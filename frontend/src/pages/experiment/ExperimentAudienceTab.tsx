@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AlertTriangle, CheckCircle2, HelpCircle, Users } from "lucide-react";
 import {
   useExperimentTargetingSelections,
   useSaveExperimentTargetingSelections,
@@ -9,6 +10,7 @@ import type {
   TargetingCandidateType,
   TargetingElement,
 } from "../../api/targeting/types";
+import "./ExperimentAudienceTab.css";
 
 interface ExperimentAudienceTabProps {
   experimentId: number;
@@ -62,6 +64,28 @@ function formatMetaAudienceRange(element: TargetingElement) {
   return null;
 }
 
+function getAudienceBounds(element: TargetingElement) {
+  const lower =
+    typeof element.metaAudienceSizeLowerBound === "number"
+      ? element.metaAudienceSizeLowerBound
+      : 0;
+  const upper =
+    typeof element.metaAudienceSizeUpperBound === "number"
+      ? element.metaAudienceSizeUpperBound
+      : lower;
+  return { lower, upper };
+}
+
+function formatCombinedAudienceRange(lower: number, upper: number) {
+  if (lower === 0 && upper === 0) {
+    return "Sem alcance informado";
+  }
+  if (lower === upper) {
+    return `${formatAudienceSize(lower)} pessoas`;
+  }
+  return `${formatAudienceSize(lower)} a ${formatAudienceSize(upper)} pessoas`;
+}
+
 export function ExperimentAudienceTab({
   experimentId,
   nicheId,
@@ -111,18 +135,23 @@ export function ExperimentAudienceTab({
     0,
   );
 
-  const quantifiedMetaOptions = useMemo(
-    () => availableOptions.filter((item) => formatMetaAudienceRange(item)),
+  const readyOptions = useMemo(
+    () => availableOptions.filter((item) => isMetaUsable(item)),
+    [availableOptions],
+  );
+
+  const diagnosticOptions = useMemo(
+    () => availableOptions.filter((item) => !isMetaUsable(item)),
     [availableOptions],
   );
 
   const grouped = useMemo(() => {
     return {
-      INTEREST: availableOptions.filter((item) => item.type === "INTEREST"),
-      JOB_TITLE: availableOptions.filter((item) => item.type === "JOB_TITLE"),
-      BEHAVIOR: availableOptions.filter((item) => item.type === "BEHAVIOR"),
+      INTEREST: readyOptions.filter((item) => item.type === "INTEREST"),
+      JOB_TITLE: readyOptions.filter((item) => item.type === "JOB_TITLE"),
+      BEHAVIOR: readyOptions.filter((item) => item.type === "BEHAVIOR"),
     };
-  }, [availableOptions]);
+  }, [readyOptions]);
 
   const selectedWithoutMeta = useMemo(
     () =>
@@ -130,6 +159,26 @@ export function ExperimentAudienceTab({
         (item) => selected.has(buildKey(item)) && !isMetaUsable(item),
       ),
     [availableOptions, selected],
+  );
+
+  const selectedReadyOptions = useMemo(
+    () => readyOptions.filter((item) => selected.has(buildKey(item))),
+    [readyOptions, selected],
+  );
+
+  const selectedAudienceRange = useMemo(
+    () =>
+      selectedReadyOptions.reduce(
+        (acc, item) => {
+          const bounds = getAudienceBounds(item);
+          return {
+            lower: acc.lower + bounds.lower,
+            upper: acc.upper + bounds.upper,
+          };
+        },
+        { lower: 0, upper: 0 },
+      ),
+    [selectedReadyOptions],
   );
 
   const toggleSelection = (item: TargetingElement) => {
@@ -145,7 +194,7 @@ export function ExperimentAudienceTab({
 
   const handleSave = async () => {
     if (alterationLocked) return;
-    const selectedItems = availableOptions.filter((item) =>
+    const selectedItems = readyOptions.filter((item) =>
       selected.has(buildKey(item)),
     );
     await saveSelections.mutateAsync({
@@ -166,50 +215,76 @@ export function ExperimentAudienceTab({
   }
 
   return (
-    <div className="card mt-3">
-      <div className="card-body d-flex flex-column gap-3">
+    <div className="card mt-3 audience-tab">
+      <div className="card-body d-flex flex-column gap-4">
+        <div className="audience-header">
+          <div>
+            <h5 className="card-title mb-1">Público da campanha</h5>
+            <p className="text-muted mb-0 small">
+              Monte um público simples, válido para Meta Ads e fácil de publicar
+              no worker.
+            </p>
+          </div>
+          <div className="audience-header__status">
+            <CheckCircle2 size={16} aria-hidden="true" />
+            {readyOptions.length} pronto{readyOptions.length === 1 ? "" : "s"}
+          </div>
+        </div>
+
+        <div className="audience-summary-grid" aria-label="Resumo do público">
+          <div className="audience-summary-item audience-summary-item--primary">
+            <span>Selecionados</span>
+            <strong>{selectedReadyOptions.length}</strong>
+            <small>itens que entrarão no targeting</small>
+          </div>
+          <div className="audience-summary-item">
+            <span>Prontos para Meta</span>
+            <strong>{readyOptions.length}</strong>
+            <small>com ID oficial da Meta</small>
+          </div>
+          <div className="audience-summary-item">
+            <span>Alcance selecionado</span>
+            <strong>
+              {formatCombinedAudienceRange(
+                selectedAudienceRange.lower,
+                selectedAudienceRange.upper,
+              )}
+            </strong>
+            <small>soma dos intervalos informados</small>
+          </div>
+          <div className="audience-summary-item">
+            <span>Diagnóstico</span>
+            <strong>{diagnosticOptions.length}</strong>
+            <small>aprovados sem ID Meta</small>
+          </div>
+        </div>
+
+        <div className="audience-guidance">
+          <div className="audience-guidance__icon">
+            <HelpCircle size={18} aria-hidden="true" />
+          </div>
+          <div>
+            <strong>Regra prática:</strong> salve pelo menos um item pronto para
+            Meta. Interesses, cargos e comportamentos selecionados entram como
+            ampliação de alcance para o teste de campanha.
+          </div>
+        </div>
+
         <div>
-          <h5 className="card-title mb-1">Público</h5>
-          <p className="text-muted mb-0 small">
-            Marque somente públicos aprovados e com ID oficial da Meta. Itens
-            sem ID Meta aparecem para diagnóstico, mas não devem ser usados em
-            campanha.
-          </p>
           {alterationLocked ? (
             <div className="alert alert-secondary mt-3 mb-0" role="status">
               Público bloqueado para alteração porque o experimento já foi
               liberado ou está em execução.
             </div>
           ) : null}
-          <div className="alert alert-info mt-3 mb-0 small" role="status">
-            <strong>Pronto para Meta</strong> significa que o item possui
-            identificador oficial da Meta e pode entrar no targeting da
-            campanha.
-            <strong className="ms-1">Sem ID Meta</strong> precisa ser resolvido
-            antes de publicar.
-          </div>
           {selectedWithoutMeta.length > 0 ? (
             <div className="alert alert-warning mt-3 mb-0 small" role="alert">
-              Remova {selectedWithoutMeta.length} item
-              {selectedWithoutMeta.length === 1 ? "" : "s"} sem ID Meta antes de
-              salvar o público.
-            </div>
-          ) : null}
-          {quantifiedMetaOptions.length > 0 ? (
-            <div className="alert alert-success mt-3 mb-0 small" role="status">
-              <div className="fw-semibold mb-2">
-                Públicos com alcance quantificado pela Meta
-              </div>
-              <div className="d-flex flex-wrap gap-2">
-                {quantifiedMetaOptions.map((item) => (
-                  <span
-                    className="badge text-bg-light border"
-                    key={buildKey(item)}
-                  >
-                    {item.term}: {formatMetaAudienceRange(item)}
-                  </span>
-                ))}
-              </div>
+              {selectedWithoutMeta.length} item
+              {selectedWithoutMeta.length === 1 ? "" : "s"} salvo
+              {selectedWithoutMeta.length === 1 ? "" : "s"} anteriormente sem ID
+              Meta não entrará
+              {selectedWithoutMeta.length === 1 ? "" : "ão"} no próximo
+              salvamento.
             </div>
           ) : null}
         </div>
@@ -250,18 +325,46 @@ export function ExperimentAudienceTab({
             </Link>
           </div>
         ) : (
-          <div className="row g-3">
+          <div className="audience-category-grid">
             {(["INTEREST", "JOB_TITLE", "BEHAVIOR"] as const).map((type) => (
-              <div key={type} className="col-12 col-lg-4">
-                <div className="border rounded p-3 h-100">
-                  <h6 className="mb-2">{TYPE_LABEL[type]}</h6>
-                  <div className="d-flex flex-column gap-2">
+              <section key={type} className="audience-category">
+                <div className="audience-category__header">
+                  <div>
+                    <h6>{TYPE_LABEL[type]}</h6>
+                    <span>
+                      {
+                        grouped[type].filter((item) =>
+                          selected.has(buildKey(item)),
+                        ).length
+                      }{" "}
+                      selecionado
+                      {grouped[type].filter((item) =>
+                        selected.has(buildKey(item)),
+                      ).length === 1
+                        ? ""
+                        : "s"}
+                    </span>
+                  </div>
+                  <Users size={18} aria-hidden="true" />
+                </div>
+                {grouped[type].length === 0 ? (
+                  <div className="audience-empty-state">
+                    Nenhum item pronto nesta categoria.
+                  </div>
+                ) : (
+                  <div className="audience-option-list">
                     {grouped[type].map((item) => {
                       const key = buildKey(item);
                       const itemSelected = selected.has(key);
-                      const metaUsable = isMetaUsable(item);
+                      const audienceRange = formatMetaAudienceRange(item);
                       return (
-                        <div className="form-check" key={key}>
+                        <label
+                          className={`audience-option ${
+                            itemSelected ? "audience-option--selected" : ""
+                          }`}
+                          htmlFor={key}
+                          key={key}
+                        >
                           <input
                             id={key}
                             className="form-check-input"
@@ -269,44 +372,96 @@ export function ExperimentAudienceTab({
                             checked={itemSelected}
                             onChange={() => toggleSelection(item)}
                             disabled={
-                              saveSelections.isPending ||
-                              alterationLocked ||
-                              (!metaUsable && !itemSelected)
+                              saveSelections.isPending || alterationLocked
                             }
                           />
-                          <label htmlFor={key} className="form-check-label">
-                            {item.term}
-                            <span
-                              className={`badge ms-2 ${
-                                metaUsable
-                                  ? "text-bg-success"
-                                  : "text-bg-warning"
-                              }`}
-                            >
-                              {metaUsable ? "Pronto para Meta" : "Sem ID Meta"}
+                          <span className="audience-option__content">
+                            <span className="audience-option__title">
+                              {item.term}
                             </span>
-                            {metaUsable && item.metaKey ? (
-                              <span className="text-muted small ms-2">
-                                {item.metaKey}
-                              </span>
-                            ) : null}
-                            {formatMetaAudienceRange(item) ? (
-                              <span className="badge text-bg-light border ms-2">
-                                Meta: {formatMetaAudienceRange(item)}
-                              </span>
-                            ) : null}
-                          </label>
-                        </div>
+                            <span className="audience-option__meta">
+                              {item.metaKey ? (
+                                <span>Meta: {item.metaKey}</span>
+                              ) : null}
+                              {audienceRange ? (
+                                <span>{audienceRange}</span>
+                              ) : (
+                                <span>Alcance não informado</span>
+                              )}
+                            </span>
+                          </span>
+                          <span className="audience-option__badge">Pronto</span>
+                        </label>
                       );
                     })}
                   </div>
-                </div>
-              </div>
+                )}
+              </section>
             ))}
           </div>
         )}
 
-        <div className="d-flex justify-content-end">
+        {diagnosticOptions.length > 0 ? (
+          <details className="audience-diagnostic">
+            <summary>
+              <span>
+                <AlertTriangle size={16} aria-hidden="true" />
+                Itens aprovados sem ID Meta
+              </span>
+              <strong>{diagnosticOptions.length}</strong>
+            </summary>
+            <div className="audience-diagnostic__body">
+              <p>
+                Estes itens ficam fora da seleção porque ainda não possuem o
+                identificador oficial necessário para publicação na Meta.
+              </p>
+              <div className="audience-diagnostic__list">
+                {diagnosticOptions.map((item) => (
+                  <div
+                    className="audience-diagnostic__item"
+                    key={buildKey(item)}
+                  >
+                    <span>{item.term}</span>
+                    <small>{TYPE_LABEL[item.type]}</small>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+        ) : null}
+
+        {selectedReadyOptions.length > 0 ? (
+          <details className="audience-selected-details">
+            <summary>Ver público selecionado</summary>
+            <div className="audience-selected-details__body">
+              {selectedReadyOptions.map((item) => (
+                <div
+                  className="audience-selected-details__item"
+                  key={buildKey(item)}
+                >
+                  <div>
+                    <strong>{item.term}</strong>
+                    <span>{TYPE_LABEL[item.type]}</span>
+                  </div>
+                  <small>
+                    {formatMetaAudienceRange(item) ?? "Sem alcance"}
+                  </small>
+                </div>
+              ))}
+            </div>
+          </details>
+        ) : null}
+
+        <div className="audience-actions">
+          <div className="text-muted small">
+            {selectedReadyOptions.length === 0
+              ? "Selecione pelo menos um público pronto para liberar a campanha."
+              : `${selectedReadyOptions.length} item${
+                  selectedReadyOptions.length === 1 ? "" : "s"
+                } pronto${
+                  selectedReadyOptions.length === 1 ? "" : "s"
+                } para salvar.`}
+          </div>
           <button
             className="btn btn-primary"
             onClick={handleSave}
@@ -314,7 +469,7 @@ export function ExperimentAudienceTab({
               saveSelections.isPending ||
               isLoading ||
               alterationLocked ||
-              selectedWithoutMeta.length > 0
+              selectedReadyOptions.length === 0
             }
           >
             {saveSelections.isPending ? (

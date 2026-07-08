@@ -178,7 +178,59 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.commercial-planning-week-card-header::-webkit-details-marker,
+.commercial-planning-node-header::-webkit-details-marker {
+  display: none;
+}
+
+.commercial-planning-week-card[open] > .commercial-planning-week-card-header {
   margin-bottom: 0.75rem;
+}
+
+.commercial-planning-summary-title {
+  display: flex;
+  min-width: 0;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.commercial-planning-collapse-indicator {
+  display: inline-grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #d9dee7;
+  border-radius: 999px;
+  color: #344054;
+  font-size: 0.8rem;
+  line-height: 1;
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.commercial-planning-week-card:not([open])
+  > .commercial-planning-week-card-header
+  .commercial-planning-collapse-indicator,
+.commercial-planning-niche-node:not([open])
+  > .commercial-planning-node-header
+  .commercial-planning-collapse-indicator,
+.commercial-planning-hypothesis-node:not([open])
+  > .commercial-planning-node-header
+  .commercial-planning-collapse-indicator {
+  transform: rotate(-90deg);
+}
+
+.commercial-planning-week-card-header:hover .commercial-planning-collapse-indicator,
+.commercial-planning-node-header:hover .commercial-planning-collapse-indicator {
+  border-color: #98a2b3;
+  background: #f2f4f7;
 }
 
 .commercial-planning-week-card-header h3 {
@@ -233,6 +285,8 @@
   justify-content: space-between;
   gap: 0.75rem;
   align-items: start;
+  cursor: pointer;
+  list-style: none;
 }
 
 .commercial-planning-node-header h4,
@@ -282,6 +336,13 @@
   display: grid;
   gap: 0.75rem;
   margin-top: 0.75rem;
+}
+
+.commercial-planning-niche-node:not([open])
+  > .commercial-planning-hypothesis-list,
+.commercial-planning-hypothesis-node:not([open])
+  > .commercial-planning-experiment-grid {
+  display: none;
 }
 
 .commercial-planning-experiment-grid {

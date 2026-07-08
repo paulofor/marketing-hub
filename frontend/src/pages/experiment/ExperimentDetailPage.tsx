@@ -60,6 +60,16 @@ function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   );
 }
 
+const experimentDetailTabs = [
+  { value: "overview", label: "Overview" },
+  { value: "funnel", label: "Funil de vendas" },
+  { value: "analytics", label: "Analytics" },
+  { value: "creatives", label: "Criativos" },
+  { value: "landing", label: "Landing" },
+  { value: "content-structure", label: "Estrutura de conteúdo" },
+  { value: "publico", label: "Público" },
+] as const;
+
 function parseCostValue(value?: number | string | null) {
   if (value == null) return null;
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
@@ -2645,28 +2655,18 @@ export default function ExperimentDetailPage() {
       ) : null}
       <div ref={tabsSectionRef}>
         <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
-          <Tabs.List className="nav nav-tabs">
-            <Tabs.Trigger value="overview" className="nav-link">
-              Overview
-            </Tabs.Trigger>
-            <Tabs.Trigger value="funnel" className="nav-link">
-              Funil de vendas
-            </Tabs.Trigger>
-            <Tabs.Trigger value="analytics" className="nav-link">
-              Analytics
-            </Tabs.Trigger>
-            <Tabs.Trigger value="creatives" className="nav-link">
-              Criativos
-            </Tabs.Trigger>
-            <Tabs.Trigger value="landing" className="nav-link">
-              Landing
-            </Tabs.Trigger>
-            <Tabs.Trigger value="content-structure" className="nav-link">
-              Estrutura de conteúdo
-            </Tabs.Trigger>
-            <Tabs.Trigger value="publico" className="nav-link">
-              Público
-            </Tabs.Trigger>
+          <Tabs.List className="nav nav-tabs experiment-detail-tabs">
+            {experimentDetailTabs.map((item) => (
+              <Tabs.Trigger
+                key={item.value}
+                value={item.value}
+                className={`nav-link experiment-detail-tabs__item${
+                  tab === item.value ? " active" : ""
+                }`}
+              >
+                {item.label}
+              </Tabs.Trigger>
+            ))}
           </Tabs.List>
           <Tabs.Content value="overview" asChild>
             <div className="d-flex flex-column gap-3">

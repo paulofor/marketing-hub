@@ -427,6 +427,14 @@ function HierarchySummary({
   );
 }
 
+function CollapseIndicator() {
+  return (
+    <span className="commercial-planning-collapse-indicator" aria-hidden="true">
+      ▾
+    </span>
+  );
+}
+
 function WeeklyExperimentTable({
   planId,
   weeks,
@@ -437,13 +445,17 @@ function WeeklyExperimentTable({
   return (
     <section className="commercial-planning-week-list">
       {weeks.map((week) => (
-        <article
+        <details
           className="commercial-planning-week-card"
           key={week.weekNumber}
+          open={week.weekNumber === 1}
         >
-          <div className="commercial-planning-week-card-header">
+          <summary className="commercial-planning-week-card-header">
             <div>
-              <h3>Semana {week.weekNumber}</h3>
+              <div className="commercial-planning-summary-title">
+                <CollapseIndicator />
+                <h3>Semana {week.weekNumber}</h3>
+              </div>
               <p>
                 {formatDate(week.startDate)} até {formatDate(week.endDate)}
               </p>
@@ -453,40 +465,48 @@ function WeeklyExperimentTable({
               <strong>{formatExecutedCurrency(week.totalCost)}</strong>
               <small>{formatExecutedCurrency(week.totalRevenue)} receita</small>
             </div>
-          </div>
+          </summary>
 
           {week.experiments.length > 0 ? (
             <div className="commercial-planning-hierarchy">
               {buildExperimentHierarchy(week.experiments).map((niche) => (
-                <section
+                <details
                   className="commercial-planning-niche-node"
                   key={niche.key}
+                  open
                 >
-                  <div className="commercial-planning-node-header">
+                  <summary className="commercial-planning-node-header">
                     <div>
-                      <span className="commercial-planning-node-kicker">
-                        Nicho
-                      </span>
+                      <div className="commercial-planning-summary-title">
+                        <CollapseIndicator />
+                        <span className="commercial-planning-node-kicker">
+                          Nicho
+                        </span>
+                      </div>
                       <h4>{niche.name}</h4>
                     </div>
                     <HierarchySummary summary={niche.summary} />
-                  </div>
+                  </summary>
 
                   <div className="commercial-planning-hypothesis-list">
                     {niche.hypotheses.map((hypothesis) => (
-                      <section
+                      <details
                         className="commercial-planning-hypothesis-node"
                         key={hypothesis.key}
+                        open={hypothesis.experiments.length === 1}
                       >
-                        <div className="commercial-planning-node-header">
+                        <summary className="commercial-planning-node-header">
                           <div>
-                            <span className="commercial-planning-node-kicker">
-                              Hipótese
-                            </span>
+                            <div className="commercial-planning-summary-title">
+                              <CollapseIndicator />
+                              <span className="commercial-planning-node-kicker">
+                                Hipótese
+                              </span>
+                            </div>
                             <h5>{hypothesis.title}</h5>
                           </div>
                           <HierarchySummary summary={hypothesis.summary} />
-                        </div>
+                        </summary>
 
                         <div className="commercial-planning-experiment-grid">
                           {hypothesis.experiments.map((experiment) => (
@@ -570,10 +590,10 @@ function WeeklyExperimentTable({
                             </article>
                           ))}
                         </div>
-                      </section>
+                      </details>
                     ))}
                   </div>
-                </section>
+                </details>
               ))}
             </div>
           ) : (
@@ -583,7 +603,7 @@ function WeeklyExperimentTable({
           )}
 
           <WeeklyObjectiveEditor planId={planId} week={week} />
-        </article>
+        </details>
       ))}
     </section>
   );

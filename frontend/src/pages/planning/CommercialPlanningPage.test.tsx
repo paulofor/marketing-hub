@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
@@ -164,13 +165,19 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Receita parcial")).toBeTruthy();
   });
 
-  it("renderiza objetivos semanais editaveis", () => {
+  it("renderiza objetivos semanais como texto e mostra campo apenas para novo objetivo", async () => {
+    const user = userEvent.setup();
     render(<CommercialPlanningPage />);
 
     expect(screen.getByText("Objetivos da semana")).toBeTruthy();
-    expect(screen.getByDisplayValue(/checkout_click/)).toBeTruthy();
-    expect(screen.getByLabelText("Nota do objetivo 1 da semana 1")).toBeTruthy();
-    expect(screen.getByText("Salvar objetivos")).toBeTruthy();
+    expect(screen.getByText(/checkout_click/)).toBeTruthy();
+    expect(screen.queryByDisplayValue(/checkout_click/)).toBeNull();
+    expect(screen.queryByLabelText("Novo objetivo da semana 1")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Inserir novo" }));
+
+    expect(screen.getByLabelText("Novo objetivo da semana 1")).toBeTruthy();
+    expect(screen.getByText("Salvar novo")).toBeTruthy();
   });
 
   it("usa valores seguros quando status vem fora do contrato", () => {

@@ -12,14 +12,17 @@ import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: montar a leitura semanal de experimentos do planejamento comercial. */
 @Service
@@ -35,15 +38,26 @@ public class CommercialPlanWeeklyExperimentService {
     private final CommercialPlanService planService;
     private final JdbcTemplate jdbcTemplate;
     private final CommercialPlanWeekObjectiveRepository objectiveRepository;
+    private final Clock clock;
 
     /** Inicializa o serviço com a fonte de plano e acesso SQL de leitura operacional. */
     public CommercialPlanWeeklyExperimentService(
             CommercialPlanService planService,
             JdbcTemplate jdbcTemplate,
             CommercialPlanWeekObjectiveRepository objectiveRepository) {
+        this(planService, jdbcTemplate, objectiveRepository, Clock.systemUTC());
+    }
+
+    /** Inicializa o serviço permitindo controlar o relogio em testes de janela semanal. */
+    CommercialPlanWeeklyExperimentService(
+            CommercialPlanService planService,
+            JdbcTemplate jdbcTemplate,
+            CommercialPlanWeekObjectiveRepository objectiveRepository,
+            Clock clock) {
         this.planService = planService;
         this.jdbcTemplate = jdbcTemplate;
         this.objectiveRepository = objectiveRepository;
+        this.clock = clock;
     }
 
     /** Lista as semanas do mês do plano com os experimentos criados em cada período. */
@@ -58,6 +72,7 @@ public class CommercialPlanWeeklyExperimentService {
         while (!start.isAfter(monthEnd)) {
             LocalDate end = start.plusDays(6).isAfter(monthEnd) ? monthEnd : start.plusDays(6);
             List<CommercialPlanWeekExperimentDto> experiments = listExperiments(start, end.plusDays(1));
+            boolean objectivesEditable = isObjectiveEditWindowOpen(end);
             weeks.add(new CommercialPlanWeekDto(
                     weekNumber,
                     start,
@@ -65,6 +80,8 @@ public class CommercialPlanWeeklyExperimentService {
                     experiments.size(),
                     sumCost(experiments),
                     sumRevenue(experiments),
+                    objectivesEditable,
+                    objectiveEditWindowMessage(end, objectivesEditable),
                     listObjectives(plan, weekNumber),
                     experiments));
             start = end.plusDays(1);
@@ -80,6 +97,10 @@ public class CommercialPlanWeeklyExperimentService {
             Integer weekNumber,
             UpdateCommercialPlanWeekObjectivesRequest request) {
         CommercialPlan plan = planService.getPlan(planId);
+        WeekPeriod period = resolveWeekPeriod(plan, weekNumber);
+        if (!isObjectiveEditWindowOpen(period.endDate())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, objectiveEditWindowMessage(period.endDate(), false));
+        }
         objectiveRepository.deleteByPlanIdAndWeekNumber(planId, weekNumber);
         List<CommercialPlanWeekObjective> objectives = new ArrayList<>();
         List<UpdateCommercialPlanWeekObjectivesRequest.Item> items =
@@ -101,6 +122,43 @@ public class CommercialPlanWeeklyExperimentService {
         return objectiveRepository.saveAll(objectives).stream()
                 .map(this::toObjectiveDto)
                 .toList();
+    }
+
+    /** Resolve a semana solicitada dentro do mes de referencia do plano. */
+    private WeekPeriod resolveWeekPeriod(CommercialPlan plan, Integer weekNumber) {
+        if (weekNumber == null || weekNumber < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Semana do planejamento invalida.");
+        }
+        LocalDate monthEnd = resolvePlanEnd(plan);
+        LocalDate start = monthEnd.withDayOfMonth(1);
+        int currentWeek = 1;
+        while (!start.isAfter(monthEnd)) {
+            LocalDate end = start.plusDays(6).isAfter(monthEnd) ? monthEnd : start.plusDays(6);
+            if (currentWeek == weekNumber) {
+                return new WeekPeriod(start, end);
+            }
+            start = end.plusDays(1);
+            currentWeek++;
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Semana do planejamento fora do mes do plano.");
+    }
+
+    /** Verifica se a edicao de objetivos esta dentro de dois dias antes ou depois do fim da semana. */
+    private boolean isObjectiveEditWindowOpen(LocalDate weekEndDate) {
+        LocalDate today = LocalDate.now(clock);
+        LocalDate windowStart = weekEndDate.minusDays(2);
+        LocalDate windowEnd = weekEndDate.plusDays(2);
+        return !today.isBefore(windowStart) && !today.isAfter(windowEnd);
+    }
+
+    /** Monta a mensagem de disponibilidade da janela de objetivos semanais. */
+    private String objectiveEditWindowMessage(LocalDate weekEndDate, boolean editable) {
+        LocalDate windowStart = weekEndDate.minusDays(2);
+        LocalDate windowEnd = weekEndDate.plusDays(2);
+        if (editable) {
+            return "Objetivos liberados ate " + windowEnd + ".";
+        }
+        return "Objetivos disponiveis de " + windowStart + " ate " + windowEnd + ".";
     }
 
     /** Resolve o mês de referência do plano a partir do prazo ou da criação. */
@@ -301,4 +359,7 @@ public class CommercialPlanWeeklyExperimentService {
     private Instant toInstant(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();
     }
+
+    /** Representa o periodo de uma semana dentro do planejamento comercial. */
+    private record WeekPeriod(LocalDate startDate, LocalDate endDate) {}
 }

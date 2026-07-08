@@ -53,6 +53,8 @@ let mockWeeks: unknown[] = [
     experimentsCreated: 1,
     totalCost: 37,
     totalRevenue: 27,
+    objectivesEditable: true,
+    objectiveEditWindowMessage: "Objetivos liberados ate 2026-07-09.",
     objectives: [
       {
         id: null,
@@ -130,6 +132,8 @@ afterEach(() => {
       experimentsCreated: 1,
       totalCost: 37,
       totalRevenue: 27,
+      objectivesEditable: true,
+      objectiveEditWindowMessage: "Objetivos liberados ate 2026-07-09.",
       objectives: [
         {
           id: null,
@@ -212,6 +216,23 @@ describe("CommercialPlanningPage", () => {
 
     expect(screen.getByLabelText("Novo objetivo da semana 1")).toBeTruthy();
     expect(screen.getByText("Salvar novo")).toBeTruthy();
+  });
+
+  it("oculta insercao de objetivo quando a semana esta fora da janela permitida", () => {
+    mockWeeks = [
+      {
+        ...(mockWeeks[0] as Record<string, unknown>),
+        objectivesEditable: false,
+        objectiveEditWindowMessage:
+          "Objetivos disponiveis de 2026-07-12 ate 2026-07-16.",
+      },
+    ];
+
+    renderPage();
+
+    expect(screen.getByText("Objetivos da semana")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Inserir novo" })).toBeNull();
+    expect(screen.queryByLabelText("Novo objetivo da semana 1")).toBeNull();
   });
 
   it("usa valores seguros quando status vem fora do contrato", () => {

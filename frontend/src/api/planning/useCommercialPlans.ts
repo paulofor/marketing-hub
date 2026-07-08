@@ -133,6 +133,8 @@ export interface CommercialPlanWeek {
   experimentsCreated: number;
   totalCost?: number | null;
   totalRevenue?: number | null;
+  objectivesEditable?: boolean | null;
+  objectiveEditWindowMessage?: string | null;
   objectives: CommercialPlanWeekObjective[];
   experiments: CommercialPlanWeekExperiment[];
 }

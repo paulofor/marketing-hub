@@ -15,6 +15,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /** Testa o mapeamento das métricas de campanha coletadas na Meta. */
 class FacebookCampaignMetricsServiceTest {
@@ -107,10 +108,61 @@ class FacebookCampaignMetricsServiceTest {
         assertThat(payload.ads().get(0).id()).isEqualTo("ad-1");
     }
 
+    /** Garante que gasto minimo sem leads ativa a trava emergencial direto na Meta. */
+    @Test
+    void pauseCampaignIfNoLeadsAfterMinimumSpendPausesMetaCampaign() throws Exception {
+        FacebookAdsService facebookAdsService = mock(FacebookAdsService.class);
+        FacebookCampaignMetricsService service = service(facebookAdsService);
+        var payload = new FacebookCampaignMetricsService.CampaignMetricsUpdateRequest(
+                LocalDate.parse("2026-07-04"),
+                LocalDate.parse("2026-07-04"),
+                1800L,
+                2400L,
+                299L,
+                0L,
+                new BigDecimal("50.23"));
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "pauseCampaignIfNoLeadsAfterMinimumSpend",
+                String.class,
+                FacebookCampaignMetricsService.CampaignMetricsUpdateRequest.class);
+        method.setAccessible(true);
+        method.invoke(service, "cmp-1", payload);
+
+        verify(facebookAdsService).pauseCampaign("cmp-1");
+    }
+
+    /** Garante que a trava emergencial nao dispara antes do piso financeiro. */
+    @Test
+    void shouldEmergencyPauseWaitsForMinimumSpend() throws Exception {
+        FacebookCampaignMetricsService service = service();
+        var payload = new FacebookCampaignMetricsService.CampaignMetricsUpdateRequest(
+                LocalDate.parse("2026-07-04"),
+                LocalDate.parse("2026-07-04"),
+                100L,
+                150L,
+                12L,
+                0L,
+                new BigDecimal("24.99"));
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "shouldEmergencyPause",
+                FacebookCampaignMetricsService.CampaignMetricsUpdateRequest.class);
+        method.setAccessible(true);
+        boolean shouldPause = (boolean) method.invoke(service, payload);
+
+        assertThat(shouldPause).isFalse();
+    }
+
     /** Cria o serviço com dependências simuladas para testar apenas o mapeamento local. */
     private FacebookCampaignMetricsService service() {
+        return service(mock(FacebookAdsService.class));
+    }
+
+    /** Cria o serviço com cliente Meta controlado para testar regras locais. */
+    private FacebookCampaignMetricsService service(FacebookAdsService facebookAdsService) {
         return new FacebookCampaignMetricsService(
-                mock(FacebookAdsService.class),
+                facebookAdsService,
                 mock(FacebookAccessTokenManager.class),
                 mock(FacebookWorkerConfigurationClient.class),
                 mock(FacebookCampaignStatusSnapshotClient.class),

@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
@@ -103,6 +104,14 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
   };
 });
 
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <CommercialPlanningPage />
+    </MemoryRouter>,
+  );
+}
+
 afterEach(() => {
   mockPlans = defaultPlans;
   mockWeeks = [
@@ -142,7 +151,7 @@ afterEach(() => {
 
 describe("CommercialPlanningPage", () => {
   it("renderiza somente o planejamento superior", () => {
-    render(<CommercialPlanningPage />);
+    renderPage();
 
     expect(screen.getByText("Planejamento")).toBeTruthy();
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
@@ -157,17 +166,20 @@ describe("CommercialPlanningPage", () => {
   });
 
   it("renderiza experimentos criados por semana do mes", () => {
-    render(<CommercialPlanningPage />);
+    renderPage();
 
     expect(screen.getByText("Semana 1")).toBeTruthy();
-    expect(screen.getByText("Kit manutenção")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Kit manutenção" })).toHaveAttribute(
+      "href",
+      "/experiments/39",
+    );
     expect(screen.getByText("Vídeo")).toBeTruthy();
     expect(screen.getByText("Receita parcial")).toBeTruthy();
   });
 
   it("renderiza objetivos semanais como texto e mostra campo apenas para novo objetivo", async () => {
     const user = userEvent.setup();
-    render(<CommercialPlanningPage />);
+    renderPage();
 
     expect(screen.getByText("Objetivos da semana")).toBeTruthy();
     expect(screen.getByText(/checkout_click/)).toBeTruthy();
@@ -181,7 +193,7 @@ describe("CommercialPlanningPage", () => {
   });
 
   it("usa valores seguros quando status vem fora do contrato", () => {
-    render(<CommercialPlanningPage />);
+    renderPage();
 
     expect(screen.getAllByText("Rascunho").length).toBeGreaterThan(0);
   });
@@ -189,7 +201,7 @@ describe("CommercialPlanningPage", () => {
   it("renderiza sugestao de julho quando a API ainda nao retorna planos", () => {
     mockPlans = [];
 
-    render(<CommercialPlanningPage />);
+    renderPage();
 
     expect(screen.getByText("Planejamento")).toBeTruthy();
     expect(screen.getByText("Julho 2026")).toBeTruthy();

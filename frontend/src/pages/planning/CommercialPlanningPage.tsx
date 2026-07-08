@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
   CommercialPlan,
@@ -353,7 +354,11 @@ function WeeklyExperimentTable({
                   week.experiments.map((experiment) => (
                     <tr key={experiment.id}>
                       <td>{experiment.id}</td>
-                      <td>{experiment.name}</td>
+                      <td>
+                        <Link to={`/experiments/${experiment.id}`}>
+                          {experiment.name}
+                        </Link>
+                      </td>
                       <td>{experiment.productType ?? "Não definido"}</td>
                       <td>{experiment.status ?? "Não definido"}</td>
                       <td>{formatDate(experiment.createdAt)}</td>

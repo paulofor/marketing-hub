@@ -1,5 +1,6 @@
 package com.marketinghub.openai;
 
+import com.marketinghub.modelos.openai.catalogo.v1.service.OpenAiModelCatalogV1Service;
 import com.marketinghub.openai.service.OpenAiModelPricingSyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,17 +12,21 @@ import org.springframework.stereotype.Component;
 public class OpenAiModelPricingScheduler {
     private static final Logger log = LoggerFactory.getLogger(OpenAiModelPricingScheduler.class);
 
+    private final OpenAiModelCatalogV1Service catalogService;
     private final OpenAiModelPricingSyncService syncService;
 
-    /** Inicializa o agendador com o serviço transacional de sincronização de preços. */
-    public OpenAiModelPricingScheduler(OpenAiModelPricingSyncService syncService) {
+    /** Inicializa o agendador com os serviços de sincronização do catálogo técnico e dos preços. */
+    public OpenAiModelPricingScheduler(
+            OpenAiModelCatalogV1Service catalogService, OpenAiModelPricingSyncService syncService) {
+        this.catalogService = catalogService;
         this.syncService = syncService;
     }
 
-    /** Executa diariamente às 04:00 no fuso de São Paulo para manter os preços dos modelos atualizados. */
+    /** Executa diariamente às 04:00 no fuso de São Paulo para manter modelos e preços atualizados. */
     @Scheduled(cron = "0 0 4 * * *", zone = "America/Sao_Paulo")
     public void syncDailyPricing() {
         try {
+            catalogService.fetchAndPersistCatalog();
             int updated = syncService.syncOfficialPricing();
             log.info("Rotina diária de preços OpenAI concluída; operation=openai-pricing-daily-sync modelsUpdated={}", updated);
         } catch (RuntimeException ex) {

@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 public class FacebookCampaignMetricsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookCampaignMetricsService.class);
+    private static final BigDecimal EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD = new BigDecimal("25.00");
 
     private final FacebookAdsService facebookAdsService;
     private final FacebookAccessTokenManager accessTokenManager;
@@ -112,6 +113,7 @@ public class FacebookCampaignMetricsService {
                 reportMetricsError(target.campaignId(), "Could not parse insights payload");
                 return;
             }
+            pauseCampaignIfNoLeadsAfterMinimumSpend(target.campaignId(), payload);
             sendMetrics(target.campaignId(), payload);
         } catch (FacebookAccessTokenExpiredException ex) {
             LOGGER.warn("Facebook access token expired while fetching metrics for campaign {}", target.campaignId(), ex);
@@ -213,6 +215,39 @@ public class FacebookCampaignMetricsService {
      */
     private CampaignMetricsUpdateRequest buildEmptyMetricsPayload() {
         return new CampaignMetricsUpdateRequest(null, null, 0L, 0L, 0L, 0L, BigDecimal.ZERO);
+    }
+
+    /**
+     * Pausa diretamente na Meta quando o gasto real passou do piso sem gerar lead, mesmo se o backend falhar.
+     */
+    private void pauseCampaignIfNoLeadsAfterMinimumSpend(String campaignId, CampaignMetricsUpdateRequest payload) {
+        if (!shouldEmergencyPause(payload)) {
+            return;
+        }
+        try {
+            facebookAdsService.pauseCampaign(campaignId);
+            LOGGER.warn(
+                    "Emergency pause applied to Facebook campaign {} after spend {} with zero leads",
+                    campaignId,
+                    payload.spend());
+        } catch (Exception ex) {
+            LOGGER.warn(
+                    "Could not apply emergency pause to Facebook campaign {} after spend {} with zero leads",
+                    campaignId,
+                    payload.spend(),
+                    ex);
+        }
+    }
+
+    /**
+     * Verifica se o payload da Meta exige trava emergencial por gasto sem resultado.
+     */
+    private boolean shouldEmergencyPause(CampaignMetricsUpdateRequest payload) {
+        if (payload == null || payload.spend() == null) {
+            return false;
+        }
+        long leads = payload.leads() != null ? payload.leads() : 0L;
+        return leads == 0L && payload.spend().compareTo(EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD) >= 0;
     }
 
     /**

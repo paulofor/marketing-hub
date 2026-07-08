@@ -608,6 +608,33 @@ class FacebookAdsCampaignControllerTest {
     }
 
     @Test
+    void syncStatusStopsRunningExperimentWhenMetaCampaignIsPaused() throws Exception {
+        var experiment = new Experiment();
+        experiment.setId(57L);
+        experiment.setStatus(ExperimentStatus.RUNNING);
+        var campaign = new FacebookAdsCampaign();
+        campaign.setId("cmp-paused");
+        campaign.setExperiment(experiment);
+        campaign.setStatus(FacebookAdStatus.ACTIVE);
+        when(campaignRepository.findById("cmp-paused")).thenReturn(Optional.of(campaign));
+
+        String payload = """
+            {
+              "status": "PAUSED",
+              "effectiveStatus": "PAUSED"
+            }
+            """;
+
+        mockMvc.perform(post("/api/facebook-campaigns/cmp-paused/status-sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isAccepted());
+
+        assertThat(campaign.getStatus()).isEqualTo(FacebookAdStatus.PAUSED);
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+    }
+
+    @Test
     void createCampaignRejectsAnotherCampaignForSameExperiment() throws Exception {
         var experiment = Experiment.builder()
                 .id(37L)

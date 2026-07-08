@@ -1990,13 +1990,6 @@ export default function ExperimentDetailPage() {
       value: experimentTypeLabel,
     },
     {
-      label: "Mecanismo de Produto IA",
-      value: data.productAiSubtype
-        ? (productAiSubtypeLabel[data.productAiSubtype] ??
-          data.productAiSubtype)
-        : "-",
-    },
-    {
       label: "Nicho",
       value: <Link to={`/niches/${data.nicheId}`}>{niche?.name}</Link>,
     },
@@ -2011,14 +2004,6 @@ export default function ExperimentDetailPage() {
     {
       label: "Etapa priorizada",
       value: getExperimentStageLabel(data.stage as ExperimentStage),
-    },
-    {
-      label: "Variável principal",
-      value: data.primaryVariable || "—",
-    },
-    {
-      label: "Métrica principal",
-      value: data.primaryMetric || "—",
     },
     {
       label: "Dor única",
@@ -2042,67 +2027,25 @@ export default function ExperimentDetailPage() {
       label: "Objetivo da campanha",
       value: campaignObjectiveLabel,
     },
+    { label: "Custo rastreável", value: formatCurrency(data.cost) },
     {
-      label: "Página do Facebook",
-      value: experimentPage
-        ? `${experimentPage.name} (${experimentPage.pageId})`
-        : "—",
+      label: "Criativos aprovados",
+      value: `${readinessCreativeCount}/3`,
     },
     {
-      label: "Conta do Instagram",
-      value: instagramAccount
-        ? `${instagramAccount.name} (${instagramAccount.handle})`
-        : "—",
-    },
-    { label: "Preset de Métricas", value: preset?.name || "—" },
-    {
-      label: "Sample size",
-      value: data.sampleSize ?? preset?.sampleSize ?? "—",
-    },
-    { label: "Criativos a gerar", value: data.creativesToGenerate ?? "—" },
-    { label: "E-mails a gerar", value: data.emailsToGenerate ?? "—" },
-    {
-      label: "E-mails de amostra a gerar",
-      value: data.sampleEmailsToGenerate ?? "—",
+      label: "Público para publicação",
+      value: hasPublisherTargeting ? "Salvo" : "Pendente",
     },
     {
-      label: "Fluxo de portal do lead",
-      value: data.leadPortalFlowName ? (
-        <div className="d-flex flex-column">
-          <span>{data.leadPortalFlowName}</span>
-          {data.leadPortalFlowSlug ? (
-            <span className="text-muted small">
-              Slug: {data.leadPortalFlowSlug}
-            </span>
-          ) : null}
-        </div>
+      label: "Página de venda",
+      value: data.followUpActionUrl ? (
+        <a href={data.followUpActionUrl} target="_blank" rel="noreferrer">
+          Abrir página
+        </a>
       ) : (
-        "—"
+        "Pendente"
       ),
     },
-    {
-      label: "Modelo de imagem",
-      value: data.imageModelName
-        ? `${data.imageModelName}${data.imageModelQualityName ? " · " + data.imageModelQualityName : ""}`
-        : "—",
-    },
-    {
-      label: "MDE (p.p.)",
-      value: data.mdePercent ?? preset?.defaultMdePp ?? "—",
-    },
-    {
-      label: "Stop-loss factor",
-      value: preset?.stopLossFactor ? `${preset.stopLossFactor}×` : "—",
-    },
-    {
-      label: "CPL-meta",
-      value: formatCurrency(data.kpiTarget ?? data.kpiTargetCpl),
-    },
-    { label: "Custo", value: formatCurrency(data.cost) },
-    { label: "Despesa", value: formatCurrency(data.expense) },
-    { label: "Stop-loss CPL", value: formatCurrency(stopLossCpl) },
-    { label: "Baseline CVR", value: formatPercent(data.baselineCvr) },
-    { label: "Target CVR", value: formatPercent(data.targetCvr) },
     { label: "Plataforma", value: data.platform },
     { label: "Início", value: data.startDate },
     { label: "Término", value: data.endDate },
@@ -2128,25 +2071,6 @@ export default function ExperimentDetailPage() {
               Editar
             </Link>
           )}
-          {alterationLocked ? (
-            <span
-              className="btn btn-outline-primary disabled me-2"
-              aria-disabled="true"
-              title="Playbook bloqueado após a liberação/publicação do experimento."
-            >
-              Playbook de Ad Sets
-            </span>
-          ) : (
-            <Link to="adset-workflow" className="btn btn-outline-primary me-2">
-              Playbook de Ad Sets
-            </Link>
-          )}
-          <Link to="facebook-api-logs" className="btn btn-outline-info me-2">
-            Chamadas Meta
-          </Link>
-          <Link to="pipeline-jobs" className="btn btn-outline-dark me-2">
-            Jobs do pipeline
-          </Link>
           {canDownloadCompleteReport ? (
             <button
               type="button"
@@ -2168,25 +2092,6 @@ export default function ExperimentDetailPage() {
               )}
             </button>
           ) : null}
-          <button
-            type="button"
-            className="btn btn-outline-danger me-2"
-            onClick={openResetModal}
-            disabled={resetCampaigns.isPending || alterationLocked}
-          >
-            {resetCampaigns.isPending ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                />
-                Resetando...
-              </>
-            ) : (
-              "Resetar pendências"
-            )}
-          </button>
           <span className="badge bg-secondary">{data.status}</span>
         </div>
       </div>
@@ -2301,7 +2206,7 @@ export default function ExperimentDetailPage() {
           ) : null}
         </div>
       ) : null}
-      {isLowTicketProduct ? (
+      {false ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
@@ -2370,7 +2275,7 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       ) : null}
-      {isLowTicketProduct ? (
+      {false ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
@@ -2415,7 +2320,7 @@ export default function ExperimentDetailPage() {
                       <div className="text-muted small">Página de venda</div>
                       {latestSalesPagePublication.salesPageUrl ? (
                         <a
-                          href={latestSalesPagePublication.salesPageUrl}
+                          href={latestSalesPagePublication.salesPageUrl ?? undefined}
                           target="_blank"
                           rel="noreferrer"
                           className="small text-break"
@@ -2432,7 +2337,7 @@ export default function ExperimentDetailPage() {
                       <div className="text-muted small">Checkout usado</div>
                       {latestSalesPagePublication.checkoutUrl ? (
                         <a
-                          href={latestSalesPagePublication.checkoutUrl}
+                          href={latestSalesPagePublication.checkoutUrl ?? undefined}
                           target="_blank"
                           rel="noreferrer"
                           className="small text-break"
@@ -2599,6 +2504,7 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       </div>
+      {false ? (
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
@@ -2619,7 +2525,7 @@ export default function ExperimentDetailPage() {
             <div className="text-muted small">Carregando campanhas...</div>
           ) : facebookCampaigns?.length ? (
             <div className="d-flex flex-column gap-3">
-              {facebookCampaigns.map((campaign) => (
+              {(facebookCampaigns ?? []).map((campaign) => (
                 <div key={campaign.id} className="border rounded-3 p-3">
                   <div className="d-flex justify-content-between gap-3 flex-wrap">
                     <div>
@@ -2736,6 +2642,7 @@ export default function ExperimentDetailPage() {
           )}
         </div>
       </div>
+      ) : null}
       <div ref={tabsSectionRef}>
         <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
           <Tabs.List className="nav nav-tabs">
@@ -2744,9 +2651,6 @@ export default function ExperimentDetailPage() {
             </Tabs.Trigger>
             <Tabs.Trigger value="funnel" className="nav-link">
               Funil de vendas
-            </Tabs.Trigger>
-            <Tabs.Trigger value="execucao" className="nav-link">
-              Execução
             </Tabs.Trigger>
             <Tabs.Trigger value="analytics" className="nav-link">
               Analytics
@@ -2757,14 +2661,8 @@ export default function ExperimentDetailPage() {
             <Tabs.Trigger value="landing" className="nav-link">
               Landing
             </Tabs.Trigger>
-            <Tabs.Trigger value="gera-landing" className="nav-link">
-              Gera landing
-            </Tabs.Trigger>
             <Tabs.Trigger value="content-structure" className="nav-link">
               Estrutura de conteúdo
-            </Tabs.Trigger>
-            <Tabs.Trigger value="conteudo" className="nav-link">
-              Conteúdo
             </Tabs.Trigger>
             <Tabs.Trigger value="publico" className="nav-link">
               Público

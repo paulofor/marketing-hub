@@ -55,6 +55,7 @@ import java.util.Optional;
 import static jakarta.persistence.EnumType.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -296,6 +297,73 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
         assertThat(campaign.getStopReason())
                 .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND);
+    }
+
+    /** Garante que falha em regra derivada não impede salvar e responder a métrica real da Meta. */
+    @Test
+    void postMetricsKeepsMetricSuccessfulWhenSideEffectFails() throws Exception {
+        Experiment experiment = new Experiment();
+        experiment.setId(125L);
+        experiment.setStatus(ExperimentStatus.RUNNING);
+
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId(CAMPAIGN_ID);
+        campaign.setExperiment(experiment);
+        campaign.setFacebookAccount(new FacebookAccount());
+        campaign.setAdAccountId("act_123");
+        campaign.setName("Campanha com regra secundaria falhando");
+        campaign.setObjective("OUTCOME_SALES");
+        campaign.setStatus(FacebookAdStatus.ACTIVE);
+        campaign.setCreatedAt(Instant.now());
+
+        ExperimentCampaignMetric metric = ExperimentCampaignMetric.builder()
+                .campaign(campaign)
+                .experiment(experiment)
+                .dateStart(LocalDate.parse("2026-07-04"))
+                .dateStop(LocalDate.parse("2026-07-04"))
+                .reach(1800L)
+                .impressions(2400L)
+                .clicks(299L)
+                .leads(0L)
+                .spend(new BigDecimal("50.23"))
+                .build();
+
+        when(campaignMetricService.upsert(
+                eq(CAMPAIGN_ID),
+                eq(LocalDate.parse("2026-07-04")),
+                eq(LocalDate.parse("2026-07-04")),
+                eq(1800L),
+                eq(2400L),
+                eq(299L),
+                eq(0L),
+                eq(new BigDecimal("50.23"))
+        )).thenReturn(metric);
+        when(diagnosticService.diagnose(125L))
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(), null));
+        when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
+        doThrow(new IllegalStateException("falha simulada"))
+                .when(campaignStrategyService).evaluateAfterMetrics(metric);
+
+        String payload = """
+                {
+                  "dateStart": "2026-07-04",
+                  "dateStop": "2026-07-04",
+                  "reach": 1800,
+                  "impressions": 2400,
+                  "clicks": 299,
+                  "leads": 0,
+                  "spend": 50.23
+                }
+                """;
+
+        mockMvc.perform(post("/api/facebook-campaigns/{campaignId}/metrics", CAMPAIGN_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.spend").value(50.23));
+
+        assertThat(campaign.getMetricsLastSyncedAt()).isNotNull();
+        assertThat(campaign.getMetricsLastError()).contains("Metric side-effect evaluation failed");
     }
 
     /** Cria diagnóstico de interesse baixo com reprovação estatística na etapa de acesso ao formulário. */

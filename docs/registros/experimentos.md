@@ -5668,3 +5668,10 @@
 - Causa-raiz tratada: `CostAttributionService` podia alterar entidade gerenciada pelo JPA e também executar `incrementTotalCost` SQL na mesma operação, criando risco de dupla contagem; além disso, `experiment.total_cost` era usado como fonte principal sem reconciliação por origem.
 - Correção aplicada: o backend expõe custo rastreável em BRL por origem, mídia e despesa operacional, preserva `total_cost` como legado e calcula diferença não reconciliada; a tela destaca o total rastreável e separa custos técnicos em USD como auditoria.
 - Prevenção de recorrência: teste de atribuição impede incremento SQL quando a entidade já está gerenciada pelo JPA, e teste de resumo financeiro impede que diferença legada seja exibida como custo técnico real.
+
+## 2026-07-08 — Proteção contra divergência de gasto Meta x Hub
+
+- Problema: campanhas que ainda apareciam em execução no Hub tinham gasto real muito maior na Meta; o operador precisou pausar manualmente para conter orçamento.
+- Causa-raiz tratada: o backend podia devolver `500` no pós-processamento de `POST /api/facebook-campaigns/{campaignId}/metrics`, impedindo persistir o gasto real; além disso, campanha pausada manualmente na Meta podia continuar como experimento `RUNNING` no Hub.
+- Correção aplicada: a métrica da Meta passa a ser persistida mesmo se regras derivadas de parada/estratégia falharem; o status `PAUSED` vindo da Meta reconcilia experimento `RUNNING` para `USER_STOPPED`; e o Facebook Ads Worker pausa direto na Meta quando o Insights mostrar gasto de pelo menos R$ 25,00 com zero leads.
+- Prevenção de recorrência: o cânone de publicação/métricas Facebook Ads registra a Meta como fonte de verdade de gasto, a trava financeira emergencial no worker e a proibição de campanha pausada na Meta continuar rodando operacionalmente no Hub.

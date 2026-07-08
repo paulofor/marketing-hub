@@ -44,6 +44,8 @@ import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -71,6 +73,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/facebook-campaigns")
 public class FacebookAdsCampaignController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAdsCampaignController.class);
+
     private final ExperimentService experimentService;
     private final FacebookAdsCampaignRepository campaignRepository;
     private final FacebookAccountRepository accountRepository;
@@ -338,6 +342,7 @@ public class FacebookAdsCampaignController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Facebook campaign not found: " + campaignId));
         campaign.setStatus(resolveMetaStatus(request.status(), request.effectiveStatus(), campaign.getStatus()));
+        reconcilePausedCampaignWithExperiment(campaign);
         if (request.adSets() != null) {
             for (CampaignStatusSyncRequest.AdSetStatus adSetStatus : request.adSets()) {
                 if (adSetStatus == null || !StringUtils.hasText(adSetStatus.id())) {
@@ -409,14 +414,40 @@ public class FacebookAdsCampaignController {
         FacebookAdsCampaign campaign = metric.getCampaign();
         campaign.setMetricsLastSyncedAt(Instant.now());
         campaign.setMetricsLastError(null);
-        funnelAutoStopService.stopIfNoPrimaryResultAfterMinimumSpend(campaign.getExperiment());
-        funnelAutoStopService.stopIfAnyPrioritizedStageStatisticallyFailed(campaign.getExperiment());
-        funnelAutoStopService.stopIfLowImpressionsAfterRunningTime(
-                campaign.getExperiment(),
-                metric.getImpressions(),
-                campaign.getCreatedAt());
-        campaignStrategyService.evaluateAfterMetrics(metric);
+        evaluateMetricsSideEffectsSafely(campaign, metric);
         return toMetricSummary(metric);
+    }
+
+    // Fecha o experimento quando a Meta informa que a campanha foi pausada fora do Hub.
+    private void reconcilePausedCampaignWithExperiment(FacebookAdsCampaign campaign) {
+        if (campaign.getStatus() != FacebookAdStatus.PAUSED || campaign.getExperiment() == null) {
+            return;
+        }
+        Experiment experiment = campaign.getExperiment();
+        if (experiment.getStatus() == ExperimentStatus.RUNNING) {
+            experiment.setStatus(ExperimentStatus.USER_STOPPED);
+        }
+    }
+
+    // Executa regras derivadas da métrica sem impedir a persistência do gasto oficial da Meta.
+    private void evaluateMetricsSideEffectsSafely(FacebookAdsCampaign campaign, ExperimentCampaignMetric metric) {
+        try {
+            funnelAutoStopService.stopIfNoPrimaryResultAfterMinimumSpend(campaign.getExperiment());
+            funnelAutoStopService.stopIfAnyPrioritizedStageStatisticallyFailed(campaign.getExperiment());
+            funnelAutoStopService.stopIfLowImpressionsAfterRunningTime(
+                    campaign.getExperiment(),
+                    metric.getImpressions(),
+                    campaign.getCreatedAt());
+            campaignStrategyService.evaluateAfterMetrics(metric);
+        } catch (Exception ex) {
+            Long experimentId = campaign.getExperiment() != null ? campaign.getExperiment().getId() : null;
+            campaign.setMetricsLastError("Metric side-effect evaluation failed: " + ex.getMessage());
+            LOGGER.warn(
+                    "Falha ao avaliar regras derivadas de metricas Facebook Ads. modulo=facebookads operacao=updateMetrics campaignId={} experimentId={}",
+                    campaign.getId(),
+                    experimentId,
+                    ex);
+        }
     }
 
     @PostMapping("/{campaignId}/metrics-error")

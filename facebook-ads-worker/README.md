@@ -327,6 +327,11 @@ resultado primário (`ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`) ou
 quando qualquer etapa prioritária do funil ficar `STATISTICALLY_FAILED`. O
 worker não decide a regra: ele apenas envia métricas, consome
 `/api/facebook-campaigns/stop-requests` e aplica `status=PAUSED` na Meta.
+Como trava financeira emergencial, se o Insights da Meta já indicar gasto de
+pelo menos R$ 25,00 com zero leads, o worker pausa a campanha diretamente na
+Meta antes de reportar a métrica ao backend. Essa trava protege orçamento mesmo
+quando o backend está temporariamente indisponível ou rejeita o pós-processamento
+da métrica.
 
 As chamadas de Insights da Graph API (`/{campaignId}/insights`) não registram
 mais logs de request/response em `INFO`, reduzindo ruído no processamento

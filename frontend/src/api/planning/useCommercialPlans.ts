@@ -100,6 +100,10 @@ export interface CommercialPlan {
 export interface CommercialPlanWeekExperiment {
   id: number;
   name: string;
+  nicheId?: number | null;
+  nicheName?: string | null;
+  hypothesisId?: string | null;
+  hypothesisTitle?: string | null;
   productType?: string | null;
   status?: string | null;
   createdAt?: string | null;
@@ -108,6 +112,10 @@ export interface CommercialPlanWeekExperiment {
   videoCost?: number | null;
   totalCost?: number | null;
   revenue?: number | null;
+  clicks?: number | null;
+  leads?: number | null;
+  checkoutClicks?: number | null;
+  purchases?: number | null;
   result?: string | null;
 }
 

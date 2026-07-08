@@ -167,16 +167,36 @@ public class CommercialPlanWeeklyExperimentService {
                 select
                     e.id,
                     e.name,
+                    e.niche_id,
+                    mn.name as niche_name,
+                    lower(concat(
+                        substr(hex(h.id), 1, 8), '-',
+                        substr(hex(h.id), 9, 4), '-',
+                        substr(hex(h.id), 13, 4), '-',
+                        substr(hex(h.id), 17, 4), '-',
+                        substr(hex(h.id), 21, 12)
+                    )) as hypothesis_id,
+                    h.title as hypothesis_title,
                     coalesce(e.product_ai_subtype, e.experiment_type) as product_type,
                     e.status,
                     e.created_at,
                     coalesce(campaign.cost, 0) as campaign_cost,
                     coalesce(financial.ai_cost, 0) as ai_cost,
                     coalesce(video.cost, 0) as video_cost,
-                    coalesce(financial.revenue, 0) as revenue
+                    coalesce(financial.revenue, 0) as revenue,
+                    coalesce(nullif(financial.clicks, 0), campaign.clicks, 0) as clicks,
+                    coalesce(nullif(financial.leads, 0), campaign.leads, 0) as leads,
+                    coalesce(financial.checkout_clicks, 0) as checkout_clicks,
+                    coalesce(financial.purchases, 0) as purchases
                 from experiment e
+                left join market_niche mn on mn.id = e.niche_id
+                left join hypothesis h on h.id = e.hypothesis_id
                 left join (
-                    select m.experiment_id, sum(coalesce(m.spend, 0)) as cost
+                    select
+                        m.experiment_id,
+                        sum(coalesce(m.spend, 0)) as cost,
+                        sum(coalesce(m.clicks, 0)) as clicks,
+                        sum(coalesce(m.leads, 0)) as leads
                     from experiment_campaign_metric m
                     where (
                         m.date_start is not null
@@ -193,7 +213,11 @@ public class CommercialPlanWeeklyExperimentService {
                 left join (
                     select b.external_experiment_id as experiment_id,
                            sum(coalesce(f.ai_cost_cents, 0)) / 100.0 as ai_cost,
-                           sum(coalesce(f.revenue_cents, 0)) / 100.0 as revenue
+                           sum(coalesce(f.revenue_cents, 0)) / 100.0 as revenue,
+                           sum(coalesce(f.clicks, 0)) as clicks,
+                           sum(coalesce(f.leads, 0)) as leads,
+                           sum(coalesce(f.checkout_clicks, 0)) as checkout_clicks,
+                           sum(coalesce(f.purchases, 0)) as purchases
                     from experiment_budget b
                     join experiment_financial_metric f on f.experiment_budget_id = b.id
                     where f.measured_at >= ? and f.measured_at < ?
@@ -221,6 +245,10 @@ public class CommercialPlanWeeklyExperimentService {
         return new CommercialPlanWeekExperimentDto(
                 rs.getLong("id"),
                 rs.getString("name"),
+                rs.getLong("niche_id"),
+                rs.getString("niche_name"),
+                rs.getString("hypothesis_id"),
+                rs.getString("hypothesis_title"),
                 rs.getString("product_type"),
                 rs.getString("status"),
                 toInstant(rs.getTimestamp("created_at")),
@@ -229,6 +257,10 @@ public class CommercialPlanWeeklyExperimentService {
                 videoCost,
                 totalCost,
                 revenue,
+                rs.getLong("clicks"),
+                rs.getLong("leads"),
+                rs.getInt("checkout_clicks"),
+                rs.getInt("purchases"),
                 resultLabel(revenue, totalCost));
     }
 

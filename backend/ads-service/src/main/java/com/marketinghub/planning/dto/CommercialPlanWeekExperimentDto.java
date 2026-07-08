@@ -7,6 +7,10 @@ import java.time.Instant;
 public record CommercialPlanWeekExperimentDto(
         Long id,
         String name,
+        Long nicheId,
+        String nicheName,
+        String hypothesisId,
+        String hypothesisTitle,
         String productType,
         String status,
         Instant createdAt,
@@ -15,4 +19,8 @@ public record CommercialPlanWeekExperimentDto(
         BigDecimal videoCost,
         BigDecimal totalCost,
         BigDecimal revenue,
+        Long clicks,
+        Long leads,
+        Integer checkoutClicks,
+        Integer purchases,
         String result) {}

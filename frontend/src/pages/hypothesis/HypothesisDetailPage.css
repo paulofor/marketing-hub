@@ -1,0 +1,220 @@
+.hypothesis-detail {
+  color: #182230;
+}
+
+.hypothesis-detail__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: 1rem;
+  align-items: stretch;
+  border: 1px solid #d7dde8;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.hypothesis-detail__hero span,
+.hypothesis-detail__eyebrow {
+  display: block;
+  color: #536176;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.hypothesis-detail__hero h1 {
+  margin: 0.2rem 0 0.5rem;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  line-height: 1.15;
+}
+
+.hypothesis-detail__hero p {
+  max-width: 76rem;
+  margin: 0;
+  color: #344054;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.hypothesis-detail__meta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.hypothesis-detail__meta div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #dde3ed;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.75rem 0.9rem;
+}
+
+.hypothesis-detail__meta strong {
+  color: #101828;
+  font-size: 0.95rem;
+}
+
+.hypothesis-detail__meta span {
+  color: #667085;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.hypothesis-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.hypothesis-detail__section {
+  border: 1px solid #d7dde8;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.hypothesis-detail__section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 4px solid #2563eb;
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.hypothesis-detail__section--pain .hypothesis-detail__section-header {
+  border-top-color: #dc2626;
+}
+
+.hypothesis-detail__section--result .hypothesis-detail__section-header {
+  border-top-color: #16a34a;
+}
+
+.hypothesis-detail__section--mechanism .hypothesis-detail__section-header {
+  border-top-color: #2563eb;
+}
+
+.hypothesis-detail__section--proof .hypothesis-detail__section-header {
+  border-top-color: #7c3aed;
+}
+
+.hypothesis-detail__section--offer .hypothesis-detail__section-header {
+  border-top-color: #ca8a04;
+}
+
+.hypothesis-detail__section-header h2 {
+  margin: 0.35rem 0 0;
+  color: #101828;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.hypothesis-detail__collapses {
+  display: flex;
+  flex-direction: column;
+}
+
+.hypothesis-detail__collapse {
+  border-top: 1px solid #e4e7ec;
+}
+
+.hypothesis-detail__collapse summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  color: #101828;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.hypothesis-detail__collapse summary::-webkit-details-marker {
+  display: none;
+}
+
+.hypothesis-detail__collapse summary::before {
+  content: "+";
+  display: inline-grid;
+  flex: 0 0 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  color: #475467;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.hypothesis-detail__collapse[open] summary::before {
+  content: "-";
+}
+
+.hypothesis-detail__collapse summary > span:first-child {
+  flex: 1;
+}
+
+.hypothesis-detail__collapse-action {
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.hypothesis-detail__collapse-body {
+  padding: 0 1rem 1rem 3rem;
+  color: #344054;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.hypothesis-detail__collapse-body p {
+  margin: 0 0 0.75rem;
+}
+
+.hypothesis-detail__collapse-body p:last-child,
+.hypothesis-detail__list {
+  margin-bottom: 0;
+}
+
+.hypothesis-detail__list {
+  padding-left: 1.1rem;
+}
+
+.hypothesis-detail__list li + li {
+  margin-top: 0.45rem;
+}
+
+@media (max-width: 1199.98px) {
+  .hypothesis-detail__hero,
+  .hypothesis-detail__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hypothesis-detail__meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .hypothesis-detail__hero {
+    padding: 1rem;
+  }
+
+  .hypothesis-detail__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .hypothesis-detail__collapse-body {
+    padding-left: 1rem;
+  }
+}

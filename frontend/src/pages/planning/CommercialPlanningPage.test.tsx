@@ -53,6 +53,8 @@ let mockWeeks: unknown[] = [
     experimentsCreated: 1,
     totalCost: 37,
     totalRevenue: 27,
+    objectivesEditable: true,
+    objectiveEditWindowMessage: "Objetivos liberados ate 2026-07-09.",
     objectives: [
       {
         id: null,
@@ -66,12 +68,20 @@ let mockWeeks: unknown[] = [
       {
         id: 39,
         name: "Kit manutenção",
+        nicheId: 21,
+        nicheName: "Manicure profissional",
+        hypothesisId: "11111111-1111-1111-1111-111111111111",
+        hypothesisTitle: "Kit de manutenção guiada para manicures",
         productType: "LOW_TICKET",
         status: "ACTIVE",
         createdAt: "2026-07-02T10:00:00Z",
         totalCost: 37,
         videoCost: 12,
         revenue: 27,
+        clicks: 44,
+        leads: 6,
+        checkoutClicks: 2,
+        purchases: 1,
         result: "Receita parcial",
       },
     ],
@@ -122,6 +132,8 @@ afterEach(() => {
       experimentsCreated: 1,
       totalCost: 37,
       totalRevenue: 27,
+      objectivesEditable: true,
+      objectiveEditWindowMessage: "Objetivos liberados ate 2026-07-09.",
       objectives: [
         {
           id: null,
@@ -135,12 +147,20 @@ afterEach(() => {
         {
           id: 39,
           name: "Kit manutenção",
+          nicheId: 21,
+          nicheName: "Manicure profissional",
+          hypothesisId: "11111111-1111-1111-1111-111111111111",
+          hypothesisTitle: "Kit de manutenção guiada para manicures",
           productType: "LOW_TICKET",
           status: "ACTIVE",
           createdAt: "2026-07-02T10:00:00Z",
           totalCost: 37,
           videoCost: 12,
           revenue: 27,
+          clicks: 44,
+          leads: 6,
+          checkoutClicks: 2,
+          purchases: 1,
           result: "Receita parcial",
         },
       ],
@@ -169,11 +189,17 @@ describe("CommercialPlanningPage", () => {
     renderPage();
 
     expect(screen.getByText("Semana 1")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Kit manutenção" })).toHaveAttribute(
-      "href",
-      "/experiments/39",
-    );
-    expect(screen.getByText("Vídeo")).toBeTruthy();
+    expect(screen.getByText("Nicho")).toBeTruthy();
+    expect(screen.getByText("Manicure profissional")).toBeTruthy();
+    expect(screen.getByText("Hipótese")).toBeTruthy();
+    expect(
+      screen.getByText("Kit de manutenção guiada para manicures"),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Kit manutenção" }),
+    ).toHaveAttribute("href", "/experiments/39");
+    expect(screen.getByText("Checkout")).toBeTruthy();
+    expect(screen.getByText("Compras")).toBeTruthy();
     expect(screen.getByText("Receita parcial")).toBeTruthy();
   });
 
@@ -190,6 +216,23 @@ describe("CommercialPlanningPage", () => {
 
     expect(screen.getByLabelText("Novo objetivo da semana 1")).toBeTruthy();
     expect(screen.getByText("Salvar novo")).toBeTruthy();
+  });
+
+  it("oculta insercao de objetivo quando a semana esta fora da janela permitida", () => {
+    mockWeeks = [
+      {
+        ...(mockWeeks[0] as Record<string, unknown>),
+        objectivesEditable: false,
+        objectiveEditWindowMessage:
+          "Objetivos disponiveis de 2026-07-12 ate 2026-07-16.",
+      },
+    ];
+
+    renderPage();
+
+    expect(screen.getByText("Objetivos da semana")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Inserir novo" })).toBeNull();
+    expect(screen.queryByLabelText("Novo objetivo da semana 1")).toBeNull();
   });
 
   it("usa valores seguros quando status vem fora do contrato", () => {

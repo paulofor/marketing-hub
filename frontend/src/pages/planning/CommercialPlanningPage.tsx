@@ -108,6 +108,11 @@ function formatExecutedNumber(value?: number | null) {
   return value == null ? "0" : String(value);
 }
 
+function formatRoas(revenue?: number | null, cost?: number | null) {
+  if (!cost || cost <= 0) return "Não definido";
+  return `${((revenue ?? 0) / cost).toFixed(2)}x`;
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "Não definido";
   return new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
@@ -201,6 +206,7 @@ function WeeklyObjectiveEditor({
   );
   const [isAddingObjective, setIsAddingObjective] = useState(false);
   const [newObjectiveText, setNewObjectiveText] = useState("");
+  const objectivesEditable = week.objectivesEditable === true;
 
   useEffect(() => {
     setObjectives(normalizeObjectives(week.objectives));
@@ -233,13 +239,15 @@ function WeeklyObjectiveEditor({
     <div className="commercial-planning-week-objectives">
       <div className="commercial-planning-week-objectives-header">
         <h4>Objetivos da semana</h4>
-        <button
-          className="btn btn-sm btn-outline-primary"
-          type="button"
-          onClick={() => setIsAddingObjective((current) => !current)}
-        >
-          Inserir novo
-        </button>
+        {objectivesEditable ? (
+          <button
+            className="btn btn-sm btn-outline-primary"
+            type="button"
+            onClick={() => setIsAddingObjective((current) => !current)}
+          >
+            Inserir novo
+          </button>
+        ) : null}
       </div>
 
       <div className="commercial-planning-week-objective-list">
@@ -263,7 +271,7 @@ function WeeklyObjectiveEditor({
         ))}
       </div>
 
-      {isAddingObjective ? (
+      {isAddingObjective && objectivesEditable ? (
         <div className="commercial-planning-week-objective-form">
           <textarea
             aria-label={`Novo objetivo da semana ${week.weekNumber}`}
@@ -309,6 +317,116 @@ function normalizeObjectives(
   return [];
 }
 
+interface ExperimentHierarchyMetricSummary {
+  experiments: number;
+  totalCost: number;
+  revenue: number;
+  clicks: number;
+  leads: number;
+  checkoutClicks: number;
+  purchases: number;
+}
+
+interface ExperimentHierarchyHypothesis {
+  key: string;
+  id?: string | null;
+  title: string;
+  summary: ExperimentHierarchyMetricSummary;
+  experiments: CommercialPlanWeek["experiments"];
+}
+
+interface ExperimentHierarchyNiche {
+  key: string;
+  id?: number | null;
+  name: string;
+  summary: ExperimentHierarchyMetricSummary;
+  hypotheses: ExperimentHierarchyHypothesis[];
+}
+
+function emptySummary(): ExperimentHierarchyMetricSummary {
+  return {
+    experiments: 0,
+    totalCost: 0,
+    revenue: 0,
+    clicks: 0,
+    leads: 0,
+    checkoutClicks: 0,
+    purchases: 0,
+  };
+}
+
+function addExperimentToSummary(
+  summary: ExperimentHierarchyMetricSummary,
+  experiment: CommercialPlanWeek["experiments"][number],
+) {
+  summary.experiments += 1;
+  summary.totalCost += experiment.totalCost ?? 0;
+  summary.revenue += experiment.revenue ?? 0;
+  summary.clicks += experiment.clicks ?? 0;
+  summary.leads += experiment.leads ?? 0;
+  summary.checkoutClicks += experiment.checkoutClicks ?? 0;
+  summary.purchases += experiment.purchases ?? 0;
+}
+
+function buildExperimentHierarchy(
+  experiments: CommercialPlanWeek["experiments"],
+): ExperimentHierarchyNiche[] {
+  const niches = new Map<string, ExperimentHierarchyNiche>();
+
+  experiments.forEach((experiment) => {
+    const nicheKey =
+      experiment.nicheId != null ? String(experiment.nicheId) : "sem-nicho";
+    const hypothesisKey =
+      experiment.hypothesisId ?? `sem-hipotese-${experiment.id}`;
+    let niche = niches.get(nicheKey);
+    if (!niche) {
+      niche = {
+        key: nicheKey,
+        id: experiment.nicheId,
+        name: experiment.nicheName ?? "Nicho não informado",
+        summary: emptySummary(),
+        hypotheses: [],
+      };
+      niches.set(nicheKey, niche);
+    }
+
+    let hypothesis = niche.hypotheses.find(
+      (item) => item.key === hypothesisKey,
+    );
+    if (!hypothesis) {
+      hypothesis = {
+        key: hypothesisKey,
+        id: experiment.hypothesisId,
+        title: experiment.hypothesisTitle ?? "Hipótese não informada",
+        summary: emptySummary(),
+        experiments: [],
+      };
+      niche.hypotheses.push(hypothesis);
+    }
+
+    addExperimentToSummary(niche.summary, experiment);
+    addExperimentToSummary(hypothesis.summary, experiment);
+    hypothesis.experiments.push(experiment);
+  });
+
+  return Array.from(niches.values());
+}
+
+function HierarchySummary({
+  summary,
+}: {
+  summary: ExperimentHierarchyMetricSummary;
+}) {
+  return (
+    <div className="commercial-planning-hierarchy-summary">
+      <span>{summary.experiments} exp.</span>
+      <span>{formatExecutedCurrency(summary.totalCost)} custo</span>
+      <span>{formatExecutedCurrency(summary.revenue)} receita</span>
+      <span>{summary.purchases} compras</span>
+    </div>
+  );
+}
+
 function WeeklyExperimentTable({
   planId,
   weeks,
@@ -319,7 +437,10 @@ function WeeklyExperimentTable({
   return (
     <section className="commercial-planning-week-list">
       {weeks.map((week) => (
-        <article className="commercial-planning-week-card" key={week.weekNumber}>
+        <article
+          className="commercial-planning-week-card"
+          key={week.weekNumber}
+        >
           <div className="commercial-planning-week-card-header">
             <div>
               <h3>Semana {week.weekNumber}</h3>
@@ -334,50 +455,132 @@ function WeeklyExperimentTable({
             </div>
           </div>
 
-          <div className="commercial-planning-week-table-wrap">
-            <table className="table table-sm align-middle mb-0 commercial-planning-week-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nome</th>
-                  <th>Tipo</th>
-                  <th>Status</th>
-                  <th>Criado</th>
-                  <th>Custo total</th>
-                  <th>Vídeo</th>
-                  <th>Receita</th>
-                  <th>Resultado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {week.experiments.length > 0 ? (
-                  week.experiments.map((experiment) => (
-                    <tr key={experiment.id}>
-                      <td>{experiment.id}</td>
-                      <td>
-                        <Link to={`/experiments/${experiment.id}`}>
-                          {experiment.name}
-                        </Link>
-                      </td>
-                      <td>{experiment.productType ?? "Não definido"}</td>
-                      <td>{experiment.status ?? "Não definido"}</td>
-                      <td>{formatDate(experiment.createdAt)}</td>
-                      <td>{formatExecutedCurrency(experiment.totalCost)}</td>
-                      <td>{formatExecutedCurrency(experiment.videoCost)}</td>
-                      <td>{formatExecutedCurrency(experiment.revenue)}</td>
-                      <td>{experiment.result ?? "Sem resultado"}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={9} className="text-muted">
-                      Nenhum experimento criado nesta semana.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {week.experiments.length > 0 ? (
+            <div className="commercial-planning-hierarchy">
+              {buildExperimentHierarchy(week.experiments).map((niche) => (
+                <section
+                  className="commercial-planning-niche-node"
+                  key={niche.key}
+                >
+                  <div className="commercial-planning-node-header">
+                    <div>
+                      <span className="commercial-planning-node-kicker">
+                        Nicho
+                      </span>
+                      <h4>{niche.name}</h4>
+                    </div>
+                    <HierarchySummary summary={niche.summary} />
+                  </div>
+
+                  <div className="commercial-planning-hypothesis-list">
+                    {niche.hypotheses.map((hypothesis) => (
+                      <section
+                        className="commercial-planning-hypothesis-node"
+                        key={hypothesis.key}
+                      >
+                        <div className="commercial-planning-node-header">
+                          <div>
+                            <span className="commercial-planning-node-kicker">
+                              Hipótese
+                            </span>
+                            <h5>{hypothesis.title}</h5>
+                          </div>
+                          <HierarchySummary summary={hypothesis.summary} />
+                        </div>
+
+                        <div className="commercial-planning-experiment-grid">
+                          {hypothesis.experiments.map((experiment) => (
+                            <article
+                              className="commercial-planning-experiment-card"
+                              key={experiment.id}
+                            >
+                              <div className="commercial-planning-experiment-card-header">
+                                <div>
+                                  <span>Experimento #{experiment.id}</span>
+                                  <Link to={`/experiments/${experiment.id}`}>
+                                    {experiment.name}
+                                  </Link>
+                                </div>
+                                <span className="badge text-bg-light border">
+                                  {experiment.status ?? "Não definido"}
+                                </span>
+                              </div>
+
+                              <div className="commercial-planning-experiment-metrics">
+                                <div>
+                                  <span>Receita</span>
+                                  <strong>
+                                    {formatExecutedCurrency(experiment.revenue)}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Compras</span>
+                                  <strong>
+                                    {formatExecutedNumber(experiment.purchases)}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Checkout</span>
+                                  <strong>
+                                    {formatExecutedNumber(
+                                      experiment.checkoutClicks,
+                                    )}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Leads</span>
+                                  <strong>
+                                    {formatExecutedNumber(experiment.leads)}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Cliques</span>
+                                  <strong>
+                                    {formatExecutedNumber(experiment.clicks)}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Custo</span>
+                                  <strong>
+                                    {formatExecutedCurrency(
+                                      experiment.totalCost,
+                                    )}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>ROAS</span>
+                                  <strong>
+                                    {formatRoas(
+                                      experiment.revenue,
+                                      experiment.totalCost,
+                                    )}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Criado</span>
+                                  <strong>
+                                    {formatDate(experiment.createdAt)}
+                                  </strong>
+                                </div>
+                              </div>
+
+                              <div className="commercial-planning-experiment-result">
+                                {experiment.result ?? "Sem resultado"}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="commercial-planning-empty-week">
+              Nenhum experimento criado nesta semana.
+            </div>
+          )}
 
           <WeeklyObjectiveEditor planId={planId} week={week} />
         </article>

@@ -223,6 +223,37 @@ class GeraSalesPagePublicationAuditServiceTest {
                 .hasMessageContaining("endereco");
     }
 
+    /** Deve bloquear pagina publica com rotulos operacionais visiveis para o comprador. */
+    @Test
+    void shouldBlockPublicationWithVisibleOperationalLabels() {
+        Experiment experiment = new Experiment();
+        experiment.setId(53L);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/checkout");
+        GeraSalesPageStageExecution publication = execution(
+                "job-publication",
+                GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(),
+                "{\"html\":\"<html><body><main>"
+                        + "<section data-transform-visual='after'><h1>Venda</h1>"
+                        + "<img src='https://cdn.test/depois.jpg' alt='Imagem alinhada'></section>"
+                        + "<section data-transform-visual='pain'><img src='https://cdn.test/clareza.jpg' "
+                        + "alt='Clareza'><figcaption>Dor atual: muitos itens, pouca direcao.</figcaption></section>"
+                        + "<section data-transform-visual='preview'><img src='https://cdn.test/guia.jpg' "
+                        + "alt='Guia'><figcaption>Prova do produto: conteudo digital organizado.</figcaption></section>"
+                        + "</main></body></html>\",\"checkoutUrl\":\"https://mp.test/checkout\"}",
+                Instant.parse("2026-07-01T10:10:00Z"));
+
+        when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
+        when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+        when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
+                .thenReturn(List.of(publication));
+
+        assertThatThrownBy(() -> service.snapshotPublication(publication))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("rotulo operacional visivel")
+                .hasMessageContaining("dor atual:")
+                .hasMessageContaining("prova do produto:");
+    }
+
     /** Deve bloquear pagina que fala da oferta sem cenas visuais suficientes da transformacao. */
     @Test
     void shouldBlockPublicationWithoutEnoughTransformationVisualScenes() {

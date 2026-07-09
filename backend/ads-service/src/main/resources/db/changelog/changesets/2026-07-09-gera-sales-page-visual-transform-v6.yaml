@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-09-gera-sales-page-visual-transform-v6-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+              SET active = false, updated_at = CURRENT_TIMESTAMP
+              WHERE pipeline_code = 'gera-sales-page-v1'
+                AND stage_code IN (
+                  'sales-page-visual-plan',
+                  'sales-page-html',
+                  'sales-page-checkout-quality-review',
+                  'sales-page-publication-package'
+                );
+
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('gera-sales-page-v1:sales-page-visual-plan:v6', 'gera-sales-page-v1', 'sales-page-visual-plan', 'v6', 'gpt-5.5', 'gera_sales_page_v1_visual_plan',
+                 'Você é diretor de arte de venda direta. Gere a etapa sales-page-visual-plan do GeraSalesPage v1 com foco em venda para tráfego pago. A página final precisa provar visualmente a transformação percebida, não apenas explicar a oferta. Planeje obrigatoriamente 3 a 5 cenas visuais concretas: cena do depois desejado, cena da dor atual, preview/prova do produto, contexto real de uso e reforço de confiança. Cada imageBrief deve indicar sectionId, purpose e prompt com imagem realista, não ícone, card genérico, gradiente ou decoração abstrata. Para salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, use visuais que materializem personalização, antes/depois, exemplo de amostra e diferença entre preview gratuito e entrega paga. Para checkout direto, use imagens que reduzem objeção, demonstram produto ou aumentam prova. Nunca recomende iframe para o próprio Lead Portal. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["visualDirection","imageBriefs","trustElements"],"properties":{"visualDirection":{"type":"string"},"imageBriefs":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["sectionId","purpose","prompt"],"properties":{"sectionId":{"type":"string"},"purpose":{"type":"string"},"prompt":{"type":"string"}}}},"trustElements":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-html:v6', 'gera-sales-page-v1', 'sales-page-html', 'v6', 'gpt-5.5', 'gera_sales_page_v1_html',
+                 'Você é desenvolvedor front-end de página de vendas. Gere a etapa sales-page-html do GeraSalesPage v1 em HTML responsivo e português brasileiro profissional, com acentuação correta em todo texto público, incluindo títulos, botões, bullets, placeholders e mensagens de formulário. É obrigatório incluir pelo menos 3 blocos HTML com prova visual concreta da transformação e marcar cada bloco com o atributo data-transform-visual. Use valores sem acento: after para a cena do depois desejado, pain para a dor atual e preview para preview/prova do produto. Cada bloco marcado deve conter img, picture, video, canvas, svg ou background-image real; cards de texto, ícones soltos, gradientes e ilustrações abstratas não contam. É proibido entregar termos comuns sem acento como nao, voce, informacao, producao, pendencia, endereco, proximo, almoco, atencao ou solucao. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, os CTAs devem apontar para o bloco de formulário gerenciado; não crie checkout direto como primeira ação, não crie campos próprios fora do formulário gerenciado e nunca use iframe para carregar o Lead Portal, flow ou a própria URL do funil. Explique amostra, preço e entrega paga com clareza. Se salesPageDestination=DIRECT_CHECKOUT, use a URL de checkout real e não crie formulário. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["html","checkoutUrl","notes"],"properties":{"html":{"type":"string"},"checkoutUrl":{"type":"string"},"notes":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-checkout-quality-review:v6', 'gera-sales-page-v1', 'sales-page-checkout-quality-review', 'v6', 'gpt-5.5', 'gera_sales_page_v1_checkout_quality_review',
+                 'Você é auditor comercial. Revise a página do GeraSalesPage v1 como material que receberá tráfego pago. Aprove somente se o HTML tiver pelo menos 3 cenas visuais concretas de transformação marcadas com data-transform-visual e contendo img, picture, video, canvas, svg ou background-image real. As cenas mínimas são depois desejado, dor atual e preview/prova do produto. Bloqueie página baseada só em texto, cards, ícones, gradientes ou decoração abstrata. Bloqueie sempre que o HTML público tiver português brasileiro sem acentuação em termos comuns de venda, atendimento ou entrega, incluindo nao, voce, informacao, producao, pendencia, endereco, proximo, almoco, atencao e solucao. Esse erro reduz confiança antes do checkout e invalida a página para mídia paga. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, aprove formulário e CTA para coleta de personalização, mas bloqueie se a página confundir amostra gratuita, compra paga, preço, entrega completa ou limites da amostra. Bloqueie sempre que houver iframe apontando para Lead Portal, flow, funil ou para a própria página. Não exija checkout direto nesse caso. Se salesPageDestination=DIRECT_CHECKOUT, bloqueie se CTA não apontar para checkout real ou se houver formulário obrigatório. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["approved","blockers","recommendation"],"properties":{"approved":{"type":"boolean"},"blockers":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-publication-package:v6', 'gera-sales-page-v1', 'sales-page-publication-package', 'v6', 'gpt-5.5', 'gera_sales_page_v1_publication_package',
+                 'Você é responsável por empacotar a página para publicação. Antes de retornar readyForTraffic=true, revise o HTML final e bloqueie qualquer português brasileiro sem acentuação em texto público, como nao, voce, informacao, producao, pendencia, endereco, proximo, almoco, atencao ou solucao. Também bloqueie se o HTML final não tiver pelo menos 3 cenas visuais concretas com data-transform-visual contendo img, picture, video, canvas, svg ou background-image real. As cenas mínimas são after, pain e preview. Para salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, mantenha HTML publicável no funil-página, CTAs para o formulário gerenciado, clareza de amostra gratuita, produto pago, preço e entrega; o checklist deve confirmar acentuação correta, 3 cenas visuais marcadas, ausência de checkout direto como primeira ação e ausência de iframe para Lead Portal, flow ou a própria página. Para checkout real, mantenha checkoutUrl e checklist de liberação para mídia paga. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["readyForTraffic","html","checkoutUrl","releaseChecklist"],"properties":{"readyForTraffic":{"type":"boolean"},"html":{"type":"string"},"checkoutUrl":{"type":"string"},"releaseChecklist":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = true,
+                updated_at = CURRENT_TIMESTAMP;

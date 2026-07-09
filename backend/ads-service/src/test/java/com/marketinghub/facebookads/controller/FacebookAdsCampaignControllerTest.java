@@ -51,6 +51,7 @@ import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -70,6 +71,7 @@ import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.any;
@@ -134,6 +136,12 @@ class FacebookAdsCampaignControllerTest {
     @MockBean
     ExperimentCampaignMetricService campaignMetricService;
 
+    @BeforeEach
+    // Mantem o comportamento real: sem teste A/B ativo, nao ha bloqueio de publicacao por A/B.
+    void configureDefaultSalesPageAbTestReadiness() {
+        lenient().when(salesPageAbTestService.hasReadyActiveTest(org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
+        lenient().when(salesPageAbTestService.findActiveForCampaign(org.mockito.ArgumentMatchers.anyLong())).thenReturn(Optional.empty());
+    }
 
     @Test
     // Verifica que o módulo Facebook expõe somente criativos aprovados para consumo do worker.

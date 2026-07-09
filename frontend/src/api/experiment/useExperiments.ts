@@ -17,6 +17,7 @@ export interface InstagramAccountSummary {
 
 export type ExperimentStage = "AD" | "LANDING" | "SAMPLE" | "SALES";
 export type ExperimentType = "NICHE_TEST" | "LOW_TICKET_PRODUCT";
+export type ExperimentCreationSource = "SYSTEM_FLOW" | "MANUAL_FLOW";
 export type ProductAiSubtype =
   | "AI_VISUAL_PREVIEW"
   | "AI_PERSONALIZED_SAMPLE"
@@ -68,6 +69,7 @@ export interface Experiment {
   nicheId: number;
   hypothesisId: string;
   name: string;
+  creationSource?: ExperimentCreationSource | null;
   hypothesis: string;
   singlePain?: string | null;
   freeReward?: string | null;

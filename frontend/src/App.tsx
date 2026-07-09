@@ -36,6 +36,7 @@ import MicroserviceExceptionListPage from "./pages/microservice/MicroserviceExce
 import PipelineCrudPage from "./pages/pipeline/PipelineCrudPage";
 import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
+import ManualExperimentWizardPage from "./pages/experiment/ManualExperimentWizardPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
 import EditExperimentPage from "./pages/experiment/EditExperimentPage";
 import InstantFormDetailPage from "./pages/experiment/InstantFormDetailPage";
@@ -242,6 +243,10 @@ export default function App() {
               <Route path="/experiments" element={<ExperimentListPage />} />
               <Route path="/planning" element={<CommercialPlanningPage />} />
               <Route path="/experiments/new" element={<NewExperimentPage />} />
+              <Route
+                path="/experiments/manual/new"
+                element={<ManualExperimentWizardPage />}
+              />
               <Route path="/experiments/:id" element={<AppLayout />}>
                 <Route index element={<ExperimentDetailPage />} />
                 <Route path="edit" element={<EditExperimentPage />} />

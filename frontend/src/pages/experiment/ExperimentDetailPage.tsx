@@ -2065,6 +2065,9 @@ export default function ExperimentDetailPage() {
       <div className="d-flex justify-content-between align-items-start">
         <div>
           <PageTitle icon={experimentIcon}>{data.name}</PageTitle>
+          {data.creationSource === "MANUAL_FLOW" ? (
+            <span className="badge text-bg-warning mb-2">Fluxo manual</span>
+          ) : null}
           <p className="text-muted mb-0">{data.hypothesis}</p>
         </div>
         <div className="d-flex align-items-center">

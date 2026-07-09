@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-09-experiment-creation-source
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - not:
+            - columnExists:
+                tableName: experiment
+                columnName: creation_source
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: creation_source
+                  type: varchar(32)
+                  defaultValue: SYSTEM_FLOW
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropColumn:
+            tableName: experiment
+            columnName: creation_source

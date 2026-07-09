@@ -206,6 +206,9 @@ export default function ExperimentListPage() {
         <Link className="btn btn-primary" to="/experiments/new">
           Novo Teste
         </Link>
+        <Link className="btn btn-outline-primary" to="/experiments/manual/new">
+          Novo experimento manual
+        </Link>
         {latestPromiseOptionsDraft.data && (
           <Link className="btn btn-outline-primary" to="/experiments/new">
             Continuar teste em criação
@@ -283,7 +286,16 @@ export default function ExperimentListPage() {
               return (
                 <tr key={e.id}>
                   <td className="text-nowrap">{e.id}</td>
-                  <td>{e.name}</td>
+                  <td>
+                    <div className="d-flex flex-column gap-1">
+                      <span>{e.name}</span>
+                      {e.creationSource === "MANUAL_FLOW" ? (
+                        <span className="badge text-bg-warning align-self-start">
+                          Fluxo manual
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="text-nowrap">{formatDate(e.createdAt)}</td>
                   <td>
                     {nicheNameById.get(e.nicheId) || `Nicho #${e.nicheId}`}

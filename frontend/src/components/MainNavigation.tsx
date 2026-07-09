@@ -165,6 +165,11 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/prompt-entities", label: "Objetos de Prompt", icon: Shapes },
       { to: "/prompt-domains", label: "Domínios de Prompt", icon: Map },
       { to: "/prompts", label: "Prompts (templates)", icon: ScrollText },
+      {
+        to: "/ai-prompt-schema-templates",
+        label: "Prompts operacionais",
+        icon: ScrollText,
+      },
       { to: "/angles", label: "Angles", icon: Compass },
       { to: "/visual-proofs", label: "Provas Visuais", icon: BadgeCheck },
       {

@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: AI Prompt Schema Templates API
+  version: 1.0.0
+  description: Administração de prompts e schemas operacionais usados pelos pipelines de IA.
+paths:
+  /api/ai-prompt-schema-templates:
+    get:
+      summary: Lista templates operacionais de IA
+      parameters:
+        - in: query
+          name: pipelineCode
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: stageCode
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Templates encontrados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AiPromptSchemaTemplate"
+  /api/ai-prompt-schema-templates/{templateKey}:
+    get:
+      summary: Busca um template operacional
+      parameters:
+        - $ref: "#/components/parameters/TemplateKey"
+      responses:
+        "200":
+          description: Template encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiPromptSchemaTemplate"
+    put:
+      summary: Atualiza prompt, schema, modelo e versão
+      parameters:
+        - $ref: "#/components/parameters/TemplateKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAiPromptSchemaTemplate"
+      responses:
+        "200":
+          description: Template atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiPromptSchemaTemplate"
+        "400":
+          description: Dados obrigatórios ausentes ou JSON schema inválido.
+  /api/ai-prompt-schema-templates/{templateKey}/activate:
+    post:
+      summary: Ativa um template para a etapa
+      parameters:
+        - $ref: "#/components/parameters/TemplateKey"
+      responses:
+        "200":
+          description: Template ativado e demais templates da etapa desativados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiPromptSchemaTemplate"
+components:
+  parameters:
+    TemplateKey:
+      in: path
+      name: templateKey
+      required: true
+      schema:
+        type: string
+      description: Identificador técnico do template.
+  schemas:
+    AiPromptSchemaTemplate:
+      type: object
+      required:
+        - templateKey
+        - pipelineCode
+        - stageCode
+        - version
+        - openAiModel
+        - schemaName
+        - promptMarkdownContent
+        - schemaJson
+        - active
+      properties:
+        templateKey:
+          type: string
+        pipelineCode:
+          type: string
+        stageCode:
+          type: string
+        version:
+          type: string
+        openAiModel:
+          type: string
+        schemaName:
+          type: string
+        promptMarkdownContent:
+          type: string
+        schemaJson:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    UpdateAiPromptSchemaTemplate:
+      type: object
+      required:
+        - version
+        - openAiModel
+        - schemaName
+        - promptMarkdownContent
+        - schemaJson
+        - active
+      properties:
+        version:
+          type: string
+        openAiModel:
+          type: string
+        schemaName:
+          type: string
+        promptMarkdownContent:
+          type: string
+        schemaJson:
+          type: string
+        active:
+          type: boolean

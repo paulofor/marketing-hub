@@ -185,22 +185,47 @@ describe("CommercialPlanningPage", () => {
     expect(screen.queryByText("Novo Plano de Primeira Venda")).toBeNull();
   });
 
-  it("renderiza experimentos criados por semana do mes", () => {
+  it("renderiza experimentos criados por semana do mes em slides", async () => {
+    const user = userEvent.setup();
     renderPage();
 
     expect(screen.getByText("Semana 1")).toBeTruthy();
     expect(screen.getByText("Nicho")).toBeTruthy();
     expect(screen.getByText("Manicure profissional")).toBeTruthy();
+    expect(screen.queryByText("Hipótese")).toBeNull();
+    expect(
+      screen.queryByText("Kit de manutenção guiada para manicures"),
+    ).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", { name: /manicure profissional/i }),
+    );
+
     expect(screen.getByText("Hipótese")).toBeTruthy();
     expect(
       screen.getByText("Kit de manutenção guiada para manicures"),
     ).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Kit manutenção" })).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /kit de manutenção guiada para manicures/i,
+      }),
+    );
+
     expect(
       screen.getByRole("link", { name: "Kit manutenção" }),
     ).toHaveAttribute("href", "/experiments/39");
     expect(screen.getByText("Checkout")).toBeTruthy();
     expect(screen.getByText("Compras")).toBeTruthy();
     expect(screen.getByText("Receita parcial")).toBeTruthy();
+
+    await user.click(
+      screen.getByRole("button", { name: "Voltar para o nível anterior" }),
+    );
+
+    expect(screen.getByText("Hipótese")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Kit manutenção" })).toBeNull();
   });
 
   it("renderiza objetivos semanais como texto e mostra campo apenas para novo objetivo", async () => {

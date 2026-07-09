@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
@@ -435,6 +436,210 @@ function CollapseIndicator() {
   );
 }
 
+type ExperimentSlideDirection = "forward" | "back";
+
+function ExperimentCard({
+  experiment,
+}: {
+  experiment: CommercialPlanWeek["experiments"][number];
+}) {
+  return (
+    <article className="commercial-planning-experiment-card">
+      <div className="commercial-planning-experiment-card-header">
+        <div>
+          <span>Experimento #{experiment.id}</span>
+          <Link to={`/experiments/${experiment.id}`}>{experiment.name}</Link>
+        </div>
+        <span className="badge text-bg-light border">
+          {experiment.status ?? "Não definido"}
+        </span>
+      </div>
+
+      <div className="commercial-planning-experiment-metrics">
+        <div>
+          <span>Receita</span>
+          <strong>{formatExecutedCurrency(experiment.revenue)}</strong>
+        </div>
+        <div>
+          <span>Compras</span>
+          <strong>{formatExecutedNumber(experiment.purchases)}</strong>
+        </div>
+        <div>
+          <span>Checkout</span>
+          <strong>{formatExecutedNumber(experiment.checkoutClicks)}</strong>
+        </div>
+        <div>
+          <span>Leads</span>
+          <strong>{formatExecutedNumber(experiment.leads)}</strong>
+        </div>
+        <div>
+          <span>Cliques</span>
+          <strong>{formatExecutedNumber(experiment.clicks)}</strong>
+        </div>
+        <div>
+          <span>Custo</span>
+          <strong>{formatExecutedCurrency(experiment.totalCost)}</strong>
+        </div>
+        <div>
+          <span>ROAS</span>
+          <strong>
+            {formatRoas(experiment.revenue, experiment.totalCost)}
+          </strong>
+        </div>
+        <div>
+          <span>Criado</span>
+          <strong>{formatDate(experiment.createdAt)}</strong>
+        </div>
+      </div>
+
+      <div className="commercial-planning-experiment-result">
+        {experiment.result ?? "Sem resultado"}
+      </div>
+    </article>
+  );
+}
+
+function WeeklyExperimentSlides({
+  experiments,
+}: {
+  experiments: CommercialPlanWeek["experiments"];
+}) {
+  const hierarchy = useMemo(
+    () => buildExperimentHierarchy(experiments),
+    [experiments],
+  );
+  const [selectedNicheKey, setSelectedNicheKey] = useState<string | null>(null);
+  const [selectedHypothesisKey, setSelectedHypothesisKey] = useState<
+    string | null
+  >(null);
+  const [direction, setDirection] =
+    useState<ExperimentSlideDirection>("forward");
+
+  const selectedNiche = hierarchy.find(
+    (niche) => niche.key === selectedNicheKey,
+  );
+  const selectedHypothesis = selectedNiche?.hypotheses.find(
+    (hypothesis) => hypothesis.key === selectedHypothesisKey,
+  );
+
+  useEffect(() => {
+    if (!selectedNicheKey) return;
+    const hasSelectedNiche = hierarchy.some(
+      (niche) => niche.key === selectedNicheKey,
+    );
+    if (!hasSelectedNiche) {
+      setSelectedNicheKey(null);
+      setSelectedHypothesisKey(null);
+    }
+  }, [hierarchy, selectedNicheKey]);
+
+  function openNiche(niche: ExperimentHierarchyNiche) {
+    setDirection("forward");
+    setSelectedNicheKey(niche.key);
+    setSelectedHypothesisKey(null);
+  }
+
+  function openHypothesis(hypothesis: ExperimentHierarchyHypothesis) {
+    setDirection("forward");
+    setSelectedHypothesisKey(hypothesis.key);
+  }
+
+  function goBack() {
+    setDirection("back");
+    if (selectedHypothesisKey) {
+      setSelectedHypothesisKey(null);
+      return;
+    }
+    setSelectedNicheKey(null);
+  }
+
+  const slideClassName = `commercial-planning-slide ${
+    direction === "forward"
+      ? "commercial-planning-slide-forward"
+      : "commercial-planning-slide-reverse"
+  }`;
+
+  return (
+    <div className="commercial-planning-slide-shell">
+      {selectedNiche ? (
+        <div className="commercial-planning-slide-bar">
+          <button
+            className="commercial-planning-slide-back"
+            type="button"
+            onClick={goBack}
+            aria-label="Voltar para o nível anterior"
+            title="Voltar"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+          </button>
+          <div className="commercial-planning-slide-path">
+            <span>Nichos</span>
+            <strong>{selectedNiche.name}</strong>
+            {selectedHypothesis ? (
+              <strong>{selectedHypothesis.title}</strong>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {!selectedNiche ? (
+        <div className={slideClassName} key="niches">
+          <div className="commercial-planning-slide-grid">
+            {hierarchy.map((niche) => (
+              <button
+                className="commercial-planning-slide-card"
+                type="button"
+                key={niche.key}
+                onClick={() => openNiche(niche)}
+              >
+                <span className="commercial-planning-node-kicker">Nicho</span>
+                <strong>{niche.name}</strong>
+                <HierarchySummary summary={niche.summary} />
+                <span className="commercial-planning-slide-card-action">
+                  <ChevronRight size={16} aria-hidden="true" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : !selectedHypothesis ? (
+        <div className={slideClassName} key={`hypotheses-${selectedNiche.key}`}>
+          <div className="commercial-planning-slide-grid">
+            {selectedNiche.hypotheses.map((hypothesis) => (
+              <button
+                className="commercial-planning-slide-card"
+                type="button"
+                key={hypothesis.key}
+                onClick={() => openHypothesis(hypothesis)}
+              >
+                <span className="commercial-planning-node-kicker">
+                  Hipótese
+                </span>
+                <strong>{hypothesis.title}</strong>
+                <HierarchySummary summary={hypothesis.summary} />
+                <span className="commercial-planning-slide-card-action">
+                  <ChevronRight size={16} aria-hidden="true" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div
+          className={slideClassName}
+          key={`experiments-${selectedHypothesis.key}`}
+        >
+          <div className="commercial-planning-experiment-grid">
+            {selectedHypothesis.experiments.map((experiment) => (
+              <ExperimentCard experiment={experiment} key={experiment.id} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WeeklyExperimentTable({
   planId,
   weeks,
@@ -468,134 +673,7 @@ function WeeklyExperimentTable({
           </summary>
 
           {week.experiments.length > 0 ? (
-            <div className="commercial-planning-hierarchy">
-              {buildExperimentHierarchy(week.experiments).map((niche) => (
-                <details
-                  className="commercial-planning-niche-node"
-                  key={niche.key}
-                  open
-                >
-                  <summary className="commercial-planning-node-header">
-                    <div>
-                      <div className="commercial-planning-summary-title">
-                        <CollapseIndicator />
-                        <span className="commercial-planning-node-kicker">
-                          Nicho
-                        </span>
-                      </div>
-                      <h4>{niche.name}</h4>
-                    </div>
-                    <HierarchySummary summary={niche.summary} />
-                  </summary>
-
-                  <div className="commercial-planning-hypothesis-list">
-                    {niche.hypotheses.map((hypothesis) => (
-                      <details
-                        className="commercial-planning-hypothesis-node"
-                        key={hypothesis.key}
-                        open={hypothesis.experiments.length === 1}
-                      >
-                        <summary className="commercial-planning-node-header">
-                          <div>
-                            <div className="commercial-planning-summary-title">
-                              <CollapseIndicator />
-                              <span className="commercial-planning-node-kicker">
-                                Hipótese
-                              </span>
-                            </div>
-                            <h5>{hypothesis.title}</h5>
-                          </div>
-                          <HierarchySummary summary={hypothesis.summary} />
-                        </summary>
-
-                        <div className="commercial-planning-experiment-grid">
-                          {hypothesis.experiments.map((experiment) => (
-                            <article
-                              className="commercial-planning-experiment-card"
-                              key={experiment.id}
-                            >
-                              <div className="commercial-planning-experiment-card-header">
-                                <div>
-                                  <span>Experimento #{experiment.id}</span>
-                                  <Link to={`/experiments/${experiment.id}`}>
-                                    {experiment.name}
-                                  </Link>
-                                </div>
-                                <span className="badge text-bg-light border">
-                                  {experiment.status ?? "Não definido"}
-                                </span>
-                              </div>
-
-                              <div className="commercial-planning-experiment-metrics">
-                                <div>
-                                  <span>Receita</span>
-                                  <strong>
-                                    {formatExecutedCurrency(experiment.revenue)}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span>Compras</span>
-                                  <strong>
-                                    {formatExecutedNumber(experiment.purchases)}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span>Checkout</span>
-                                  <strong>
-                                    {formatExecutedNumber(
-                                      experiment.checkoutClicks,
-                                    )}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span>Leads</span>
-                                  <strong>
-                                    {formatExecutedNumber(experiment.leads)}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span>Cliques</span>
-                                  <strong>
-                                    {formatExecutedNumber(experiment.clicks)}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span>Custo</span>
-                                  <strong>
-                                    {formatExecutedCurrency(
-                                      experiment.totalCost,
-                                    )}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span>ROAS</span>
-                                  <strong>
-                                    {formatRoas(
-                                      experiment.revenue,
-                                      experiment.totalCost,
-                                    )}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span>Criado</span>
-                                  <strong>
-                                    {formatDate(experiment.createdAt)}
-                                  </strong>
-                                </div>
-                              </div>
-
-                              <div className="commercial-planning-experiment-result">
-                                {experiment.result ?? "Sem resultado"}
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      </details>
-                    ))}
-                  </div>
-                </details>
-              ))}
-            </div>
+            <WeeklyExperimentSlides experiments={week.experiments} />
           ) : (
             <div className="commercial-planning-empty-week">
               Nenhum experimento criado nesta semana.

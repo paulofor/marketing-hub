@@ -1,5 +1,12 @@
 # Registros — Modelos OpenAI
 
+## 2026-07-09 — Correção da fonte da rotina diária de preços
+
+- Confirmado que a rotina diária falhava porque tentava obter preços financeiros em `GET /models`, mas essa API não entregava metadados de preço suficientes para sincronização.
+- Corrigida a causa-raiz: a rotina de preços agora consulta a página oficial pública de pricing da OpenAI (`https://developers.openai.com/api/docs/pricing`), extrai as tabelas de preço por 1M tokens e persiste Standard/Batch no catálogo local.
+- Mantida a API `/models` apenas como fonte técnica de existência/capacidade dos modelos; preço financeiro passa a registrar a URL de pricing como `pricing_source`.
+- Adicionados testes para parsing de modelos de texto, modelos de imagem e ausência de Batch, impedindo voltar a inventar preço ou depender de `/models` para custo.
+
 ## 2026-06-06 — Correção da atualização diária de preços para variantes datadas
 
 - Investigada a tela `/openai-models`, alimentada pelo endpoint backend `GET /api/modelos/openai/catalogo/v1/modelos` e pela tabela `openai_model`.

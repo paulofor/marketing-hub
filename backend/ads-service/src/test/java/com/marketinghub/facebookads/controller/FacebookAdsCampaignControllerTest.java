@@ -11,12 +11,14 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
+import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
@@ -70,6 +72,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.times;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -124,6 +128,8 @@ class FacebookAdsCampaignControllerTest {
     LeadPortalMetricsService leadPortalMetricsService;
     @MockBean
     ExperimentFunnelAutoStopService funnelAutoStopService;
+    @MockBean
+    ExperimentCampaignMetricService campaignMetricService;
 
 
     @Test
@@ -632,6 +638,134 @@ class FacebookAdsCampaignControllerTest {
 
         assertThat(campaign.getStatus()).isEqualTo(FacebookAdStatus.PAUSED);
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+    }
+
+    @Test
+    // Garante que a sincronização de métricas inclui campanhas recentes em liquidação final da Meta.
+    void listsRunningAndRecentSettlementCampaignsAsMetricsSyncTargets() throws Exception {
+        var runningExperiment = Experiment.builder()
+                .id(59L)
+                .status(ExperimentStatus.RUNNING)
+                .build();
+        var stoppedExperiment = Experiment.builder()
+                .id(58L)
+                .status(ExperimentStatus.USER_STOPPED)
+                .build();
+        var runningCampaign = new FacebookAdsCampaign();
+        runningCampaign.setId("cmp-running");
+        runningCampaign.setExperiment(runningExperiment);
+        runningCampaign.setMetricsLastSyncedAt(Instant.parse("2026-07-08T15:04:06Z"));
+        var stoppedCampaign = new FacebookAdsCampaign();
+        stoppedCampaign.setId("cmp-stopped");
+        stoppedCampaign.setExperiment(stoppedExperiment);
+        stoppedCampaign.setMetricsLastSyncedAt(Instant.parse("2026-07-08T15:04:04Z"));
+        when(campaignRepository.findMetricsSyncTargets(
+                eq(ExperimentStatus.RUNNING),
+                argThat(statuses -> statuses.contains(ExperimentStatus.USER_STOPPED)
+                        && statuses.contains(ExperimentStatus.INVALIDATED)
+                        && !statuses.contains(ExperimentStatus.PLANNED)),
+                any(Instant.class)))
+                .thenReturn(List.of(runningCampaign, stoppedCampaign));
+
+        mockMvc.perform(get("/api/facebook-campaigns/metrics/sync-targets"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].campaignId").value("cmp-running"))
+                .andExpect(jsonPath("$[0].experimentId").value(59))
+                .andExpect(jsonPath("$[0].lastSyncedAt").value("2026-07-08T15:04:06Z"))
+                .andExpect(jsonPath("$[1].campaignId").value("cmp-stopped"))
+                .andExpect(jsonPath("$[1].experimentId").value(58))
+                .andExpect(jsonPath("$[1].lastSyncedAt").value("2026-07-08T15:04:04Z"));
+
+        ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(campaignRepository).findMetricsSyncTargets(
+                eq(ExperimentStatus.RUNNING),
+                argThat(statuses -> statuses.contains(ExperimentStatus.USER_STOPPED)
+                        && statuses.contains(ExperimentStatus.INVALIDATED)
+                        && !statuses.contains(ExperimentStatus.PLANNED)),
+                cutoffCaptor.capture());
+        assertThat(cutoffCaptor.getValue()).isBetween(
+                Instant.now().minus(java.time.Duration.ofHours(73)),
+                Instant.now().minus(java.time.Duration.ofHours(71)));
+    }
+
+    @Test
+    // Garante que campanhas encerradas sem fechamento final entram no backfill de métricas da Meta.
+    void listsStoppedCampaignWithoutFinalMetricsSyncForBackfill() throws Exception {
+        var stoppedExperiment = Experiment.builder()
+                .id(55L)
+                .status(ExperimentStatus.USER_STOPPED)
+                .build();
+        var stoppedCampaign = new FacebookAdsCampaign();
+        stoppedCampaign.setId("cmp-backfill");
+        stoppedCampaign.setExperiment(stoppedExperiment);
+        stoppedCampaign.setMetricsLastSyncedAt(Instant.parse("2026-07-05T15:04:04Z"));
+        stoppedCampaign.setMetricsFinalSyncedAt(null);
+        when(campaignRepository.findMetricsSyncTargets(
+                eq(ExperimentStatus.RUNNING),
+                argThat(statuses -> statuses.contains(ExperimentStatus.USER_STOPPED)),
+                any(Instant.class)))
+                .thenReturn(List.of(stoppedCampaign));
+
+        mockMvc.perform(get("/api/facebook-campaigns/metrics/sync-targets"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].campaignId").value("cmp-backfill"))
+                .andExpect(jsonPath("$[0].experimentId").value(55))
+                .andExpect(jsonPath("$[0].lastSyncedAt").value("2026-07-05T15:04:04Z"));
+    }
+
+    @Test
+    // Marca fechamento final quando uma campanha encerrada recebe métricas oficiais da Meta.
+    void updateMetricsMarksFinalSyncForStoppedCampaign() throws Exception {
+        var stoppedExperiment = Experiment.builder()
+                .id(55L)
+                .status(ExperimentStatus.USER_STOPPED)
+                .build();
+        var stoppedCampaign = new FacebookAdsCampaign();
+        stoppedCampaign.setId("cmp-backfill");
+        stoppedCampaign.setExperiment(stoppedExperiment);
+        var metric = ExperimentCampaignMetric.builder()
+                .id(77L)
+                .experiment(stoppedExperiment)
+                .campaign(stoppedCampaign)
+                .dateStart(LocalDate.of(2026, 7, 1))
+                .dateStop(LocalDate.of(2026, 7, 7))
+                .reach(1000L)
+                .impressions(1200L)
+                .clicks(34L)
+                .leads(0L)
+                .spend(BigDecimal.valueOf(12.18))
+                .build();
+        when(campaignMetricService.upsert(
+                eq("cmp-backfill"),
+                eq(LocalDate.of(2026, 7, 1)),
+                eq(LocalDate.of(2026, 7, 7)),
+                eq(1000L),
+                eq(1200L),
+                eq(34L),
+                eq(0L),
+                eq(BigDecimal.valueOf(12.18))))
+                .thenReturn(metric);
+
+        String payload = """
+            {
+              "dateStart": "2026-07-01",
+              "dateStop": "2026-07-07",
+              "reach": 1000,
+              "impressions": 1200,
+              "clicks": 34,
+              "leads": 0,
+              "spend": 12.18
+            }
+            """;
+
+        mockMvc.perform(post("/api/facebook-campaigns/cmp-backfill/metrics")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.spend").value(12.18));
+
+        assertThat(stoppedCampaign.getMetricsLastSyncedAt()).isNotNull();
+        assertThat(stoppedCampaign.getMetricsFinalSyncedAt()).isEqualTo(stoppedCampaign.getMetricsLastSyncedAt());
     }
 
     @Test

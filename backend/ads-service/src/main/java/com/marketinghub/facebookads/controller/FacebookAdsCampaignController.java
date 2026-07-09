@@ -55,14 +55,17 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -74,6 +77,16 @@ import java.util.UUID;
 @RequestMapping("/api/facebook-campaigns")
 public class FacebookAdsCampaignController {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAdsCampaignController.class);
+    private static final Duration METRICS_SETTLEMENT_WINDOW = Duration.ofHours(72);
+    private static final Set<ExperimentStatus> METRICS_SETTLEMENT_STATUSES = EnumSet.of(
+            ExperimentStatus.PAUSED,
+            ExperimentStatus.STANDBY,
+            ExperimentStatus.USER_STOPPED,
+            ExperimentStatus.VALIDATED,
+            ExperimentStatus.INVALIDATED,
+            ExperimentStatus.INCONCLUSIVE,
+            ExperimentStatus.FINISHED,
+            ExperimentStatus.FAILED);
 
     private final ExperimentService experimentService;
     private final FacebookAdsCampaignRepository campaignRepository;
@@ -211,9 +224,13 @@ public class FacebookAdsCampaignController {
     }
 
     @GetMapping("/metrics/sync-targets")
-    // Executa a operação metricsSyncTargets da integração Facebook Ads.
+    // Lista campanhas em execução, campanhas em liquidação e campanhas encerradas sem fechamento final.
     public List<CampaignMetricsSyncTarget> metricsSyncTargets() {
-        return campaignRepository.findAllByExperimentStatus(com.marketinghub.experiment.ExperimentStatus.RUNNING)
+        Instant settlementCutoff = Instant.now().minus(METRICS_SETTLEMENT_WINDOW);
+        return campaignRepository.findMetricsSyncTargets(
+                        ExperimentStatus.RUNNING,
+                        METRICS_SETTLEMENT_STATUSES,
+                        settlementCutoff)
                 .stream()
                 .map(c -> new CampaignMetricsSyncTarget(c.getId(), c.getExperiment().getId(), c.getMetricsLastSyncedAt()))
                 .toList();
@@ -414,8 +431,19 @@ public class FacebookAdsCampaignController {
         FacebookAdsCampaign campaign = metric.getCampaign();
         campaign.setMetricsLastSyncedAt(Instant.now());
         campaign.setMetricsLastError(null);
+        markFinalMetricsSyncWhenExperimentIsSettled(campaign);
         evaluateMetricsSideEffectsSafely(campaign, metric);
         return toMetricSummary(metric);
+    }
+
+    // Marca que uma campanha encerrada já teve reconciliação final de métricas contra a Meta.
+    private void markFinalMetricsSyncWhenExperimentIsSettled(FacebookAdsCampaign campaign) {
+        if (campaign == null || campaign.getExperiment() == null) {
+            return;
+        }
+        if (METRICS_SETTLEMENT_STATUSES.contains(campaign.getExperiment().getStatus())) {
+            campaign.setMetricsFinalSyncedAt(campaign.getMetricsLastSyncedAt());
+        }
     }
 
     // Fecha o experimento quando a Meta informa que a campanha foi pausada fora do Hub.

@@ -60,7 +60,7 @@ class OpenAiModelServiceTest {
         assertThat(created.getPriceInputStandard()).isEqualByComparingTo("5.00");
         assertThat(created.getPriceOutputBatch()).isEqualByComparingTo("15.00");
         assertThat(created.isAcceptsImageInput()).isFalse();
-        assertThat(created.getPricingSource()).isEqualTo("openai:/models");
+        assertThat(created.getPricingSource()).isEqualTo(OpenAiPricingPageClient.PRICING_PAGE_URL);
         assertThat(created.getLastPricingSyncAt()).isNotNull();
         verify(catalogService).fetchAndPersistCatalog();
     }

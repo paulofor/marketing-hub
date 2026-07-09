@@ -5675,3 +5675,17 @@
 - Causa-raiz tratada: o backend podia devolver `500` no pós-processamento de `POST /api/facebook-campaigns/{campaignId}/metrics`, impedindo persistir o gasto real; além disso, campanha pausada manualmente na Meta podia continuar como experimento `RUNNING` no Hub.
 - Correção aplicada: a métrica da Meta passa a ser persistida mesmo se regras derivadas de parada/estratégia falharem; o status `PAUSED` vindo da Meta reconcilia experimento `RUNNING` para `USER_STOPPED`; e o Facebook Ads Worker pausa direto na Meta quando o Insights mostrar gasto de pelo menos R$ 25,00 com zero leads.
 - Prevenção de recorrência: o cânone de publicação/métricas Facebook Ads registra a Meta como fonte de verdade de gasto, a trava financeira emergencial no worker e a proibição de campanha pausada na Meta continuar rodando operacionalmente no Hub.
+
+## 2026-07-09 — Planejamento em navegação por slides
+
+- Decisão: a tela de planejamento passa a mostrar primeiro apenas nichos, depois hipóteses do nicho selecionado e, por fim, experimentos da hipótese selecionada.
+- Objetivo comercial: reduzir ruído visual e deixar a leitura do funil Nicho → Hipótese → Experimento mais clara para decidir onde criar, publicar ou corrigir testes.
+- Correção aplicada: a hierarquia recolhível foi substituída por navegação progressiva com animação para a direita ao descer nível e para a esquerda ao voltar.
+- Prevenção de recorrência: teste da tela valida que hipóteses e experimentos só aparecem após a seleção do nível anterior.
+
+## 2026-07-09 — Bloqueio de hipótese com texto corrompido
+
+- Problema: a hipótese do nicho 21 foi fechada com o caractere corrompido `re預` e com JSON inteiro salvo em campos comerciais.
+- Causa-raiz tratada: a etapa aceitava sucesso técnico da IA sem validar qualidade textual e o fechamento copiava a resposta bruta da etapa para a hipótese.
+- Correção aplicada: o backend passa a rejeitar resposta de etapa com caractere corrompido/inesperado, materializa JSON de etapa em texto comercial antes de fechar a hipótese e saneia o registro atual.
+- Prevenção de recorrência: testes cobrem rejeição no callback da IA e impedem que JSON bruto vire `problem`, `promise`, `mechanism`, `successRule` ou `entrega`.

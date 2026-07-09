@@ -11,7 +11,6 @@ import "./HypothesisDetailPage.css";
 type SectionRow = {
   label: string;
   value?: string | number | string[] | null;
-  defaultOpen?: boolean;
 };
 
 type DetailSection = {
@@ -65,11 +64,10 @@ function HypothesisSectionCard({ section }: { section: DetailSection }) {
         </div>
       </div>
       <div className="hypothesis-detail__collapses">
-        {rows.map((row, index) => (
+        {rows.map((row) => (
           <details
             key={row.label}
             className="hypothesis-detail__collapse"
-            open={row.defaultOpen ?? index < 2}
           >
             <summary>
               <span>{row.label}</span>
@@ -112,9 +110,8 @@ export default function HypothesisDetailPage() {
         {
           label: "Dor superficial",
           value: framework.pain.surface,
-          defaultOpen: true,
         },
-        { label: "Dor raiz", value: framework.pain.root, defaultOpen: true },
+        { label: "Dor raiz", value: framework.pain.root },
         { label: "Dor emocional", value: framework.pain.emotional },
         { label: "Dor social", value: framework.pain.social },
         { label: "Custo da inação", value: framework.pain.cost },
@@ -129,12 +126,10 @@ export default function HypothesisDetailPage() {
         {
           label: "Resultado desejado",
           value: framework.result.desiredResult,
-          defaultOpen: true,
         },
         {
           label: "Antes e depois",
           value: framework.result.desiredIdentity,
-          defaultOpen: true,
         },
         {
           label: "Resultado de negócio",
@@ -152,12 +147,10 @@ export default function HypothesisDetailPage() {
         {
           label: "Mecanismo central",
           value: framework.mechanism.core,
-          defaultOpen: true,
         },
         {
           label: "Nome / diferencial",
           value: framework.mechanism.unique,
-          defaultOpen: true,
         },
         { label: "Como funciona", value: framework.mechanism.visible },
         {
@@ -175,12 +168,10 @@ export default function HypothesisDetailPage() {
         {
           label: "Tipo de prova",
           value: framework.proof.type,
-          defaultOpen: true,
         },
         {
           label: "Ativo de prova",
           value: framework.proof.asset,
-          defaultOpen: true,
         },
         { label: "Mensagem", value: framework.proof.message },
         {
@@ -198,12 +189,10 @@ export default function HypothesisDetailPage() {
         {
           label: "Nome da oferta",
           value: framework.offer.name,
-          defaultOpen: true,
         },
         {
           label: "Promessa central",
           value: framework.offer.corePromise,
-          defaultOpen: true,
         },
         { label: "Entregáveis", value: framework.offer.deliverables },
         { label: "Reversão de risco", value: framework.offer.riskReversal },
@@ -314,6 +303,26 @@ export default function HypothesisDetailPage() {
             </strong>
             <span>Preço sugerido</span>
           </div>
+        </div>
+      </section>
+
+      <section className="hypothesis-detail__ai-audit">
+        <div className="hypothesis-detail__ai-audit-header">
+          <div>
+            <span className="hypothesis-detail__eyebrow">Geração por IA</span>
+            <h2>Prompt usado para gerar esta hipótese</h2>
+          </div>
+          <div className="hypothesis-detail__ai-model">
+            <span>Modelo</span>
+            <strong>{data.model?.trim() || "Não registrado"}</strong>
+          </div>
+        </div>
+        <div className="hypothesis-detail__prompt-card">
+          {data.prompt?.trim() ? (
+            <pre>{data.prompt}</pre>
+          ) : (
+            <p className="text-muted mb-0">Prompt não registrado no backend.</p>
+          )}
         </div>
       </section>
 

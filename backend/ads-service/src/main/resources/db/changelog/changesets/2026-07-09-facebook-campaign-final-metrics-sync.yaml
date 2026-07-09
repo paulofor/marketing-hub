@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-09-facebook-campaign-final-metrics-sync
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: facebook_ads_campaign
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: metrics_final_synced_at
+      changes:
+        - addColumn:
+            tableName: facebook_ads_campaign
+            columns:
+              - column:
+                  name: metrics_final_synced_at
+                  type: datetime

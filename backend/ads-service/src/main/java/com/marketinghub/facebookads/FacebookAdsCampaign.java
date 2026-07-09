@@ -101,6 +101,9 @@ public class FacebookAdsCampaign {
     @Column(name = "metrics_last_synced_at")
     private Instant metricsLastSyncedAt;
 
+    @Column(name = "metrics_final_synced_at")
+    private Instant metricsFinalSyncedAt;
+
     @Column(name = "metrics_last_error", columnDefinition = "TEXT")
     private String metricsLastError;
 

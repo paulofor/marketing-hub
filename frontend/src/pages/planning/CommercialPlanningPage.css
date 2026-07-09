@@ -227,7 +227,8 @@
   transform: rotate(-90deg);
 }
 
-.commercial-planning-week-card-header:hover .commercial-planning-collapse-indicator,
+.commercial-planning-week-card-header:hover
+  .commercial-planning-collapse-indicator,
 .commercial-planning-node-header:hover .commercial-planning-collapse-indicator {
   border-color: #98a2b3;
   background: #f2f4f7;
@@ -330,6 +331,145 @@
   border-radius: 999px;
   background: #ffffff;
   white-space: nowrap;
+}
+
+.commercial-planning-slide-shell {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.commercial-planning-slide-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.commercial-planning-slide-back {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid #d9dee7;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #344054;
+}
+
+.commercial-planning-slide-back:hover {
+  border-color: #98a2b3;
+  background: #f2f4f7;
+}
+
+.commercial-planning-slide-path {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.commercial-planning-slide-path span,
+.commercial-planning-slide-path strong {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.commercial-planning-slide-path strong {
+  color: #101828;
+}
+
+.commercial-planning-slide-path strong::before {
+  margin-right: 0.35rem;
+  color: #98a2b3;
+  content: "/";
+}
+
+.commercial-planning-slide {
+  min-width: 0;
+  animation-duration: 0.2s;
+  animation-timing-function: ease-out;
+}
+
+.commercial-planning-slide-forward {
+  animation-name: commercial-planning-slide-from-right;
+}
+
+.commercial-planning-slide-reverse {
+  animation-name: commercial-planning-slide-from-left;
+}
+
+.commercial-planning-slide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.commercial-planning-slide-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: 0.65rem;
+  padding: 0.875rem 3rem 0.875rem 0.875rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  color: inherit;
+  text-align: left;
+}
+
+.commercial-planning-slide-card:hover {
+  border-color: #98a2b3;
+  background: #ffffff;
+}
+
+.commercial-planning-slide-card strong {
+  color: #101828;
+  font-size: 0.98rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.commercial-planning-slide-card-action {
+  position: absolute;
+  top: 0.875rem;
+  right: 0.875rem;
+  display: inline-grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid #d9dee7;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #344054;
+}
+
+@keyframes commercial-planning-slide-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes commercial-planning-slide-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .commercial-planning-hypothesis-list {

@@ -19,6 +19,8 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -60,7 +62,8 @@ class HypothesisPainStageServiceTest {
                 enrichmentProfileReader,
                 executionRepository,
                 templateRepository,
-                costCalculator);
+                costCalculator,
+                new HypothesisPipelineContentGuard(new ObjectMapper()));
         mockActiveTemplate("hypothesis-pain");
         mockActiveTemplate("hypothesis-result");
         mockActiveTemplate("hypothesis-mechanism");
@@ -126,6 +129,48 @@ class HypothesisPainStageServiceTest {
 
         verify(costCalculator).calculateFlexCostUsd("gpt-5.2", 1200, 300);
         verify(costCalculator).addFlexCostDeltaToNiche(niche, new BigDecimal("0.00500000"));
+    }
+
+    /** Deve reprovar resposta com caractere corrompido mesmo quando a OpenAI retornou sucesso técnico. */
+    @Test
+    void markCompletedFromResponseFailsCorruptedCommercialText() {
+        String idJob = "8bb83a22-3894-43bd-9752-374f84eb6a2c";
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
+                .idJob(idJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-pain")
+                .status("PROCESSANDO")
+                .openAiModel("gpt-5.2")
+                .build();
+        RecebeRespostaRequest request = new RecebeRespostaRequest(
+                18L,
+                "hypothesis-pain",
+                "{\"summary\":\"Prova a buscar depois: redução de faltas, re預\"}",
+                "{\"id\":\"resp_1\"}",
+                1200,
+                300,
+                null,
+                "openai-job-1",
+                null,
+                null);
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(idJob.getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+        when(executionRepository.save(any(HypothesisPainStageExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(costCalculator.calculateFlexCostUsd("gpt-5.2", 1200, 300))
+                .thenReturn(new BigDecimal("0.01500000"));
+
+        service.markCompletedFromResponse(idJob, request);
+
+        ArgumentCaptor<HypothesisPainStageExecution> captor = ArgumentCaptor.forClass(HypothesisPainStageExecution.class);
+        verify(executionRepository).save(captor.capture());
+        assertEquals("FALHA", captor.getValue().getStatus());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getErrorMessage())
+                .contains("caractere corrompido");
     }
 
     /** Deve recuperar job antigo em PROCESSANDO sem openai_job_id para impedir travamento operacional da fila. */

@@ -181,18 +181,18 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
         return html + block;
     }
 
-    /** Cria um card SVG simples que materializa dor, depois ou preview do produto digital. */
+    /** Cria um card SVG simples com texto comercial seguro para materializar a transformacao. */
     private String fallbackTransformationVisualCard(int index) {
         String kind = transformationVisualKind(index);
         String title = switch (index) {
-            case 0 -> "Depois desejado";
-            case 1 -> "Dor atual";
-            default -> "Preview do produto";
+            case 0 -> "Imagem mais alinhada";
+            case 1 -> "Mais clareza nas escolhas";
+            default -> "Conteudo pratico e organizado";
         };
         String subtitle = switch (index) {
-            case 0 -> "rotina organizada e decisao facil";
-            case 1 -> "perda de tempo, inseguranca e retrabalho";
-            default -> "material pratico pronto para usar";
+            case 0 -> "presenca mais cuidada com detalhes simples";
+            case 1 -> "menos tentativa e mais direcao no dia a dia";
+            default -> "passos objetivos para aplicar na rotina";
         };
         String accent = switch (index) {
             case 0 -> "#1f8a70";

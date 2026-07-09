@@ -54,6 +54,11 @@ public class GeraSalesPagePublicationAuditService {
             "(?iu)(?<![\\p{L}])(" 
                     + "nao|voce|informacao|producao|pendencia|endereco|proximo|almoco|atencao|solucao"
                     + ")(?![\\p{L}@-])");
+    private static final List<String> FORBIDDEN_VISIBLE_OPERATIONAL_LABELS = List.of(
+            "depois desejado:",
+            "dor atual:",
+            "preview do produto:",
+            "prova do produto:");
     private static final Pattern NON_TRACK_SECTION_CHARS = Pattern.compile("[^a-z0-9_-]+");
     private static final int MIN_TRANSFORMATION_VISUAL_SCENES = 3;
 
@@ -340,10 +345,37 @@ public class GeraSalesPagePublicationAuditService {
         validatePublicPortugueseAccentuation(experiment, publicationExecution, html);
         Document document = Jsoup.parse(html, "", Parser.htmlParser());
         document.outputSettings().prettyPrint(false);
+        validateNoVisibleOperationalLabels(experiment, publicationExecution, document);
         validateTransformationVisualScenes(experiment, publicationExecution, document);
         markTrackableSections(document);
         injectAnalyticsScriptIfMissing(document, flowSlug);
         return document.outerHtml();
+    }
+
+    /** Bloqueia rotulos internos de auditoria que nao podem aparecer para o comprador. */
+    private void validateNoVisibleOperationalLabels(
+            Experiment experiment,
+            GeraSalesPageStageExecution publicationExecution,
+            Document document) {
+        String visibleText = document.body() == null
+                ? document.text()
+                : document.body().text();
+        String normalizedText = visibleText.toLowerCase(Locale.ROOT);
+        List<String> leakedLabels = FORBIDDEN_VISIBLE_OPERATIONAL_LABELS.stream()
+                .filter(normalizedText::contains)
+                .toList();
+        if (leakedLabels.isEmpty()) {
+            return;
+        }
+        log.warn(
+                "GeraSalesPage bloqueou publicacao com rotulo operacional visivel: experimentId={}, idJob={}, labels={}",
+                experiment.getId(),
+                publicationExecution != null ? publicationExecution.getIdJob() : null,
+                leakedLabels);
+        throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "GeraSalesPage bloqueou a publicacao por conter rotulo operacional visivel: "
+                        + String.join(", ", leakedLabels));
     }
 
     /** Bloqueia paginas de venda sem prova visual suficiente da transformacao prometida. */

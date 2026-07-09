@@ -66,7 +66,11 @@ class GeraSalesPageProcessorTest {
                 .contains("data-transform-visual=\"after\"")
                 .contains("data-transform-visual=\"pain\"")
                 .contains("data-transform-visual=\"preview\"")
-                .contains("<svg");
+                .contains("<svg")
+                .doesNotContain("Depois desejado")
+                .doesNotContain("Dor atual")
+                .doesNotContain("Preview do produto")
+                .doesNotContain("Prova do produto");
     }
 
     /** Cria processor mínimo para exercitar métodos puros por reflexão. */

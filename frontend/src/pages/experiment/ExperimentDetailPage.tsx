@@ -29,6 +29,7 @@ import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
 import ExperimentRunPanel from "./ExperimentRunPanel";
 import LandingTab from "./LandingTab";
+import ExperimentVideoTab from "./ExperimentVideoTab";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 import {
@@ -66,6 +67,7 @@ const experimentDetailTabs = [
   { value: "analytics", label: "Analytics" },
   { value: "creatives", label: "Criativos" },
   { value: "landing", label: "Landing" },
+  { value: "video", label: "Vídeo" },
   { value: "content-structure", label: "Estrutura de conteúdo" },
   { value: "publico", label: "Público" },
 ] as const;
@@ -2803,6 +2805,12 @@ export default function ExperimentDetailPage() {
           </Tabs.Content>
           <Tabs.Content value="landing" asChild>
             <LandingTab experiment={data} alterationLocked={alterationLocked} />
+          </Tabs.Content>
+          <Tabs.Content value="video" asChild>
+            <ExperimentVideoTab
+              experiment={data}
+              alterationLocked={alterationLocked}
+            />
           </Tabs.Content>
           <Tabs.Content value="gera-landing" asChild>
             <div className="d-flex flex-column gap-3">

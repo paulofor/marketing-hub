@@ -39,6 +39,12 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.providers.real.poll-interval` | Intervalo de polling do status no provider. | `PT5S` |
 | `video.providers.real.max-poll-attempts` | Máximo de tentativas de polling antes de timeout técnico. | `120` |
 
+### Nota operacional sobre VEO
+
+O VEO ja foi validado para experimentos do Marketing Hub, mas o caso real registrado em `docs/registros/experimentos-veo-2026-07-06.md` foi um handoff operacional/manual via Gemini API com `GEMINI_API_KEY`, nao uma execucao automatica completa deste worker.
+
+Para este modulo consumir jobs com `providerName=VEO`, inclua `VEO` em `video.providers.real.accepted-names` e configure `video.providers.real.base-url` para uma API intermediaria compativel com o contrato generico do provider real (`create`, `status` e URLs finais para download). Sem essa API intermediaria, use o fluxo manual validado: gerar o MP4 no VEO, subir como asset, concluir o job e vincular o ativo ao experimento.
+
 ## Observabilidade (Sprint V3)
 
 O módulo expõe métricas em `/actuator/prometheus` com os principais indicadores operacionais:

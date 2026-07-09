@@ -8,14 +8,25 @@ import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
+import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.LandingVideoSlot;
+import com.marketinghub.salesvideo.SalesVideoExecutionMode;
+import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.SalesVideoProfile;
+import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +58,12 @@ class ExperimentVideoAssetServiceTest {
     private AssetRepository assetRepository;
     @Mock
     private LandingVideoSlotRepository landingVideoSlotRepository;
+    @Mock
+    private ProductRepository productRepository;
+    @Mock
+    private LandingPageRepository landingPageRepository;
+    @Mock
+    private SalesVideoService salesVideoService;
 
     private ExperimentVideoAssetService service;
 
@@ -59,7 +76,10 @@ class ExperimentVideoAssetServiceTest {
                 profileRepository,
                 jobRepository,
                 assetRepository,
-                landingVideoSlotRepository);
+                landingVideoSlotRepository,
+                productRepository,
+                landingPageRepository,
+                salesVideoService);
     }
 
     /** Garante que um vídeo novo recebe estados padrão quando criado para o experimento. */
@@ -100,6 +120,66 @@ class ExperimentVideoAssetServiceTest {
         assertThat(dto.id()).isEqualTo(7L);
         assertThat(dto.status()).isEqualTo(ExperimentVideoStatus.PLANNED);
         assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+        assertThat(dto.requiredForRelease()).isTrue();
+    }
+
+    /** Garante que o Hub cria o fluxo VEO completo a partir do experimento. */
+    @Test
+    void shouldRequestVeoRenderFromExperiment() {
+        MarketNiche niche = MarketNiche.builder().id(31L).name("Beleza").build();
+        Experiment experiment = Experiment.builder()
+                .id(61L)
+                .niche(niche)
+                .name("Guia de elegancia")
+                .singlePain("Aparencia comum mesmo gastando")
+                .funnelPromise("Parecer mais elegante sem gastar muito")
+                .build();
+        Product product = Product.builder().id(3L).marketNiche(niche).build();
+        SalesVideoProfile profile = SalesVideoProfile.builder().id(12L).product(product).build();
+        SalesVideoJob job = SalesVideoJob.builder().id(10108L).profile(profile).build();
+        SalesVideoProfileDto profileDto = new SalesVideoProfileDto();
+        profileDto.setId(12L);
+        SalesVideoJobDto jobDto = new SalesVideoJobDto();
+        jobDto.setId(10108L);
+        RequestExperimentVeoVideoRequest request = new RequestExperimentVeoVideoRequest(
+                ExperimentVideoSlot.LANDING_HERO,
+                "Video VEO experimento 61",
+                "Aumentar conversao da pagina",
+                "checkout_start_rate",
+                "Consultora",
+                "premium acessivel",
+                "natural",
+                "pt-BR",
+                30,
+                "Mostre como pequenos detalhes mudam a percepcao de elegancia.",
+                "Voce parece comum mesmo se arrumando?",
+                "Quero o guia",
+                null,
+                "VEO",
+                SalesVideoExecutionMode.TEST,
+                "time@marketinghub.io",
+                true);
+        given(experimentRepository.findById(61L)).willReturn(Optional.of(experiment));
+        given(productRepository.findFirstByMarketNiche_IdOrderByCreatedAtDesc(31L)).willReturn(Optional.of(product));
+        given(landingPageRepository.findByExperimentId(61L)).willReturn(List.of());
+        given(salesVideoService.createProfile(any(), any())).willReturn(profileDto);
+        given(salesVideoService.requestRender(any(), any())).willReturn(jobDto);
+        given(profileRepository.findById(12L)).willReturn(Optional.of(profile));
+        given(jobRepository.findById(10108L)).willReturn(Optional.of(job));
+        given(repository.save(any(ExperimentVideoAsset.class))).willAnswer(invocation -> {
+            ExperimentVideoAsset saved = invocation.getArgument(0);
+            saved.setId(77L);
+            return saved;
+        });
+
+        ExperimentVideoAssetDto dto = service.requestVeoRender(61L, request);
+
+        assertThat(dto.id()).isEqualTo(77L);
+        assertThat(dto.status()).isEqualTo(ExperimentVideoStatus.GENERATING);
+        assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+        assertThat(dto.provider()).isEqualTo("VEO");
+        assertThat(dto.salesVideoProfileId()).isEqualTo(12L);
+        assertThat(dto.salesVideoJobId()).isEqualTo(10108L);
         assertThat(dto.requiredForRelease()).isTrue();
     }
 

@@ -16,6 +16,9 @@ import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbTestDto;
+import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbVariantDto;
+import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.leadportal.LeadPortalFlow;
@@ -106,6 +109,7 @@ public class FacebookAdsCampaignController {
     private final FacebookCampaignRecommendationService recommendationService;
     private final FacebookCampaignPublicationJobStepService publicationJobStepService;
     private final CampaignStrategyService campaignStrategyService;
+    private final ExperimentSalesPageAbTestService salesPageAbTestService;
 
     /**
      * Cria o controller com os repositórios e serviços usados pelos contratos de campanhas Facebook.
@@ -126,7 +130,8 @@ public class FacebookAdsCampaignController {
                                          LeadPortalMetricsService leadPortalMetricsService,
                                          FacebookCampaignRecommendationService recommendationService,
                                          FacebookCampaignPublicationJobStepService publicationJobStepService,
-                                         CampaignStrategyService campaignStrategyService) {
+                                         CampaignStrategyService campaignStrategyService,
+                                         ExperimentSalesPageAbTestService salesPageAbTestService) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.accountRepository = accountRepository;
@@ -144,6 +149,7 @@ public class FacebookAdsCampaignController {
         this.recommendationService = recommendationService;
         this.publicationJobStepService = publicationJobStepService;
         this.campaignStrategyService = campaignStrategyService;
+        this.salesPageAbTestService = salesPageAbTestService;
     }
 
     @GetMapping("/experiments-ready")
@@ -761,7 +767,47 @@ public class FacebookAdsCampaignController {
                 buildPublicationJobId(experiment),
                 toLeadPortalFunnelSummary(leadPortalMetrics),
                 toMetricSummary(experiment.getCampaignMetric()),
-                toCampaignStrategySummary(campaignStrategyService.findLatestByExperimentId(experiment.getId())));
+                toCampaignStrategySummary(campaignStrategyService.findLatestByExperimentId(experiment.getId())),
+                toSalesPageAbTestSummary(salesPageAbTestService.findActiveForCampaign(experiment.getId()).orElse(null)));
+    }
+
+    // Converte o teste A/B de pagina de venda para resumo consumido pelo worker Meta.
+    private SalesPageAbTestSummary toSalesPageAbTestSummary(ExperimentSalesPageAbTestDto test) {
+        if (test == null) {
+            return null;
+        }
+        List<SalesPageAbVariantSummary> variants = test.variants() == null
+                ? List.of()
+                : test.variants().stream()
+                .map(this::toSalesPageAbVariantSummary)
+                .toList();
+        return new SalesPageAbTestSummary(
+                test.id(),
+                test.name(),
+                test.status() != null ? test.status().name() : null,
+                test.primaryMetric(),
+                test.winnerRule(),
+                test.minimumRuntimeDays(),
+                test.minimumSampleSize(),
+                test.metaSplitTestRecommended(),
+                variants);
+    }
+
+    // Converte uma variante A/B para resumo consumido pelo worker Meta.
+    private SalesPageAbVariantSummary toSalesPageAbVariantSummary(ExperimentSalesPageAbVariantDto variant) {
+        return new SalesPageAbVariantSummary(
+                variant.id(),
+                variant.variantKey(),
+                variant.name(),
+                variant.variantType() != null ? variant.variantType().name() : null,
+                variant.status() != null ? variant.status().name() : null,
+                variant.trafficWeight(),
+                variant.salesPageUrl(),
+                variant.checkoutUrl(),
+                variant.adDestinationUrl(),
+                variant.analyticsVariantParam(),
+                variant.experimentVideoAssetId(),
+                variant.requiredCollectorsPresent());
     }
 
     // Converte a estrategia de campanha para resumo consumido pela tela.
@@ -952,7 +998,8 @@ public class FacebookAdsCampaignController {
             String publicationJobId,
             LeadPortalFunnelSummary leadPortalFunnel,
             CampaignMetricSummary metrics,
-            CampaignStrategySummary campaignStrategy) {}
+            CampaignStrategySummary campaignStrategy,
+            SalesPageAbTestSummary salesPageAbTest) {}
 
     public record LeadPortalFlowSummary(Long id, String name, String slug, String publicUrl) {}
 
@@ -992,6 +1039,31 @@ public class FacebookAdsCampaignController {
             Long minimumLinkClicks,
             Long minimumImpressions,
             boolean enabled) {}
+
+    public record SalesPageAbTestSummary(
+            Long id,
+            String name,
+            String status,
+            String primaryMetric,
+            String winnerRule,
+            Integer minimumRuntimeDays,
+            Integer minimumSampleSize,
+            boolean metaSplitTestRecommended,
+            List<SalesPageAbVariantSummary> variants) {}
+
+    public record SalesPageAbVariantSummary(
+            Long id,
+            String variantKey,
+            String name,
+            String variantType,
+            String status,
+            BigDecimal trafficWeight,
+            String salesPageUrl,
+            String checkoutUrl,
+            String adDestinationUrl,
+            String analyticsVariantParam,
+            Long experimentVideoAssetId,
+            boolean requiredCollectorsPresent) {}
 
     public record CampaignMetricsSyncTarget(String campaignId, Long experimentId, Instant lastSyncedAt) {}
 

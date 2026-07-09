@@ -18,6 +18,7 @@ import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
@@ -100,6 +101,8 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
     private ExperimentCampaignMetricRepository campaignMetricRepository;
     @Mock
     private CampaignStrategyService campaignStrategyService;
+    @Mock
+    private ExperimentSalesPageAbTestService salesPageAbTestService;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -130,7 +133,8 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                 leadPortalMetricsService,
                 recommendationService,
                 org.mockito.Mockito.mock(FacebookCampaignPublicationJobStepService.class),
-                campaignStrategyService
+                campaignStrategyService,
+                salesPageAbTestService
         );
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }

@@ -10,5 +10,6 @@ public enum ExperimentReadinessIssueType {
     VIDEO_ASSET,
     TARGETING,
     GERA_LANDING,
-    GERA_SALES_PAGE
+    GERA_SALES_PAGE,
+    SALES_PAGE_AB_TEST
 }

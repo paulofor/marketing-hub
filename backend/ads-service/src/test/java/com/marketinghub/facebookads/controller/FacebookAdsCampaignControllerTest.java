@@ -23,6 +23,7 @@ import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.FacebookAdsAdCreative;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdCreativeRepository;
@@ -123,6 +124,8 @@ class FacebookAdsCampaignControllerTest {
     FacebookCampaignPublicationJobStepService publicationJobStepService;
     @MockBean
     CampaignStrategyService campaignStrategyService;
+    @MockBean
+    ExperimentSalesPageAbTestService salesPageAbTestService;
 
     @MockBean
     LeadPortalMetricsService leadPortalMetricsService;

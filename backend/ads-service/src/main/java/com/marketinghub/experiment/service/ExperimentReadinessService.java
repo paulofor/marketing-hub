@@ -15,6 +15,7 @@ import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
+import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,19 +64,22 @@ public class ExperimentReadinessService {
 
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
     private final ExperimentVideoAssetService experimentVideoAssetService;
+    private final ExperimentSalesPageAbTestService salesPageAbTestService;
     /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
                                       ExperimentTargetingSelectionRepository targetingSelectionRepository,
                                       GeraLandingStageExecutionRepository geraLandingStageExecutionRepository,
                                       ExperimentCampaignDestinationPolicy campaignDestinationPolicy,
-                                      ExperimentVideoAssetService experimentVideoAssetService) {
+                                      ExperimentVideoAssetService experimentVideoAssetService,
+                                      ExperimentSalesPageAbTestService salesPageAbTestService) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
         this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
         this.campaignDestinationPolicy = campaignDestinationPolicy;
         this.experimentVideoAssetService = experimentVideoAssetService;
+        this.salesPageAbTestService = salesPageAbTestService;
     }
 
     /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
@@ -98,6 +102,7 @@ public class ExperimentReadinessService {
         boolean hasCommercialContract = campaignDestinationPolicy.hasCompleteCommercialContract(experiment);
         boolean hasGeraSalesPagePipeline = campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(experimentId);
         boolean hasRequiredVideoBlockingRelease = hasRequiredVideoBlockingRelease(experiment);
+        boolean hasReadySalesPageAbTest = salesPageAbTestService.hasReadyActiveTest(experimentId);
         Optional<GeraSalesPagePublicationAudit> salesPagePublication =
                 campaignDestinationPolicy.latestSalesPagePublication(experimentId);
 
@@ -135,6 +140,15 @@ public class ExperimentReadinessService {
                     "Vídeo obrigatório ainda não aprovado",
                     "Este experimento possui vídeo obrigatório para o funil, mas o ativo ainda não está pronto e aprovado.",
                     "Finalize a geração, revise o vídeo e aprove o ativo antes de liberar tráfego.",
+                    List.of()
+            ));
+        }
+        if (!hasReadySalesPageAbTest) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.SALES_PAGE_AB_TEST,
+                    "Teste A/B de página incompleto",
+                    "Existe um teste A/B ativo para a página de venda, mas as duas variantes ainda não estão prontas para tráfego.",
+                    "Configure página, checkout, destino do anúncio, coletores e divisão de tráfego das duas variantes antes de liberar a campanha.",
                     List.of()
             ));
         }
@@ -234,6 +248,9 @@ public class ExperimentReadinessService {
         }
         if (hasRequiredVideoBlockingRelease(experiment)) {
             missing.add("experimentVideoAsset");
+        }
+        if (!salesPageAbTestService.hasReadyActiveTest(experiment.getId())) {
+            missing.add("salesPageAbTest");
         }
         if (!hasConfiguredTargeting(experiment)) {
             missing.add("approvedTargetingPackage");

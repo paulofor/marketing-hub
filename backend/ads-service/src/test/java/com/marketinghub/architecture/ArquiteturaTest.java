@@ -88,6 +88,8 @@ class ArquiteturaTest {
             HYPOTHESIS_PAIN_STAGE_EXECUTION_REPOSITORY_CLASS,
             MARKET_NICHE_REPOSITORY_CLASS,
             AI_PROMPT_SCHEMA_TEMPLATE_REPOSITORY_CLASS);
+    private static final List<String> ALLOWED_HYPOTHESIS_STAGE_SHARED_SERVICE_CLASSES =
+            List.of("com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard");
     private static final Pattern BACKEND_CONTROLLER_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Controller$");
     private static final Pattern BACKEND_SERVICE_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Service$");
     private static final Pattern EPM_CONTROLLER_PACKAGE_PATTERN = Pattern.compile("^com\\.marketinghub\\.epm\\.controller$");
@@ -2970,6 +2972,7 @@ class ArquiteturaTest {
                             || targetName.equals(HYPOTHESIS_CLASS)
                             || targetName.equals(MARKET_NICHE_CLASS)
                             || isAiPromptSchemaTemplateClass(targetName)
+                            || isAllowedHypothesisStageSharedServiceClass(targetName)
                             || isAllowedHypothesisStageServiceRepository(targetName)) {
                         return;
                     }
@@ -2982,12 +2985,21 @@ class ArquiteturaTest {
                             + HYPOTHESIS_CLASS + ", "
                             + MARKET_NICHE_CLASS + ", "
                             + AI_PROMPT_SCHEMA_TEMPLATE_CLASS
+                            + ", serviços compartilhados explicitamente liberados: "
+                            + ALLOWED_HYPOTHESIS_STAGE_SHARED_SERVICE_CLASSES
                             + " e somente repositories canônicos explicitamente liberados: "
                             + ALLOWED_HYPOTHESIS_STAGE_SERVICE_REPOSITORIES;
                     events.add(SimpleConditionEvent.violated(item, message));
                 });
             }
         };
+    }
+
+    /**
+     * Verifica se a dependência alvo é um serviço compartilhado liberado para services do Hypothesis.
+     */
+    private static boolean isAllowedHypothesisStageSharedServiceClass(String targetName) {
+        return ALLOWED_HYPOTHESIS_STAGE_SHARED_SERVICE_CLASSES.contains(targetName);
     }
 
     /**

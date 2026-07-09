@@ -97,6 +97,8 @@ import PaymentDetailPage from "./pages/payments/PaymentDetailPage";
 import PromptListPage from "./pages/promptTemplate/PromptListPage";
 import NewPromptPage from "./pages/promptTemplate/NewPromptPage";
 import EditPromptPage from "./pages/promptTemplate/EditPromptPage";
+import AiPromptSchemaTemplateListPage from "./pages/aiPromptSchemaTemplate/AiPromptSchemaTemplateListPage";
+import EditAiPromptSchemaTemplatePage from "./pages/aiPromptSchemaTemplate/EditAiPromptSchemaTemplatePage";
 import PromptDomainListPage from "./pages/promptDomain/PromptDomainListPage";
 import NewPromptDomainPage from "./pages/promptDomain/NewPromptDomainPage";
 import EditPromptDomainPage from "./pages/promptDomain/EditPromptDomainPage";
@@ -150,10 +152,7 @@ function LegacyHypothesisRedirect() {
   const { nicheId, hypothesisId } = useParams();
   if (nicheId && hypothesisId) {
     return (
-      <Navigate
-        to={`/niches/${nicheId}/hypotheses/${hypothesisId}`}
-        replace
-      />
+      <Navigate to={`/niches/${nicheId}/hypotheses/${hypothesisId}`} replace />
     );
   }
   return <Navigate to={nicheId ? `/niches/${nicheId}` : "/niches"} replace />;
@@ -549,6 +548,14 @@ export default function App() {
               <Route path="/prompts" element={<PromptListPage />} />
               <Route path="/prompts/new" element={<NewPromptPage />} />
               <Route path="/prompts/:id/edit" element={<EditPromptPage />} />
+              <Route
+                path="/ai-prompt-schema-templates"
+                element={<AiPromptSchemaTemplateListPage />}
+              />
+              <Route
+                path="/ai-prompt-schema-templates/:templateKey/edit"
+                element={<EditAiPromptSchemaTemplatePage />}
+              />
               <Route
                 path="/facebook-campaigns"
                 element={<FacebookCampaignExperimentsPage />}

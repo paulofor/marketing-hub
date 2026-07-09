@@ -5,6 +5,14 @@ video:
   backend-base-url: http://191.252.181.168:8000
   worker-id: vm-service-local
   auth-token: ""
+  storage:
+    bucket: ${VIDEO_STORAGE_BUCKET:${LEAD_PORTAL_STORAGE_BUCKET:leadportal}}
+    endpoint: ${VIDEO_STORAGE_ENDPOINT:${LEAD_PORTAL_STORAGE_ENDPOINT:}}
+    public-base-url: ${VIDEO_STORAGE_PUBLIC_BASE_URL:${LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL:}}
+    access-key-id: ${VIDEO_STORAGE_ACCESS_KEY_ID:${LEAD_PORTAL_STORAGE_ACCESS_KEY_ID:}}
+    secret-access-key: ${VIDEO_STORAGE_SECRET_ACCESS_KEY:${LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY:}}
+    region: ${VIDEO_STORAGE_REGION:${LEAD_PORTAL_STORAGE_REGION:auto}}
+    root-folder: ${VIDEO_STORAGE_ROOT_FOLDER:sales-videos}
   jobs:
     polling-enabled: false
     orphan-recovery-enabled: true
@@ -18,6 +26,8 @@ video:
       enabled: false
       accepted-names:
         - REAL
+        - VEO
+        - GEMINI_VEO
         - HEYGEN
         - SYNTHESIA
       base-url: http://real-video-provider:8080

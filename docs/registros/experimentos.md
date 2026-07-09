@@ -5702,3 +5702,8 @@
 - Decisão: o experimento 63 deve usar o fluxo em que o `ai-worker` gera o roteiro com OpenAI e o módulo externo de vídeo renderiza com Gemini/VEO.
 - Regra comercial: o vídeo final deve ficar no R2/CDN e ser consumido pela página como stream/progressivo, evitando download manual ou tráfego de binário entre módulos.
 - Impacto: o vídeo só deve desbloquear a campanha quando houver URL reproduzível, asset pronto, revisão aprovada e vínculo com a variante B do teste A/B da página de venda.
+## 2026-07-09 — Experimento 63: contrato de vídeo por R2
+
+- Para desbloquear o vídeo obrigatório do experimento 63 sem trafegar MP4 pelo backend, foi implementado o contrato de conclusão por URL pública/CDN do R2.
+- Ao concluir o render, o backend passa a sincronizar o asset do experimento e o slot da landing, deixando o vídeo reproduzível por `<video>`/stream progressivo.
+- O experimento continua exigindo revisão comercial/humana aprovada antes de liberação de campanha.

@@ -599,6 +599,18 @@ components:
         assetId: { type: integer, format: int64 }
         posterAssetId: { type: integer, format: int64 }
         vttAssetId: { type: integer, format: int64 }
+        assetUrl:
+          type: string
+          format: uri
+          description: URL pública/CDN do MP4 final já armazenado no R2 pelo módulo de vídeo.
+        posterAssetUrl:
+          type: string
+          format: uri
+          description: URL pública/CDN do poster quando gerado.
+        vttAssetUrl:
+          type: string
+          format: uri
+          description: URL pública/CDN da legenda VTT quando gerada.
         providerJobId: { type: string }
         metadataJson: { type: string }
         message: { type: string }

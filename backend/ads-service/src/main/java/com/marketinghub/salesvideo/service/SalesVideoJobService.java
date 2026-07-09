@@ -1,7 +1,15 @@
 package com.marketinghub.salesvideo.service;
 
+import com.marketinghub.experiment.LandingPage;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.media.Asset;
+import com.marketinghub.media.AssetStatus;
+import com.marketinghub.media.AssetType;
+import com.marketinghub.media.MediaProvider;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
@@ -37,6 +45,8 @@ public class SalesVideoJobService {
     private final SalesVideoProfileRepository profileRepository;
     private final SalesVideoScriptRepository scriptRepository;
     private final AssetRepository assetRepository;
+    private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
+    private final LandingVideoSlotRepository landingVideoSlotRepository;
     private final SalesVideoReprocessPolicy reprocessPolicy;
 
     public SalesVideoJobService(SalesVideoJobRepository jobRepository,
@@ -44,12 +54,16 @@ public class SalesVideoJobService {
                                 SalesVideoProfileRepository profileRepository,
                                 SalesVideoScriptRepository scriptRepository,
                                 AssetRepository assetRepository,
+                                ExperimentVideoAssetRepository experimentVideoAssetRepository,
+                                LandingVideoSlotRepository landingVideoSlotRepository,
                                 SalesVideoReprocessPolicy reprocessPolicy) {
         this.jobRepository = jobRepository;
         this.eventRepository = eventRepository;
         this.profileRepository = profileRepository;
         this.scriptRepository = scriptRepository;
         this.assetRepository = assetRepository;
+        this.experimentVideoAssetRepository = experimentVideoAssetRepository;
+        this.landingVideoSlotRepository = landingVideoSlotRepository;
         this.reprocessPolicy = reprocessPolicy;
     }
 
@@ -165,6 +179,7 @@ public class SalesVideoJobService {
         return SalesVideoMapper.toDto(job);
     }
 
+    /** Conclui um job e sincroniza assets externos de vídeo quando existirem. */
     @Transactional
     public SalesVideoJobDto complete(Long jobId, JobCompletionRequest request) {
         SalesVideoJob job = loadJob(jobId);
@@ -175,15 +190,16 @@ public class SalesVideoJobService {
         job.setFinishedAt(Instant.now());
         job.setProviderJobId(request.getProviderJobId());
         job.setMetadataJson(request.getMetadataJson());
-        attachAsset(job::setAsset, request.getAssetId());
-        attachAsset(job::setPosterAsset, request.getPosterAssetId());
-        attachAsset(job::setVttAsset, request.getVttAssetId());
+        job.setAsset(resolveCompletedAsset(request.getAssetId(), request.getAssetUrl(), AssetType.VIDEO, job));
+        job.setPosterAsset(resolveCompletedAsset(request.getPosterAssetId(), request.getPosterAssetUrl(), AssetType.IMAGE, job));
+        job.setVttAsset(resolveCompletedAsset(request.getVttAssetId(), request.getVttAssetUrl(), AssetType.CAPTION, job));
         SalesVideoScript persistedScript = maybePersistScriptResult(job, request.getScriptResult());
         if (persistedScript != null) {
             job.setScript(persistedScript);
         }
         jobRepository.save(job);
         maybeUpdateProfileStatus(job, finalStatus);
+        syncExperimentVideoAsset(job, request, finalStatus);
         registerEvent(job, SalesVideoJobEventType.COMPLETED, previous, finalStatus,
                 request.getMessage(), request.getDetailsJson());
         return SalesVideoMapper.toDto(job);
@@ -278,15 +294,98 @@ public class SalesVideoJobService {
         return saved;
     }
 
-    private void attachAsset(java.util.function.Consumer<Asset> setter, Long assetId) {
-        if (assetId == null) {
-            setter.accept(null);
+    /** Resolve asset concluído por ID existente ou por URL externa já armazenada no R2/CDN. */
+    private Asset resolveCompletedAsset(Long assetId,
+                                        String assetUrl,
+                                        AssetType assetType,
+                                        SalesVideoJob job) {
+        if (assetId != null) {
+            return assetRepository.findById(assetId)
+                    .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.ASSET_NOT_FOUND,
+                            "Asset não encontrado: " + assetId));
+        }
+        if (!StringUtils.hasText(assetUrl)) {
+            return null;
+        }
+        String normalizedUrl = assetUrl.trim();
+        return assetRepository.findByUrlIn(List.of(normalizedUrl)).stream()
+                .findFirst()
+                .orElseGet(() -> assetRepository.save(Asset.builder()
+                        .type(assetType)
+                        .provider(MediaProvider.VIDEO_MODULE)
+                        .externalId(job.getProviderJobId())
+                        .status(AssetStatus.READY)
+                        .url(normalizedUrl)
+                        .model(job.getProviderName())
+                        .prompt(job.getScript() != null ? job.getScript().getScriptText() : null)
+                        .payload(buildExternalAssetPayload(job, normalizedUrl))
+                        .build()));
+    }
+
+    /** Sincroniza o vídeo do experimento e o slot de stream quando o render finaliza. */
+    private void syncExperimentVideoAsset(SalesVideoJob job,
+                                          JobCompletionRequest request,
+                                          SalesVideoStatus finalStatus) {
+        if (job.getJobType() != SalesVideoJobType.RENDER || finalStatus != SalesVideoStatus.VIDEO_READY) {
             return;
         }
-        Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.ASSET_NOT_FOUND,
-                        "Asset não encontrado: " + assetId));
-        setter.accept(asset);
+        experimentVideoAssetRepository.findFirstBySalesVideoJobId(job.getId()).ifPresent(videoAsset -> {
+            if (job.getAsset() != null) {
+                videoAsset.setAsset(job.getAsset());
+                videoAsset.setAssetUrl(job.getAsset().getUrl());
+            }
+            if (job.getPosterAsset() != null) {
+                videoAsset.setThumbnailUrl(job.getPosterAsset().getUrl());
+            }
+            videoAsset.setStatus(ExperimentVideoStatus.READY);
+            if (request.getMetadataJson() != null) {
+                videoAsset.setResponseJson(request.getMetadataJson());
+            }
+            LandingVideoSlot slot = upsertLandingVideoSlot(videoAsset, job);
+            if (slot != null) {
+                videoAsset.setLandingVideoSlot(slot);
+            }
+            experimentVideoAssetRepository.save(videoAsset);
+        });
+    }
+
+    /** Cria ou atualiza o slot que permite reprodução progressiva por URL na landing. */
+    private LandingVideoSlot upsertLandingVideoSlot(ExperimentVideoAsset videoAsset,
+                                                    SalesVideoJob job) {
+        SalesVideoProfile profile = job.getProfile();
+        LandingPage landingPage = profile != null ? profile.getLandingPage() : null;
+        Asset asset = job.getAsset();
+        if (landingPage == null || profile == null || asset == null) {
+            return null;
+        }
+        String slotName = videoAsset.getSlot() != null ? videoAsset.getSlot().name() : "LANDING_HERO";
+        LandingVideoSlot slot = landingVideoSlotRepository
+                .findByLandingPageIdAndSlotName(landingPage.getId(), slotName)
+                .orElseGet(() -> LandingVideoSlot.builder()
+                        .landingPage(landingPage)
+                        .profile(profile)
+                        .tenantId(profile.getTenantId())
+                        .slotName(slotName)
+                        .autoplay(true)
+                        .muted(true)
+                        .loopVideo(false)
+                        .controlsEnabled(true)
+                        .lazyLoad(true)
+                        .build());
+        slot.setProfile(profile);
+        slot.setTenantId(profile.getTenantId());
+        slot.setAsset(asset);
+        slot.setPosterAsset(job.getPosterAsset());
+        slot.setVttAsset(job.getVttAsset());
+        return landingVideoSlotRepository.save(slot);
+    }
+
+    /** Monta metadata mínima para asset externo controlado pelo módulo de vídeo. */
+    private String buildExternalAssetPayload(SalesVideoJob job, String assetUrl) {
+        Long profileId = job.getProfile() != null ? job.getProfile().getId() : null;
+        return """
+                {"storage_medium":"CLOUDFLARE_R2","source":"VIDEO_MANAGEMENT_SERVICE","job_id":%d,"profile_id":%s,"asset_url":"%s"}
+                """.formatted(job.getId(), profileId == null ? "null" : profileId.toString(), assetUrl);
     }
 
     private SalesVideoJob loadJob(Long jobId) {

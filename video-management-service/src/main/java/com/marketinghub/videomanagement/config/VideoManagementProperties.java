@@ -13,6 +13,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Centraliza a configuração operacional do módulo executor de vídeos.
+ */
 @Getter
 @Setter
 @Component("videoManagementProperties")
@@ -36,6 +39,12 @@ public class VideoManagementProperties {
     @NotNull
     private Providers providers = new Providers();
 
+    @NotNull
+    private Storage storage = new Storage();
+
+    /**
+     * Define frequência e tamanho de lote do consumo de jobs no backend.
+     */
     @Getter
     @Setter
     public static class Jobs {
@@ -58,6 +67,9 @@ public class VideoManagementProperties {
         private int backendCallMaxAttempts = 3;
     }
 
+    /**
+     * Agrupa configurações dos providers de renderização disponíveis.
+     */
     @Getter
     @Setter
     public static class Providers {
@@ -65,6 +77,9 @@ public class VideoManagementProperties {
         private Real real = new Real();
     }
 
+    /**
+     * Configura a integração HTTP com o provider real de vídeo.
+     */
     @Getter
     @Setter
     public static class Real {
@@ -74,7 +89,7 @@ public class VideoManagementProperties {
          * Nomes que identificam o provider real dentro de providerName do job.
          */
         @NotNull
-        private List<String> acceptedNames = new ArrayList<>(List.of("REAL", "HEYGEN", "SYNTHESIA"));
+        private List<String> acceptedNames = new ArrayList<>(List.of("REAL", "VEO", "GEMINI_VEO", "HEYGEN", "SYNTHESIA"));
 
         /**
          * Base URL da API do provider real.
@@ -94,5 +109,20 @@ public class VideoManagementProperties {
 
         @Min(1)
         private int maxPollAttempts = 120;
+    }
+
+    /**
+     * Configuração do bucket R2 usado para publicar vídeos finais por URL.
+     */
+    @Getter
+    @Setter
+    public static class Storage {
+        private String bucket = "";
+        private URI endpoint;
+        private String publicBaseUrl = "";
+        private String accessKeyId = "";
+        private String secretAccessKey = "";
+        private String region = "auto";
+        private String rootFolder = "sales-videos";
     }
 }

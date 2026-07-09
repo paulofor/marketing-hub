@@ -4,6 +4,7 @@ import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +17,10 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
     /** Lista os vídeos de um experimento com os vínculos necessários para resposta da API. */
     @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
     List<ExperimentVideoAsset> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
+
+    /** Busca o vídeo comercial vinculado a um job de renderização. */
+    @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
+    Optional<ExperimentVideoAsset> findFirstBySalesVideoJobId(Long salesVideoJobId);
 
     /** Verifica se existem vídeos obrigatórios que ainda bloqueiam a publicação. */
     @Query("""

@@ -26,6 +26,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 
+/**
+ * Executa jobs de renderização de vídeo e reporta resultado final ao backend.
+ */
 @Service
 public class VideoJobProcessor {
     private final Logger log = LoggerFactory.getLogger(VideoJobProcessor.class);
@@ -50,6 +53,7 @@ public class VideoJobProcessor {
         this.objectMapper = objectMapper;
     }
 
+    /** Processa um job pendente, armazena o vídeo final no R2 e registra o callback. */
     public void process(SalesVideoJob job) {
         try (AutoCloseable ignored = putMdc(job)) {
             log.info("Processando job {} para profile {}", job.id(), job.profileId());
@@ -74,6 +78,9 @@ public class VideoJobProcessor {
                     uploadedAssets.videoAssetId(),
                     uploadedAssets.posterAssetId(),
                     uploadedAssets.captionAssetId(),
+                    uploadedAssets.videoAssetUrl(),
+                    uploadedAssets.posterAssetUrl(),
+                    uploadedAssets.captionAssetUrl(),
                     artifacts.providerJobId(),
                     metadataJson,
                     "Vídeo processado com sucesso",

@@ -12,6 +12,9 @@ public class JobCompletionRequest {
     private Long assetId;
     private Long posterAssetId;
     private Long vttAssetId;
+    private String assetUrl;
+    private String posterAssetUrl;
+    private String vttAssetUrl;
     private String providerJobId;
     private String metadataJson;
     private String message;

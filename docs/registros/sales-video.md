@@ -14,3 +14,10 @@
 - Regra de entrega: o MP4 final deve permanecer no Cloudflare R2/CDN; o Marketing Hub deve trafegar e persistir referência do asset, URL pública/streaming, provider job id e metadados, sem mover o binário entre módulos depois do upload.
 - Experiência de página: a landing deve reproduzir o vídeo como streaming/progressivo em `<video>` ou player equivalente; link simples para download/aba externa não atende ao fluxo comercial.
 - Cânone atualizado: `docs/canonical/avatar-sales-video-canonical-rules.md`.
+
+## 2026-07-09 — Contrato backend/video-management-service para URL R2
+
+- Implementado contrato de conclusão de job de vídeo aceitando `assetUrl`, `posterAssetUrl` e `vttAssetUrl`, além dos IDs legados.
+- `video-management-service` passa a publicar os artefatos finais no R2 configurado e reportar apenas URLs ao backend.
+- Backend cria asset externo `READY`, sincroniza `experiment_video_asset`, marca o vídeo como `READY` e cria/atualiza o slot da landing para reprodução por stream progressivo.
+- Testes focados executados: `SalesVideoJobServiceTest`, `ExperimentVideoAssetServiceTest`, `VideoAssetUploaderTest` e `VideoJobProcessorTest`.

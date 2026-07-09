@@ -88,7 +88,8 @@ class VideoJobProcessorTest {
         when(backendClient.fetchProfile(2L)).thenReturn(profile);
         when(providerRegistry.resolve(job)).thenReturn(Optional.of(videoProvider));
         when(videoProvider.render(any(), any(), any())).thenReturn(artifacts);
-        when(assetUploader.uploadAssets(job, artifacts)).thenReturn(new UploadedAssets(20L, null, null));
+        when(assetUploader.uploadAssets(job, artifacts)).thenReturn(
+                new UploadedAssets(null, null, null, "https://cdn.test/video.mp4", null, null));
 
         processor.process(job);
 
@@ -96,7 +97,7 @@ class VideoJobProcessorTest {
                 org.mockito.ArgumentMatchers.any(JobClaimPayload.class));
         verify(backendClient).completeJob(org.mockito.Mockito.eq(job.id()), completionCaptor.capture());
         JobCompletionPayload payload = completionCaptor.getValue();
-        assertThat(payload.assetId()).isEqualTo(20L);
+        assertThat(payload.assetUrl()).isEqualTo("https://cdn.test/video.mp4");
         assertThat(payload.status()).isEqualTo(SalesVideoStatus.VIDEO_READY);
         verify(backendClient, never()).failJob(any(), any());
     }

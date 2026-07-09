@@ -97,6 +97,9 @@ public final class SalesVideoMapper {
         dto.setAssetId(job.getAsset() != null ? job.getAsset().getId() : null);
         dto.setPosterAssetId(job.getPosterAsset() != null ? job.getPosterAsset().getId() : null);
         dto.setVttAssetId(job.getVttAsset() != null ? job.getVttAsset().getId() : null);
+        dto.setAssetUrl(job.getAsset() != null ? job.getAsset().getUrl() : null);
+        dto.setPosterAssetUrl(job.getPosterAsset() != null ? job.getPosterAsset().getUrl() : null);
+        dto.setVttAssetUrl(job.getVttAsset() != null ? job.getVttAsset().getUrl() : null);
         dto.setMetadataJson(job.getMetadataJson());
         dto.setAuditSnapshotJson(job.getAuditSnapshotJson());
         dto.setCreatedAt(job.getCreatedAt());

@@ -39,6 +39,9 @@ public class SalesVideoJobDto {
     private Long assetId;
     private Long posterAssetId;
     private Long vttAssetId;
+    private String assetUrl;
+    private String posterAssetUrl;
+    private String vttAssetUrl;
     private String metadataJson;
     private String auditSnapshotJson;
     private Instant createdAt;

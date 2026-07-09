@@ -7,21 +7,35 @@ import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
+import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.media.Asset;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.LandingVideoSlot;
 import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.SalesVideoKind;
 import com.marketinghub.salesvideo.SalesVideoProfile;
+import com.marketinghub.salesvideo.SalesVideoProviderFamily;
+import com.marketinghub.salesvideo.dto.ApproveSalesVideoScriptRequest;
+import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
+import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
+import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -35,6 +49,9 @@ public class ExperimentVideoAssetService {
     private final SalesVideoJobRepository jobRepository;
     private final AssetRepository assetRepository;
     private final LandingVideoSlotRepository landingVideoSlotRepository;
+    private final ProductRepository productRepository;
+    private final LandingPageRepository landingPageRepository;
+    private final SalesVideoService salesVideoService;
 
     /** Inicializa o serviço com os repositórios dos vínculos de experimento e vídeo. */
     public ExperimentVideoAssetService(ExperimentVideoAssetRepository repository,
@@ -42,13 +59,19 @@ public class ExperimentVideoAssetService {
                                        SalesVideoProfileRepository profileRepository,
                                        SalesVideoJobRepository jobRepository,
                                        AssetRepository assetRepository,
-                                       LandingVideoSlotRepository landingVideoSlotRepository) {
+                                       LandingVideoSlotRepository landingVideoSlotRepository,
+                                       ProductRepository productRepository,
+                                       LandingPageRepository landingPageRepository,
+                                       SalesVideoService salesVideoService) {
         this.repository = repository;
         this.experimentRepository = experimentRepository;
         this.profileRepository = profileRepository;
         this.jobRepository = jobRepository;
         this.assetRepository = assetRepository;
         this.landingVideoSlotRepository = landingVideoSlotRepository;
+        this.productRepository = productRepository;
+        this.landingPageRepository = landingPageRepository;
+        this.salesVideoService = salesVideoService;
     }
 
     /** Lista todos os vídeos registrados para um experimento. */
@@ -87,6 +110,57 @@ public class ExperimentVideoAssetService {
                 .salesVideoJob(resolveJob(request.salesVideoJobId()))
                 .asset(resolveAsset(request.assetId()))
                 .landingVideoSlot(resolveLandingVideoSlot(experimentId, request.landingVideoSlotId()))
+                .build();
+        return toDto(repository.save(videoAsset));
+    }
+
+    /** Orquestra pelo Marketing Hub a criação de vídeo VEO para um experimento. */
+    @Transactional
+    public ExperimentVideoAssetDto requestVeoRender(Long experimentId, RequestExperimentVeoVideoRequest request) {
+        Experiment experiment = ensureExperiment(experimentId);
+        Product product = resolveOrCreateProduct(experiment);
+        Long landingPageId = resolveLandingPageId(experimentId);
+
+        CreateSalesVideoProfileRequest profileRequest = new CreateSalesVideoProfileRequest();
+        profileRequest.setVideoKind(SalesVideoKind.HERO);
+        profileRequest.setTitle(request.title().trim());
+        profileRequest.setPersonaName(trimToNull(request.personaName()));
+        profileRequest.setPersonaStyle(trimToNull(request.personaStyle()));
+        profileRequest.setVoiceStyle(trimToNull(request.voiceStyle()));
+        profileRequest.setLanguage(Optional.ofNullable(trimToNull(request.language())).orElse("pt-BR"));
+        profileRequest.setTargetDurationSeconds(request.targetDurationSeconds());
+        profileRequest.setLandingPageId(landingPageId);
+        SalesVideoProfileDto profile = salesVideoService.createProfile(product.getId(), profileRequest);
+
+        ApproveSalesVideoScriptRequest scriptRequest = new ApproveSalesVideoScriptRequest();
+        scriptRequest.setScriptText(request.scriptText().trim());
+        scriptRequest.setHookText(trimToNull(request.hookText()));
+        scriptRequest.setCtaText(trimToNull(request.ctaText()));
+        scriptRequest.setCaptionText(trimToNull(request.captionText()));
+        scriptRequest.setApprovedBy(request.requestedBy().trim());
+        salesVideoService.approveScript(profile.getId(), scriptRequest);
+
+        RequestVideoRenderRequest renderRequest = new RequestVideoRenderRequest();
+        renderRequest.setRequestedBy(request.requestedBy().trim());
+        renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+        renderRequest.setProviderName(Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"));
+        renderRequest.setExecutionMode(request.executionMode());
+        SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
+
+        ExperimentVideoAsset videoAsset = ExperimentVideoAsset.builder()
+                .experiment(experiment)
+                .slot(request.slot())
+                .objective(request.objective().trim())
+                .primaryMetric(request.primaryMetric().trim())
+                .script(request.scriptText().trim())
+                .prompt(buildVeoPromptSnapshot(request))
+                .provider("VEO")
+                .model(Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"))
+                .status(ExperimentVideoStatus.GENERATING)
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(request.requiredForRelease())
+                .salesVideoProfile(resolveProfile(profile.getId()))
+                .salesVideoJob(resolveJob(job.getId()))
                 .build();
         return toDto(repository.save(videoAsset));
     }
@@ -187,6 +261,57 @@ public class ExperimentVideoAssetService {
     private Experiment ensureExperiment(Long experimentId) {
         return experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "experiment not found"));
+    }
+
+    /** Reusa o produto operacional do nicho ou cria um mínimo para suportar o vídeo. */
+    private Product resolveOrCreateProduct(Experiment experiment) {
+        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
+        if (nicheId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experiment niche not found");
+        }
+        return productRepository.findFirstByMarketNiche_IdOrderByCreatedAtDesc(nicheId)
+                .orElseGet(() -> productRepository.save(Product.builder()
+                        .marketNiche(experiment.getNiche())
+                        .niche(experiment.getNiche().getName())
+                        .avatar(experiment.getName())
+                        .explicitPain(experiment.getSinglePain())
+                        .promise(resolveProductPromise(experiment))
+                        .build()));
+    }
+
+    /** Resolve a promessa comercial mínima do produto operacional. */
+    private String resolveProductPromise(Experiment experiment) {
+        if (StringUtils.hasText(experiment.getFunnelPromise())) {
+            return experiment.getFunnelPromise();
+        }
+        if (StringUtils.hasText(experiment.getHypothesis())) {
+            return experiment.getHypothesis();
+        }
+        return experiment.getName();
+    }
+
+    /** Seleciona a landing do experimento quando já existir publicação registrada. */
+    private Long resolveLandingPageId(Long experimentId) {
+        return landingPageRepository.findByExperimentId(experimentId).stream()
+                .findFirst()
+                .map(LandingPage::getId)
+                .orElse(null);
+    }
+
+    /** Monta um resumo auditável do prompt enviado ao fluxo VEO. */
+    private String buildVeoPromptSnapshot(RequestExperimentVeoVideoRequest request) {
+        return """
+                Provider: VEO
+                Objetivo: %s
+                Métrica primária: %s
+                Script:
+                %s
+                """.formatted(request.objective().trim(), request.primaryMetric().trim(), request.scriptText().trim());
+    }
+
+    /** Normaliza textos opcionais em branco para nulo. */
+    private String trimToNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     /** Busca o perfil de vídeo quando informado. */

@@ -2,6 +2,7 @@ package com.marketinghub.experiment.video.web;
 
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
+import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import jakarta.validation.Valid;
@@ -38,6 +39,13 @@ public class ExperimentVideoAssetController {
     public ExperimentVideoAssetDto create(@PathVariable Long experimentId,
                                           @Valid @RequestBody CreateExperimentVideoAssetRequest request) {
         return service.create(experimentId, request);
+    }
+
+    /** Cria perfil, script, job VEO e vínculo obrigatório de vídeo para o experimento. */
+    @PostMapping("/veo-render-requests")
+    public ExperimentVideoAssetDto requestVeoRender(@PathVariable Long experimentId,
+                                                    @Valid @RequestBody RequestExperimentVeoVideoRequest request) {
+        return service.requestVeoRender(experimentId, request);
     }
 
     /** Atualiza status, revisão e vínculos de um vídeo comercial do experimento. */

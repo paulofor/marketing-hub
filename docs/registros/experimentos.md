@@ -5696,3 +5696,9 @@
 - Causa-raiz tratada: a fila de métricas devolvia campanhas encerradas com fechamento final já concluído porque o próprio sync atualizava `facebook_ads_campaign.updated_at`, mantendo 155 campanhas antigas elegíveis a cada ciclo e consumindo quota da ad account em `development_access`.
 - Correção aplicada: o backend passa a listar campanhas encerradas para sync somente quando `metrics_final_synced_at` ainda está vazio; campanhas em execução continuam elegíveis normalmente.
 - Prevenção de recorrência: teste de contrato da fila de métricas foi ajustado para proteger a separação entre campanhas em execução e campanhas encerradas sem fechamento final, evitando que `updated_at` operacional reabra backfill infinito.
+
+## 2026-07-09 — Direção do vídeo obrigatório para o experimento 63
+
+- Decisão: o experimento 63 deve usar o fluxo em que o `ai-worker` gera o roteiro com OpenAI e o módulo externo de vídeo renderiza com Gemini/VEO.
+- Regra comercial: o vídeo final deve ficar no R2/CDN e ser consumido pela página como stream/progressivo, evitando download manual ou tráfego de binário entre módulos.
+- Impacto: o vídeo só deve desbloquear a campanha quando houver URL reproduzível, asset pronto, revisão aprovada e vínculo com a variante B do teste A/B da página de venda.

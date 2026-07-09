@@ -139,6 +139,15 @@ Um vídeo só pode ir para `PUBLISHED` se:
 4. CTA estiver alinhado à oferta real e ao estágio do público;
 5. evento de auditoria de publicação for registrado.
 
+## 6.1 Separação obrigatória de roteiro, render e entrega
+
+- O roteiro comercial do vídeo deve ser gerado pelo `ai-worker` usando modelo OpenAI, prompt/schema versionados e auditoria de request/response.
+- A produção/renderização do vídeo deve ser executada por módulo externo especializado de vídeo, como `video-management-service`, conectado ao provider de vídeo (ex.: Gemini/VEO), nunca pelo `ai-worker`.
+- O arquivo final do vídeo deve permanecer no Cloudflare R2 ou storage equivalente configurado como fonte pública/CDN. O sistema deve persistir e trafegar a referência do asset (`assetId`, object key, URL pública/streaming, provider job id e metadados), não mover o binário entre módulos depois da publicação no storage.
+- O backend continua sendo a fonte de verdade do estado do job, aprovação, vínculo com experimento e vínculo com landing; o módulo de vídeo apenas executa render/upload e reporta resultado pelos contratos internos.
+- A página de venda deve consumir o vídeo por elemento de streaming/progressivo (`<video>` ou player equivalente) a partir da URL pública/CDN, com `Content-Type` correto, suporte a carregamento progressivo e controles visíveis quando necessário. Link simples para download ou abertura em nova aba não atende a experiência mínima do usuário.
+- O vídeo só pode desbloquear experimento/campanha quando a URL persistida estiver acessível para reprodução, o asset estiver marcado como pronto e a revisão comercial/humana estiver aprovada.
+
 ---
 
 ## 7. Observabilidade obrigatória

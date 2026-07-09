@@ -1271,3 +1271,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-07-09-clean-corrupted-hypothesis-pipeline-content.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-09-facebook-campaign-final-metrics-sync.yaml
+      relativeToChangelogFile: true

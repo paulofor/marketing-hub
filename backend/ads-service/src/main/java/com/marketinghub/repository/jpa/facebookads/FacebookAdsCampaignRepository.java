@@ -36,8 +36,7 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
                or (
                    e.status in :settlementStatuses
                    and (
-                       c.metricsLastSyncedAt is null
-                       or c.metricsLastSyncedAt >= :settlementCutoff
+                       c.metricsFinalSyncedAt is null
                        or c.updatedAt >= :settlementCutoff
                        or e.updatedAt >= :settlementCutoff
                    )

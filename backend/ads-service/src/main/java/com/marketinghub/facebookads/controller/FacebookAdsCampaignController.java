@@ -224,7 +224,7 @@ public class FacebookAdsCampaignController {
     }
 
     @GetMapping("/metrics/sync-targets")
-    // Lista campanhas em execução e campanhas recentes em janela de liquidação final da Meta.
+    // Lista campanhas em execução, campanhas em liquidação e campanhas encerradas sem fechamento final.
     public List<CampaignMetricsSyncTarget> metricsSyncTargets() {
         Instant settlementCutoff = Instant.now().minus(METRICS_SETTLEMENT_WINDOW);
         return campaignRepository.findMetricsSyncTargets(
@@ -431,8 +431,19 @@ public class FacebookAdsCampaignController {
         FacebookAdsCampaign campaign = metric.getCampaign();
         campaign.setMetricsLastSyncedAt(Instant.now());
         campaign.setMetricsLastError(null);
+        markFinalMetricsSyncWhenExperimentIsSettled(campaign);
         evaluateMetricsSideEffectsSafely(campaign, metric);
         return toMetricSummary(metric);
+    }
+
+    // Marca que uma campanha encerrada já teve reconciliação final de métricas contra a Meta.
+    private void markFinalMetricsSyncWhenExperimentIsSettled(FacebookAdsCampaign campaign) {
+        if (campaign == null || campaign.getExperiment() == null) {
+            return;
+        }
+        if (METRICS_SETTLEMENT_STATUSES.contains(campaign.getExperiment().getStatus())) {
+            campaign.setMetricsFinalSyncedAt(campaign.getMetricsLastSyncedAt());
+        }
     }
 
     // Fecha o experimento quando a Meta informa que a campanha foi pausada fora do Hub.

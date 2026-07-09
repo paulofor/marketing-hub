@@ -128,6 +128,7 @@ class QualityReviewBackendClientTest {
                 "default",
                 Duration.ofSeconds(5),
                 "/usr/bin/chromium",
-                Duration.ofSeconds(5));
+                Duration.ofSeconds(5),
+                52_428_800);
     }
 }

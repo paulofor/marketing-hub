@@ -24,7 +24,8 @@ class QualityReviewWorkerPropertiesTest {
                 null,
                 Duration.ofMinutes(30),
                 "/usr/bin/chromium",
-                null);
+                null,
+                52_428_800);
 
         assertThat(properties.screenshotTimeout()).isEqualTo(Duration.ofMinutes(2));
         assertThat(properties.serviceTier()).isEqualTo("default");

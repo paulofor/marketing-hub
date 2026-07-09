@@ -44,7 +44,9 @@ public class ImageGenerationBackendClient implements StageBackendPort<ImageGener
     ) {
         this.storageClient = storageClient;
         this.imageOptimizer = imageOptimizer;
-        this.webClient = webClientBuilder.build();
+        this.webClient = webClientBuilder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(properties.maxInMemorySizeBytes()))
+                .build();
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.workerId = resolveWorkerId(properties.workerId());

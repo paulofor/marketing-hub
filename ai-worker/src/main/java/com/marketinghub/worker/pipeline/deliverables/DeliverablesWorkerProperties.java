@@ -34,7 +34,10 @@ public record DeliverablesWorkerProperties(
         String model,
 
         @NotNull
-        Duration timeout
+        Duration timeout,
+
+        @Min(1)
+        int maxInMemorySizeBytes
 ) {
     /** Normaliza valores opcionais usados pelo worker quando a configuração externa omite o campo. */
     public DeliverablesWorkerProperties {
@@ -46,6 +49,9 @@ public record DeliverablesWorkerProperties(
         }
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);
+        }
+        if (maxInMemorySizeBytes < 1) {
+            maxInMemorySizeBytes = 52_428_800;
         }
     }
 }

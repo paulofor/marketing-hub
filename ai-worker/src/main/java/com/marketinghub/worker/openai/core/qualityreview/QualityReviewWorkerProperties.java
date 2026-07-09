@@ -24,7 +24,8 @@ public record QualityReviewWorkerProperties(
         String serviceTier,
         @NotNull Duration timeout,
         String chromiumExecutablePath,
-        @NotNull Duration screenshotTimeout
+        @NotNull Duration screenshotTimeout,
+        @Min(1) int maxInMemorySizeBytes
 ) {
     /** Normaliza valores opcionais usados pelo worker de revisão visual quando a configuração externa omite o campo. */
     public QualityReviewWorkerProperties {
@@ -61,6 +62,9 @@ public record QualityReviewWorkerProperties(
         }
         if (screenshotTimeout == null || screenshotTimeout.isNegative() || screenshotTimeout.isZero()) {
             screenshotTimeout = Duration.ofMinutes(2);
+        }
+        if (maxInMemorySizeBytes < 1) {
+            maxInMemorySizeBytes = 52_428_800;
         }
     }
 }

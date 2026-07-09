@@ -92,6 +92,7 @@ class ImageGenerationBackendClientTest {
                         Duration.ofMillis(300),
                         "worker-test",
                         100,
-                        0.01d));
+                        0.01d,
+                        52_428_800));
     }
 }

@@ -22,8 +22,10 @@ public class DeliverablesBackendClient implements StageBackendPort<DeliverablesI
 
     /** Inicializa o cliente com WebClient, propriedades de deliverables e ObjectMapper para normalizar artefatos. */
     public DeliverablesBackendClient(WebClient.Builder builder, DeliverablesWorkerProperties properties, ObjectMapper objectMapper) {
-        this.webClient = builder.build();
         this.properties = properties;
+        this.webClient = builder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(properties.maxInMemorySizeBytes()))
+                .build();
         this.objectMapper = objectMapper;
     }
 

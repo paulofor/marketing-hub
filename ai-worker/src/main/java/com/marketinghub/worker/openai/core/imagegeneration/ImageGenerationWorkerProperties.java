@@ -38,7 +38,10 @@ public record ImageGenerationWorkerProperties(
         @Min(0)
         int rolloutPercentage,
 
-        double costPerImageUsd
+        double costPerImageUsd,
+
+        @Min(1)
+        int maxInMemorySizeBytes
 ) {
     /** Normaliza valores opcionais usados pelo worker de imagegeneration quando a configuração externa omite o campo. */
     public ImageGenerationWorkerProperties {
@@ -62,6 +65,9 @@ public record ImageGenerationWorkerProperties(
         }
         if (costPerImageUsd < 0d) {
             costPerImageUsd = 0d;
+        }
+        if (maxInMemorySizeBytes < 1) {
+            maxInMemorySizeBytes = 52_428_800;
         }
     }
 }

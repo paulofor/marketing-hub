@@ -23,8 +23,10 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
     private final QualityReviewWorkerProperties properties;
     /** Inicializa o cliente com WebClient, propriedades da revisão visual e ObjectMapper mantido por compatibilidade de configuração. */
     public QualityReviewBackendClient(WebClient.Builder builder, QualityReviewWorkerProperties properties, ObjectMapper objectMapper) {
-        this.webClient = builder.build();
         this.properties = properties;
+        this.webClient = builder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(properties.maxInMemorySizeBytes()))
+                .build();
     }
 
     /** Busca no backend os jobs de revisão visual iniciados e aptos para processamento pela OpenAI. */

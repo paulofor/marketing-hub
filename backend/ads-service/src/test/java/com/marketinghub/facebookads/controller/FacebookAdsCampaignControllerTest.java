@@ -652,8 +652,8 @@ class FacebookAdsCampaignControllerTest {
     }
 
     @Test
-    // Garante que a sincronização de métricas inclui campanhas recentes em liquidação final da Meta.
-    void listsRunningAndRecentSettlementCampaignsAsMetricsSyncTargets() throws Exception {
+    // Garante que a sincronização de métricas inclui campanhas em execução e encerradas sem fechamento final.
+    void listsRunningAndUnfinalizedSettlementCampaignsAsMetricsSyncTargets() throws Exception {
         var runningExperiment = Experiment.builder()
                 .id(59L)
                 .status(ExperimentStatus.RUNNING)
@@ -674,8 +674,7 @@ class FacebookAdsCampaignControllerTest {
                 eq(ExperimentStatus.RUNNING),
                 argThat(statuses -> statuses.contains(ExperimentStatus.USER_STOPPED)
                         && statuses.contains(ExperimentStatus.INVALIDATED)
-                        && !statuses.contains(ExperimentStatus.PLANNED)),
-                any(Instant.class)))
+                        && !statuses.contains(ExperimentStatus.PLANNED))))
                 .thenReturn(List.of(runningCampaign, stoppedCampaign));
 
         mockMvc.perform(get("/api/facebook-campaigns/metrics/sync-targets"))
@@ -687,16 +686,11 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[1].experimentId").value(58))
                 .andExpect(jsonPath("$[1].lastSyncedAt").value("2026-07-08T15:04:04Z"));
 
-        ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
         verify(campaignRepository).findMetricsSyncTargets(
                 eq(ExperimentStatus.RUNNING),
                 argThat(statuses -> statuses.contains(ExperimentStatus.USER_STOPPED)
                         && statuses.contains(ExperimentStatus.INVALIDATED)
-                        && !statuses.contains(ExperimentStatus.PLANNED)),
-                cutoffCaptor.capture());
-        assertThat(cutoffCaptor.getValue()).isBetween(
-                Instant.now().minus(java.time.Duration.ofHours(73)),
-                Instant.now().minus(java.time.Duration.ofHours(71)));
+                        && !statuses.contains(ExperimentStatus.PLANNED)));
     }
 
     @Test
@@ -713,8 +707,7 @@ class FacebookAdsCampaignControllerTest {
         stoppedCampaign.setMetricsFinalSyncedAt(null);
         when(campaignRepository.findMetricsSyncTargets(
                 eq(ExperimentStatus.RUNNING),
-                argThat(statuses -> statuses.contains(ExperimentStatus.USER_STOPPED)),
-                any(Instant.class)))
+                argThat(statuses -> statuses.contains(ExperimentStatus.USER_STOPPED))))
                 .thenReturn(List.of(stoppedCampaign));
 
         mockMvc.perform(get("/api/facebook-campaigns/metrics/sync-targets"))

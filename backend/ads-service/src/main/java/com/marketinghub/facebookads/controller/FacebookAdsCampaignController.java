@@ -58,7 +58,6 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -80,7 +79,6 @@ import java.util.UUID;
 @RequestMapping("/api/facebook-campaigns")
 public class FacebookAdsCampaignController {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAdsCampaignController.class);
-    private static final Duration METRICS_SETTLEMENT_WINDOW = Duration.ofHours(72);
     private static final Set<ExperimentStatus> METRICS_SETTLEMENT_STATUSES = EnumSet.of(
             ExperimentStatus.PAUSED,
             ExperimentStatus.STANDBY,
@@ -230,13 +228,11 @@ public class FacebookAdsCampaignController {
     }
 
     @GetMapping("/metrics/sync-targets")
-    // Lista campanhas em execução, campanhas em liquidação e campanhas encerradas sem fechamento final.
+    // Lista campanhas em execução e campanhas encerradas sem fechamento final de métricas.
     public List<CampaignMetricsSyncTarget> metricsSyncTargets() {
-        Instant settlementCutoff = Instant.now().minus(METRICS_SETTLEMENT_WINDOW);
         return campaignRepository.findMetricsSyncTargets(
                         ExperimentStatus.RUNNING,
-                        METRICS_SETTLEMENT_STATUSES,
-                        settlementCutoff)
+                        METRICS_SETTLEMENT_STATUSES)
                 .stream()
                 .map(c -> new CampaignMetricsSyncTarget(c.getId(), c.getExperiment().getId(), c.getMetricsLastSyncedAt()))
                 .toList();

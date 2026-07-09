@@ -5689,3 +5689,10 @@
 - Causa-raiz tratada: a etapa aceitava sucesso técnico da IA sem validar qualidade textual e o fechamento copiava a resposta bruta da etapa para a hipótese.
 - Correção aplicada: o backend passa a rejeitar resposta de etapa com caractere corrompido/inesperado, materializa JSON de etapa em texto comercial antes de fechar a hipótese e saneia o registro atual.
 - Prevenção de recorrência: testes cobrem rejeição no callback da IA e impedem que JSON bruto vire `problem`, `promise`, `mechanism`, `successRule` ou `entrega`.
+
+## 2026-07-09 — Saturação da Meta Ads por sync infinito de métricas encerradas
+
+- Problema: o experimento 60 falhava repetidamente antes de criar campanha, sempre no `reachestimate`, com erro Meta `80004/2446079`.
+- Causa-raiz tratada: a fila de métricas devolvia campanhas encerradas com fechamento final já concluído porque o próprio sync atualizava `facebook_ads_campaign.updated_at`, mantendo 155 campanhas antigas elegíveis a cada ciclo e consumindo quota da ad account em `development_access`.
+- Correção aplicada: o backend passa a listar campanhas encerradas para sync somente quando `metrics_final_synced_at` ainda está vazio; campanhas em execução continuam elegíveis normalmente.
+- Prevenção de recorrência: teste de contrato da fila de métricas foi ajustado para proteger a separação entre campanhas em execução e campanhas encerradas sem fechamento final, evitando que `updated_at` operacional reabra backfill infinito.

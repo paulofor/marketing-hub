@@ -1,58 +1,120 @@
 package com.marketinghub.openai;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
-/** Responsabilidade: consultar a API autenticada da OpenAI e extrair preços tokenizados de modelos suportados. */
+/** Responsabilidade: consultar a página oficial de preços da OpenAI e extrair preços tokenizados de modelos suportados. */
 @Component
 public class OpenAiPricingPageClient {
     private static final Logger log = LoggerFactory.getLogger(OpenAiPricingPageClient.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Pattern MONEY_PATTERN = Pattern.compile("[0-9]+(?:\\.[0-9]+)?");
+    private static final Pattern CONTEXT_SUFFIX_PATTERN =
+            Pattern.compile("\\s*\\([^)]*context[^)]*\\)\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final int PRICING_PAGE_MAX_IN_MEMORY_BYTES = 2 * 1024 * 1024;
+    public static final String PRICING_PAGE_URL = "https://developers.openai.com/api/docs/pricing";
 
-    private final WebClient openAiWebClient;
+    private final WebClient pricingPageWebClient;
 
-    /** Inicializa o cliente com o WebClient autenticado da API OpenAI. */
-    @Autowired
-    public OpenAiPricingPageClient(@Qualifier("openAiWebClient") WebClient openAiWebClient) {
-        this.openAiWebClient = openAiWebClient;
+    /** Inicializa o cliente com um WebClient público para a página oficial de preços. */
+    public OpenAiPricingPageClient(WebClient.Builder builder) {
+        ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(PRICING_PAGE_MAX_IN_MEMORY_BYTES))
+                .build();
+        this.pricingPageWebClient =
+                builder.baseUrl(PRICING_PAGE_URL).exchangeStrategies(exchangeStrategies).build();
     }
 
-    /** Inicializa o cliente em testes focados no parser da resposta autenticada. */
+    /** Inicializa o cliente em testes focados no parser da página oficial. */
     OpenAiPricingPageClient() {
-        this.openAiWebClient = null;
+        this.pricingPageWebClient = null;
     }
 
-    /** Busca preços exclusivamente na API autenticada da OpenAI e falha quando a API não entregar preços. */
+    /** Busca preços exclusivamente na página oficial da OpenAI e falha quando ela não entregar preços tokenizados. */
     public List<OpenAiModelPricing> fetchAllModelPricing() {
-        if (openAiWebClient == null) {
-            throw new IllegalStateException("Cliente autenticado da OpenAI não configurado para buscar preços.");
+        if (pricingPageWebClient == null) {
+            throw new IllegalStateException(
+                    "Cliente público da página de preços OpenAI não configurado para buscar preços.");
         }
         try {
-            JsonNode response = openAiWebClient.get().uri("/models").retrieve().bodyToMono(JsonNode.class).block();
-            List<OpenAiModelPricing> prices = parseAuthenticatedApiPricing(response);
+            String html = pricingPageWebClient.get().uri("").retrieve().bodyToMono(String.class).block();
+            List<OpenAiModelPricing> prices = parsePricingPage(html);
             if (prices.isEmpty()) {
-                throw new IllegalStateException("API OpenAI /models não retornou metadados de preço para sincronização.");
+                throw new IllegalStateException(
+                        "Página oficial de preços OpenAI não retornou preços tokenizados para sincronização.");
             }
             log.info(
-                    "Preços OpenAI obtidos pela API autenticada; operation=openai-pricing-api-fetch models={}",
-                    prices.size());
+                    "Preços OpenAI obtidos pela página oficial; operation=openai-pricing-page-fetch models={} url={}",
+                    prices.size(),
+                    PRICING_PAGE_URL);
             return prices;
         } catch (RuntimeException ex) {
-            log.error("Falha ao buscar preços pela API autenticada OpenAI; operation=openai-pricing-api-fetch endpoint=/models", ex);
+            log.error(
+                    "Falha ao buscar preços na página oficial OpenAI; operation=openai-pricing-page-fetch url={}",
+                    PRICING_PAGE_URL,
+                    ex);
             throw ex;
         }
+    }
+
+    /** Converte o HTML da página oficial de pricing em preços por 1 milhão de tokens. */
+    List<OpenAiModelPricing> parsePricingPage(String html) {
+        if (html == null || html.isBlank()) {
+            return List.of();
+        }
+        Document document = Jsoup.parse(html);
+        Map<String, PriceTriple> standardPrices = new LinkedHashMap<>();
+        Map<String, PriceTriple> batchPrices = new HashMap<>();
+        for (Element pane : document.select("[data-content-switcher-pane]")) {
+            String mode = pane.attr("data-value").trim().toLowerCase(Locale.ROOT);
+            if (!"standard".equals(mode) && !"batch".equals(mode)) {
+                continue;
+            }
+            parsePricePanes(pane).forEach((code, price) -> {
+                if ("standard".equals(mode)) {
+                    standardPrices.putIfAbsent(code, price);
+                } else {
+                    batchPrices.putIfAbsent(code, price);
+                }
+            });
+        }
+        List<OpenAiModelPricing> prices = new ArrayList<>();
+        for (Map.Entry<String, PriceTriple> entry : standardPrices.entrySet()) {
+            PriceTriple standard = entry.getValue();
+            PriceTriple batch = batchPrices.get(entry.getKey());
+            if (batch == null) {
+                continue;
+            }
+            prices.add(new OpenAiModelPricing(
+                    entry.getKey(),
+                    entry.getKey(),
+                    standard.input(),
+                    standard.cachedInput(),
+                    standard.output(),
+                    batch.input(),
+                    batch.cachedInput(),
+                    batch.output()));
+        }
+        return prices;
     }
 
     /** Busca preços tokenizados preservando compatibilidade com chamadas antigas focadas em texto. */
@@ -60,7 +122,172 @@ public class OpenAiPricingPageClient {
         return fetchAllModelPricing();
     }
 
-    /** Converte uma resposta autenticada de /models em preços a partir dos metadados financeiros do payload. */
+    /** Extrai preços de todas as tabelas tokenizadas dentro de uma aba Standard ou Batch. */
+    private Map<String, PriceTriple> parsePricePanes(Element pane) {
+        Map<String, PriceTriple> prices = new LinkedHashMap<>();
+        prices.putAll(parseAstroComponentPrices(pane));
+        for (Element table : pane.select("table")) {
+            if (isFineTuningTable(table)) {
+                continue;
+            }
+            for (Element row : table.select("tbody tr")) {
+                Optional<PriceTriple> price = parsePricingRow(row);
+                price.ifPresent(value -> prices.putIfAbsent(value.name(), value));
+            }
+        }
+        return prices;
+    }
+
+    /** Extrai preços dos props estruturados dos componentes Astro, incluindo linhas ocultas atrás de "All models". */
+    private Map<String, PriceTriple> parseAstroComponentPrices(Element pane) {
+        Map<String, PriceTriple> prices = new LinkedHashMap<>();
+        for (Element island : pane.select("astro-island[props]")) {
+            String component = island.attr("component-export");
+            if (!"TextTokenPricingTables".equals(component) && !"PricingTable".equals(component)) {
+                continue;
+            }
+            try {
+                JsonNode props = OBJECT_MAPPER.readTree(island.attr("props"));
+                if (isFineTuningProps(props)) {
+                    continue;
+                }
+                readAstroRows(props)
+                        .forEach(row -> parsePricingRow(row)
+                                .ifPresent(price -> prices.putIfAbsent(price.name(), price)));
+            } catch (JsonProcessingException ex) {
+                log.warn(
+                        "Falha ao ler props de preços OpenAI; operation=openai-pricing-page-parse component={}",
+                        component,
+                        ex);
+            }
+        }
+        return prices;
+    }
+
+    /** Ignora tabelas de fine-tuning porque incluem coluna de treinamento que não representa inferência tokenizada. */
+    private boolean isFineTuningTable(Element table) {
+        return table.select("thead").text().toLowerCase(Locale.ROOT).contains("training");
+    }
+
+    /** Ignora props de fine-tuning porque incluem coluna de treinamento que não representa inferência tokenizada. */
+    private boolean isFineTuningProps(JsonNode props) {
+        return readAstroArray(props.path("headings")).stream()
+                .map(this::readAstroScalar)
+                .anyMatch(value -> "training".equalsIgnoreCase(value));
+    }
+
+    /** Lê as linhas serializadas pelo Astro no formato tipado usado pela documentação da OpenAI. */
+    private List<List<String>> readAstroRows(JsonNode props) {
+        List<List<String>> rows = new ArrayList<>();
+        for (JsonNode rowNode : readAstroArray(props.path("rows"))) {
+            List<String> cells = readAstroArray(rowNode).stream().map(this::readAstroScalar).toList();
+            rows.add(cells);
+        }
+        return rows;
+    }
+
+    /** Desembrulha arrays serializados como [tipo, valor] pelos componentes Astro. */
+    private List<JsonNode> readAstroArray(JsonNode node) {
+        JsonNode value = unwrapAstroNode(node);
+        if (!value.isArray()) {
+            return List.of();
+        }
+        List<JsonNode> values = new ArrayList<>();
+        value.forEach(values::add);
+        return values;
+    }
+
+    /** Lê um valor escalar serializado pelo Astro, convertendo HTML rico em texto simples. */
+    private String readAstroScalar(JsonNode node) {
+        JsonNode value = unwrapAstroNode(node);
+        if (value.isObject() && value.has("__pricingHtml")) {
+            return Jsoup.parse(readAstroScalar(value.path("__pricingHtml"))).text();
+        }
+        if (value.isNull() || value.isMissingNode()) {
+            return "";
+        }
+        return value.asText("");
+    }
+
+    /** Remove o envelope tipado do Astro quando o nó estiver no formato [tipo, valor]. */
+    private JsonNode unwrapAstroNode(JsonNode node) {
+        if (node != null && node.isArray() && node.size() == 2 && node.get(0).isInt()) {
+            return node.get(1);
+        }
+        return node == null ? OBJECT_MAPPER.nullNode() : node;
+    }
+
+    /** Converte uma linha de tabela oficial em trio input/cache/output quando ela representa inferência tokenizada. */
+    private Optional<PriceTriple> parsePricingRow(Element row) {
+        List<Element> cells = row.select("td");
+        if (cells.size() == 7) {
+            return parseTextPricingRow(cells);
+        }
+        if (cells.size() == 5) {
+            return parseImagePricingRow(cells);
+        }
+        if (cells.size() == 4) {
+            return parseSimplePricingRow(cells);
+        }
+        return Optional.empty();
+    }
+
+    /** Converte uma linha estruturada dos props oficiais em trio input/cache/output quando ela é tokenizada. */
+    private Optional<PriceTriple> parsePricingRow(List<String> cells) {
+        if (cells.size() == 4) {
+            return buildPriceTriple(cells.get(0), cells.get(1), cells.get(2), cells.get(3));
+        }
+        if (cells.size() == 5 && "image".equalsIgnoreCase(cells.get(1))) {
+            return buildPriceTriple(cells.get(0), cells.get(2), cells.get(3), cells.get(4));
+        }
+        return Optional.empty();
+    }
+
+    /** Extrai preço de tabela textual com colunas de contexto curto e longo, usando o preço base de contexto curto. */
+    private Optional<PriceTriple> parseTextPricingRow(List<Element> cells) {
+        return buildPriceTriple(cells.get(0).text(), cells.get(1).text(), cells.get(2).text(), cells.get(3).text());
+    }
+
+    /** Extrai preço de tabela multimodal, priorizando a modalidade principal Image quando houver linhas por modalidade. */
+    private Optional<PriceTriple> parseImagePricingRow(List<Element> cells) {
+        String modality = cells.get(1).text().trim();
+        if (!"image".equalsIgnoreCase(modality)) {
+            return Optional.empty();
+        }
+        return buildPriceTriple(cells.get(0).text(), cells.get(2).text(), cells.get(3).text(), cells.get(4).text());
+    }
+
+    /** Extrai preço de tabelas simples com Model, Input, Cached input e Output. */
+    private Optional<PriceTriple> parseSimplePricingRow(List<Element> cells) {
+        return buildPriceTriple(cells.get(0).text(), cells.get(1).text(), cells.get(2).text(), cells.get(3).text());
+    }
+
+    /** Monta o trio de preço apenas quando modelo, input e output estão publicados na fonte oficial. */
+    private Optional<PriceTriple> buildPriceTriple(String rawCode, String rawInput, String rawCachedInput, String rawOutput) {
+        String code = normalizeModelCode(rawCode);
+        if (!isSupportedTokenModelCode(code)) {
+            return Optional.empty();
+        }
+        BigDecimal input = parseMoney(rawInput);
+        BigDecimal output = parseMoney(rawOutput);
+        if (input == null || output == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new PriceTriple(code, input, zeroIfNull(parseMoney(rawCachedInput)), output));
+    }
+
+    /** Normaliza nomes publicados na tabela removendo sufixos visuais que não fazem parte do código do modelo. */
+    private String normalizeModelCode(String rawCode) {
+        String code = rawCode == null ? "" : rawCode.trim().toLowerCase(Locale.ROOT);
+        int lineBreak = code.indexOf('\n');
+        if (lineBreak >= 0) {
+            code = code.substring(0, lineBreak);
+        }
+        code = CONTEXT_SUFFIX_PATTERN.matcher(code).replaceFirst("");
+        return code.trim();
+    }
+
+    /** Converte uma resposta autenticada de /models em preços a partir dos metadados financeiros do payload legado. */
     List<OpenAiModelPricing> parseAuthenticatedApiPricing(JsonNode response) {
         if (response == null || !response.path("data").isArray()) {
             return List.of();
@@ -92,7 +319,7 @@ public class OpenAiPricingPageClient {
         return prices;
     }
 
-    /** Seleciona preço exato ou preço-base mais específico para variantes datadas retornadas por /models. */
+    /** Seleciona preço exato ou preço-base mais específico para variantes datadas retornadas pela fonte oficial. */
     public Optional<OpenAiModelPricing> findBestModelPricing(List<OpenAiModelPricing> prices, String modelCode) {
         if (prices == null || modelCode == null || modelCode.isBlank()) {
             return Optional.empty();
@@ -189,7 +416,7 @@ public class OpenAiPricingPageClient {
                 || code.startsWith("computer-use-");
     }
 
-    /** Verifica se o código de /models é uma variante datada do código-base publicado na API. */
+    /** Verifica se o código solicitado é uma variante datada do código-base publicado na fonte oficial. */
     private boolean isVersionVariantOf(String requestedCode, String pricedCode) {
         if (requestedCode == null || pricedCode == null || requestedCode.equals(pricedCode)) {
             return false;
@@ -197,7 +424,7 @@ public class OpenAiPricingPageClient {
         return requestedCode.startsWith(pricedCode + "-");
     }
 
-    /** Converte valores monetários da API para decimal por 1 milhão de tokens. */
+    /** Converte valores monetários da fonte oficial para decimal por 1 milhão de tokens. */
     private BigDecimal parseMoney(String value) {
         String normalized = value == null ? "" : value.replace(",", "").trim();
         Matcher matcher = MONEY_PATTERN.matcher(normalized);

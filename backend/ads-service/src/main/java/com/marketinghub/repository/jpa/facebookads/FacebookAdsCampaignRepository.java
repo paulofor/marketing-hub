@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
@@ -27,7 +26,7 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
     List<FacebookAdsCampaign> findAllByExperimentStatus(@Param("status") ExperimentStatus status);
 
     /**
-     * Lista campanhas que devem ter métricas sincronizadas, incluindo janela final de liquidação Meta.
+     * Lista campanhas que devem ter métricas sincronizadas, evitando repetir fechamento final já concluído.
      */
     @Query("""
             select c from FacebookAdsCampaign c
@@ -35,17 +34,12 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
             where e.status = :runningStatus
                or (
                    e.status in :settlementStatuses
-                   and (
-                       c.metricsFinalSyncedAt is null
-                       or c.updatedAt >= :settlementCutoff
-                       or e.updatedAt >= :settlementCutoff
-                   )
+                   and c.metricsFinalSyncedAt is null
                )
             """)
     List<FacebookAdsCampaign> findMetricsSyncTargets(
             @Param("runningStatus") ExperimentStatus runningStatus,
-            @Param("settlementStatuses") Collection<ExperimentStatus> settlementStatuses,
-            @Param("settlementCutoff") Instant settlementCutoff);
+            @Param("settlementStatuses") Collection<ExperimentStatus> settlementStatuses);
 
     /**
      * Lista campanhas ativas cujo experimento proprietário está no status informado.

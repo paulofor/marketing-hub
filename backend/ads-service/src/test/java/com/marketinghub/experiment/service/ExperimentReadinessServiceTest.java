@@ -10,6 +10,7 @@ import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
+import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
@@ -40,6 +41,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +61,8 @@ class ExperimentReadinessServiceTest {
     private GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
     @Mock
     private ExperimentVideoAssetService experimentVideoAssetService;
+    @Mock
+    private ExperimentSalesPageAbTestService salesPageAbTestService;
 
     private ExperimentReadinessService service;
 
@@ -73,7 +77,9 @@ class ExperimentReadinessServiceTest {
                 targetingSelectionRepository,
                 geraLandingStageExecutionRepository,
                 campaignDestinationPolicy,
-                experimentVideoAssetService);
+                experimentVideoAssetService,
+                salesPageAbTestService);
+        lenient().when(salesPageAbTestService.hasReadyActiveTest(org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
     }
 
     @Test
@@ -154,6 +160,21 @@ class ExperimentReadinessServiceTest {
 
         assertThat(service.computeMissingConfiguration(experiment))
                 .containsExactly("experimentVideoAsset");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    /** Garante que teste A/B ativo incompleto bloqueia a liberacao para campanha. */
+    @Test
+    void shouldBlockCampaignWhenActiveSalesPageAbTestIsIncomplete() {
+        Experiment experiment = buildExperiment(44L, 54L);
+        experiment.setFollowUpActionUrl("https://example.com/landing/44");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(44L, CreativeStatus.READY)).thenReturn(true);
+        when(salesPageAbTestService.hasReadyActiveTest(44L)).thenReturn(false);
+        mockPublishableSelection(44L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("salesPageAbTest");
         assertThat(service.isReadyForCampaign(experiment)).isFalse();
     }
 

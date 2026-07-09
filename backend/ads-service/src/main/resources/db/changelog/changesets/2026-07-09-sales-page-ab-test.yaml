@@ -1,0 +1,84 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-09-01-create-sales-page-ab-test
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_sales_page_ab_test
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_sales_page_ab_test (
+                  id BIGINT NOT NULL AUTO_INCREMENT,
+                  experiment_id BIGINT NOT NULL,
+                  name VARCHAR(191) NOT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  hypothesis VARCHAR(1024) NOT NULL,
+                  primary_metric VARCHAR(191) NOT NULL,
+                  secondary_metrics VARCHAR(512) NULL,
+                  winner_rule VARCHAR(1024) NOT NULL,
+                  minimum_runtime_days INT NOT NULL,
+                  minimum_sample_size INT NOT NULL,
+                  meta_split_test_recommended BIT(1) NOT NULL DEFAULT b'1',
+                  notes LONGTEXT NULL,
+                  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (id),
+                  CONSTRAINT fk_sales_page_ab_test_experiment
+                      FOREIGN KEY (experiment_id) REFERENCES experiment (id)
+              );
+              CREATE INDEX idx_sales_page_ab_test_experiment_status
+                  ON experiment_sales_page_ab_test (experiment_id, status, updated_at);
+
+  - changeSet:
+      id: 2026-07-09-02-create-sales-page-ab-variant
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_sales_page_ab_variant
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_sales_page_ab_variant (
+                  id BIGINT NOT NULL AUTO_INCREMENT,
+                  ab_test_id BIGINT NOT NULL,
+                  variant_key VARCHAR(16) NOT NULL,
+                  name VARCHAR(191) NOT NULL,
+                  variant_type VARCHAR(32) NOT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  traffic_weight DECIMAL(5, 2) NOT NULL,
+                  sales_page_url VARCHAR(1024) NULL,
+                  checkout_url VARCHAR(1024) NULL,
+                  ad_destination_url VARCHAR(1024) NULL,
+                  analytics_variant_param VARCHAR(64) NOT NULL,
+                  publication_audit_id BIGINT NULL,
+                  experiment_video_asset_id BIGINT NULL,
+                  required_collectors_present BIT(1) NOT NULL DEFAULT b'0',
+                  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (id),
+                  CONSTRAINT fk_sales_page_ab_variant_test
+                      FOREIGN KEY (ab_test_id) REFERENCES experiment_sales_page_ab_test (id),
+                  CONSTRAINT fk_sales_page_ab_variant_publication_audit
+                      FOREIGN KEY (publication_audit_id) REFERENCES gera_sales_page_publication_audit (id),
+                  CONSTRAINT fk_sales_page_ab_variant_video_asset
+                      FOREIGN KEY (experiment_video_asset_id) REFERENCES experiment_video_asset (id),
+                  CONSTRAINT uk_sales_page_ab_variant_key
+                      UNIQUE (ab_test_id, variant_key)
+              );
+              CREATE INDEX idx_sales_page_ab_variant_test_status
+                  ON experiment_sales_page_ab_variant (ab_test_id, status);
+              CREATE INDEX idx_sales_page_ab_variant_type
+                  ON experiment_sales_page_ab_variant (variant_type);

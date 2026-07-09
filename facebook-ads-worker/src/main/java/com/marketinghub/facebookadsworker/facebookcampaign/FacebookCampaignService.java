@@ -1154,7 +1154,8 @@ public class FacebookCampaignService {
         boolean nextStepInstantForm,
         String followUpActionUrl,
         String publicationJobId,
-        LeadPortalFlow leadPortalFlow
+        LeadPortalFlow leadPortalFlow,
+        SalesPageAbTest salesPageAbTest
     ) {
         public FacebookPage associatedPage() {
             return facebookPage;
@@ -1172,6 +1173,31 @@ public class FacebookCampaignService {
             String shareLink
         ) {}
         public record LeadPortalFlow(Long id, String name, String slug, String publicUrl) {}
+        public record SalesPageAbTest(
+            Long id,
+            String name,
+            String status,
+            String primaryMetric,
+            String winnerRule,
+            Integer minimumRuntimeDays,
+            Integer minimumSampleSize,
+            boolean metaSplitTestRecommended,
+            List<SalesPageAbVariant> variants
+        ) {}
+        public record SalesPageAbVariant(
+            Long id,
+            String variantKey,
+            String name,
+            String variantType,
+            String status,
+            BigDecimal trafficWeight,
+            String salesPageUrl,
+            String checkoutUrl,
+            String adDestinationUrl,
+            String analyticsVariantParam,
+            Long experimentVideoAssetId,
+            boolean requiredCollectorsPresent
+        ) {}
     }
 
     public record CreateCampaignRequest(

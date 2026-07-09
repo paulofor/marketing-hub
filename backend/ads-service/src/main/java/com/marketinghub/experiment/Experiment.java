@@ -41,6 +41,12 @@ public class Experiment {
     @Column(nullable = false)
     private String name;
 
+    /** Origem operacional usada para criar o experimento. */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "creation_source", length = 32, nullable = false)
+    private ExperimentCreationSource creationSource = ExperimentCreationSource.SYSTEM_FLOW;
+
     @Column(length = 255)
     private String hypothesis;
 

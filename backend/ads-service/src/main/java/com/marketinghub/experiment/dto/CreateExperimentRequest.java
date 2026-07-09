@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentCreationSource;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.productai.ProductAiSubtype;
 import java.time.LocalDate;
@@ -19,6 +20,7 @@ public class CreateExperimentRequest {
     private Long marketNicheId;
     private java.util.UUID hypothesisId;
     private String name;
+    private ExperimentCreationSource creationSource;
     private String hypothesis;
     private String singlePain;
     private String freeReward;

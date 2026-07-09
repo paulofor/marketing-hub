@@ -6,6 +6,7 @@ import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentCreationSource;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.CreativeGenerationStatus;
@@ -24,6 +25,7 @@ public class ExperimentDto {
     private Long nicheId;
     private java.util.UUID hypothesisId;
     private String name;
+    private ExperimentCreationSource creationSource;
     private String hypothesis;
     private String singlePain;
     private String freeReward;

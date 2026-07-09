@@ -370,6 +370,9 @@ public class ExperimentService {
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(automaticName)
+                .creationSource(request.getCreationSource() != null
+                        ? request.getCreationSource()
+                        : ExperimentCreationSource.SYSTEM_FLOW)
                 .hypothesis(request.getHypothesis())
                 .singlePain(normalizeExperimentPromiseField(request.getSinglePain()))
                 .freeReward(normalizeExperimentPromiseField(request.getFreeReward()))
@@ -501,6 +504,7 @@ public class ExperimentService {
         Experiment copy = Experiment.builder()
                 .niche(original.getNiche())
                 .name(original.getName() + " copy")
+                .creationSource(original.getCreationSource())
                 .hypothesis(original.getHypothesis())
                 .singlePain(original.getSinglePain())
                 .freeReward(original.getFreeReward())

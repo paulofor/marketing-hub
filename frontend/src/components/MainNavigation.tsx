@@ -100,6 +100,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: experimentIcon,
         children: [
           {
+            to: "/experiments/manual/new",
+            label: "Experimento manual",
+            icon: PlusCircle,
+          },
+          {
             to: "/facebook-campaigns",
             label: "Experimentos para campanha",
             icon: Flag,

@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-09-experiment-creation-source.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-07-commercial-plan-week-objectives.yaml
       relativeToChangelogFile: true
   - include:

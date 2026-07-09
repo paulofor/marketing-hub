@@ -11,6 +11,7 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
+import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
@@ -46,7 +47,8 @@ class HypothesisPipelineFinalizationServiceTest {
                 marketNicheRepository,
                 executionRepository,
                 hypothesisRepository,
-                new HypothesisFrameworkMapperSupport(new ObjectMapper()));
+                new HypothesisFrameworkMapperSupport(new ObjectMapper()),
+                new HypothesisPipelineContentGuard(new ObjectMapper()));
     }
 
     /** Deve materializar o framework concluído como hipótese BACKLOG fora da etapa Dor. */
@@ -81,6 +83,49 @@ class HypothesisPipelineFinalizationServiceTest {
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getFrameworkJson())
                 .contains("dor validada")
                 .contains("oferta low-ticket");
+    }
+
+    /** Deve materializar JSON estruturado das etapas em texto comercial antes de salvar a hipótese. */
+    @Test
+    void finalizeHypothesisStoresCommercialTextInsteadOfJsonPayload() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        niche.setName("Manicure em domicílio");
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        mockCompletedStage("hypothesis-pain", "{\"summary\":\"Agenda instável por faltas e cancelamentos.\"}", "gpt-5.2", null);
+        mockCompletedStage("hypothesis-result", "{\"summary\":\"Agenda mais previsível e respeitada.\"}", "gpt-5.2", null);
+        mockCompletedStage("hypothesis-mechanism", "{\"summary\":\"Confirmação, regras e organização por região.\"}", "gpt-5.2", null);
+        mockCompletedStage("hypothesis-proof", "{\"summary\":\"Diagnóstico de agenda de 7 dias.\"}", "gpt-5.2", null);
+        mockCompletedStage("hypothesis-offer", "{\"summary\":\"Kit Agenda Blindada 7D.\"}", "gpt-5.2", null);
+        when(hypothesisRepository.countByMarketNicheId(18L)).thenReturn(0L);
+        when(hypothesisRepository.save(any(Hypothesis.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Hypothesis hypothesis = service.finalizeHypothesis(18L, new FinalizeHypothesisRequest("Hipótese final"));
+
+        assertEquals("Agenda instável por faltas e cancelamentos.", hypothesis.getProblem());
+        assertEquals("Agenda mais previsível e respeitada.", hypothesis.getPromise());
+        assertEquals("Confirmação, regras e organização por região.", hypothesis.getMechanism());
+        assertEquals("Diagnóstico de agenda de 7 dias.", hypothesis.getSuccessRule());
+        assertEquals("Kit Agenda Blindada 7D.", hypothesis.getEntrega());
+        org.assertj.core.api.Assertions.assertThat(hypothesis.getProblem()).doesNotStartWith("{");
+    }
+
+    /** Deve impedir fechamento de hipótese quando uma etapa concluída contém caractere corrompido. */
+    @Test
+    void finalizeHypothesisRejectsCorruptedStageResponse() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        niche.setName("Manicure em domicílio");
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        mockCompletedStage("hypothesis-pain", "{\"summary\":\"redução de faltas, re預\"}", "gpt-5.2", null);
+
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> service.finalizeHypothesis(18L, new FinalizeHypothesisRequest("Hipótese final")));
+
+        org.assertj.core.api.Assertions.assertThat(error.getMessage())
+                .contains("Dor")
+                .contains("caractere corrompido");
     }
 
     /** Deve manter a prova final compatível com respostas longas geradas pela IA. */

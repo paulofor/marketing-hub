@@ -5,6 +5,7 @@ import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
+import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
@@ -40,17 +41,20 @@ public class HypothesisPipelineFinalizationService {
     private final HypothesisPainStageExecutionRepository executionRepository;
     private final HypothesisRepository hypothesisRepository;
     private final HypothesisFrameworkMapperSupport frameworkMapperSupport;
+    private final HypothesisPipelineContentGuard contentGuard;
 
     /** Inicializa a etapa de fechamento com os repositórios e o normalizador canônico do framework. */
     public HypothesisPipelineFinalizationService(
             MarketNicheRepository marketNicheRepository,
             HypothesisPainStageExecutionRepository executionRepository,
             HypothesisRepository hypothesisRepository,
-            HypothesisFrameworkMapperSupport frameworkMapperSupport) {
+            HypothesisFrameworkMapperSupport frameworkMapperSupport,
+            HypothesisPipelineContentGuard contentGuard) {
         this.marketNicheRepository = marketNicheRepository;
         this.executionRepository = executionRepository;
         this.hypothesisRepository = hypothesisRepository;
         this.frameworkMapperSupport = frameworkMapperSupport;
+        this.contentGuard = contentGuard;
     }
 
     /** Fecha o framework concluído em uma hipótese BACKLOG pronta para gerar experimento. */
@@ -59,11 +63,11 @@ public class HypothesisPipelineFinalizationService {
         MarketNiche niche = marketNicheRepository.findById(marketNicheId)
                 .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + marketNicheId));
         String title = buildAutomaticHypothesisTitle(niche);
-        String pain = requireCompletedStageResponse(marketNicheId, STAGE_CODE, "Dor");
-        String result = requireCompletedStageResponse(marketNicheId, RESULT_STAGE_CODE, "Resultado");
-        String mechanism = requireCompletedStageResponse(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo");
-        String proof = requireCompletedStageResponse(marketNicheId, PROOF_STAGE_CODE, "Prova");
-        String offer = requireCompletedStageResponse(marketNicheId, OFFER_STAGE_CODE, "Oferta");
+        String pain = requireCompletedStageText(marketNicheId, STAGE_CODE, "Dor");
+        String result = requireCompletedStageText(marketNicheId, RESULT_STAGE_CODE, "Resultado");
+        String mechanism = requireCompletedStageText(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo");
+        String proof = requireCompletedStageText(marketNicheId, PROOF_STAGE_CODE, "Prova");
+        String offer = requireCompletedStageText(marketNicheId, OFFER_STAGE_CODE, "Oferta");
         Hypothesis hypothesis = Hypothesis.builder()
                 .marketNiche(niche)
                 .title(title)
@@ -128,6 +132,18 @@ public class HypothesisPipelineFinalizationService {
                     "A etapa " + stageLabel + " precisa estar concluída antes de fechar a hipótese.");
         }
         return response;
+    }
+
+    /** Exige resposta concluída e extrai o texto comercial seguro da etapa. */
+    private String requireCompletedStageText(Long marketNicheId, String stageCode, String stageLabel) {
+        String response = requireCompletedStageResponse(marketNicheId, stageCode, stageLabel);
+        try {
+            return contentGuard.materializeStageText(stageCode, response);
+        } catch (IllegalStateException ex) {
+            throw new IllegalStateException(
+                    "A etapa " + stageLabel + " possui resposta inválida para fechar a hipótese: " + ex.getMessage(),
+                    ex);
+        }
     }
 
     /** Retorna a resposta concluída mais recente de uma etapa do framework. */

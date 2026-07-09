@@ -16,6 +16,7 @@ import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSumm
 import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
@@ -74,6 +75,7 @@ public class HypothesisPainStageService {
     private final HypothesisPainStageExecutionRepository executionRepository;
     private final AiPromptSchemaTemplateRepository templateRepository;
     private final HypothesisPainCostCalculator costCalculator;
+    private final HypothesisPipelineContentGuard contentGuard;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
     public HypothesisPainStageService(
@@ -81,12 +83,14 @@ public class HypothesisPainStageService {
             HypothesisPainEnrichmentProfileReader enrichmentProfileReader,
             HypothesisPainStageExecutionRepository executionRepository,
             AiPromptSchemaTemplateRepository templateRepository,
-            HypothesisPainCostCalculator costCalculator) {
+            HypothesisPainCostCalculator costCalculator,
+            HypothesisPipelineContentGuard contentGuard) {
         this.marketNicheRepository = marketNicheRepository;
         this.enrichmentProfileReader = enrichmentProfileReader;
         this.executionRepository = executionRepository;
         this.templateRepository = templateRepository;
         this.costCalculator = costCalculator;
+        this.contentGuard = contentGuard;
     }
 
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
@@ -728,6 +732,7 @@ public class HypothesisPainStageService {
             BigDecimal previousCostUsd = execution.getCostUsd();
             String normalizedErrorDetail = StringUtils.hasText(request.errorDetail()) ? request.errorDetail().trim() : null;
             String normalizedErrorMessage = normalizeErrorMessage(request.errorMessage(), normalizedErrorDetail);
+            normalizedErrorMessage = validateSuccessfulModelResponse(execution.getStageCode(), request.modelResponse(), normalizedErrorMessage);
             BigDecimal calculatedCostUsd = calculateInternalCostUsd(execution, request, normalizedErrorMessage);
             BigDecimal costDeltaUsd = calculateCostDeltaUsd(previousCostUsd, calculatedCostUsd);
             execution.setCostUsd(calculatedCostUsd);
@@ -749,6 +754,24 @@ public class HypothesisPainStageService {
                     request.errorMessage(),
                     ex);
             throw ex;
+        }
+    }
+
+    /** Valida a qualidade textual quando a OpenAI retornou sucesso técnico sem erro explícito. */
+    private String validateSuccessfulModelResponse(String stageCode, String modelResponse, String currentErrorMessage) {
+        if (StringUtils.hasText(currentErrorMessage)) {
+            return currentErrorMessage;
+        }
+        try {
+            contentGuard.validateStageResponse(stageCode, modelResponse);
+            return null;
+        } catch (IllegalStateException ex) {
+            log.warn(
+                    "[HypothesisPipeline] Resposta rejeitada por qualidade textual stageCode={} motivo={}",
+                    stageCode,
+                    ex.getMessage(),
+                    ex);
+            return ex.getMessage();
         }
     }
 

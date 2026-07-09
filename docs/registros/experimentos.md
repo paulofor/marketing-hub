@@ -5682,3 +5682,10 @@
 - Objetivo comercial: reduzir ruído visual e deixar a leitura do funil Nicho → Hipótese → Experimento mais clara para decidir onde criar, publicar ou corrigir testes.
 - Correção aplicada: a hierarquia recolhível foi substituída por navegação progressiva com animação para a direita ao descer nível e para a esquerda ao voltar.
 - Prevenção de recorrência: teste da tela valida que hipóteses e experimentos só aparecem após a seleção do nível anterior.
+
+## 2026-07-09 — Bloqueio de hipótese com texto corrompido
+
+- Problema: a hipótese do nicho 21 foi fechada com o caractere corrompido `re預` e com JSON inteiro salvo em campos comerciais.
+- Causa-raiz tratada: a etapa aceitava sucesso técnico da IA sem validar qualidade textual e o fechamento copiava a resposta bruta da etapa para a hipótese.
+- Correção aplicada: o backend passa a rejeitar resposta de etapa com caractere corrompido/inesperado, materializa JSON de etapa em texto comercial antes de fechar a hipótese e saneia o registro atual.
+- Prevenção de recorrência: testes cobrem rejeição no callback da IA e impedem que JSON bruto vire `problem`, `promise`, `mechanism`, `successRule` ou `entrega`.

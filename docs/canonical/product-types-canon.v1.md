@@ -4,6 +4,8 @@
 
 Definir os tipos de produto do Marketing Hub para orientar decisoes futuras de nicho, hipotese, oferta, pagina, campanha, custo, preco, tracking e escala.
 
+Este documento e a descricao canonica unica dos tipos de produto do sistema. Qualquer novo tipo, subtipo ou mudanca de regra comercial sobre tipos de produto deve ser registrado aqui antes de orientar implementacao, campanhas, experimentos ou relatorios.
+
 ## Regra financeira comum
 
 Todo produto precisa ser financeiramente viavel para o negocio. Antes de escalar, a decisao deve considerar:
@@ -145,10 +147,76 @@ Criar o mesmo conceito para outro nicho exige nova execucao do fluxo com novo co
 
 Padroes externos, como os dossies da Biblioteca de Paginas de Vendas, podem ser usados como insumo de briefing e aprendizado. Eles nao podem substituir a geracao rastreavel de hipotese, dor, mecanismo, prova, oferta e experimento pelo sistema.
 
+## Produto IA de atendimento personalizado por sandbox
+
+Produto IA de atendimento personalizado por sandbox e um produto conversacional em que o cliente entra pelo WhatsApp, faz uma solicitacao ou continua uma conversa anterior, e recebe uma resposta personalizada com texto, imagem ou ambos. O valor central nao e "conversar com IA"; e receber um atendimento util, contextual e personalizado, com memoria do relacionamento e capacidade de transformar dados do proprio cliente em orientacao, diagnostico, proposta, criativo, plano ou entrega aplicavel.
+
+Este tipo usa o conceito operacional do exemplo `/exemplos/aih6`: uma solicitacao entra pelo front/backend, o backend cria uma execucao isolada, o Codex App Server disponibiliza uma sandbox para o modelo trabalhar, o modelo usa ferramentas e contexto dentro dessa sandbox, devolve um resultado auditavel e a execucao e encerrada. A diferenca canonica e que, neste produto, a sandbox nao baixa um repositorio para gerar codigo; ela baixa ou recebe os dados de relacionamento daquele cliente, materiais autorizados e fontes complementares necessarias para produzir uma resposta comercial ou operacional personalizada.
+
+Fluxo canonico inicial:
+
+```text
+Cliente envia mensagem no WhatsApp
+→ provedor WhatsApp entrega evento ao backend
+→ backend identifica cliente, conversa, produto e contexto autorizado
+→ backend cria uma sandbox exclusiva para aquele cliente/interacao via Codex App Server
+→ sandbox recebe historico de interacoes, dados permitidos e materiais auxiliares
+→ modelo analisa, pesquisa quando permitido e produz resposta personalizada
+→ backend envia texto e/ou imagem pelo WhatsApp
+→ backend registra entrada, contexto usado, resposta, custos, status e resultado
+→ sandbox e descartada
+```
+
+Caracteristicas obrigatorias:
+
+- uma sandbox isolada por cliente/interacao relevante, sem reutilizar workspace entre clientes;
+- historico do cliente carregado a partir de dados persistidos e autorizados, nunca por memoria solta do modelo;
+- separacao clara entre dados do cliente, materiais de apoio, fontes externas e resposta final;
+- registro auditavel da mensagem recebida, contexto entregue a sandbox, prompts/schemas quando houver, resposta enviada, midia gerada, custo, erro e status;
+- resposta enviada pelo canal original do cliente, inicialmente WhatsApp, com suporte a texto e imagem quando o caso de uso exigir;
+- encerramento e descarte da sandbox apos a execucao, preservando apenas os registros necessarios no banco;
+- protecao de privacidade: dados de um cliente nunca podem aparecer na sandbox, resposta ou artefatos de outro cliente;
+- modelo economico com margem positiva considerando WhatsApp, IA, imagem, infraestrutura, armazenamento, suporte e recuperacao de falhas.
+
+Usos recomendados:
+
+- consultoria automatizada de entrada, com diagnostico personalizado e proximo passo pago;
+- atendimento pos-lead para aumentar conversao de produtos digitais;
+- entrega personalizada sob demanda, quando o valor depende do historico e do contexto do cliente;
+- geracao de criativos, mensagens, planos, roteiros, imagens ou recomendacoes a partir de dados do proprio cliente;
+- reativacao de leads e clientes com abordagem contextual, em vez de disparo generico.
+
+Este tipo deve ser tratado como produto de alto potencial comercial porque combina canal de resposta direta, personalizacao real e reducao forte de esforco para o cliente. O risco principal e operacional: se a memoria estiver incompleta, se a sandbox misturar clientes, se a resposta nao for auditavel ou se o custo por atendimento superar a margem, o produto perde escalabilidade. Por isso, a primeira versao deve priorizar poucos casos de uso de alto valor percebido, resposta curta, custo controlado e metricas claras.
+
+Metricas minimas:
+
+- taxa de resposta do cliente no WhatsApp;
+- tempo ate primeira resposta util;
+- custo medio por atendimento;
+- taxa de clique, agendamento, compra ou proximo passo;
+- taxa de reabertura de conversa;
+- satisfacao, reclamacao ou sinal negativo;
+- margem por conversa, por cliente e por oferta;
+- recorrencia de uso quando o produto for vendido como assinatura ou acompanhamento.
+
+Gatilhos de bloqueio:
+
+- ausencia de identificacao segura do cliente;
+- historico insuficiente para personalizacao prometida;
+- risco de expor dado de outro cliente;
+- solicitacao fora do escopo do produto vendido;
+- necessidade de decisao humana, juridica, medica, financeira ou sensivel sem protocolo especifico;
+- custo estimado acima da margem esperada;
+- falha no registro auditavel da interacao.
+
+Este tipo nao substitui low-ticket nem Produto IA tradicional. Ele deve ser escolhido quando o canal conversacional e a memoria do relacionamento aumentam a conversao ou o valor percebido mais do que uma pagina, formulario, entrega estatica ou ferramenta self-service.
+
 ## Decisao entre tipos
 
 Use low-ticket quando o problema pode ser resolvido por um pacote digital estatico ou semi-estatico, barato, rapido de produzir e vendavel por pagina curta.
 
 Use Produto IA quando o valor principal depende de transformar uma entrada especifica do usuario em uma saida personalizada, com reducao forte de esforco e experiencia simples.
 
-Quando houver duvida, comece por low-ticket para validar dor/oferta com menor custo. Evolua para Produto IA quando a personalizacao aumentar claramente a percepcao de valor e a margem continuar viavel.
+Use Produto IA de atendimento personalizado por sandbox quando o valor principal depende de conversa, memoria individual do cliente, contexto acumulado e resposta personalizada enviada por WhatsApp ou canal conversacional equivalente.
+
+Quando houver duvida, comece por low-ticket para validar dor/oferta com menor custo. Evolua para Produto IA quando a personalizacao aumentar claramente a percepcao de valor e a margem continuar viavel. Evolua para atendimento personalizado por sandbox quando o relacionamento individual e a resposta contextual tiverem potencial de aumentar conversao, retencao ou ticket medio de forma mensuravel.

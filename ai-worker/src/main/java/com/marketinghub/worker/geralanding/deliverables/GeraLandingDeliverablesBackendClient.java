@@ -27,12 +27,16 @@ public class GeraLandingDeliverablesBackendClient {
     private final String apiPrefix;
     private final ObjectMapper objectMapper;
 
+    /** Inicializa o cliente com limite de buffer suficiente para pendências grandes do GeraLanding. */
     public GeraLandingDeliverablesBackendClient(
             WebClient.Builder builder,
             @Value("${backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
             @Value("${backend.api-prefix:/api}") String apiPrefix,
+            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes,
             ObjectMapper objectMapper) {
-        this.webClient = builder.build();
+        this.webClient = builder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeBytes))
+                .build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
         this.objectMapper = objectMapper;

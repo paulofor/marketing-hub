@@ -40,11 +40,14 @@ public class ImageGenerationBackendClient implements StageBackendPort<ImageGener
             CreativeImageOptimizer imageOptimizer,
             WebClient.Builder webClientBuilder,
             ObjectMapper objectMapper,
-            ImageGenerationWorkerProperties properties
+            ImageGenerationWorkerProperties properties,
+            int maxInMemorySizeBytes
     ) {
         this.storageClient = storageClient;
         this.imageOptimizer = imageOptimizer;
-        this.webClient = webClientBuilder.build();
+        this.webClient = webClientBuilder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeBytes))
+                .build();
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.workerId = resolveWorkerId(properties.workerId());
@@ -87,10 +90,13 @@ public class ImageGenerationBackendClient implements StageBackendPort<ImageGener
         body.put("jobidopenai", dispatch.openAiJobId());
 
         log.info(
-                "Envio para backend GeraLanding após despacho imagegeneration [jobId={}, experimentId={}, payload={}]",
+                "Envio para backend GeraLanding após despacho imagegeneration [jobId={}, experimentId={}, openAiJobId={}, promptChars={}, schemaChars={}, requestChars={}]",
                 execution.idJob(),
                 execution.aggregateId(),
-                body
+                dispatch.openAiJobId(),
+                textLength(dispatch.prompt()),
+                textLength(dispatch.schemaJson()),
+                textLength(dispatch.requestBodyJson())
         );
         webClient.post()
                 .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-prompt", execution.idJob())
@@ -127,10 +133,12 @@ public class ImageGenerationBackendClient implements StageBackendPort<ImageGener
         body.put("errorDetail", null);
 
         log.info(
-                "Envio para backend GeraLanding concluindo imagegeneration [jobId={}, experimentId={}, payload={}]",
+                "Envio para backend GeraLanding concluindo imagegeneration [jobId={}, experimentId={}, openAiJobId={}, imageCount={}, manifestChars={}]",
                 execution.idJob(),
                 execution.aggregateId(),
-                body
+                result.openAiJobId(),
+                manifestImages.size(),
+                textLength(manifest)
         );
         webClient.post()
                 .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-resposta", execution.idJob())
@@ -155,10 +163,11 @@ public class ImageGenerationBackendClient implements StageBackendPort<ImageGener
         body.put("errorDetail", error != null ? stackTraceSummary(error) : null);
 
         log.info(
-                "Envio para backend GeraLanding falhando imagegeneration [jobId={}, experimentId={}, payload={}]",
+                "Envio para backend GeraLanding falhando imagegeneration [jobId={}, experimentId={}, errorChars={}, detailChars={}]",
                 execution.idJob(),
                 execution.aggregateId(),
-                body
+                textLength(asString(body.get("errorMessage"))),
+                textLength(asString(body.get("errorDetail")))
         );
         webClient.post()
                 .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-resposta", execution.idJob())
@@ -392,6 +401,11 @@ public class ImageGenerationBackendClient implements StageBackendPort<ImageGener
             }
         }
         return builder.toString();
+    }
+
+    /** Calcula tamanho de texto para logs sem registrar payloads grandes ou sensíveis. */
+    private int textLength(String value) {
+        return value != null ? value.length() : 0;
     }
 
     /** Verifica se o experimento pertence ao bucket de rollout configurado. */

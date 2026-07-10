@@ -21,9 +21,16 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
 
     private final WebClient webClient;
     private final QualityReviewWorkerProperties properties;
-    /** Inicializa o cliente com WebClient, propriedades da revisão visual e ObjectMapper mantido por compatibilidade de configuração. */
-    public QualityReviewBackendClient(WebClient.Builder builder, QualityReviewWorkerProperties properties, ObjectMapper objectMapper) {
-        this.webClient = builder.build();
+    /** Inicializa o cliente com WebClient, limite de buffer e propriedades da revisão visual. */
+    public QualityReviewBackendClient(
+            WebClient.Builder builder,
+            QualityReviewWorkerProperties properties,
+            ObjectMapper objectMapper,
+            int maxInMemorySizeBytes
+    ) {
+        this.webClient = builder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeBytes))
+                .build();
         this.properties = properties;
     }
 

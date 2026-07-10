@@ -55,7 +55,8 @@ class QualityReviewBackendClientTest {
         QualityReviewBackendClient client = new QualityReviewBackendClient(
                 WebClient.builder(),
                 properties(),
-                objectMapper);
+                objectMapper,
+                1024 * 1024);
 
         List<StageExecution<QualityReviewInput>> pending = client.listPending(5);
 
@@ -101,7 +102,8 @@ class QualityReviewBackendClientTest {
         QualityReviewBackendClient client = new QualityReviewBackendClient(
                 WebClient.builder(),
                 properties(),
-                objectMapper);
+                objectMapper,
+                1024 * 1024);
 
         List<StageExecution<QualityReviewInput>> pending = client.listPending(5);
 
@@ -111,6 +113,35 @@ class QualityReviewBackendClientTest {
         assertThat(pending.getFirst().input().promptData())
                 .containsOnlyKeys("htmlGeraLanding")
                 .doesNotContainKeys("landingPageHtml");
+    }
+
+    /** Deve aceitar pending grande do GeraLanding sem estourar o buffer padrão de 256 KB. */
+    @Test
+    void listPendingShouldAcceptLargeGeraLandingPayload() {
+        server.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [
+                          {
+                            "experimentId": 63,
+                            "jobid": "job-quality-large",
+                            "stageCode": "landing-page-quality-review",
+                            "executionRequestedAt": "2026-07-10T12:00:00Z",
+                            "landingPageDesignPreset": "%s",
+                            "htmlGeraLanding": "<!doctype html><html><body><h1>Landing final</h1></body></html>"
+                          }
+                        ]
+                        """.formatted("x".repeat(350_000))));
+        QualityReviewBackendClient client = new QualityReviewBackendClient(
+                WebClient.builder(),
+                properties(),
+                objectMapper,
+                1024 * 1024);
+
+        List<StageExecution<QualityReviewInput>> pending = client.listPending(5);
+
+        assertThat(pending).hasSize(1);
+        assertThat(pending.getFirst().idJob()).isEqualTo("job-quality-large");
     }
 
     /** Monta propriedades mínimas para o client quality-review usado no teste. */

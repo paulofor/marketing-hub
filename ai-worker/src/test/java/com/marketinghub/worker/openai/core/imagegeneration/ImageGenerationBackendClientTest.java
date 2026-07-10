@@ -74,6 +74,35 @@ class ImageGenerationBackendClientTest {
         });
     }
 
+    /** Deve aceitar payload de pending maior que o limite padrão do WebClient para não travar GeraLanding. */
+    @Test
+    void listPendingShouldAcceptLargeGeraLandingPayload() throws Exception {
+        Map<String, Object> pendingExecution = Map.of(
+                "experimentId", 63,
+                "stageCode", "landing-page-image-generation",
+                "jobid", "job-geralanding-image-large",
+                "executionRequestedAt", "2026-07-10T12:00:00Z",
+                "landingPageDesignPreset", "x".repeat(350_000),
+                "experiment", Map.of(
+                        "landingPageImagePlanning", Map.of(
+                                "landingPageImagePlanning", Map.of(
+                                        "images", List.of(Map.of(
+                                                "sectionId", "hero",
+                                                "elementId", "hero-img",
+                                                "imageGoal", "Mostrar entrega",
+                                                "imagePrompt", "Imagem principal da promessa"))))));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(List.of(pendingExecution))));
+        ImageGenerationBackendClient client = newClient();
+
+        List<StageExecution<ImageGenerationInput>> result = client.listPending(5);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().idJob()).isEqualTo("job-geralanding-image-large");
+    }
+
     /** Cria o client imagegeneration apontando para o backend simulado do teste. */
     private ImageGenerationBackendClient newClient() {
         return new ImageGenerationBackendClient(
@@ -92,6 +121,7 @@ class ImageGenerationBackendClientTest {
                         Duration.ofMillis(300),
                         "worker-test",
                         100,
-                        0.01d));
+                        0.01d),
+                1024 * 1024);
     }
 }

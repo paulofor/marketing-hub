@@ -206,6 +206,22 @@ function resolveJobNumberFromStageContent(content: string) {
   }
 }
 
+export function buildExperimentTestUrl(url?: string | null) {
+  const trimmedUrl = url?.trim();
+  if (!trimmedUrl) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedUrl);
+    parsedUrl.searchParams.set("mh_test", "1");
+    return parsedUrl.toString();
+  } catch {
+    const separator = trimmedUrl.includes("?") ? "&" : "?";
+    return `${trimmedUrl}${separator}mh_test=1`;
+  }
+}
+
 function hasExecutionWithJobId(
   executions: GeraLandingStageExecutionItem[] | undefined,
   jobId: string,
@@ -309,6 +325,7 @@ export default function ExperimentDetailPage() {
   });
   const { data: geraLandingStageModels, isLoading: isLoadingStageModels } =
     useGeraLandingStageModels();
+  const experimentTestUrl = buildExperimentTestUrl(data?.followUpActionUrl);
   const {
     data: diagnostics,
     isLoading: isLoadingDiagnostics,
@@ -2051,9 +2068,16 @@ export default function ExperimentDetailPage() {
     {
       label: "Página de venda",
       value: data.followUpActionUrl ? (
-        <a href={data.followUpActionUrl} target="_blank" rel="noreferrer">
-          Abrir página
-        </a>
+        <div className="d-flex flex-wrap gap-2">
+          <a href={data.followUpActionUrl} target="_blank" rel="noreferrer">
+            Abrir página
+          </a>
+          {experimentTestUrl ? (
+            <a href={experimentTestUrl} target="_blank" rel="noreferrer">
+              Abrir teste
+            </a>
+          ) : null}
+        </div>
       ) : (
         "Pendente"
       ),
@@ -2334,14 +2358,28 @@ export default function ExperimentDetailPage() {
                     <div className="border rounded-3 p-3 h-100">
                       <div className="text-muted small">Página de venda</div>
                       {latestSalesPagePublication.salesPageUrl ? (
-                        <a
-                          href={latestSalesPagePublication.salesPageUrl ?? undefined}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="small text-break"
-                        >
-                          {latestSalesPagePublication.salesPageUrl}
-                        </a>
+                        <div className="d-flex flex-column gap-2">
+                          <a
+                            href={latestSalesPagePublication.salesPageUrl ?? undefined}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="small text-break"
+                          >
+                            {latestSalesPagePublication.salesPageUrl}
+                          </a>
+                          <a
+                            href={
+                              buildExperimentTestUrl(
+                                latestSalesPagePublication.salesPageUrl,
+                              ) ?? undefined
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="small"
+                          >
+                            Abrir link de teste
+                          </a>
+                        </div>
                       ) : (
                         <span className="text-muted small">Não registrada</span>
                       )}

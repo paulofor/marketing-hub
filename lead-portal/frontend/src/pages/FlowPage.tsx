@@ -25,9 +25,12 @@ import type {
   LeadPortalSimpleFormStyleDefinition,
 } from "../types";
 
+const INTERNAL_TEST_STORAGE_KEY = "mh_internal_test";
+
 export default function FlowPage() {
   const { slug } = useParams<{ slug: string }>();
   const campaignCode = useCampaignCode();
+  const testMode = isInternalTestTraffic();
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [hasTrackedRenderComplete, setHasTrackedRenderComplete] = useState(false);
   const [hasTrackedFormStart, setHasTrackedFormStart] = useState(false);
@@ -41,7 +44,7 @@ export default function FlowPage() {
   }, [slug]);
 
   const trackFormEvent = (eventType: "form_start" | "form_submit") => {
-    if (!resolvedFlowSlug) {
+    if (!resolvedFlowSlug || testMode) {
       return;
     }
     const eventPayload = buildFlowPageAnalyticsPayload(eventType);
@@ -65,12 +68,12 @@ export default function FlowPage() {
   };
 
   const { data: flow, isLoading, isError, error } = useQuery({
-    queryKey: ["lead-portal-flow", slug, campaignCode ?? null],
+    queryKey: ["lead-portal-flow", slug, campaignCode ?? null, testMode],
     queryFn: async () => {
       if (!slug) {
         throw new Error("Fluxo não informado");
       }
-      return fetchLeadPortalFlow(slug, { campaignCode });
+      return fetchLeadPortalFlow(slug, { campaignCode, testMode });
     },
     enabled: Boolean(slug),
   });
@@ -99,7 +102,7 @@ export default function FlowPage() {
   }, [hasCustomTemplate, flow, metadata]);
 
   useEffect(() => {
-    if (!resolvedFlowSlug || isLoading || isError || hasTrackedRenderComplete) {
+    if (testMode || !resolvedFlowSlug || isLoading || isError || hasTrackedRenderComplete) {
       return;
     }
     let cancelled = false;
@@ -125,14 +128,14 @@ export default function FlowPage() {
     return () => {
       cancelled = true;
     };
-  }, [resolvedFlowSlug, isLoading, isError, hasTrackedRenderComplete, campaignCode]);
+  }, [resolvedFlowSlug, isLoading, isError, hasTrackedRenderComplete, campaignCode, testMode]);
 
   useEffect(() => {
-    if (!flow?.facebookPixelId) {
+    if (testMode || !flow?.facebookPixelId) {
       return;
     }
     initializeMetaPixel(flow.facebookPixelId);
-  }, [flow?.facebookPixelId]);
+  }, [flow?.facebookPixelId, testMode]);
 
   if (!slug) {
     return <p className="flow-message">Fluxo não informado.</p>;
@@ -694,6 +697,9 @@ function attachCustomTemplateBridgeToDocument(
 
   const startedForms = new WeakSet<HTMLFormElement>();
   const trackTemplateFormEvent = (eventType: "form_start" | "form_submit") => {
+    if (isInternalTestTraffic()) {
+      return;
+    }
     registerFlowPageAnalytics(options.flowSlug, buildFlowPageAnalyticsPayload(eventType)).catch((trackError) => {
       console.warn(`Falha ao registrar ${eventType} do template`, trackError);
     });
@@ -1415,6 +1421,9 @@ function initializeMetaPixel(pixelId: string) {
   if (typeof window === "undefined") {
     return;
   }
+  if (isInternalTestTraffic()) {
+    return;
+  }
   const normalized = pixelId.trim();
   if (!normalized) {
     return;
@@ -1464,4 +1473,16 @@ function ensureMetaPixelBase(): FbqFunction {
     document.head?.appendChild(script);
   }
   return fbq;
+}
+
+function isInternalTestTraffic() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("mh_test") === "1") {
+    window.sessionStorage.setItem(INTERNAL_TEST_STORAGE_KEY, "true");
+    return true;
+  }
+  return window.sessionStorage.getItem(INTERNAL_TEST_STORAGE_KEY) === "true";
 }

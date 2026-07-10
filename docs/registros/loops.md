@@ -365,6 +365,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - somar submissões públicas vindas de `experiment_funnel_event` na etapa `ENVIO_FORM`, com deduplicação por `submissionId`;
   - criar tabela normalizada `experiment_landing_analytics_event` vinculada ao evento bruto, preservando auditoria e permitindo recorrência por `visitorId`;
   - deduplicar `page_view` por `visitorId`, `sessionId`, `eventType` e `pageUrl` em janela curta;
+  - usar `page_view` normalizado como fonte canônica da etapa de visualização no funil, mantendo `render-complete` apenas como fallback legado para não somar duas fontes da mesma visita;
   - no reset, apagar primeiro eventos normalizados e depois eventos brutos, evitando violação de FK;
   - invalidar também a query da aba Analytics no frontend após zerar contagens;
   - enviar `deviceType`, sistema operacional e tamanho de tela pelo script público para apoiar decisão de layout/mobile.
@@ -380,6 +381,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Fechamento mínimo do loop**:
   - registry de eventos com fonte, payload, tabela bruta, tabela normalizada e query de resumo;
   - teste: evento enviado pelo endpoint público aparece no funil e na aba Analytics;
+  - teste: resumo do funil não soma `render-complete` com `page_view` normalizado na mesma etapa;
   - teste: reset apaga normalizados antes dos brutos;
   - teste: submissão pública soma `ENVIO_FORM` sem duplicar.
 - **Regra preventiva**:

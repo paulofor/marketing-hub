@@ -109,11 +109,14 @@ export async function fetchImageMaterialCase(submissionId: string): Promise<Imag
 
 export async function fetchLeadPortalFlow(
   slug: string,
-  options?: { campaignCode?: string | null }
+  options?: { campaignCode?: string | null; testMode?: boolean }
 ): Promise<LeadPortalFlow> {
   const params = new URLSearchParams();
   if (options?.campaignCode && options.campaignCode.trim()) {
     params.set("campaign", options.campaignCode.trim());
+  }
+  if (options?.testMode) {
+    params.set("mh_test", "1");
   }
   const query = params.toString();
   const response = await fetch(

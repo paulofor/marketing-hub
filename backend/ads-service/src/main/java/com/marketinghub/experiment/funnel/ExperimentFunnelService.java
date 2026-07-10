@@ -692,25 +692,38 @@ public class ExperimentFunnelService {
 
         mergeMetric(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
                 fetchSingleMetric("""
-                        SELECT COUNT(*) AS total,
+                        SELECT CASE
+                                   WHEN normalized_page_views.total > 0 THEN normalized_page_views.total
+                                   ELSE render_complete.total
+                               END AS total,
                                NULL AS unique_count,
-                               MAX(occurred_at) AS last_event
-                        FROM experiment_funnel_event
-                        WHERE experiment_id = ?
-                          AND stage = 'VISUALIZACAO_FORM'
-                          AND (
-                              source = ?
-                              OR (
-                                  source = ?
-                                  AND payload LIKE '%eventType=page_view%'
-                              )
-                          )
-                          AND (? IS NULL OR occurred_at > ?)
+                               CASE
+                                   WHEN normalized_page_views.total > 0 THEN normalized_page_views.last_event
+                                   ELSE render_complete.last_event
+                               END AS last_event
+                        FROM (
+                            SELECT COUNT(*) AS total,
+                                   MAX(occurred_at) AS last_event
+                            FROM experiment_landing_analytics_event
+                            WHERE experiment_id = ?
+                              AND LOWER(event_type) = 'page_view'
+                              AND (? IS NULL OR occurred_at > ?)
+                        ) normalized_page_views
+                        CROSS JOIN (
+                            SELECT COUNT(*) AS total,
+                                   MAX(occurred_at) AS last_event
+                            FROM experiment_funnel_event
+                            WHERE experiment_id = ?
+                              AND stage = 'VISUALIZACAO_FORM'
+                              AND source = ?
+                              AND (? IS NULL OR occurred_at > ?)
+                        ) render_complete
                         """, experimentId,
+                        baseline, baseline,
+                        experimentId,
                         ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE,
-                        ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
                         baseline, baseline),
-                "Visualizações registradas pelo Lead Portal e analytics da landing (experiment_funnel_event)");
+                "Visualizações canônicas por page_view normalizado com fallback legado de render-complete");
 
         mergeMetric(stages, ExperimentFunnelStage.ENVIO_FORM,
                 fetchSingleMetric("""

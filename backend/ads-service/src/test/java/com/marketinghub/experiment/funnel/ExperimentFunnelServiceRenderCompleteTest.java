@@ -588,10 +588,10 @@ class ExperimentFunnelServiceRenderCompleteTest {
     }
 
     /**
-     * Valida que o resumo consolida page_view da landing junto com render-complete na visualização do formulário.
+     * Valida que o resumo usa page_view normalizado como fonte canônica da visualização do formulário.
      */
     @Test
-    void summarizeCountsLandingAnalyticsAsFormVisualization() {
+    void summarizeUsesNormalizedPageViewsAsCanonicalFormVisualization() {
         Experiment experiment = Experiment.builder().id(37L).build();
         when(experimentRepository.findById(37L)).thenReturn(Optional.of(experiment));
         when(eventRepository.aggregateManualByExperiment(37L, null)).thenReturn(List.of());
@@ -600,34 +600,48 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
         verify(jdbcTemplate).query(
                 eq("""
-                        SELECT COUNT(*) AS total,
+                        SELECT CASE
+                                   WHEN normalized_page_views.total > 0 THEN normalized_page_views.total
+                                   ELSE render_complete.total
+                               END AS total,
                                NULL AS unique_count,
-                               MAX(occurred_at) AS last_event
-                        FROM experiment_funnel_event
-                        WHERE experiment_id = ?
-                          AND stage = 'VISUALIZACAO_FORM'
-                          AND (
-                              source = ?
-                              OR (
-                                  source = ?
-                                  AND payload LIKE '%eventType=page_view%'
-                              )
-                          )
-                          AND (? IS NULL OR occurred_at > ?)
+                               CASE
+                                   WHEN normalized_page_views.total > 0 THEN normalized_page_views.last_event
+                                   ELSE render_complete.last_event
+                               END AS last_event
+                        FROM (
+                            SELECT COUNT(*) AS total,
+                                   MAX(occurred_at) AS last_event
+                            FROM experiment_landing_analytics_event
+                            WHERE experiment_id = ?
+                              AND LOWER(event_type) = 'page_view'
+                              AND (? IS NULL OR occurred_at > ?)
+                        ) normalized_page_views
+                        CROSS JOIN (
+                            SELECT COUNT(*) AS total,
+                                   MAX(occurred_at) AS last_event
+                            FROM experiment_funnel_event
+                            WHERE experiment_id = ?
+                              AND stage = 'VISUALIZACAO_FORM'
+                              AND source = ?
+                              AND (? IS NULL OR occurred_at > ?)
+                        ) render_complete
                         """),
                 any(ResultSetExtractor.class),
                 eq(37L),
+                eq(null),
+                eq(null),
+                eq(37L),
                 eq(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE),
-                eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
                 eq(null),
                 eq(null));
     }
 
     /**
-     * Valida que o resumo não transforma eventos técnicos de analytics em novas visualizações do formulário.
+     * Valida que o resumo ignora eventos brutos de analytics para não duplicar render-complete e page_view.
      */
     @Test
-    void summarizeFiltersLandingAnalyticsFormVisualizationToPageViewOnly() {
+    void summarizeDoesNotCountRawLandingAnalyticsAsExtraFormVisualization() {
         Experiment experiment = Experiment.builder().id(41L).build();
         when(experimentRepository.findById(41L)).thenReturn(Optional.of(experiment));
         when(eventRepository.aggregateManualByExperiment(41L, null)).thenReturn(List.of());
@@ -636,25 +650,39 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
         verify(jdbcTemplate).query(
                 eq("""
-                        SELECT COUNT(*) AS total,
+                        SELECT CASE
+                                   WHEN normalized_page_views.total > 0 THEN normalized_page_views.total
+                                   ELSE render_complete.total
+                               END AS total,
                                NULL AS unique_count,
-                               MAX(occurred_at) AS last_event
-                        FROM experiment_funnel_event
-                        WHERE experiment_id = ?
-                          AND stage = 'VISUALIZACAO_FORM'
-                          AND (
-                              source = ?
-                              OR (
-                                  source = ?
-                                  AND payload LIKE '%eventType=page_view%'
-                              )
-                          )
-                          AND (? IS NULL OR occurred_at > ?)
+                               CASE
+                                   WHEN normalized_page_views.total > 0 THEN normalized_page_views.last_event
+                                   ELSE render_complete.last_event
+                               END AS last_event
+                        FROM (
+                            SELECT COUNT(*) AS total,
+                                   MAX(occurred_at) AS last_event
+                            FROM experiment_landing_analytics_event
+                            WHERE experiment_id = ?
+                              AND LOWER(event_type) = 'page_view'
+                              AND (? IS NULL OR occurred_at > ?)
+                        ) normalized_page_views
+                        CROSS JOIN (
+                            SELECT COUNT(*) AS total,
+                                   MAX(occurred_at) AS last_event
+                            FROM experiment_funnel_event
+                            WHERE experiment_id = ?
+                              AND stage = 'VISUALIZACAO_FORM'
+                              AND source = ?
+                              AND (? IS NULL OR occurred_at > ?)
+                        ) render_complete
                         """),
                 any(ResultSetExtractor.class),
                 eq(41L),
+                eq(null),
+                eq(null),
+                eq(41L),
                 eq(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE),
-                eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
                 eq(null),
                 eq(null));
     }

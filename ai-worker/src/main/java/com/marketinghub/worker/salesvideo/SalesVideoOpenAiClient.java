@@ -1,10 +1,13 @@
 package com.marketinghub.worker.salesvideo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,9 +15,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -27,6 +32,8 @@ public class SalesVideoOpenAiClient {
             + " Gere textos persuasivos, claros e orientados a conversão.";
     private static final String RESPONSES_PATH = "/responses";
     private static final String DOMAIN = "SALES_VIDEO_SCRIPT";
+    private static final String SCHEMA_PATH = "prompts/salesvideo/sales-video-script-schema.json";
+    private static final String SCHEMA_NAME = "sales_video_script";
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -59,23 +66,25 @@ public class SalesVideoOpenAiClient {
         this.webClient = clientBuilder.build();
     }
 
+    /** Indica se o client pode chamar a OpenAI com chave configurada. */
     public boolean isEnabled() {
         return enabled;
     }
 
+    /** Gera o roteiro do vídeo usando Responses API com JSON Schema estrito e modo Flex. */
     public GeneratedScriptResult generateScript(long jobId, String prompt) {
         if (!enabled) {
             throw new SalesVideoOpenAiException("OpenAI API key is not configured");
         }
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
-        payload.put("modalities", List.of("text"));
-        payload.put("max_output_tokens", maxOutputTokens);
-        payload.put("messages", List.of(
+        payload.put("input", List.of(
                 OpenAiRequestUtils.message("system", SYSTEM_PROMPT),
                 OpenAiRequestUtils.message("user", prompt)
         ));
-        payload.put("response_format", responseFormat());
+        payload.put("text", Map.of("format", responseFormat()));
+        payload.put("service_tier", "flex");
+        payload.put("max_output_tokens", maxOutputTokens);
         if (OpenAiRequestUtils.supportsTemperature(model)) {
             payload.put("temperature", 0.7);
         }
@@ -91,6 +100,7 @@ public class SalesVideoOpenAiClient {
         if (response == null) {
             throw new SalesVideoOpenAiException("Resposta vazia da OpenAI");
         }
+        String rawResponseJson = serializeRawResponse(response);
         if (response.hasError()) {
             throw new SalesVideoOpenAiException(response.errorMessage());
         }
@@ -116,42 +126,51 @@ public class SalesVideoOpenAiClient {
         payloadDto.put("prompt", prompt);
         payloadDto.put("model", model);
 
-        generationRecorder.record(DOMAIN, String.valueOf(jobId), prompt, output, model, response.usage());
-        return new GeneratedScriptResult(payloadDto, output, response.usage(), response.id());
+        generationRecorder.record(DOMAIN, String.valueOf(jobId), prompt, rawResponseJson, model, response.usage());
+        return new GeneratedScriptResult(payloadDto, rawResponseJson, response.usage(), response.id());
     }
 
+    /** Monta o formato de saída estruturada com schema versionado no classpath. */
     private Map<String, Object> responseFormat() {
-        Map<String, Object> schema = new LinkedHashMap<>();
-        schema.put("type", "object");
-        schema.put("required", List.of("hook", "script", "cta", "caption", "storyboard"));
-        Map<String, Object> properties = new LinkedHashMap<>();
-        properties.put("hook", Map.of("type", "string"));
-        properties.put("script", Map.of("type", "string"));
-        properties.put("cta", Map.of("type", "string"));
-        properties.put("caption", Map.of("type", "string"));
-        Map<String, Object> storyboardItem = new LinkedHashMap<>();
-        storyboardItem.put("type", "object");
-        storyboardItem.put("required", List.of("scene", "visual", "voiceover", "durationSeconds"));
-        Map<String, Object> storyboardProps = new LinkedHashMap<>();
-        storyboardProps.put("scene", Map.of("type", "integer"));
-        storyboardProps.put("visual", Map.of("type", "string"));
-        storyboardProps.put("voiceover", Map.of("type", "string"));
-        storyboardProps.put("durationSeconds", Map.of("type", "number"));
-        storyboardItem.put("properties", storyboardProps);
-        properties.put("storyboard", Map.of("type", "array", "items", storyboardItem));
-        schema.put("properties", properties);
-        Map<String, Object> wrapper = new LinkedHashMap<>();
-        wrapper.put("type", "json_schema");
-        wrapper.put("json_schema", Map.of("name", "sales_video_script", "schema", schema));
-        return wrapper;
+        try {
+            Object schema = objectMapper.readValue(loadSchema(), Object.class);
+            Map<String, Object> format = new LinkedHashMap<>();
+            format.put("type", "json_schema");
+            format.put("name", SCHEMA_NAME);
+            format.put("schema", schema);
+            format.put("strict", true);
+            return format;
+        } catch (JsonProcessingException ex) {
+            throw new SalesVideoOpenAiException("Schema de roteiro de vídeo inválido", ex);
+        }
     }
 
+    /** Serializa o storyboard para persistência no backend. */
     private String serializeStoryboard(List<StoryboardScene> storyboard) {
         List<StoryboardScene> safeList = storyboard == null ? Collections.emptyList() : storyboard;
         try {
             return objectMapper.writeValueAsString(safeList);
         } catch (Exception ex) {
             throw new SalesVideoOpenAiException("Falha ao serializar storyboard", ex);
+        }
+    }
+
+    /** Carrega o schema versionado de roteiro de vídeo. */
+    private String loadSchema() {
+        try {
+            return StreamUtils.copyToString(new ClassPathResource(SCHEMA_PATH).getInputStream(),
+                    StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            throw new SalesVideoOpenAiException("Schema de roteiro de vídeo não encontrado: " + SCHEMA_PATH, ex);
+        }
+    }
+
+    /** Serializa a resposta completa para auditoria no backend. */
+    private String serializeRawResponse(OpenAiResponse response) {
+        try {
+            return objectMapper.writeValueAsString(response);
+        } catch (JsonProcessingException ex) {
+            throw new SalesVideoOpenAiException("Falha ao serializar resposta bruta da OpenAI", ex);
         }
     }
 

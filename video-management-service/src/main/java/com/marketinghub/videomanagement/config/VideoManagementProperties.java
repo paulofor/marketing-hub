@@ -63,6 +63,9 @@ public class VideoManagementProperties {
     public static class Providers {
         @NotNull
         private Real real = new Real();
+
+        @NotNull
+        private Veo veo = new Veo();
     }
 
     @Getter
@@ -91,6 +94,41 @@ public class VideoManagementProperties {
 
         @NotNull
         private Duration pollInterval = Duration.ofSeconds(5);
+
+        @Min(1)
+        private int maxPollAttempts = 120;
+    }
+
+    @Getter
+    @Setter
+    public static class Veo {
+        private boolean enabled = false;
+
+        /**
+         * Nomes que identificam jobs destinados ao adapter direto do VEO.
+         */
+        @NotNull
+        private List<String> acceptedNames = new ArrayList<>(List.of("VEO", "VEO-3.1", "VEO_3_1"));
+
+        /**
+         * Base URL oficial da Gemini API para geração de vídeos.
+         */
+        @NotNull
+        private URI baseUrl = URI.create("https://generativelanguage.googleapis.com/v1beta");
+
+        /**
+         * Chave da Gemini API usada apenas pelo módulo executor de vídeo.
+         */
+        private String apiKey;
+
+        private String model = "veo-3.1-generate-preview";
+        private String aspectRatio = "9:16";
+        private String resolution = "720p";
+        private String personGeneration = "allow_all";
+        private Integer durationSeconds = 8;
+
+        @NotNull
+        private Duration pollInterval = Duration.ofSeconds(10);
 
         @Min(1)
         private int maxPollAttempts = 120;

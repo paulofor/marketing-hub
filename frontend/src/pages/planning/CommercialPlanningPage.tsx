@@ -114,6 +114,15 @@ function formatRoas(revenue?: number | null, cost?: number | null) {
   return `${((revenue ?? 0) / cost).toFixed(2)}x`;
 }
 
+function formatAverageViewTime(valueMs?: number | null) {
+  if (valueMs == null || valueMs <= 0) return "Sem dados";
+  const totalSeconds = Math.round(valueMs / 1000);
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return seconds > 0 ? `${minutes}min ${seconds}s` : `${minutes}min`;
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "Não definido";
   return new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
@@ -475,6 +484,12 @@ function ExperimentCard({
         <div>
           <span>Cliques</span>
           <strong>{formatExecutedNumber(experiment.clicks)}</strong>
+        </div>
+        <div>
+          <span>Tempo tela</span>
+          <strong>
+            {formatAverageViewTime(experiment.averageProductViewTimeMs)}
+          </strong>
         </div>
         <div>
           <span>Custo</span>

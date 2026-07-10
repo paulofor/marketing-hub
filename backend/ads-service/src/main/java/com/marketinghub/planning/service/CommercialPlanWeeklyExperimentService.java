@@ -247,7 +247,8 @@ public class CommercialPlanWeeklyExperimentService {
                     coalesce(nullif(financial.clicks, 0), campaign.clicks, 0) as clicks,
                     coalesce(nullif(financial.leads, 0), campaign.leads, 0) as leads,
                     coalesce(financial.checkout_clicks, 0) as checkout_clicks,
-                    coalesce(financial.purchases, 0) as purchases
+                    coalesce(financial.purchases, 0) as purchases,
+                    analytics.average_product_view_time_ms
                 from experiment e
                 left join market_niche mn on mn.id = e.niche_id
                 left join hypothesis h on h.id = e.hypothesis_id
@@ -289,10 +290,28 @@ public class CommercialPlanWeeklyExperimentService {
                     where created_at >= ? and created_at < ?
                     group by experiment_id
                 ) video on video.experiment_id = e.id
+                left join (
+                    select
+                        event_times.experiment_id,
+                        round(sum(event_times.elapsed_ms) / count(distinct event_times.session_id)) as average_product_view_time_ms
+                    from (
+                        select
+                            lae.experiment_id,
+                            coalesce(lae.session_id, concat('evento:', lae.id)) as session_id,
+                            cast(nullif(substring_index(substring_index(efe.payload, 'elapsedMs=', -1), ';', 1), '') as unsigned) as elapsed_ms
+                        from experiment_landing_analytics_event lae
+                        join experiment_funnel_event efe on efe.id = lae.funnel_event_id
+                        where lower(lae.event_type) = 'section_view_time'
+                          and lae.occurred_at >= ? and lae.occurred_at < ?
+                          and efe.payload like '%elapsedMs=%'
+                    ) event_times
+                    where event_times.elapsed_ms is not null
+                    group by event_times.experiment_id
+                ) analytics on analytics.experiment_id = e.id
                 where e.created_at >= ? and e.created_at < ?
                 order by e.created_at asc, e.id asc
                 """, this::mapExperiment, java.sql.Date.valueOf(endExclusive), java.sql.Date.valueOf(startInclusive),
-                start, end, start, end, start, end, start, end);
+                start, end, start, end, start, end, start, end, start, end);
     }
 
     /** Converte a linha SQL no contrato de experimento semanal. */
@@ -321,6 +340,7 @@ public class CommercialPlanWeeklyExperimentService {
                 rs.getLong("leads"),
                 rs.getInt("checkout_clicks"),
                 rs.getInt("purchases"),
+                nullableLong(rs, "average_product_view_time_ms"),
                 resultLabel(revenue, totalCost));
     }
 
@@ -360,6 +380,12 @@ public class CommercialPlanWeeklyExperimentService {
     /** Converte timestamp nulo ou preenchido para Instant. */
     private Instant toInstant(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();
+    }
+
+    /** Lê um long opcional preservando nulo quando a agregação SQL não retornou valor. */
+    private Long nullableLong(ResultSet rs, String column) throws SQLException {
+        long value = rs.getLong(column);
+        return rs.wasNull() ? null : value;
     }
 
     /** Representa o periodo de uma semana dentro do planejamento comercial. */

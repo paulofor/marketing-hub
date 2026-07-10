@@ -1,0 +1,43 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
+import DashboardPage from './pages/DashboardPage';
+import PromptsPage from './pages/PromptsPage';
+import AuditLogPage from './pages/AuditLogPage';
+import ShellLayout from './components/ShellLayout';
+import CodexPage from './pages/CodexPage';
+import CodexModelsPage from './pages/CodexModelsPage';
+import CodexRequestDetailPage from './pages/CodexRequestDetailPage';
+import EnvironmentsPage from './pages/EnvironmentsPage';
+import LogInterpreterPage from './pages/LogInterpreterPage';
+import PromptHintsPage from './pages/PromptHintsPage';
+import PromptListsPage from './pages/PromptListsPage';
+import ProblemsPage from './pages/ProblemsPage';
+import ProblemDetailPage from './pages/ProblemDetailPage';
+import CodexChatgptPage from './pages/CodexChatgptPage';
+import PrivacyPage from './pages/PrivacyPage';
+
+function App() {
+  return (
+    <ShellLayout>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/prompts" element={<PromptsPage />} />
+        <Route path="/prompt-hints" element={<PromptHintsPage />} />
+        <Route path="/prompt-lists" element={<PromptListsPage />} />
+        <Route path="/problems" element={<ProblemsPage />} />
+        <Route path="/problems/:id" element={<ProblemDetailPage />} />
+        <Route path="/environments" element={<EnvironmentsPage />} />
+        <Route path="/logs" element={<LogInterpreterPage />} />
+        <Route path="/codex" element={<CodexPage />} />
+        <Route path="/codex-chatgpt" element={<CodexChatgptPage />} />
+        <Route path="/codex-chatgpt-mkt" element={<CodexChatgptPage variant="marketing" />} />
+        <Route path="/codex/requests/:id" element={<CodexRequestDetailPage />} />
+        <Route path="/codex/models" element={<CodexModelsPage />} />
+        <Route path="/audit" element={<AuditLogPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ShellLayout>
+  );
+}
+
+export default App;

@@ -20,11 +20,27 @@ video:
         - REAL
         - HEYGEN
         - SYNTHESIA
+        - VEO
       base-url: http://real-video-provider:8080
       auth-token: ""
       create-path: /v1/renders
       status-path-template: /v1/renders/{providerJobId}
       poll-interval: PT5S
+      max-poll-attempts: 120
+    veo:
+      enabled: false
+      accepted-names:
+        - VEO
+        - VEO-3.1
+        - VEO_3_1
+      base-url: https://generativelanguage.googleapis.com/v1beta
+      api-key: ${GEMINI_API_KEY:}
+      model: veo-3.1-generate-preview
+      aspect-ratio: "9:16"
+      resolution: 720p
+      person-generation: allow_all
+      duration-seconds: 8
+      poll-interval: PT10S
       max-poll-attempts: 120
 
 management:

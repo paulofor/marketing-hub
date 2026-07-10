@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hook", "script", "cta", "caption", "storyboard"],
+  "properties": {
+    "hook": {
+      "type": "string",
+      "minLength": 10
+    },
+    "script": {
+      "type": "string",
+      "minLength": 80
+    },
+    "cta": {
+      "type": "string",
+      "minLength": 10
+    },
+    "caption": {
+      "type": "string",
+      "minLength": 20
+    },
+    "storyboard": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scene", "visual", "voiceover", "durationSeconds"],
+        "properties": {
+          "scene": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "visual": {
+            "type": "string",
+            "minLength": 10
+          },
+          "voiceover": {
+            "type": "string",
+            "minLength": 10
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    }
+  }
+}

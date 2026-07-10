@@ -30,14 +30,16 @@ Validacao revisada em 2026-07-09 via MCP/banco real:
 - O evento do job registra claim manual por `codex-manual-video` e conclusao com a mensagem `Video MP4 validado e anexado ao experimento 59 com assets reais`.
 - O `metadata_json` do job registra `source=codex-sandbox` e a observacao de que o MP4 foi usado para destravar o experimento enquanto o provider externo permanecia sem polling.
 
-Conclusao: o experimento 59 prova que o VEO foi validado e que o artefato final pode ser registrado corretamente no Marketing Hub, mas esse caso foi um handoff operacional/manual com `GEMINI_API_KEY`, nao uma execucao automatica completa pelo `video-management-service`.
+Conclusao original: o experimento 59 provou que o VEO foi validado e que o artefato final podia ser registrado corretamente no Marketing Hub, mas aquele caso foi um handoff operacional/manual com `GEMINI_API_KEY`, nao uma execucao automatica completa pelo `video-management-service`.
+
+Atualizacao em 2026-07-10: o `video-management-service` recebeu adapter nominal `VEO`, com criacao de operacao `predictLongRunning`, polling da Gemini API e download do MP4 final. A execucao direta continua condicionada a `VIDEO_PROVIDERS_VEO_ENABLED=true` e `GEMINI_API_KEY`/`VIDEO_PROVIDERS_VEO_API_KEY` configurada no ambiente.
 
 ## Diferenca entre VEO manual e worker automatico
 
 - O backend aceita `providerName=VEO` no job e no ativo de experimento.
-- O `video-management-service` atual possui adapter generico `real`, configurado por padrao para aceitar `REAL`, `HEYGEN` e `SYNTHESIA`.
-- Para o worker consumir automaticamente jobs com `providerName=VEO`, a configuracao `video.providers.real.accepted-names` precisa incluir `VEO` e o endpoint real configurado em `video.providers.real.base-url` precisa ser uma API que traduza o contrato generico do worker para a Gemini/Veo.
-- Sem essa configuracao/API intermediaria, o caminho funcional validado continua sendo: gerar via Gemini API com `GEMINI_API_KEY`, subir o MP4 como asset, marcar o job como concluido e vincular o asset ao experimento.
+- O `video-management-service` possui adapter direto `veo` para consumir jobs com `providerName=VEO`.
+- O adapter direto usa a Gemini API com `x-goog-api-key`, envia `durationSeconds` como numero e nao envia `numberOfVideos`, preservando a evidencia operacional ja validada.
+- Sem chave Gemini ou com provider indisponivel, o caminho manual validado continua sendo fallback: gerar via Gemini API, subir o MP4 como asset, marcar o job como concluido e vincular o ativo ao experimento.
 
 ## Alternativas para proximos experimentos
 
@@ -48,18 +50,20 @@ Conclusao: o experimento 59 prova que o VEO foi validado e que o artefato final 
    - Aderencia comercial: alta para destravar experimento urgente.
 
 2. **Usar o adapter generico `real` aceitando `VEO`**
-   - Beneficio: reaproveita o modulo existente e permite automacao sem criar uma tela nova.
+   - Status: opcao de compatibilidade para API intermediaria.
+   - Beneficio: reaproveita contrato generico quando houver gateway proprio.
    - Risco: exige uma API intermediaria compativel com o contrato `create/status/download` do provider real.
    - Custo/esforco: medio.
-   - Aderencia comercial: melhor opcao quando queremos escala operacional sem refatorar o modulo.
+   - Aderencia comercial: util quando houver gateway interno de video.
 
 3. **Implementar adapter nominal `VEO` no `video-management-service`**
+   - Status: implementado em 2026-07-10.
    - Beneficio: contrato direto com Gemini/Veo, melhor rastreabilidade e menor ambiguidade futura.
-   - Risco: maior esforco tecnico e necessidade de testes de provider, polling, download, custo e falhas.
+   - Risco: exige chave Gemini operacional, monitoramento de falhas e custo externo.
    - Custo/esforco: alto.
-   - Aderencia comercial: melhor para escala recorrente, mas nao e o caminho mais rapido para uma campanha urgente.
+   - Aderencia comercial: melhor para escala recorrente.
 
-Decisao recomendada: para campanha urgente, usar o caminho manual validado do experimento 59; para escala, evoluir primeiro a alternativa 2 e so depois criar adapter nominal se o volume justificar.
+Decisao atual: usar o adapter nominal VEO para escala quando houver credencial Gemini configurada; manter handoff manual apenas como fallback operacional.
 
 ## Regra operacional proposta
 

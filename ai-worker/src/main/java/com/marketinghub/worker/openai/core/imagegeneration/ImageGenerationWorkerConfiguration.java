@@ -29,9 +29,17 @@ public class ImageGenerationWorkerConfiguration {
             CreativeImageOptimizer imageOptimizer,
             WebClient.Builder webClientBuilder,
             ObjectMapper objectMapper,
-            ImageGenerationWorkerProperties properties
+            ImageGenerationWorkerProperties properties,
+            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes
     ) {
-        return new ImageGenerationBackendClient(storageClient, imageOptimizer, webClientBuilder, objectMapper, properties);
+        return new ImageGenerationBackendClient(
+                storageClient,
+                imageOptimizer,
+                webClientBuilder,
+                objectMapper,
+                properties,
+                maxInMemorySizeBytes
+        );
     }
 
     /** Cria o builder responsável por montar o request de imagem da OpenAI para a etapa imagegeneration. */

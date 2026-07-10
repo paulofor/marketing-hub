@@ -6,6 +6,7 @@ import com.marketinghub.worker.openai.core.StageWorker;
 import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.openai.ResponsesApiOpenAiClient;
 import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -21,8 +22,13 @@ public class QualityReviewWorkerConfiguration {
 
     /** Cria o adapter HTTP da revisão visual para consultar e atualizar execuções no backend. */
     @Bean
-    public QualityReviewBackendClient qualityReviewBackendClient(WebClient.Builder webClientBuilder, QualityReviewWorkerProperties properties, ObjectMapper objectMapper) {
-        return new QualityReviewBackendClient(webClientBuilder, properties, objectMapper);
+    public QualityReviewBackendClient qualityReviewBackendClient(
+            WebClient.Builder webClientBuilder,
+            QualityReviewWorkerProperties properties,
+            ObjectMapper objectMapper,
+            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes
+    ) {
+        return new QualityReviewBackendClient(webClientBuilder, properties, objectMapper, maxInMemorySizeBytes);
     }
 
     /** Cria o serviço que renderiza o HTML final em Chromium e publica screenshots públicos. */

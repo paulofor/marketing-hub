@@ -33,7 +33,19 @@ public class PresetDesignBackendClient implements StageBackendPort<PresetDesignI
             PresetDesignWorkerProperties properties,
             ObjectMapper objectMapper
     ) {
-        this.webClient = builder.build();
+        this(builder, properties, objectMapper, 52_428_800);
+    }
+
+    /** Inicializa o cliente com WebClient, limite de buffer e propriedades de presetdesign. */
+    public PresetDesignBackendClient(
+            WebClient.Builder builder,
+            PresetDesignWorkerProperties properties,
+            ObjectMapper objectMapper,
+            int maxInMemorySizeBytes
+    ) {
+        this.webClient = builder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeBytes))
+                .build();
         this.properties = properties;
         this.objectMapper = objectMapper;
     }

@@ -75,19 +75,23 @@ public class FlowController {
      */
     @GetMapping("/{slug}")
     public FlowResponse getFlow(@PathVariable("slug") String slug, HttpServletRequest request) {
+        if (isTestTraffic(request)) {
+            return FlowResponse.from(flowService.get(slug));
+        }
         FlowAccessMetadata accessMetadata = FlowAccessMetadata.from(request);
         return FlowResponse.from(flowService.getAndTrackAccess(slug, accessMetadata));
     }
 
     /**
-     * Entrega a landing standalone com analytics dinâmico para alimentar o funil do experimento.
+     * Entrega a landing standalone com analytics dinâmico, ignorando acessos marcados como teste.
      */
     @GetMapping(value = "/{slug}/page", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> getStandaloneFlowPage(
             @PathVariable("slug") String slug,
             HttpServletRequest request) {
-        FlowAccessMetadata accessMetadata = FlowAccessMetadata.from(request);
-        Flow flow = flowService.getAndTrackAccess(slug, accessMetadata);
+        Flow flow = isTestTraffic(request)
+                ? flowService.get(slug)
+                : flowService.getAndTrackAccess(slug, FlowAccessMetadata.from(request));
         String html = flow.customFormHtml();
         if (!isStandaloneHtmlDocument(html)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -154,10 +158,10 @@ public class FlowController {
     }
 
     /**
-     * Atualiza a instrumentação legada já existente para incluir logs de diagnóstico sem duplicar scripts.
+     * Atualiza a instrumentação legada para incluir diagnóstico e bloqueio de tráfego de teste.
      */
     private String refreshLandingAnalyticsScriptWhenMissingDebug(String slug, String html) {
-        if (html.contains("mhAnalyticsDebug")) {
+        if (html.contains("mhAnalyticsDebug") && html.contains("mh_internal_test")) {
             return html;
         }
         String analyticsScript = buildLandingAnalyticsScript(slug);
@@ -176,6 +180,14 @@ public class FlowController {
                 <script data-mh-landing-analytics="true">
                 (function(){
                   const slugValue = %s;
+                  const params = new URLSearchParams(window.location.search);
+                  const testParam = params.get('mh_test') === '1';
+                  if (testParam) {
+                    sessionStorage.setItem('mh_internal_test', 'true');
+                  }
+                  if (testParam || sessionStorage.getItem('mh_internal_test') === 'true') {
+                    return;
+                  }
                   const endpoint = '/api/flows/' + encodeURIComponent(slugValue) + '/page-analytics';
                   const debugParam = new URLSearchParams(window.location.search).get('mhAnalyticsDebug') === '1';
                   const debugStorage = localStorage.getItem('mhLandingAnalyticsDebug') === 'true';
@@ -367,6 +379,13 @@ public class FlowController {
         return "\"" + safeValue
                 .replace("\\", "\\\\")
                 .replace("\"", "\\\"") + "\"";
+    }
+
+    /**
+     * Identifica acessos internos de teste que não devem entrar nas métricas comerciais.
+     */
+    private boolean isTestTraffic(HttpServletRequest request) {
+        return "1".equals(request.getParameter("mh_test"));
     }
 
     /**

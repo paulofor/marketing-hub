@@ -289,6 +289,29 @@ class FlowControllerTest {
     }
 
     /**
+     * Valida que o link de teste entrega a landing sem registrar acesso nem analytics comercial.
+     */
+    @Test
+    void getStandaloneFlowPageWithTestParamDoesNotTrackAccess() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("<!doctype html><html><body>Landing teste</body></html>");
+
+        mockMvc.perform(put("/api/flows/landing-teste")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/landing-teste/page").param("mh_test", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("mh_internal_test")))
+                .andExpect(content().string(containsString("Landing teste")));
+
+        assertThat(flowAccessRepository.findAll()).isEmpty();
+        assertThat(meterRegistry.counter("lead_portal_flow_access_total", "slug", "landing-teste").count())
+                .isZero();
+    }
+
+    /**
      * Valida atualização de instrumentação legada para exibir diagnóstico no browser sem duplicar analytics.
      */
     @Test

@@ -452,12 +452,18 @@ public class GeraSalesPagePublicationAuditService {
         }
     }
 
-    /** Monta o coletor minimo de page view, carga, tempo por secao e clique no checkout. */
+    /** Monta o coletor minimo de analytics, ignorando acessos internos marcados como teste. */
     private String buildAnalyticsScript(String flowSlug) {
         return """
                 (function(){
                   if (window.__mhSalesPageAnalyticsStarted) return;
                   window.__mhSalesPageAnalyticsStarted = true;
+                  var params = new URLSearchParams(window.location.search);
+                  var testParam = params.get('mh_test') === '1';
+                  if (testParam) {
+                    sessionStorage.setItem('mh_internal_test', 'true');
+                  }
+                  if (testParam || sessionStorage.getItem('mh_internal_test') === 'true') return;
                   var flowSlug = '%s';
                   var endpoint = flowSlug ? '/mh-api/public/lead-portal/flows/' + encodeURIComponent(flowSlug) + '/page-analytics' : '';
                   var sessionId = localStorage.getItem('mh_session_id') || (Date.now() + '-' + Math.random().toString(16).slice(2));

@@ -2056,7 +2056,10 @@ export default function ExperimentDetailPage() {
       label: "Objetivo da campanha",
       value: campaignObjectiveLabel,
     },
-    { label: "Custo rastreável", value: formatCurrency(data.cost) },
+    {
+      label: "Custo rastreável",
+      value: formatCurrency(experimentCostSummary.auditableTotalBrl),
+    },
     {
       label: "Criativos aprovados",
       value: `${readinessCreativeCount}/3`,
@@ -2730,8 +2733,8 @@ export default function ExperimentDetailPage() {
                     <div>
                       <h5 className="card-title mb-1">Custos do experimento</h5>
                       <p className="text-muted small mb-0">
-                        Total rastreável em BRL separado da auditoria técnica em
-                        USD.
+                        Total rastreável em BRL com custos técnicos em USD
+                        convertidos pelo padrão US$ 1 = R$ 5.
                       </p>
                     </div>
                     <div className="text-end">
@@ -2760,6 +2763,15 @@ export default function ExperimentDetailPage() {
                               costRow.currency,
                             )}
                           </div>
+                          {costRow.convertedValueBrl != null ? (
+                            <div className="text-muted small">
+                              Equivale a{" "}
+                              {formatCurrencyValue(
+                                costRow.convertedValueBrl,
+                                "BRL",
+                              )}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     ))}

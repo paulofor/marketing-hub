@@ -69,6 +69,8 @@ class CommercialPlanWeeklyExperimentServiceTest {
                         any(),
                         any(),
                         any(),
+                        any(),
+                        any(),
                         any()))
                 .thenReturn(List.<CommercialPlanWeekExperimentDto>of());
 

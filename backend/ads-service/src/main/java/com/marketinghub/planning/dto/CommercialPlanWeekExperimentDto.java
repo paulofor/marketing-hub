@@ -23,4 +23,5 @@ public record CommercialPlanWeekExperimentDto(
         Long leads,
         Integer checkoutClicks,
         Integer purchases,
+        Long averageProductViewTimeMs,
         String result) {}

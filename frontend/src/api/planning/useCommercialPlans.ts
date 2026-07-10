@@ -116,6 +116,7 @@ export interface CommercialPlanWeekExperiment {
   leads?: number | null;
   checkoutClicks?: number | null;
   purchases?: number | null;
+  averageProductViewTimeMs?: number | null;
   result?: string | null;
 }
 

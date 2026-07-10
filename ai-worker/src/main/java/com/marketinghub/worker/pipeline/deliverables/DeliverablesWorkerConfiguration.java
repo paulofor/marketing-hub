@@ -10,6 +10,7 @@ import com.marketinghub.worker.pipeline.PipelineWorker;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -21,8 +22,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class DeliverablesWorkerConfiguration {
     /** Cria o adapter HTTP da etapa deliverables para consultar e atualizar execuções no backend. */
     @Bean
-    public DeliverablesBackendClient deliverablesBackendClient(WebClient.Builder webClientBuilder, DeliverablesWorkerProperties properties, ObjectMapper objectMapper) {
-        return new DeliverablesBackendClient(webClientBuilder, properties, objectMapper);
+    public DeliverablesBackendClient deliverablesBackendClient(
+            WebClient.Builder webClientBuilder,
+            DeliverablesWorkerProperties properties,
+            ObjectMapper objectMapper,
+            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes) {
+        return new DeliverablesBackendClient(webClientBuilder, properties, objectMapper, maxInMemorySizeBytes);
     }
 
     /** Cria o validador da resposta JSON retornada pela OpenAI para a etapa deliverables. */

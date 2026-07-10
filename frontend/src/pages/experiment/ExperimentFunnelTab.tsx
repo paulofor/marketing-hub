@@ -1,4 +1,3 @@
-import { useState, type FormEvent } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import {
@@ -6,7 +5,6 @@ import {
   type ExperimentFunnelStageSummary,
 } from "../../api/experiment/useExperimentFunnel";
 import type { ExperimentType } from "../../api/experiment/useExperiments";
-import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
 import { useResetExperimentFunnel } from "../../api/experiment/useResetExperimentFunnel";
 import {
   useExperimentFunnelDiagnostics,
@@ -20,6 +18,10 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 });
 
 const BACKTEST_TARGET_TOTAL = 500;
+const ZERO_PRIMARY_RESULT_MINIMUM_SPEND = 25;
+const LOW_IMPRESSIONS_MINIMUM = 100;
+const LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE_HOURS = 48;
+const EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD = 25;
 
 function formatPercentage(value: number) {
   return `${value.toFixed(1)}%`;
@@ -252,26 +254,52 @@ export default function ExperimentFunnelTab({
     BACKTEST_TARGET_TOTAL > 0
       ? (totalOutcomes / BACKTEST_TARGET_TOTAL) * 100
       : 0;
-  const registerEvent = useRegisterExperimentFunnelEvent(experimentId);
   const resetFunnel = useResetExperimentFunnel(experimentId);
-  const [form, setForm] = useState({
-    stage: "VISUALIZACAO_ANUNCIO",
-    leadId: "",
-    source: "",
-    campaignCode: "",
-    payload: "",
-  });
-
-  const onSubmit = (evt: FormEvent) => {
-    evt.preventDefault();
-    registerEvent.mutate({
-      stage: form.stage as any,
-      leadId: form.leadId ? form.leadId.trim() : undefined,
-      source: form.source ? form.source.trim() : undefined,
-      campaignCode: form.campaignCode ? form.campaignCode.trim() : undefined,
-      payload: form.payload ? form.payload.trim() : undefined,
-    });
-  };
+  const statisticallyFailedStages =
+    diagnosticsQuery.data?.diagnostics?.filter(
+      (item) => item.status === "STATISTICALLY_FAILED",
+    ) ?? [];
+  const backendStopRules = [
+    {
+      title: "Baixa entrega",
+      detail: `Parar se a campanha tiver menos de ${LOW_IMPRESSIONS_MINIMUM} impressões após ${LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE_HOURS} horas em execução.`,
+      status:
+        "Decisão no backend; o pedido de pausa é enviado ao Facebook Ads Worker.",
+    },
+    {
+      title: "Gasto sem resultado primário",
+      detail: `Parar se o gasto chegar a ${formatCurrency(ZERO_PRIMARY_RESULT_MINIMUM_SPEND)} sem envio de formulário, abertura do e-mail de amostra ou compra.`,
+      status:
+        normalizedTotalSpend != null &&
+        normalizedTotalSpend >= ZERO_PRIMARY_RESULT_MINIMUM_SPEND
+          ? "Piso de gasto já atingido; depende dos resultados primários do funil."
+          : `Ainda abaixo do piso de ${formatCurrency(ZERO_PRIMARY_RESULT_MINIMUM_SPEND)}.`,
+    },
+    {
+      title: "Etapa prioritária reprovada",
+      detail:
+        "Parar quando qualquer transição prioritária do funil ficar estatisticamente reprovada.",
+      status: statisticallyFailedStages.length
+        ? `${statisticallyFailedStages.length} etapa(s) reprovada(s): ${statisticallyFailedStages
+            .map((stage) => stage.stageLabel)
+            .join(", ")}.`
+        : "Nenhuma etapa prioritária reprovada no diagnóstico carregado.",
+    },
+  ];
+  const workerStopRules = [
+    {
+      title: "Execução da pausa oficial",
+      detail:
+        "Consome /api/facebook-campaigns/stop-requests, aplica status=PAUSED na Meta e reporta o resultado ao backend.",
+      status: "O worker executa a decisão; a regra de negócio fica no backend.",
+    },
+    {
+      title: "Trava financeira emergencial",
+      detail: `Pausa diretamente na Meta se o Insights indicar gasto de pelo menos ${formatCurrency(EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD)} com zero leads.`,
+      status:
+        "Protege orçamento mesmo se o backend estiver indisponível durante a sincronização de métricas.",
+    },
+  ];
 
   const handleReset = async () => {
     if (resetFunnel.isPending) {
@@ -526,136 +554,53 @@ export default function ExperimentFunnelTab({
         ) : null}
 
         <hr className="my-4" />
-        <form className="row g-3 align-items-end" onSubmit={onSubmit}>
-          <div className="col-12 col-lg-3">
-            <label className="form-label" htmlFor="funnel_stage">
-              Etapa
-            </label>
-            <select
-              id="funnel_stage"
-              className="form-select"
-              value={form.stage}
-              onChange={(e) => setForm({ ...form, stage: e.target.value })}
-              disabled={alterationLocked}
-            >
-              {stages.map((stage) => (
-                <option key={stage.stage} value={stage.stage}>
-                  {stage.order}. {stage.label}
-                </option>
-              ))}
-            </select>
+        <div className="rounded-3 border p-3 bg-light">
+          <div className="d-flex flex-wrap justify-content-between gap-2 mb-3">
+            <div>
+              <h6 className="mb-1">Regras de parada do experimento</h6>
+              <p className="text-muted small mb-0">
+                Critérios que protegem orçamento e impedem manter campanha ruim
+                rodando sem sinal comercial.
+              </p>
+            </div>
+            <span className="badge text-bg-secondary align-self-start">
+              Experimento #{experimentId}
+            </span>
           </div>
-          <div className="col-12 col-lg-3">
-            <label className="form-label" htmlFor="funnel_lead">
-              Lead (UUID) opcional
-            </label>
-            <input
-              id="funnel_lead"
-              type="text"
-              className="form-control"
-              placeholder="00000000-0000-0000-0000-000000000000"
-              value={form.leadId}
-              onChange={(e) => setForm({ ...form, leadId: e.target.value })}
-              disabled={alterationLocked}
-            />
-          </div>
-          <div className="col-12 col-lg-3">
-            <label className="form-label" htmlFor="funnel_source">
-              Fonte (opcional)
-            </label>
-            <input
-              id="funnel_source"
-              type="text"
-              className="form-control"
-              placeholder="manual, integração, etc"
-              value={form.source}
-              onChange={(e) => setForm({ ...form, source: e.target.value })}
-              disabled={alterationLocked}
-            />
-          </div>
-          <div className="col-12 col-lg-3">
-            <label className="form-label" htmlFor="funnel_campaign_code">
-              Código do anúncio (campaign)
-            </label>
-            <input
-              id="funnel_campaign_code"
-              type="text"
-              className="form-control"
-              placeholder="ex.: 123456789012345"
-              value={form.campaignCode}
-              onChange={(e) =>
-                setForm({ ...form, campaignCode: e.target.value })
-              }
-              disabled={alterationLocked}
-            />
-            <div className="form-text">
-              Use o mesmo valor configurado nos parâmetros da URL/UTM do
-              anúncio.
+          <div className="row g-3">
+            <div className="col-12 col-xl-6">
+              <div className="h-100">
+                <div className="text-uppercase text-muted small fw-semibold mb-2">
+                  Backend
+                </div>
+                <div className="list-group">
+                  {backendStopRules.map((rule) => (
+                    <div key={rule.title} className="list-group-item">
+                      <div className="fw-semibold">{rule.title}</div>
+                      <div className="small">{rule.detail}</div>
+                      <div className="small text-muted mt-1">{rule.status}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="col-12 col-xl-6">
+              <div className="h-100">
+                <div className="text-uppercase text-muted small fw-semibold mb-2">
+                  Facebook Ads Worker
+                </div>
+                <div className="list-group">
+                  {workerStopRules.map((rule) => (
+                    <div key={rule.title} className="list-group-item">
+                      <div className="fw-semibold">{rule.title}</div>
+                      <div className="small">{rule.detail}</div>
+                      <div className="small text-muted mt-1">{rule.status}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-          <div className="col-12 col-lg-3 d-flex align-items-end">
-            <button
-              type="submit"
-              className="btn btn-primary w-100"
-              disabled={registerEvent.isPending || alterationLocked}
-            >
-              {registerEvent.isPending ? "Registrando..." : "Registrar evento"}
-            </button>
-          </div>
-          <div className="col-12">
-            <label className="form-label" htmlFor="funnel_payload">
-              Observação ou payload (opcional)
-            </label>
-            <textarea
-              id="funnel_payload"
-              className="form-control"
-              rows={2}
-              placeholder="Detalhes adicionais para rastreabilidade"
-              value={form.payload}
-              onChange={(e) => setForm({ ...form, payload: e.target.value })}
-              disabled={alterationLocked}
-            />
-            {registerEvent.isSuccess ? (
-              <div className="text-success small mt-1">
-                Evento registrado com sucesso.
-              </div>
-            ) : null}
-            {registerEvent.isError ? (
-              <div className="text-danger small mt-1">
-                Não foi possível salvar o evento. Verifique os dados e tente de
-                novo.
-              </div>
-            ) : null}
-          </div>
-        </form>
-
-        <div className="alert alert-info mb-0 mt-4" role="alert">
-          <div className="fw-semibold mb-1">O que cada etapa representa</div>
-          {isLowTicketProduct ? (
-            <ul className="mb-0 small ps-3">
-              <li>1) Impressões do anúncio.</li>
-              <li>2) Cliques que levaram para a página de venda.</li>
-              <li>3) Visualizações reais da página de venda.</li>
-              <li>4) Cliques reais no checkout.</li>
-              <li>5) Compras aprovadas.</li>
-              <li>6) Visualização/download do material pago.</li>
-            </ul>
-          ) : (
-            <ul className="mb-0 small ps-3">
-              <li>1) Impressões do anúncio.</li>
-              <li>2) Cliques que levaram ao formulário do experimento.</li>
-              <li>
-                3) Renderizações completas do formulário (evento
-                lead-portal-render-complete).
-              </li>
-              <li>4) Envios de formulário (lead_portal_submission).</li>
-              <li>5) Abertura do e-mail de amostra.</li>
-              <li>6) Acessos ao checkout no Mercado Pago.</li>
-              <li>7) Compras aprovadas.</li>
-              <li>8) Abertura do e-mail de entrega da compra.</li>
-              <li>9) Visualização/download do material pago.</li>
-            </ul>
-          )}
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -32,9 +33,10 @@ public class PresetDesignWorkerConfiguration {
     public PresetDesignBackendClient presetdesignBackendClient(
             WebClient.Builder webClientBuilder,
             PresetDesignWorkerProperties properties,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes
     ) {
-        return new PresetDesignBackendClient(webClientBuilder, properties, objectMapper);
+        return new PresetDesignBackendClient(webClientBuilder, properties, objectMapper, maxInMemorySizeBytes);
     }
 
     /** Cria o builder responsável por montar prompt, schema e request OpenAI da etapa presetdesign. */

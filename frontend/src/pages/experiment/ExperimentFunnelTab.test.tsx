@@ -12,13 +12,11 @@ import {
 } from "vitest";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import { useExperimentFunnel } from "../../api/experiment/useExperimentFunnel";
-import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
 import { useResetExperimentFunnel } from "../../api/experiment/useResetExperimentFunnel";
 import { useExperimentFunnelDiagnostics } from "../../api/experiment/useExperimentFunnelDiagnostics";
 import "@testing-library/jest-dom/vitest";
 
 vi.mock("../../api/experiment/useExperimentFunnel");
-vi.mock("../../api/experiment/useRegisterExperimentFunnelEvent");
 vi.mock("../../api/experiment/useResetExperimentFunnel");
 vi.mock("../../api/experiment/useExperimentFunnelDiagnostics");
 
@@ -61,12 +59,6 @@ describe("ExperimentFunnelTab", () => {
       isError: false,
     });
 
-    (useRegisterExperimentFunnelEvent as unknown as Mock).mockReturnValue({
-      mutate: vi.fn(),
-      isPending: false,
-      isSuccess: false,
-      isError: false,
-    });
     (useResetExperimentFunnel as unknown as Mock).mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(),
@@ -148,6 +140,23 @@ describe("ExperimentFunnelTab", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows backend and facebook worker stop rules instead of manual event creation", () => {
+    renderWithClient(
+      <ExperimentFunnelTab experimentId="42" totalSpend={100} />,
+    );
+
+    expect(
+      screen.getByText("Regras de parada do experimento"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Backend")).toBeInTheDocument();
+    expect(screen.getByText("Facebook Ads Worker")).toBeInTheDocument();
+    expect(screen.getByText("Gasto sem resultado primário")).toBeInTheDocument();
+    expect(screen.getByText("Trava financeira emergencial")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Registrar evento" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the reset button available while campaign spend is zero even when manual changes are locked", () => {
     renderWithClient(
       <ExperimentFunnelTab
@@ -202,7 +211,7 @@ describe("ExperimentFunnelTab", () => {
     expect(secondStageCells[3]).toHaveTextContent("—");
   });
 
-  it("explains the direct-sales funnel for low-ticket products without form steps", () => {
+  it("keeps the direct-sales funnel for low-ticket products without form steps", () => {
     (useExperimentFunnel as unknown as Mock).mockReturnValue({
       data: [],
       isLoading: false,
@@ -223,10 +232,8 @@ describe("ExperimentFunnelTab", () => {
     );
 
     expect(screen.getByText(/Venda direta low-ticket/)).toBeInTheDocument();
-    expect(
-      screen.getAllByText("Clique para a página de venda").length,
-    ).toBeGreaterThan(0);
-    expect(screen.getAllByText("Clique no checkout").length).toBeGreaterThan(0);
+    expect(screen.getByText("Clique para a página de venda")).toBeInTheDocument();
+    expect(screen.getByText("Clique no checkout")).toBeInTheDocument();
     expect(
       screen.queryByText("Acesso ao formulário de lead"),
     ).not.toBeInTheDocument();

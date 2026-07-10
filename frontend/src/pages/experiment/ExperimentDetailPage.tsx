@@ -8,7 +8,7 @@ import { useExperimentDiagnostics } from "../../api/experiment/useExperimentDiag
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
-import PageTitle from "../../components/PageTitle";
+import "../../components/PageTitle.css";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getExperimentStageLabel } from "./stageLabels";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
@@ -2090,7 +2090,17 @@ export default function ExperimentDetailPage() {
     <div>
       <div className="d-flex justify-content-between align-items-start">
         <div>
-          <PageTitle icon={experimentIcon}>{data.name}</PageTitle>
+          <div className="page-title-wrapper">
+            <h1 className="page-title flex-wrap">
+              <span className="page-title-icon">
+                <img src={experimentIcon} alt="" loading="lazy" />
+              </span>
+              <span className="page-title-text">{data.name}</span>
+              <span className="badge text-bg-primary fs-6 align-self-center">
+                ID #{data.id}
+              </span>
+            </h1>
+          </div>
           {data.creationSource === "MANUAL_FLOW" ? (
             <span className="badge text-bg-warning mb-2">Fluxo manual</span>
           ) : null}

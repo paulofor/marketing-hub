@@ -565,12 +565,7 @@ public class ExperimentService {
     public Experiment updateStatus(Long id, ExperimentStatus status) {
         Experiment exp = repository.findById(id).orElseThrow();
         if (status == ExperimentStatus.RUNNING) {
-            if (exp.getKpiTargetCpl() == null || exp.getStopLossCpl() == null || exp.getSampleSize() == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "financial fields not set");
-            }
-            if (exp.getDailyBudget() == null || exp.getDailyBudget().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget not set");
-            }
+            validateRunningStatusTransition(exp);
         }
         exp.setStatus(status);
         if (status == ExperimentStatus.PAUSED) {
@@ -581,6 +576,22 @@ public class ExperimentService {
             );
         }
         return exp;
+    }
+
+    /** Valida as evidências mínimas antes de aceitar experimento como em execução. */
+    private void validateRunningStatusTransition(Experiment exp) {
+        if (exp.getKpiTargetCpl() == null || exp.getStopLossCpl() == null || exp.getSampleSize() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "financial fields not set");
+        }
+        if (exp.getDailyBudget() == null || exp.getDailyBudget().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget not set");
+        }
+        if (exp.getPlatform() == ExperimentPlatform.FACEBOOK
+                && !facebookAdsCampaignRepository.existsByExperimentId(exp.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Facebook campaign must be registered before setting experiment RUNNING");
+        }
     }
 
     /**

@@ -708,6 +708,49 @@ class ExperimentServiceTest {
     }
 
     @Test
+    void updateStatusRunningRejectsFacebookExperimentWithoutRegisteredCampaign() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Running Guard").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ARG").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HRG")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150_RUNNING_GUARD")
+                .name("Lean-Startup 150 Running Guard")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("ExpRunningGuard");
+        req.setHypothesis("H");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150_RUNNING_GUARD");
+        req.setSampleSize(150);
+        req.setDailyBudget(new BigDecimal("25"));
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+
+        assertThatThrownBy(() -> service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("Facebook campaign must be registered before setting experiment RUNNING");
+        assertThat(experimentRepository.findById(experiment.getId()).orElseThrow().getStatus())
+                .isEqualTo(ExperimentStatus.PLANNED);
+    }
+
+    @Test
     void updateStatusPausedRequestsStopForLinkedFacebookCampaigns() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Pause Stop").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("APS").build());

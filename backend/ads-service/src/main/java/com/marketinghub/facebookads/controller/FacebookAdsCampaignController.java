@@ -254,6 +254,9 @@ public class FacebookAdsCampaignController {
     @ResponseStatus(HttpStatus.CREATED)
     // Executa a operação create da integração Facebook Ads.
     public void create(@RequestBody CreateCampaignRequest req) {
+        if (req == null || req.experimentId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campaign publication report is required");
+        }
         Experiment experiment;
         try {
             experiment = experimentService.get(req.experimentId());
@@ -276,6 +279,7 @@ public class FacebookAdsCampaignController {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Experiment already has a Facebook campaign: " + req.experimentId());
         }
+        validateCompleteCampaignPublicationReport(req);
         FacebookAccount account = accountRepository.findById(req.facebookAccountId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Facebook account not found: " + req.facebookAccountId()));
@@ -324,6 +328,44 @@ public class FacebookAdsCampaignController {
             }
         }
         experiment.setStatus(ExperimentStatus.RUNNING);
+    }
+
+    // Bloqueia callback parcial do worker para evitar experimento RUNNING sem publicação materializada.
+    private void validateCompleteCampaignPublicationReport(CreateCampaignRequest req) {
+        if (!StringUtils.hasText(resolveMetaId(req.externalId(), req.id()))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Published Meta campaign id is required");
+        }
+        if (!StringUtils.hasText(req.adAccountId())
+                || !StringUtils.hasText(req.name())
+                || !StringUtils.hasText(req.objective())
+                || req.budgetMode() == null
+                || req.experimentId() == null
+                || req.facebookAccountId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Campaign publication report is incomplete");
+        }
+        if (req.adSet() == null || !StringUtils.hasText(req.adSet().id())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Published Meta ad set is required");
+        }
+        List<CreateCampaignRequest.AdCreative> creativeRequests = resolveAdCreativeRequests(req);
+        List<CreateCampaignRequest.Ad> adRequests = resolveAdRequests(req);
+        if (creativeRequests.isEmpty() || adRequests.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Published Meta creative and ad are required");
+        }
+        Set<String> creativeIds = creativeRequests.stream()
+                .map(CreateCampaignRequest.AdCreative::id)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
+        if (creativeIds.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Published Meta creative id is required");
+        }
+        for (CreateCampaignRequest.Ad adRequest : adRequests) {
+            if (adRequest == null
+                    || !StringUtils.hasText(adRequest.id())
+                    || !StringUtils.hasText(adRequest.creativeId())
+                    || !creativeIds.contains(adRequest.creativeId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Published Meta ad must reference a reported creative");
+            }
+        }
     }
 
 

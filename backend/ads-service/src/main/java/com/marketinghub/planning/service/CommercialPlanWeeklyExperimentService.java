@@ -299,19 +299,20 @@ public class CommercialPlanWeeklyExperimentService {
                 left join (
                     select
                         event_times.experiment_id,
-                        round(sum(event_times.elapsed_ms) / count(distinct event_times.session_id)) as average_product_view_time_ms
+                        round(coalesce(sum(event_times.elapsed_ms), 0) / count(distinct event_times.session_id)) as average_product_view_time_ms
                     from (
                         select
                             lae.experiment_id,
                             coalesce(lae.session_id, concat('evento:', lae.id)) as session_id,
-                            cast(nullif(substring_index(substring_index(efe.payload, 'elapsedMs=', -1), ';', 1), '') as unsigned) as elapsed_ms
+                            case
+                                when lower(lae.event_type) = 'section_view_time'
+                                then cast(nullif(substring_index(substring_index(efe.payload, 'elapsedMs=', -1), ';', 1), '') as unsigned)
+                                else null
+                            end as elapsed_ms
                         from experiment_landing_analytics_event lae
                         join experiment_funnel_event efe on efe.id = lae.funnel_event_id
-                        where lower(lae.event_type) = 'section_view_time'
-                          and lae.occurred_at >= ? and lae.occurred_at < ?
-                          and efe.payload like '%elapsedMs=%'
+                        where lae.occurred_at >= ? and lae.occurred_at < ?
                     ) event_times
-                    where event_times.elapsed_ms is not null
                     group by event_times.experiment_id
                 ) analytics on analytics.experiment_id = e.id
                 where e.created_at >= ? and e.created_at < ?

@@ -5701,3 +5701,10 @@
 
 - Ajuste: na tela de planejamento, o nome do experimento permanece apontando para `/experiments/{id}` e agora fica visualmente destacado como link.
 - Objetivo comercial: reduzir atrito para sair da visão semanal e abrir rapidamente o detalhe do experimento, onde ficam decisões, funil, ativos e métricas para correção ou escala.
+
+## 2026-07-11 — Correção da média de tempo no planejamento comercial
+
+- Problema: o experimento 52 aparecia no planejamento com média de tempo de 51s, mas o detalhe do experimento mostrava 3s.
+- Causa-raiz: o planejamento dividia o tempo visível apenas pelas sessões com evento de seção, enquanto o detalhe divide pelo total de sessões capturadas pela landing.
+- Correção: o planejamento passou a usar a mesma leitura conservadora do detalhe, somando `section_view_time` e dividindo por todas as sessões de analytics do experimento no período.
+- Impacto comercial: evita superestimar engajamento da landing e melhora a decisão de pausar, corrigir ou escalar campanhas.

@@ -12,6 +12,8 @@ public record CommercialPlanWeekExperimentDto(
         String hypothesisId,
         String hypothesisTitle,
         String productType,
+        Boolean manual,
+        Boolean abTest,
         String status,
         Instant createdAt,
         BigDecimal campaignCost,

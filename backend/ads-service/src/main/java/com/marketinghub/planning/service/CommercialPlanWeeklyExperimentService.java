@@ -238,6 +238,8 @@ public class CommercialPlanWeeklyExperimentService {
                     )) as hypothesis_id,
                     h.title as hypothesis_title,
                     coalesce(e.product_ai_subtype, e.experiment_type) as product_type,
+                    case when e.creation_source = 'MANUAL_FLOW' then 1 else 0 end as manual,
+                    case when ab_test.experiment_id is null then 0 else 1 end as ab_test,
                     e.status,
                     e.created_at,
                     coalesce(campaign.cost, 0) as campaign_cost,
@@ -291,6 +293,10 @@ public class CommercialPlanWeeklyExperimentService {
                     group by experiment_id
                 ) video on video.experiment_id = e.id
                 left join (
+                    select distinct experiment_id
+                    from experiment_sales_page_ab_test
+                ) ab_test on ab_test.experiment_id = e.id
+                left join (
                     select
                         event_times.experiment_id,
                         round(sum(event_times.elapsed_ms) / count(distinct event_times.session_id)) as average_product_view_time_ms
@@ -309,7 +315,7 @@ public class CommercialPlanWeeklyExperimentService {
                     group by event_times.experiment_id
                 ) analytics on analytics.experiment_id = e.id
                 where e.created_at >= ? and e.created_at < ?
-                order by e.created_at asc, e.id asc
+                order by analytics.average_product_view_time_ms desc, e.created_at asc, e.id asc
                 """, this::mapExperiment, java.sql.Date.valueOf(endExclusive), java.sql.Date.valueOf(startInclusive),
                 start, end, start, end, start, end, start, end, start, end);
     }
@@ -329,6 +335,8 @@ public class CommercialPlanWeeklyExperimentService {
                 rs.getString("hypothesis_id"),
                 rs.getString("hypothesis_title"),
                 rs.getString("product_type"),
+                rs.getBoolean("manual"),
+                rs.getBoolean("ab_test"),
                 rs.getString("status"),
                 toInstant(rs.getTimestamp("created_at")),
                 campaignCost,

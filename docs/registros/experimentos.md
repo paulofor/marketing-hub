@@ -5696,3 +5696,8 @@
 - Causa-raiz tratada: a fila de métricas devolvia campanhas encerradas com fechamento final já concluído porque o próprio sync atualizava `facebook_ads_campaign.updated_at`, mantendo 155 campanhas antigas elegíveis a cada ciclo e consumindo quota da ad account em `development_access`.
 - Correção aplicada: o backend passa a listar campanhas encerradas para sync somente quando `metrics_final_synced_at` ainda está vazio; campanhas em execução continuam elegíveis normalmente.
 - Prevenção de recorrência: teste de contrato da fila de métricas foi ajustado para proteger a separação entre campanhas em execução e campanhas encerradas sem fechamento final, evitando que `updated_at` operacional reabra backfill infinito.
+
+## 2026-07-11 — Link visível no nome do experimento no planejamento
+
+- Ajuste: na tela de planejamento, o nome do experimento permanece apontando para `/experiments/{id}` e agora fica visualmente destacado como link.
+- Objetivo comercial: reduzir atrito para sair da visão semanal e abrir rapidamente o detalhe do experimento, onde ficam decisões, funil, ativos e métricas para correção ou escala.

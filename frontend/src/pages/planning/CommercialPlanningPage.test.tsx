@@ -73,6 +73,8 @@ let mockWeeks: unknown[] = [
         hypothesisId: "11111111-1111-1111-1111-111111111111",
         hypothesisTitle: "Kit de manutenção guiada para manicures",
         productType: "LOW_TICKET",
+        manual: true,
+        abTest: true,
         status: "ACTIVE",
         createdAt: "2026-07-02T10:00:00Z",
         totalCost: 37,
@@ -82,7 +84,30 @@ let mockWeeks: unknown[] = [
         leads: 6,
         checkoutClicks: 2,
         purchases: 1,
+        averageProductViewTimeMs: 45000,
         result: "Receita parcial",
+      },
+      {
+        id: 40,
+        name: "Agenda recorrente",
+        nicheId: 21,
+        nicheName: "Manicure profissional",
+        hypothesisId: "11111111-1111-1111-1111-111111111111",
+        hypothesisTitle: "Kit de manutenção guiada para manicures",
+        productType: "LEAD_MAGNET",
+        manual: false,
+        abTest: false,
+        status: "ACTIVE",
+        createdAt: "2026-07-03T10:00:00Z",
+        totalCost: 12,
+        videoCost: 0,
+        revenue: 0,
+        clicks: 12,
+        leads: 3,
+        checkoutClicks: 0,
+        purchases: 0,
+        averageProductViewTimeMs: 90000,
+        result: "Sem receita rastreada",
       },
     ],
   },
@@ -152,6 +177,8 @@ afterEach(() => {
           hypothesisId: "11111111-1111-1111-1111-111111111111",
           hypothesisTitle: "Kit de manutenção guiada para manicures",
           productType: "LOW_TICKET",
+          manual: true,
+          abTest: true,
           status: "ACTIVE",
           createdAt: "2026-07-02T10:00:00Z",
           totalCost: 37,
@@ -161,7 +188,30 @@ afterEach(() => {
           leads: 6,
           checkoutClicks: 2,
           purchases: 1,
+          averageProductViewTimeMs: 45000,
           result: "Receita parcial",
+        },
+        {
+          id: 40,
+          name: "Agenda recorrente",
+          nicheId: 21,
+          nicheName: "Manicure profissional",
+          hypothesisId: "11111111-1111-1111-1111-111111111111",
+          hypothesisTitle: "Kit de manutenção guiada para manicures",
+          productType: "LEAD_MAGNET",
+          manual: false,
+          abTest: false,
+          status: "ACTIVE",
+          createdAt: "2026-07-03T10:00:00Z",
+          totalCost: 12,
+          videoCost: 0,
+          revenue: 0,
+          clicks: 12,
+          leads: 3,
+          checkoutClicks: 0,
+          purchases: 0,
+          averageProductViewTimeMs: 90000,
+          result: "Sem receita rastreada",
         },
       ],
     },
@@ -185,47 +235,32 @@ describe("CommercialPlanningPage", () => {
     expect(screen.queryByText("Novo Plano de Primeira Venda")).toBeNull();
   });
 
-  it("renderiza experimentos criados por semana do mes em slides", async () => {
-    const user = userEvent.setup();
+  it("renderiza experimentos criados por semana em tabela ordenada por media de tempo", () => {
     renderPage();
 
     expect(screen.getByText("Semana 1")).toBeTruthy();
-    expect(screen.getByText("Nicho")).toBeTruthy();
-    expect(screen.getByText("Manicure profissional")).toBeTruthy();
-    expect(screen.queryByText("Hipótese")).toBeNull();
-    expect(
-      screen.queryByText("Kit de manutenção guiada para manicures"),
-    ).toBeNull();
-
-    await user.click(
-      screen.getByRole("button", { name: /manicure profissional/i }),
-    );
-
-    expect(screen.getByText("Hipótese")).toBeTruthy();
-    expect(
-      screen.getByText("Kit de manutenção guiada para manicures"),
-    ).toBeTruthy();
-    expect(screen.queryByRole("link", { name: "Kit manutenção" })).toBeNull();
-
-    await user.click(
-      screen.getByRole("button", {
-        name: /kit de manutenção guiada para manicures/i,
-      }),
-    );
-
+    expect(screen.getByText("Nome do experimento")).toBeTruthy();
+    expect(screen.getByText("Média de tempo")).toBeTruthy();
+    expect(screen.getByText("Tipo de produto")).toBeTruthy();
+    expect(screen.getByText("Teste A/B")).toBeTruthy();
     expect(
       screen.getByRole("link", { name: "Kit manutenção" }),
     ).toHaveAttribute("href", "/experiments/39");
-    expect(screen.getByText("Checkout")).toBeTruthy();
-    expect(screen.getByText("Compras")).toBeTruthy();
-    expect(screen.getByText("Receita parcial")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Agenda recorrente" }),
+    ).toHaveAttribute("href", "/experiments/40");
 
-    await user.click(
-      screen.getByRole("button", { name: "Voltar para o nível anterior" }),
-    );
-
-    expect(screen.getByText("Hipótese")).toBeTruthy();
-    expect(screen.queryByRole("link", { name: "Kit manutenção" })).toBeNull();
+    const rows = screen.getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Agenda recorrente");
+    expect(rows[1]).toHaveTextContent("1min 30s");
+    expect(rows[2]).toHaveTextContent("Kit manutenção");
+    expect(rows[2]).toHaveTextContent("45s");
+    expect(screen.getAllByText("Manicure profissional")).toHaveLength(2);
+    expect(
+      screen.getAllByText("Kit de manutenção guiada para manicures"),
+    ).toHaveLength(2);
+    expect(screen.getByText("LOW_TICKET")).toBeTruthy();
+    expect(screen.getByText("LEAD_MAGNET")).toBeTruthy();
   });
 
   it("renderiza objetivos semanais como texto e mostra campo apenas para novo objetivo", async () => {

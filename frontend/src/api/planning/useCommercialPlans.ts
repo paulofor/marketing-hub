@@ -105,6 +105,8 @@ export interface CommercialPlanWeekExperiment {
   hypothesisId?: string | null;
   hypothesisTitle?: string | null;
   productType?: string | null;
+  manual?: boolean | null;
+  abTest?: boolean | null;
   status?: string | null;
   createdAt?: string | null;
   campaignCost?: number | null;

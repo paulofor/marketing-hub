@@ -333,8 +333,26 @@ function formatBoolean(value?: boolean | null) {
   return value ? "Sim" : "Não";
 }
 
+function experimentProfit(experiment: CommercialPlanWeek["experiments"][number]) {
+  return (experiment.revenue ?? 0) - (experiment.totalCost ?? 0);
+}
+
 function sortedByAverageTime(experiments: CommercialPlanWeek["experiments"]) {
   return [...experiments].sort((first, second) => {
+    const firstTime = first.averageProductViewTimeMs ?? -1;
+    const secondTime = second.averageProductViewTimeMs ?? -1;
+    if (secondTime !== firstTime) return secondTime - firstTime;
+    return first.id - second.id;
+  });
+}
+
+function sortedByProfitThenAverageTime(
+  experiments: CommercialPlanWeek["experiments"],
+) {
+  return [...experiments].sort((first, second) => {
+    const firstProfit = experimentProfit(first);
+    const secondProfit = experimentProfit(second);
+    if (secondProfit !== firstProfit) return secondProfit - firstProfit;
     const firstTime = first.averageProductViewTimeMs ?? -1;
     const secondTime = second.averageProductViewTimeMs ?? -1;
     if (secondTime !== firstTime) return secondTime - firstTime;
@@ -363,6 +381,7 @@ function ExperimentsTable({
             <th>Hipótese</th>
             <th>Custo</th>
             <th>Receita</th>
+            <th>Lucro</th>
             <th>Média de tempo</th>
             <th>Tipo de produto</th>
             <th>Manual</th>
@@ -382,6 +401,7 @@ function ExperimentsTable({
               <td>{experiment.hypothesisTitle ?? "Hipótese não informada"}</td>
               <td>{formatExecutedCurrency(experiment.totalCost)}</td>
               <td>{formatExecutedCurrency(experiment.revenue)}</td>
+              <td>{formatExecutedCurrency(experimentProfit(experiment))}</td>
               <td>
                 {formatAverageViewTime(experiment.averageProductViewTimeMs)}
               </td>
@@ -393,6 +413,75 @@ function ExperimentsTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+function TopExperimentsRanking({ weeks }: { weeks: CommercialPlanWeek[] }) {
+  const topExperiments = useMemo(
+    () =>
+      sortedByProfitThenAverageTime(
+        weeks.flatMap((week) => week.experiments ?? []),
+      ).slice(0, 5),
+    [weeks],
+  );
+
+  return (
+    <section className="commercial-planning-top-ranking">
+      <div className="commercial-planning-top-ranking-header">
+        <div>
+          <p className="commercial-planning-month-eyebrow mb-1">
+            Ranking de experimentos
+          </p>
+          <h3>Top 5 por lucro</h3>
+        </div>
+        <span>Empate ou lucro zerado: maior tempo médio primeiro</span>
+      </div>
+
+      {topExperiments.length > 0 ? (
+        <div className="commercial-planning-ranking-list">
+          {topExperiments.map((experiment, index) => (
+            <article
+              className="commercial-planning-ranking-item"
+              key={experiment.id}
+            >
+              <span className="commercial-planning-ranking-position">
+                {index + 1}
+              </span>
+              <div className="commercial-planning-ranking-main">
+                <Link to={`/experiments/${experiment.id}`}>
+                  {experiment.name}
+                </Link>
+                <span>{experiment.nicheName ?? "Nicho não informado"}</span>
+              </div>
+              <div className="commercial-planning-ranking-metrics">
+                <div>
+                  <span>Lucro</span>
+                  <strong>
+                    {formatExecutedCurrency(experimentProfit(experiment))}
+                  </strong>
+                </div>
+                <div>
+                  <span>Receita</span>
+                  <strong>{formatExecutedCurrency(experiment.revenue)}</strong>
+                </div>
+                <div>
+                  <span>Tempo médio</span>
+                  <strong>
+                    {formatAverageViewTime(
+                      experiment.averageProductViewTimeMs,
+                    )}
+                  </strong>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="commercial-planning-empty-week">
+          Nenhum experimento disponível para ranking.
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -409,7 +498,6 @@ function WeeklyExperimentList({
         <details
           className="commercial-planning-week-card"
           key={week.weekNumber}
-          open={week.weekNumber === 1}
         >
           <summary className="commercial-planning-week-card-header">
             <div>
@@ -556,7 +644,10 @@ export default function CommercialPlanningPage() {
       ) : null}
 
       {weeks.length > 0 ? (
-        <WeeklyExperimentList planId={currentMonthPlan.id} weeks={weeks} />
+        <>
+          <WeeklyExperimentList planId={currentMonthPlan.id} weeks={weeks} />
+          <TopExperimentsRanking weeks={weeks} />
+        </>
       ) : null}
     </div>
   );

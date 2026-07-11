@@ -549,6 +549,118 @@
   text-decoration: underline;
 }
 
+.commercial-planning-top-ranking {
+  display: grid;
+  min-width: 0;
+  gap: 0.875rem;
+  padding: 1rem;
+  border: 1px solid #d9dee7;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.commercial-planning-top-ranking-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.commercial-planning-top-ranking-header h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.commercial-planning-top-ranking-header > span {
+  max-width: 260px;
+  color: #667085;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.commercial-planning-ranking-list {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.commercial-planning-ranking-item {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) minmax(340px, 0.9fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.5rem;
+  background: #fcfcfd;
+}
+
+.commercial-planning-ranking-position {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #101828;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.commercial-planning-ranking-main {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.commercial-planning-ranking-main a {
+  color: #1d4ed8;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.commercial-planning-ranking-main span {
+  color: #667085;
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.commercial-planning-ranking-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.commercial-planning-ranking-metrics div {
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.commercial-planning-ranking-metrics span {
+  display: block;
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.commercial-planning-ranking-metrics strong {
+  display: block;
+  margin-top: 0.1rem;
+  color: #101828;
+  font-size: 0.9rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
 .commercial-planning-experiment-card {
   display: grid;
   min-width: 0;
@@ -740,6 +852,23 @@
     flex-direction: column;
   }
 
+  .commercial-planning-top-ranking-header {
+    display: grid;
+  }
+
+  .commercial-planning-top-ranking-header > span {
+    max-width: none;
+    text-align: left;
+  }
+
+  .commercial-planning-ranking-item {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+  }
+
+  .commercial-planning-ranking-metrics {
+    grid-column: 1 / -1;
+  }
+
   .commercial-planning-hierarchy-summary {
     justify-content: flex-start;
     text-align: left;
@@ -760,7 +889,8 @@
   }
 
   .commercial-planning-experiment-grid,
-  .commercial-planning-experiment-metrics {
+  .commercial-planning-experiment-metrics,
+  .commercial-planning-ranking-metrics {
     grid-template-columns: 1fr;
   }
 }

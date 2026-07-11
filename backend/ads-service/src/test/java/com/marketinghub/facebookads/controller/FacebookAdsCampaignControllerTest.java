@@ -579,6 +579,40 @@ class FacebookAdsCampaignControllerTest {
     }
 
     @Test
+    void createCampaignRejectsPartialPublicationReportBeforeRunningExperiment() throws Exception {
+        var experiment = Experiment.builder()
+                .id(38L)
+                .name("Experimento 38")
+                .status(ExperimentStatus.PLANNED)
+                .build();
+        when(experimentService.get(38L)).thenReturn(experiment);
+        when(campaignRepository.findById("cmp-parcial")).thenReturn(Optional.empty());
+        when(campaignRepository.existsByExperimentId(38L)).thenReturn(false);
+
+        String payload = """
+            {
+              "id": "cmp-parcial",
+              "adAccountId": "act_888",
+              "name": "Experimento 38",
+              "objective": "OUTCOME_TRAFFIC",
+              "status": "ACTIVE",
+              "budgetMode": "ADSET",
+              "experimentId": 38,
+              "facebookAccountId": 88
+            }
+            """;
+
+        mockMvc.perform(post("/api/facebook-campaigns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+        verify(campaignRepository, never()).save(any());
+        verify(facebookAccountRepository, never()).findById(88L);
+    }
+
+    @Test
     void syncStatusUpdatesCampaignAdSetAndAdsFromMetaSnapshot() throws Exception {
         var campaign = new FacebookAdsCampaign();
         campaign.setId("cmp-sync");

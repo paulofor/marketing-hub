@@ -19,7 +19,7 @@ const baseExperiment = {
 } satisfies Experiment;
 
 describe("buildExperimentCostSummary", () => {
-  it("prioritizes auditable BRL cost and isolates unreconciled legacy difference", () => {
+  it("adds technical USD costs converted to BRL and isolates unreconciled legacy difference", () => {
     const summary = buildExperimentCostSummary({
       experiment: {
         ...baseExperiment,
@@ -33,9 +33,10 @@ describe("buildExperimentCostSummary", () => {
       geraSalesPageCostUsd: 1.460795,
     });
 
-    expect(summary.auditableTotalBrl).toBe(12.33);
+    expect(summary.auditableTotalBrl).toBe(19.68);
+    expect(summary.technicalTotalBrl).toBe(7.35);
     expect(summary.legacyTotalBrl).toBe(91.31);
-    expect(summary.unreconciledLegacyCostBrl).toBe(78.98);
+    expect(summary.unreconciledLegacyCostBrl).toBe(71.63);
     expect(summary.brlRows.map((row) => row.currency)).toEqual([
       "BRL",
       "BRL",
@@ -45,6 +46,11 @@ describe("buildExperimentCostSummary", () => {
       "USD",
       "USD",
       "USD",
+    ]);
+    expect(summary.technicalRows.map((row) => row.convertedValueBrl)).toEqual([
+      0.05,
+      0,
+      7.3,
     ]);
   });
 

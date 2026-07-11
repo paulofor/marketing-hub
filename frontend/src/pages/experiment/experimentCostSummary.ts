@@ -4,10 +4,12 @@ export interface ExperimentCostRow {
   label: string;
   value: number;
   currency: "BRL" | "USD";
+  convertedValueBrl?: number;
 }
 
 export interface ExperimentCostSummary {
   auditableTotalBrl: number;
+  technicalTotalBrl: number;
   legacyTotalBrl: number;
   unreconciledLegacyCostBrl: number;
   brlRows: ExperimentCostRow[];
@@ -29,6 +31,7 @@ const toNumber = (value: number | string | null | undefined) => {
 };
 
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
+const TECHNICAL_COST_USD_TO_BRL = 5;
 
 export function buildExperimentCostSummary({
   experiment,
@@ -39,11 +42,18 @@ export function buildExperimentCostSummary({
   const originCostBrl = toNumber(experiment.cost);
   const paidMediaCostBrl = toNumber(experiment.campaignMetric?.spend);
   const operationalExpenseBrl = toNumber(experiment.expense);
-  const computedAuditableTotalBrl = roundMoney(
+  const technicalTotalUsd =
+    contentPipelineCostUsd + geraLandingCostUsd + geraSalesPageCostUsd;
+  const technicalTotalBrl = roundMoney(
+    technicalTotalUsd * TECHNICAL_COST_USD_TO_BRL,
+  );
+  const computedAuditableBaseBrl = roundMoney(
     originCostBrl + paidMediaCostBrl + operationalExpenseBrl,
   );
+  const auditableBaseBrl =
+    toNumber(experiment.auditableTotalCost) || computedAuditableBaseBrl;
   const auditableTotalBrl = roundMoney(
-    toNumber(experiment.auditableTotalCost) || computedAuditableTotalBrl,
+    auditableBaseBrl + technicalTotalBrl,
   );
   const legacyTotalBrl = roundMoney(
     toNumber(experiment.legacyTotalCost) || toNumber(experiment.totalCost),
@@ -58,6 +68,7 @@ export function buildExperimentCostSummary({
 
   return {
     auditableTotalBrl,
+    technicalTotalBrl,
     legacyTotalBrl,
     unreconciledLegacyCostBrl,
     brlRows: [
@@ -82,16 +93,25 @@ export function buildExperimentCostSummary({
         label: "Pipeline de conteúdo",
         value: contentPipelineCostUsd,
         currency: "USD",
+        convertedValueBrl: roundMoney(
+          contentPipelineCostUsd * TECHNICAL_COST_USD_TO_BRL,
+        ),
       },
       {
         label: "GeraLanding",
         value: geraLandingCostUsd,
         currency: "USD",
+        convertedValueBrl: roundMoney(
+          geraLandingCostUsd * TECHNICAL_COST_USD_TO_BRL,
+        ),
       },
       {
         label: "GeraSalesPage",
         value: geraSalesPageCostUsd,
         currency: "USD",
+        convertedValueBrl: roundMoney(
+          geraSalesPageCostUsd * TECHNICAL_COST_USD_TO_BRL,
+        ),
       },
     ],
   };

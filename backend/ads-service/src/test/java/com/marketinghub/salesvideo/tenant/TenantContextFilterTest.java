@@ -44,4 +44,18 @@ class TenantContextFilterTest {
         assertThat(response.getStatus()).isEqualTo(400);
         assertThat(response.getContentAsString()).contains("TENANT_HEADER_REQUIRED");
     }
+
+    /** Deve manter leitura legado de perfil sem tenant para o renderizador externo atual. */
+    @Test
+    void shouldAllowReadOnlyProfileCompatibilityWithoutTenantHeader() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/sales-videos/profiles/3");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = Mockito.mock(FilterChain.class);
+
+        filter.doFilter(request, response, chain);
+
+        Mockito.verify(chain).doFilter(Mockito.any(), Mockito.any());
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(TenantContextHolder.getContext().systemRequest()).isTrue();
+    }
 }

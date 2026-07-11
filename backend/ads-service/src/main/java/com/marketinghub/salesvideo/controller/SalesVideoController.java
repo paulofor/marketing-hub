@@ -176,6 +176,12 @@ public class SalesVideoController {
         return salesVideoService.getProfile(profileId);
     }
 
+    /** Consulta perfil de vídeo para processamento interno do módulo externo de renderização. */
+    @GetMapping("/internal/video/sales-videos/profiles/{profileId}")
+    public SalesVideoProfileDto getInternalVideoProfile(@PathVariable Long profileId) {
+        return salesVideoService.getProfile(profileId);
+    }
+
     /** Faz claim de job OpenAI interno. */
     @PostMapping("/internal/ai/openai-jobs/{jobId}/claim")
     public SalesVideoJobDto claimOpenAiJob(@PathVariable Long jobId,

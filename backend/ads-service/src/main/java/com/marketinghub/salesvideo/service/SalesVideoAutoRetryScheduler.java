@@ -30,6 +30,7 @@ public class SalesVideoAutoRetryScheduler {
     private final Duration retryDelay;
     private final int scanLimit;
 
+    /** Inicializa o agendador com política e janela de retry automático. */
     public SalesVideoAutoRetryScheduler(SalesVideoJobRepository jobRepository,
                                         SalesVideoJobService jobService,
                                         SalesVideoReprocessPolicy reprocessPolicy,
@@ -44,6 +45,7 @@ public class SalesVideoAutoRetryScheduler {
         this.scanLimit = scanLimit;
     }
 
+    /** Reprocessa jobs falhos elegíveis sem duplicar filhos de retry já criados. */
     @Scheduled(fixedDelayString = "${sales-video.reprocess.auto.scan-interval-ms:300000}")
     public void retryFailedJobs() {
         if (!enabled) {
@@ -54,6 +56,9 @@ public class SalesVideoAutoRetryScheduler {
         int executed = 0;
         for (SalesVideoJob job : candidates) {
             if (!reprocessPolicy.hasAttemptsRemaining(job)) {
+                continue;
+            }
+            if (jobRepository.existsByRetryOfJob_Id(job.getId())) {
                 continue;
             }
             try {

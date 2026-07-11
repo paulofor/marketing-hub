@@ -76,4 +76,20 @@ class SalesVideoAssetControllerTest {
 
         verify(salesVideoService).getProfile(59L);
     }
+
+    /** Deve expor perfil pelo endpoint interno genérico do módulo de renderização. */
+    @Test
+    void shouldGetProfileFromInternalVideoEndpointWithoutTenantHeader() throws Exception {
+        SalesVideoProfileDto profile = new SalesVideoProfileDto();
+        profile.setId(59L);
+        profile.setTitle("Manicure em domicílio");
+        when(salesVideoService.getProfile(59L)).thenReturn(profile);
+
+        mockMvc.perform(get("/internal/video/sales-videos/profiles/59"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(59L))
+                .andExpect(jsonPath("$.title").value("Manicure em domicílio"));
+
+        verify(salesVideoService).getProfile(59L);
+    }
 }

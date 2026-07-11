@@ -31,6 +31,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
     private static final AntPathMatcher MATCHER = new AntPathMatcher();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    /** Indica quando uma requisição não precisa passar pela validação de tenant de vídeo. */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
@@ -46,6 +47,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
         return !requiresTenant(path);
     }
 
+    /** Define o contexto de tenant para rotas administrativas e internas do módulo de vídeo. */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -57,6 +59,11 @@ public class TenantContextFilter extends OncePerRequestFilter {
             } else if (requiresTenant(path)) {
                 String tenantId = request.getHeader(TENANT_HEADER);
                 if (!StringUtils.hasText(tenantId)) {
+                    if (isReadOnlyProfileCompatibilityRequest(request, path)) {
+                        TenantContextHolder.set(TenantContext.system());
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
                     writeErrorResponse(response, request.getRequestURI());
                     return;
                 }
@@ -74,6 +81,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
         }
     }
 
+    /** Identifica rotas administrativas que precisam de tenant explícito. */
     private boolean requiresTenant(String path) {
         if (path == null) {
             return false;
@@ -83,6 +91,13 @@ public class TenantContextFilter extends OncePerRequestFilter {
                 || MATCHER.match("/api/landing-pages/*/video-slots/**", path);
     }
 
+    /** Permite leitura legado do perfil pelo renderizador externo enquanto ele migra para `/internal/video`. */
+    private boolean isReadOnlyProfileCompatibilityRequest(HttpServletRequest request, String path) {
+        return HttpMethod.GET.matches(request.getMethod())
+                && MATCHER.match("/api/sales-videos/profiles/*", path);
+    }
+
+    /** Escreve resposta padronizada quando o cabeçalho de tenant obrigatório está ausente. */
     private void writeErrorResponse(HttpServletResponse response, String path) throws IOException {
         response.setStatus(HttpStatus.BAD_REQUEST.value());
         response.setContentType("application/json");

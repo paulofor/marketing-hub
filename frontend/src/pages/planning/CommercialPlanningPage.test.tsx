@@ -276,7 +276,7 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("LEAD_MAGNET")).toBeTruthy();
   });
 
-  it("renderiza top 5 no final por lucro e usa tempo medio como desempate", () => {
+  it("renderiza top 5 no final por tempo medio em ordem decrescente", () => {
     mockWeeks = [
       {
         ...(mockWeeks[0] as Record<string, unknown>),
@@ -286,7 +286,7 @@ describe("CommercialPlanningPage", () => {
             name: "Kit manutenção",
             nicheName: "Manicure profissional",
             totalCost: 37,
-            revenue: 47,
+            revenue: 137,
             averageProductViewTimeMs: 45000,
           },
           {
@@ -311,19 +311,19 @@ describe("CommercialPlanningPage", () => {
 
     const { container } = renderPage();
 
-    expect(screen.getByText("Top 5 por lucro")).toBeTruthy();
-    expect(screen.getByText(/lucro zerado/)).toBeTruthy();
+    expect(screen.getByText("Top 5 por tempo médio")).toBeTruthy();
+    expect(screen.getByText(/maior tempo médio de tela/)).toBeTruthy();
 
     const rankingItems = Array.from(
       container.querySelectorAll(".commercial-planning-ranking-item"),
     );
     expect(rankingItems).toHaveLength(3);
-    expect(rankingItems[0]).toHaveTextContent("Kit manutenção");
-    expect(rankingItems[0]).toHaveTextContent("R$ 10,00");
-    expect(rankingItems[1]).toHaveTextContent("Amostra rápida");
-    expect(rankingItems[1]).toHaveTextContent("2min");
-    expect(rankingItems[2]).toHaveTextContent("Agenda recorrente");
-    expect(rankingItems[2]).toHaveTextContent("1min 30s");
+    expect(rankingItems[0]).toHaveTextContent("Amostra rápida");
+    expect(rankingItems[0]).toHaveTextContent("2min");
+    expect(rankingItems[1]).toHaveTextContent("Agenda recorrente");
+    expect(rankingItems[1]).toHaveTextContent("1min 30s");
+    expect(rankingItems[2]).toHaveTextContent("Kit manutenção");
+    expect(rankingItems[2]).toHaveTextContent("45s");
   });
 
   it("renderiza objetivos semanais como texto e mostra campo apenas para novo objetivo", async () => {

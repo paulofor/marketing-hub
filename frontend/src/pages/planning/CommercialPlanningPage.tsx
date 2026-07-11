@@ -346,20 +346,6 @@ function sortedByAverageTime(experiments: CommercialPlanWeek["experiments"]) {
   });
 }
 
-function sortedByProfitThenAverageTime(
-  experiments: CommercialPlanWeek["experiments"],
-) {
-  return [...experiments].sort((first, second) => {
-    const firstProfit = experimentProfit(first);
-    const secondProfit = experimentProfit(second);
-    if (secondProfit !== firstProfit) return secondProfit - firstProfit;
-    const firstTime = first.averageProductViewTimeMs ?? -1;
-    const secondTime = second.averageProductViewTimeMs ?? -1;
-    if (secondTime !== firstTime) return secondTime - firstTime;
-    return first.id - second.id;
-  });
-}
-
 function ExperimentsTable({
   experiments,
 }: {
@@ -419,7 +405,7 @@ function ExperimentsTable({
 function TopExperimentsRanking({ weeks }: { weeks: CommercialPlanWeek[] }) {
   const topExperiments = useMemo(
     () =>
-      sortedByProfitThenAverageTime(
+      sortedByAverageTime(
         weeks.flatMap((week) => week.experiments ?? []),
       ).slice(0, 5),
     [weeks],
@@ -432,9 +418,9 @@ function TopExperimentsRanking({ weeks }: { weeks: CommercialPlanWeek[] }) {
           <p className="commercial-planning-month-eyebrow mb-1">
             Ranking de experimentos
           </p>
-          <h3>Top 5 por lucro</h3>
+          <h3>Top 5 por tempo médio</h3>
         </div>
-        <span>Empate ou lucro zerado: maior tempo médio primeiro</span>
+        <span>Ordenado pelo maior tempo médio de tela</span>
       </div>
 
       {topExperiments.length > 0 ? (

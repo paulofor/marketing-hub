@@ -235,19 +235,30 @@ describe("CommercialPlanningPage", () => {
     expect(screen.queryByText("Novo Plano de Primeira Venda")).toBeNull();
   });
 
-  it("renderiza experimentos criados por semana em tabela ordenada por media de tempo", () => {
-    renderPage();
+  it("inicializa semanas fechadas e abre a tabela ordenada por media de tempo", async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage();
+
+    const weekDetails = container.querySelector(
+      ".commercial-planning-week-card",
+    ) as HTMLDetailsElement;
+    expect(weekDetails.open).toBe(false);
 
     expect(screen.getByText("Semana 1")).toBeTruthy();
+
+    await user.click(screen.getByText("Semana 1"));
+
+    expect(weekDetails.open).toBe(true);
     expect(screen.getByText("Nome do experimento")).toBeTruthy();
     expect(screen.getByText("Média de tempo")).toBeTruthy();
     expect(screen.getByText("Tipo de produto")).toBeTruthy();
     expect(screen.getByText("Teste A/B")).toBeTruthy();
+    expect(screen.getAllByText("Lucro").length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("link", { name: "Kit manutenção" }),
+      screen.getAllByRole("link", { name: "Kit manutenção" })[0],
     ).toHaveAttribute("href", "/experiments/39");
     expect(
-      screen.getByRole("link", { name: "Agenda recorrente" }),
+      screen.getAllByRole("link", { name: "Agenda recorrente" })[0],
     ).toHaveAttribute("href", "/experiments/40");
 
     const rows = screen.getAllByRole("row");
@@ -255,12 +266,64 @@ describe("CommercialPlanningPage", () => {
     expect(rows[1]).toHaveTextContent("1min 30s");
     expect(rows[2]).toHaveTextContent("Kit manutenção");
     expect(rows[2]).toHaveTextContent("45s");
-    expect(screen.getAllByText("Manicure profissional")).toHaveLength(2);
+    expect(screen.getAllByText("Manicure profissional").length).toBeGreaterThan(
+      1,
+    );
     expect(
       screen.getAllByText("Kit de manutenção guiada para manicures"),
     ).toHaveLength(2);
     expect(screen.getByText("LOW_TICKET")).toBeTruthy();
     expect(screen.getByText("LEAD_MAGNET")).toBeTruthy();
+  });
+
+  it("renderiza top 5 no final por lucro e usa tempo medio como desempate", () => {
+    mockWeeks = [
+      {
+        ...(mockWeeks[0] as Record<string, unknown>),
+        experiments: [
+          {
+            id: 39,
+            name: "Kit manutenção",
+            nicheName: "Manicure profissional",
+            totalCost: 37,
+            revenue: 47,
+            averageProductViewTimeMs: 45000,
+          },
+          {
+            id: 40,
+            name: "Agenda recorrente",
+            nicheName: "Manicure profissional",
+            totalCost: 12,
+            revenue: 12,
+            averageProductViewTimeMs: 90000,
+          },
+          {
+            id: 41,
+            name: "Amostra rápida",
+            nicheName: "Manicure profissional",
+            totalCost: 8,
+            revenue: 8,
+            averageProductViewTimeMs: 120000,
+          },
+        ],
+      },
+    ];
+
+    const { container } = renderPage();
+
+    expect(screen.getByText("Top 5 por lucro")).toBeTruthy();
+    expect(screen.getByText(/lucro zerado/)).toBeTruthy();
+
+    const rankingItems = Array.from(
+      container.querySelectorAll(".commercial-planning-ranking-item"),
+    );
+    expect(rankingItems).toHaveLength(3);
+    expect(rankingItems[0]).toHaveTextContent("Kit manutenção");
+    expect(rankingItems[0]).toHaveTextContent("R$ 10,00");
+    expect(rankingItems[1]).toHaveTextContent("Amostra rápida");
+    expect(rankingItems[1]).toHaveTextContent("2min");
+    expect(rankingItems[2]).toHaveTextContent("Agenda recorrente");
+    expect(rankingItems[2]).toHaveTextContent("1min 30s");
   });
 
   it("renderiza objetivos semanais como texto e mostra campo apenas para novo objetivo", async () => {

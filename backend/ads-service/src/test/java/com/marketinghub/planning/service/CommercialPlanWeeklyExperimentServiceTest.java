@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +21,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -80,6 +82,54 @@ class CommercialPlanWeeklyExperimentServiceTest {
         assertThat(weeks.get(0).objectivesEditable()).isTrue();
         assertThat(weeks.get(1).objectivesEditable()).isFalse();
         assertThat(weeks.get(0).objectiveEditWindowMessage()).contains("2026-07-09");
+    }
+
+    /** Deve calcular tempo medio com todas as sessoes de analytics, alinhado ao detalhe do experimento. */
+    @Test
+    void listWeeksUsesAllLandingAnalyticsSessionsAsAverageTimeDenominator() {
+        CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 8));
+        when(objectiveRepository.findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(any(), any()))
+                .thenReturn(List.of());
+        when(jdbcTemplate.query(
+                        anyString(),
+                        any(RowMapper.class),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any()))
+                .thenReturn(List.<CommercialPlanWeekExperimentDto>of());
+
+        service.listWeeks(1L);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate, times(5)).query(
+                sqlCaptor.capture(),
+                any(RowMapper.class),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any());
+        String sql = sqlCaptor.getAllValues().getFirst();
+        assertThat(sql).contains("count(distinct event_times.session_id)");
+        assertThat(sql).contains("when lower(lae.event_type) = 'section_view_time'");
+        assertThat(sql).doesNotContain("where lower(lae.event_type) = 'section_view_time'");
+        assertThat(sql).doesNotContain("where event_times.elapsed_ms is not null");
     }
 
     /** Deve impedir gravacao de objetivos quando a semana esta fora da janela comercial. */

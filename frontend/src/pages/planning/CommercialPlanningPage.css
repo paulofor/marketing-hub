@@ -537,13 +537,15 @@
 }
 
 .commercial-planning-experiment-table a {
-  color: #101828;
+  color: #1d4ed8;
   font-weight: 800;
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.commercial-planning-experiment-table a:hover {
-  color: #2563eb;
+.commercial-planning-experiment-table a:hover,
+.commercial-planning-experiment-table a:focus {
+  color: #1e40af;
   text-decoration: underline;
 }
 

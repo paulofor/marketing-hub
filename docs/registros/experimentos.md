@@ -1,3 +1,10 @@
+## 2026-07-12 — Experimento 63: correção da busca interna do perfil de vídeo
+
+- causa-raiz confirmada no banco: o job VEO/REAL `10108` falhou antes de chamar o provider, porque o `video-management-service` buscava o perfil pela rota administrativa `/api/sales-videos/profiles/{id}`, que exigia `X-Tenant-ID`.
+- foi feito: o client do `video-management-service` passou a buscar perfil pela rota interna `/internal/video/sales-videos/profiles/{id}`, já existente no backend para o executor de vídeo.
+- validação: simulação local com backend/VEO mockado passou, cobrindo criação da operação, polling, download do MP4 e processamento do job; também foi adicionado teste para impedir regressão para a rota administrativa.
+- próximo passo operacional: publicar o `video-management-service` corrigido e criar retry limpo do vídeo do experimento 63; o perfil 3 já possui roteiro aprovado.
+
 ## 2026-07-06 — Experimentos: camada Experiment Video Asset
 
 - decisão aplicada: vídeo passa a ser registrado como artefato mensurável do experimento, com slot no funil, objetivo comercial e métrica principal.

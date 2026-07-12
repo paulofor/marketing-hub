@@ -9,6 +9,8 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
 import com.marketinghub.videomanagement.client.dto.SalesVideoScript;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -105,6 +107,11 @@ public class VeoVideoProvider implements VideoProvider {
         metadata.put("aspect_ratio", properties.getProviders().getVeo().getAspectRatio());
         metadata.put("resolution", properties.getProviders().getVeo().getResolution());
         metadata.put("duration_seconds", properties.getProviders().getVeo().getDurationSeconds());
+        metadata.put("cost_usd", estimateCostUsd(
+                properties.getProviders().getVeo().getModel(),
+                properties.getProviders().getVeo().getDurationSeconds(),
+                properties.getProviders().getVeo().getResolution()));
+        metadata.put("pricing_source", "Google Gemini API pricing: Veo video generation billed per generated second");
         metadata.put("polled_at", Instant.now().toString());
         metadata.put("final_status", objectMapper.convertValue(finalStatus, Map.class));
 
@@ -211,6 +218,48 @@ public class VeoVideoProvider implements VideoProvider {
                 script.scriptText(),
                 nullToDefault(script.ctaText(), ""),
                 storyboard);
+    }
+
+    /** Calcula o custo oficial aproximado do VEO em USD por segundo gerado. */
+    private BigDecimal estimateCostUsd(String model, Integer durationSeconds, String resolution) {
+        if (durationSeconds == null || durationSeconds <= 0) {
+            return null;
+        }
+        BigDecimal pricePerSecond = pricePerSecondUsd(model, resolution);
+        return pricePerSecond.multiply(BigDecimal.valueOf(durationSeconds.longValue()))
+                .setScale(4, RoundingMode.HALF_UP);
+    }
+
+    /** Resolve o preço por segundo do VEO conforme modelo e resolução. */
+    private BigDecimal pricePerSecondUsd(String model, String resolution) {
+        String normalizedModel = normalize(model).toLowerCase(Locale.ROOT);
+        if (normalizedModel.contains("veo-2")) {
+            return new BigDecimal("0.35");
+        }
+        if (normalizedModel.contains("fast")) {
+            return veoFastPrice(resolution);
+        }
+        if (normalizedModel.contains("lite")) {
+            return normalize(resolution).toLowerCase(Locale.ROOT).contains("1080")
+                    ? new BigDecimal("0.08")
+                    : new BigDecimal("0.05");
+        }
+        String normalizedResolution = normalize(resolution).toLowerCase(Locale.ROOT);
+        return normalizedResolution.contains("4k") || normalizedResolution.contains("2160")
+                ? new BigDecimal("0.60")
+                : new BigDecimal("0.40");
+    }
+
+    /** Resolve preço por segundo do VEO Fast conforme resolução. */
+    private BigDecimal veoFastPrice(String resolution) {
+        String normalizedResolution = normalize(resolution).toLowerCase(Locale.ROOT);
+        if (normalizedResolution.contains("4k") || normalizedResolution.contains("2160")) {
+            return new BigDecimal("0.30");
+        }
+        if (normalizedResolution.contains("1080")) {
+            return new BigDecimal("0.12");
+        }
+        return new BigDecimal("0.10");
     }
 
     /** Garante que o perfil possui roteiro aprovado para renderização. */

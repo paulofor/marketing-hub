@@ -21,6 +21,7 @@ export interface ExperimentCostSummaryInput {
   contentPipelineCostUsd: number;
   geraLandingCostUsd: number;
   geraSalesPageCostUsd: number;
+  videoProductionCostUsd: number;
 }
 
 const toNumber = (value: number | string | null | undefined) => {
@@ -38,12 +39,16 @@ export function buildExperimentCostSummary({
   contentPipelineCostUsd,
   geraLandingCostUsd,
   geraSalesPageCostUsd,
+  videoProductionCostUsd,
 }: ExperimentCostSummaryInput): ExperimentCostSummary {
   const originCostBrl = toNumber(experiment.cost);
   const paidMediaCostBrl = toNumber(experiment.campaignMetric?.spend);
   const operationalExpenseBrl = toNumber(experiment.expense);
   const technicalTotalUsd =
-    contentPipelineCostUsd + geraLandingCostUsd + geraSalesPageCostUsd;
+    contentPipelineCostUsd +
+    geraLandingCostUsd +
+    geraSalesPageCostUsd +
+    videoProductionCostUsd;
   const technicalTotalBrl = roundMoney(
     technicalTotalUsd * TECHNICAL_COST_USD_TO_BRL,
   );
@@ -52,9 +57,7 @@ export function buildExperimentCostSummary({
   );
   const auditableBaseBrl =
     toNumber(experiment.auditableTotalCost) || computedAuditableBaseBrl;
-  const auditableTotalBrl = roundMoney(
-    auditableBaseBrl + technicalTotalBrl,
-  );
+  const auditableTotalBrl = roundMoney(auditableBaseBrl + technicalTotalBrl);
   const legacyTotalBrl = roundMoney(
     toNumber(experiment.legacyTotalCost) || toNumber(experiment.totalCost),
   );
@@ -111,6 +114,14 @@ export function buildExperimentCostSummary({
         currency: "USD",
         convertedValueBrl: roundMoney(
           geraSalesPageCostUsd * TECHNICAL_COST_USD_TO_BRL,
+        ),
+      },
+      {
+        label: "Produção de vídeo",
+        value: videoProductionCostUsd,
+        currency: "USD",
+        convertedValueBrl: roundMoney(
+          videoProductionCostUsd * TECHNICAL_COST_USD_TO_BRL,
         ),
       },
     ],

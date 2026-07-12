@@ -1,6 +1,7 @@
 package com.marketinghub.salesvideo.dto;
 
 import com.marketinghub.salesvideo.SalesVideoStatus;
+import java.math.BigDecimal;
 import lombok.Data;
 
 /**
@@ -14,6 +15,7 @@ public class JobCompletionRequest {
     private Long vttAssetId;
     private String providerJobId;
     private String metadataJson;
+    private BigDecimal costUsd;
     private String message;
     private String detailsJson;
     private GeneratedScriptResultPayload scriptResult;

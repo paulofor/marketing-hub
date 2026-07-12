@@ -1,5 +1,7 @@
 package com.marketinghub.salesvideo.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoJobType;
@@ -46,6 +48,8 @@ class SalesVideoJobServiceTest {
 
     @Mock
     private SalesVideoReprocessPolicy reprocessPolicy;
+    @Mock
+    private ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
     private SalesVideoJobService service;
 
@@ -56,7 +60,10 @@ class SalesVideoJobServiceTest {
                 profileRepository,
                 scriptRepository,
                 assetRepository,
-                reprocessPolicy);
+                reprocessPolicy,
+                experimentVideoAssetRepository,
+                new SalesVideoProductionCostCalculator(),
+                new ObjectMapper());
     }
 
     @Test

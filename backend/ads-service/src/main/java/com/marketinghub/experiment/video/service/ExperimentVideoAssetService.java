@@ -29,7 +29,9 @@ import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
@@ -52,6 +54,7 @@ public class ExperimentVideoAssetService {
     private final ProductRepository productRepository;
     private final LandingPageRepository landingPageRepository;
     private final SalesVideoService salesVideoService;
+    private final SalesVideoProductionCostCalculator costCalculator;
 
     /** Inicializa o serviço com os repositórios dos vínculos de experimento e vídeo. */
     public ExperimentVideoAssetService(ExperimentVideoAssetRepository repository,
@@ -62,7 +65,8 @@ public class ExperimentVideoAssetService {
                                        LandingVideoSlotRepository landingVideoSlotRepository,
                                        ProductRepository productRepository,
                                        LandingPageRepository landingPageRepository,
-                                       SalesVideoService salesVideoService) {
+                                       SalesVideoService salesVideoService,
+                                       SalesVideoProductionCostCalculator costCalculator) {
         this.repository = repository;
         this.experimentRepository = experimentRepository;
         this.profileRepository = profileRepository;
@@ -72,6 +76,7 @@ public class ExperimentVideoAssetService {
         this.productRepository = productRepository;
         this.landingPageRepository = landingPageRepository;
         this.salesVideoService = salesVideoService;
+        this.costCalculator = costCalculator;
     }
 
     /** Lista todos os vídeos registrados para um experimento. */
@@ -103,7 +108,7 @@ public class ExperimentVideoAssetService {
                 .aspectRatio(request.aspectRatio())
                 .requestJson(request.requestJson())
                 .responseJson(request.responseJson())
-                .cost(request.cost())
+                .cost(resolveCost(request.cost(), request.provider(), request.model(), request.durationSeconds(), null))
                 .reviewStatus(request.reviewStatus() == null ? ExperimentVideoReviewStatus.PENDING : request.reviewStatus())
                 .requiredForRelease(request.requiredForRelease())
                 .salesVideoProfile(resolveProfile(request.salesVideoProfileId()))
@@ -146,6 +151,12 @@ public class ExperimentVideoAssetService {
         renderRequest.setProviderName(Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"));
         renderRequest.setExecutionMode(request.executionMode());
         SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
+        String providerName = Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO");
+        BigDecimal estimatedCost = costCalculator.estimateUsd(
+                providerName,
+                providerName,
+                request.targetDurationSeconds(),
+                "720p");
 
         ExperimentVideoAsset videoAsset = ExperimentVideoAsset.builder()
                 .experiment(experiment)
@@ -155,8 +166,10 @@ public class ExperimentVideoAssetService {
                 .script(request.scriptText().trim())
                 .prompt(buildVeoPromptSnapshot(request))
                 .provider("VEO")
-                .model(Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"))
+                .model(providerName)
                 .status(ExperimentVideoStatus.GENERATING)
+                .durationSeconds(request.targetDurationSeconds())
+                .cost(estimatedCost)
                 .reviewStatus(ExperimentVideoReviewStatus.PENDING)
                 .requiredForRelease(request.requiredForRelease())
                 .salesVideoProfile(resolveProfile(profile.getId()))
@@ -236,6 +249,16 @@ public class ExperimentVideoAssetService {
         }
         if (request.cost() != null) {
             videoAsset.setCost(request.cost());
+        } else if (request.durationSeconds() != null || request.provider() != null || request.model() != null) {
+            BigDecimal estimatedCost = resolveCost(
+                    null,
+                    videoAsset.getProvider(),
+                    videoAsset.getModel(),
+                    videoAsset.getDurationSeconds(),
+                    null);
+            if (estimatedCost != null) {
+                videoAsset.setCost(estimatedCost);
+            }
         }
         if (request.reviewStatus() != null) {
             videoAsset.setReviewStatus(request.reviewStatus());
@@ -307,6 +330,18 @@ public class ExperimentVideoAssetService {
                 Script:
                 %s
                 """.formatted(request.objective().trim(), request.primaryMetric().trim(), request.scriptText().trim());
+    }
+
+    /** Resolve o custo em USD informado ou calculado pela tabela oficial do provider. */
+    private BigDecimal resolveCost(BigDecimal informedCost,
+                                   String provider,
+                                   String model,
+                                   Integer durationSeconds,
+                                   String resolution) {
+        if (informedCost != null) {
+            return informedCost;
+        }
+        return costCalculator.estimateUsd(provider, model, durationSeconds, resolution);
     }
 
     /** Normaliza textos opcionais em branco para nulo. */

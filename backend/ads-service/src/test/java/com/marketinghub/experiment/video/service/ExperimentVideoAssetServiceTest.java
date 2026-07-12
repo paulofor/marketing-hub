@@ -26,6 +26,7 @@ import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.util.List;
 import java.util.Optional;
@@ -79,7 +80,8 @@ class ExperimentVideoAssetServiceTest {
                 landingVideoSlotRepository,
                 productRepository,
                 landingPageRepository,
-                salesVideoService);
+                salesVideoService,
+                new SalesVideoProductionCostCalculator());
     }
 
     /** Garante que um vídeo novo recebe estados padrão quando criado para o experimento. */
@@ -181,6 +183,7 @@ class ExperimentVideoAssetServiceTest {
         assertThat(dto.salesVideoProfileId()).isEqualTo(12L);
         assertThat(dto.salesVideoJobId()).isEqualTo(10108L);
         assertThat(dto.requiredForRelease()).isTrue();
+        assertThat(dto.cost()).isEqualByComparingTo("12.0000");
     }
 
     /** Garante que a landing de outro experimento não pode contaminar o aprendizado do funil atual. */

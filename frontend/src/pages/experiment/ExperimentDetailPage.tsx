@@ -25,6 +25,7 @@ import {
 } from "../../api/experiment/useExperimentCampaignReset";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentLandingAnalyticsTab from "./ExperimentLandingAnalyticsTab";
+import ExperimentSalesPageAbTab from "./ExperimentSalesPageAbTab";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
 import ExperimentRunPanel from "./ExperimentRunPanel";
@@ -64,6 +65,7 @@ function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
 const experimentDetailTabs = [
   { value: "overview", label: "Overview" },
   { value: "funnel", label: "Funil de vendas" },
+  { value: "ab-test", label: "Teste A/B" },
   { value: "analytics", label: "Analytics" },
   { value: "creatives", label: "Criativos" },
   { value: "landing", label: "Landing" },
@@ -2853,6 +2855,9 @@ export default function ExperimentDetailPage() {
               spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
               alterationLocked={alterationLocked}
             />
+          </Tabs.Content>
+          <Tabs.Content value="ab-test" asChild>
+            <ExperimentSalesPageAbTab experimentId={expId} />
           </Tabs.Content>
           <Tabs.Content value="analytics" asChild>
             <ExperimentLandingAnalyticsTab experimentId={expId} />

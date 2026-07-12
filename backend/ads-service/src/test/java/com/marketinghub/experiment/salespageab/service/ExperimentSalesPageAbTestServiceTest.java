@@ -14,16 +14,24 @@ import com.marketinghub.repository.jpa.experiment.salespageab.ExperimentSalesPag
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 /** Valida a estrutura operacional de teste A/B de pagina de venda. */
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +46,8 @@ class ExperimentSalesPageAbTestServiceTest {
     private GeraSalesPagePublicationAuditRepository publicationAuditRepository;
     @Mock
     private ExperimentVideoAssetRepository videoAssetRepository;
+    @Mock
+    private JdbcTemplate jdbcTemplate;
 
     private ExperimentSalesPageAbTestService service;
 
@@ -49,7 +59,8 @@ class ExperimentSalesPageAbTestServiceTest {
                 variantRepository,
                 experimentRepository,
                 publicationAuditRepository,
-                videoAssetRepository);
+                videoAssetRepository,
+                jdbcTemplate);
     }
 
     /** Garante que o plano padrao nasce com duas variantes equivalentes e metrica de checkout. */
@@ -120,6 +131,56 @@ class ExperimentSalesPageAbTestServiceTest {
                         true));
 
         assertThat(dto.status()).isEqualTo(ExperimentSalesPageAbTestStatus.READY);
+    }
+
+    /** Garante que os resultados A/B calculam taxas por variante e sugerem vencedor apenas com amostra. */
+    @Test
+    void shouldSummarizeAbTestResultsByVariant() throws Exception {
+        Experiment experiment = Experiment.builder().id(60L).build();
+        ExperimentSalesPageAbTest test = ExperimentSalesPageAbTest.builder()
+                .id(11L)
+                .experiment(experiment)
+                .name("A/B")
+                .status(ExperimentSalesPageAbTestStatus.READY)
+                .hypothesis("Video aumenta confianca")
+                .primaryMetric("checkout_click_rate")
+                .winnerRule("maior checkout")
+                .minimumRuntimeDays(7)
+                .minimumSampleSize(100)
+                .metaSplitTestRecommended(true)
+                .build();
+        test.getVariants().add(readyVariant(test, 21L, "A", ExperimentSalesPageAbVariantType.TRADITIONAL));
+        test.getVariants().add(readyVariant(test, 22L, "B", ExperimentSalesPageAbVariantType.HUMAN_VIDEO));
+        given(experimentRepository.findById(60L)).willReturn(Optional.of(experiment));
+        given(testRepository.findByExperimentIdOrderByCreatedAtDesc(60L)).willReturn(List.of(test));
+        given(jdbcTemplate.query(
+                ArgumentMatchers.anyString(),
+                ArgumentMatchers.<RowMapper<Object>>any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any()))
+                .willAnswer(invocation -> List.of(mapAggregation(invocation.getArgument(1), 120L, 60L, 3L)))
+                .willAnswer(invocation -> List.of(mapAggregation(invocation.getArgument(1), 130L, 70L, 8L)));
+
+        var results = service.results(60L);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).winnerVariantKey()).isEqualTo("B");
+        assertThat(results.get(0).status()).isEqualTo("VENCEDOR_SUGERIDO");
+        assertThat(results.get(0).variants()).extracting("checkoutClicks")
+                .containsExactly(3L, 8L);
+    }
+
+    /** Cria uma agregacao simulada para o JdbcTemplate do resumo A/B. */
+    private Object mapAggregation(RowMapper<?> mapper, long pageViews, long sessions, long checkoutClicks) throws Exception {
+        ResultSet resultSet = mock(ResultSet.class);
+        given(resultSet.getLong("page_views")).willReturn(pageViews);
+        given(resultSet.getLong("sessions")).willReturn(sessions);
+        given(resultSet.getLong("checkout_clicks")).willReturn(checkoutClicks);
+        given(resultSet.getLong("purchases")).willReturn(0L);
+        given(resultSet.getTimestamp("last_event_at")).willReturn(Timestamp.from(Instant.parse("2026-07-10T10:00:00Z")));
+        return mapper.mapRow(resultSet, 0);
     }
 
     /** Cria uma variante pronta para uso em testes do servico. */

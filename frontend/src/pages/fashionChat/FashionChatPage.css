@@ -23,6 +23,32 @@
   max-width: 680px;
 }
 
+.fashion-chat-name-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  max-width: 760px;
+}
+
+.fashion-chat-name-label {
+  color: #354052;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.fashion-chat-name-pill {
+  border: 1px solid #d9dee7;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .fashion-chat-status {
   min-width: 160px;
   border: 1px solid #d9dee7;

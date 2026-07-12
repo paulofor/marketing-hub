@@ -7,7 +7,9 @@ import com.marketinghub.experiment.salespageab.ExperimentSalesPageAbVariant;
 import com.marketinghub.experiment.salespageab.ExperimentSalesPageAbVariantStatus;
 import com.marketinghub.experiment.salespageab.ExperimentSalesPageAbVariantType;
 import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbTestDto;
+import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbTestResultDto;
 import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbVariantDto;
+import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbVariantResultDto;
 import com.marketinghub.experiment.salespageab.dto.UpdateExperimentSalesPageAbVariantRequest;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
@@ -17,9 +19,16 @@ import com.marketinghub.repository.jpa.experiment.salespageab.ExperimentSalesPag
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +39,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ExperimentSalesPageAbTestService {
     private static final BigDecimal HALF_TRAFFIC = new BigDecimal("50.00");
+    private static final int RATE_SCALE = 4;
     private static final List<ExperimentSalesPageAbTestStatus> ACTIVE_STATUSES = List.of(
             ExperimentSalesPageAbTestStatus.DRAFT,
             ExperimentSalesPageAbTestStatus.READY,
@@ -40,18 +50,21 @@ public class ExperimentSalesPageAbTestService {
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPagePublicationAuditRepository publicationAuditRepository;
     private final ExperimentVideoAssetRepository videoAssetRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     /** Inicializa o servico com as fontes canonicas de experimento, publicacao e video. */
     public ExperimentSalesPageAbTestService(ExperimentSalesPageAbTestRepository testRepository,
                                             ExperimentSalesPageAbVariantRepository variantRepository,
                                             ExperimentRepository experimentRepository,
                                             GeraSalesPagePublicationAuditRepository publicationAuditRepository,
-                                            ExperimentVideoAssetRepository videoAssetRepository) {
+                                            ExperimentVideoAssetRepository videoAssetRepository,
+                                            JdbcTemplate jdbcTemplate) {
         this.testRepository = testRepository;
         this.variantRepository = variantRepository;
         this.experimentRepository = experimentRepository;
         this.publicationAuditRepository = publicationAuditRepository;
         this.videoAssetRepository = videoAssetRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /** Cria o plano padrao recomendado para Meta: pagina tradicional contra pagina com video humano. */
@@ -82,6 +95,16 @@ public class ExperimentSalesPageAbTestService {
         findExperiment(experimentId);
         return testRepository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
                 .map(this::toDto)
+                .toList();
+    }
+
+    /** Lista os testes A/B com desempenho por variante calculado a partir do analytics da landing. */
+    @Transactional(readOnly = true)
+    public List<ExperimentSalesPageAbTestResultDto> results(Long experimentId) {
+        Experiment experiment = findExperiment(experimentId);
+        Instant baseline = resolveBaseline(experiment);
+        return testRepository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
+                .map(test -> toResultDto(toDto(test), baseline))
                 .toList();
     }
 
@@ -220,6 +243,148 @@ public class ExperimentSalesPageAbTestService {
                 && variant.trafficWeight().signum() > 0;
     }
 
+    /** Monta o resultado de um teste usando as URLs parametrizadas das variantes. */
+    private ExperimentSalesPageAbTestResultDto toResultDto(ExperimentSalesPageAbTestDto test, Instant baseline) {
+        List<ExperimentSalesPageAbVariantResultDto> variantResults = test.variants().stream()
+                .map(variant -> toVariantResultDto(test.experimentId(), variant, baseline))
+                .toList();
+        String winnerVariantKey = resolveWinnerVariantKey(test, variantResults);
+        String status = resolveResultStatus(test, variantResults, winnerVariantKey);
+        return new ExperimentSalesPageAbTestResultDto(
+                test,
+                variantResults,
+                winnerVariantKey,
+                status,
+                buildResultRecommendation(test, variantResults, status, winnerVariantKey));
+    }
+
+    /** Calcula os contadores de uma variante a partir dos eventos normalizados de analytics. */
+    private ExperimentSalesPageAbVariantResultDto toVariantResultDto(Long experimentId,
+                                                                    ExperimentSalesPageAbVariantDto variant,
+                                                                    Instant baseline) {
+        VariantAnalyticsAggregation aggregation = aggregateVariantAnalytics(experimentId, variant, baseline);
+        return new ExperimentSalesPageAbVariantResultDto(
+                variant,
+                aggregation.pageViews(),
+                aggregation.sessions(),
+                aggregation.checkoutClicks(),
+                aggregation.purchases(),
+                rate(aggregation.checkoutClicks(), aggregation.pageViews()),
+                rate(aggregation.purchases(), aggregation.pageViews()),
+                aggregation.lastEventAt());
+    }
+
+    /** Agrega eventos por parametro A/B presente na URL rastreada da pagina. */
+    private VariantAnalyticsAggregation aggregateVariantAnalytics(Long experimentId,
+                                                                 ExperimentSalesPageAbVariantDto variant,
+                                                                 Instant baseline) {
+        String variantPattern = "%" + normalizeVariantParam(variant) + "%";
+        String sql = """
+                SELECT
+                    SUM(CASE WHEN LOWER(event_type) = 'page_view' THEN 1 ELSE 0 END) AS page_views,
+                    COUNT(DISTINCT CASE WHEN session_id IS NOT NULL AND session_id <> '' THEN session_id ELSE NULL END) AS sessions,
+                    SUM(CASE WHEN LOWER(event_type) = 'checkout_click' THEN 1 ELSE 0 END) AS checkout_clicks,
+                    SUM(CASE WHEN LOWER(event_type) = 'purchase' THEN 1 ELSE 0 END) AS purchases,
+                    MAX(occurred_at) AS last_event_at
+                FROM experiment_landing_analytics_event
+                WHERE experiment_id = ?
+                  AND LOWER(COALESCE(page_url, '')) LIKE ?
+                  AND (? IS NULL OR occurred_at > ?)
+                """;
+        return jdbcTemplate.query(
+                        sql,
+                        new VariantAnalyticsAggregationRowMapper(),
+                        experimentId,
+                        variantPattern,
+                        baseline,
+                        baseline)
+                .stream()
+                .findFirst()
+                .orElse(VariantAnalyticsAggregation.empty());
+    }
+
+    /** Normaliza o parametro configurado da variante para comparacao case-insensitive em URL. */
+    private String normalizeVariantParam(ExperimentSalesPageAbVariantDto variant) {
+        String configured = variant.analyticsVariantParam();
+        String fallback = "ab=" + Optional.ofNullable(variant.variantKey()).orElse("").toLowerCase();
+        String normalized = StringUtils.hasText(configured) ? configured.trim() : fallback;
+        return normalized.toLowerCase();
+    }
+
+    /** Resolve a variante vencedora somente quando ja existe amostra minima e clique de checkout. */
+    private String resolveWinnerVariantKey(ExperimentSalesPageAbTestDto test,
+                                           List<ExperimentSalesPageAbVariantResultDto> variants) {
+        long totalPageViews = variants.stream().mapToLong(ExperimentSalesPageAbVariantResultDto::pageViews).sum();
+        long totalCheckoutClicks = variants.stream().mapToLong(ExperimentSalesPageAbVariantResultDto::checkoutClicks).sum();
+        if (totalPageViews < Optional.ofNullable(test.minimumSampleSize()).orElse(0) || totalCheckoutClicks == 0) {
+            return null;
+        }
+        return variants.stream()
+                .max(Comparator
+                        .comparing(ExperimentSalesPageAbVariantResultDto::checkoutClickRate)
+                        .thenComparing(ExperimentSalesPageAbVariantResultDto::pageViews))
+                .map(result -> result.variant().variantKey())
+                .orElse(null);
+    }
+
+    /** Classifica o resultado do teste para a UI sem forcar decisao prematura. */
+    private String resolveResultStatus(ExperimentSalesPageAbTestDto test,
+                                       List<ExperimentSalesPageAbVariantResultDto> variants,
+                                       String winnerVariantKey) {
+        long totalPageViews = variants.stream().mapToLong(ExperimentSalesPageAbVariantResultDto::pageViews).sum();
+        long totalCheckoutClicks = variants.stream().mapToLong(ExperimentSalesPageAbVariantResultDto::checkoutClicks).sum();
+        if (totalPageViews == 0) {
+            return "SEM_DADOS";
+        }
+        if (totalPageViews < Optional.ofNullable(test.minimumSampleSize()).orElse(0)) {
+            return "AMOSTRA_INSUFICIENTE";
+        }
+        if (totalCheckoutClicks == 0) {
+            return "SEM_CLIQUE_CHECKOUT";
+        }
+        return winnerVariantKey == null ? "INCONCLUSIVO" : "VENCEDOR_SUGERIDO";
+    }
+
+    /** Gera uma recomendacao comercial objetiva para a tela do experimento. */
+    private String buildResultRecommendation(ExperimentSalesPageAbTestDto test,
+                                             List<ExperimentSalesPageAbVariantResultDto> variants,
+                                             String status,
+                                             String winnerVariantKey) {
+        long totalPageViews = variants.stream().mapToLong(ExperimentSalesPageAbVariantResultDto::pageViews).sum();
+        long minimumSample = Optional.ofNullable(test.minimumSampleSize()).orElse(0);
+        return switch (status) {
+            case "SEM_DADOS" -> "Ainda nao ha eventos com ab=a ou ab=b suficientes para comparar as variantes.";
+            case "AMOSTRA_INSUFICIENTE" -> "Continue o teste ate atingir pelo menos " + minimumSample
+                    + " page views rastreados por A/B. Atual: " + totalPageViews + ".";
+            case "SEM_CLIQUE_CHECKOUT" -> "Ainda nao houve clique no checkout; nao declare vencedor antes de gerar intencao de compra.";
+            case "VENCEDOR_SUGERIDO" -> "Variante " + winnerVariantKey
+                    + " lidera em taxa de clique no checkout. Confirme com mais volume e compras antes de escalar forte.";
+            default -> "Resultado ainda inconclusivo. Mantenha oferta, preco, publico e criativos equivalentes.";
+        };
+    }
+
+    /** Calcula taxa decimal com escala estavel para comparacao e exibicao. */
+    private BigDecimal rate(long numerator, long denominator) {
+        if (denominator <= 0) {
+            return BigDecimal.ZERO.setScale(RATE_SCALE, RoundingMode.HALF_UP);
+        }
+        return BigDecimal.valueOf(numerator)
+                .divide(BigDecimal.valueOf(denominator), RATE_SCALE, RoundingMode.HALF_UP);
+    }
+
+    /** Resolve o marco temporal operacional usado pelos paineis de funil do experimento. */
+    private Instant resolveBaseline(Experiment experiment) {
+        Instant release = experiment.getFacebookReleaseRequestedAt();
+        Instant reset = experiment.getFunnelResetAt();
+        if (release == null) {
+            return reset;
+        }
+        if (reset == null) {
+            return release;
+        }
+        return release.isAfter(reset) ? release : reset;
+    }
+
     /** Converte o teste para contrato de API com variantes ordenadas. */
     private ExperimentSalesPageAbTestDto toDto(ExperimentSalesPageAbTest test) {
         List<ExperimentSalesPageAbVariantDto> variants = test.getVariants() == null
@@ -264,5 +429,35 @@ public class ExperimentSalesPageAbTestService {
                 variant.isRequiredCollectorsPresent(),
                 variant.getCreatedAt(),
                 variant.getUpdatedAt());
+    }
+
+    /** Mapeia a agregacao SQL de analytics da variante para o contrato interno do servico. */
+    private static class VariantAnalyticsAggregationRowMapper implements RowMapper<VariantAnalyticsAggregation> {
+
+        /** Converte uma linha agregada em contadores de variante. */
+        @Override
+        public VariantAnalyticsAggregation mapRow(ResultSet rs, int rowNum) throws SQLException {
+            Timestamp lastEventAt = rs.getTimestamp("last_event_at");
+            return new VariantAnalyticsAggregation(
+                    rs.getLong("page_views"),
+                    rs.getLong("sessions"),
+                    rs.getLong("checkout_clicks"),
+                    rs.getLong("purchases"),
+                    lastEventAt != null ? lastEventAt.toInstant() : null);
+        }
+    }
+
+    /** Representa a leitura agregada de analytics para uma variante A/B. */
+    private record VariantAnalyticsAggregation(
+            long pageViews,
+            long sessions,
+            long checkoutClicks,
+            long purchases,
+            Instant lastEventAt) {
+
+        /** Retorna agregacao vazia para variantes sem eventos rastreados. */
+        private static VariantAnalyticsAggregation empty() {
+            return new VariantAnalyticsAggregation(0, 0, 0, 0, null);
+        }
     }
 }

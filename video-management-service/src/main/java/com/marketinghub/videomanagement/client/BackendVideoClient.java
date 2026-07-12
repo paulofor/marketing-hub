@@ -96,7 +96,7 @@ public class BackendVideoClient {
     public SalesVideoProfile fetchProfile(Long profileId) {
         try {
             return executeWithRetry("fetch profile " + profileId, () -> authorized(webClient.get()
-                            .uri("/api/sales-videos/profiles/{profileId}", profileId))
+                            .uri("/internal/video/sales-videos/profiles/{profileId}", profileId))
                     .retrieve()
                     .onStatus(status -> !status.is2xxSuccessful(), response ->
                             mapError("Erro ao carregar perfil %d".formatted(profileId), response))

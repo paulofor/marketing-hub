@@ -154,7 +154,7 @@ public class FacebookAdsCampaignController {
     // Executa a operação experimentsReady da integração Facebook Ads.
     public List<ExperimentSummary> experimentsReady() {
         Map<Long, LeadPortalExperimentMetricsDto> leadPortalMetrics = indexLeadPortalMetrics();
-        return experimentService
+        List<ExperimentSummary> summaries = new ArrayList<>(experimentService
                 .listByStatusAndPlatform(com.marketinghub.experiment.ExperimentStatus.PLANNED,
                         com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
                 .stream()
@@ -163,7 +163,29 @@ public class FacebookAdsCampaignController {
                 .filter(experimentReadinessService::isReadyForCampaign)
                 .peek(this::registerBackendDispatchStep)
                 .map(experiment -> toSummary(experiment, leadPortalMetrics.get(experiment.getId())))
-                .toList();
+                .toList());
+        addForcedLocalExperimentForAbExecution(summaries, leadPortalMetrics);
+        return summaries;
+    }
+
+    // Adiciona o experimento 63 somente em execução local controlada para evitar corrida com worker remoto.
+    private void addForcedLocalExperimentForAbExecution(
+            List<ExperimentSummary> summaries,
+            Map<Long, LeadPortalExperimentMetricsDto> leadPortalMetrics) {
+        if (!Boolean.getBoolean("marketinghub.local.forceExperiment63Ready")) {
+            return;
+        }
+        if (summaries.stream().anyMatch(summary -> Objects.equals(summary.id(), 63L))) {
+            return;
+        }
+        Experiment experiment = experimentService.get(63L);
+        if (experiment.getFacebookReleaseRequestedAt() == null
+                || campaignRepository.existsByExperimentId(experiment.getId())
+                || !experimentReadinessService.isReadyForCampaign(experiment)) {
+            return;
+        }
+        registerBackendDispatchStep(experiment);
+        summaries.add(toSummary(experiment, leadPortalMetrics.get(experiment.getId())));
     }
 
     @PostMapping("/publication-job-steps")

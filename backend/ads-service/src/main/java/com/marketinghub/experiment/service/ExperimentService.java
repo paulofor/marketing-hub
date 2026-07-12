@@ -1004,7 +1004,7 @@ public class ExperimentService {
     }
 
     /**
-     * Remove a publicação anterior do Facebook para permitir que o worker publique um novo ciclo.
+     * Remove a publicação anterior do Facebook e seus dados dependentes para permitir novo ciclo.
      */
     private void removePreviousFacebookPublication(Long experimentId) {
         List<String> campaignIds = facebookAdsCampaignRepository.findByExperimentId(experimentId)
@@ -1014,6 +1014,12 @@ public class ExperimentService {
         if (campaignIds.isEmpty()) {
             return;
         }
+        entityManager.createNativeQuery("DELETE FROM campaign_strategy_evaluation WHERE campaign_id IN (:campaignIds)")
+                .setParameter("campaignIds", campaignIds)
+                .executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM campaign_strategy WHERE campaign_id IN (:campaignIds)")
+                .setParameter("campaignIds", campaignIds)
+                .executeUpdate();
         facebookAdsAdRepository.deleteByAdSetCampaignIdIn(campaignIds);
         facebookAdsAdSetRepository.deleteByCampaignIdIn(campaignIds);
         facebookAdsCampaignRepository.deleteByExperimentId(experimentId);

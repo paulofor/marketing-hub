@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.salespageab.web;
 
 import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbTestDto;
+import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbTestResultDto;
 import com.marketinghub.experiment.salespageab.dto.UpdateExperimentSalesPageAbVariantRequest;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import java.util.List;
@@ -27,6 +28,12 @@ public class ExperimentSalesPageAbTestController {
     @GetMapping
     public List<ExperimentSalesPageAbTestDto> list(@PathVariable Long experimentId) {
         return service.list(experimentId);
+    }
+
+    /** Lista os resultados rastreados dos testes A/B cadastrados no experimento. */
+    @GetMapping("/results")
+    public List<ExperimentSalesPageAbTestResultDto> results(@PathVariable Long experimentId) {
+        return service.results(experimentId);
     }
 
     /** Cria o teste recomendado para Meta: tradicional contra video humano. */

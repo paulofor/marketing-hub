@@ -96,3 +96,12 @@
 - Ponto inicial canônico: `/api/internal/product-ai/personalizedsample/v1/paid-delivery/stage-executions/pending`.
 - Aplicação: protocolo padrão módulo aplicado no executor novo, com ArchUnit bloqueando banco direto, prompt/schema local e dependência do núcleo em etapa concreta/infra.
 - Backend permanece como fonte de verdade para contrato, prompt/schema em banco, custo autoritativo, compra aprovada e marcação de entrega.
+
+## 2026-07-12 — Video Management Service — solicitação/renderização de vídeos
+
+- Módulo executor: `video-management-service`.
+- Pacote protegido: `com.marketinghub.videomanagement`.
+- Etapa operacional protegida: renderização de vídeo por providers plugáveis (`VideoProvider`), incluindo VEO/Gemini, provider real e stub local.
+- Ponto inicial canônico atual de consumo pelo executor: `/internal/video/jobs?status=VIDEO_REQUESTED`, com callbacks oficiais `/claim`, `/heartbeat`, `/progress`, `/complete`, `/fail` e `/expired`.
+- Backend permanece fora do protocolo padrão módulo; ele continua como fonte de verdade para solicitação, fila, status, assets, eventos e relatório persistível.
+- Aplicação: protocolo padrão módulo aplicado no executor responsável pelo fluxo, com ArchUnit protegendo independência dos providers, dependência do núcleo apenas no contrato `VideoProvider`, isolamento de tecnologias externas de render fora do núcleo operacional, uso dos contratos internos do backend e bloqueio de `nextStageCode` sem contrato completo.

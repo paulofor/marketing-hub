@@ -21,6 +21,19 @@ const nameCandidates = [
   "Bella Combina",
 ];
 
+export function createMessageId() {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+
+  return `msg-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+}
+
 export default function FashionChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -35,7 +48,7 @@ export default function FashionChatPage() {
     }
 
     const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: createMessageId(),
       role: "user",
       text,
     };
@@ -60,7 +73,7 @@ export default function FashionChatPage() {
       setMessages((current) => [
         ...current,
         {
-          id: crypto.randomUUID(),
+          id: createMessageId(),
           role: "assistant",
           text: payload.answer || "Nao foi possivel responder agora.",
           mode: payload.mode,
@@ -73,7 +86,7 @@ export default function FashionChatPage() {
       setMessages((current) => [
         ...current,
         {
-          id: crypto.randomUUID(),
+          id: createMessageId(),
           role: "assistant",
           text: `Nao consegui acionar o modulo de moda agora. Detalhe: ${message}`,
         },

@@ -5753,3 +5753,10 @@
 - Validação do arquivo: a URL pública respondeu `Content-Type: video/mp4`, `Content-Length: 2024034` e assinatura inicial `ftyp`, confirmando MP4 real.
 - Causa-raiz adicional tratada: o banco real tinha `asset.provider` e `asset.type` como `ENUM` físico defasado, sem `VIDEO_MODULE` e `CAPTION`; o VEO também precisava seguir redirect no download da Gemini e aumentar o limite de buffer do WebClient para baixar MP4 acima de 256 KB.
 - Prevenção preparada: changeset `2026-07-12-video-asset-enums` alinha os enums físicos do MySQL ao contrato Java, e o provider VEO local passa a seguir redirects, validar MP4 e bloquear JSON de erro salvo como vídeo.
+
+## 2026-07-12 — Chat de moda sem quebra em HTTP inseguro
+
+- Problema: o envio de pergunta na aba `Chat Moda` quebrava antes de chamar o serviço, com `crypto.randomUUID is not a function`.
+- Causa-raiz tratada: a tela dependia diretamente de `crypto.randomUUID`, API que pode ficar indisponível em contexto HTTP não seguro fora de `localhost`.
+- Correção aplicada: a geração de ID de mensagens passou a usar `crypto.randomUUID` quando disponível e fallback local quando não disponível.
+- Validação: teste de regressão cobre navegador sem `randomUUID`; Chromium local confirmou envio pelo IP HTTP inseguro sem `pageerror` e renderização da resposta com API mockada.

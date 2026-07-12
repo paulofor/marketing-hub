@@ -362,23 +362,14 @@ public class FacebookCampaignService {
             }
 
             String defaultMessage = formatCreativeMessage(exp.name(), config);
-            List<CreativePublicationPayload> creativePayloads = selectedCreatives.stream()
-                .map(creative -> {
-                    String websiteUrl = resolveDestinationUrl(exp, creative, config, resolvedInstantFormDestination);
-                    String leadGenFormId = resolveLeadGenFormId(exp, creative, config, resolvedInstantFormDestination);
-                    return new CreativePublicationPayload(
-                        creative,
-                        websiteUrl,
-                        leadGenFormId,
-                        StringUtils.hasText(creative.primaryText()) ? creative.primaryText() : defaultMessage,
-                        resolveCallToActionType(creative.cta(), config.defaultCallToActionType(), StringUtils.hasText(leadGenFormId)),
-                        creative.headline(),
-                        creative.description(),
-                        null,
-                        resolveCreativeImageUrl(creative.imageUrl()),
-                        coalesce(creative.instagramUserId(), fallbackInstagramActorId)
-                    );
-                })
+            List<CreativePublicationPayload> creativePayloads = buildCreativePublicationPayloads(
+                    exp,
+                    selectedCreatives,
+                    config,
+                    resolvedInstantFormDestination,
+                    defaultMessage,
+                    fallbackInstagramActorId)
+                .stream()
                 .filter(payload -> {
                     if (hasLeadFormDestination && !StringUtils.hasText(payload.leadGenFormId())) {
                         LOGGER.warn(
@@ -519,7 +510,7 @@ public class FacebookCampaignService {
                 String creativeId = adCreativeCreation.id();
                 String adName = creativePayloads.size() == 1
                     ? exp.name() + " - Ad"
-                    : exp.name() + " - Ad " + creativeIndex;
+                    : exp.name() + " - Ad " + creativeIndex + payload.adNameSuffix();
                 FacebookAdsService.AdRequest adRequest = new FacebookAdsService.AdRequest(
                     adName,
                     adSetId,
@@ -1267,7 +1258,8 @@ public class FacebookCampaignService {
         String description,
         String imageHash,
         String imageUrl,
-        String instagramActorId
+        String instagramActorId,
+        String adNameSuffix
     ) {
         private CreativePublicationPayload withImageHash(String value) {
             return new CreativePublicationPayload(
@@ -1280,7 +1272,8 @@ public class FacebookCampaignService {
                 description,
                 value,
                 imageUrl,
-                instagramActorId
+                instagramActorId,
+                adNameSuffix
             );
         }
     }
@@ -1560,6 +1553,90 @@ public class FacebookCampaignService {
     private record CanonicalImageHashResponse(
         @JsonAlias({"metaImageHash", "meta_image_hash", "imageHash", "image_hash"}) String metaImageHash
     ) {}
+
+    /** Monta os anúncios que serão publicados, duplicando o criativo por variante A/B pronta quando existir. */
+    private List<CreativePublicationPayload> buildCreativePublicationPayloads(
+        Experiment exp,
+        List<Creative> selectedCreatives,
+        FacebookWorkerConfiguration config,
+        InstantFormDestination instantFormDestination,
+        String defaultMessage,
+        String fallbackInstagramActorId
+    ) {
+        List<Experiment.SalesPageAbVariant> readyVariants = readySalesPageAbVariants(exp);
+        if (instantFormDestination == null && !readyVariants.isEmpty()) {
+            return selectedCreatives.stream()
+                .flatMap(creative -> readyVariants.stream()
+                    .map(variant -> toCreativePublicationPayload(
+                        exp,
+                        creative,
+                        config,
+                        null,
+                        defaultMessage,
+                        fallbackInstagramActorId,
+                        variant.adDestinationUrl(),
+                        " - Variante " + variant.variantKey())))
+                .toList();
+        }
+        return selectedCreatives.stream()
+            .map(creative -> toCreativePublicationPayload(
+                exp,
+                creative,
+                config,
+                instantFormDestination,
+                defaultMessage,
+                fallbackInstagramActorId,
+                null,
+                ""))
+            .toList();
+    }
+
+    /** Converte um criativo e um destino opcional de variante no payload aceito pela publicação Meta. */
+    private CreativePublicationPayload toCreativePublicationPayload(
+        Experiment exp,
+        Creative creative,
+        FacebookWorkerConfiguration config,
+        InstantFormDestination instantFormDestination,
+        String defaultMessage,
+        String fallbackInstagramActorId,
+        String variantDestinationUrl,
+        String adNameSuffix
+    ) {
+        String leadGenFormId = resolveLeadGenFormId(exp, creative, config, instantFormDestination);
+        String websiteUrl = StringUtils.hasText(variantDestinationUrl)
+            ? appendCampaignTrackingParameter(variantDestinationUrl, exp)
+            : resolveDestinationUrl(exp, creative, config, instantFormDestination);
+        return new CreativePublicationPayload(
+            creative,
+            websiteUrl,
+            leadGenFormId,
+            StringUtils.hasText(creative.primaryText()) ? creative.primaryText() : defaultMessage,
+            resolveCallToActionType(creative.cta(), config.defaultCallToActionType(), StringUtils.hasText(leadGenFormId)),
+            creative.headline(),
+            creative.description(),
+            null,
+            resolveCreativeImageUrl(creative.imageUrl()),
+            coalesce(creative.instagramUserId(), fallbackInstagramActorId),
+            adNameSuffix
+        );
+    }
+
+    /** Retorna somente variantes A/B aptas a receber trafego pago pela campanha. */
+    private List<Experiment.SalesPageAbVariant> readySalesPageAbVariants(Experiment exp) {
+        if (exp == null || exp.salesPageAbTest() == null
+            || !"READY".equalsIgnoreCase(exp.salesPageAbTest().status())
+            || exp.salesPageAbTest().variants() == null) {
+            return List.of();
+        }
+        List<Experiment.SalesPageAbVariant> variants = exp.salesPageAbTest().variants().stream()
+            .filter(variant -> variant != null)
+            .filter(variant -> "READY".equalsIgnoreCase(variant.status()))
+            .filter(variant -> StringUtils.hasText(variant.adDestinationUrl()))
+            .filter(variant -> variant.trafficWeight() != null && variant.trafficWeight().signum() > 0)
+            .sorted(Comparator.comparing(Experiment.SalesPageAbVariant::variantKey, Comparator.nullsLast(String::compareTo)))
+            .toList();
+        return variants.size() >= 2 ? variants : List.of();
+    }
 
     private JsonNode parseJson(String raw) {
         if (!StringUtils.hasText(raw)) {

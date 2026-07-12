@@ -142,6 +142,7 @@ import HotmartPage from "./pages/hotmart/HotmartPage";
 import ClickbasePage from "./pages/clickbase/ClickbasePage";
 import OpsMonitorPage from "./pages/OpsMonitorPage";
 import CommercialPlanningPage from "./pages/planning/CommercialPlanningPage";
+import FashionChatPage from "./pages/fashionChat/FashionChatPage";
 
 function LegacyNicheRedirect() {
   const { nicheId } = useParams();
@@ -341,6 +342,7 @@ export default function App() {
                 path="/ai/pending-requests"
                 element={<AiWorkerPendingRequestsPage />}
               />
+              <Route path="/fashion-chat" element={<FashionChatPage />} />
               <Route
                 path="/targeting/recent-queries"
                 element={<TargetingRecentQueriesPage />}

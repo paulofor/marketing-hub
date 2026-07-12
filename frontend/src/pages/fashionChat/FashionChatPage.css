@@ -1,0 +1,122 @@
+.fashion-chat-page {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.fashion-chat-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.fashion-chat-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.fashion-chat-subtitle {
+  margin: 6px 0 0;
+  color: #5b6472;
+  max-width: 680px;
+}
+
+.fashion-chat-status {
+  min-width: 160px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.86rem;
+  color: #354052;
+  background: #fff;
+}
+
+.fashion-chat-panel {
+  display: grid;
+  grid-template-rows: minmax(380px, 58vh) auto;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.fashion-chat-messages {
+  padding: 18px;
+  overflow: auto;
+  background: #f7f8fa;
+}
+
+.fashion-chat-empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #697386;
+  text-align: center;
+}
+
+.fashion-chat-message {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.fashion-chat-message--user {
+  justify-content: flex-end;
+}
+
+.fashion-chat-bubble {
+  max-width: min(720px, 82%);
+  border-radius: 8px;
+  padding: 12px 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.fashion-chat-message--user .fashion-chat-bubble {
+  background: #1f6feb;
+  color: #fff;
+}
+
+.fashion-chat-message--assistant .fashion-chat-bubble {
+  background: #fff;
+  border: 1px solid #d9dee7;
+  color: #1f2937;
+}
+
+.fashion-chat-meta {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: #697386;
+}
+
+.fashion-chat-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 14px;
+  border-top: 1px solid #d9dee7;
+  background: #fff;
+}
+
+.fashion-chat-input {
+  min-height: 48px;
+  max-height: 140px;
+  resize: vertical;
+}
+
+@media (max-width: 720px) {
+  .fashion-chat-header,
+  .fashion-chat-form {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .fashion-chat-status {
+    width: 100%;
+  }
+
+  .fashion-chat-bubble {
+    max-width: 94%;
+  }
+}

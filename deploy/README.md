@@ -19,7 +19,7 @@ O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys est
 | `VIDEO_TAR` | Caminho do tar usado no carregamento automático | `/tmp/video-management-image.tar` |
 | `VIDEO_BACKEND_BASE_URL` | URL utilizada pelo módulo de vídeo para conversar com o backend | `http://backend:8000` |
 | `VIDEO_JOBS_POLLING_ENABLED` | Ativa o polling automático no módulo de vídeo | `true` |
-| `VIDEO_PROVIDERS_VEO_ENABLED` | Habilita o adapter direto VEO/Gemini no módulo de vídeo | `false` |
+| `VIDEO_PROVIDERS_VEO_ENABLED` | Habilita o adapter direto VEO/Gemini no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_VEO_API_KEY` | Chave Gemini usada pelo adapter VEO; pode vir de `GEMINI_API_KEY` | vazio |
 | `VIDEO_PROVIDERS_VEO_MODEL` | Modelo VEO usado no render | `veo-3.1-generate-preview` |
 | `VIDEO_MANAGEMENT_PORT` | Porta exposta externamente | `8095` |
@@ -27,7 +27,7 @@ O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys est
 | `OPENAI_API_KEY_FILE` | Caminho interno lido pelo backend para chamadas OpenAI, incluindo a busca oficial de modelos | `/run/secrets/openai_api_key` |
 | `OPENAI_API_KEY` | Alternativa para token direto quando não houver arquivo montado; não deve ser versionada em `.env` do repositório | vazio |
 
-> **Importante:** o poller do módulo de vídeo fica ativo no compose operacional. O provider VEO direto permanece desativado até configurar `VIDEO_PROVIDERS_VEO_ENABLED=true` e uma chave Gemini real.
+> **Importante:** o poller do módulo de vídeo fica ativo no compose operacional. O provider VEO direto fica habilitado por padrão para alinhar com jobs `providerName=VEO`, mas a renderização real continua dependendo de `GEMINI_API_KEY` ou `VIDEO_PROVIDERS_VEO_API_KEY` no ambiente do container.
 >
 > **Nota operacional (MCP/VPS):** mantenha o arquivo de ambiente em `${DEPLOY_DIR}/.env` no servidor. O pipeline de deploy do MCP sincroniza `deploy/` com `rsync --delete`, mas preserva explicitamente o `.env` remoto para não apagar segredos locais.
 

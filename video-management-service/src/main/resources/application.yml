@@ -33,6 +33,7 @@ video:
         - VEO
         - VEO-3.1
         - VEO_3_1
+        - REAL
       base-url: https://generativelanguage.googleapis.com/v1beta
       api-key: ${GEMINI_API_KEY:}
       model: veo-3.1-generate-preview

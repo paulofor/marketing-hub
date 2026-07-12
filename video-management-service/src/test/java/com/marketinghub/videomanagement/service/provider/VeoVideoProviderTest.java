@@ -76,6 +76,14 @@ class VeoVideoProviderTest {
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/video-123");
     }
 
+    /** Deve aceitar REAL como alias legado para jobs de experimento roteados ao VEO. */
+    @Test
+    void shouldSupportRealAliasForLegacyExperimentJobs() {
+        VeoVideoProvider provider = new VeoVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThat(provider.supports(job("REAL"))).isTrue();
+    }
+
     /** Cria uma resposta JSON para a Gemini API simulada. */
     private MockResponse json(String body) {
         return new MockResponse()
@@ -96,13 +104,18 @@ class VeoVideoProviderTest {
 
     /** Cria um job de render VEO. */
     private SalesVideoJob job() {
+        return job("VEO");
+    }
+
+    /** Cria um job de render para o provider informado. */
+    private SalesVideoJob job(String providerName) {
         return new SalesVideoJob(
                 1L,
                 2L,
                 3L,
                 "tenant-a",
                 SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
-                "VEO",
+                providerName,
                 null,
                 SalesVideoJobType.RENDER,
                 SalesVideoStatus.VIDEO_REQUESTED,

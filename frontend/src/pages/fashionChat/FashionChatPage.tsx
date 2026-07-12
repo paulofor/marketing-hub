@@ -13,6 +13,14 @@ type ChatMessage = {
 const serviceUrl =
   import.meta.env.VITE_FASHION_CHAT_SERVICE_URL || "http://localhost:8094";
 
+const nameCandidates = [
+  "Mia Estilo",
+  "Clara Look",
+  "Aura Moda",
+  "Lia Closet",
+  "Bella Combina",
+];
+
 export default function FashionChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -85,6 +93,19 @@ export default function FashionChatPage() {
             Piloto de produto conversacional AI Sandbox: pergunta do cliente,
             pesquisa de moda e resposta curta para orientar decisao.
           </p>
+          <div
+            className="fashion-chat-name-candidates"
+            aria-label="Nomes candidatos para o chat consultor de moda"
+          >
+            <span className="fashion-chat-name-label">
+              Nomes em avaliacao:
+            </span>
+            {nameCandidates.map((name) => (
+              <span className="fashion-chat-name-pill" key={name}>
+                {name}
+              </span>
+            ))}
+          </div>
         </div>
         <div className="fashion-chat-status">
           <strong>Status</strong>

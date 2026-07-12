@@ -1,3 +1,11 @@
+## 2026-07-12 — Experimento 63: tenant no endpoint canônico de vídeo do experimento
+
+- Problema confirmado ao tentar o próximo passo operacional: o endpoint `/api/experiments/63/video-assets/veo-render-requests` recebia `X-Tenant-ID`, mas o filtro do backend não classificava essa rota como parte do módulo de vídeo; ao criar o perfil internamente, o contexto permanecia `system` e o service retornava `TENANT_HEADER_REQUIRED`.
+- Causa-raiz: o contrato de vídeo do experimento usa serviços do Avatar Sales Video, mas estava fora da lista de rotas protegidas por tenant em `TenantContextFilter`.
+- Correção aplicada localmente: `/api/experiments/*/video-assets/**` passa a carregar contexto de tenant, com teste cobrindo a rota de render VEO do experimento.
+- Validação: testes focados do backend passaram após `clean` e o `video-management-service` subiu localmente com VEO habilitado, `REAL` como alias e health `UP`.
+- Próximo passo operacional: publicar o backend corrigido e então acionar nova solicitação canônica de vídeo para o experimento 63; antes do deploy, a produção ainda rejeita a criação do job novo por tenant.
+
 ## 2026-07-12 — Experimento 63: correção da busca interna do perfil de vídeo
 
 - causa-raiz confirmada no banco: o job VEO/REAL `10108` falhou antes de chamar o provider, porque o `video-management-service` buscava o perfil pela rota administrativa `/api/sales-videos/profiles/{id}`, que exigia `X-Tenant-ID`.

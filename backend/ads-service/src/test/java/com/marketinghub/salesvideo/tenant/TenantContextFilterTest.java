@@ -45,6 +45,24 @@ class TenantContextFilterTest {
         assertThat(response.getContentAsString()).contains("TENANT_HEADER_REQUIRED");
     }
 
+    /** Deve proteger criação de vídeo de experimento com o mesmo contexto de tenant do módulo de vídeo. */
+    @Test
+    void shouldApplyTenantContextToExperimentVideoAssetsEndpoints() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                "POST", "/api/experiments/63/video-assets/veo-render-requests");
+        request.addHeader("X-Tenant-ID", "default");
+        request.addHeader("X-User-Email", "codex@marketinghub.io");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = (servletRequest, servletResponse) -> {
+            assertThat(TenantContextHolder.requireTenant()).isEqualTo("default");
+            assertThat(TenantContextHolder.resolveUserEmail(null)).isEqualTo("codex@marketinghub.io");
+        };
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
     /** Deve manter leitura legado de perfil sem tenant para o renderizador externo atual. */
     @Test
     void shouldAllowReadOnlyProfileCompatibilityWithoutTenantHeader() throws Exception {

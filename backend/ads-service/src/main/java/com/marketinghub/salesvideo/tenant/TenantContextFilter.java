@@ -88,6 +88,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
         }
         return path.startsWith("/api/sales-videos")
                 || MATCHER.match("/api/products/*/sales-videos/**", path)
+                || MATCHER.match("/api/experiments/*/video-assets/**", path)
                 || MATCHER.match("/api/landing-pages/*/video-slots/**", path);
     }
 

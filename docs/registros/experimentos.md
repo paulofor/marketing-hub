@@ -5715,3 +5715,10 @@
 - Causa-raiz confirmada: o `video-management-service` tentou carregar o perfil `3` por `GET /api/sales-videos/profiles/3` sem `X-Tenant-ID`, recebendo `TENANT_HEADER_REQUIRED`; além disso, o auto-retry reprocessava jobs que já tinham filho de retry, gerando repetição da mesma falha sem avançar o ativo comercial.
 - Correção preparada: o backend passa a expor perfil por contrato interno `/internal/video/sales-videos/profiles/{profileId}`, mantém compatibilidade somente leitura para o GET legado usado pelo renderizador atual e bloqueia retry automático quando o job falho já originou outro retry.
 - Próximo passo operacional: publicar a correção do backend e reprocessar o vídeo do experimento 63; só liberar Facebook quando o asset estiver `READY`, `APPROVED` e com `assetUrl` público.
+
+## 2026-07-12 — Experimento 63: provider de vídeo e loop de auto-retry
+
+- Problema: após a correção de tenant, o perfil 3 acumulou milhares de jobs `AUTO_RECOVERY` com `provider_name=REAL`, todos falhando com `Nenhum provider configurado para o job`; o ativo do experimento 63 continuou `PLANNED/PENDING` sem `assetUrl`.
+- Causa-raiz confirmada: o deploy do `video-management-service` mantinha VEO desabilitado por padrão e não havia gateway `REAL` configurado para os jobs legados do perfil 3; além disso, o auto-retry aceitava falhas não-retryable e continuava criando filhos automáticos de jobs que já tinham nascido de `AUTO_RECOVERY`.
+- Correção preparada: o auto-retry passa a agir somente quando o worker marcou `retryable=true` e não reprocessa falhas de jobs criados por `AUTO_RECOVERY`; o compose operacional passa a habilitar VEO por padrão, `REAL` passa a ser aceito como alias legado do adapter VEO, e o `/api/status` do `video-management-service` passa a expor providers ativos sem revelar credenciais.
+- Próximo passo operacional: publicar backend e `video-management-service`, confirmar no status público `providers.veo.enabled=true` e `providers.veo.apiKeyConfigured=true`, então criar um retry manual limpo para o perfil 3 antes de liberar o A/B/Facebook.

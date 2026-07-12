@@ -108,7 +108,7 @@ public class VideoManagementProperties {
          * Nomes que identificam jobs destinados ao adapter direto do VEO.
          */
         @NotNull
-        private List<String> acceptedNames = new ArrayList<>(List.of("VEO", "VEO-3.1", "VEO_3_1"));
+        private List<String> acceptedNames = new ArrayList<>(List.of("VEO", "VEO-3.1", "VEO_3_1", "REAL"));
 
         /**
          * Base URL oficial da Gemini API para geração de vídeos.

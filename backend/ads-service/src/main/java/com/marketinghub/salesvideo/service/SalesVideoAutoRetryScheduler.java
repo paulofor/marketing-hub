@@ -55,6 +55,9 @@ public class SalesVideoAutoRetryScheduler {
         List<SalesVideoJob> candidates = jobRepository.findByStatusAndFinishedAtBefore(SalesVideoStatus.VIDEO_FAILED, cutoff);
         int executed = 0;
         for (SalesVideoJob job : candidates) {
+            if (!isAutomaticRetryCandidate(job)) {
+                continue;
+            }
             if (!reprocessPolicy.hasAttemptsRemaining(job)) {
                 continue;
             }
@@ -78,5 +81,17 @@ public class SalesVideoAutoRetryScheduler {
         if (executed > 0) {
             LOGGER.info("Reprocessamento automático disparou {} novos jobs", executed);
         }
+    }
+
+    /** Verifica se a falha é técnica e segura para retry automático. */
+    private boolean isAutomaticRetryCandidate(SalesVideoJob job) {
+        if (job.getRetryReason() == SalesVideoRetryReason.AUTO_RECOVERY) {
+            return false;
+        }
+        String detail = job.getFailureDetail();
+        if (detail == null || detail.isBlank()) {
+            return false;
+        }
+        return detail.contains("retryable=true");
     }
 }

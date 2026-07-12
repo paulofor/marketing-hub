@@ -19,13 +19,29 @@ public class StatusController {
         this.properties = properties;
     }
 
+    /** Retorna configuração operacional sem expor credenciais sensíveis. */
     @GetMapping
     public Map<String, Object> status() {
         return Map.of(
                 "backendBaseUrl", properties.getBackendBaseUrl(),
                 "pollingEnabled", properties.getJobs().isPollingEnabled(),
                 "pollIntervalSeconds", properties.getJobs().getPollInterval().getSeconds(),
-                "batchSize", properties.getJobs().getBatchSize()
+                "batchSize", properties.getJobs().getBatchSize(),
+                "providers", Map.of(
+                        "real", Map.of(
+                                "enabled", properties.getProviders().getReal().isEnabled(),
+                                "acceptedNames", properties.getProviders().getReal().getAcceptedNames(),
+                                "baseUrlConfigured", properties.getProviders().getReal().getBaseUrl() != null),
+                        "veo", Map.of(
+                                "enabled", properties.getProviders().getVeo().isEnabled(),
+                                "acceptedNames", properties.getProviders().getVeo().getAcceptedNames(),
+                                "apiKeyConfigured", hasText(properties.getProviders().getVeo().getApiKey()),
+                                "model", properties.getProviders().getVeo().getModel()))
         );
+    }
+
+    /** Indica presença de texto sem retornar o valor configurado. */
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

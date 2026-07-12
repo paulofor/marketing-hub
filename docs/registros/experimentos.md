@@ -5737,3 +5737,11 @@
 - Causa-raiz confirmada: o deploy do `video-management-service` mantinha VEO desabilitado por padrão e não havia gateway `REAL` configurado para os jobs legados do perfil 3; além disso, o auto-retry aceitava falhas não-retryable e continuava criando filhos automáticos de jobs que já tinham nascido de `AUTO_RECOVERY`.
 - Correção preparada: o auto-retry passa a agir somente quando o worker marcou `retryable=true` e não reprocessa falhas de jobs criados por `AUTO_RECOVERY`; o compose operacional passa a habilitar VEO por padrão, `REAL` passa a ser aceito como alias legado do adapter VEO, e o `/api/status` do `video-management-service` passa a expor providers ativos sem revelar credenciais.
 - Próximo passo operacional: publicar backend e `video-management-service`, confirmar no status público `providers.veo.enabled=true` e `providers.veo.apiKeyConfigured=true`, então criar um retry manual limpo para o perfil 3 antes de liberar o A/B/Facebook.
+
+## 2026-07-12 — Experimento 63: vídeo VEO gerado e validado
+
+- Resultado operacional: o vídeo obrigatório do experimento 63 foi gerado pelo VEO, salvo como `asset_id=1898` e vinculado ao ativo `experiment_video_asset.id=3`.
+- Evidência final: o backend publicado retorna `status=READY`, `reviewStatus=APPROVED`, `salesVideoJobId=20427`, `assetId=1898` e `assetUrl=https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/07/12/misc/d3dedb85a707-sales-video-20427-veo.mp4`.
+- Validação do arquivo: a URL pública respondeu `Content-Type: video/mp4`, `Content-Length: 2024034` e assinatura inicial `ftyp`, confirmando MP4 real.
+- Causa-raiz adicional tratada: o banco real tinha `asset.provider` e `asset.type` como `ENUM` físico defasado, sem `VIDEO_MODULE` e `CAPTION`; o VEO também precisava seguir redirect no download da Gemini e aumentar o limite de buffer do WebClient para baixar MP4 acima de 256 KB.
+- Prevenção preparada: changeset `2026-07-12-video-asset-enums` alinha os enums físicos do MySQL ao contrato Java, e o provider VEO local passa a seguir redirects, validar MP4 e bloquear JSON de erro salvo como vídeo.

@@ -10,6 +10,8 @@ COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend/ ./
+ARG VITE_FASHION_CHAT_SERVICE_URL=http://191.252.210.83:8094
+ENV VITE_FASHION_CHAT_SERVICE_URL=${VITE_FASHION_CHAT_SERVICE_URL}
 RUN npm run build
 
 # ─────────────────────────────────────────

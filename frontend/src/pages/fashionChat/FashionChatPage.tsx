@@ -11,7 +11,7 @@ type ChatMessage = {
 };
 
 const serviceUrl =
-  import.meta.env.VITE_FASHION_CHAT_SERVICE_URL || "http://localhost:8094";
+  import.meta.env.VITE_FASHION_CHAT_SERVICE_URL || "http://191.252.210.83:8094";
 
 const nameCandidates = [
   "Mia Estilo",

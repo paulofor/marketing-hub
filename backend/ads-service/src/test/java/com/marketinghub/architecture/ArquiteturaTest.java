@@ -101,6 +101,7 @@ class ArquiteturaTest {
     private static final String SALES_VIDEO_SERVICE_PACKAGE = SALES_VIDEO_PACKAGE + ".service";
     private static final String SALES_VIDEO_DTO_PACKAGE = SALES_VIDEO_PACKAGE + ".dto";
     private static final String SALES_VIDEO_REPOSITORY_PACKAGE = "com.marketinghub.repository.jpa.salesvideo";
+    private static final String SALES_VIDEO_EXECUTOR_MODULE = "video-management-service";
     private static final Pattern FACEBOOK_ADS_STAGE_CONTROLLER_PACKAGE_PATTERN =
             Pattern.compile("^com\\.marketinghub\\.facebookads\\.stage\\.([a-zA-Z0-9_]+)\\.controller$");
     private static final Pattern FACEBOOK_ADS_STAGE_SERVICE_PACKAGE_PATTERN =
@@ -707,6 +708,86 @@ class ArquiteturaTest {
                 .forEach(javaClass -> violations.add("[ARQUITETURA] [BACKEND][SalesVideo] classe="
                         + javaClass.getName() + " deve estender JpaRepository no pacote externo "
                         + SALES_VIDEO_REPOSITORY_PACKAGE));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante o protocolo backend do fluxo de solicitação/renderização de vídeos.
+     */
+    @ArchTest
+    static void salesVideoRenderRequestMustFollowBackendProtocol(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        JavaClass controller = directPackageClasses(importedClasses, SALES_VIDEO_CONTROLLER_PACKAGE).stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("SalesVideoController"))
+                .findFirst()
+                .orElse(null);
+        if (controller == null) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] deve existir SalesVideoController como borda HTTP única do fluxo de solicitação de vídeos");
+        } else {
+            requirePostMapping(violations, controller, "requestRender",
+                    "/api/sales-videos/profiles/{profileId}/request-render",
+                    "solicitação administrativa de render");
+            requireGetMapping(violations, controller, "listVideoJobs", "/internal/video/jobs",
+                    "pending canônico do executor " + SALES_VIDEO_EXECUTOR_MODULE);
+            requirePostMapping(violations, controller, "claimVideoJob", "/internal/video/jobs/{jobId}/claim",
+                    "claim do executor " + SALES_VIDEO_EXECUTOR_MODULE);
+            requirePostMapping(violations, controller, "heartbeatVideoJob", "/internal/video/jobs/{jobId}/heartbeat",
+                    "heartbeat auditável do executor " + SALES_VIDEO_EXECUTOR_MODULE);
+            requirePostMapping(violations, controller, "progressVideoJob", "/internal/video/jobs/{jobId}/progress",
+                    "progresso persistido do executor " + SALES_VIDEO_EXECUTOR_MODULE);
+            requirePostMapping(violations, controller, "completeVideoJob", "/internal/video/jobs/{jobId}/complete",
+                    "callback de sucesso do executor " + SALES_VIDEO_EXECUTOR_MODULE);
+            requirePostMapping(violations, controller, "failVideoJob", "/internal/video/jobs/{jobId}/fail",
+                    "callback de falha do executor " + SALES_VIDEO_EXECUTOR_MODULE);
+            requirePostMapping(violations, controller, "expireVideoJob", "/internal/video/jobs/{jobId}/expired",
+                    "callback de expiração do executor " + SALES_VIDEO_EXECUTOR_MODULE);
+            requirePostMapping(violations, controller, "upload", "/internal/video/assets",
+                    "registro de artefato final/auxiliar do executor " + SALES_VIDEO_EXECUTOR_MODULE);
+            requireGetMapping(violations, controller, "getJobEvents", "/api/sales-videos/jobs/{jobId}/events",
+                    "relatório auditável de eventos do job");
+        }
+
+        boolean hasJobRepository = directPackageClasses(importedClasses, SALES_VIDEO_REPOSITORY_PACKAGE).stream()
+                .anyMatch(javaClass -> javaClass.getSimpleName().equals("SalesVideoJobRepository"));
+        boolean hasJobEventRepository = directPackageClasses(importedClasses, SALES_VIDEO_REPOSITORY_PACKAGE).stream()
+                .anyMatch(javaClass -> javaClass.getSimpleName().equals("SalesVideoJobEventRepository"));
+        if (!hasJobRepository || !hasJobEventRepository) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] solicitação de vídeo deve persistir job e eventos em repositories canônicos; "
+                    + "SalesVideoJobRepository=" + hasJobRepository + ", SalesVideoJobEventRepository=" + hasJobEventRepository);
+        }
+
+        JavaClass profileService = directPackageClasses(importedClasses, SALES_VIDEO_SERVICE_PACKAGE).stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("SalesVideoProfileService"))
+                .findFirst()
+                .orElse(null);
+        if (profileService == null) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] SalesVideoProfileService deve manter a regra de criação da solicitação de render e gate comercial/compliance");
+        } else {
+            if (!hasMethod(profileService, "requestRender")) {
+                violations.add("[ARQUITETURA] [BACKEND][SalesVideo] SalesVideoProfileService deve possuir requestRender para criar SalesVideoJob no backend antes do executor processar");
+            }
+            if (!hasMethod(profileService, "ensureProductionCompliance")) {
+                violations.add("[ARQUITETURA] [BACKEND][SalesVideo] SalesVideoProfileService deve possuir ensureProductionCompliance para bloquear render produtivo sem consentimento/revisão humana");
+            }
+        }
+
+        JavaClass jobService = directPackageClasses(importedClasses, SALES_VIDEO_SERVICE_PACKAGE).stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("SalesVideoJobService"))
+                .findFirst()
+                .orElse(null);
+        if (jobService == null) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] SalesVideoJobService deve centralizar persistência de status, callbacks e eventos do executor "
+                    + SALES_VIDEO_EXECUTOR_MODULE);
+        } else {
+            List<String> requiredJobMethods = List.of(
+                    "createJob", "findJobs", "claimJob", "heartbeat", "progress", "complete", "fail", "expire",
+                    "getJobEvents");
+            requiredJobMethods.stream()
+                    .filter(methodName -> !hasMethod(jobService, methodName))
+                    .forEach(methodName -> violations.add("[ARQUITETURA] [BACKEND][SalesVideo] SalesVideoJobService deve possuir método "
+                            + methodName + " para persistir execução/status/eventos do fluxo de vídeo"));
+        }
+
         failWithArchitectureViolations(violations);
     }
 
@@ -1861,6 +1942,56 @@ class ArquiteturaTest {
                 .anyMatch(getMapping -> getMapping != null
                         && (containsOnlyMapping(getMapping.value(), "/pending")
                                 || containsOnlyMapping(getMapping.path(), "/pending")));
+    }
+
+    /**
+     * Verifica se uma classe possui um método com nome informado.
+     */
+    private static boolean hasMethod(JavaClass javaClass, String methodName) {
+        return javaClass.getMethods().stream()
+                .anyMatch(method -> method.getName().equals(methodName));
+    }
+
+    /**
+     * Registra violação quando o método não expõe o @PostMapping esperado.
+     */
+    private static void requirePostMapping(List<String> violations,
+                                           JavaClass javaClass,
+                                           String methodName,
+                                           String expectedMapping,
+                                           String responsibility) {
+        boolean present = javaClass.getMethods().stream()
+                .filter(method -> method.getName().equals(methodName))
+                .map(method -> method.reflect().getAnnotation(PostMapping.class))
+                .anyMatch(postMapping -> postMapping != null
+                        && (containsOnlyMapping(postMapping.value(), expectedMapping)
+                                || containsOnlyMapping(postMapping.path(), expectedMapping)));
+        if (!present) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] " + javaClass.getSimpleName()
+                    + "." + methodName + " deve expor @PostMapping(\"" + expectedMapping + "\") para "
+                    + responsibility);
+        }
+    }
+
+    /**
+     * Registra violação quando o método não expõe o @GetMapping esperado.
+     */
+    private static void requireGetMapping(List<String> violations,
+                                          JavaClass javaClass,
+                                          String methodName,
+                                          String expectedMapping,
+                                          String responsibility) {
+        boolean present = javaClass.getMethods().stream()
+                .filter(method -> method.getName().equals(methodName))
+                .map(method -> method.reflect().getAnnotation(GetMapping.class))
+                .anyMatch(getMapping -> getMapping != null
+                        && (containsOnlyMapping(getMapping.value(), expectedMapping)
+                                || containsOnlyMapping(getMapping.path(), expectedMapping)));
+        if (!present) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] " + javaClass.getSimpleName()
+                    + "." + methodName + " deve expor @GetMapping(\"" + expectedMapping + "\") para "
+                    + responsibility);
+        }
     }
 
     /**

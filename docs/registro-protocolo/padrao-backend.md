@@ -57,3 +57,10 @@
 - Módulo executor externo: `mois-sales-library-worker`.
 - Pipelines expostos para enfileiramento: `salespagepatterns.v1` e `warmupecosystem.v1`.
 - Aplicação: ArchUnit no backend para impedir que a biblioteca vire executor runtime de OpenAI; backend mantém leitura/escrita, custos e contratos.
+
+## 2026-07-12 — SalesVideo / solicitação de vídeos
+
+- Pacote backend protegido: `com.marketinghub.salesvideo`.
+- Módulo executor externo: `video-management-service`.
+- Fluxo protegido: solicitação de render em `/api/sales-videos/profiles/{profileId}/request-render`, pending canônico legado em `/internal/video/jobs`, callbacks internos de claim/heartbeat/progress/complete/fail/expired e upload interno de artefatos em `/internal/video/assets`.
+- Aplicação: protocolo padrão backend aplicado por regra ArchUnit em `ArquiteturaTest`, exigindo backend como fonte de verdade para job/eventos/status, persistência auditável da execução e gate de compliance antes de render produtivo.

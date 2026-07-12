@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-12-video-asset-enums
+      author: marketinghub
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE asset
+                  MODIFY provider ENUM(
+                      'SYNTHESIA',
+                      'HEYGEN',
+                      'ELEVENLABS',
+                      'RUNWAY',
+                      'OPENAI',
+                      'WATERMARKER',
+                      'VIDEO_MODULE',
+                      'USER_UPLOAD'
+                  ) NULL;
+              ALTER TABLE asset
+                  MODIFY type ENUM(
+                      'VIDEO',
+                      'AUDIO',
+                      'BROLL',
+                      'IMAGE',
+                      'CAPTION'
+                  ) NULL;

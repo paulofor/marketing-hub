@@ -15,15 +15,20 @@ import java.util.Locale;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 /** Adapter direto para renderizar vídeos comerciais usando VEO via Gemini API. */
 @Component
 @ConditionalOnProperty(prefix = "video.providers.veo", name = "enabled", havingValue = "true")
 public class VeoVideoProvider implements VideoProvider {
     private static final MediaType VIDEO_MP4 = MediaType.valueOf("video/mp4");
+    private static final int MAX_VIDEO_DOWNLOAD_BYTES = 25 * 1024 * 1024;
 
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
@@ -35,7 +40,13 @@ public class VeoVideoProvider implements VideoProvider {
                             WebClient.Builder webClientBuilder) {
         this.properties = properties;
         this.objectMapper = objectMapper;
-        this.webClient = webClientBuilder.baseUrl(resolveBaseUrl()).build();
+        this.webClient = webClientBuilder
+                .baseUrl(resolveBaseUrl())
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
+                .exchangeStrategies(ExchangeStrategies.builder()
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
+                        .build())
+                .build();
     }
 
     /** Verifica se o job de render pertence ao provider VEO. */
@@ -156,12 +167,19 @@ public class VeoVideoProvider implements VideoProvider {
 
     /** Baixa o arquivo final informado pela Gemini API usando a mesma chave de autenticação. */
     private ProviderFile downloadVideo(SalesVideoJob job, String videoUri) {
-        byte[] content = authorized(webClient.get().uri(videoUri))
+        ResponseEntity<byte[]> response = authorized(webClient.get().uri(videoUri))
                 .retrieve()
-                .bodyToMono(byte[].class)
+                .toEntity(byte[].class)
                 .block();
+        byte[] content = response == null ? null : response.getBody();
         if (content == null || content.length == 0) {
             throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Download vazio do vídeo VEO");
+        }
+        MediaType contentType = response.getHeaders().getContentType();
+        if (contentType == null || !VIDEO_MP4.isCompatibleWith(contentType) || !looksLikeMp4(content)) {
+            throw new VideoProviderException("PROVIDER_RENDER_FAILED",
+                    "Download do VEO não retornou MP4 válido; contentType=%s bytes=%d"
+                            .formatted(contentType, content.length));
         }
         return new ProviderFile("sales-video-" + job.id() + "-veo.mp4",
                 VIDEO_MP4,
@@ -229,6 +247,17 @@ public class VeoVideoProvider implements VideoProvider {
     /** Substitui valores vazios por padrão textual seguro para o prompt. */
     private String nullToDefault(String value, String fallback) {
         return StringUtils.hasText(value) ? value.trim() : fallback;
+    }
+
+    /** Verifica assinatura mínima de container MP4 para não salvar JSON/erro como vídeo. */
+    private boolean looksLikeMp4(byte[] content) {
+        if (content.length < 12) {
+            return false;
+        }
+        return content[4] == 'f'
+                && content[5] == 't'
+                && content[6] == 'y'
+                && content[7] == 'p';
     }
 
     /** Aguarda entre tentativas de polling e preserva interrupção da thread. */

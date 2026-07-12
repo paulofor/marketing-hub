@@ -1,6 +1,7 @@
 package com.marketinghub.videomanagement.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.AssetType;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okio.Buffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,9 +59,12 @@ class VeoVideoProviderTest {
                 }
                 """.formatted(server.url("/").toString().replaceAll("/$", ""))));
         server.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "video/mp4")
-                .setBody("mp4-bytes"));
+                .setResponseCode(302)
+                .setHeader("Location", server.url("/download/video-123-final").toString())
+                .setBody("""
+                        {"error":{"code":302,"message":"Unknown Error.","status":"UNKNOWN"}}
+                        """));
+        server.enqueue(mp4Response());
         VeoVideoProvider provider = new VeoVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
         AtomicInteger progress = new AtomicInteger();
 
@@ -74,6 +79,34 @@ class VeoVideoProviderTest {
         assertThat(server.takeRequest().getPath()).isEqualTo("/models/veo-3.1-generate-preview:predictLongRunning");
         assertThat(server.takeRequest().getPath()).isEqualTo("/operations/video-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/video-123");
+        assertThat(server.takeRequest().getPath()).isEqualTo("/download/video-123-final");
+    }
+
+    /** Deve rejeitar resposta JSON/erro para impedir asset falso com extensão MP4. */
+    @Test
+    void shouldRejectNonMp4Download() {
+        server.enqueue(json("{\"name\":\"operations/video-123\"}"));
+        server.enqueue(json("""
+                {
+                  "done": true,
+                  "response": {
+                    "generateVideoResponse": {
+                      "generatedSamples": [
+                        {"video": {"uri": "%s/download/video-123"}}
+                      ]
+                    }
+                  }
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"error\":{\"code\":302}}"));
+        VeoVideoProvider provider = new VeoVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasMessageContaining("não retornou MP4 válido");
     }
 
     /** Deve aceitar REAL como alias legado para jobs de experimento roteados ao VEO. */
@@ -90,6 +123,16 @@ class VeoVideoProviderTest {
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
                 .setBody(body);
+    }
+
+    /** Cria uma resposta MP4 mínima com assinatura ftyp. */
+    private MockResponse mp4Response() {
+        return new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "video/mp4")
+                .setBody(new Buffer().write(new byte[] {
+                        0, 0, 0, 32, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm', 0, 0, 2, 0
+                }));
     }
 
     /** Configura o provider VEO apontando para a API simulada. */

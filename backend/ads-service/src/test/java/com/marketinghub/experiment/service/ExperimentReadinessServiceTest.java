@@ -167,15 +167,38 @@ class ExperimentReadinessServiceTest {
     @Test
     void shouldBlockCampaignWhenActiveSalesPageAbTestIsIncomplete() {
         Experiment experiment = buildExperiment(44L, 54L);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
         experiment.setFollowUpActionUrl("https://example.com/landing/44");
+        completeCommercialContract(experiment);
 
         when(creativeRepository.existsByExperimentIdAndStatus(44L, CreativeStatus.READY)).thenReturn(true);
         when(salesPageAbTestService.hasReadyActiveTest(44L)).thenReturn(false);
         mockPublishableSelection(44L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(44L);
+        mockSalesPageAudit(
+                44L,
+                "https://example.com/landing/44",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp44",
+                trackedSalesPageHtml());
 
         assertThat(service.computeMissingConfiguration(experiment))
                 .containsExactly("salesPageAbTest");
         assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    /** Garante que teste A/B de venda incompleto nao bloqueia campanha de captura de leads. */
+    @Test
+    void shouldNotRequireSalesPageAbTestForLeadGenerationNicheTest() {
+        Experiment experiment = buildExperiment(45L, 55L);
+        experiment.setExperimentType(ExperimentType.NICHE_TEST);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.LEADS);
+        experiment.setFollowUpActionUrl("https://example.com/landing/45");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(45L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(45L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
     @Test

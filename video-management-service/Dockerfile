@@ -16,4 +16,4 @@ COPY --from=build /workspace/video-management-service/target/app.jar app.jar
 EXPOSE 8095
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD curl -fsS http://127.0.0.1:8095/actuator/health || exit 1
-ENTRYPOINT ["/bin/sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["/bin/sh", "-c", "if [ -z \"$GEMINI_API_KEY\" ] && [ -n \"$GEMINI_API_KEY_FILE\" ] && [ -r \"$GEMINI_API_KEY_FILE\" ]; then export GEMINI_API_KEY=\"$(tr -d '\\r\\n' < \"$GEMINI_API_KEY_FILE\")\"; fi; if [ -z \"$VIDEO_PROVIDERS_VEO_API_KEY\" ] && [ -n \"$GEMINI_API_KEY\" ]; then export VIDEO_PROVIDERS_VEO_API_KEY=\"$GEMINI_API_KEY\"; fi; exec java $JAVA_OPTS -jar /app/app.jar"]

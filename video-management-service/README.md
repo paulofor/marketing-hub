@@ -40,15 +40,17 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.providers.real.poll-interval` | Intervalo de polling do status no provider. | `PT5S` |
 | `video.providers.real.max-poll-attempts` | Máximo de tentativas de polling antes de timeout técnico. | `120` |
 | `video.providers.veo.enabled` | Habilita o adapter direto VEO/Gemini. | `false` |
-| `video.providers.veo.api-key` | Chave Gemini usada pelo adapter VEO. | `${GEMINI_API_KEY}` |
+| `video.providers.veo.api-key` | Chave Gemini usada pelo adapter VEO. | `${GEMINI_API_KEY}` ou arquivo em `${GEMINI_API_KEY_FILE}` |
 | `video.providers.veo.model` | Modelo VEO usado para gerar vídeo. | `veo-3.1-generate-preview` |
 | `video.providers.veo.duration-seconds` | Duração numérica enviada ao VEO. | `8` |
 
 ### Nota operacional sobre VEO
 
-O VEO ja foi validado para experimentos do Marketing Hub. Desde 2026-07-10, este modulo tambem possui adapter direto `veo`, acionado por `providerName=VEO` quando `video.providers.veo.enabled=true` e `GEMINI_API_KEY` esta configurada.
+O VEO ja foi validado para experimentos do Marketing Hub. Desde 2026-07-10, este modulo tambem possui adapter direto `veo`, acionado por `providerName=VEO` quando `video.providers.veo.enabled=true` e a chave Gemini esta configurada por `GEMINI_API_KEY` ou pelo arquivo `GEMINI_API_KEY_FILE`.
 
 O adapter direto usa o contrato REST da Gemini API: cria uma operacao `predictLongRunning`, faz polling em `operations/...` e baixa o MP4 retornado. O fluxo manual continua sendo fallback operacional quando nao houver chave Gemini ou quando o provider externo estiver indisponivel.
+
+No container, o compose monta por padrao `/root/infra/gemini-token/gemini_api_key` em `/run/secrets/gemini_api_key:ro`; o entrypoint carrega esse arquivo para `GEMINI_API_KEY` antes de iniciar a aplicacao.
 
 ## Observabilidade (Sprint V3)
 
@@ -90,5 +92,5 @@ Os logs também passam a incluir correlação por MDC com:
 ## Construção do container
 
 ```bash
-docker build -t marketinghub-video-management:latest .
+docker build -f video-management-service/Dockerfile -t marketinghub-video-management:latest .
 ```

@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-12 — Token Gemini via arquivo no container de video
+
+- Problema observado: jobs de video VEO podiam falhar por provider sem token configurado quando o container nao recebia `GEMINI_API_KEY`.
+- Causa-raiz tratada: o modulo `video-management-service` dependia de variavel de ambiente direta, mas a operacao real mantem a chave em arquivo no host.
+- Correção preparada: compose local e compose de deploy montam `/root/infra/gemini-token/gemini_api_key` como `/run/secrets/gemini_api_key:ro`; o entrypoint carrega o arquivo para `GEMINI_API_KEY` e `VIDEO_PROVIDERS_VEO_API_KEY` antes de iniciar o Spring Boot.
+- Protecao adicional: a passagem direta de `GEMINI_API_KEY` pelo compose foi removida para reduzir risco de vazamento em `docker compose config`.
+
 ## 2026-07-02 — Correção de truncamento em evento de retry
 
 - Problema observado: backend saudável, mas logs com `Data truncated for column 'event_type' at row 1` durante `SalesVideoAutoRetryScheduler`.

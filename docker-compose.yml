@@ -136,8 +136,8 @@ services:
 
   video-management-service:
     build:
-      context: ./video-management-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: video-management-service/Dockerfile
     image: marketinghub/video-management-service:latest
     restart: unless-stopped
     extra_hosts:
@@ -149,10 +149,12 @@ services:
       VIDEO_JOBS_POLL_INTERVAL: ${VIDEO_JOBS_POLL_INTERVAL:-PT30S}
       VIDEO_JOBS_BATCH_SIZE: ${VIDEO_JOBS_BATCH_SIZE:-10}
       VIDEO_PROVIDERS_VEO_ENABLED: ${VIDEO_PROVIDERS_VEO_ENABLED:-true}
-      VIDEO_PROVIDERS_VEO_API_KEY: ${GEMINI_API_KEY:-${VIDEO_PROVIDERS_VEO_API_KEY:-}}
+      GEMINI_API_KEY_FILE: ${GEMINI_API_KEY_FILE:-/run/secrets/gemini_api_key}
       VIDEO_PROVIDERS_VEO_MODEL: ${VIDEO_PROVIDERS_VEO_MODEL:-veo-3.1-generate-preview}
     ports:
       - "${VIDEO_MANAGEMENT_PORT:-8095}:8095"
+    volumes:
+      - ${GEMINI_API_KEY_HOST_FILE:-/root/infra/gemini-token/gemini_api_key}:/run/secrets/gemini_api_key:ro
 
   mcp-server:
     build:

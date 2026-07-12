@@ -19,6 +19,7 @@ public record McpProperties(
         @NotBlank String serverName,
         @NotBlank String serverVersion,
         @NotNull @Valid Logs logs,
+        @NotNull @Valid ChatLogs chatLogs,
         @NotNull @Valid Meta meta,
         @NotNull @Valid Github github
 ) {
@@ -44,6 +45,18 @@ public record McpProperties(
             @Positive int fetchRetryDelayMillis,
             @Positive int maxLines,
             @Positive int httpTailRangeBytes
+    ) {
+    }
+
+    /**
+     * Define os limites da leitura de logs de containers de chat via Docker.
+     */
+    public record ChatLogs(
+            boolean enabled,
+            @NotEmpty List<@NotBlank String> allowedContainers,
+            @NotBlank String dockerCommand,
+            @Positive int maxLines,
+            @Positive int timeoutSeconds
     ) {
     }
 

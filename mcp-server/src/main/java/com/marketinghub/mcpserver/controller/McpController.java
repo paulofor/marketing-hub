@@ -1,6 +1,7 @@
 package com.marketinghub.mcpserver.controller;
 
 import com.marketinghub.mcpserver.config.McpProperties;
+import com.marketinghub.mcpserver.service.ChatContainerLogService;
 import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.GithubActionsService;
@@ -40,6 +41,7 @@ public class McpController {
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
     private final ModuleLogService moduleLogService;
+    private final ChatContainerLogService chatContainerLogService;
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
 
@@ -49,11 +51,13 @@ public class McpController {
     public McpController(McpProperties properties,
                          DatabaseDiagnosticsService databaseDiagnosticsService,
                          ModuleLogService moduleLogService,
+                         ChatContainerLogService chatContainerLogService,
                          MetaDiagnosticsService metaDiagnosticsService,
                          GithubActionsService githubActionsService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
         this.moduleLogService = moduleLogService;
+        this.chatContainerLogService = chatContainerLogService;
         this.metaDiagnosticsService = metaDiagnosticsService;
         this.githubActionsService = githubActionsService;
     }
@@ -152,6 +156,23 @@ public class McpController {
                                             "offset", Map.of("type", "integer", "minimum", 0, "description", "Offset para paginação dentro do conjunto filtrado."),
                                             "cursor", Map.of("type", "string", "description", "Cursor retornado em nextCursor para próxima página.")),
                                     "required", List.of("module"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "chat_container_logs",
+                            "description", "Retorna logs Docker dos containers de chat permitidos no host do MCP.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "container", Map.of("type", "string",
+                                                    "enum", chatContainerLogService.allowedContainers(),
+                                                    "description", "Container de chat permitido para consulta."),
+                                            "lines", Map.of("type", "integer", "minimum", 1,
+                                                    "maximum", chatContainerLogService.maxLines(),
+                                                    "description", "Quantidade de linhas retornadas. Padrão: 200."),
+                                            "contains", Map.of("type", "string",
+                                                    "description", "Filtra linhas que contenham este texto literal.")),
+                                    "required", List.of("container"),
                                     "additionalProperties", false)
                     ),
                     Map.of(
@@ -261,6 +282,7 @@ public class McpController {
                 case "db_read_table" -> callReadTable(id, arguments);
                 case "db_query" -> callQueryTool(id, arguments);
                 case "java_module_logs" -> callJavaModuleLogsTool(id, arguments);
+                case "chat_container_logs" -> callChatContainerLogsTool(id, arguments);
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
                 case "meta_graph_get" -> callMetaGraphGetTool(id, arguments);
                 case "meta_graph_debug_token" -> callMetaGraphDebugTokenTool(id, arguments);
@@ -366,6 +388,43 @@ public class McpController {
     @SuppressWarnings("unchecked")
     private String buildJavaModuleLogsText(Map<String, Object> result) {
         String header = "Read " + result.get("returnedLines") + " log lines from module " + result.get("module");
+        Object rawLines = result.get("lines");
+        if (!(rawLines instanceof List<?> lines) || lines.isEmpty()) {
+            return header;
+        }
+        String logLines = lines.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining("\n"));
+        return header + "\n" + logLines;
+    }
+
+    /**
+     * Lê logs Docker de um container de chat permitido.
+     */
+    private Map<String, Object> callChatContainerLogsTool(Object id, Map<String, Object> arguments) {
+        String container = stringArgument(arguments, "container");
+        Integer lines = intArgument(arguments, "lines");
+        String contains = stringArgument(arguments, "contains");
+
+        try {
+            Map<String, Object> result = chatContainerLogService.readLogs(container, lines, contains);
+            return successToolResult(id, result, buildChatContainerLogsText(result));
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP chat_container_logs inválido: requestId={} container={} motivo={}", id, container, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar chat_container_logs: requestId={} container={} lines={} contains={}",
+                    id, container, lines, contains, ex);
+            return error(id, -32603, "Failed to read chat container logs: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Formata a resposta textual do tool de logs de containers de chat.
+     */
+    private String buildChatContainerLogsText(Map<String, Object> result) {
+        String header = "Read " + result.get("returnedLines") + " Docker log lines from chat container "
+                + result.get("container");
         Object rawLines = result.get("lines");
         if (!(rawLines instanceof List<?> lines) || lines.isEmpty()) {
             return header;

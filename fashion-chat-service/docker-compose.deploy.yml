@@ -1,0 +1,3 @@
+services:
+  fashion-chat-service:
+    image: ${FASHION_CHAT_IMAGE:-ghcr.io/paulofor/marketing-hub/fashion-chat-service:latest}

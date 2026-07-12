@@ -56,9 +56,15 @@ class McpControllerTest {
         registry.add("mcp.logs.mois-sales-library-worker-path",
                 () -> TEST_LOG_DIR.resolve("mois-sales-library-worker.log").toString());
         registry.add("mcp.logs.mois-hotmart-path", () -> TEST_LOG_DIR.resolve("mois-hotmart.log").toString());
+        registry.add("mcp.logs.clickbank-coletor-mois-path", () -> TEST_LOG_DIR.resolve("clickbank-coletor-mois.log").toString());
         registry.add("mcp.logs.oprm-coletor-receita-path", () -> TEST_LOG_DIR.resolve("oprm-coletor-receita.log").toString());
         registry.add("mcp.logs.ops-monitor-worker-path", () -> TEST_LOG_DIR.resolve("ops-monitor-worker.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
+        registry.add("mcp.chat-logs.enabled", () -> "true");
+        registry.add("mcp.chat-logs.allowed-containers", () -> "marketinghub-fashion-chat");
+        registry.add("mcp.chat-logs.docker-command", () -> TEST_LOG_DIR.resolve("docker-fake.sh").toString());
+        registry.add("mcp.chat-logs.max-lines", () -> "500");
+        registry.add("mcp.chat-logs.timeout-seconds", () -> "5");
         registry.add("mcp.meta.enabled", () -> "false");
         registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
         registry.add("mcp.meta.graph-version", () -> "v23.0");
@@ -89,6 +95,13 @@ class McpControllerTest {
         Files.writeString(TEST_LOG_DIR.resolve("ops-monitor-worker.log"),
                 "ops-monitor-worker-line-1\nops-monitor-worker-line-2\n",
                 StandardCharsets.UTF_8);
+        Path fakeDocker = TEST_LOG_DIR.resolve("docker-fake.sh");
+        Files.writeString(fakeDocker,
+                "#!/usr/bin/env sh\n"
+                        + "echo \"2026-07-12T10:00:00Z Fashion chat service listening on port 8094\"\n"
+                        + "echo \"2026-07-12T10:00:01Z health ok\"\n",
+                StandardCharsets.UTF_8);
+        fakeDocker.toFile().setExecutable(true);
     }
 
     /**
@@ -276,6 +289,38 @@ class McpControllerTest {
                         .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker"));
     }
 
+    /**
+     * Garante que a tool chat_container_logs lê logs Docker apenas do container de chat permitido.
+     */
+    @Test
+    void shouldReadChatContainerLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":18,"method":"tools/call","params":{"name":"chat_container_logs","arguments":{"container":"marketinghub-fashion-chat","lines":2,"contains":"Fashion"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.container").value("marketinghub-fashion-chat"))
+                .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value("2026-07-12T10:00:00Z Fashion chat service listening on port 8094"));
+    }
+
+    /**
+     * Garante que a tool chat_container_logs rejeita containers fora da allowlist.
+     */
+    @Test
+    void shouldRejectChatContainerOutsideAllowList() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":19,"method":"tools/call","params":{"name":"chat_container_logs","arguments":{"container":"marketinghub-backend","lines":2}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32602))
+                .andExpect(jsonPath("$.error.message").value("container must be one of: marketinghub-fashion-chat"));
+    }
+
 
 
     /**
@@ -316,14 +361,15 @@ class McpControllerTest {
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}
+                {"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.tools[7].name").value("meta_graph_debug_token"))
-                .andExpect(jsonPath("$.result.tools[8].name").value("github_actions_list_workflows"))
-                .andExpect(jsonPath("$.result.tools[9].name").value("github_actions_list_runs"))
-                .andExpect(jsonPath("$.result.tools[10].name").value("github_actions_get_run_summary"))
-                .andExpect(jsonPath("$.result.tools[11].name").value("github_actions_get_run_logs"));
+                .andExpect(jsonPath("$.result.tools[*].name").value(org.hamcrest.Matchers.hasItems(
+                        "meta_graph_debug_token",
+                        "github_actions_list_workflows",
+                        "github_actions_list_runs",
+                        "github_actions_get_run_summary",
+                        "github_actions_get_run_logs")));
     }
 
 

@@ -12,6 +12,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASS}
       MCP_SERVER_NAME: ${MCP_SERVER_NAME:-marketing-hub-mcp}
       MCP_SERVER_VERSION: ${MCP_SERVER_VERSION:-1.0.0}
+      MCP_CHAT_LOG_ALLOWED_CONTAINERS: ${MCP_CHAT_LOG_ALLOWED_CONTAINERS:-marketinghub-fashion-chat}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     expose:
       - "8096"
     healthcheck:

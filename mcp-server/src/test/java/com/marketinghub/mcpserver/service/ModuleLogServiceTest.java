@@ -97,6 +97,14 @@ class ModuleLogServiceTest {
                 List.of("developers.facebook.com")
         );
 
+        McpProperties.ChatLogs chatLogs = new McpProperties.ChatLogs(
+                true,
+                List.of("marketinghub-fashion-chat"),
+                "docker",
+                500,
+                20
+        );
+
         McpProperties.Github github = new McpProperties.Github(
                 false,
                 "https://api.github.com",
@@ -105,6 +113,6 @@ class ModuleLogServiceTest {
                 ""
         );
 
-        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, meta, github);
+        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, meta, github);
     }
 }

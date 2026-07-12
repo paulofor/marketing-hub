@@ -33,3 +33,25 @@ CODEX_APP_SERVER_ENABLED=true npm start
 ```
 
 O piloto nao clona repositorio. A sandbox e criada como diretorio temporario local, recebe contexto de pesquisa de moda e executa o turno do App Codex Server quando ele estiver disponivel e autenticado.
+
+## Deploy no host do MCP
+
+O workflow `.github/workflows/fashion-chat-service-ci.yml` publica a imagem no GHCR e faz deploy no mesmo host do MCP server (`191.252.210.83`), em:
+
+```bash
+/opt/marketinghub/containers/fashion-chat-service
+```
+
+Container padrao:
+
+- `marketinghub-fashion-chat`
+- porta publica: `8094`
+- health-check: `GET /health`
+
+Validacao operacional apos deploy:
+
+```bash
+curl -fsS http://191.252.210.83:8094/health
+```
+
+Os logs do container podem ser consultados pelo MCP via tool `chat_container_logs`, limitada por allowlist ao container `marketinghub-fashion-chat`.

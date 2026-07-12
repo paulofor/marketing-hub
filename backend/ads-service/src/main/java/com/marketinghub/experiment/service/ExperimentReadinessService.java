@@ -102,7 +102,9 @@ public class ExperimentReadinessService {
         boolean hasCommercialContract = campaignDestinationPolicy.hasCompleteCommercialContract(experiment);
         boolean hasGeraSalesPagePipeline = campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(experimentId);
         boolean hasRequiredVideoBlockingRelease = hasRequiredVideoBlockingRelease(experiment);
-        boolean hasReadySalesPageAbTest = salesPageAbTestService.hasReadyActiveTest(experimentId);
+        boolean requiresSalesPageAbTest = campaignDestinationPolicy.requiresSalesPageBeforePurchase(experiment);
+        boolean hasReadySalesPageAbTest = !requiresSalesPageAbTest
+                || salesPageAbTestService.hasReadyActiveTest(experimentId);
         Optional<GeraSalesPagePublicationAudit> salesPagePublication =
                 campaignDestinationPolicy.latestSalesPagePublication(experimentId);
 
@@ -143,7 +145,7 @@ public class ExperimentReadinessService {
                     List.of()
             ));
         }
-        if (!hasReadySalesPageAbTest) {
+        if (requiresSalesPageAbTest && !hasReadySalesPageAbTest) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.SALES_PAGE_AB_TEST,
                     "Teste A/B de página incompleto",
@@ -249,7 +251,8 @@ public class ExperimentReadinessService {
         if (hasRequiredVideoBlockingRelease(experiment)) {
             missing.add("experimentVideoAsset");
         }
-        if (!salesPageAbTestService.hasReadyActiveTest(experiment.getId())) {
+        if (campaignDestinationPolicy.requiresSalesPageBeforePurchase(experiment)
+                && !salesPageAbTestService.hasReadyActiveTest(experiment.getId())) {
             missing.add("salesPageAbTest");
         }
         if (!hasConfiguredTargeting(experiment)) {

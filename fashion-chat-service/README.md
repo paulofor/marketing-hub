@@ -34,6 +34,8 @@ CODEX_APP_SERVER_ENABLED=true npm start
 
 O piloto nao clona repositorio. A sandbox e criada como diretorio temporario local, recebe contexto de pesquisa de moda e executa o turno do App Codex Server quando ele estiver disponivel e autenticado.
 
+O servico nao usa `OPENAI_API_KEY` nem cliente OpenAI direto como fallback. Se o Codex App Server nao estiver disponivel, a resposta cai no fallback deterministico local.
+
 ## Deploy no host do MCP
 
 O workflow `.github/workflows/fashion-chat-service-ci.yml` publica a imagem no GHCR e faz deploy no mesmo host do MCP server (`191.252.210.83`), em:

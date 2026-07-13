@@ -6,8 +6,6 @@ services:
     restart: unless-stopped
     environment:
       PORT: ${PORT:-8094}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      FASHION_CHAT_MODEL: ${FASHION_CHAT_MODEL:-gpt-4o-mini}
       CODEX_APP_SERVER_ENABLED: ${CODEX_APP_SERVER_ENABLED:-false}
       CODEX_APP_SERVER_COMMAND: ${CODEX_APP_SERVER_COMMAND:-codex}
       CODEX_APP_SERVER_ARGS: ${CODEX_APP_SERVER_ARGS:-app-server --listen stdio://}

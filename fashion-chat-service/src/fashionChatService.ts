@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import OpenAI from 'openai';
 import { CodexAppServerClient } from './codexAppServerClient.js';
 import { FashionResearchService, type FashionResearchResult } from './fashionResearch.js';
 
@@ -12,26 +11,20 @@ export interface FashionChatRequest {
 
 export interface FashionChatResponse {
   answer: string;
-  mode: 'codex_app_server' | 'openai_direct' | 'deterministic_fallback';
+  mode: 'codex_app_server' | 'deterministic_fallback';
   sandboxId: string;
   research: FashionResearchResult;
   warnings: string[];
 }
 
 export class FashionChatService {
-  private readonly openai?: OpenAI;
-  private readonly model: string;
   private readonly forceFallback: boolean;
 
   constructor(
     private readonly researchService: FashionResearchService,
     private readonly codexAppServerClient?: CodexAppServerClient,
   ) {
-    this.model = process.env.FASHION_CHAT_MODEL?.trim() || 'gpt-4o-mini';
     this.forceFallback = (process.env.FASHION_CHAT_FORCE_FALLBACK ?? 'false').toLowerCase() === 'true';
-    if (process.env.OPENAI_API_KEY) {
-      this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    }
   }
 
   async answer(request: FashionChatRequest): Promise<FashionChatResponse> {
@@ -52,15 +45,6 @@ export class FashionChatService {
       }
     } else if (!this.forceFallback) {
       warnings.push('Codex App Server nao esta pronto ou nao foi habilitado.');
-    }
-
-    if (!this.forceFallback && this.openai) {
-      try {
-        const answer = await this.answerWithOpenAI(prompt);
-        return { answer: this.cleanAnswer(answer), mode: 'openai_direct', sandboxId, research, warnings };
-      } catch (err) {
-        warnings.push(`OpenAI direto falhou: ${err instanceof Error ? err.message : String(err)}`);
-      }
     }
 
     return {
@@ -124,19 +108,6 @@ export class FashionChatService {
     } finally {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     }
-  }
-
-  private async answerWithOpenAI(prompt: string): Promise<string> {
-    if (!this.openai) {
-      throw new Error('OPENAI_API_KEY ausente');
-    }
-    const response = await this.openai.chat.completions.create({
-      model: this.model,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 220,
-    });
-    return response.choices[0]?.message?.content ?? 'Nao consegui gerar uma resposta objetiva.';
   }
 
   private buildPrompt(message: string, customerId: string | undefined, research: FashionResearchResult): string {

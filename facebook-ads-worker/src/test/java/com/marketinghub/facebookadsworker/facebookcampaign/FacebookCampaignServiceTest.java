@@ -590,6 +590,40 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Garante que nenhum objeto de anúncio seja criado quando o criativo pronto não tem imagem.
+    void blocksCampaignPublicationWhenReadyCreativeHasNoImage() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-no-image\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        RecordedRequest experimentsReady = takeBackendRequest("experiments ready");
+        assertEquals("/api/facebook-campaigns/experiments-ready", experimentsReady.getPath());
+        RecordedRequest creativesReady = takeBackendRequest("creatives ready");
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", creativesReady.getPath());
+        RecordedRequest failureStep = takeBackendRequestMatching(
+            "publication job image required step",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+        );
+        JsonNode failurePayload = objectMapper.readTree(failureStep.getBody().inputStream());
+        assertEquals("job-no-image", failurePayload.get("jobId").asText());
+        assertEquals("CAMPAIGN_CREATIVE_IMAGE_REQUIRED", failurePayload.get("stepName").asText());
+        assertTrue(failurePayload.get("errorMessage").asText().contains("todos os anúncios precisam de imagem"));
+
+        RecordedRequest failedStatusRequest = takeBackendRequestMatching(
+            "failed status update",
+            request -> request.getPath() != null
+                && request.getPath().contains("/api/experiments/1/status?status=FAILED")
+                && "PATCH".equals(request.getMethod())
+        );
+        assertNotNull(failedStatusRequest);
+        assertEquals(0, facebook.getRequestCount());
+    }
+
+    @Test
     void retriesAdCreativeCreationWhenFacebookCannotDownloadImageTemporarily() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));

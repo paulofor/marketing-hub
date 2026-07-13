@@ -19,15 +19,76 @@ test('health returns service status', async () => {
   assert.equal(response.body.service, 'fashion-chat-service');
 });
 
-test('chat requires Codex App Server to answer', async () => {
+test('ready health fails when Codex App Server is not authenticated', async () => {
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    readAuthentication: async () => ({ authenticated: false }),
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient)).get('/health/ready').expect(503);
+  assert.equal(response.body.status, 'degraded');
+  assert.equal(response.body.codexAppServer.authenticated, false);
+});
+
+test('ready health passes when Codex App Server is authenticated', async () => {
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    readAuthentication: async () => ({ authenticated: true, authMode: 'chatgpt' }),
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient)).get('/health/ready').expect(200);
+  assert.equal(response.body.status, 'ok');
+  assert.equal(response.body.codexAppServer.authenticated, true);
+});
+
+test('chat uses local fallback when Codex App Server is unavailable', async () => {
   mockResearchFetch();
-  await request(createApp())
+  const response = await request(createApp())
     .post('/api/fashion-chat/messages')
     .send({ message: 'Que roupa usar em uma reuniao casual?', customerId: 'teste' })
-    .expect(503)
-    .expect((response) => {
-      assert.equal(response.body.error, 'CODEX_APP_SERVER_UNAVAILABLE');
-    });
+    .expect(200);
+
+  assert.equal(response.body.mode, 'local_fallback');
+  assert.match(response.body.answer, /visual casual|ocasiao/);
+  assert.ok(response.body.sandboxId);
+  globalThis.fetch = originalFetch;
+});
+
+test('chat uses local fallback when Codex account is not authenticated', async () => {
+  mockResearchFetch();
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    onNotification: () => () => undefined,
+    request: async (method: string) => {
+      if (method === 'account/read') {
+        return {};
+      }
+      return {};
+    },
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .post('/api/fashion-chat/messages')
+    .send({ message: 'Que roupa usar em uma reuniao casual?', customerId: 'teste' })
+    .expect(200);
+
+  assert.equal(response.body.mode, 'local_fallback');
+  assert.match(response.body.answer, /visual casual|ocasiao/);
+  globalThis.fetch = originalFetch;
+});
+
+test('chat fallback handles greeting before style recommendation', async () => {
+  mockResearchFetch();
+  const response = await request(createApp())
+    .post('/api/fashion-chat/messages')
+    .send({ message: 'oi', customerId: 'teste' })
+    .expect(200);
+
+  assert.equal(response.body.mode, 'local_fallback');
+  assert.match(response.body.answer, /Me diga a ocasiao/);
   globalThis.fetch = originalFetch;
 });
 

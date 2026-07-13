@@ -17,7 +17,7 @@ services:
     volumes:
       - fashion-chat-codex-home:${CODEX_HOME:-/var/lib/ai-hub/codex}
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:${PORT:-8094}/health >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:${PORT:-8094}/health/ready >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5

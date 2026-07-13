@@ -34,14 +34,30 @@ CODEX_APP_SERVER_ENABLED=true npm start
 
 O piloto nao clona repositorio. A sandbox e criada como diretorio temporario local, recebe contexto de pesquisa de moda e executa o turno do App Codex Server.
 
-O servico usa somente Codex App Server para responder o chat:
+O servico tenta usar o Codex App Server como resposta principal:
 
 - nao usa `OPENAI_API_KEY`;
 - nao usa cliente OpenAI direto;
-- nao possui fallback deterministico local;
-- se o Codex App Server nao estiver pronto ou autenticado, `POST /api/fashion-chat/messages` retorna `503`.
+- se o Codex App Server nao estiver pronto ou autenticado, `POST /api/fashion-chat/messages` responde em modo `local_fallback` para nao quebrar a conversa do cliente;
+- a prontidao operacional em `GET /health/ready` so retorna `200` quando o Codex App Server estiver pronto e autenticado;
+- `FASHION_CHAT_FORCE_FALLBACK=true` forca o modo local para validacao operacional.
 
 Na imagem Docker, o CLI `codex` fica instalado e o `CODEX_APP_SERVER_ENABLED` vem habilitado por padrao. O volume `fashion-chat-codex-home` preserva o `CODEX_HOME` entre reinicios do container.
+
+## Autenticacao da sandbox Codex
+
+A sandbox precisa estar autenticada no `CODEX_HOME` persistente do container. Sem isso, o chat ainda pode responder em `local_fallback`, mas o healthcheck fica degradado e `GET /health/ready` retorna `503`.
+
+Procedimento operacional no host:
+
+```bash
+cd /opt/marketinghub/containers/fashion-chat-service
+docker compose exec fashion-chat-service codex login
+docker compose exec fashion-chat-service codex app-server --help >/dev/null
+curl -fsS http://localhost:8094/health/ready
+```
+
+O comando de login deve gravar a sessao no volume `fashion-chat-codex-home`, usando `CODEX_HOME=/var/lib/ai-hub/codex`. Nao use `OPENAI_API_KEY` para este servico.
 
 ## Deploy no host do MCP
 
@@ -60,7 +76,7 @@ Container padrao:
 Validacao operacional apos deploy:
 
 ```bash
-curl -fsS http://191.252.210.83:8094/health
+curl -fsS http://191.252.210.83:8094/health/ready
 ```
 
 Os logs do container podem ser consultados pelo MCP via tool `chat_container_logs`, limitada por allowlist ao container `marketinghub-fashion-chat`.

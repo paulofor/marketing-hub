@@ -401,6 +401,7 @@ public class FacebookCampaignService {
                 markExperimentAsFailed(exp.id(), reason);
                 return;
             }
+            validateCreativePayloadsHaveImageUrls(exp, creativePayloads);
 
             if (!StringUtils.hasText(creativePayloads.get(0).instagramActorId())) {
                 LOGGER.warn(
@@ -452,6 +453,7 @@ public class FacebookCampaignService {
                 FacebookAdsService.BRAZIL_COUNTRY_CODE
             );
             creativePayloads = preloadCreativeImagesForExperiment(exp.publicationJobId(), exp.id(), config.adAccountId(), creativePayloads);
+            validateCreativePayloadsHaveImageHashes(exp, creativePayloads);
             try {
                 campaignId = executeFacebookCallWithLogging(
                     exp.publicationJobId(),
@@ -1621,6 +1623,46 @@ public class FacebookCampaignService {
         );
     }
 
+    /** Bloqueia publicação de anúncio antes de criar objetos na Meta quando o criativo não tem imagem de origem. */
+    private void validateCreativePayloadsHaveImageUrls(Experiment exp, List<CreativePublicationPayload> creativePayloads) {
+        List<Long> creativeIdsWithoutImage = creativePayloads.stream()
+            .filter(payload -> !StringUtils.hasText(payload.imageUrl()))
+            .map(payload -> payload.creative().id())
+            .toList();
+        if (creativeIdsWithoutImage.isEmpty()) {
+            return;
+        }
+        String reason = "Campanha bloqueada: todos os anúncios precisam de imagem antes da publicação. Criativos sem imageUrl: "
+            + creativeIdsWithoutImage;
+        experimentFacebookApiLogClient.logPublicationJobFailureStep(
+            exp.publicationJobId(),
+            exp.id(),
+            "CAMPAIGN_CREATIVE_IMAGE_REQUIRED",
+            reason
+        );
+        throw new IllegalStateException(reason);
+    }
+
+    /** Bloqueia publicação quando o upload/canonização da imagem não gerou image_hash utilizável pela Meta. */
+    private void validateCreativePayloadsHaveImageHashes(Experiment exp, List<CreativePublicationPayload> creativePayloads) {
+        List<Long> creativeIdsWithoutImageHash = creativePayloads.stream()
+            .filter(payload -> !StringUtils.hasText(payload.imageHash()))
+            .map(payload -> payload.creative().id())
+            .toList();
+        if (creativeIdsWithoutImageHash.isEmpty()) {
+            return;
+        }
+        String reason = "Campanha bloqueada: a imagem do anúncio não foi validada na biblioteca da Meta. Criativos sem image_hash: "
+            + creativeIdsWithoutImageHash;
+        experimentFacebookApiLogClient.logPublicationJobFailureStep(
+            exp.publicationJobId(),
+            exp.id(),
+            "CAMPAIGN_CREATIVE_IMAGE_HASH_REQUIRED",
+            reason
+        );
+        throw new IllegalStateException(reason);
+    }
+
     /** Retorna somente variantes A/B aptas a receber trafego pago pela campanha. */
     private List<Experiment.SalesPageAbVariant> readySalesPageAbVariants(Experiment exp) {
         if (exp == null || exp.salesPageAbTest() == null
@@ -1764,15 +1806,13 @@ public class FacebookCampaignService {
                 imageHash
             );
         } else if (!StringUtils.hasText(imageUrl)) {
-            LOGGER.warn(
-                "Creating Facebook ad creative without image because URL and image_hash are empty: experimentId={}",
-                experiment.id()
+            throw new IllegalStateException(
+                "Campanha bloqueada: tentativa defensiva de criar anúncio sem imagem para o experimento " + experiment.id()
             );
         } else {
-            LOGGER.warn(
-                "Falling back to external image URL because image_hash is unavailable: experimentId={}, url={}",
-                experiment.id(),
-                imageUrl
+            throw new IllegalStateException(
+                "Campanha bloqueada: imagem do anúncio não foi enviada por bytes para a Meta antes da publicação do experimento "
+                    + experiment.id()
             );
         }
 

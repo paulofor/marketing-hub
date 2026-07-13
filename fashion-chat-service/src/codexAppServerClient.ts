@@ -19,6 +19,8 @@ export interface CodexAppServerHealth {
   restartAttempts: number;
   lastError?: string;
   initializedAt?: string;
+  authenticated?: boolean;
+  authMode?: string;
 }
 
 export class CodexAppServerError extends Error {
@@ -108,6 +110,12 @@ export class CodexAppServerClient {
       throw new CodexAppServerError('Codex App Server nao esta pronto');
     }
     return this.sendRequest<T>(method, params);
+  }
+
+  async readAuthentication(): Promise<{ authenticated: boolean; authMode?: string }> {
+    const account = await this.request<Record<string, unknown>>('account/read', { refreshToken: false });
+    const authMode = this.extractAuthMode(account);
+    return { authenticated: !!authMode, authMode };
   }
 
   onNotification(method: string, listener: (params: unknown) => void): () => void {
@@ -231,6 +239,19 @@ export class CodexAppServerClient {
 
   private stringifyForLog(value: unknown): string {
     return this.sanitize(JSON.stringify(value));
+  }
+
+  private extractAuthMode(account: Record<string, unknown>): string | undefined {
+    for (const key of ['authMode', 'auth_mode', 'account']) {
+      const value = account[key];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+      if (value && typeof value === 'object') {
+        return key;
+      }
+    }
+    return undefined;
   }
 
   private sanitize(value: string): string {

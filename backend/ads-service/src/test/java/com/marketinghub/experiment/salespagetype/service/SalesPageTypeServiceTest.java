@@ -91,6 +91,25 @@ class SalesPageTypeServiceTest {
                 .hasMessageContaining("duplicated typeCode");
     }
 
+    /** Garante que o teste A/B comercial nao aceita terceira variante selecionada. */
+    @Test
+    void shouldRejectMoreThanTwoSalesPageTypeSelections() {
+        Experiment experiment = Experiment.builder().id(64L).build();
+        given(experimentRepository.findById(64L)).willReturn(Optional.of(experiment));
+
+        assertThatThrownBy(() -> service.replaceExperimentSelections(
+                64L,
+                new UpdateExperimentSalesPageTypeSelectionRequest(List.of(
+                        new UpdateExperimentSalesPageTypeSelectionItem(
+                                "TRADITIONAL_LONG_FORM", "A", BigDecimal.TEN, true, null),
+                        new UpdateExperimentSalesPageTypeSelectionItem(
+                                "HUMAN_VIDEO_SALES_PAGE", "B", BigDecimal.TEN, true, null),
+                        new UpdateExperimentSalesPageTypeSelectionItem(
+                                "AI_CHAT_DIGITAL_BAIT", "C", BigDecimal.TEN, true, null)))))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("at most 2 variants");
+    }
+
     /** Cria o tipo chat IA usado nos testes. */
     private SalesPageType chatType() {
         return SalesPageType.builder()

@@ -11,6 +11,8 @@ import {
   type SalesPageType,
 } from "../../api/experiment/useSalesPageTypes";
 
+const MAX_AB_TEST_TYPES = 2;
+
 interface ExperimentSalesPageAbTabProps {
   experimentId: string;
 }
@@ -104,7 +106,7 @@ export default function ExperimentSalesPageAbTab({
     useUpdateExperimentSalesPageTypeSelections(experimentId);
   const [selectedTypeCodes, setSelectedTypeCodes] = useState<string[]>([]);
   const [selectionFeedback, setSelectionFeedback] = useState<
-    "success" | "error" | null
+    "success" | "error" | "limit" | null
   >(null);
 
   useEffect(() => {
@@ -134,12 +136,20 @@ export default function ExperimentSalesPageAbTab({
       if (current.includes(typeCode)) {
         return current.filter((code) => code !== typeCode);
       }
+      if (current.length >= MAX_AB_TEST_TYPES) {
+        setSelectionFeedback("limit");
+        return current;
+      }
       return [...current, typeCode];
     });
   };
 
   const saveTypeSelection = async () => {
     setSelectionFeedback(null);
+    if (selectedTypeCodes.length > MAX_AB_TEST_TYPES) {
+      setSelectionFeedback("limit");
+      return;
+    }
     try {
       await updateSelections.mutateAsync(
         selectedTypeCodes.map((typeCode, index) => ({
@@ -195,6 +205,7 @@ export default function ExperimentSalesPageAbTab({
           disabled={
             updateSelections.isPending ||
             selectedTypeCodes.length === 0 ||
+            selectedTypeCodes.length > MAX_AB_TEST_TYPES ||
             isLoadingTypes ||
             isLoadingSelections
           }
@@ -220,6 +231,12 @@ export default function ExperimentSalesPageAbTab({
           Não foi possível salvar os tipos de página de venda.
         </div>
       ) : null}
+      {selectionFeedback === "limit" ? (
+        <div className="alert alert-warning mb-0" role="alert">
+          Teste A/B aceita somente 2 variantes. Remova uma opção antes de
+          escolher outra.
+        </div>
+      ) : null}
 
       {isLoadingTypes || isLoadingSelections ? (
         <div className="text-muted small">Carregando tipos disponíveis...</div>
@@ -227,6 +244,7 @@ export default function ExperimentSalesPageAbTab({
         <div className="row g-3">
           {(types ?? []).map((type) => {
             const checked = selectedTypeCodes.includes(type.code);
+            const disabled = !checked && selectedTypeCodes.length >= MAX_AB_TEST_TYPES;
             return (
               <div className="col-12 col-xl-6" key={type.code}>
                 <label className="border rounded-3 p-3 h-100 d-flex gap-3">
@@ -234,6 +252,7 @@ export default function ExperimentSalesPageAbTab({
                     className="form-check-input mt-1"
                     type="checkbox"
                     checked={checked}
+                    disabled={disabled}
                     onChange={() => toggleType(type.code)}
                   />
                   <span>

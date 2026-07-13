@@ -116,6 +116,16 @@ Regras obrigatórias:
 - o bloqueio deve acontecer no readiness do backend, antes de o experimento entrar na fila de publicação de mídia paga;
 - a ausência de vídeo não deve ser interpretada como desempenho ruim da variante, pois contamina o aprendizado comercial.
 
+### 4.1.3.1.1 Regra mandatória — teste A/B de página de venda com no máximo duas variantes
+
+Teste A/B de página de venda deve comparar no máximo duas experiências comerciais por vez. O sistema não deve permitir seleção, aprovação ou liberação de teste com três ou mais variantes simultâneas, porque isso dilui tráfego, aumenta risco de falso vencedor e torna o aprendizado menos acionável para escala de vendas.
+
+Regras obrigatórias:
+- a seleção de tipos de página de venda do experimento deve aceitar no máximo duas opções ativas;
+- quando houver três mecanismos comerciais plausíveis, o usuário deve escolher as duas hipóteses mais fortes para o teste atual e deixar a terceira para um novo ciclo;
+- nenhuma variante incompleta pode substituir uma das duas escolhas, pois isso contamina a leitura comercial;
+- o backend deve bloquear payload com mais de duas seleções e a interface deve impedir a marcação da terceira opção.
+
 ### 4.1.3.2 Regra mandatória — política única de parada por campanha
 
 Campanhas pagas não devem depender de regra operacional por tipo de experimento. A decisão de parada deve ser única por campanha e orientada a prova comercial objetiva: se a campanha não prova que pode gerar resultado, ela deve parar antes de consumir mais orçamento.

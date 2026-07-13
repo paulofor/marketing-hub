@@ -62,6 +62,9 @@ public class ImageGenerationPromptBuilder implements StagePromptBuilder<ImageGen
         putIfPresent(payload, "sectionId", item.sectionId());
         putIfPresent(payload, "elementId", item.elementId());
         putIfPresent(payload, "imageGoal", item.imageGoal());
+        putIfPresent(payload, "visualAssetType", item.visualAssetType());
+        putIfPresent(payload, "deliveryPreviewBasis", item.deliveryPreviewBasis());
+        putIfPresent(payload, "avatarUsagePolicy", item.avatarUsagePolicy());
         payload.put("prompt", item.prompt());
         return payload;
     }

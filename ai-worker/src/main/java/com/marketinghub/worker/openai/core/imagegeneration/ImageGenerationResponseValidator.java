@@ -56,6 +56,9 @@ public class ImageGenerationResponseValidator implements StageResponseValidator<
                     text(imageNode.path("sectionId")),
                     text(imageNode.path("elementId")),
                     text(imageNode.path("imageGoal")),
+                    text(imageNode.path("visualAssetType")),
+                    text(imageNode.path("deliveryPreviewBasis")),
+                    text(imageNode.path("avatarUsagePolicy")),
                     text(imageNode.path("prompt")),
                     firstText(text(imageNode.path("model")), text(root.path("model"))),
                     imageContent.bytes(),
@@ -72,6 +75,9 @@ public class ImageGenerationResponseValidator implements StageResponseValidator<
     private ImageGenerationOutput parseSingleOpenAiResponse(JsonNode root) {
         ImageContent imageContent = extractImageContent(root);
         return new ImageGenerationOutput(List.of(new ImageGenerationOutput.GeneratedImage(
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,

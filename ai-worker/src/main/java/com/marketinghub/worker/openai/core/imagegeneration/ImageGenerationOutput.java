@@ -19,6 +19,9 @@ public record ImageGenerationOutput(List<GeneratedImage> images) {
             String sectionId,
             String elementId,
             String imageGoal,
+            String visualAssetType,
+            String deliveryPreviewBasis,
+            String avatarUsagePolicy,
             String prompt,
             String model,
             byte[] imageContent,
@@ -35,6 +38,9 @@ public record ImageGenerationOutput(List<GeneratedImage> images) {
             sectionId = Objects.toString(sectionId, null);
             elementId = Objects.toString(elementId, null);
             imageGoal = Objects.toString(imageGoal, null);
+            visualAssetType = Objects.toString(visualAssetType, null);
+            deliveryPreviewBasis = Objects.toString(deliveryPreviewBasis, null);
+            avatarUsagePolicy = Objects.toString(avatarUsagePolicy, null);
             prompt = Objects.toString(prompt, null);
             model = Objects.toString(model, null);
         }

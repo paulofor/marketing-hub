@@ -3,7 +3,7 @@
 # Etapa: Gera Prompt Imagens (landing-page-image-planning)
 
 template_id: landing-page-image-planning
-template_version: v4
+template_version: v5
 artifact_target: landingPageImagePlanning
 
 Objetivo:
@@ -16,7 +16,7 @@ Objetivo:
 - Não altere estrutura do wireframe nem da copy; apenas planeje imagens.
 - Não invente novas imagens, não remova imagens e não renomeie `sectionId` ou `elementId`.
 - A resposta DEVE ser um objeto com o atributo `images` (array) dentro de `landingPageImagePlanning`.
-- Cada item deve possuir somente: `sectionId`, `elementId`, `imageGoal` e `imagePrompt`.
+- Cada item deve possuir somente: `sectionId`, `elementId`, `imageGoal`, `visualAssetType`, `deliveryPreviewBasis`, `avatarUsagePolicy` e `imagePrompt`.
 - É proibido retornar array na raiz ou concatenar múltiplos JSONs; retorne exatamente um único objeto JSON com `landingPageImagePlanning.images`.
 - Responda em JSON válido e estritamente aderente ao schema da etapa.
 
@@ -63,6 +63,21 @@ Para cada `tag: img`, use obrigatoriamente os dados do próprio elemento no wire
 - Quando o produto for digital, prefira mockup premium de tela/documento/card com camadas, sombras, bordas e elementos visuais legíveis.
 - Quando houver dor/resultado, mostre contraste visual ético e plausível, sem exagero e sem prometer resultado garantido.
 
+## Regra obrigatória para mock de produto/entrega
+- Quando `briefingVisual.classificacaoVisual` for `mockup` ou quando a imagem funcionar como prova do que será entregue, defina `visualAssetType` como `DELIVERY_PREVIEW_MOCKUP`.
+- Em `DELIVERY_PREVIEW_MOCKUP`, a imagem deve mostrar uma prévia fiel do ativo digital que o cliente compra ou recebe: capa, páginas internas, checklist, cards, roteiro, template, planilha, biblioteca ou kit, conforme a oferta real.
+- O mock nunca pode parecer app, dashboard, consultoria, mentoria, automação, sistema completo, tela real de ferramenta, impressão de cliente ou produto maior quando a entrega real for PDF, checklist, roteiro, template, biblioteca ou kit simples.
+- A composição pode ser bonita e premium, mas a sofisticação deve vir de organização visual, capa, páginas, hierarquia, sombras e acabamento; não de funcionalidades que não serão entregues.
+- Use `deliveryPreviewBasis` para declarar em uma frase curta qual entrega real está sendo materializada no mock, por exemplo: “kit digital com checklist, regras leves e mensagens prontas”.
+- Se o produto real ainda não estiver claro no contexto, gere um preview conservador do menor ativo prometido no contrato (`freeReward`, `proof` ou `offer`) e escreva em `deliveryPreviewBasis` que a base foi a recompensa/prova contratada.
+- O `imagePrompt` de `DELIVERY_PREVIEW_MOCKUP` deve conter explicitamente: “preview fiel da entrega real” e “sem prometer app, dashboard, consultoria, automação ou funcionalidade que não será entregue”.
+
+## Regra para avatar modificado
+- Use `MODIFIED_AVATAR` somente quando a função comercial da imagem for identificação, aspiração ou cena humana do público-alvo, não como prova principal do produto entregue.
+- Avatar modificado pode mostrar a persona/nicho em situação plausível antes/depois, usando estilo compatível com a landing, mas não deve substituir o preview fiel da entrega quando a seção pede mock ou prova do produto.
+- Em `MODIFIED_AVATAR`, `deliveryPreviewBasis` deve explicar que a imagem não representa a entrega, e `avatarUsagePolicy` deve indicar o papel do avatar na página.
+- É proibido usar avatar modificado para sugerir resultado garantido, prova real de cliente, transformação física/financeira garantida ou condição médica/estética não comprovada.
+
 ## Direção de arte dos prompts
 Cada `imagePrompt` deve ser autossuficiente e incluir, de forma natural:
 1. O tipo de visual: mockup, print conceitual, diagrama, foto contextual ou ilustração funcional.
@@ -72,6 +87,7 @@ Cada `imagePrompt` deve ser autossuficiente e incluir, de forma natural:
 5. Estilo visual compatível com landing moderna/premium: composição limpa, contraste bom, profundidade, sombras suaves, bordas arredondadas, aparência profissional.
 6. Orientação de enquadramento/proporção coerente com `aspectRatio` e posição na seção.
 7. Restrições negativas dentro do próprio prompt: sem logos reais, sem marcas registradas, sem texto pequeno ilegível, sem elementos poluídos, sem aparência amadora.
+8. Quando for mock de entrega, a lista concreta de peças que aparecem no preview, sempre alinhada ao que será entregue.
 
 ## Regras específicas para texto dentro da imagem
 - Não dependa de textos longos dentro da imagem para comunicar a ideia; modelos de imagem podem errar texto pequeno.
@@ -81,7 +97,7 @@ Cada `imagePrompt` deve ser autossuficiente e incluir, de forma natural:
 - Não peça screenshots reais de apps conhecidos. Se precisar representar conversa, descreva como “interface conceitual de mensagens, sem logotipo real”.
 
 ## Regras específicas por classificação visual
-- `mockup`: peça uma composição de produto digital premium, com moldura, camadas, sombras, cartões e detalhes suficientes para parecer entrega real.
+- `mockup`: peça uma composição de produto digital premium e fiel, com capa e páginas/cards internos que representem a entrega real; não peça funcionalidades, interfaces ou materiais que o produto não entrega.
 - `print conceitual`: peça uma interface fictícia/ilustrativa, sem marcas reais, com blocos legíveis e foco no fluxo/resultado.
 - `diagrama`: peça fluxo simples com 3 passos ou antes/depois, usando formas limpas e hierarquia clara.
 - `foto`: peça cena plausível do nicho, humana e contextual, sem pose de banco de imagem; conecte a dor/resultado.
@@ -101,6 +117,8 @@ Antes de devolver o JSON, verifique:
 - Nenhum prompt é genérico como “imagem moderna de marketing digital”.
 - Nenhum prompt pede logos reais, marcas registradas, prints reais ou texto longo.
 - Pelo menos a imagem principal tangibiliza a prova/recompensa prometida e não apenas decora a página ou troca a entrega por outro ativo.
+- Todo item `DELIVERY_PREVIEW_MOCKUP` descreve preview fiel da entrega real e bloqueia app/dashboard/consultoria/automação quando esses elementos não fazem parte da oferta.
+- Todo item `MODIFIED_AVATAR` deixa claro que avatar é suporte narrativo, não representação da entrega.
 - O conjunto de imagens melhora a percepção de valor da landing.
 
 OUTPUT_CONTRACT
@@ -112,6 +130,9 @@ Retorne somente JSON válido conforme schema da etapa:
         "sectionId": "id-da-secao-do-wireframe",
         "elementId": "id-do-elemento-img-do-wireframe",
         "imageGoal": "função comercial objetiva da imagem",
+        "visualAssetType": "DELIVERY_PREVIEW_MOCKUP",
+        "deliveryPreviewBasis": "entrega real materializada ou motivo de não representar entrega",
+        "avatarUsagePolicy": "como avatar será usado ou 'não usar avatar nesta imagem'",
         "imagePrompt": "prompt final autossuficiente para gerar a imagem"
       }
     ]

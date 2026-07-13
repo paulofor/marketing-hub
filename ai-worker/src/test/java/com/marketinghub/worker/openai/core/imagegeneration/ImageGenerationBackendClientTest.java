@@ -51,6 +51,9 @@ class ImageGenerationBackendClientTest {
                                                 "sectionId", "hero",
                                                 "elementId", "hero-img",
                                                 "imageGoal", "Mostrar entrega",
+                                                "visualAssetType", "DELIVERY_PREVIEW_MOCKUP",
+                                                "deliveryPreviewBasis", "kit digital com checklist e mensagens prontas",
+                                                "avatarUsagePolicy", "não usar avatar nesta imagem",
                                                 "imagePrompt", "Mockup premium da amostra personalizada"))))));
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
@@ -70,6 +73,9 @@ class ImageGenerationBackendClientTest {
         assertThat(execution.input().images()).singleElement().satisfies(image -> {
             assertThat(image.sectionId()).isEqualTo("hero");
             assertThat(image.elementId()).isEqualTo("hero-img");
+            assertThat(image.visualAssetType()).isEqualTo("DELIVERY_PREVIEW_MOCKUP");
+            assertThat(image.deliveryPreviewBasis()).isEqualTo("kit digital com checklist e mensagens prontas");
+            assertThat(image.avatarUsagePolicy()).isEqualTo("não usar avatar nesta imagem");
             assertThat(image.prompt()).isEqualTo("Mockup premium da amostra personalizada");
         });
     }

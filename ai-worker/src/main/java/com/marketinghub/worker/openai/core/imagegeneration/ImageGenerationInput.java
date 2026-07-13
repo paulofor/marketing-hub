@@ -22,6 +22,9 @@ public record ImageGenerationInput(
             String sectionId,
             String elementId,
             String imageGoal,
+            String visualAssetType,
+            String deliveryPreviewBasis,
+            String avatarUsagePolicy,
             String prompt
     ) {
         /** Normaliza campos textuais opcionais do item planejado preservando o prompt funcional. */
@@ -30,6 +33,9 @@ public record ImageGenerationInput(
             sectionId = normalize(sectionId);
             elementId = normalize(elementId);
             imageGoal = normalize(imageGoal);
+            visualAssetType = normalize(visualAssetType);
+            deliveryPreviewBasis = normalize(deliveryPreviewBasis);
+            avatarUsagePolicy = normalize(avatarUsagePolicy);
             prompt = normalize(prompt);
         }
 

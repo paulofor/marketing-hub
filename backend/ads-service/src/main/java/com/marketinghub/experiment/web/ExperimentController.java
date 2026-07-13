@@ -3,10 +3,15 @@ package com.marketinghub.experiment.web;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentDto;
+import com.marketinghub.experiment.dto.ExperimentSessionDurationSummaryDto;
+import com.marketinghub.experiment.dto.ExperimentSessionDurationVariantDto;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
+import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
+import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
 import com.marketinghub.experiment.service.ExperimentService;
@@ -35,19 +40,25 @@ public class ExperimentController {
     private final ExperimentReadinessService readinessService;
     private final ExperimentPromiseGenerationService promiseGenerationService;
     private final ExperimentCampaignDestinationPolicy campaignDestinationPolicy;
+    private final ExperimentFunnelService funnelService;
+    private final ExperimentSalesPageAbTestService salesPageAbTestService;
 
     /** Inicializa o controller com serviços de experimento, diagnóstico, prontidão e geração de promessas. */
     public ExperimentController(ExperimentService service, ExperimentMapper mapper,
                                 ExperimentDiagnosticsService diagnosticsService,
                                 ExperimentReadinessService readinessService,
                                 ExperimentPromiseGenerationService promiseGenerationService,
-                                ExperimentCampaignDestinationPolicy campaignDestinationPolicy) {
+                                ExperimentCampaignDestinationPolicy campaignDestinationPolicy,
+                                ExperimentFunnelService funnelService,
+                                ExperimentSalesPageAbTestService salesPageAbTestService) {
         this.service = service;
         this.mapper = mapper;
         this.diagnosticsService = diagnosticsService;
         this.readinessService = readinessService;
         this.promiseGenerationService = promiseGenerationService;
         this.campaignDestinationPolicy = campaignDestinationPolicy;
+        this.funnelService = funnelService;
+        this.salesPageAbTestService = salesPageAbTestService;
     }
 
     /** Cria um novo experimento com os dados comerciais informados na tela. */
@@ -84,8 +95,33 @@ public class ExperimentController {
     @GetMapping
     public List<ExperimentDto> list() {
         return StreamSupport.stream(service.list().spliterator(), false)
-                .map(mapper::toDto)
+                .map(this::toListDto)
                 .toList();
+    }
+
+    /** Monta o contrato da lista com o resumo de engajamento da landing. */
+    private ExperimentDto toListDto(com.marketinghub.experiment.Experiment experiment) {
+        ExperimentDto dto = mapper.toDto(experiment);
+        dto.setSessionDurationSummary(buildSessionDurationSummary(experiment.getId()));
+        return dto;
+    }
+
+    /** Consolida tempo medio geral e por variante A/B quando houver teste separado. */
+    private ExperimentSessionDurationSummaryDto buildSessionDurationSummary(Long experimentId) {
+        ExperimentLandingAnalyticsDto analytics = funnelService.summarizeLandingAnalytics(experimentId);
+        List<ExperimentSessionDurationVariantDto> variants = salesPageAbTestService.results(experimentId).stream()
+                .flatMap(result -> result.variants().stream())
+                .filter(variant -> variant.sessions() > 0)
+                .map(variant -> new ExperimentSessionDurationVariantDto(
+                        variant.variant().variantKey(),
+                        variant.variant().name(),
+                        variant.sessions(),
+                        variant.averageVisibleMsPerSession()))
+                .toList();
+        return new ExperimentSessionDurationSummaryDto(
+                analytics.totalSessions(),
+                analytics.averageVisibleMsPerSession(),
+                variants);
     }
 
     /** Atualiza apenas o status do experimento. */

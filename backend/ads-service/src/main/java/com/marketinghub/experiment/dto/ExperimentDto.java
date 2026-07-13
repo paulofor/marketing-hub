@@ -74,6 +74,7 @@ public class ExperimentDto {
     private BigDecimal legacyTotalCost;
     private BigDecimal unreconciledLegacyCost;
     private BigDecimal expense;
+    private ExperimentSessionDurationSummaryDto sessionDurationSummary;
     private LocalDate startDate;
     private LocalDate endDate;
     private ExperimentStatus status;

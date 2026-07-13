@@ -267,6 +267,7 @@ public class ExperimentSalesPageAbTestService {
                 variant,
                 aggregation.pageViews(),
                 aggregation.sessions(),
+                aggregation.averageVisibleMsPerSession(),
                 aggregation.checkoutClicks(),
                 aggregation.purchases(),
                 rate(aggregation.checkoutClicks(), aggregation.pageViews()),
@@ -281,15 +282,28 @@ public class ExperimentSalesPageAbTestService {
         String variantPattern = "%" + normalizeVariantParam(variant) + "%";
         String sql = """
                 SELECT
-                    SUM(CASE WHEN LOWER(event_type) = 'page_view' THEN 1 ELSE 0 END) AS page_views,
+                    SUM(CASE WHEN LOWER(e.event_type) = 'page_view' THEN 1 ELSE 0 END) AS page_views,
                     COUNT(DISTINCT CASE WHEN session_id IS NOT NULL AND session_id <> '' THEN session_id ELSE NULL END) AS sessions,
-                    SUM(CASE WHEN LOWER(event_type) = 'checkout_click' THEN 1 ELSE 0 END) AS checkout_clicks,
-                    SUM(CASE WHEN LOWER(event_type) = 'purchase' THEN 1 ELSE 0 END) AS purchases,
-                    MAX(occurred_at) AS last_event_at
-                FROM experiment_landing_analytics_event
-                WHERE experiment_id = ?
-                  AND LOWER(COALESCE(page_url, '')) LIKE ?
-                  AND (? IS NULL OR occurred_at > ?)
+                    COALESCE(
+                        CAST(
+                            SUM(CASE
+                                WHEN LOWER(e.event_type) = 'section_view_time'
+                                THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(fe.payload, 'elapsedMs=', -1), ';', 1) AS UNSIGNED)
+                                ELSE 0
+                            END)
+                            / NULLIF(COUNT(DISTINCT CASE WHEN e.session_id IS NOT NULL AND e.session_id <> '' THEN e.session_id ELSE NULL END), 0)
+                            AS UNSIGNED
+                        ),
+                        0
+                    ) AS average_visible_ms_per_session,
+                    SUM(CASE WHEN LOWER(e.event_type) = 'checkout_click' THEN 1 ELSE 0 END) AS checkout_clicks,
+                    SUM(CASE WHEN LOWER(e.event_type) = 'purchase' THEN 1 ELSE 0 END) AS purchases,
+                    MAX(e.occurred_at) AS last_event_at
+                FROM experiment_landing_analytics_event e
+                JOIN experiment_funnel_event fe ON fe.id = e.funnel_event_id
+                WHERE e.experiment_id = ?
+                  AND LOWER(COALESCE(e.page_url, '')) LIKE ?
+                  AND (? IS NULL OR e.occurred_at > ?)
                 """;
         return jdbcTemplate.query(
                         sql,
@@ -441,6 +455,7 @@ public class ExperimentSalesPageAbTestService {
             return new VariantAnalyticsAggregation(
                     rs.getLong("page_views"),
                     rs.getLong("sessions"),
+                    rs.getLong("average_visible_ms_per_session"),
                     rs.getLong("checkout_clicks"),
                     rs.getLong("purchases"),
                     lastEventAt != null ? lastEventAt.toInstant() : null);
@@ -451,13 +466,14 @@ public class ExperimentSalesPageAbTestService {
     private record VariantAnalyticsAggregation(
             long pageViews,
             long sessions,
+            long averageVisibleMsPerSession,
             long checkoutClicks,
             long purchases,
             Instant lastEventAt) {
 
         /** Retorna agregacao vazia para variantes sem eventos rastreados. */
         private static VariantAnalyticsAggregation empty() {
-            return new VariantAnalyticsAggregation(0, 0, 0, 0, null);
+            return new VariantAnalyticsAggregation(0, 0, 0, 0, 0, null);
         }
     }
 }

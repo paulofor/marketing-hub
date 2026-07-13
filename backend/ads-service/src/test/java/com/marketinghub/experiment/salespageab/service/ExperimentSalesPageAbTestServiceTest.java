@@ -160,8 +160,8 @@ class ExperimentSalesPageAbTestServiceTest {
                 ArgumentMatchers.any(),
                 ArgumentMatchers.any(),
                 ArgumentMatchers.any()))
-                .willAnswer(invocation -> List.of(mapAggregation(invocation.getArgument(1), 120L, 60L, 3L)))
-                .willAnswer(invocation -> List.of(mapAggregation(invocation.getArgument(1), 130L, 70L, 8L)));
+                .willAnswer(invocation -> List.of(mapAggregation(invocation.getArgument(1), 120L, 60L, 90000L, 3L)))
+                .willAnswer(invocation -> List.of(mapAggregation(invocation.getArgument(1), 130L, 70L, 150000L, 8L)));
 
         var results = service.results(60L);
 
@@ -170,13 +170,21 @@ class ExperimentSalesPageAbTestServiceTest {
         assertThat(results.get(0).status()).isEqualTo("VENCEDOR_SUGERIDO");
         assertThat(results.get(0).variants()).extracting("checkoutClicks")
                 .containsExactly(3L, 8L);
+        assertThat(results.get(0).variants()).extracting("averageVisibleMsPerSession")
+                .containsExactly(90000L, 150000L);
     }
 
     /** Cria uma agregacao simulada para o JdbcTemplate do resumo A/B. */
-    private Object mapAggregation(RowMapper<?> mapper, long pageViews, long sessions, long checkoutClicks) throws Exception {
+    private Object mapAggregation(
+            RowMapper<?> mapper,
+            long pageViews,
+            long sessions,
+            long averageVisibleMsPerSession,
+            long checkoutClicks) throws Exception {
         ResultSet resultSet = mock(ResultSet.class);
         given(resultSet.getLong("page_views")).willReturn(pageViews);
         given(resultSet.getLong("sessions")).willReturn(sessions);
+        given(resultSet.getLong("average_visible_ms_per_session")).willReturn(averageVisibleMsPerSession);
         given(resultSet.getLong("checkout_clicks")).willReturn(checkoutClicks);
         given(resultSet.getLong("purchases")).willReturn(0L);
         given(resultSet.getTimestamp("last_event_at")).willReturn(Timestamp.from(Instant.parse("2026-07-10T10:00:00Z")));

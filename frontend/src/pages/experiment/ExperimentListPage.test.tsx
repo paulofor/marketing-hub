@@ -47,6 +47,11 @@ describe("ExperimentListPage", () => {
         hypothesisId: `hypothesis-${id}`,
         name: `Experimento ${id}`,
         hypothesis: `Hipótese ${id}`,
+        sessionDurationSummary: {
+          totalSessions: 3,
+          averageVisibleMsPerSession: 94000,
+          variants: [],
+        },
         cost: id,
         startDate: `2026-06-${String(id).padStart(2, "0")}`,
         endDate: null,
@@ -96,6 +101,9 @@ describe("ExperimentListPage", () => {
     ).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Nicho" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Hipótese" })).toBeTruthy();
+    expect(
+      screen.getByRole("columnheader", { name: "Tempo médio sessão" }),
+    ).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Custo" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Status" })).toBeTruthy();
     expect(
@@ -126,6 +134,97 @@ describe("ExperimentListPage", () => {
     ).toBeTruthy();
     expect(
       within(row as HTMLTableRowElement).getByText("R$ 1,00"),
+    ).toBeTruthy();
+    expect(
+      within(row as HTMLTableRowElement).getByText("1m 34s"),
+    ).toBeTruthy();
+  });
+
+  it("shows session duration split by A/B variant when available", async () => {
+    const experiments = [
+      {
+        id: "63",
+        nicheId: 10,
+        hypothesisId: "hypothesis-63",
+        name: "MPAE-H001-E001",
+        hypothesis: "Hipótese A/B",
+        sessionDurationSummary: {
+          totalSessions: 11,
+          averageVisibleMsPerSession: 120000,
+          variants: [
+            {
+              variantKey: "A",
+              variantName: "Página tradicional",
+              sessions: 5,
+              averageVisibleMsPerSession: 90000,
+            },
+            {
+              variantKey: "B",
+              variantName: "Página com vídeo",
+              sessions: 6,
+              averageVisibleMsPerSession: 150000,
+            },
+          ],
+        },
+        cost: 0.03,
+        startDate: "2026-07-09",
+        endDate: null,
+        creativeApproved: true,
+        status: "RUNNING",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-09T00:00:00Z",
+        updatedAt: "2026-07-09T00:00:00Z",
+      },
+    ];
+
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments")
+        return Promise.resolve({ data: experiments });
+      if (url === "/api/niches") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 10,
+              name: "Mulheres profissionais",
+              description: "",
+              demandVolume: "",
+              promises: "",
+              offers: "",
+              baseSegmentation: "",
+              interests: "",
+              demographicFilters: "",
+              extraTips: "",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+
+    const row = (await screen.findByText("MPAE-H001-E001")).closest("tr");
+
+    expect(row).not.toBeNull();
+    expect(
+      within(row as HTMLTableRowElement).getByText("2m 00s"),
+    ).toBeTruthy();
+    expect(
+      within(row as HTMLTableRowElement).getByText("A:", { exact: false }),
+    ).toBeTruthy();
+    expect(
+      within(row as HTMLTableRowElement).getByText("1m 30s", {
+        exact: false,
+      }),
+    ).toBeTruthy();
+    expect(
+      within(row as HTMLTableRowElement).getByText("B:", { exact: false }),
+    ).toBeTruthy();
+    expect(
+      within(row as HTMLTableRowElement).getByText("2m 30s", {
+        exact: false,
+      }),
     ).toBeTruthy();
   });
 

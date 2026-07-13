@@ -1,0 +1,59 @@
+openapi: 3.0.3
+info:
+  title: Fashion Chat Validation API
+  version: v1
+paths:
+  /api/fashion-chat/validation/status:
+    get:
+      summary: Consulta prontidão e autenticação do serviço Chat Moda
+      responses:
+        '200':
+          description: Status operacional do Chat Moda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FashionChatValidationStatusResponse'
+  /api/fashion-chat/validation/login/start:
+    post:
+      summary: Inicia login ChatGPT por device code no serviço Chat Moda
+      responses:
+        '200':
+          description: Dados para autenticação por device code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartFashionChatLoginResponse'
+components:
+  schemas:
+    FashionChatValidationStatusResponse:
+      type: object
+      properties:
+        serviceBaseUrl: { type: string }
+        checkedAt: { type: string, format: date-time }
+        ready: { type: boolean }
+        readyHttpStatus: { type: integer, nullable: true }
+        readyError: { type: string, nullable: true }
+        accountStatus:
+          type: string
+          enum: [AUTHENTICATED, NOT_AUTHENTICATED, UNAVAILABLE, UNKNOWN]
+        authenticated: { type: boolean, nullable: true }
+        accountHttpStatus: { type: integer, nullable: true }
+        accountError: { type: string, nullable: true }
+        accountPayload:
+          type: object
+          nullable: true
+          additionalProperties: true
+    StartFashionChatLoginResponse:
+      type: object
+      properties:
+        serviceBaseUrl: { type: string }
+        httpStatus: { type: integer, nullable: true }
+        verificationUri: { type: string, nullable: true }
+        userCode: { type: string, nullable: true }
+        expiresIn: { type: integer, nullable: true }
+        interval: { type: integer, nullable: true }
+        payload:
+          type: object
+          nullable: true
+          additionalProperties: true
+        errorMessage: { type: string, nullable: true }

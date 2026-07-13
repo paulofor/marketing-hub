@@ -5787,3 +5787,9 @@
 - Ajuste: o detalhe do experimento passou a ter a aba `Entregáveis`, mostrando o produto que o cliente vai receber.
 - Fonte de verdade: a tela reutiliza os endpoints existentes de entregáveis do nicho e pacotes de entregáveis vinculados ao experimento.
 - Objetivo comercial: dar clareza entre campanha, criativo, landing e produto entregue, reduzindo risco de vender uma promessa sem materializar a entrega.
+
+## 2026-07-13 — Validação administrativa do Chat Moda
+
+- Criada tela no Marketing Hub para validar a autenticação do serviço Chat Moda sem depender de comandos manuais.
+- Backend passou a expor contrato administrativo para consultar prontidão, conta ChatGPT e iniciar login por device code.
+- Objetivo de negócio: reduzir atrito operacional para manter o experimento conversacional apto a responder com IA real, evitando fallback local silencioso.

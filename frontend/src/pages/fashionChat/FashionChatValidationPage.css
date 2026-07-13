@@ -1,0 +1,140 @@
+.fashion-chat-validation-page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.fashion-chat-validation-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.fashion-chat-validation-page__header .btn,
+.fashion-chat-validation-page__panel .btn,
+.fashion-chat-validation-page__login-box .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.fashion-chat-validation-page__card {
+  min-height: 148px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.fashion-chat-validation-page__card > span,
+.fashion-chat-validation-page__label {
+  color: #5b6472;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.fashion-chat-validation-page__card .badge {
+  justify-self: start;
+  font-size: 0.9rem;
+  white-space: normal;
+  text-align: left;
+}
+
+.fashion-chat-validation-page__card p {
+  margin: 0;
+  color: #354052;
+  line-height: 1.45;
+}
+
+.fashion-chat-validation-page__panel {
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #fff;
+  padding: 18px;
+}
+
+.fashion-chat-validation-page__panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.fashion-chat-validation-page__panel h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.fashion-chat-validation-page__panel p {
+  margin: 6px 0 0;
+  color: #5b6472;
+}
+
+.fashion-chat-validation-page__login-box {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) minmax(220px, 1fr) minmax(
+      140px,
+      180px
+    );
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #f7f8fa;
+}
+
+.fashion-chat-validation-page__login-box > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fashion-chat-validation-page__login-box strong {
+  color: #1f2937;
+  overflow-wrap: anywhere;
+}
+
+.fashion-chat-validation-page__ready,
+.fashion-chat-validation-page__error {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.fashion-chat-validation-page__ready {
+  border: 1px solid #badbcc;
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.fashion-chat-validation-page__error {
+  margin-top: 16px;
+  border: 1px solid #f5c2c7;
+  background: #f8d7da;
+  color: #842029;
+}
+
+.fashion-chat-validation-page__ready > div,
+.fashion-chat-validation-page__error > div {
+  display: grid;
+  gap: 4px;
+}
+
+@media (max-width: 760px) {
+  .fashion-chat-validation-page__header,
+  .fashion-chat-validation-page__panel-header {
+    display: grid;
+  }
+
+  .fashion-chat-validation-page__login-box {
+    grid-template-columns: 1fr;
+  }
+}

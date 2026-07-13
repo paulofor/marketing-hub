@@ -9,18 +9,49 @@ export function createApp(codexAppServerClient?: CodexAppServerClient) {
   const app = express();
   const chatService = new FashionChatService(new FashionResearchService(), codexAppServerClient);
 
+  async function buildHealth() {
+    if (!codexAppServerClient) {
+      return {
+        status: 'ok',
+        service: 'fashion-chat-service',
+        codexAppServer: { status: 'disabled', ready: false, restartAttempts: 0 },
+      };
+    }
+    const codexHealth = codexAppServerClient.health();
+    if (!codexAppServerClient.isReady()) {
+      return { status: 'degraded', service: 'fashion-chat-service', codexAppServer: codexHealth };
+    }
+    try {
+      const authentication = await codexAppServerClient.readAuthentication();
+      return {
+        status: authentication.authenticated ? 'ok' : 'degraded',
+        service: 'fashion-chat-service',
+        codexAppServer: { ...codexHealth, ...authentication },
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        status: 'degraded',
+        service: 'fashion-chat-service',
+        codexAppServer: { ...codexHealth, authenticated: false, lastError: message },
+      };
+    }
+  }
+
   if (process.env.NODE_ENV !== 'test') {
     app.use(morgan('combined'));
   }
   app.use(cors({ origin: true }));
   app.use(express.json({ limit: '200kb' }));
 
-  app.get('/health', (_req: Request, res: Response) => {
-    res.json({
-      status: 'ok',
-      service: 'fashion-chat-service',
-      codexAppServer: codexAppServerClient?.health() ?? { status: 'disabled', ready: false, restartAttempts: 0 },
-    });
+  app.get('/health', async (_req: Request, res: Response) => {
+    res.json(await buildHealth());
+  });
+
+  app.get('/health/ready', async (_req: Request, res: Response) => {
+    const health = await buildHealth();
+    const status = health.status === 'ok' ? 200 : 503;
+    res.status(status).json(health);
   });
 
   app.post('/api/fashion-chat/messages', async (req: Request, res: Response) => {

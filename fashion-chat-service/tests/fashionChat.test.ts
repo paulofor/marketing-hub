@@ -19,6 +19,30 @@ test('health returns service status', async () => {
   assert.equal(response.body.service, 'fashion-chat-service');
 });
 
+test('ready health fails when Codex App Server is not authenticated', async () => {
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    readAuthentication: async () => ({ authenticated: false }),
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient)).get('/health/ready').expect(503);
+  assert.equal(response.body.status, 'degraded');
+  assert.equal(response.body.codexAppServer.authenticated, false);
+});
+
+test('ready health passes when Codex App Server is authenticated', async () => {
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    readAuthentication: async () => ({ authenticated: true, authMode: 'chatgpt' }),
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient)).get('/health/ready').expect(200);
+  assert.equal(response.body.status, 'ok');
+  assert.equal(response.body.codexAppServer.authenticated, true);
+});
+
 test('chat uses local fallback when Codex App Server is unavailable', async () => {
   mockResearchFetch();
   const response = await request(createApp())

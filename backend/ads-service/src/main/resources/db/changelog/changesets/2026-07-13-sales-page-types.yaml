@@ -1,0 +1,123 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-13-01-create-sales-page-type
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: sales_page_type
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE sales_page_type (
+                  code VARCHAR(64) NOT NULL,
+                  name VARCHAR(191) NOT NULL,
+                  description VARCHAR(1024) NOT NULL,
+                  commercial_mechanism VARCHAR(1024) NOT NULL,
+                  lead_capture_strategy VARCHAR(1024) NOT NULL,
+                  digital_bait_delivery VARCHAR(1024) NOT NULL,
+                  default_for_ab_test BIT(1) NOT NULL DEFAULT b'0',
+                  active BIT(1) NOT NULL DEFAULT b'1',
+                  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (code)
+              );
+
+  - changeSet:
+      id: 2026-07-13-02-create-experiment-sales-page-type-selection
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_sales_page_type_selection
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_sales_page_type_selection (
+                  id BIGINT NOT NULL AUTO_INCREMENT,
+                  experiment_id BIGINT NOT NULL,
+                  sales_page_type_code VARCHAR(64) NOT NULL,
+                  variant_key VARCHAR(16) NOT NULL,
+                  traffic_weight DECIMAL(5, 2) NOT NULL DEFAULT 50.00,
+                  active BIT(1) NOT NULL DEFAULT b'1',
+                  notes VARCHAR(1024) NULL,
+                  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (id),
+                  CONSTRAINT fk_exp_sales_page_type_selection_experiment
+                      FOREIGN KEY (experiment_id) REFERENCES experiment (id),
+                  CONSTRAINT fk_exp_sales_page_type_selection_type
+                      FOREIGN KEY (sales_page_type_code) REFERENCES sales_page_type (code),
+                  CONSTRAINT uk_exp_sales_page_type_selection_type
+                      UNIQUE (experiment_id, sales_page_type_code),
+                  CONSTRAINT uk_exp_sales_page_type_selection_variant
+                      UNIQUE (experiment_id, variant_key)
+              );
+              CREATE INDEX idx_exp_sales_page_type_selection_experiment
+                  ON experiment_sales_page_type_selection (experiment_id, active);
+
+  - changeSet:
+      id: 2026-07-13-03-seed-sales-page-types
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT IGNORE INTO sales_page_type
+                  (code, name, description, commercial_mechanism, lead_capture_strategy, digital_bait_delivery, default_for_ab_test, active)
+              VALUES
+                  (
+                      'TRADITIONAL_LONG_FORM',
+                      'Pagina tradicional de venda',
+                      'Pagina linear com promessa, mecanismo, prova, oferta, FAQ e chamada para checkout.',
+                      'Conduz o lead por uma narrativa de convencimento antes do clique de compra.',
+                      'Captura lead por formulario ou CTA secundario quando a compra nao acontece.',
+                      'Entrega isca por formulario, e-mail ou portal do lead antes da oferta completa.',
+                      b'1',
+                      b'1'
+                  ),
+                  (
+                      'HUMAN_VIDEO_SALES_PAGE',
+                      'Pagina com video humano',
+                      'Pagina de venda com video principal de apresentador humano ou avatar revisado.',
+                      'Usa presenca humana, demonstracao e transferencia de confianca para aumentar intencao.',
+                      'Captura lead por CTA abaixo do video, formulario de interesse ou evento de checkout.',
+                      'Entrega isca por bloco visual ou portal apos interacao inicial.',
+                      b'1',
+                      b'1'
+                  ),
+                  (
+                      'AI_CHAT_DIGITAL_BAIT',
+                      'Chat IA com isca imediata',
+                      'Experiencia chat-first em que uma IA conversa, coleta dados do lead e entrega a propria isca digital no chat, como uma imagem personalizada.',
+                      'Gera valor percebido antes da venda: o lead recebe uma amostra personalizada, sente progresso imediato e fica mais propenso a comprar o produto completo.',
+                      'Coleta dados em conversa curta, com consentimento e campos minimos para personalizar a amostra e atribuir campanha.',
+                      'Entrega imagem, preview, mini-relatorio ou outro ativo leve diretamente no chat antes da oferta.',
+                      b'1',
+                      b'1'
+                  ),
+                  (
+                      'DIAGNOSTIC_QUIZ',
+                      'Quiz diagnostico',
+                      'Pagina guiada por perguntas fechadas que segmenta o lead e recomenda uma solucao.',
+                      'Aumenta relevancia da oferta ao devolver um diagnostico simples antes do pitch.',
+                      'Captura lead ao final do diagnostico ou antes de revelar recomendacao completa.',
+                      'Entrega score, diagnostico ou plano resumido como isca digital.',
+                      b'0',
+                      b'1'
+                  );

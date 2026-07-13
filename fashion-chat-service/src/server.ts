@@ -35,7 +35,8 @@ export function createApp(codexAppServerClient?: CodexAppServerClient) {
     } catch (err) {
       const messageText = err instanceof Error ? err.message : 'FASHION_CHAT_FAILED';
       console.error(`Fashion chat failed: ${messageText}`, err);
-      return res.status(500).json({ error: messageText });
+      const status = messageText.startsWith('CODEX_APP_SERVER') || messageText === 'CODEX_NOT_AUTHENTICATED' ? 503 : 500;
+      return res.status(status).json({ error: messageText });
     }
   });
 

@@ -26,15 +26,22 @@ npm run build
 PORT=8094 npm start
 ```
 
-Para habilitar o Codex App Server:
+Para executar com Codex App Server local:
 
 ```bash
 CODEX_APP_SERVER_ENABLED=true npm start
 ```
 
-O piloto nao clona repositorio. A sandbox e criada como diretorio temporario local, recebe contexto de pesquisa de moda e executa o turno do App Codex Server quando ele estiver disponivel e autenticado.
+O piloto nao clona repositorio. A sandbox e criada como diretorio temporario local, recebe contexto de pesquisa de moda e executa o turno do App Codex Server.
 
-O servico nao usa `OPENAI_API_KEY` nem cliente OpenAI direto como fallback. Se o Codex App Server nao estiver disponivel, a resposta cai no fallback deterministico local.
+O servico usa somente Codex App Server para responder o chat:
+
+- nao usa `OPENAI_API_KEY`;
+- nao usa cliente OpenAI direto;
+- nao possui fallback deterministico local;
+- se o Codex App Server nao estiver pronto ou autenticado, `POST /api/fashion-chat/messages` retorna `503`.
+
+Na imagem Docker, o CLI `codex` fica instalado e o `CODEX_APP_SERVER_ENABLED` vem habilitado por padrao. O volume `fashion-chat-codex-home` preserva o `CODEX_HOME` entre reinicios do container.
 
 ## Deploy no host do MCP
 

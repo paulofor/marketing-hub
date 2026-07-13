@@ -2,8 +2,7 @@ import { CodexAppServerClient } from './codexAppServerClient.js';
 import { createApp } from './server.js';
 
 const port = Number.parseInt(process.env.PORT ?? '8094', 10);
-const forceFallback = (process.env.FASHION_CHAT_FORCE_FALLBACK ?? 'false').toLowerCase() === 'true';
-const codexEnabled = !forceFallback && (process.env.CODEX_APP_SERVER_ENABLED ?? 'false').toLowerCase() === 'true';
+const codexEnabled = (process.env.CODEX_APP_SERVER_ENABLED ?? 'true').toLowerCase() === 'true';
 const codexAppServerClient = codexEnabled ? new CodexAppServerClient() : undefined;
 const app = createApp(codexAppServerClient);
 

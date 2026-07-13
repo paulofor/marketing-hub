@@ -11,21 +11,16 @@ export interface FashionChatRequest {
 
 export interface FashionChatResponse {
   answer: string;
-  mode: 'codex_app_server' | 'deterministic_fallback';
+  mode: 'codex_app_server';
   sandboxId: string;
   research: FashionResearchResult;
-  warnings: string[];
 }
 
 export class FashionChatService {
-  private readonly forceFallback: boolean;
-
   constructor(
     private readonly researchService: FashionResearchService,
     private readonly codexAppServerClient?: CodexAppServerClient,
-  ) {
-    this.forceFallback = (process.env.FASHION_CHAT_FORCE_FALLBACK ?? 'false').toLowerCase() === 'true';
-  }
+  ) {}
 
   async answer(request: FashionChatRequest): Promise<FashionChatResponse> {
     const message = request.message.trim();
@@ -35,25 +30,12 @@ export class FashionChatService {
     const prompt = this.buildPrompt(message, request.customerId, research);
     await fs.writeFile(path.join(sandboxDir, 'fashion-question.md'), prompt, 'utf-8');
 
-    const warnings: string[] = [];
-    if (!this.forceFallback && this.codexAppServerClient?.isReady()) {
-      try {
-        const answer = await this.answerWithCodexAppServer(prompt, sandboxDir);
-        return { answer: this.cleanAnswer(answer), mode: 'codex_app_server', sandboxId, research, warnings };
-      } catch (err) {
-        warnings.push(`Codex App Server indisponivel para este turno: ${err instanceof Error ? err.message : String(err)}`);
-      }
-    } else if (!this.forceFallback) {
-      warnings.push('Codex App Server nao esta pronto ou nao foi habilitado.');
+    if (!this.codexAppServerClient?.isReady()) {
+      throw new Error('CODEX_APP_SERVER_UNAVAILABLE');
     }
 
-    return {
-      answer: this.cleanAnswer(this.deterministicFallback(message, research)),
-      mode: 'deterministic_fallback',
-      sandboxId,
-      research,
-      warnings,
-    };
+    const answer = await this.answerWithCodexAppServer(prompt, sandboxDir);
+    return { answer: this.cleanAnswer(answer), mode: 'codex_app_server', sandboxId, research };
   }
 
   private async answerWithCodexAppServer(prompt: string, cwd: string): Promise<string> {
@@ -126,20 +108,6 @@ export class FashionChatService {
       '',
       'Resposta final em portugues do Brasil:',
     ].join('\n');
-  }
-
-  private deterministicFallback(message: string, research: FashionResearchResult): string {
-    const lower = message.toLowerCase();
-    if (lower.includes('trabalho') || lower.includes('reuniao') || lower.includes('reunião')) {
-      return 'Use uma base neutra bem ajustada, como camisa ou blusa lisa, calca de alfaiataria e um terceiro elemento leve. Se quiser parecer mais moderna, escolha um ponto de cor em acessorio ou sapato. Qual e o grau de formalidade da reuniao?';
-    }
-    if (lower.includes('casamento') || lower.includes('festa')) {
-      return 'Priorize tecido com bom caimento, cor que valorize seu tom de pele e acessorios discretos se a roupa ja tiver brilho. Evite branco em casamento e ajuste o look ao horario do evento. E de dia ou a noite?';
-    }
-    if (lower.includes('cor') || lower.includes('cores')) {
-      return 'Comece por uma paleta simples: 2 cores neutras e 1 cor de destaque. Repita a cor de destaque em detalhe pequeno para o look parecer intencional. Voce prefere um visual discreto ou marcante?';
-    }
-    return `Minha recomendacao inicial: escolha uma peca principal confortavel, combine com neutros de bom caimento e adicione apenas um ponto de personalidade. ${research.sources[0]?.url === 'about:blank' ? 'Para refinar melhor, me diga ocasiao, clima e estilo desejado.' : 'Pela pesquisa, vale priorizar praticidade e coerencia visual. Qual ocasiao voce tem em mente?'}`;
   }
 
   private cleanAnswer(answer: string): string {

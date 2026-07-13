@@ -11,6 +11,7 @@ export interface ExperimentSalesPageAbVariant {
   salesPageUrl?: string | null;
   checkoutUrl?: string | null;
   adDestinationUrl?: string | null;
+  metricsSafeUrl?: string | null;
   analyticsVariantParam?: string | null;
   publicationAuditId?: number | null;
   experimentVideoAssetId?: number | null;
@@ -41,6 +42,7 @@ export interface ExperimentSalesPageAbVariantResult {
   variant: ExperimentSalesPageAbVariant;
   pageViews: number;
   sessions: number;
+  averageVisibleMsPerSession: number;
   checkoutClicks: number;
   purchases: number;
   checkoutClickRate: number | string;

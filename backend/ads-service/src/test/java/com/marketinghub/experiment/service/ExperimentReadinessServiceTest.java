@@ -11,6 +11,7 @@ import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
+import com.marketinghub.repository.jpa.experiment.salespagetype.ExperimentSalesPageTypeSelectionRepository;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
@@ -63,6 +64,8 @@ class ExperimentReadinessServiceTest {
     private ExperimentVideoAssetService experimentVideoAssetService;
     @Mock
     private ExperimentSalesPageAbTestService salesPageAbTestService;
+    @Mock
+    private ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository;
 
     private ExperimentReadinessService service;
 
@@ -78,7 +81,8 @@ class ExperimentReadinessServiceTest {
                 geraLandingStageExecutionRepository,
                 campaignDestinationPolicy,
                 experimentVideoAssetService,
-                salesPageAbTestService);
+                salesPageAbTestService,
+                salesPageTypeSelectionRepository);
         lenient().when(salesPageAbTestService.hasReadyActiveTest(org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
     }
 
@@ -161,6 +165,57 @@ class ExperimentReadinessServiceTest {
         assertThat(service.computeMissingConfiguration(experiment))
                 .containsExactly("experimentVideoAsset");
         assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    /** Garante que pagina de venda com video humano bloqueia campanha sem video pronto. */
+    @Test
+    void shouldBlockCampaignWhenHumanVideoSalesPageTypeHasNoReadyApprovedVideo() {
+        Experiment experiment = buildExperiment(46L, 56L);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+        experiment.setFollowUpActionUrl("https://example.com/sales/46");
+        completeCommercialContract(experiment);
+
+        when(creativeRepository.existsByExperimentIdAndStatus(46L, CreativeStatus.READY)).thenReturn(true);
+        when(salesPageTypeSelectionRepository.existsByExperimentIdAndSalesPageTypeCodeAndActiveTrue(
+                46L,
+                "HUMAN_VIDEO_SALES_PAGE")).thenReturn(true);
+        when(experimentVideoAssetService.hasReadyApprovedVideo(46L)).thenReturn(false);
+        mockPublishableSelection(46L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(46L);
+        mockSalesPageAudit(
+                46L,
+                "https://example.com/sales/46",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp46",
+                trackedSalesPageHtml());
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("experimentVideoAsset");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    /** Garante que pagina de venda com video humano libera somente com video pronto e aprovado. */
+    @Test
+    void shouldAllowHumanVideoSalesPageTypeWithReadyApprovedVideo() {
+        Experiment experiment = buildExperiment(47L, 57L);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+        experiment.setFollowUpActionUrl("https://example.com/sales/47");
+        completeCommercialContract(experiment);
+
+        when(creativeRepository.existsByExperimentIdAndStatus(47L, CreativeStatus.READY)).thenReturn(true);
+        when(salesPageTypeSelectionRepository.existsByExperimentIdAndSalesPageTypeCodeAndActiveTrue(
+                47L,
+                "HUMAN_VIDEO_SALES_PAGE")).thenReturn(true);
+        when(experimentVideoAssetService.hasReadyApprovedVideo(47L)).thenReturn(true);
+        mockPublishableSelection(47L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(47L);
+        mockSalesPageAudit(
+                47L,
+                "https://example.com/sales/47",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp47",
+                trackedSalesPageHtml());
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
     /** Garante que teste A/B ativo incompleto bloqueia a liberacao para campanha. */

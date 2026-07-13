@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   useExperimentSalesPageAbResults,
   type ExperimentSalesPageAbTestResult,
-  type ExperimentSalesPageAbVariant,
 } from "../../api/experiment/useExperimentSalesPageAbResults";
 import {
   useExperimentSalesPageTypeSelections,
@@ -11,6 +10,8 @@ import {
   useUpdateExperimentSalesPageTypeSelections,
   type SalesPageType,
 } from "../../api/experiment/useSalesPageTypes";
+
+const MAX_AB_TEST_TYPES = 2;
 
 interface ExperimentSalesPageAbTabProps {
   experimentId: string;
@@ -80,22 +81,6 @@ function resultStatusBadge(value?: string | null) {
   }
 }
 
-function safeTestUrl(variant: ExperimentSalesPageAbVariant) {
-  const rawUrl = variant.salesPageUrl || variant.adDestinationUrl;
-  if (!rawUrl) return null;
-  try {
-    const url = new URL(rawUrl);
-    if (!url.searchParams.has("mh_test")) {
-      url.searchParams.set("mh_test", "1");
-    }
-    return url.toString();
-  } catch {
-    return rawUrl.includes("mh_test=1")
-      ? rawUrl
-      : `${rawUrl}${rawUrl.includes("?") ? "&" : "?"}mh_test=1`;
-  }
-}
-
 function totalPageViews(result: ExperimentSalesPageAbTestResult) {
   return result.variants.reduce((total, item) => total + item.pageViews, 0);
 }
@@ -121,7 +106,7 @@ export default function ExperimentSalesPageAbTab({
     useUpdateExperimentSalesPageTypeSelections(experimentId);
   const [selectedTypeCodes, setSelectedTypeCodes] = useState<string[]>([]);
   const [selectionFeedback, setSelectionFeedback] = useState<
-    "success" | "error" | null
+    "success" | "error" | "limit" | null
   >(null);
 
   useEffect(() => {
@@ -151,12 +136,20 @@ export default function ExperimentSalesPageAbTab({
       if (current.includes(typeCode)) {
         return current.filter((code) => code !== typeCode);
       }
+      if (current.length >= MAX_AB_TEST_TYPES) {
+        setSelectionFeedback("limit");
+        return current;
+      }
       return [...current, typeCode];
     });
   };
 
   const saveTypeSelection = async () => {
     setSelectionFeedback(null);
+    if (selectedTypeCodes.length > MAX_AB_TEST_TYPES) {
+      setSelectionFeedback("limit");
+      return;
+    }
     try {
       await updateSelections.mutateAsync(
         selectedTypeCodes.map((typeCode, index) => ({
@@ -212,6 +205,7 @@ export default function ExperimentSalesPageAbTab({
           disabled={
             updateSelections.isPending ||
             selectedTypeCodes.length === 0 ||
+            selectedTypeCodes.length > MAX_AB_TEST_TYPES ||
             isLoadingTypes ||
             isLoadingSelections
           }
@@ -237,6 +231,12 @@ export default function ExperimentSalesPageAbTab({
           Não foi possível salvar os tipos de página de venda.
         </div>
       ) : null}
+      {selectionFeedback === "limit" ? (
+        <div className="alert alert-warning mb-0" role="alert">
+          Teste A/B aceita somente 2 variantes. Remova uma opção antes de
+          escolher outra.
+        </div>
+      ) : null}
 
       {isLoadingTypes || isLoadingSelections ? (
         <div className="text-muted small">Carregando tipos disponíveis...</div>
@@ -244,6 +244,7 @@ export default function ExperimentSalesPageAbTab({
         <div className="row g-3">
           {(types ?? []).map((type) => {
             const checked = selectedTypeCodes.includes(type.code);
+            const disabled = !checked && selectedTypeCodes.length >= MAX_AB_TEST_TYPES;
             return (
               <div className="col-12 col-xl-6" key={type.code}>
                 <label className="border rounded-3 p-3 h-100 d-flex gap-3">
@@ -251,6 +252,7 @@ export default function ExperimentSalesPageAbTab({
                     className="form-check-input mt-1"
                     type="checkbox"
                     checked={checked}
+                    disabled={disabled}
                     onChange={() => toggleType(type.code)}
                   />
                   <span>
@@ -375,7 +377,7 @@ export default function ExperimentSalesPageAbTab({
                 </thead>
                 <tbody>
                   {result.variants.map((item) => {
-                    const testUrl = safeTestUrl(item.variant);
+                    const testUrl = item.variant.metricsSafeUrl;
                     return (
                       <tr key={item.variant.id}>
                         <td>
@@ -425,7 +427,7 @@ export default function ExperimentSalesPageAbTab({
               <CheckCircle2 size={16} className="mt-1 text-success" />
               <span>
                 Use os links com mh_test=1 para revisar as páginas sem gerar
-                novos page views do teste.
+                novos page views do teste. A URL segura vem do backend.
               </span>
             </div>
           </div>

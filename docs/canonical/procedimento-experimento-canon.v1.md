@@ -106,7 +106,27 @@ Regras obrigatórias:
 - o status `STANDBY` por primeiro envio não substitui a validação estatística de 30+ envios qualificados, nem a regra de reprovação por 100 acessos sem envio;
 - a tela administrativa deve deixar claro que o experimento parou por sinal inicial, não por validação completa.
 
-### 4.1.3.1 Regra mandatória — política única de parada por campanha
+### 4.1.3.1 Regra mandatória — página com vídeo exige vídeo aprovado
+
+Quando o experimento escolher uma página de venda que dependa de vídeo humano/avatar, a campanha não pode ser considerada pronta enquanto não existir vídeo vinculado, tecnicamente `READY` e com revisão humana `APPROVED`.
+
+Regras obrigatórias:
+- variante A/B `HUMAN_VIDEO` só pode participar de teste pronto para tráfego quando tiver vídeo associado em estado `READY + APPROVED`;
+- seleção de tipo `HUMAN_VIDEO_SALES_PAGE` bloqueia a liberação de campanha se o experimento não possuir ao menos um `experiment_video_asset` pronto e aprovado;
+- o bloqueio deve acontecer no readiness do backend, antes de o experimento entrar na fila de publicação de mídia paga;
+- a ausência de vídeo não deve ser interpretada como desempenho ruim da variante, pois contamina o aprendizado comercial.
+
+### 4.1.3.1.1 Regra mandatória — teste A/B de página de venda com no máximo duas variantes
+
+Teste A/B de página de venda deve comparar no máximo duas experiências comerciais por vez. O sistema não deve permitir seleção, aprovação ou liberação de teste com três ou mais variantes simultâneas, porque isso dilui tráfego, aumenta risco de falso vencedor e torna o aprendizado menos acionável para escala de vendas.
+
+Regras obrigatórias:
+- a seleção de tipos de página de venda do experimento deve aceitar no máximo duas opções ativas;
+- quando houver três mecanismos comerciais plausíveis, o usuário deve escolher as duas hipóteses mais fortes para o teste atual e deixar a terceira para um novo ciclo;
+- nenhuma variante incompleta pode substituir uma das duas escolhas, pois isso contamina a leitura comercial;
+- o backend deve bloquear payload com mais de duas seleções e a interface deve impedir a marcação da terceira opção.
+
+### 4.1.3.2 Regra mandatória — política única de parada por campanha
 
 Campanhas pagas não devem depender de regra operacional por tipo de experimento. A decisão de parada deve ser única por campanha e orientada a prova comercial objetiva: se a campanha não prova que pode gerar resultado, ela deve parar antes de consumir mais orçamento.
 

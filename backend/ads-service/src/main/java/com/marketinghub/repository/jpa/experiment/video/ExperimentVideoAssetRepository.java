@@ -32,4 +32,9 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
     boolean existsRequiredReleaseBlocker(@Param("experimentId") Long experimentId,
                                          @Param("readyStatus") ExperimentVideoStatus readyStatus,
                                          @Param("approvedStatus") ExperimentVideoReviewStatus approvedStatus);
+
+    /** Verifica se o experimento possui ao menos um vídeo pronto e aprovado para uso comercial. */
+    boolean existsByExperimentIdAndStatusAndReviewStatus(Long experimentId,
+                                                         ExperimentVideoStatus status,
+                                                         ExperimentVideoReviewStatus reviewStatus);
 }

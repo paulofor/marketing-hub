@@ -116,6 +116,90 @@
   color: #697386;
 }
 
+.fashion-chat-sketch {
+  margin: 14px 0 0;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fdfbf7;
+}
+
+.fashion-chat-sketch-art {
+  display: block;
+  width: 100%;
+  max-height: 340px;
+}
+
+.fashion-chat-sketch-paper {
+  fill: #fffaf1;
+  stroke: #e7dccb;
+  stroke-width: 2;
+}
+
+.fashion-chat-sketch-line,
+.fashion-chat-sketch-detail,
+.fashion-chat-sketch-note-line {
+  fill: none;
+  stroke: #2f3542;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fashion-chat-sketch-line {
+  stroke-width: 3;
+}
+
+.fashion-chat-sketch-detail,
+.fashion-chat-sketch-note-line {
+  stroke-width: 2;
+}
+
+.fashion-chat-sketch-shadow {
+  fill: none;
+  stroke: #d8c8b2;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.fashion-chat-sketch-hair {
+  fill: #24272f;
+  opacity: 0.92;
+}
+
+.fashion-chat-sketch-garment {
+  fill: #ece7df;
+  stroke: #202633;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.fashion-chat-sketch-coat {
+  fill: #c9d3dc;
+  stroke: #202633;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.fashion-chat-sketch-accessory {
+  fill: #30261f;
+  stroke: #202633;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.fashion-chat-sketch-pin {
+  fill: #b85c38;
+}
+
+.fashion-chat-sketch-caption {
+  border-top: 1px solid #e6ded2;
+  padding: 8px 10px;
+  color: #4b5563;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  white-space: normal;
+}
+
 .fashion-chat-form {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -144,5 +228,9 @@
 
   .fashion-chat-bubble {
     max-width: 94%;
+  }
+
+  .fashion-chat-sketch-art {
+    max-height: 280px;
   }
 }

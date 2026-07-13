@@ -27,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class SalesPageTypeService {
     private static final BigDecimal DEFAULT_WEIGHT = new BigDecimal("50.00");
+    private static final int MAX_AB_TEST_SELECTIONS = 2;
 
     private final SalesPageTypeRepository typeRepository;
     private final ExperimentSalesPageTypeSelectionRepository selectionRepository;
@@ -70,6 +71,9 @@ public class SalesPageTypeService {
                 request == null || request.selections() == null ? List.of() : request.selections();
         if (requestedSelections.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "at least one sales page type is required");
+        }
+        if (requestedSelections.size() > MAX_AB_TEST_SELECTIONS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sales page A/B test accepts at most 2 variants");
         }
 
         selectionRepository.deleteByExperimentId(experimentId);

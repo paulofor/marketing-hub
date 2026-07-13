@@ -12,6 +12,8 @@ import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbVariantD
 import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbVariantResultDto;
 import com.marketinghub.experiment.salespageab.dto.UpdateExperimentSalesPageAbVariantRequest;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.salespageab.ExperimentSalesPageAbTestRepository;
@@ -33,6 +35,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: criar e manter testes A/B de pagina de venda ligados ao experimento. */
@@ -133,10 +136,19 @@ public class ExperimentSalesPageAbTestService {
     /** Verifica se o teste A/B ativo possui duas variantes prontas e equivalentes para campanha. */
     @Transactional(readOnly = true)
     public boolean hasReadyActiveTest(Long experimentId) {
-        return findActiveForCampaign(experimentId)
-                .map(test -> test.variants().size() == 2
-                        && test.variants().stream().allMatch(this::isVariantReadyForTraffic))
+        return testRepository.findTopByExperimentIdAndStatusInOrderByUpdatedAtDesc(experimentId, ACTIVE_STATUSES)
+                .map(test -> test.getVariants().size() == 2
+                        && test.getVariants().stream().allMatch(this::isVariantReadyForTraffic))
                 .orElse(true);
+    }
+
+    /** Verifica se existe variante ativa de pagina com vídeo humano no teste A/B. */
+    @Transactional(readOnly = true)
+    public boolean hasHumanVideoVariant(Long experimentId) {
+        return testRepository.findTopByExperimentIdAndStatusInOrderByUpdatedAtDesc(experimentId, ACTIVE_STATUSES)
+                .map(test -> test.getVariants().stream()
+                        .anyMatch(variant -> variant.getVariantType() == ExperimentSalesPageAbVariantType.HUMAN_VIDEO))
+                .orElse(false);
     }
 
     /** Cria uma variante inicial com divisao de trafego 50/50. */
@@ -198,7 +210,7 @@ public class ExperimentSalesPageAbTestService {
     private void normalizeTestStatus(ExperimentSalesPageAbTest test) {
         boolean ready = test.getVariants() != null
                 && test.getVariants().size() == 2
-                && test.getVariants().stream().allMatch(variant -> isVariantReadyForTraffic(toVariantDto(variant)));
+                && test.getVariants().stream().allMatch(this::isVariantReadyForTraffic);
         if (ready && test.getStatus() == ExperimentSalesPageAbTestStatus.DRAFT) {
             test.setStatus(ExperimentSalesPageAbTestStatus.READY);
         }
@@ -241,6 +253,24 @@ public class ExperimentSalesPageAbTestService {
                 && variant.requiredCollectorsPresent()
                 && variant.trafficWeight() != null
                 && variant.trafficWeight().signum() > 0;
+    }
+
+    /** Confirma se a entidade da variante pode receber trafego, incluindo vídeo quando exigido. */
+    private boolean isVariantReadyForTraffic(ExperimentSalesPageAbVariant variant) {
+        return isVariantReadyForTraffic(toVariantDto(variant))
+                && (!requiresApprovedVideo(variant) || hasReadyApprovedVideo(variant.getExperimentVideoAsset()));
+    }
+
+    /** Identifica variantes cuja promessa comercial depende de vídeo humano. */
+    private boolean requiresApprovedVideo(ExperimentSalesPageAbVariant variant) {
+        return variant != null && variant.getVariantType() == ExperimentSalesPageAbVariantType.HUMAN_VIDEO;
+    }
+
+    /** Verifica se o vídeo vinculado está pronto e aprovado para tráfego pago. */
+    private boolean hasReadyApprovedVideo(ExperimentVideoAsset videoAsset) {
+        return videoAsset != null
+                && videoAsset.getStatus() == ExperimentVideoStatus.READY
+                && videoAsset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED;
     }
 
     /** Monta o resultado de um teste usando as URLs parametrizadas das variantes. */
@@ -437,12 +467,35 @@ public class ExperimentSalesPageAbTestService {
                 variant.getSalesPageUrl(),
                 variant.getCheckoutUrl(),
                 variant.getAdDestinationUrl(),
+                buildMetricsSafeUrl(variant),
                 variant.getAnalyticsVariantParam(),
                 variant.getPublicationAudit() != null ? variant.getPublicationAudit().getId() : null,
                 variant.getExperimentVideoAsset() != null ? variant.getExperimentVideoAsset().getId() : null,
                 variant.isRequiredCollectorsPresent(),
                 variant.getCreatedAt(),
                 variant.getUpdatedAt());
+    }
+
+    /** Monta URL de revisao interna que o Lead Portal ignora nos coletores de metricas. */
+    private String buildMetricsSafeUrl(ExperimentSalesPageAbVariant variant) {
+        String rawUrl = StringUtils.hasText(variant.getSalesPageUrl())
+                ? variant.getSalesPageUrl()
+                : variant.getAdDestinationUrl();
+        if (!StringUtils.hasText(rawUrl)) {
+            return null;
+        }
+        try {
+            return UriComponentsBuilder.fromUriString(rawUrl.trim())
+                    .replaceQueryParam("mh_test", "1")
+                    .build(true)
+                    .toUriString();
+        } catch (IllegalArgumentException ex) {
+            String trimmed = rawUrl.trim();
+            if (trimmed.contains("mh_test=1")) {
+                return trimmed;
+            }
+            return trimmed + (trimmed.contains("?") ? "&" : "?") + "mh_test=1";
+        }
     }
 
     /** Mapeia a agregacao SQL de analytics da variante para o contrato interno do servico. */

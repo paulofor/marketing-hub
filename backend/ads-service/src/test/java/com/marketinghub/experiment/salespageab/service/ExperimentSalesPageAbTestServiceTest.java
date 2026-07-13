@@ -8,6 +8,9 @@ import com.marketinghub.experiment.salespageab.ExperimentSalesPageAbVariantStatu
 import com.marketinghub.experiment.salespageab.ExperimentSalesPageAbVariantType;
 import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbTestDto;
 import com.marketinghub.experiment.salespageab.dto.UpdateExperimentSalesPageAbVariantRequest;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.salespageab.ExperimentSalesPageAbTestRepository;
 import com.marketinghub.repository.jpa.experiment.salespageab.ExperimentSalesPageAbVariantRepository;
@@ -110,6 +113,7 @@ class ExperimentSalesPageAbTestServiceTest {
                 .build();
         ExperimentSalesPageAbVariant variantA = readyVariant(test, 21L, "A", ExperimentSalesPageAbVariantType.TRADITIONAL);
         ExperimentSalesPageAbVariant variantB = readyVariant(test, 22L, "B", ExperimentSalesPageAbVariantType.HUMAN_VIDEO);
+        variantB.setExperimentVideoAsset(readyApprovedVideo(experiment));
         test.getVariants().add(variantA);
         test.getVariants().add(variantB);
         given(experimentRepository.findById(60L)).willReturn(Optional.of(experiment));
@@ -131,6 +135,47 @@ class ExperimentSalesPageAbTestServiceTest {
                         true));
 
         assertThat(dto.status()).isEqualTo(ExperimentSalesPageAbTestStatus.READY);
+    }
+
+    /** Garante que variante de video humano nao fica pronta sem video pronto e aprovado. */
+    @Test
+    void shouldNotPromoteHumanVideoVariantWithoutReadyApprovedVideo() {
+        Experiment experiment = Experiment.builder().id(60L).build();
+        ExperimentSalesPageAbTest test = ExperimentSalesPageAbTest.builder()
+                .id(11L)
+                .experiment(experiment)
+                .name("A/B")
+                .status(ExperimentSalesPageAbTestStatus.DRAFT)
+                .hypothesis("Video aumenta confianca")
+                .primaryMetric("checkout_click_rate")
+                .winnerRule("menor custo por checkout")
+                .minimumRuntimeDays(7)
+                .minimumSampleSize(100)
+                .metaSplitTestRecommended(true)
+                .build();
+        ExperimentSalesPageAbVariant variantA = readyVariant(test, 21L, "A", ExperimentSalesPageAbVariantType.TRADITIONAL);
+        ExperimentSalesPageAbVariant variantB = readyVariant(test, 22L, "B", ExperimentSalesPageAbVariantType.HUMAN_VIDEO);
+        test.getVariants().add(variantA);
+        test.getVariants().add(variantB);
+        given(experimentRepository.findById(60L)).willReturn(Optional.of(experiment));
+        given(variantRepository.findByIdAndTestExperimentId(22L, 60L)).willReturn(Optional.of(variantB));
+        given(variantRepository.save(variantB)).willReturn(variantB);
+
+        ExperimentSalesPageAbTestDto dto = service.updateVariant(
+                60L,
+                22L,
+                new UpdateExperimentSalesPageAbVariantRequest(
+                        ExperimentSalesPageAbVariantStatus.READY,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        true));
+
+        assertThat(dto.status()).isEqualTo(ExperimentSalesPageAbTestStatus.DRAFT);
     }
 
     /** Garante que os resultados A/B calculam taxas por variante e sugerem vencedor apenas com amostra. */
@@ -172,6 +217,10 @@ class ExperimentSalesPageAbTestServiceTest {
                 .containsExactly(3L, 8L);
         assertThat(results.get(0).variants()).extracting("averageVisibleMsPerSession")
                 .containsExactly(90000L, 150000L);
+        assertThat(results.get(0).variants()).extracting(variant -> variant.variant().metricsSafeUrl())
+                .containsExactly(
+                        "https://example.com/sales-a?mh_test=1",
+                        "https://example.com/sales-b?mh_test=1");
     }
 
     /** Cria uma agregacao simulada para o JdbcTemplate do resumo A/B. */
@@ -210,6 +259,16 @@ class ExperimentSalesPageAbTestServiceTest {
                 .adDestinationUrl("https://example.com/sales-" + key.toLowerCase())
                 .analyticsVariantParam("ab=" + key.toLowerCase())
                 .requiredCollectorsPresent(true)
+                .build();
+    }
+
+    /** Cria um ativo de video pronto e revisado para variantes que dependem de video humano. */
+    private ExperimentVideoAsset readyApprovedVideo(Experiment experiment) {
+        return ExperimentVideoAsset.builder()
+                .id(501L)
+                .experiment(experiment)
+                .status(ExperimentVideoStatus.READY)
+                .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
                 .build();
     }
 }

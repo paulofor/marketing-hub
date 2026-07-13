@@ -1,0 +1,122 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Teste A/B de Página de Venda
+  version: "1.0"
+paths:
+  /api/experiments/{experimentId}/sales-page-ab-tests/results:
+    get:
+      summary: Lista resultados do teste A/B de páginas de venda do experimento.
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Resultados por teste e variante.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExperimentSalesPageAbTestResult"
+components:
+  schemas:
+    ExperimentSalesPageAbTestResult:
+      type: object
+      properties:
+        test:
+          $ref: "#/components/schemas/ExperimentSalesPageAbTest"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentSalesPageAbVariantResult"
+        winnerVariantKey:
+          type: string
+          nullable: true
+        status:
+          type: string
+        recommendation:
+          type: string
+    ExperimentSalesPageAbTest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        experimentId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        status:
+          type: string
+        primaryMetric:
+          type: string
+        minimumSampleSize:
+          type: integer
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentSalesPageAbVariant"
+    ExperimentSalesPageAbVariant:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        variantKey:
+          type: string
+        name:
+          type: string
+        variantType:
+          type: string
+        status:
+          type: string
+        trafficWeight:
+          type: number
+        salesPageUrl:
+          type: string
+          nullable: true
+        checkoutUrl:
+          type: string
+          nullable: true
+        adDestinationUrl:
+          type: string
+          nullable: true
+        metricsSafeUrl:
+          type: string
+          nullable: true
+          description: URL de revisão interna com mh_test=1 para acessar a página sem contaminar métricas da campanha.
+        analyticsVariantParam:
+          type: string
+    ExperimentSalesPageAbVariantResult:
+      type: object
+      properties:
+        variant:
+          $ref: "#/components/schemas/ExperimentSalesPageAbVariant"
+        pageViews:
+          type: integer
+          format: int64
+        sessions:
+          type: integer
+          format: int64
+        averageVisibleMsPerSession:
+          type: integer
+          format: int64
+        checkoutClicks:
+          type: integer
+          format: int64
+        purchases:
+          type: integer
+          format: int64
+        checkoutClickRate:
+          type: number
+        purchaseRate:
+          type: number
+        lastEventAt:
+          type: string
+          format: date-time
+          nullable: true

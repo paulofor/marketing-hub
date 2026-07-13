@@ -1,3 +1,19 @@
+## 2026-07-13 — Experimentos: página com vídeo bloqueia campanha sem vídeo aprovado
+
+- causa-raiz: a liberação de campanha bloqueava apenas vídeos já marcados como obrigatórios, mas não inferia a dependência comercial quando a variante/tipo de página escolhido era de vídeo humano.
+- foi feito: readiness do backend passa a bloquear campanha quando houver variante `HUMAN_VIDEO` ou tipo `HUMAN_VIDEO_SALES_PAGE` sem vídeo `READY + APPROVED`.
+- foi feito: teste A/B só é considerado pronto para tráfego quando a variante `HUMAN_VIDEO` possui vídeo vinculado, pronto e aprovado.
+- impacto esperado: o sistema evita campanha contaminada por página incompleta e preserva aprendizado confiável sobre oferta, criativo e mecanismo comercial.
+- prevenção de recorrência: testes unitários cobrem bloqueio por tipo de página com vídeo e bloqueio de variante A/B de vídeo sem asset aprovado.
+
+## 2026-07-13 — Teste A/B: link seguro para revisar páginas de venda
+
+- solicitação: mostrar na aba `Teste A/B` o link de cada página de venda sem contaminar métricas da campanha.
+- causa-raiz: a tela montava localmente um link com `mh_test=1`, mas a regra de não contabilizar métricas precisa vir do backend como fonte de verdade.
+- foi feito: o contrato de resultados A/B agora expõe `metricsSafeUrl` por variante, calculado pelo backend a partir da URL da página/destino e sempre com `mh_test=1`.
+- impacto esperado: o usuário pode abrir cada variante para revisão interna sem gerar novos page views ou eventos de campanha no Lead Portal.
+- prevenção de recorrência: teste unitário do backend cobre a URL segura e o frontend deixou de inferir a URL localmente.
+
 ## 2026-07-12 — Experimentos: custo de produção de vídeo VEO
 
 - causa-raiz: o ativo `experiment_video_asset` já tinha campo de custo, mas o pedido VEO criava o vídeo sem estimativa e o callback final do `video-management-service` não enviava o custo calculado pelo provider.

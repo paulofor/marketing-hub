@@ -308,6 +308,7 @@ public class FacebookAdsCampaignController {
         FacebookAdsCampaign campaign = new FacebookAdsCampaign();
         campaign.setId(req.id());
         campaign.setExternalId(resolveMetaId(req.externalId(), req.id()));
+        campaign.setPublicationKey(buildPublicationKey(req.experimentId()));
         campaign.setAdAccountId(req.adAccountId());
         campaign.setName(req.name());
         campaign.setObjective(req.objective());
@@ -350,6 +351,11 @@ public class FacebookAdsCampaignController {
             }
         }
         experiment.setStatus(ExperimentStatus.RUNNING);
+    }
+
+    // Monta a chave única de publicação para impedir duas campanhas novas do mesmo experimento.
+    private String buildPublicationKey(Long experimentId) {
+        return experimentId == null ? null : "FACEBOOK:EXPERIMENT:" + experimentId;
     }
 
     // Bloqueia callback parcial do worker para evitar experimento RUNNING sem publicação materializada.

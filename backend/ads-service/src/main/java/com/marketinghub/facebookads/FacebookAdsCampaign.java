@@ -31,6 +31,9 @@ public class FacebookAdsCampaign {
     @Column(name = "external_id")
     private String externalId;
 
+    @Column(name = "publication_key", length = 191)
+    private String publicationKey;
+
     @Column(name = "ad_account_id", nullable = false)
     private String adAccountId;
 

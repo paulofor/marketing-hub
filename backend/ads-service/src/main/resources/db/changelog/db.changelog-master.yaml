@@ -1289,3 +1289,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-07-12-video-asset-enums.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-13-facebook-campaign-publication-key.yaml
+      relativeToChangelogFile: true

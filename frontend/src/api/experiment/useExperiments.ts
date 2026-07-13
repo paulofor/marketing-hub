@@ -64,6 +64,19 @@ export interface ExperimentCampaignMetric {
   lastSyncError?: string | null;
 }
 
+export interface ExperimentSessionDurationVariant {
+  variantKey?: string | null;
+  variantName?: string | null;
+  sessions: number;
+  averageVisibleMsPerSession: number;
+}
+
+export interface ExperimentSessionDurationSummary {
+  totalSessions: number;
+  averageVisibleMsPerSession: number;
+  variants?: ExperimentSessionDurationVariant[] | null;
+}
+
 export interface Experiment {
   id: string;
   nicheId: number;
@@ -121,6 +134,7 @@ export interface Experiment {
   legacyTotalCost?: number | null;
   unreconciledLegacyCost?: number | null;
   expense?: number | null;
+  sessionDurationSummary?: ExperimentSessionDurationSummary | null;
   startDate: string | null;
   endDate: string | null;
   metricPresetId?: string | null;

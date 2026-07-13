@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-13-facebook-campaign-publication-key-column
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: facebook_ads_campaign
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: publication_key
+      changes:
+        - addColumn:
+            tableName: facebook_ads_campaign
+            columns:
+              - column:
+                  name: publication_key
+                  type: varchar(191)
+  - changeSet:
+      id: 2026-07-13-facebook-campaign-publication-key-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: facebook_ads_campaign
+        - columnExists:
+            tableName: facebook_ads_campaign
+            columnName: publication_key
+        - not:
+            - indexExists:
+                tableName: facebook_ads_campaign
+                indexName: uk_facebook_ads_campaign_publication_key
+      changes:
+        - addUniqueConstraint:
+            tableName: facebook_ads_campaign
+            columnNames: publication_key
+            constraintName: uk_facebook_ads_campaign_publication_key

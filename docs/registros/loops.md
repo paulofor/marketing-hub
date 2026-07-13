@@ -125,6 +125,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - enviar `is_adset_budget_sharing_enabled=false` em campanhas sem orçamento no nível da campanha.
   - enviar `experimentType` no contrato `/api/facebook-campaigns/experiments-ready` para o worker não degradar `LOW_TICKET_PRODUCT + SALES` para campanha de leads quando existir `freeReward` secundário.
   - exigir `facebookPixelId` para `LOW_TICKET_PRODUCT + SALES` antes de entrar na fila e publicar o ad set com `optimization_goal=OFFSITE_CONVERSIONS`, `promoted_object.pixel_id` e `custom_event_type=PURCHASE`.
+  - adicionar `facebook_ads_campaign.publication_key` com unicidade para novas publicações, impedindo que retry/concorrência grave duas campanhas novas para o mesmo experimento no backend.
 - **Módulos envolvidos**:
   - `backend/ads-service`;
   - `facebook-ads-worker`;

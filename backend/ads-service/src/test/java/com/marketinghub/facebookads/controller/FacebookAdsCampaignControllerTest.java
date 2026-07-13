@@ -483,6 +483,7 @@ class FacebookAdsCampaignControllerTest {
         FacebookAdsCampaign savedCampaign = campaignCaptor.getValue();
         assertThat(savedCampaign.getId()).isEqualTo("cmp123");
         assertThat(savedCampaign.getExternalId()).isEqualTo("meta-campaign-123");
+        assertThat(savedCampaign.getPublicationKey()).isEqualTo("FACEBOOK:EXPERIMENT:42");
         assertThat(savedCampaign.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
 

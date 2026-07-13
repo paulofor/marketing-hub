@@ -37,6 +37,15 @@ function formatCurrency(value?: number | null) {
   }).format(value);
 }
 
+function formatDurationMs(value?: number | null) {
+  if (!value || value <= 0) return "—";
+  const totalSeconds = Math.round(value / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes <= 0) return `${seconds}s`;
+  return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+}
+
 function resolveExperimentCost(experiment: {
   cost?: number | null;
   totalCost?: number | null;
@@ -273,6 +282,7 @@ export default function ExperimentListPage() {
               <th>Data de criação</th>
               <th>Nicho</th>
               <th>Hipótese</th>
+              <th>Tempo médio sessão</th>
               <th>Custo</th>
               <th>Status</th>
               <th>Botões/Ações</th>
@@ -301,6 +311,32 @@ export default function ExperimentListPage() {
                     {nicheNameById.get(e.nicheId) || `Nicho #${e.nicheId}`}
                   </td>
                   <td>{e.hypothesis || "—"}</td>
+                  <td>
+                    <div className="d-flex flex-column gap-1 text-nowrap">
+                      <span>
+                        {formatDurationMs(
+                          e.sessionDurationSummary
+                            ?.averageVisibleMsPerSession,
+                        )}
+                      </span>
+                      {e.sessionDurationSummary?.variants?.length ? (
+                        <div className="d-flex flex-column gap-1 small text-muted">
+                          {e.sessionDurationSummary.variants.map(
+                            (variant, index) => (
+                              <span
+                                key={`${variant.variantKey ?? variant.variantName ?? "variant"}-${index}`}
+                              >
+                                {variant.variantKey ?? variant.variantName}:{" "}
+                                {formatDurationMs(
+                                  variant.averageVisibleMsPerSession,
+                                )}
+                              </span>
+                            ),
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  </td>
                   <td>{formatCurrency(resolveExperimentCost(e))}</td>
                   <td>{e.status}</td>
                   <td>

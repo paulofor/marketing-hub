@@ -8,6 +8,7 @@ public record ExperimentSalesPageAbVariantResultDto(
         ExperimentSalesPageAbVariantDto variant,
         long pageViews,
         long sessions,
+        long averageVisibleMsPerSession,
         long checkoutClicks,
         long purchases,
         BigDecimal checkoutClickRate,

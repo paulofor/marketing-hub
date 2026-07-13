@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Sparkles } from "lucide-react";
+import { Download, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import WorkerRequestBanner from "./WorkerRequestBanner";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
@@ -187,6 +187,7 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
   );
   const createPackage = useCreateDeliverablePackage(experiment.id);
   const requestDeliverables = useRequestDeliverables(experiment.id, experiment.nicheId);
+  const deliverablesZipUrl = `/api/experiments/${experiment.id}/deliverables.zip`;
 
   const deliverableList = useMemo(() => {
     if (!Array.isArray(deliverables)) {
@@ -295,6 +296,19 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
         onRequest={(quantity) => requestDeliverables.mutateAsync(quantity)}
         isRequesting={requestDeliverables.isPending}
       />
+
+      <div className="deliverables-download">
+        <div>
+          <h5 className="deliverables-download__title">Pacote completo do experimento</h5>
+          <p className="text-muted mb-0">
+            Baixe um ZIP com os entregáveis do nicho, pacotes vinculados e artefato final da landing.
+          </p>
+        </div>
+        <a className="btn btn-outline-primary deliverables-download__button" href={deliverablesZipUrl}>
+          <Download size={18} />
+          <span>Baixar ZIP</span>
+        </a>
+      </div>
 
       <section className="card deliverables-panel deliverables-panel--niche mb-4 mt-4">
         <div className="card-header d-flex flex-wrap justify-content-between align-items-start gap-3">

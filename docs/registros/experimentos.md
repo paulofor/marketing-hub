@@ -5781,3 +5781,9 @@
 - Criado o conceito operacional de tipos de página de venda por experimento/campanha.
 - Adicionado o tipo `AI_CHAT_DIGITAL_BAIT`: chat com IA coleta dados mínimos do lead, entrega uma isca digital imediata no próprio chat e usa esse momento de valor para apresentar a oferta.
 - Objetivo comercial: permitir A/B entre página tradicional, vídeo humano, chat IA com isca e quiz diagnóstico, preservando rastreabilidade por experimento.
+
+## 2026-07-13 — Aba de entregáveis no experimento
+
+- Ajuste: o detalhe do experimento passou a ter a aba `Entregáveis`, mostrando o produto que o cliente vai receber.
+- Fonte de verdade: a tela reutiliza os endpoints existentes de entregáveis do nicho e pacotes de entregáveis vinculados ao experimento.
+- Objetivo comercial: dar clareza entre campanha, criativo, landing e produto entregue, reduzindo risco de vender uma promessa sem materializar a entrega.

@@ -11,7 +11,7 @@ export interface FashionChatRequest {
 
 export interface FashionChatResponse {
   answer: string;
-  mode: 'codex_app_server';
+  mode: 'codex_app_server' | 'local_fallback';
   sandboxId: string;
   research: FashionResearchResult;
 }
@@ -30,12 +30,20 @@ export class FashionChatService {
     const prompt = this.buildPrompt(message, request.customerId, research);
     await fs.writeFile(path.join(sandboxDir, 'fashion-question.md'), prompt, 'utf-8');
 
-    if (!this.codexAppServerClient?.isReady()) {
-      throw new Error('CODEX_APP_SERVER_UNAVAILABLE');
+    if (this.shouldForceFallback() || !this.codexAppServerClient?.isReady()) {
+      return { answer: this.buildFallbackAnswer(message, research), mode: 'local_fallback', sandboxId, research };
     }
 
-    const answer = await this.answerWithCodexAppServer(prompt, sandboxDir);
-    return { answer: this.cleanAnswer(answer), mode: 'codex_app_server', sandboxId, research };
+    try {
+      const answer = await this.answerWithCodexAppServer(prompt, sandboxDir);
+      return { answer: this.cleanAnswer(answer), mode: 'codex_app_server', sandboxId, research };
+    } catch (err) {
+      if (this.isRecoverableCodexError(err)) {
+        console.warn(`Fashion chat using local fallback: ${err instanceof Error ? err.message : String(err)}`);
+        return { answer: this.buildFallbackAnswer(message, research), mode: 'local_fallback', sandboxId, research };
+      }
+      throw err;
+    }
   }
 
   private async answerWithCodexAppServer(prompt: string, cwd: string): Promise<string> {
@@ -112,6 +120,82 @@ export class FashionChatService {
 
   private cleanAnswer(answer: string): string {
     return answer.replace(/\s+/g, ' ').trim().slice(0, 1200);
+  }
+
+  private shouldForceFallback(): boolean {
+    return (process.env.FASHION_CHAT_FORCE_FALLBACK ?? 'false').toLowerCase() === 'true';
+  }
+
+  private isRecoverableCodexError(err: unknown): boolean {
+    const message = err instanceof Error ? err.message : String(err);
+    return (
+      message.includes('CODEX_NOT_AUTHENTICATED') ||
+      message.includes('CODEX_APP_SERVER') ||
+      message.includes('Codex App Server') ||
+      message.includes('Timeout em request account/read')
+    );
+  }
+
+  private buildFallbackAnswer(message: string, research: FashionResearchResult): string {
+    const lowerMessage = message.toLowerCase();
+    if (this.isGreetingOnly(lowerMessage)) {
+      return 'Oi! Me diga a ocasiao, o clima e uma peca que voce quer usar. Com isso eu monto uma recomendacao curta de look, cores e combinacao.';
+    }
+    const occasion = this.detectOccasion(lowerMessage);
+    const palette = this.detectPalette(lowerMessage);
+    const sourceHint = research.sources
+      .find((source) => source.title !== 'Pesquisa web indisponivel' && source.snippet.trim())
+      ?.snippet.replace(/\s+/g, ' ')
+      .slice(0, 180);
+    const evidence = sourceHint ? ` Considerando a pesquisa, mantenha a proposta atual e facil de executar: ${sourceHint}` : '';
+
+    return this.cleanAnswer(
+      [
+        `Para ${occasion}, va de base ${palette}, caimento bem ajustado e uma terceira peca leve para deixar o look intencional.`,
+        'Combine uma peca principal lisa com textura discreta ou acessorio de cor; isso melhora presenca sem parecer exagerado.',
+        'Evite misturar muitas informacoes ao mesmo tempo: escolha uma prioridade entre conforto, elegancia ou impacto visual.',
+        `${evidence} Se quiser refinar, me diga ocasiao, clima e uma peca que voce quer usar.`,
+      ].join(' '),
+    );
+  }
+
+  private detectOccasion(message: string): string {
+    if (message.includes('trabalho') || message.includes('reuniao') || message.includes('reunião')) {
+      return 'um compromisso profissional';
+    }
+    if (message.includes('festa') || message.includes('casamento') || message.includes('evento')) {
+      return 'um evento social';
+    }
+    if (message.includes('encontro') || message.includes('jantar')) {
+      return 'um encontro ou jantar';
+    }
+    if (message.includes('casual') || message.includes('dia a dia')) {
+      return 'um visual casual';
+    }
+    return 'essa ocasiao';
+  }
+
+  private isGreetingOnly(message: string): boolean {
+    const normalized = message
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return ['oi', 'ola', 'olá', 'bom dia', 'boa tarde', 'boa noite'].includes(normalized);
+  }
+
+  private detectPalette(message: string): string {
+    if (message.includes('colorid') || message.includes('cor')) {
+      return 'neutra com um ponto de cor';
+    }
+    if (message.includes('preto')) {
+      return 'preta com contraste suave';
+    }
+    if (message.includes('branco')) {
+      return 'clara com contraste em acessorios';
+    }
+    return 'neutra';
   }
 
   private async waitForTurn(isCompleted: () => boolean, getFailure: () => string | undefined): Promise<void> {

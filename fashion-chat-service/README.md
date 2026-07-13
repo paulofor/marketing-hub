@@ -34,12 +34,12 @@ CODEX_APP_SERVER_ENABLED=true npm start
 
 O piloto nao clona repositorio. A sandbox e criada como diretorio temporario local, recebe contexto de pesquisa de moda e executa o turno do App Codex Server.
 
-O servico usa somente Codex App Server para responder o chat:
+O servico tenta usar o Codex App Server como resposta principal:
 
 - nao usa `OPENAI_API_KEY`;
 - nao usa cliente OpenAI direto;
-- nao possui fallback deterministico local;
-- se o Codex App Server nao estiver pronto ou autenticado, `POST /api/fashion-chat/messages` retorna `503`.
+- se o Codex App Server nao estiver pronto ou autenticado, `POST /api/fashion-chat/messages` responde em modo `local_fallback`;
+- `FASHION_CHAT_FORCE_FALLBACK=true` forca o modo local para validacao operacional.
 
 Na imagem Docker, o CLI `codex` fica instalado e o `CODEX_APP_SERVER_ENABLED` vem habilitado por padrao. O volume `fashion-chat-codex-home` preserva o `CODEX_HOME` entre reinicios do container.
 

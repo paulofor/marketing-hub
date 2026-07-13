@@ -14,13 +14,17 @@ import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
+import com.marketinghub.experiment.service.ExperimentDeliverablesZipService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentPromiseGenerationService;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
 import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -42,6 +46,7 @@ public class ExperimentController {
     private final ExperimentCampaignDestinationPolicy campaignDestinationPolicy;
     private final ExperimentFunnelService funnelService;
     private final ExperimentSalesPageAbTestService salesPageAbTestService;
+    private final ExperimentDeliverablesZipService deliverablesZipService;
 
     /** Inicializa o controller com serviços de experimento, diagnóstico, prontidão e geração de promessas. */
     public ExperimentController(ExperimentService service, ExperimentMapper mapper,
@@ -50,7 +55,8 @@ public class ExperimentController {
                                 ExperimentPromiseGenerationService promiseGenerationService,
                                 ExperimentCampaignDestinationPolicy campaignDestinationPolicy,
                                 ExperimentFunnelService funnelService,
-                                ExperimentSalesPageAbTestService salesPageAbTestService) {
+                                ExperimentSalesPageAbTestService salesPageAbTestService,
+                                ExperimentDeliverablesZipService deliverablesZipService) {
         this.service = service;
         this.mapper = mapper;
         this.diagnosticsService = diagnosticsService;
@@ -59,6 +65,7 @@ public class ExperimentController {
         this.campaignDestinationPolicy = campaignDestinationPolicy;
         this.funnelService = funnelService;
         this.salesPageAbTestService = salesPageAbTestService;
+        this.deliverablesZipService = deliverablesZipService;
     }
 
     /** Cria um novo experimento com os dados comerciais informados na tela. */
@@ -212,6 +219,19 @@ public class ExperimentController {
     @PatchMapping("/{id}/deliverables-to-generate")
     public ExperimentDto requestDeliverables(@PathVariable Long id, @RequestParam("quantity") int quantity) {
         return mapper.toDto(service.requestDeliverables(id, quantity));
+    }
+
+    /** Baixa um ZIP com os entregáveis persistidos para o experimento. */
+    @GetMapping("/{id}/deliverables.zip")
+    public ResponseEntity<byte[]> downloadDeliverablesZip(@PathVariable Long id) {
+        byte[] zip = deliverablesZipService.generate(id);
+        String fileName = "experimento-%d-entregaveis.zip".formatted(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(fileName).build().toString())
+                .contentLength(zip.length)
+                .body(zip);
     }
 
     /** Solicita geração de fluxos do portal do lead. */

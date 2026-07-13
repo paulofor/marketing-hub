@@ -143,6 +143,7 @@ import ClickbasePage from "./pages/clickbase/ClickbasePage";
 import OpsMonitorPage from "./pages/OpsMonitorPage";
 import CommercialPlanningPage from "./pages/planning/CommercialPlanningPage";
 import FashionChatPage from "./pages/fashionChat/FashionChatPage";
+import FashionChatValidationPage from "./pages/fashionChat/FashionChatValidationPage";
 
 function LegacyNicheRedirect() {
   const { nicheId } = useParams();
@@ -343,6 +344,10 @@ export default function App() {
                 element={<AiWorkerPendingRequestsPage />}
               />
               <Route path="/fashion-chat" element={<FashionChatPage />} />
+              <Route
+                path="/settings/fashion-chat-validation"
+                element={<FashionChatValidationPage />}
+              />
               <Route
                 path="/targeting/recent-queries"
                 element={<TargetingRecentQueriesPage />}

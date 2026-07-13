@@ -41,6 +41,33 @@
   background-color: rgba(248, 249, 250, 0.75);
 }
 
+.deliverables-download {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.deliverables-download__title {
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.deliverables-download__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  white-space: nowrap;
+}
+
 .deliverable-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -320,5 +347,9 @@
 
   .deliverable-card__tags {
     align-items: flex-start;
+  }
+
+  .deliverables-download__button {
+    width: 100%;
   }
 }

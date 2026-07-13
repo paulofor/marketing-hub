@@ -162,7 +162,6 @@ const NAV_SECTIONS: NavSection[] = [
         icon: AlertTriangle,
       },
       { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },
-      { to: "/fashion-chat", label: "Chat Moda", icon: MessageSquare },
       { to: "/prompt-entities", label: "Objetos de Prompt", icon: Shapes },
       { to: "/prompt-domains", label: "Domínios de Prompt", icon: Map },
       { to: "/prompts", label: "Prompts (templates)", icon: ScrollText },
@@ -254,6 +253,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/settings/email-service",
         label: "Serviço de e-mail",
         icon: Mail,
+      },
+      {
+        to: "/settings/fashion-chat-validation",
+        label: "Validação Chat Moda",
+        icon: ShieldCheck,
       },
       {
         to: "/settings/privacy-policy",

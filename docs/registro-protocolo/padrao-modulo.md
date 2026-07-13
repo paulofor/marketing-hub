@@ -105,3 +105,11 @@
 - Ponto inicial canônico atual de consumo pelo executor: `/internal/video/jobs?status=VIDEO_REQUESTED`, com callbacks oficiais `/claim`, `/heartbeat`, `/progress`, `/complete`, `/fail` e `/expired`.
 - Backend permanece fora do protocolo padrão módulo; ele continua como fonte de verdade para solicitação, fila, status, assets, eventos e relatório persistível.
 - Aplicação: protocolo padrão módulo aplicado no executor responsável pelo fluxo, com ArchUnit protegendo independência dos providers, dependência do núcleo apenas no contrato `VideoProvider`, isolamento de tecnologias externas de render fora do núcleo operacional, uso dos contratos internos do backend e bloqueio de `nextStageCode` sem contrato completo.
+
+## 2026-07-13 — Scientific Research Worker — product-evidence v1
+
+- Módulo executor: `scientific-research-worker`.
+- Pacote protegido: `com.marketinghub.scientificresearch.productevidence.v1`.
+- Etapas protegidas: `source-discovery`, `evidence-synthesis` e `deliverable-composer`.
+- Ponto inicial canônico de consumo pelo executor: `/api/internal/scientific-research/product-evidence/v1/<stage>/stage-executions/pending`.
+- Aplicação: protocolo padrão módulo aplicado no executor responsável por pesquisar artigos científicos, sintetizar evidências com IA e gerar entregáveis explicáveis. O worker não acessa banco diretamente; backend permanece como fonte de verdade para fila, persistência, callbacks e relatório ao usuário.

@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "approvedForProductClaim",
+    "scientificPrinciple",
+    "plainLanguageExplanation",
+    "supportedClaims",
+    "forbiddenClaims",
+    "evidenceLimits",
+    "citedSources",
+    "recommendedProductAngle"
+  ],
+  "properties": {
+    "approvedForProductClaim": {
+      "type": "boolean"
+    },
+    "scientificPrinciple": {
+      "type": "string"
+    },
+    "plainLanguageExplanation": {
+      "type": "string"
+    },
+    "supportedClaims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "forbiddenClaims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidenceLimits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "citedSources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendedProductAngle": {
+      "type": "string"
+    }
+  }
+}

@@ -44,6 +44,7 @@ Conceito comercial inicial:
 Regra de prontidão comercial:
 
 - a seleção de tipos de página de venda para teste A/B aceita no máximo duas opções ativas por experimento;
+- os tipos padrão iniciais do A/B são `HUMAN_VIDEO_SALES_PAGE` e `TRADITIONAL_LONG_FORM`; `AI_CHAT_DIGITAL_BAIT` continua disponível para seleção manual, mas não deve vir marcado por padrão;
 - qualquer seleção ativa `HUMAN_VIDEO_SALES_PAGE` exige vídeo do experimento em `experiment_video_asset` com `status=READY` e `review_status=APPROVED` antes da liberação de campanha;
 - qualquer variante A/B `HUMAN_VIDEO` também precisa de `experiment_video_asset_id` vinculado a vídeo `READY + APPROVED` para o teste ser considerado pronto para tráfego.
 

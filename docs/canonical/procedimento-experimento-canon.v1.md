@@ -122,6 +122,7 @@ Teste A/B de página de venda deve comparar no máximo duas experiências comerc
 
 Regras obrigatórias:
 - a seleção de tipos de página de venda do experimento deve aceitar no máximo duas opções ativas;
+- os tipos padrão iniciais do A/B de página de venda devem ser `HUMAN_VIDEO_SALES_PAGE` e `TRADITIONAL_LONG_FORM`; `AI_CHAT_DIGITAL_BAIT` pode ser escolhido manualmente em ciclo específico, mas não deve iniciar marcado por padrão;
 - quando houver três mecanismos comerciais plausíveis, o usuário deve escolher as duas hipóteses mais fortes para o teste atual e deixar a terceira para um novo ciclo;
 - nenhuma variante incompleta pode substituir uma das duas escolhas, pois isso contamina a leitura comercial;
 - o backend deve bloquear payload com mais de duas seleções e a interface deve impedir a marcação da terceira opção.

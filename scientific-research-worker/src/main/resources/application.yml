@@ -1,0 +1,23 @@
+server:
+  port: ${SERVER_PORT:8096}
+
+spring:
+  application:
+    name: scientific-research-worker
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,loggers
+
+scientific-research:
+  enabled: ${SCIENTIFIC_RESEARCH_WORKER_ENABLED:true}
+  backend-base-url: ${SCIENTIFIC_RESEARCH_BACKEND_BASE_URL:http://191.252.181.168}
+  pending-limit: ${SCIENTIFIC_RESEARCH_PENDING_LIMIT:5}
+  request-timeout: ${SCIENTIFIC_RESEARCH_REQUEST_TIMEOUT:PT20S}
+  open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+  open-ai-api-key: ${OPENAI_API_KEY:}
+  open-ai-model: ${SCIENTIFIC_RESEARCH_OPENAI_MODEL:gpt-4.1}
+  pubmed-base-url: ${SCIENTIFIC_RESEARCH_PUBMED_BASE_URL:https://eutils.ncbi.nlm.nih.gov/entrez/eutils}
+  crossref-base-url: ${SCIENTIFIC_RESEARCH_CROSSREF_BASE_URL:https://api.crossref.org}

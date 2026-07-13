@@ -1,0 +1,13 @@
+services:
+  scientific-research-worker:
+    image: ghcr.io/paulofor/marketing-hub/scientific-research-worker:latest
+    container_name: scientific-research-worker
+    restart: unless-stopped
+    ports:
+      - "${SCIENTIFIC_RESEARCH_WORKER_PORT:-8096}:8096"
+    environment:
+      SERVER_PORT: 8096
+      SCIENTIFIC_RESEARCH_WORKER_ENABLED: ${SCIENTIFIC_RESEARCH_WORKER_ENABLED:-true}
+      SCIENTIFIC_RESEARCH_BACKEND_BASE_URL: ${SCIENTIFIC_RESEARCH_BACKEND_BASE_URL:-http://191.252.181.168}
+      SCIENTIFIC_RESEARCH_PENDING_LIMIT: ${SCIENTIFIC_RESEARCH_PENDING_LIMIT:-5}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}

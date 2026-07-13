@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Sales Page Types
+  version: 1.0.0
+paths:
+  /api/sales-page-types:
+    get:
+      summary: Lista tipos ativos de pagina de venda
+      responses:
+        "200":
+          description: Tipos ativos retornados com sucesso
+  /api/experiments/{experimentId}/sales-page-types:
+    get:
+      summary: Lista tipos selecionados para o experimento
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Selecoes retornadas com sucesso
+    put:
+      summary: Substitui os tipos de pagina de venda selecionados para o experimento
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                selections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      typeCode:
+                        type: string
+                      variantKey:
+                        type: string
+                      trafficWeight:
+                        type: number
+                      active:
+                        type: boolean
+                      notes:
+                        type: string
+      responses:
+        "200":
+          description: Selecoes atualizadas com sucesso

@@ -5760,3 +5760,8 @@
 - Causa-raiz tratada: a tela dependia diretamente de `crypto.randomUUID`, API que pode ficar indisponível em contexto HTTP não seguro fora de `localhost`.
 - Correção aplicada: a geração de ID de mensagens passou a usar `crypto.randomUUID` quando disponível e fallback local quando não disponível.
 - Validação: teste de regressão cobre navegador sem `randomUUID`; Chromium local confirmou envio pelo IP HTTP inseguro sem `pageerror` e renderização da resposta com API mockada.
+## 2026-07-13 — Tipos de página de venda para teste A/B
+
+- Criado o conceito operacional de tipos de página de venda por experimento/campanha.
+- Adicionado o tipo `AI_CHAT_DIGITAL_BAIT`: chat com IA coleta dados mínimos do lead, entrega uma isca digital imediata no próprio chat e usa esse momento de valor para apresentar a oferta.
+- Objetivo comercial: permitir A/B entre página tradicional, vídeo humano, chat IA com isca e quiz diagnóstico, preservando rastreabilidade por experimento.

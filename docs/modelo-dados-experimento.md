@@ -23,6 +23,24 @@ Campo adicionado na entidade/tabela `experiment` para suportar o novo passo can�
   - armazena o HTML consolidado produzido no fluxo Gera Landing (a partir do `DesignPresetProvisionalHtmlAssembler`);
   - objetivo: manter `landing_page_design_preset` como JSON bruto do modelo e separar o HTML operacional para publicação/preview.
 
+## Atualização incremental — Tipos de página de venda por experimento (13/07/2026)
+
+Novas tabelas para permitir que cada experimento/campanha selecione um ou mais tipos de página de venda para teste A/B:
+
+- `sales_page_type`
+  - catálogo canônico de formatos comerciais de página de venda;
+  - inclui o novo tipo `AI_CHAT_DIGITAL_BAIT`, focado em chat com IA que coleta dados do lead e entrega a isca digital no próprio chat, como uma imagem personalizada.
+- `experiment_sales_page_type_selection`
+  - vincula o experimento aos tipos escolhidos;
+  - guarda `variant_key`, `traffic_weight`, status ativo e observações operacionais.
+
+Conceito comercial inicial:
+
+- `TRADITIONAL_LONG_FORM`: página linear de venda.
+- `HUMAN_VIDEO_SALES_PAGE`: página de venda com vídeo humano/avatar revisado.
+- `AI_CHAT_DIGITAL_BAIT`: chat-first com coleta de dados, entrega imediata de amostra e oferta depois do valor percebido.
+- `DIAGNOSTIC_QUIZ`: quiz diagnóstico com recomendação.
+
 Atualização incremental — vínculo do wireframe com execução Gera Landing (07/05/2026):
 
 - `landing_page_wireframe_job_id` (`BINARY(36)`, FK -> `gera_landing_stage_execution.id_job`)

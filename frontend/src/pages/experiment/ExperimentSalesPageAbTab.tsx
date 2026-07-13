@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   useExperimentSalesPageAbResults,
   type ExperimentSalesPageAbTestResult,
-  type ExperimentSalesPageAbVariant,
 } from "../../api/experiment/useExperimentSalesPageAbResults";
 import {
   useExperimentSalesPageTypeSelections,
@@ -77,22 +76,6 @@ function resultStatusBadge(value?: string | null) {
       return "text-bg-warning";
     default:
       return "text-bg-secondary";
-  }
-}
-
-function safeTestUrl(variant: ExperimentSalesPageAbVariant) {
-  const rawUrl = variant.salesPageUrl || variant.adDestinationUrl;
-  if (!rawUrl) return null;
-  try {
-    const url = new URL(rawUrl);
-    if (!url.searchParams.has("mh_test")) {
-      url.searchParams.set("mh_test", "1");
-    }
-    return url.toString();
-  } catch {
-    return rawUrl.includes("mh_test=1")
-      ? rawUrl
-      : `${rawUrl}${rawUrl.includes("?") ? "&" : "?"}mh_test=1`;
   }
 }
 
@@ -375,7 +358,7 @@ export default function ExperimentSalesPageAbTab({
                 </thead>
                 <tbody>
                   {result.variants.map((item) => {
-                    const testUrl = safeTestUrl(item.variant);
+                    const testUrl = item.variant.metricsSafeUrl;
                     return (
                       <tr key={item.variant.id}>
                         <td>
@@ -425,7 +408,7 @@ export default function ExperimentSalesPageAbTab({
               <CheckCircle2 size={16} className="mt-1 text-success" />
               <span>
                 Use os links com mh_test=1 para revisar as páginas sem gerar
-                novos page views do teste.
+                novos page views do teste. A URL segura vem do backend.
               </span>
             </div>
           </div>

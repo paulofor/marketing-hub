@@ -33,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: criar e manter testes A/B de pagina de venda ligados ao experimento. */
@@ -437,12 +438,35 @@ public class ExperimentSalesPageAbTestService {
                 variant.getSalesPageUrl(),
                 variant.getCheckoutUrl(),
                 variant.getAdDestinationUrl(),
+                buildMetricsSafeUrl(variant),
                 variant.getAnalyticsVariantParam(),
                 variant.getPublicationAudit() != null ? variant.getPublicationAudit().getId() : null,
                 variant.getExperimentVideoAsset() != null ? variant.getExperimentVideoAsset().getId() : null,
                 variant.isRequiredCollectorsPresent(),
                 variant.getCreatedAt(),
                 variant.getUpdatedAt());
+    }
+
+    /** Monta URL de revisao interna que o Lead Portal ignora nos coletores de metricas. */
+    private String buildMetricsSafeUrl(ExperimentSalesPageAbVariant variant) {
+        String rawUrl = StringUtils.hasText(variant.getSalesPageUrl())
+                ? variant.getSalesPageUrl()
+                : variant.getAdDestinationUrl();
+        if (!StringUtils.hasText(rawUrl)) {
+            return null;
+        }
+        try {
+            return UriComponentsBuilder.fromUriString(rawUrl.trim())
+                    .replaceQueryParam("mh_test", "1")
+                    .build(true)
+                    .toUriString();
+        } catch (IllegalArgumentException ex) {
+            String trimmed = rawUrl.trim();
+            if (trimmed.contains("mh_test=1")) {
+                return trimmed;
+            }
+            return trimmed + (trimmed.contains("?") ? "&" : "?") + "mh_test=1";
+        }
     }
 
     /** Mapeia a agregacao SQL de analytics da variante para o contrato interno do servico. */

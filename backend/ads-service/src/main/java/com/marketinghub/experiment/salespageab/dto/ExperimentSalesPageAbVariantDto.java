@@ -16,6 +16,7 @@ public record ExperimentSalesPageAbVariantDto(
         String salesPageUrl,
         String checkoutUrl,
         String adDestinationUrl,
+        String metricsSafeUrl,
         String analyticsVariantParam,
         Long publicationAuditId,
         Long experimentVideoAssetId,

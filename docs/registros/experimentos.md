@@ -1,3 +1,11 @@
+## 2026-07-13 — Teste A/B: link seguro para revisar páginas de venda
+
+- solicitação: mostrar na aba `Teste A/B` o link de cada página de venda sem contaminar métricas da campanha.
+- causa-raiz: a tela montava localmente um link com `mh_test=1`, mas a regra de não contabilizar métricas precisa vir do backend como fonte de verdade.
+- foi feito: o contrato de resultados A/B agora expõe `metricsSafeUrl` por variante, calculado pelo backend a partir da URL da página/destino e sempre com `mh_test=1`.
+- impacto esperado: o usuário pode abrir cada variante para revisão interna sem gerar novos page views ou eventos de campanha no Lead Portal.
+- prevenção de recorrência: teste unitário do backend cobre a URL segura e o frontend deixou de inferir a URL localmente.
+
 ## 2026-07-12 — Experimentos: custo de produção de vídeo VEO
 
 - causa-raiz: o ativo `experiment_video_asset` já tinha campo de custo, mas o pedido VEO criava o vídeo sem estimativa e o callback final do `video-management-service` não enviava o custo calculado pelo provider.

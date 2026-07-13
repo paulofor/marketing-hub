@@ -172,6 +172,10 @@ class ExperimentSalesPageAbTestServiceTest {
                 .containsExactly(3L, 8L);
         assertThat(results.get(0).variants()).extracting("averageVisibleMsPerSession")
                 .containsExactly(90000L, 150000L);
+        assertThat(results.get(0).variants()).extracting(variant -> variant.variant().metricsSafeUrl())
+                .containsExactly(
+                        "https://example.com/sales-a?mh_test=1",
+                        "https://example.com/sales-b?mh_test=1");
     }
 
     /** Cria uma agregacao simulada para o JdbcTemplate do resumo A/B. */

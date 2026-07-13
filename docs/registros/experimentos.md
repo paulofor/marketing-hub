@@ -1,3 +1,11 @@
+## 2026-07-12 — Experimentos: custo de produção de vídeo VEO
+
+- causa-raiz: o ativo `experiment_video_asset` já tinha campo de custo, mas o pedido VEO criava o vídeo sem estimativa e o callback final do `video-management-service` não enviava o custo calculado pelo provider.
+- regra aplicada: custo de produção de vídeo fica em USD, seguindo a cobrança oficial do Google Gemini API por segundo gerado; Veo 3.1 Standard usa US$ 0,40/s em 720p/1080p, Fast a partir de US$ 0,10/s em 720p e Lite a partir de US$ 0,05/s em 720p; Veo 2 usa US$ 0,35/s.
+- foi feito: o backend estima o custo no pedido inicial do vídeo e atualiza o ativo do experimento no callback final com duração/resolução reais informadas pelo worker.
+- foi feito: o resumo de custos do experimento passa a somar “Produção de vídeo” como custo técnico USD convertido para BRL, e a aba Vídeo mostra o custo por ativo.
+- prevenção de recorrência: o cálculo foi centralizado no backend e o worker passa a enviar `costUsd` junto da conclusão do job, impedindo novos vídeos VEO sem custo auditável.
+
 ## 2026-07-12 — Experimento 63: tenant no endpoint canônico de vídeo do experimento
 
 - Problema confirmado ao tentar o próximo passo operacional: o endpoint `/api/experiments/63/video-assets/veo-render-requests` recebia `X-Tenant-ID`, mas o filtro do backend não classificava essa rota como parte do módulo de vídeo; ao criar o perfil internamente, o contexto permanecia `system` e o service retornava `TENANT_HEADER_REQUIRED`.
@@ -5745,3 +5753,10 @@
 - Validação do arquivo: a URL pública respondeu `Content-Type: video/mp4`, `Content-Length: 2024034` e assinatura inicial `ftyp`, confirmando MP4 real.
 - Causa-raiz adicional tratada: o banco real tinha `asset.provider` e `asset.type` como `ENUM` físico defasado, sem `VIDEO_MODULE` e `CAPTION`; o VEO também precisava seguir redirect no download da Gemini e aumentar o limite de buffer do WebClient para baixar MP4 acima de 256 KB.
 - Prevenção preparada: changeset `2026-07-12-video-asset-enums` alinha os enums físicos do MySQL ao contrato Java, e o provider VEO local passa a seguir redirects, validar MP4 e bloquear JSON de erro salvo como vídeo.
+
+## 2026-07-12 — Chat de moda sem quebra em HTTP inseguro
+
+- Problema: o envio de pergunta na aba `Chat Moda` quebrava antes de chamar o serviço, com `crypto.randomUUID is not a function`.
+- Causa-raiz tratada: a tela dependia diretamente de `crypto.randomUUID`, API que pode ficar indisponível em contexto HTTP não seguro fora de `localhost`.
+- Correção aplicada: a geração de ID de mensagens passou a usar `crypto.randomUUID` quando disponível e fallback local quando não disponível.
+- Validação: teste de regressão cobre navegador sem `randomUUID`; Chromium local confirmou envio pelo IP HTTP inseguro sem `pageerror` e renderização da resposta com API mockada.

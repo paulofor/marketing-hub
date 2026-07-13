@@ -1,5 +1,6 @@
 package com.marketinghub.planning.service;
 
+import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
@@ -39,6 +40,7 @@ public class CommercialPlanWeeklyExperimentService {
     private final CommercialPlanService planService;
     private final JdbcTemplate jdbcTemplate;
     private final CommercialPlanWeekObjectiveRepository objectiveRepository;
+    private final CurrencyConversionService currencyConversionService;
     private final Clock clock;
 
     /** Inicializa o serviço com a fonte de plano e acesso SQL de leitura operacional. */
@@ -46,8 +48,9 @@ public class CommercialPlanWeeklyExperimentService {
     public CommercialPlanWeeklyExperimentService(
             CommercialPlanService planService,
             JdbcTemplate jdbcTemplate,
-            CommercialPlanWeekObjectiveRepository objectiveRepository) {
-        this(planService, jdbcTemplate, objectiveRepository, Clock.systemUTC());
+            CommercialPlanWeekObjectiveRepository objectiveRepository,
+            CurrencyConversionService currencyConversionService) {
+        this(planService, jdbcTemplate, objectiveRepository, currencyConversionService, Clock.systemUTC());
     }
 
     /** Inicializa o serviço permitindo controlar o relogio em testes de janela semanal. */
@@ -55,10 +58,12 @@ public class CommercialPlanWeeklyExperimentService {
             CommercialPlanService planService,
             JdbcTemplate jdbcTemplate,
             CommercialPlanWeekObjectiveRepository objectiveRepository,
+            CurrencyConversionService currencyConversionService,
             Clock clock) {
         this.planService = planService;
         this.jdbcTemplate = jdbcTemplate;
         this.objectiveRepository = objectiveRepository;
+        this.currencyConversionService = currencyConversionService;
         this.clock = clock;
     }
 
@@ -244,7 +249,7 @@ public class CommercialPlanWeeklyExperimentService {
                     e.created_at,
                     coalesce(campaign.cost, 0) as campaign_cost,
                     coalesce(financial.ai_cost, 0) as ai_cost,
-                    coalesce(video.cost, 0) as video_cost,
+                    coalesce(video.cost, 0) as video_cost_usd,
                     coalesce(financial.revenue, 0) as revenue,
                     coalesce(nullif(financial.clicks, 0), campaign.clicks, 0) as clicks,
                     coalesce(nullif(financial.leads, 0), campaign.leads, 0) as leads,
@@ -325,7 +330,7 @@ public class CommercialPlanWeeklyExperimentService {
     private CommercialPlanWeekExperimentDto mapExperiment(ResultSet rs, int rowNum) throws SQLException {
         BigDecimal campaignCost = money(rs.getBigDecimal("campaign_cost"));
         BigDecimal aiCost = money(rs.getBigDecimal("ai_cost"));
-        BigDecimal videoCost = money(rs.getBigDecimal("video_cost"));
+        BigDecimal videoCost = money(currencyConversionService.usdToBrl(rs.getBigDecimal("video_cost_usd")));
         BigDecimal revenue = money(rs.getBigDecimal("revenue"));
         BigDecimal totalCost = money(campaignCost.add(aiCost).add(videoCost));
         return new CommercialPlanWeekExperimentDto(

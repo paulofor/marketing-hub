@@ -9,6 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.finance.CurrencyConversionProperties;
+import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekExperimentDto;
@@ -149,6 +151,12 @@ class CommercialPlanWeeklyExperimentServiceTest {
     /** Cria o servico com data fixa para testar a regra de disponibilidade. */
     private CommercialPlanWeeklyExperimentService serviceAt(LocalDate date) {
         Clock clock = Clock.fixed(date.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
-        return new CommercialPlanWeeklyExperimentService(planService, jdbcTemplate, objectiveRepository, clock);
+        CurrencyConversionService conversionService = new CurrencyConversionService(new CurrencyConversionProperties());
+        return new CommercialPlanWeeklyExperimentService(
+                planService,
+                jdbcTemplate,
+                objectiveRepository,
+                conversionService,
+                clock);
     }
 }

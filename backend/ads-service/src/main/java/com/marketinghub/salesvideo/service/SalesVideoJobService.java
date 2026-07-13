@@ -1,7 +1,12 @@
 package com.marketinghub.salesvideo.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.media.Asset;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
@@ -21,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -38,19 +44,29 @@ public class SalesVideoJobService {
     private final SalesVideoScriptRepository scriptRepository;
     private final AssetRepository assetRepository;
     private final SalesVideoReprocessPolicy reprocessPolicy;
+    private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
+    private final SalesVideoProductionCostCalculator costCalculator;
+    private final ObjectMapper objectMapper;
 
+    /** Cria o serviço com repositórios, política de reprocessamento e cálculo de custo de vídeo. */
     public SalesVideoJobService(SalesVideoJobRepository jobRepository,
                                 SalesVideoJobEventRepository eventRepository,
                                 SalesVideoProfileRepository profileRepository,
                                 SalesVideoScriptRepository scriptRepository,
                                 AssetRepository assetRepository,
-                                SalesVideoReprocessPolicy reprocessPolicy) {
+                                SalesVideoReprocessPolicy reprocessPolicy,
+                                ExperimentVideoAssetRepository experimentVideoAssetRepository,
+                                SalesVideoProductionCostCalculator costCalculator,
+                                ObjectMapper objectMapper) {
         this.jobRepository = jobRepository;
         this.eventRepository = eventRepository;
         this.profileRepository = profileRepository;
         this.scriptRepository = scriptRepository;
         this.assetRepository = assetRepository;
         this.reprocessPolicy = reprocessPolicy;
+        this.experimentVideoAssetRepository = experimentVideoAssetRepository;
+        this.costCalculator = costCalculator;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -183,6 +199,7 @@ public class SalesVideoJobService {
             job.setScript(persistedScript);
         }
         jobRepository.save(job);
+        syncExperimentVideoAsset(job, request);
         maybeUpdateProfileStatus(job, finalStatus);
         registerEvent(job, SalesVideoJobEventType.COMPLETED, previous, finalStatus,
                 request.getMessage(), request.getDetailsJson());
@@ -276,6 +293,88 @@ public class SalesVideoJobService {
             job.getProfile().getScripts().add(saved);
         }
         return saved;
+    }
+
+    /** Atualiza o ativo de vídeo do experimento com custo e asset final do job concluído. */
+    private void syncExperimentVideoAsset(SalesVideoJob job, JobCompletionRequest request) {
+        if (job.getId() == null || job.getJobType() != SalesVideoJobType.RENDER) {
+            return;
+        }
+        List<ExperimentVideoAsset> videoAssets = experimentVideoAssetRepository.findBySalesVideoJobId(job.getId());
+        if (videoAssets.isEmpty()) {
+            return;
+        }
+        BigDecimal costUsd = Optional.ofNullable(request.getCostUsd())
+                .orElseGet(() -> costCalculator.estimateUsd(
+                        job.getProviderName(),
+                        job.getProviderName(),
+                        resolveDurationSeconds(job, request),
+                        resolveResolution(request)));
+        for (ExperimentVideoAsset videoAsset : videoAssets) {
+            if (job.getAsset() != null) {
+                videoAsset.setAsset(job.getAsset());
+                videoAsset.setAssetUrl(job.getAsset().getUrl());
+            }
+            if (job.getPosterAsset() != null) {
+                videoAsset.setThumbnailUrl(job.getPosterAsset().getUrl());
+            }
+            Integer durationSeconds = resolveDurationSeconds(job, request);
+            if (durationSeconds != null) {
+                videoAsset.setDurationSeconds(durationSeconds);
+            }
+            if (costUsd != null) {
+                videoAsset.setCost(costUsd);
+            }
+            videoAsset.setResponseJson(request.getMetadataJson());
+            videoAsset.setStatus(ExperimentVideoStatus.READY);
+        }
+        experimentVideoAssetRepository.saveAll(videoAssets);
+    }
+
+    /** Extrai a duração auditada do metadata do worker quando disponível. */
+    private Integer resolveDurationSeconds(SalesVideoJob job, JobCompletionRequest request) {
+        Integer metadataDuration = readIntegerField(request.getMetadataJson(), "duration_seconds");
+        if (metadataDuration != null) {
+            return metadataDuration;
+        }
+        return job.getProfile() != null ? job.getProfile().getTargetDurationSeconds() : null;
+    }
+
+    /** Extrai a resolução auditada do metadata do worker quando disponível. */
+    private String resolveResolution(JobCompletionRequest request) {
+        return readStringField(request.getMetadataJson(), "resolution");
+    }
+
+    /** Lê um campo numérico simples de um payload JSON de metadata. */
+    private Integer readIntegerField(String json, String fieldName) {
+        JsonNode value = readJsonField(json, fieldName);
+        if (value == null || !value.canConvertToInt()) {
+            return null;
+        }
+        return value.asInt();
+    }
+
+    /** Lê um campo textual simples de um payload JSON de metadata. */
+    private String readStringField(String json, String fieldName) {
+        JsonNode value = readJsonField(json, fieldName);
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        return value.isTextual() ? value.asText() : value.toString();
+    }
+
+    /** Lê um campo simples de um payload JSON de metadata usando parser estruturado. */
+    private JsonNode readJsonField(String json, String fieldName) {
+        if (!StringUtils.hasText(json) || !StringUtils.hasText(fieldName)) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            JsonNode value = root.path(fieldName);
+            return value.isMissingNode() ? null : value;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+            return null;
+        }
     }
 
     private void attachAsset(java.util.function.Consumer<Asset> setter, Long assetId) {

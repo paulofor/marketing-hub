@@ -31,12 +31,13 @@ describe("buildExperimentCostSummary", () => {
       contentPipelineCostUsd: 0.01,
       geraLandingCostUsd: 0,
       geraSalesPageCostUsd: 1.460795,
+      videoProductionCostUsd: 3.2,
     });
 
-    expect(summary.auditableTotalBrl).toBe(19.68);
-    expect(summary.technicalTotalBrl).toBe(7.35);
+    expect(summary.auditableTotalBrl).toBe(35.68);
+    expect(summary.technicalTotalBrl).toBe(23.35);
     expect(summary.legacyTotalBrl).toBe(91.31);
-    expect(summary.unreconciledLegacyCostBrl).toBe(71.63);
+    expect(summary.unreconciledLegacyCostBrl).toBe(55.63);
     expect(summary.brlRows.map((row) => row.currency)).toEqual([
       "BRL",
       "BRL",
@@ -46,11 +47,10 @@ describe("buildExperimentCostSummary", () => {
       "USD",
       "USD",
       "USD",
+      "USD",
     ]);
     expect(summary.technicalRows.map((row) => row.convertedValueBrl)).toEqual([
-      0.05,
-      0,
-      7.3,
+      0.05, 0, 7.3, 16,
     ]);
   });
 
@@ -68,6 +68,7 @@ describe("buildExperimentCostSummary", () => {
       contentPipelineCostUsd: 0,
       geraLandingCostUsd: 0,
       geraSalesPageCostUsd: 0,
+      videoProductionCostUsd: 0,
     });
 
     expect(summary.auditableTotalBrl).toBe(19.56);

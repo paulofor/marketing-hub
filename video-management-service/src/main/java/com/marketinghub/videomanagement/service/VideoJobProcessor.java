@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -68,6 +69,7 @@ public class VideoJobProcessor {
                 throw new VideoProviderException("Provider não retornou o asset principal de vídeo");
             }
             UploadedAssets uploadedAssets = assetUploader.uploadAssets(job, artifacts);
+            BigDecimal costUsd = readCostUsd(artifacts.metadata());
             String metadataJson = serializeMetadata(artifacts.metadata());
             backendClient.completeJob(job.id(), new JobCompletionPayload(
                     SalesVideoStatus.VIDEO_READY,
@@ -76,6 +78,7 @@ public class VideoJobProcessor {
                     uploadedAssets.captionAssetId(),
                     artifacts.providerJobId(),
                     metadataJson,
+                    costUsd,
                     "Vídeo processado com sucesso",
                     metadataJson));
             observabilityService.incrementJobsCompleted(job.providerName());
@@ -221,5 +224,17 @@ public class VideoJobProcessor {
         } catch (JsonProcessingException ex) {
             throw new VideoProviderException("Falha ao serializar metadata do provider", ex);
         }
+    }
+
+    private BigDecimal readCostUsd(Map<String, Object> metadata) {
+        if (metadata == null || metadata.get("cost_usd") == null) {
+            return null;
+        }
+        Object value = metadata.get("cost_usd");
+        if (value instanceof Number number) {
+            return BigDecimal.valueOf(number.doubleValue());
+        }
+        String text = String.valueOf(value);
+        return text.matches("\\d+(\\.\\d+)?") ? new BigDecimal(text) : null;
     }
 }

@@ -47,6 +47,7 @@ import {
 import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
 import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
 import { useExperimentPipelineJobHistory } from "../../api/experiment/useExperimentPipelineJobHistory";
+import { useExperimentVideoAssets } from "../../api/experiment/useExperimentVideoAssets";
 import { buildExperimentCostSummary } from "./experimentCostSummary";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
@@ -319,6 +320,7 @@ export default function ExperimentDetailPage() {
   const expId = id as string;
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
+  const videoAssetsQuery = useExperimentVideoAssets(expId);
   const geraSalesPagePublications = useGeraSalesPagePublications(expId);
   const experimentPipelineJobHistory = useExperimentPipelineJobHistory({
     experimentId: expId,
@@ -344,9 +346,9 @@ export default function ExperimentDetailPage() {
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [openAuditStageJobId, setOpenAuditStageJobId] = useState<
-    string | null
-  >(null);
+  const [openAuditStageJobId, setOpenAuditStageJobId] = useState<string | null>(
+    null,
+  );
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [downloadingCardKey, setDownloadingCardKey] = useState<string | null>(
@@ -1804,6 +1806,11 @@ export default function ExperimentDetailPage() {
       : null);
   const salesPagePublications = geraSalesPagePublications.data ?? [];
   const latestSalesPagePublication = salesPagePublications[0];
+  const videoProductionCostUsd =
+    videoAssetsQuery.data?.reduce(
+      (sum, videoAsset) => sum + (videoAsset.cost ?? 0),
+      0,
+    ) ?? 0;
   const contentPipelineCostUsd =
     experimentPipelineJobHistory.data?.content.reduce(
       (sum, job) => sum + (job.costUsd ?? 0),
@@ -1823,6 +1830,7 @@ export default function ExperimentDetailPage() {
     contentPipelineCostUsd,
     geraLandingCostUsd: totalCompletedGeraLandingAllStagesCostUsd,
     geraSalesPageCostUsd,
+    videoProductionCostUsd,
   });
   const experimentPage = data.facebookPage;
   const instagramAccount = data.instagramAccount;
@@ -2375,7 +2383,10 @@ export default function ExperimentDetailPage() {
                       {latestSalesPagePublication.salesPageUrl ? (
                         <div className="d-flex flex-column gap-2">
                           <a
-                            href={latestSalesPagePublication.salesPageUrl ?? undefined}
+                            href={
+                              latestSalesPagePublication.salesPageUrl ??
+                              undefined
+                            }
                             target="_blank"
                             rel="noreferrer"
                             className="small text-break"
@@ -2405,7 +2416,9 @@ export default function ExperimentDetailPage() {
                       <div className="text-muted small">Checkout usado</div>
                       {latestSalesPagePublication.checkoutUrl ? (
                         <a
-                          href={latestSalesPagePublication.checkoutUrl ?? undefined}
+                          href={
+                            latestSalesPagePublication.checkoutUrl ?? undefined
+                          }
                           target="_blank"
                           rel="noreferrer"
                           className="small text-break"
@@ -2573,143 +2586,145 @@ export default function ExperimentDetailPage() {
         </div>
       </div>
       {false ? (
-      <div className="card border-0 shadow-sm rounded-3 mt-3">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
-            <div>
-              <h5 className="card-title mb-1">Campanhas e funis publicados</h5>
-              <p className="text-muted small mb-0">
-                Campanhas, conjuntos, anúncios e etapas de funil atribuídas por
-                código de rastreamento.
-              </p>
+        <div className="card border-0 shadow-sm rounded-3 mt-3">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+              <div>
+                <h5 className="card-title mb-1">
+                  Campanhas e funis publicados
+                </h5>
+                <p className="text-muted small mb-0">
+                  Campanhas, conjuntos, anúncios e etapas de funil atribuídas
+                  por código de rastreamento.
+                </p>
+              </div>
+              <span className="badge text-bg-light border text-body">
+                {isLoadingFacebookCampaigns
+                  ? "Carregando"
+                  : `${facebookCampaigns?.length ?? 0} campanha(s)`}
+              </span>
             </div>
-            <span className="badge text-bg-light border text-body">
-              {isLoadingFacebookCampaigns
-                ? "Carregando"
-                : `${facebookCampaigns?.length ?? 0} campanha(s)`}
-            </span>
-          </div>
-          {isLoadingFacebookCampaigns ? (
-            <div className="text-muted small">Carregando campanhas...</div>
-          ) : facebookCampaigns?.length ? (
-            <div className="d-flex flex-column gap-3">
-              {(facebookCampaigns ?? []).map((campaign) => (
-                <div key={campaign.id} className="border rounded-3 p-3">
-                  <div className="d-flex justify-content-between gap-3 flex-wrap">
-                    <div>
-                      <div className="fw-semibold">{campaign.name}</div>
-                      <div className="text-muted small">
-                        {campaign.objective} · {campaign.status}
-                        {campaign.createdAt
-                          ? ` · ${formatDateTimeValue(campaign.createdAt)}`
-                          : ""}
-                      </div>
-                      {campaign.metricsLastError ? (
-                        <div className="text-danger small mt-1">
-                          {campaign.metricsLastError}
+            {isLoadingFacebookCampaigns ? (
+              <div className="text-muted small">Carregando campanhas...</div>
+            ) : facebookCampaigns?.length ? (
+              <div className="d-flex flex-column gap-3">
+                {(facebookCampaigns ?? []).map((campaign) => (
+                  <div key={campaign.id} className="border rounded-3 p-3">
+                    <div className="d-flex justify-content-between gap-3 flex-wrap">
+                      <div>
+                        <div className="fw-semibold">{campaign.name}</div>
+                        <div className="text-muted small">
+                          {campaign.objective} · {campaign.status}
+                          {campaign.createdAt
+                            ? ` · ${formatDateTimeValue(campaign.createdAt)}`
+                            : ""}
                         </div>
-                      ) : null}
+                        {campaign.metricsLastError ? (
+                          <div className="text-danger small mt-1">
+                            {campaign.metricsLastError}
+                          </div>
+                        ) : null}
+                      </div>
+                      <code className="small text-break">{campaign.id}</code>
                     </div>
-                    <code className="small text-break">{campaign.id}</code>
-                  </div>
-                  {campaign.issues?.length ? (
-                    <div className="alert alert-warning py-2 small mt-3 mb-0">
-                      {campaign.issues.join(" ")}
-                    </div>
-                  ) : null}
-                  <div className="d-flex flex-column gap-2 mt-3">
-                    {campaign.adSets.map((adSet) => (
-                      <div key={adSet.id} className="border rounded-3 p-3">
-                        <div className="d-flex justify-content-between gap-3 flex-wrap">
-                          <div>
-                            <div className="fw-semibold">{adSet.name}</div>
-                            <div className="text-muted small">
-                              {adSet.status}
-                              {adSet.createdAt
-                                ? ` · ${formatDateTimeValue(adSet.createdAt)}`
-                                : ""}
-                              {adSet.experimentAdSetId
-                                ? ` · Público #${adSet.experimentAdSetId}`
-                                : ""}
+                    {campaign.issues?.length ? (
+                      <div className="alert alert-warning py-2 small mt-3 mb-0">
+                        {campaign.issues.join(" ")}
+                      </div>
+                    ) : null}
+                    <div className="d-flex flex-column gap-2 mt-3">
+                      {campaign.adSets.map((adSet) => (
+                        <div key={adSet.id} className="border rounded-3 p-3">
+                          <div className="d-flex justify-content-between gap-3 flex-wrap">
+                            <div>
+                              <div className="fw-semibold">{adSet.name}</div>
+                              <div className="text-muted small">
+                                {adSet.status}
+                                {adSet.createdAt
+                                  ? ` · ${formatDateTimeValue(adSet.createdAt)}`
+                                  : ""}
+                                {adSet.experimentAdSetId
+                                  ? ` · Público #${adSet.experimentAdSetId}`
+                                  : ""}
+                              </div>
                             </div>
+                            <code className="small text-break">{adSet.id}</code>
                           </div>
-                          <code className="small text-break">{adSet.id}</code>
-                        </div>
-                        {adSet.issues?.length ? (
-                          <div className="alert alert-warning py-2 small mt-2 mb-0">
-                            {adSet.issues.join(" ")}
-                          </div>
-                        ) : null}
-                        {adSet.ads.length ? (
-                          <div className="table-responsive mt-3">
-                            <table className="table table-sm align-middle mb-0">
-                              <thead>
-                                <tr>
-                                  <th>Anúncio</th>
-                                  <th>Status</th>
-                                  <th>Código</th>
-                                  <th>Funil atribuído</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {adSet.ads.map((ad) => (
-                                  <tr key={ad.id}>
-                                    <td>
-                                      <div className="fw-semibold">
-                                        {ad.name}
-                                      </div>
-                                      <code className="small text-break">
-                                        {ad.id}
-                                      </code>
-                                    </td>
-                                    <td>{ad.status}</td>
-                                    <td>
-                                      <code className="small text-break">
-                                        {ad.trackingCode || "—"}
-                                      </code>
-                                    </td>
-                                    <td>
-                                      {ad.funnelStages.length ? (
-                                        <div className="d-flex flex-column gap-1">
-                                          {ad.funnelStages.map((stage) => (
-                                            <div
-                                              key={`${ad.id}-${stage.stage}`}
-                                              className="d-flex justify-content-between gap-3 small"
-                                            >
-                                              <span>
-                                                {stage.order}. {stage.label}
-                                              </span>
-                                              <strong>
-                                                {stage.totalCount}
-                                              </strong>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <span className="text-muted small">
-                                          Sem eventos atribuídos
-                                        </span>
-                                      )}
-                                    </td>
+                          {adSet.issues?.length ? (
+                            <div className="alert alert-warning py-2 small mt-2 mb-0">
+                              {adSet.issues.join(" ")}
+                            </div>
+                          ) : null}
+                          {adSet.ads.length ? (
+                            <div className="table-responsive mt-3">
+                              <table className="table table-sm align-middle mb-0">
+                                <thead>
+                                  <tr>
+                                    <th>Anúncio</th>
+                                    <th>Status</th>
+                                    <th>Código</th>
+                                    <th>Funil atribuído</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
+                                </thead>
+                                <tbody>
+                                  {adSet.ads.map((ad) => (
+                                    <tr key={ad.id}>
+                                      <td>
+                                        <div className="fw-semibold">
+                                          {ad.name}
+                                        </div>
+                                        <code className="small text-break">
+                                          {ad.id}
+                                        </code>
+                                      </td>
+                                      <td>{ad.status}</td>
+                                      <td>
+                                        <code className="small text-break">
+                                          {ad.trackingCode || "—"}
+                                        </code>
+                                      </td>
+                                      <td>
+                                        {ad.funnelStages.length ? (
+                                          <div className="d-flex flex-column gap-1">
+                                            {ad.funnelStages.map((stage) => (
+                                              <div
+                                                key={`${ad.id}-${stage.stage}`}
+                                                className="d-flex justify-content-between gap-3 small"
+                                              >
+                                                <span>
+                                                  {stage.order}. {stage.label}
+                                                </span>
+                                                <strong>
+                                                  {stage.totalCount}
+                                                </strong>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <span className="text-muted small">
+                                            Sem eventos atribuídos
+                                          </span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="alert alert-light border small text-muted mb-0">
-              Nenhuma campanha publicada encontrada para este experimento.
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="alert alert-light border small text-muted mb-0">
+                Nenhuma campanha publicada encontrada para este experimento.
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       ) : null}
       <div ref={tabsSectionRef}>
         <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">

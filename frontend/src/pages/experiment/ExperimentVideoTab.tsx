@@ -23,7 +23,10 @@ const VIDEO_SLOT_OPTIONS: ExperimentVideoSlot[] = [
   "PRE_CHECKOUT",
 ];
 
-const EXECUTION_MODE_OPTIONS: SalesVideoExecutionMode[] = ["TEST", "PRODUCTION"];
+const EXECUTION_MODE_OPTIONS: SalesVideoExecutionMode[] = [
+  "TEST",
+  "PRODUCTION",
+];
 
 function buildInitialScript(experiment: Experiment) {
   const sections = [
@@ -31,7 +34,9 @@ function buildInitialScript(experiment: Experiment) {
     experiment.singlePain ? `Dor: ${experiment.singlePain}` : null,
     experiment.primaryCta ? `CTA: ${experiment.primaryCta}` : null,
     experiment.adCopy ? `Copy do anúncio:\n${experiment.adCopy}` : null,
-    experiment.landingPageCopy ? `Copy da página:\n${experiment.landingPageCopy}` : null,
+    experiment.landingPageCopy
+      ? `Copy da página:\n${experiment.landingPageCopy}`
+      : null,
   ].filter(Boolean);
   return sections.join("\n\n").slice(0, 6000);
 }
@@ -50,17 +55,28 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
+function formatUsd(value?: number | null) {
+  if (value == null) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(value);
+}
+
 export default function ExperimentVideoTab({
   experiment,
   alterationLocked = false,
 }: ExperimentVideoTabProps) {
   const tenantContext = useTenantContext();
-  const { data: videoAssets, isLoading } = useExperimentVideoAssets(experiment.id);
+  const { data: videoAssets, isLoading } = useExperimentVideoAssets(
+    experiment.id,
+  );
   const requestVeoVideo = useRequestExperimentVeoVideo(experiment.id);
   const [formState, setFormState] = useState({
     slot: "LANDING_HERO" as ExperimentVideoSlot,
     title: `Vídeo VEO - Experimento ${experiment.id}`,
-    objective: "Aumentar conversão da página de venda e destravar campanha com vídeo obrigatório.",
+    objective:
+      "Aumentar conversão da página de venda e destravar campanha com vídeo obrigatório.",
     primaryMetric: "CTR, tempo na página e conversão para checkout/lead.",
     personaName: "",
     personaStyle: "consultiva, direta e comercial",
@@ -88,8 +104,13 @@ export default function ExperimentVideoTab({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const targetDurationSeconds = parseOptionalNumber(formState.targetDurationSeconds);
-    if (formState.targetDurationSeconds.trim() && targetDurationSeconds === undefined) {
+    const targetDurationSeconds = parseOptionalNumber(
+      formState.targetDurationSeconds,
+    );
+    if (
+      formState.targetDurationSeconds.trim() &&
+      targetDurationSeconds === undefined
+    ) {
       toast.error("Duração alvo inválida");
       return;
     }
@@ -134,7 +155,8 @@ export default function ExperimentVideoTab({
             <div>
               <h5 className="card-title mb-1">Vídeos do experimento</h5>
               <p className="text-muted small mb-0">
-                Gestão operacional dos vídeos necessários para campanha e página.
+                Gestão operacional dos vídeos necessários para campanha e
+                página.
               </p>
             </div>
             <span className="badge text-bg-secondary">
@@ -150,6 +172,7 @@ export default function ExperimentVideoTab({
                   <th>Status</th>
                   <th>Revisão</th>
                   <th>Provider</th>
+                  <th>Custo</th>
                   <th>Profile / Job</th>
                   <th>Obrigatório</th>
                   <th>Atualizado</th>
@@ -159,13 +182,13 @@ export default function ExperimentVideoTab({
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={9} className="text-muted">
+                    <td colSpan={10} className="text-muted">
                       Carregando vídeos...
                     </td>
                   </tr>
                 ) : sortedAssets.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-muted">
+                    <td colSpan={10} className="text-muted">
                       Nenhum vídeo registrado para este experimento.
                     </td>
                   </tr>
@@ -175,25 +198,36 @@ export default function ExperimentVideoTab({
                       <td>{asset.id}</td>
                       <td>{asset.slot}</td>
                       <td>
-                        <span className="badge text-bg-info">{asset.status}</span>
+                        <span className="badge text-bg-info">
+                          {asset.status}
+                        </span>
                       </td>
                       <td>{asset.reviewStatus}</td>
                       <td>{asset.provider}</td>
+                      <td>{formatUsd(asset.cost)}</td>
                       <td>
                         {asset.salesVideoProfileId ? (
-                          <Link to={`/sales-videos/profiles/${asset.salesVideoProfileId}`}>
+                          <Link
+                            to={`/sales-videos/profiles/${asset.salesVideoProfileId}`}
+                          >
                             Profile #{asset.salesVideoProfileId}
                           </Link>
                         ) : (
                           "—"
                         )}
-                        {asset.salesVideoJobId ? ` · Job #${asset.salesVideoJobId}` : ""}
+                        {asset.salesVideoJobId
+                          ? ` · Job #${asset.salesVideoJobId}`
+                          : ""}
                       </td>
                       <td>{asset.requiredForRelease ? "Sim" : "Não"}</td>
                       <td>{formatDate(asset.updatedAt)}</td>
                       <td>
                         {asset.assetUrl ? (
-                          <a href={asset.assetUrl} target="_blank" rel="noreferrer">
+                          <a
+                            href={asset.assetUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             Abrir
                           </a>
                         ) : (
@@ -238,7 +272,10 @@ export default function ExperimentVideoTab({
                 className="form-control"
                 value={formState.title}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, title: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    title: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -248,7 +285,10 @@ export default function ExperimentVideoTab({
                 className="form-control"
                 value={formState.providerName}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, providerName: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    providerName: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -258,7 +298,10 @@ export default function ExperimentVideoTab({
                 className="form-control"
                 value={formState.objective}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, objective: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    objective: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -268,7 +311,10 @@ export default function ExperimentVideoTab({
                 className="form-control"
                 value={formState.primaryMetric}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, primaryMetric: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    primaryMetric: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -295,7 +341,8 @@ export default function ExperimentVideoTab({
                 onChange={(event) =>
                   setFormState((prev) => ({
                     ...prev,
-                    executionMode: event.target.value as SalesVideoExecutionMode,
+                    executionMode: event.target
+                      .value as SalesVideoExecutionMode,
                   }))
                 }
               >
@@ -356,7 +403,10 @@ export default function ExperimentVideoTab({
                 className="form-control"
                 value={formState.hookText}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, hookText: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    hookText: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -366,7 +416,10 @@ export default function ExperimentVideoTab({
                 className="form-control"
                 value={formState.ctaText}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, ctaText: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    ctaText: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -377,7 +430,10 @@ export default function ExperimentVideoTab({
                 rows={10}
                 value={formState.scriptText}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, scriptText: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    scriptText: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -388,7 +444,10 @@ export default function ExperimentVideoTab({
                 rows={3}
                 value={formState.captionText}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, captionText: event.target.value }))
+                  setFormState((prev) => ({
+                    ...prev,
+                    captionText: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -406,15 +465,24 @@ export default function ExperimentVideoTab({
                     }))
                   }
                 />
-                <label className="form-check-label" htmlFor="requiredForRelease">
+                <label
+                  className="form-check-label"
+                  htmlFor="requiredForRelease"
+                >
                   Obrigatório para liberar campanha
                 </label>
               </div>
             </div>
           </div>
           <div className="mt-3">
-            <button className="btn btn-primary" type="submit" disabled={!canSubmit}>
-              {requestVeoVideo.isPending ? "Solicitando..." : "Solicitar vídeo VEO"}
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={!canSubmit}
+            >
+              {requestVeoVideo.isPending
+                ? "Solicitando..."
+                : "Solicitar vídeo VEO"}
             </button>
           </div>
         </div>

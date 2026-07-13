@@ -102,11 +102,12 @@ public class CommercialPlanExecutionSyncService {
                 where measured_at >= ? and measured_at < ?
                 """, start, end));
         BigDecimal aiCost = money(currencyConversionService.usdToBrl(aiCostUsd).add(aiCostFromMetrics));
-        BigDecimal videoCost = money(queryDecimal("""
+        BigDecimal videoCostUsd = money(queryDecimal("""
                 select coalesce(sum(cost), 0)
                 from experiment_video_asset
                 where created_at >= ? and created_at < ?
                 """, start, end));
+        BigDecimal videoCost = money(currencyConversionService.usdToBrl(videoCostUsd));
         BigDecimal revenue = money(queryDecimal("""
                 select coalesce(sum(revenue_cents), 0) / 100.0
                 from experiment_financial_metric

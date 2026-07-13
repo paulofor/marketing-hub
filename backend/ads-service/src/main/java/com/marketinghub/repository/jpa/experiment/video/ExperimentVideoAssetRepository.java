@@ -17,6 +17,10 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
     @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
     List<ExperimentVideoAsset> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
 
+    /** Busca o ativo de experimento vinculado ao job de vídeo canônico. */
+    @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
+    List<ExperimentVideoAsset> findBySalesVideoJobId(Long salesVideoJobId);
+
     /** Verifica se existem vídeos obrigatórios que ainda bloqueiam a publicação. */
     @Query("""
             select case when count(v) > 0 then true else false end

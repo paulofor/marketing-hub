@@ -37,6 +37,9 @@ class ImageGenerationPromptBuilderTest {
                                 "hero",
                                 "hero-img",
                                 "Mostrar produto digital",
+                                "DELIVERY_PREVIEW_MOCKUP",
+                                "kit digital com checklist e mensagens prontas",
+                                "não usar avatar nesta imagem",
                                 "Crie imagem hero de transformação real")))));
 
         Map<String, Object> body = objectMapper.readValue(request.requestBodyJson(), new TypeReference<>() {});
@@ -49,6 +52,9 @@ class ImageGenerationPromptBuilderTest {
                         .containsEntry("planningItemKey", "hero-img")
                         .containsEntry("sectionId", "hero")
                         .containsEntry("elementId", "hero-img")
+                        .containsEntry("visualAssetType", "DELIVERY_PREVIEW_MOCKUP")
+                        .containsEntry("deliveryPreviewBasis", "kit digital com checklist e mensagens prontas")
+                        .containsEntry("avatarUsagePolicy", "não usar avatar nesta imagem")
                         .containsEntry("prompt", "Crie imagem hero de transformação real"));
         assertThat(request.metadata())
                 .containsEntry("stageCode", "landing-page-image-generation")

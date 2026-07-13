@@ -7,6 +7,10 @@ O servico expoe um chat HTTP independente do `backend/ads-service`. O Marketing 
 ## Endpoints
 
 - `GET /health`
+- `GET /codex-app-server/account/read`
+- `POST /codex-app-server/account/login/start`
+- `POST /codex-app-server/account/login/cancel`
+- `POST /codex-app-server/account/logout`
 - `POST /api/fashion-chat/messages`
 
 Body:
@@ -58,6 +62,18 @@ curl -fsS http://localhost:8094/health/ready
 ```
 
 O comando de login deve gravar a sessao no volume `fashion-chat-codex-home`, usando `CODEX_HOME=/var/lib/ai-hub/codex`. Nao use `OPENAI_API_KEY` para este servico.
+
+Alternativa via API, alinhada ao fluxo do `/exemplos/aih6`:
+
+```bash
+curl -fsS -X POST http://localhost:8094/codex-app-server/account/login/start \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"chatgptDeviceCode"}'
+curl -fsS http://localhost:8094/codex-app-server/account/read
+curl -fsS http://localhost:8094/health/ready
+```
+
+Abra a URL retornada pelo primeiro comando, informe o codigo de usuario e valide que `account/read` retorna `connected: true`.
 
 ## Deploy no host do MCP
 

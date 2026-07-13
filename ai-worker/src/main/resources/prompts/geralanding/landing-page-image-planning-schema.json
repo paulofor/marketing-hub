@@ -16,9 +16,29 @@
               "sectionId": {"type": "string", "minLength": 1},
               "elementId": {"type": "string", "minLength": 1},
               "imageGoal": {"type": "string", "minLength": 1},
+              "visualAssetType": {
+                "type": "string",
+                "enum": [
+                  "DELIVERY_PREVIEW_MOCKUP",
+                  "MODIFIED_AVATAR",
+                  "CONTEXTUAL_PHOTO",
+                  "FUNCTIONAL_DIAGRAM",
+                  "CONCEPTUAL_INTERFACE"
+                ]
+              },
+              "deliveryPreviewBasis": {"type": "string", "minLength": 1},
+              "avatarUsagePolicy": {"type": "string", "minLength": 1},
               "imagePrompt": {"type": "string", "minLength": 1}
             },
-            "required": ["sectionId", "elementId", "imageGoal", "imagePrompt"]
+            "required": [
+              "sectionId",
+              "elementId",
+              "imageGoal",
+              "visualAssetType",
+              "deliveryPreviewBasis",
+              "avatarUsagePolicy",
+              "imagePrompt"
+            ]
           }
         }
       },

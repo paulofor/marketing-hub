@@ -42,6 +42,9 @@ class ImageGenerationResponseValidatorTest {
                       "planningItemKey": "hero-img",
                       "sectionId": "hero",
                       "elementId": "hero-img",
+                      "visualAssetType": "DELIVERY_PREVIEW_MOCKUP",
+                      "deliveryPreviewBasis": "kit digital com checklist e mensagens prontas",
+                      "avatarUsagePolicy": "não usar avatar nesta imagem",
                       "prompt": "hero",
                       "rawResponse": {"data":[{"b64_json":"%s"}]}
                     }
@@ -55,6 +58,9 @@ class ImageGenerationResponseValidatorTest {
             assertThat(image.planningItemKey()).isEqualTo("hero-img");
             assertThat(image.sectionId()).isEqualTo("hero");
             assertThat(image.elementId()).isEqualTo("hero-img");
+            assertThat(image.visualAssetType()).isEqualTo("DELIVERY_PREVIEW_MOCKUP");
+            assertThat(image.deliveryPreviewBasis()).isEqualTo("kit digital com checklist e mensagens prontas");
+            assertThat(image.avatarUsagePolicy()).isEqualTo("não usar avatar nesta imagem");
             assertThat(image.imageContent()).isEqualTo("hero-image".getBytes(StandardCharsets.UTF_8));
         });
     }

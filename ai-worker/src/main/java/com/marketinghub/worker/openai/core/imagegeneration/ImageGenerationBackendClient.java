@@ -222,6 +222,9 @@ public class ImageGenerationBackendClient implements StageBackendPort<ImageGener
                     asString(image.get("sectionId")),
                     asString(image.get("elementId")),
                     asString(image.get("imageGoal")),
+                    asString(image.get("visualAssetType")),
+                    asString(image.get("deliveryPreviewBasis")),
+                    asString(image.get("avatarUsagePolicy")),
                     prompt
             ));
         }
@@ -323,6 +326,9 @@ public class ImageGenerationBackendClient implements StageBackendPort<ImageGener
         putIfPresent(image, "sectionId", generated.sectionId());
         putIfPresent(image, "elementId", generated.elementId());
         putIfPresent(image, "imageGoal", generated.imageGoal());
+        putIfPresent(image, "visualAssetType", generated.visualAssetType());
+        putIfPresent(image, "deliveryPreviewBasis", generated.deliveryPreviewBasis());
+        putIfPresent(image, "avatarUsagePolicy", generated.avatarUsagePolicy());
         putIfPresent(image, "prompt", generated.prompt());
         putIfPresent(image, "model", generated.model());
         putIfPresent(image, "openAiJobId", openAiJobId);

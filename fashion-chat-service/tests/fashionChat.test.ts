@@ -43,6 +43,95 @@ test('ready health passes when Codex App Server is authenticated', async () => {
   assert.equal(response.body.codexAppServer.authenticated, true);
 });
 
+test('account read exposes disconnected Codex authentication state', async () => {
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    request: async (method: string) => {
+      assert.equal(method, 'account/read');
+      return {};
+    },
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .get('/codex-app-server/account/read')
+    .expect(200);
+
+  assert.equal(response.body.connected, false);
+  assert.equal(response.body.status, 'disconnected');
+  assert.equal(response.body.blockReason, 'CODEX_NOT_AUTHENTICATED');
+});
+
+test('account login start returns device-code authentication payload', async () => {
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    request: async (method: string, params: unknown) => {
+      assert.equal(method, 'account/login/start');
+      assert.deepEqual(params, { type: 'chatgptDeviceCode' });
+      return {
+        loginId: 'login-fashion-test',
+        verificationUrl: 'https://example.test/activate',
+        userCode: 'ABCD-EFGH',
+        interval: 5,
+      };
+    },
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .post('/codex-app-server/account/login/start')
+    .send({})
+    .expect(202);
+
+  assert.equal(response.body.status, 'authorization_pending');
+  assert.equal(response.body.loginId, 'login-fashion-test');
+  assert.equal(response.body.userCode, 'ABCD-EFGH');
+});
+
+test('account login cancel requires login id and forwards cancellation', async () => {
+  let cancelledLoginId = '';
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    request: async (method: string, params: { loginId?: string }) => {
+      assert.equal(method, 'account/login/cancel');
+      cancelledLoginId = params.loginId ?? '';
+      return {};
+    },
+  } as unknown as CodexAppServerClient;
+
+  await request(createApp(fakeCodexAppServerClient))
+    .post('/codex-app-server/account/login/cancel')
+    .send({})
+    .expect(400);
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .post('/codex-app-server/account/login/cancel')
+    .send({ loginId: 'login-fashion-test' })
+    .expect(200);
+
+  assert.equal(cancelledLoginId, 'login-fashion-test');
+  assert.equal(response.body.status, 'cancelled');
+});
+
+test('account logout clears account and returns current state', async () => {
+  const calls: string[] = [];
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    request: async (method: string) => {
+      calls.push(method);
+      if (method === 'account/read') {
+        return {};
+      }
+      return {};
+    },
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .post('/codex-app-server/account/logout')
+    .expect(200);
+
+  assert.deepEqual(calls, ['account/logout', 'account/read']);
+  assert.equal(response.body.connected, false);
+});
+
 test('chat uses local fallback when Codex App Server is unavailable', async () => {
   mockResearchFetch();
   const response = await request(createApp())

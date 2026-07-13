@@ -41,6 +41,11 @@ Conceito comercial inicial:
 - `AI_CHAT_DIGITAL_BAIT`: chat-first com coleta de dados, entrega imediata de amostra e oferta depois do valor percebido.
 - `DIAGNOSTIC_QUIZ`: quiz diagnóstico com recomendação.
 
+Regra de prontidão comercial:
+
+- qualquer seleção ativa `HUMAN_VIDEO_SALES_PAGE` exige vídeo do experimento em `experiment_video_asset` com `status=READY` e `review_status=APPROVED` antes da liberação de campanha;
+- qualquer variante A/B `HUMAN_VIDEO` também precisa de `experiment_video_asset_id` vinculado a vídeo `READY + APPROVED` para o teste ser considerado pronto para tráfego.
+
 Atualização incremental — vínculo do wireframe com execução Gera Landing (07/05/2026):
 
 - `landing_page_wireframe_job_id` (`BINARY(36)`, FK -> `gera_landing_stage_execution.id_job`)

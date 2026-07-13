@@ -8,6 +8,7 @@ import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.repository.jpa.experiment.salespagetype.ExperimentSalesPageTypeSelectionRepository;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.targeting.TargetingElement;
@@ -65,6 +66,7 @@ public class ExperimentReadinessService {
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
     private final ExperimentVideoAssetService experimentVideoAssetService;
     private final ExperimentSalesPageAbTestService salesPageAbTestService;
+    private final ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository;
     /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
@@ -72,7 +74,8 @@ public class ExperimentReadinessService {
                                       GeraLandingStageExecutionRepository geraLandingStageExecutionRepository,
                                       ExperimentCampaignDestinationPolicy campaignDestinationPolicy,
                                       ExperimentVideoAssetService experimentVideoAssetService,
-                                      ExperimentSalesPageAbTestService salesPageAbTestService) {
+                                      ExperimentSalesPageAbTestService salesPageAbTestService,
+                                      ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
@@ -80,6 +83,7 @@ public class ExperimentReadinessService {
         this.campaignDestinationPolicy = campaignDestinationPolicy;
         this.experimentVideoAssetService = experimentVideoAssetService;
         this.salesPageAbTestService = salesPageAbTestService;
+        this.salesPageTypeSelectionRepository = salesPageTypeSelectionRepository;
     }
 
     /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
@@ -353,9 +357,23 @@ public class ExperimentReadinessService {
 
     /** Verifica se algum vídeo obrigatório do experimento ainda impede liberação comercial. */
     private boolean hasRequiredVideoBlockingRelease(Experiment experiment) {
-        return experiment != null
-                && experiment.getId() != null
-                && experimentVideoAssetService.hasRequiredVideoBlockingRelease(experiment.getId());
+        if (experiment == null || experiment.getId() == null) {
+            return false;
+        }
+        Long experimentId = experiment.getId();
+        if (experimentVideoAssetService.hasRequiredVideoBlockingRelease(experimentId)) {
+            return true;
+        }
+        return hasVideoDependentSalesPage(experimentId)
+                && !experimentVideoAssetService.hasReadyApprovedVideo(experimentId);
+    }
+
+    /** Verifica se o desenho comercial escolhido depende de página com vídeo humano. */
+    private boolean hasVideoDependentSalesPage(Long experimentId) {
+        return salesPageAbTestService.hasHumanVideoVariant(experimentId)
+                || salesPageTypeSelectionRepository.existsByExperimentIdAndSalesPageTypeCodeAndActiveTrue(
+                        experimentId,
+                        "HUMAN_VIDEO_SALES_PAGE");
     }
 
 }

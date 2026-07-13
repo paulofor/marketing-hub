@@ -1,3 +1,11 @@
+## 2026-07-13 — Experimentos: página com vídeo bloqueia campanha sem vídeo aprovado
+
+- causa-raiz: a liberação de campanha bloqueava apenas vídeos já marcados como obrigatórios, mas não inferia a dependência comercial quando a variante/tipo de página escolhido era de vídeo humano.
+- foi feito: readiness do backend passa a bloquear campanha quando houver variante `HUMAN_VIDEO` ou tipo `HUMAN_VIDEO_SALES_PAGE` sem vídeo `READY + APPROVED`.
+- foi feito: teste A/B só é considerado pronto para tráfego quando a variante `HUMAN_VIDEO` possui vídeo vinculado, pronto e aprovado.
+- impacto esperado: o sistema evita campanha contaminada por página incompleta e preserva aprendizado confiável sobre oferta, criativo e mecanismo comercial.
+- prevenção de recorrência: testes unitários cobrem bloqueio por tipo de página com vídeo e bloqueio de variante A/B de vídeo sem asset aprovado.
+
 ## 2026-07-13 — Teste A/B: link seguro para revisar páginas de venda
 
 - solicitação: mostrar na aba `Teste A/B` o link de cada página de venda sem contaminar métricas da campanha.

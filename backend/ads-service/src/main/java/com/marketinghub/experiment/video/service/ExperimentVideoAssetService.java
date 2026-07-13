@@ -203,6 +203,18 @@ public class ExperimentVideoAssetService {
                 ExperimentVideoReviewStatus.APPROVED);
     }
 
+    /** Verifica se existe vídeo pronto e aprovado para uma pagina/funil que depende de vídeo. */
+    @Transactional(readOnly = true)
+    public boolean hasReadyApprovedVideo(Long experimentId) {
+        if (experimentId == null) {
+            return false;
+        }
+        return repository.existsByExperimentIdAndStatusAndReviewStatus(
+                experimentId,
+                ExperimentVideoStatus.READY,
+                ExperimentVideoReviewStatus.APPROVED);
+    }
+
     /** Aplica os campos opcionais enviados na atualização do ativo de vídeo. */
     private void applyUpdate(ExperimentVideoAsset videoAsset, UpdateExperimentVideoAssetRequest request, Long experimentId) {
         if (request.slot() != null) {

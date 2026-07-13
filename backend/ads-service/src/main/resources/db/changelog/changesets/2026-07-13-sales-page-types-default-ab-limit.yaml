@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-13-04-disable-chat-sales-page-type-default
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE sales_page_type
+              SET default_for_ab_test = b'0'
+              WHERE code = 'AI_CHAT_DIGITAL_BAIT'
+                AND default_for_ab_test = b'1';

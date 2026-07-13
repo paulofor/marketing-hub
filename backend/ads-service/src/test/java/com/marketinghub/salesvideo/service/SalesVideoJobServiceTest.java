@@ -1,7 +1,6 @@
 package com.marketinghub.salesvideo.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoJobType;
@@ -28,6 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+/**
+ * Valida as regras de negocio dos jobs do modulo de video.
+ */
 @ExtendWith(MockitoExtension.class)
 class SalesVideoJobServiceTest {
 
@@ -49,10 +51,11 @@ class SalesVideoJobServiceTest {
     @Mock
     private SalesVideoReprocessPolicy reprocessPolicy;
     @Mock
-    private ExperimentVideoAssetRepository experimentVideoAssetRepository;
+    private SalesVideoCompletedRenderAssetSync completedRenderAssetSync;
 
     private SalesVideoJobService service;
 
+    /** Inicializa o service com dependencias simuladas para cada teste. */
     @BeforeEach
     void setUp() {
         service = new SalesVideoJobService(jobRepository,
@@ -61,11 +64,11 @@ class SalesVideoJobServiceTest {
                 scriptRepository,
                 assetRepository,
                 reprocessPolicy,
-                experimentVideoAssetRepository,
-                new SalesVideoProductionCostCalculator(),
+                completedRenderAssetSync,
                 new ObjectMapper());
     }
 
+    /** Garante que os jobs de um perfil sao retornados em contrato de leitura. */
     @Test
     void shouldListJobsByProfile() {
         long profileId = 10L;
@@ -94,6 +97,7 @@ class SalesVideoJobServiceTest {
         assertThat(result.get(0).getStatus()).isEqualTo(SalesVideoStatus.VIDEO_REQUESTED);
     }
 
+    /** Garante erro de negocio quando o perfil solicitado nao existe. */
     @Test
     void shouldRejectWhenProfileDoesNotExist() {
         long missingId = 404L;

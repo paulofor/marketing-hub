@@ -3,10 +3,7 @@ package com.marketinghub.salesvideo.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.media.Asset;
-import com.marketinghub.experiment.video.ExperimentVideoAsset;
-import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.media.AssetRepository;
-import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
@@ -26,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
-import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -44,19 +40,17 @@ public class SalesVideoJobService {
     private final SalesVideoScriptRepository scriptRepository;
     private final AssetRepository assetRepository;
     private final SalesVideoReprocessPolicy reprocessPolicy;
-    private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
-    private final SalesVideoProductionCostCalculator costCalculator;
+    private final SalesVideoCompletedRenderAssetSync completedRenderAssetSync;
     private final ObjectMapper objectMapper;
 
-    /** Cria o serviço com repositórios, política de reprocessamento e cálculo de custo de vídeo. */
+    /** Cria o serviço com repositórios, política de reprocessamento e porta de sincronizacao. */
     public SalesVideoJobService(SalesVideoJobRepository jobRepository,
                                 SalesVideoJobEventRepository eventRepository,
                                 SalesVideoProfileRepository profileRepository,
                                 SalesVideoScriptRepository scriptRepository,
                                 AssetRepository assetRepository,
                                 SalesVideoReprocessPolicy reprocessPolicy,
-                                ExperimentVideoAssetRepository experimentVideoAssetRepository,
-                                SalesVideoProductionCostCalculator costCalculator,
+                                SalesVideoCompletedRenderAssetSync completedRenderAssetSync,
                                 ObjectMapper objectMapper) {
         this.jobRepository = jobRepository;
         this.eventRepository = eventRepository;
@@ -64,8 +58,7 @@ public class SalesVideoJobService {
         this.scriptRepository = scriptRepository;
         this.assetRepository = assetRepository;
         this.reprocessPolicy = reprocessPolicy;
-        this.experimentVideoAssetRepository = experimentVideoAssetRepository;
-        this.costCalculator = costCalculator;
+        this.completedRenderAssetSync = completedRenderAssetSync;
         this.objectMapper = objectMapper;
     }
 
@@ -295,40 +288,16 @@ public class SalesVideoJobService {
         return saved;
     }
 
-    /** Atualiza o ativo de vídeo do experimento com custo e asset final do job concluído. */
+    /** Notifica a porta de sincronizacao de ativos quando um render e concluido. */
     private void syncExperimentVideoAsset(SalesVideoJob job, JobCompletionRequest request) {
         if (job.getId() == null || job.getJobType() != SalesVideoJobType.RENDER) {
             return;
         }
-        List<ExperimentVideoAsset> videoAssets = experimentVideoAssetRepository.findBySalesVideoJobId(job.getId());
-        if (videoAssets.isEmpty()) {
-            return;
-        }
-        BigDecimal costUsd = Optional.ofNullable(request.getCostUsd())
-                .orElseGet(() -> costCalculator.estimateUsd(
-                        job.getProviderName(),
-                        job.getProviderName(),
-                        resolveDurationSeconds(job, request),
-                        resolveResolution(request)));
-        for (ExperimentVideoAsset videoAsset : videoAssets) {
-            if (job.getAsset() != null) {
-                videoAsset.setAsset(job.getAsset());
-                videoAsset.setAssetUrl(job.getAsset().getUrl());
-            }
-            if (job.getPosterAsset() != null) {
-                videoAsset.setThumbnailUrl(job.getPosterAsset().getUrl());
-            }
-            Integer durationSeconds = resolveDurationSeconds(job, request);
-            if (durationSeconds != null) {
-                videoAsset.setDurationSeconds(durationSeconds);
-            }
-            if (costUsd != null) {
-                videoAsset.setCost(costUsd);
-            }
-            videoAsset.setResponseJson(request.getMetadataJson());
-            videoAsset.setStatus(ExperimentVideoStatus.READY);
-        }
-        experimentVideoAssetRepository.saveAll(videoAssets);
+        completedRenderAssetSync.syncCompletedRender(
+                job,
+                request,
+                resolveDurationSeconds(job, request),
+                resolveResolution(request));
     }
 
     /** Extrai a duração auditada do metadata do worker quando disponível. */

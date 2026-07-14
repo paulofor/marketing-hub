@@ -130,6 +130,8 @@ export class FashionChatService {
     const message = err instanceof Error ? err.message : String(err);
     return (
       message.includes('CODEX_NOT_AUTHENTICATED') ||
+      message.includes('CODEX_THREAD_START_FAILED') ||
+      message.includes('CODEX_TURN_TIMEOUT') ||
       message.includes('CODEX_APP_SERVER') ||
       message.includes('Codex App Server') ||
       message.includes('Timeout em request account/read')

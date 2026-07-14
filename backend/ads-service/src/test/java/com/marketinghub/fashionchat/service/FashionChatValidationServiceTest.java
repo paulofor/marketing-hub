@@ -45,6 +45,36 @@ class FashionChatValidationServiceTest {
         assertThat(response.readyHttpStatus()).isEqualTo(503);
         assertThat(response.accountStatus()).isEqualTo("NOT_AUTHENTICATED");
         assertThat(response.authenticated()).isFalse();
+        assertThat(response.connected()).isNull();
+        assertThat(response.executable()).isNull();
+        server.verify();
+    }
+
+    /** Deve reconhecer sessão conectada e executável como autenticada no contrato real do Chat Moda. */
+    @Test
+    void statusReturnsAuthenticatedWhenCodexSessionIsConnectedAndExecutable() {
+        server.expect(requestTo("http://fashion-chat.test/health/ready"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("{\"status\":\"ok\"}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://fashion-chat.test/codex-app-server/account/read"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        {
+                          "connected": true,
+                          "status": "connected",
+                          "executable": true,
+                          "blockReason": null
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        FashionChatValidationStatusResponse response = service.status();
+
+        assertThat(response.ready()).isTrue();
+        assertThat(response.accountStatus()).isEqualTo("AUTHENTICATED");
+        assertThat(response.authenticated()).isTrue();
+        assertThat(response.connected()).isTrue();
+        assertThat(response.executable()).isTrue();
+        assertThat(response.blockReason()).isNull();
         server.verify();
     }
 

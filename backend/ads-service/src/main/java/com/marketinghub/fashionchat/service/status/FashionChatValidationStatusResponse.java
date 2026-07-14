@@ -12,6 +12,9 @@ public record FashionChatValidationStatusResponse(
         String readyError,
         String accountStatus,
         Boolean authenticated,
+        Boolean connected,
+        Boolean executable,
+        String blockReason,
         Integer accountHttpStatus,
         String accountError,
         JsonNode accountPayload) {

@@ -169,6 +169,33 @@ test('chat uses local fallback when Codex account is not authenticated', async (
   globalThis.fetch = originalFetch;
 });
 
+test('chat uses local fallback when Codex thread start does not return thread id', async () => {
+  mockResearchFetch();
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    onNotification: () => () => undefined,
+    request: async (method: string) => {
+      if (method === 'account/read') {
+        return { authMode: 'chatgpt' };
+      }
+      if (method === 'thread/start') {
+        return {};
+      }
+      return {};
+    },
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .post('/api/fashion-chat/messages')
+    .send({ message: 'Que roupa usar em uma reuniao casual?', customerId: 'teste' })
+    .expect(200);
+
+  assert.equal(response.body.mode, 'local_fallback');
+  assert.match(response.body.answer, /visual casual|ocasiao/);
+  globalThis.fetch = originalFetch;
+});
+
 test('chat fallback handles greeting before style recommendation', async () => {
   mockResearchFetch();
   const response = await request(createApp())

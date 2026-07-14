@@ -40,7 +40,7 @@ public class FashionChatMessageService {
             RestTemplateBuilder restTemplateBuilder,
             @Value("${integrations.fashion-chat.base-url:http://191.252.210.83:8094}") String serviceBaseUrl,
             @Value("${integrations.fashion-chat.connect-timeout:PT2S}") Duration connectTimeout,
-            @Value("${integrations.fashion-chat.read-timeout:PT180S}") Duration readTimeout) {
+            @Value("${integrations.fashion-chat.read-timeout:PT0S}") Duration readTimeout) {
         this(restTemplateBuilder
                 .setConnectTimeout(connectTimeout)
                 .setReadTimeout(readTimeout)

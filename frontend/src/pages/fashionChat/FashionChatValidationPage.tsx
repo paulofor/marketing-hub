@@ -37,6 +37,7 @@ export default function FashionChatValidationPage() {
   const status = statusQuery.data;
   const login = loginMutation.data;
   const isAuthenticated = status?.accountStatus === "AUTHENTICATED";
+  const isExecutable = status?.executable === true;
   const canOpenLogin = Boolean(login?.verificationUri);
 
   return (
@@ -99,7 +100,9 @@ export default function FashionChatValidationPage() {
             }
             detail={
               isAuthenticated
-                ? "O Chat Moda pode responder usando Codex/ChatGPT."
+                ? isExecutable
+                  ? "Sessão conectada e executável para responder com Codex/ChatGPT."
+                  : "Sessão conectada, mas ainda sem confirmação de execução."
                 : "A sessão precisa ser autenticada para sair do fallback local."
             }
           />
@@ -110,6 +113,18 @@ export default function FashionChatValidationPage() {
             badge={formatDateTime(status?.checkedAt)}
             badgeClass="text-bg-light"
             detail={status?.serviceBaseUrl ?? "Serviço ainda não consultado"}
+          />
+        </div>
+        <div className="col-lg-4">
+          <StatusCard
+            title="Execução Codex"
+            badge={isExecutable ? "Executável" : "Bloqueado"}
+            badgeClass={isExecutable ? "text-bg-success" : "text-bg-warning"}
+            detail={
+              status
+                ? status.blockReason ?? `Conectado: ${status.connected ? "sim" : "não"}`
+                : "Consultando"
+            }
           />
         </div>
       </div>
@@ -191,7 +206,9 @@ export default function FashionChatValidationPage() {
           <div>
             <strong>Chat Moda autenticado.</strong>
             <span>
-              O serviço está apto a usar a sessão ChatGPT configurada.
+              {isExecutable
+                ? "O serviço está apto a usar a sessão ChatGPT configurada."
+                : "A sessão existe, mas a execução ainda precisa ser confirmada."}
             </span>
           </div>
         </section>

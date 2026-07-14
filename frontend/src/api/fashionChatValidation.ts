@@ -12,6 +12,9 @@ export interface FashionChatValidationStatus {
   readyError?: string | null;
   accountStatus: FashionChatAccountStatus;
   authenticated?: boolean | null;
+  connected?: boolean | null;
+  executable?: boolean | null;
+  blockReason?: string | null;
   accountHttpStatus?: number | null;
   accountError?: string | null;
   accountPayload?: unknown;

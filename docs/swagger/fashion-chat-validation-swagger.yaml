@@ -37,6 +37,9 @@ components:
           type: string
           enum: [AUTHENTICATED, NOT_AUTHENTICATED, UNAVAILABLE, UNKNOWN]
         authenticated: { type: boolean, nullable: true }
+        connected: { type: boolean, nullable: true }
+        executable: { type: boolean, nullable: true }
+        blockReason: { type: string, nullable: true }
         accountHttpStatus: { type: integer, nullable: true }
         accountError: { type: string, nullable: true }
         accountPayload:

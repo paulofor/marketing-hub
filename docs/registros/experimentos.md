@@ -5793,3 +5793,10 @@
 - Criada tela no Marketing Hub para validar a autenticação do serviço Chat Moda sem depender de comandos manuais.
 - Backend passou a expor contrato administrativo para consultar prontidão, conta ChatGPT e iniciar login por device code.
 - Objetivo de negócio: reduzir atrito operacional para manter o experimento conversacional apto a responder com IA real, evitando fallback local silencioso.
+
+## 2026-07-14 — Download do ZIP de entregáveis do experimento 65
+
+- Problema: na aba `Entregáveis`, clicar em `Baixar ZIP` navegava para `/api/experiments/65/deliverables.zip` dentro do frontend e tirava o usuário da tela.
+- Causa-raiz confirmada: o backend já entregava um ZIP válido; o erro estava no link relativo do frontend, que dependia da navegação do navegador em vez do cliente API configurado.
+- Correção aplicada: o botão passou a baixar o arquivo por blob usando a base oficial do backend, mantendo a tela do experimento aberta e exibindo carregamento.
+- Validação: Chromium local em `/experiments/65` baixou `experimento-65-entregaveis.zip` sem mudar a URL; o ZIP contém README, artefato final da landing e 5 entregáveis do nicho.

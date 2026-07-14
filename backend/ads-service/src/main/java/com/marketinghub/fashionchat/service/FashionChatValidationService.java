@@ -62,6 +62,8 @@ public class FashionChatValidationService {
         ProbeResult account = getJson("/codex-app-server/account/read");
         String accountStatus = resolveAccountStatus(account);
         Boolean authenticated = resolveAuthenticated(account);
+        Boolean connected = booleanField(account.body(), "connected");
+        Boolean executable = booleanField(account.body(), "executable");
         return new FashionChatValidationStatusResponse(
                 serviceBaseUrl,
                 checkedAt,
@@ -70,6 +72,9 @@ public class FashionChatValidationService {
                 ready.errorMessage(),
                 accountStatus,
                 authenticated,
+                connected,
+                executable,
+                text(account.body(), "blockReason", "block_reason", "code", "errorCode", "error"),
                 account.httpStatus(),
                 account.errorMessage(),
                 account.body());
@@ -151,6 +156,11 @@ public class FashionChatValidationService {
         if (Boolean.TRUE.equals(authenticated)) {
             return AUTHENTICATED;
         }
+        Boolean connected = booleanField(account.body(), "connected");
+        Boolean executable = booleanField(account.body(), "executable");
+        if (Boolean.TRUE.equals(connected) && Boolean.TRUE.equals(executable)) {
+            return AUTHENTICATED;
+        }
         String code = text(account.body(), "code", "errorCode", "error");
         if ("CODEX_NOT_AUTHENTICATED".equals(code) || Boolean.FALSE.equals(authenticated)) {
             return NOT_AUTHENTICATED;
@@ -167,6 +177,11 @@ public class FashionChatValidationService {
         if (body == null) {
             return null;
         }
+        Boolean executable = booleanField(body, "executable");
+        Boolean connected = booleanField(body, "connected");
+        if (Boolean.TRUE.equals(connected) && Boolean.TRUE.equals(executable)) {
+            return true;
+        }
         JsonNode authenticated = body.get("authenticated");
         if (authenticated != null && authenticated.isBoolean()) {
             return authenticated.asBoolean();
@@ -178,6 +193,15 @@ public class FashionChatValidationService {
             return accountNode.get("authenticated").asBoolean();
         }
         return null;
+    }
+
+    /** Lê um campo booleano direto do payload informado. */
+    private Boolean booleanField(JsonNode body, String name) {
+        if (body == null) {
+            return null;
+        }
+        JsonNode node = body.get(name);
+        return node != null && node.isBoolean() ? node.asBoolean() : null;
     }
 
     /** Monta a URL completa sem duplicar barras entre base e caminho. */

@@ -30,7 +30,10 @@ function normalizeFashionText(value: string) {
 function FashionSuggestionSketch({ suggestion }: { suggestion: string }) {
   const titleId = useId();
   const lowerSuggestion = normalizeFashionText(suggestion);
-  const hasDress = lowerSuggestion.includes("vestido");
+  const hasDress =
+    lowerSuggestion.includes("vestido") ||
+    lowerSuggestion.includes("evento") ||
+    lowerSuggestion.includes("festa");
   const hasCoat =
     lowerSuggestion.includes("casaco") ||
     lowerSuggestion.includes("terceira peca") ||
@@ -66,51 +69,85 @@ function FashionSuggestionSketch({ suggestion }: { suggestion: string }) {
           rx="4"
         />
         <path
+          className="fashion-chat-sketch-board-line"
+          d="M42 39 C90 28 151 29 206 38"
+        />
+        <path
+          className="fashion-chat-sketch-board-line"
+          d="M261 45 C289 36 318 39 337 54"
+        />
+        <path
           className="fashion-chat-sketch-shadow"
-          d="M135 375 C170 390 220 388 250 374"
+          d="M115 381 C157 397 226 396 270 379"
         />
         <path
           className="fashion-chat-sketch-line"
-          d="M181 58 C166 62 158 77 161 94 C164 113 181 119 196 109 C209 100 211 78 200 66 C196 61 189 57 181 58 Z"
+          d="M181 42 C164 46 155 64 158 84 C161 105 178 116 195 106 C211 96 214 70 202 56 C197 49 189 42 181 42 Z"
         />
         <path
           className="fashion-chat-sketch-hair"
-          d="M160 88 C157 63 173 47 192 55 C213 63 216 90 202 111 C204 92 195 78 180 74 C169 72 162 77 160 88 Z"
+          d="M158 83 C151 55 171 33 195 45 C220 57 225 90 202 114 C205 88 194 69 178 64 C166 62 159 70 158 83 Z"
+        />
+        <path
+          className="fashion-chat-sketch-face-detail"
+          d="M178 78 C182 76 187 76 191 79 M181 93 C185 96 190 96 194 92"
         />
         <path
           className="fashion-chat-sketch-line"
-          d="M181 118 C178 145 178 176 181 204"
+          d="M181 105 C177 143 177 181 181 217"
+        />
+        <path
+          className="fashion-chat-sketch-detail"
+          d="M169 118 C178 125 192 125 202 118"
         />
         <path
           className="fashion-chat-sketch-line"
-          d="M181 204 C171 248 159 296 151 357"
+          d="M181 217 C169 262 151 313 135 374"
         />
         <path
           className="fashion-chat-sketch-line"
-          d="M183 204 C201 248 214 297 230 359"
+          d="M184 217 C204 262 225 314 249 375"
         />
         <path
           className="fashion-chat-sketch-line"
-          d="M161 145 C129 163 106 190 86 222"
+          d="M160 133 C128 154 102 186 76 229"
         />
         <path
           className="fashion-chat-sketch-line"
-          d="M202 145 C233 166 255 193 272 225"
+          d="M204 133 C238 154 266 188 289 231"
         />
         {hasDress ? (
-          <path
-            className="fashion-chat-sketch-garment"
-            d="M152 142 L211 142 C222 202 236 256 255 318 C214 337 172 337 132 318 C147 257 152 204 152 142 Z"
-          />
+          <>
+            <path
+              className="fashion-chat-sketch-garment"
+              d="M151 129 C169 117 197 117 216 130 C219 183 237 252 280 354 C231 380 166 381 104 354 C135 258 149 191 151 129 Z"
+            />
+            <path
+              className="fashion-chat-sketch-color-wash"
+              d="M154 153 C172 164 196 165 214 153 C222 213 241 279 262 343 C221 363 172 364 125 343 C143 276 151 211 154 153 Z"
+            />
+            <path
+              className="fashion-chat-sketch-floral"
+              d="M160 178 C170 166 182 167 185 181 C177 189 167 189 160 178 Z M205 219 C216 207 229 210 231 224 C221 232 211 230 205 219 Z M146 292 C158 278 173 281 175 296 C164 305 153 302 146 292 Z M220 316 C232 305 246 309 247 324 C235 332 225 328 220 316 Z"
+            />
+            <path
+              className="fashion-chat-sketch-detail"
+              d="M151 164 C172 174 196 174 216 163 M135 254 C174 274 223 274 253 252 M122 340 C169 360 225 360 267 340"
+            />
+          </>
         ) : (
           <>
             <path
               className="fashion-chat-sketch-garment"
-              d="M151 142 C170 133 194 133 213 142 L207 215 C187 225 166 224 145 215 Z"
+              d="M149 130 C170 120 197 120 218 130 L210 218 C188 230 164 229 141 217 Z"
             />
             <path
               className="fashion-chat-sketch-garment"
-              d="M147 224 C166 232 188 232 207 224 L225 322 C197 334 170 333 139 322 Z"
+              d="M139 226 C164 236 190 236 213 226 L237 337 C203 353 164 352 124 336 Z"
+            />
+            <path
+              className="fashion-chat-sketch-color-wash"
+              d="M153 146 C170 139 193 139 209 146 L205 206 C186 214 168 214 149 206 Z"
             />
           </>
         )}
@@ -118,64 +155,72 @@ function FashionSuggestionSketch({ suggestion }: { suggestion: string }) {
           <>
             <path
               className="fashion-chat-sketch-coat"
-              d="M138 142 C122 184 116 244 118 319 C133 329 148 331 164 324 C159 263 160 197 171 143 Z"
+              d="M136 130 C117 181 107 253 108 338 C126 349 146 350 164 341 C157 270 159 197 171 131 Z"
             />
             <path
               className="fashion-chat-sketch-coat"
-              d="M224 143 C241 185 249 245 250 319 C236 329 220 331 205 324 C208 260 205 196 193 143 Z"
+              d="M225 131 C248 181 260 254 262 338 C245 349 224 350 204 341 C210 270 206 196 193 131 Z"
             />
             <path
               className="fashion-chat-sketch-detail"
-              d="M171 150 C178 176 183 201 181 224"
+              d="M171 140 C178 172 183 202 181 231"
             />
             <path
               className="fashion-chat-sketch-detail"
-              d="M193 150 C188 177 185 201 186 224"
+              d="M193 140 C188 172 185 202 186 231"
             />
           </>
         ) : null}
         <path
           className="fashion-chat-sketch-detail"
-          d="M151 181 C170 189 195 189 214 181"
+          d="M149 168 C171 177 195 177 217 168"
         />
         <path
           className="fashion-chat-sketch-detail"
-          d="M142 246 C172 258 217 258 242 244"
+          d="M126 254 C165 270 222 270 252 252"
         />
         {hasBoot ? (
           <>
             <path
               className="fashion-chat-sketch-accessory"
-              d="M133 354 L159 354 L158 386 L124 386 C124 375 128 364 133 354 Z"
+              d="M119 365 L149 365 L148 397 L108 397 C108 385 112 374 119 365 Z"
             />
             <path
               className="fashion-chat-sketch-accessory"
-              d="M219 356 L245 356 L253 386 L221 386 C216 374 216 365 219 356 Z"
+              d="M238 366 L266 366 L276 397 L240 397 C234 385 233 374 238 366 Z"
             />
           </>
         ) : (
           <>
             <path
               className="fashion-chat-sketch-accessory"
-              d="M134 357 C145 363 154 364 163 359 L158 382 L123 382 C124 373 128 365 134 357 Z"
+              d="M119 368 C132 375 143 375 153 369 L148 394 L106 394 C108 384 112 375 119 368 Z"
             />
             <path
               className="fashion-chat-sketch-accessory"
-              d="M220 359 C230 364 239 364 247 359 L258 382 L222 382 C218 373 217 365 220 359 Z"
+              d="M238 370 C249 376 260 376 269 370 L282 394 L241 394 C236 384 235 376 238 370 Z"
             />
           </>
         )}
         <path
-          className="fashion-chat-sketch-note-line"
-          d="M249 93 C280 77 307 77 323 91"
+          className="fashion-chat-sketch-pencil"
+          d="M55 333 L96 292 L106 302 L65 343 Z"
+        />
+        <path
+          className="fashion-chat-sketch-pencil-tip"
+          d="M96 292 L112 286 L106 302 Z"
         />
         <path
           className="fashion-chat-sketch-note-line"
-          d="M250 122 C285 113 313 116 332 133"
+          d="M249 88 C280 72 310 73 330 88"
         />
         <path
           className="fashion-chat-sketch-note-line"
-          d="M51 291 C77 276 103 277 124 291"
+          d="M251 118 C287 107 316 111 337 129"
+        />
+        <path
+          className="fashion-chat-sketch-note-line"
+          d="M43 269 C70 255 101 257 126 274"
         />
         <circle className="fashion-chat-sketch-pin" cx="246" cy="94" r="4" />
         <circle className="fashion-chat-sketch-pin" cx="248" cy="123" r="4" />
@@ -185,6 +230,18 @@ function FashionSuggestionSketch({ suggestion }: { suggestion: string }) {
         Croqui da sugestao: {captionParts.join(", ")}.
       </figcaption>
     </figure>
+  );
+}
+
+export function shouldRenderFashionSketch(message: ChatMessage) {
+  if (message.role !== "assistant") {
+    return false;
+  }
+  const normalized = normalizeFashionText(message.text);
+  return (
+    !normalized.includes("nao consegui acionar") &&
+    !normalized.includes("erro de conexao") &&
+    !normalized.includes("http 502")
   );
 }
 
@@ -308,7 +365,7 @@ export default function FashionChatPage() {
               >
                 <div className="fashion-chat-bubble">
                   {message.text}
-                  {message.role === "assistant" ? (
+                  {shouldRenderFashionSketch(message) ? (
                     <FashionSuggestionSketch suggestion={message.text} />
                   ) : null}
                   {message.role === "assistant" &&

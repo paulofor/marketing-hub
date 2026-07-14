@@ -295,8 +295,9 @@ test('chat accepts connected executable account contract before starting Codex t
   assert.equal(turnStartRecord.input?.[0]?.type, 'text');
   assert.match(turnStartRecord.input?.[0]?.text ?? '', /Que roupa usar em uma reuniao casual\?/);
   assert.match(turnStartRecord.input?.[0]?.text ?? '', /Use imagem somente quando for necessario/);
-  assert.match(turnStartRecord.input?.[0]?.text ?? '', /croqui de moda editorial/);
-  assert.match(turnStartRecord.input?.[0]?.text ?? '', /nunca fotos, 3D, catalogo generico ou ilustracao infantil/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /croqui editorial e croqui tecnico leve/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /Evitar sempre:/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /Render 3D/);
   globalThis.fetch = originalFetch;
 });
 

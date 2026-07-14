@@ -138,7 +138,9 @@
 
 .fashion-chat-sketch-line,
 .fashion-chat-sketch-detail,
-.fashion-chat-sketch-note-line {
+.fashion-chat-sketch-note-line,
+.fashion-chat-sketch-board-line,
+.fashion-chat-sketch-face-detail {
   fill: none;
   stroke: #2f3542;
   stroke-linecap: round;
@@ -146,18 +148,20 @@
 }
 
 .fashion-chat-sketch-line {
-  stroke-width: 3;
+  stroke-width: 2.6;
 }
 
 .fashion-chat-sketch-detail,
-.fashion-chat-sketch-note-line {
-  stroke-width: 2;
+.fashion-chat-sketch-note-line,
+.fashion-chat-sketch-board-line,
+.fashion-chat-sketch-face-detail {
+  stroke-width: 1.8;
 }
 
 .fashion-chat-sketch-shadow {
   fill: none;
-  stroke: #d8c8b2;
-  stroke-width: 4;
+  stroke: #c9c1b6;
+  stroke-width: 3;
   stroke-linecap: round;
 }
 
@@ -167,24 +171,49 @@
 }
 
 .fashion-chat-sketch-garment {
-  fill: #ece7df;
+  fill: #f8f5ef;
   stroke: #202633;
-  stroke-width: 3;
+  stroke-width: 2.2;
   stroke-linejoin: round;
 }
 
 .fashion-chat-sketch-coat {
-  fill: #c9d3dc;
+  fill: rgba(199, 211, 220, 0.76);
   stroke: #202633;
-  stroke-width: 3;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.fashion-chat-sketch-color-wash {
+  fill: rgba(210, 63, 71, 0.2);
+  stroke: rgba(160, 36, 45, 0.5);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.fashion-chat-sketch-floral {
+  fill: rgba(211, 48, 64, 0.72);
+  stroke: rgba(127, 29, 29, 0.35);
+  stroke-width: 1.2;
   stroke-linejoin: round;
 }
 
 .fashion-chat-sketch-accessory {
-  fill: #30261f;
+  fill: #2a2521;
   stroke: #202633;
   stroke-width: 2.5;
   stroke-linejoin: round;
+}
+
+.fashion-chat-sketch-pencil {
+  fill: #d8b26e;
+  stroke: #2f3542;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.fashion-chat-sketch-pencil-tip {
+  fill: #2f3542;
 }
 
 .fashion-chat-sketch-pin {

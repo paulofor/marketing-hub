@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { CodexAppServerClient } from './codexAppServerClient.js';
 import { FashionResearchService, type FashionResearchResult } from './fashionResearch.js';
+import { FashionPromptTemplateLoader } from './promptTemplates.js';
 
 export interface FashionChatRequest {
   message: string;
@@ -20,6 +21,7 @@ export class FashionChatService {
   constructor(
     private readonly researchService: FashionResearchService,
     private readonly codexAppServerClient?: CodexAppServerClient,
+    private readonly promptTemplateLoader = new FashionPromptTemplateLoader(),
   ) {}
 
   async answer(request: FashionChatRequest): Promise<FashionChatResponse> {
@@ -27,7 +29,7 @@ export class FashionChatService {
     const sandboxDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fashion-chat-'));
     const sandboxId = path.basename(sandboxDir);
     const research = await this.researchService.research(message);
-    const prompt = this.buildPrompt(message, request.customerId, research);
+    const prompt = await this.buildPrompt(message, request.customerId, research);
     await fs.writeFile(path.join(sandboxDir, 'fashion-question.md'), prompt, 'utf-8');
 
     if (this.shouldForceFallback() || !this.codexAppServerClient?.isReady()) {
@@ -100,16 +102,12 @@ export class FashionChatService {
     }
   }
 
-  private buildPrompt(message: string, customerId: string | undefined, research: FashionResearchResult): string {
+  private async buildPrompt(message: string, customerId: string | undefined, research: FashionResearchResult): Promise<string> {
+    const templates = await this.promptTemplateLoader.load();
     return [
-      'Voce e uma consultora de moda do Marketing Hub.',
-      'Objetivo: responder ao cliente com orientacao curta, objetiva, elegante e aplicavel.',
-      'Nao escreva texto longo. Use no maximo 5 bullets curtos ou 1 paragrafo curto.',
-      'Se faltar contexto, de a melhor recomendacao segura e faca uma unica pergunta de refinamento no final.',
-      'Nao invente marcas, precos ou tendencias especificas sem evidencia.',
-      'Use imagem somente quando for necessario mostrar visualmente uma ideia de look, silhueta, proporcao, estampa, combinacao de cores ou styling. Nao inclua imagem em todos os envios.',
-      'Quando sugerir imagem, oriente o visual como croqui de moda editorial: mulher elegante de corpo alongado, traco preto fino e expressivo, fundo branco ou cinza muito claro, desenho minimalista de estilista, roupa sofisticada com poucas areas em estampa floral colorida, contraste entre line art preto e detalhes vibrantes no tecido, aparencia leve, feminina, moderna e premium.',
-      'As imagens do chat de moda devem parecer esbocos de estilista; nunca fotos, 3D, catalogo generico ou ilustracao infantil.',
+      templates.system,
+      '',
+      templates.visualStyle,
       '',
       `Cliente: ${customerId?.trim() || 'cliente-piloto'}`,
       `Pergunta: ${message}`,

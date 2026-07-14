@@ -294,6 +294,9 @@ test('chat accepts connected executable account contract before starting Codex t
   assert.equal(turnStartRecord.threadId, 'thread-fashion-connected-test');
   assert.equal(turnStartRecord.input?.[0]?.type, 'text');
   assert.match(turnStartRecord.input?.[0]?.text ?? '', /Que roupa usar em uma reuniao casual\?/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /Use imagem somente quando for necessario/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /croqui de moda editorial/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /nunca fotos, 3D, catalogo generico ou ilustracao infantil/);
   globalThis.fetch = originalFetch;
 });
 

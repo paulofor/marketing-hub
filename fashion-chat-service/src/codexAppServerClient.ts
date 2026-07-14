@@ -115,7 +115,7 @@ export class CodexAppServerClient {
   async readAuthentication(): Promise<{ authenticated: boolean; authMode?: string }> {
     const account = await this.request<Record<string, unknown>>('account/read', { refreshToken: false });
     const authMode = this.extractAuthMode(account);
-    return { authenticated: !!authMode, authMode };
+    return { authenticated: this.isAuthenticatedAccount(account), authMode };
   }
 
   onNotification(method: string, listener: (params: unknown) => void): () => void {
@@ -252,6 +252,13 @@ export class CodexAppServerClient {
       }
     }
     return undefined;
+  }
+
+  private isAuthenticatedAccount(account: Record<string, unknown>): boolean {
+    if (this.extractAuthMode(account)) {
+      return true;
+    }
+    return account.connected === true && account.executable === true;
   }
 
   private sanitize(value: string): string {

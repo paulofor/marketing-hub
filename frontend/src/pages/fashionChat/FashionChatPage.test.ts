@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createMessageId } from "./FashionChatPage";
+import {
+  createMessageId,
+  fashionChatMessageEndpoint,
+} from "./FashionChatPage";
+
+describe("fashionChatMessageEndpoint", () => {
+  it("usa o backend como ponto unico de contato do frontend", () => {
+    expect(fashionChatMessageEndpoint).toBe("/api/fashion-chat/messages");
+  });
+});
 
 describe("createMessageId", () => {
   afterEach(() => {

@@ -52,7 +52,7 @@ export class FashionChatService {
       throw new Error('CODEX_APP_SERVER_DISABLED');
     }
     const account = await client.request<Record<string, unknown>>('account/read', { refreshToken: false });
-    if (!account?.authMode && !account?.auth_mode && !account?.account) {
+    if (!this.isAuthenticatedAccount(account)) {
       throw new Error('CODEX_NOT_AUTHENTICATED');
     }
     const thread = await client.request<Record<string, unknown>>('thread/start', {
@@ -135,6 +135,16 @@ export class FashionChatService {
       message.includes('CODEX_APP_SERVER') ||
       message.includes('Codex App Server') ||
       message.includes('Timeout em request account/read')
+    );
+  }
+
+  private isAuthenticatedAccount(account: Record<string, unknown>): boolean {
+    return Boolean(
+      account.authMode ||
+        account.auth_mode ||
+        account.account ||
+        account.login ||
+        (account.connected === true && account.executable === true),
     );
   }
 

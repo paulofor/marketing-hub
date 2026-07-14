@@ -13,11 +13,11 @@ import com.marketinghub.feo.fabricacao.v1.dto.FeoFabricacaoV1ExecutionSummaryRes
 import com.marketinghub.feo.fabricacao.v1.dto.FeoFabricacaoV1FailureRequest;
 import com.marketinghub.feo.fabricacao.v1.dto.FeoFabricacaoV1PendingResponse;
 import com.marketinghub.feo.fabricacao.v1.dto.FeoFabricacaoV1StartResponse;
-import com.marketinghub.feo.fabricacao.v1.repository.FeoFabricacaoV1StageExecutionRepository;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverableRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.feo.fabricacao.v1.FeoFabricacaoV1StageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

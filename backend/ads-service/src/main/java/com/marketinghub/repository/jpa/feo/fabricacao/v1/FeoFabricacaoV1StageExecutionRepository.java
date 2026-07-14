@@ -1,10 +1,10 @@
-package com.marketinghub.feo.fabricacao.v1.repository;
+package com.marketinghub.repository.jpa.feo.fabricacao.v1;
 
 import com.marketinghub.feo.fabricacao.v1.FeoFabricacaoV1StageExecution;
 import com.marketinghub.feo.fabricacao.v1.FeoFabricacaoV1StageStatus;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.time.Instant;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -49,4 +49,10 @@ public interface FeoFabricacaoV1StageExecutionRepository extends JpaRepository<F
 
     /** Lista histórico recente da FEO para um experimento. */
     List<FeoFabricacaoV1StageExecution> findTop20ByExperimentIdOrderByCreatedAtDesc(Long experimentId);
+
+    /** Busca a montagem final mais recente concluída para publicar artefatos no ZIP do experimento. */
+    Optional<FeoFabricacaoV1StageExecution> findFirstByExperimentIdAndStageCodeAndStatusOrderByFinishedAtDesc(
+            Long experimentId,
+            String stageCode,
+            FeoFabricacaoV1StageStatus status);
 }

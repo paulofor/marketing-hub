@@ -5816,3 +5816,10 @@
 - Causa-raiz tratada: faltava correlação ponta a ponta por mensagem, retry curto no proxy do backend e separação clara entre sucesso textual e falha da imagem complementar.
 - Correção aplicada: backend passa a propagar `jobId`/`X-Correlation-Id`, registrar início/fim por tentativa e repetir uma vez falhas transitórias 502/503/504; o serviço Chat Moda registra o mesmo `jobId` e retorna texto com `imageError` quando a imagem falha.
 - Prevenção: cânone de chats de produto atualizado para exigir rastreabilidade e fallback textual quando mídia complementar falhar.
+
+## 2026-07-14 — FEO premium para MUSA-H001-E004
+
+- Problema: o download da aba `Entregáveis` do experimento MUSA-H001-E004 entregava arquivos `.md` e conteúdos curtos, insuficientes para produto final vendido ao cliente.
+- Causa-raiz confirmada: o ZIP do experimento renderizava entregáveis e pacotes como Markdown, enquanto a FEO ainda montava conteúdo mais próximo de manifesto/resumo do que de workbook premium; em produção, a tabela `feo_fabricacao_v1_stage_execution` ainda não existe, então o worker FEO não consegue processar o experimento real até o backend/changelog serem publicados.
+- Correção preparada: o ZIP do experimento passa a gerar HTML de consumo/revisão e incluir artefatos finais reais da FEO quando houver montagem concluída; a FEO passa a gerar pacote com HTML, PDF, CSV, diagnóstico inicial, templates preenchíveis, plano de 7 dias e gate de qualidade comercial.
+- Validação local: testes do módulo `feo` passaram; testes focados do backend para ZIP/FEO passaram; smoke test local gerou `/tmp/musa-feo-premium.zip` com `01-pacote-final.html`, `02-pacote-final.pdf`, `03-manifesto-entregaveis.csv`, manifesto e relatório.

@@ -28,6 +28,7 @@ import ExperimentLandingAnalyticsTab from "./ExperimentLandingAnalyticsTab";
 import ExperimentSalesPageAbTab from "./ExperimentSalesPageAbTab";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
+import ExperimentConstructionTab from "./ExperimentConstructionTab";
 import ExperimentRunPanel from "./ExperimentRunPanel";
 import LandingTab from "./LandingTab";
 import ExperimentVideoTab from "./ExperimentVideoTab";
@@ -66,6 +67,7 @@ function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
 
 const experimentDetailTabs = [
   { value: "overview", label: "Overview" },
+  { value: "construction", label: "Construção", manualOnly: true },
   { value: "funnel", label: "Funil de vendas" },
   { value: "ab-test", label: "Teste A/B" },
   { value: "analytics", label: "Analytics" },
@@ -1744,6 +1746,15 @@ export default function ExperimentDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const alterationLocked = isExperimentAlterationLocked(data);
+  const isManualExperiment = data.creationSource === "MANUAL_FLOW";
+  const visibleExperimentDetailTabs = experimentDetailTabs.filter(
+    (item) => !("manualOnly" in item) || !item.manualOnly || isManualExperiment,
+  );
+  const selectedTab = visibleExperimentDetailTabs.some(
+    (item) => item.value === tab,
+  )
+    ? tab
+    : "overview";
   const hasPublishedFacebookCampaigns = Boolean(facebookCampaigns?.length);
   const showGeraLandingStartButtons = !Boolean(data.facebookReleaseRequestedAt);
   const preset = presets?.find((p) => p.id === data.metricPresetId);
@@ -2729,14 +2740,14 @@ export default function ExperimentDetailPage() {
         </div>
       ) : null}
       <div ref={tabsSectionRef}>
-        <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
+        <Tabs.Root value={selectedTab} onValueChange={setTab} className="mt-3">
           <Tabs.List className="nav nav-tabs experiment-detail-tabs">
-            {experimentDetailTabs.map((item) => (
+            {visibleExperimentDetailTabs.map((item) => (
               <Tabs.Trigger
                 key={item.value}
                 value={item.value}
                 className={`nav-link experiment-detail-tabs__item${
-                  tab === item.value ? " active" : ""
+                  selectedTab === item.value ? " active" : ""
                 }`}
               >
                 {item.label}
@@ -2858,6 +2869,9 @@ export default function ExperimentDetailPage() {
                 </div>
               </div>
             </div>
+          </Tabs.Content>
+          <Tabs.Content value="construction" asChild>
+            <ExperimentConstructionTab experimentId={expId} />
           </Tabs.Content>
           <Tabs.Content value="execucao" asChild>
             <div className="d-flex flex-column gap-3">

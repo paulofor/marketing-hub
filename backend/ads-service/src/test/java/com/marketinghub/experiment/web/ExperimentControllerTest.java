@@ -229,6 +229,53 @@ class ExperimentControllerTest {
         assertThat(saved.get(0).getProductAiSubtype()).isEqualTo(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
     }
 
+    /** Garante que a construção do experimento manual é exposta como verdade do backend. */
+    @Test
+    void constructionEndpointExplainsManualExperimentBuild() throws Exception {
+        var niche = nicheRepo.findById(nicheId).orElseThrow();
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Manual").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("MAN-H001")
+                .premiseAngle(angle)
+                .persona("Mulheres urbanas")
+                .problem("Querem parecer sofisticadas sem gastar muito")
+                .promise("Sofisticação acessível em poucos minutos")
+                .mechanism("Checklist sensorial")
+                .entrega("Checklist gratuito")
+                .successRule("CPL abaixo de 8 reais")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("8.00"))
+                .build());
+        var experiment = repository.save(com.marketinghub.experiment.Experiment.builder()
+                .niche(niche)
+                .name("MAN-H001-E001")
+                .creationSource(com.marketinghub.experiment.ExperimentCreationSource.MANUAL_FLOW)
+                .hypothesisRef(hyp)
+                .hypothesis("Mulheres respondem melhor a promessa sensorial específica.")
+                .singlePain("Quer cheiro sofisticado sem perfume caro")
+                .freeReward("Checklist de combinações")
+                .funnelPromise("Montar rotina de cheiro sofisticado")
+                .primaryCta("Receber checklist")
+                .dailyBudget(new BigDecimal("25.00"))
+                .kpiTargetCpl(new BigDecimal("8.00"))
+                .sampleSize(100)
+                .primaryVariable("Promessa manual")
+                .primaryMetric("Lead qualificado")
+                .creativeTextPrompt("Ângulo perfume acessível")
+                .build());
+
+        mockMvc.perform(get("/api/experiments/{id}/construction", experiment.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.experimentId").value(experiment.getId()))
+                .andExpect(jsonPath("$.creationSource").value("MANUAL_FLOW"))
+                .andExpect(jsonPath("$.manualFlow").value(true))
+                .andExpect(jsonPath("$.sections[0].title").value("Origem e cadeia criada"))
+                .andExpect(jsonPath("$.sections[1].title").value("Tese comercial"))
+                .andExpect(jsonPath("$.sections[1].items[0].label").value("Público/persona"))
+                .andExpect(jsonPath("$.sections[1].items[0].value").value("Mulheres urbanas"));
+    }
+
     /** Garante que o preparo de Produto IA expõe rascunho somente quando a hipótese está completa. */
     @Test
     void productAiPreparationReturnsDraftWhenHypothesisIsReady() throws Exception {

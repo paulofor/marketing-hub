@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+  feo:
+    container_name: feo
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: marketinghub/feo:latest
+    restart: unless-stopped
+    environment:
+      FEO_WORKER_ID: ${FEO_WORKER_ID:-feo-worker-1}
+      FEO_BACKEND_BASE_URL: ${FEO_BACKEND_BASE_URL:-http://191.252.181.168}
+      FEO_PENDING_LIMIT: ${FEO_PENDING_LIMIT:-1}
+      FEO_OUTPUT_DIR: ${FEO_OUTPUT_DIR:-/tmp/feo}
+      LOGGING_FILE_NAME: ${FEO_LOG_FILE:-/var/log/feo/application.log}
+    ports:
+      - "4577:4577"
+    volumes:
+      - ${FEO_LOG_DIR:-./logs}:/var/log/feo

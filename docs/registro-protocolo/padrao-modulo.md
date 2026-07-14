@@ -113,3 +113,11 @@
 - Etapas protegidas: `source-discovery`, `evidence-synthesis` e `deliverable-composer`.
 - Ponto inicial canônico de consumo pelo executor: `/api/internal/scientific-research/product-evidence/v1/<stage>/stage-executions/pending`.
 - Aplicação: protocolo padrão módulo aplicado no executor responsável por pesquisar artigos científicos, sintetizar evidências com IA e gerar entregáveis explicáveis. O worker não acessa banco diretamente; backend permanece como fonte de verdade para fila, persistência, callbacks e relatório ao usuário.
+
+## 2026-07-14 — FEO — fabricacao v1
+
+- Módulo executor: `feo`.
+- Pacote protegido: `com.marketinghub.feo.fabricacaov1`.
+- Etapas protegidas: `planejamento-entregaveis` e `montagem-pacote`.
+- Ponto inicial canônico de consumo pelo executor: `/api/internal/feo/fabricacao/v1/<stage>/stage-executions/pending`.
+- Aplicação: protocolo padrão módulo aplicado no executor responsável por transformar oferta validada em entregáveis digitais profissionais, com núcleo genérico `pipeline`, etapas concretas plugáveis, geração de HTML/PDF/CSV/ZIP e ArchUnit bloqueando dependência do núcleo em etapas concretas, dependência entre etapas, ciclos e tecnologia concreta no núcleo. O backend permanece como fonte de verdade para fila, persistência, callbacks e entrega ao usuário.

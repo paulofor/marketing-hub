@@ -5,6 +5,7 @@ import WorkerRequestBanner from "./WorkerRequestBanner";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useDeliverablePackagesByExperiment } from "../../api/deliverable/useDeliverablePackagesByExperiment";
 import { useCreateDeliverablePackage } from "../../api/deliverable/useCreateDeliverablePackage";
+import { useDownloadExperimentDeliverablesZip } from "../../api/experiment/useDownloadExperimentDeliverablesZip";
 import { useRequestDeliverables } from "../../api/experiment/useRequestDeliverables";
 import type { Deliverable } from "../../api/deliverable/types";
 import type { Experiment } from "../../api/experiment/useExperiments";
@@ -187,7 +188,7 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
   );
   const createPackage = useCreateDeliverablePackage(experiment.id);
   const requestDeliverables = useRequestDeliverables(experiment.id, experiment.nicheId);
-  const deliverablesZipUrl = `/api/experiments/${experiment.id}/deliverables.zip`;
+  const downloadDeliverablesZip = useDownloadExperimentDeliverablesZip(experiment.id);
 
   const deliverableList = useMemo(() => {
     if (!Array.isArray(deliverables)) {
@@ -304,10 +305,19 @@ export default function DeliverablesTab({ experiment, nicheName }: DeliverablesT
             Baixe um ZIP com os entregáveis do nicho, pacotes vinculados e artefato final da landing.
           </p>
         </div>
-        <a className="btn btn-outline-primary deliverables-download__button" href={deliverablesZipUrl}>
-          <Download size={18} />
-          <span>Baixar ZIP</span>
-        </a>
+        <button
+          type="button"
+          className="btn btn-outline-primary deliverables-download__button"
+          onClick={() => downloadDeliverablesZip.mutate()}
+          disabled={downloadDeliverablesZip.isPending}
+        >
+          {downloadDeliverablesZip.isPending ? (
+            <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+          ) : (
+            <Download size={18} />
+          )}
+          <span>{downloadDeliverablesZip.isPending ? "Baixando..." : "Baixar ZIP"}</span>
+        </button>
       </div>
 
       <section className="card deliverables-panel deliverables-panel--niche mb-4 mt-4">

@@ -56,13 +56,13 @@ export class FashionChatService {
       throw new Error('CODEX_NOT_AUTHENTICATED');
     }
     const thread = await client.request<Record<string, unknown>>('thread/start', {
-      model: process.env.FASHION_CHAT_CODEX_MODEL?.trim() || 'gpt-5-codex',
+      model: process.env.FASHION_CHAT_CODEX_MODEL?.trim() || 'gpt-5.5',
       cwd,
       approvalPolicy: 'never',
       sandbox: process.env.CODEX_APP_SERVER_SANDBOX_MODE?.trim() || 'danger-full-access',
       serviceName: 'fashion_chat_service',
     });
-    const threadId = this.extractId(thread, ['threadId', 'id']);
+    const threadId = this.extractId(thread, ['threadId', 'id']) ?? this.extractNestedId(thread, 'thread', ['threadId', 'id']);
     if (!threadId) {
       throw new Error('CODEX_THREAD_START_FAILED');
     }
@@ -88,7 +88,7 @@ export class FashionChatService {
     try {
       await client.request<Record<string, unknown>>('turn/start', {
         threadId,
-        input: [{ role: 'user', content: prompt }],
+        input: [{ type: 'text', text: prompt }],
       });
       await this.waitForTurn(() => completed, () => failure);
       if (failure) {
@@ -233,6 +233,14 @@ export class FashionChatService {
       }
     }
     return undefined;
+  }
+
+  private extractNestedId(value: Record<string, unknown>, key: string, idKeys: string[]): string | undefined {
+    const nested = value[key];
+    if (!nested || typeof nested !== 'object') {
+      return undefined;
+    }
+    return this.extractId(nested as Record<string, unknown>, idKeys);
   }
 
   private extractAgentMessageText(value: unknown): string | undefined {

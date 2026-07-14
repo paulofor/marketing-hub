@@ -250,6 +250,8 @@ test('chat accepts connected executable account contract before starting Codex t
   mockResearchFetch();
   const listeners = new Map<string, (params: unknown) => void>();
   const calls: string[] = [];
+  let threadStartParams: unknown;
+  let turnStartParams: unknown;
   const fakeCodexAppServerClient = {
     isReady: () => true,
     health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
@@ -257,15 +259,17 @@ test('chat accepts connected executable account contract before starting Codex t
       listeners.set(method, listener);
       return () => listeners.delete(method);
     },
-    request: async (method: string) => {
+    request: async (method: string, params?: unknown) => {
       calls.push(method);
       if (method === 'account/read') {
         return { connected: true, status: 'connected', executable: true, blockReason: null };
       }
       if (method === 'thread/start') {
-        return { threadId: 'thread-fashion-connected-test' };
+        threadStartParams = params;
+        return { thread: { id: 'thread-fashion-connected-test' } };
       }
       if (method === 'turn/start') {
+        turnStartParams = params;
         setTimeout(() => {
           listeners.get('turn/completed')?.({ text: 'Use camisa fluida, calca reta e um ponto de cor discreto.' });
         }, 0);
@@ -283,6 +287,13 @@ test('chat accepts connected executable account contract before starting Codex t
   assert.equal(response.body.mode, 'codex_app_server');
   assert.match(response.body.answer, /camisa fluida/);
   assert.deepEqual(calls, ['account/read', 'thread/start', 'turn/start']);
+  assert.ok(threadStartParams && typeof threadStartParams === 'object');
+  assert.equal((threadStartParams as { model?: string }).model, 'gpt-5.5');
+  assert.ok(turnStartParams && typeof turnStartParams === 'object');
+  const turnStartRecord = turnStartParams as { threadId?: string; input?: Array<{ type?: string; text?: string }> };
+  assert.equal(turnStartRecord.threadId, 'thread-fashion-connected-test');
+  assert.equal(turnStartRecord.input?.[0]?.type, 'text');
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /Que roupa usar em uma reuniao casual\?/);
   globalThis.fetch = originalFetch;
 });
 

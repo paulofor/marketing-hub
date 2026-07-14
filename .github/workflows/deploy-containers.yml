@@ -22,9 +22,77 @@ permissions:
   packages: read
 
 jobs:
+  detect-changes:
+    name: Detect changed modules
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      video: ${{ steps.filter.outputs.video }}
+      app_deploy: ${{ steps.filter.outputs.app_deploy }}
+      video_deploy: ${{ steps.filter.outputs.video_deploy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: filter
+        name: Detect affected deployment targets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          before="${{ github.event.before }}"
+          if [[ -z "${before}" || "${before}" =~ ^0+$ ]]; then
+            base="$(git rev-list --max-parents=0 HEAD)"
+          else
+            base="${before}"
+          fi
+
+          changed_files="$(git diff --name-only "${base}" "${GITHUB_SHA}")"
+          printf 'Changed files:\n%s\n' "${changed_files}"
+
+          backend=false
+          frontend=false
+          video=false
+          deploy=false
+
+          while IFS= read -r file; do
+            [[ -z "${file}" ]] && continue
+            case "${file}" in
+              .dockerignore) backend=true; frontend=true; video=true ;;
+              backend/settings.xml) backend=true ;;
+              backend/ads-service/*) backend=true ;;
+              frontend/*) frontend=true ;;
+              video-management-service/*) video=true ;;
+              deploy/*) deploy=true ;;
+            esac
+          done <<< "${changed_files}"
+
+          app_deploy=false
+          video_deploy=false
+
+          if [[ "${backend}" == "true" || "${frontend}" == "true" || "${deploy}" == "true" ]]; then
+            app_deploy=true
+          fi
+
+          if [[ "${video}" == "true" || "${deploy}" == "true" ]]; then
+            video_deploy=true
+          fi
+
+          {
+            echo "backend=${backend}"
+            echo "frontend=${frontend}"
+            echo "video=${video}"
+            echo "app_deploy=${app_deploy}"
+            echo "video_deploy=${video_deploy}"
+          } >> "${GITHUB_OUTPUT}"
+
   backend-image:
     name: Backend – build image
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     services:
       mysql:
         image: mysql:5.7
@@ -94,6 +162,8 @@ jobs:
   frontend-image:
     name: Frontend – build image
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -127,6 +197,8 @@ jobs:
   video-management-image:
     name: Video management – build image
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.video == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -156,17 +228,20 @@ jobs:
   deploy-app:
     name: Deploy backend + frontend
     runs-on: ubuntu-latest
-    needs: [backend-image, frontend-image]
+    needs: [detect-changes, backend-image, frontend-image]
+    if: always() && needs.detect-changes.outputs.app_deploy == 'true'
     steps:
       - uses: actions/checkout@v4
 
       - name: Download backend image artifact
+        if: needs.detect-changes.outputs.backend == 'true'
         uses: actions/download-artifact@v4
         with:
           name: backend-image
           path: artifacts
 
       - name: Download frontend image artifact
+        if: needs.detect-changes.outputs.frontend == 'true'
         uses: actions/download-artifact@v4
         with:
           name: frontend-image
@@ -199,6 +274,7 @@ jobs:
           retry rsync -az --delete -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${APP_VPS_IP}:${DEPLOY_DIR}/
 
       - name: Upload images to APP VPS
+        if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true'
         env:
           SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
@@ -213,8 +289,33 @@ jobs:
             done
           }
 
-          retry rsync -az --partial --append-verify -e "ssh ${SSH_OPTS}" artifacts/backend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image.tar
-          retry rsync -az --partial --append-verify -e "ssh ${SSH_OPTS}" artifacts/frontend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/frontend-image.tar
+          if [[ -f artifacts/backend-image.tar ]]; then
+            retry rsync -az --partial --append-verify -e "ssh ${SSH_OPTS}" artifacts/backend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image.tar
+          fi
+
+          if [[ -f artifacts/frontend-image.tar ]]; then
+            retry rsync -az --partial --append-verify -e "ssh ${SSH_OPTS}" artifacts/frontend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/frontend-image.tar
+          fi
+
+      - name: Remove unchanged APP image artifacts
+        env:
+          BACKEND_CHANGED: ${{ needs.detect-changes.outputs.backend }}
+          FRONTEND_CHANGED: ${{ needs.detect-changes.outputs.frontend }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          files_to_remove=()
+
+          if [[ "${BACKEND_CHANGED}" != "true" ]]; then
+            files_to_remove+=(/tmp/backend-image.tar)
+          fi
+
+          if [[ "${FRONTEND_CHANGED}" != "true" ]]; then
+            files_to_remove+=(/tmp/frontend-image.tar)
+          fi
+
+          if [[ "${#files_to_remove[@]}" -gt 0 ]]; then
+            ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "rm -f ${files_to_remove[*]}"
+          fi
 
       - name: Apply backend/frontend stack
         env:
@@ -228,11 +329,13 @@ jobs:
   deploy-video-management:
     name: Deploy video management
     runs-on: ubuntu-latest
-    needs: [video-management-image]
+    needs: [detect-changes, video-management-image]
+    if: always() && needs.detect-changes.outputs.video_deploy == 'true'
     steps:
       - uses: actions/checkout@v4
 
       - name: Download video-management image artifact
+        if: needs.detect-changes.outputs.video == 'true'
         uses: actions/download-artifact@v4
         with:
           name: video-management-image
@@ -265,6 +368,7 @@ jobs:
           retry rsync -az --delete -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${VIDEO_VPS_IP}:${DEPLOY_DIR}/
 
       - name: Upload image to VIDEO VPS
+        if: needs.detect-changes.outputs.video == 'true'
         env:
           SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
@@ -280,6 +384,12 @@ jobs:
           }
 
           retry scp ${SSH_OPTS} artifacts/video-management-image.tar ${VPS_USER}@${VIDEO_VPS_IP}:/tmp/video-management-image.tar
+
+      - name: Remove unchanged VIDEO image artifact
+        if: needs.detect-changes.outputs.video != 'true'
+        env:
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "rm -f /tmp/video-management-image.tar"
 
       - name: Apply video-management stack
         env:

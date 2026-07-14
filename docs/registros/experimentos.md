@@ -5809,3 +5809,10 @@
 - Causa-raiz confirmada: o backend já entregava um ZIP válido; o erro estava no link relativo do frontend, que dependia da navegação do navegador em vez do cliente API configurado.
 - Correção aplicada: o botão passou a baixar o arquivo por blob usando a base oficial do backend, mantendo a tela do experimento aberta e exibindo carregamento.
 - Validação: Chromium local em `/experiments/65` baixou `experimento-65-entregaveis.zip` sem mudar a URL; o ZIP contém README, artefato final da landing e 5 entregáveis do nicho.
+
+## 2026-07-14 — Chat Moda com rastreabilidade e fallback de imagem
+
+- Problema: uma resposta textual do Chat Moda podia ser prejudicada por falha transitória no serviço ou por geração de imagem vazia.
+- Causa-raiz tratada: faltava correlação ponta a ponta por mensagem, retry curto no proxy do backend e separação clara entre sucesso textual e falha da imagem complementar.
+- Correção aplicada: backend passa a propagar `jobId`/`X-Correlation-Id`, registrar início/fim por tentativa e repetir uma vez falhas transitórias 502/503/504; o serviço Chat Moda registra o mesmo `jobId` e retorna texto com `imageError` quando a imagem falha.
+- Prevenção: cânone de chats de produto atualizado para exigir rastreabilidade e fallback textual quando mídia complementar falhar.

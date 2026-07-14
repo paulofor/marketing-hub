@@ -8,10 +8,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.mds.productevidence.v1.MdsProductEvidenceStageExecution;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.mds.MdsProductEvidenceStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.time.Instant;
@@ -36,6 +38,9 @@ class ProductEvidenceWorkflowServiceTest {
     private HypothesisPainStageExecutionRepository hypothesisExecutionRepository;
 
     @Mock
+    private HypothesisRepository hypothesisRepository;
+
+    @Mock
     private MarketNicheRepository marketNicheRepository;
 
     private ProductEvidenceWorkflowService service;
@@ -46,6 +51,7 @@ class ProductEvidenceWorkflowServiceTest {
         service = new ProductEvidenceWorkflowService(
                 executionRepository,
                 hypothesisExecutionRepository,
+                hypothesisRepository,
                 marketNicheRepository,
                 new ObjectMapper());
     }
@@ -66,6 +72,7 @@ class ProductEvidenceWorkflowServiceTest {
                         any()))
                 .thenReturn(Optional.empty());
         when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        when(hypothesisRepository.findByMarketNicheId(18L)).thenReturn(List.of());
         mockStage("hypothesis-pain", "agenda instável");
         mockStage("hypothesis-result", "agenda previsível");
         mockStage("hypothesis-mechanism", "confirmação e regras");
@@ -81,6 +88,45 @@ class ProductEvidenceWorkflowServiceTest {
         assertThat(captor.getValue().getStageCode()).isEqualTo("source-discovery");
         assertThat(captor.getValue().getStatus()).isEqualTo("PENDENTE");
         assertThat(captor.getValue().getScientificQuestion()).contains("confirmação e regras");
+    }
+
+    /** Deve usar a hipótese manual mais recente quando o pipeline de hipótese ainda não gerou etapas. */
+    @Test
+    void ensureProductEvidenceStartedFallsBackToLatestHypothesisForManualFlow() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(31L);
+        niche.setName("Mulheres urbanas sofisticação acessível");
+        Hypothesis hypothesis = Hypothesis.builder()
+                .title("MUSA-H001")
+                .persona("Mulher urbana de 25 a 45 anos")
+                .problem("Quer parecer sofisticada sem gastar com luxo.")
+                .promise("Parecer mais elegante com escolhas simples de beleza e imagem.")
+                .mechanism("Metodo Elegancia Acessivel")
+                .entrega("Checklist gratuito de sinais de sofisticação.")
+                .createdAt(Instant.parse("2026-07-14T10:00:00Z"))
+                .build();
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByCreatedAtDesc(
+                        31L,
+                        "deliverable-composer",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+        when(executionRepository.findTopByMarketNicheIdAndStatusInOrderByCreatedAtDesc(
+                        any(),
+                        any()))
+                .thenReturn(Optional.empty());
+        when(marketNicheRepository.findById(31L)).thenReturn(Optional.of(niche));
+        when(hypothesisRepository.findByMarketNicheId(31L)).thenReturn(List.of(hypothesis));
+        mockEmptyStages(31L);
+
+        service.ensureProductEvidenceStarted(31L);
+
+        ArgumentCaptor<MdsProductEvidenceStageExecution> captor =
+                ArgumentCaptor.forClass(MdsProductEvidenceStageExecution.class);
+        verify(executionRepository).save(captor.capture());
+        assertThat(captor.getValue().getProductIdea()).contains("Parecer mais elegante");
+        assertThat(captor.getValue().getScientificQuestion()).contains("Metodo Elegancia Acessivel");
+        assertThat(captor.getValue().getInputPayload()).contains("MUSA-H001");
+        assertThat(captor.getValue().getInputPayload()).contains("Quer parecer sofisticada");
     }
 
     /** Deve entregar pendência no contrato esperado pelo scientific-research-worker. */
@@ -198,6 +244,22 @@ class ProductEvidenceWorkflowServiceTest {
                                 stageCode,
                                 "CONCLUIDO"))
                 .thenReturn(Optional.of(execution));
+    }
+
+    /** Simula ausência de etapas concluídas do pipeline de hipótese. */
+    private void mockEmptyStages(Long marketNicheId) {
+        for (String stageCode : List.of(
+                "hypothesis-pain",
+                "hypothesis-result",
+                "hypothesis-mechanism",
+                "hypothesis-proof")) {
+            when(hypothesisExecutionRepository
+                            .findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
+                                    marketNicheId,
+                                    stageCode,
+                                    "CONCLUIDO"))
+                    .thenReturn(Optional.empty());
+        }
     }
 
     /** Cria uma execução científica mínima para os testes do workflow. */

@@ -12,5 +12,6 @@ public record FashionChatMessageResponse(
         String imageError,
         String mode,
         String sandboxId,
-        JsonNode research) {
+        JsonNode research,
+        String jobId) {
 }

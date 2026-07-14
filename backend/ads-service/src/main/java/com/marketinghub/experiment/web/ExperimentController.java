@@ -14,10 +14,12 @@ import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
+import com.marketinghub.experiment.service.ExperimentConstructionService;
 import com.marketinghub.experiment.service.ExperimentDeliverablesZipService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentPromiseGenerationService;
+import com.marketinghub.experiment.service.construction.ExperimentConstructionDto;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
 import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
@@ -47,6 +49,7 @@ public class ExperimentController {
     private final ExperimentFunnelService funnelService;
     private final ExperimentSalesPageAbTestService salesPageAbTestService;
     private final ExperimentDeliverablesZipService deliverablesZipService;
+    private final ExperimentConstructionService constructionService;
 
     /** Inicializa o controller com serviços de experimento, diagnóstico, prontidão e geração de promessas. */
     public ExperimentController(ExperimentService service, ExperimentMapper mapper,
@@ -56,7 +59,8 @@ public class ExperimentController {
                                 ExperimentCampaignDestinationPolicy campaignDestinationPolicy,
                                 ExperimentFunnelService funnelService,
                                 ExperimentSalesPageAbTestService salesPageAbTestService,
-                                ExperimentDeliverablesZipService deliverablesZipService) {
+                                ExperimentDeliverablesZipService deliverablesZipService,
+                                ExperimentConstructionService constructionService) {
         this.service = service;
         this.mapper = mapper;
         this.diagnosticsService = diagnosticsService;
@@ -66,6 +70,7 @@ public class ExperimentController {
         this.funnelService = funnelService;
         this.salesPageAbTestService = salesPageAbTestService;
         this.deliverablesZipService = deliverablesZipService;
+        this.constructionService = constructionService;
     }
 
     /** Cria um novo experimento com os dados comerciais informados na tela. */
@@ -84,6 +89,12 @@ public class ExperimentController {
     @GetMapping("/{id}")
     public ExperimentDto get(@PathVariable Long id) {
         return mapper.toDto(service.get(id));
+    }
+
+    /** Retorna a explicação de construção comercial e operacional do experimento. */
+    @GetMapping("/{id}/construction")
+    public ExperimentConstructionDto construction(@PathVariable Long id) {
+        return constructionService.getConstruction(id);
     }
 
     /** Retorna diagnósticos operacionais e comerciais do experimento. */

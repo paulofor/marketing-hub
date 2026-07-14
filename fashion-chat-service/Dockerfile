@@ -9,6 +9,7 @@ FROM deps AS builder
 COPY tsconfig.json ./
 COPY src ./src
 COPY tests ./tests
+COPY prompts ./prompts
 RUN npm run build
 
 FROM node:20-alpine
@@ -23,5 +24,6 @@ RUN npm ci --omit=dev \
   && chmod 700 /var/lib/ai-hub/codex \
   && npm cache clean --force
 COPY --from=builder /app/dist ./dist
+COPY prompts ./prompts
 EXPOSE 8094
 CMD ["node", "dist/src/index.js"]

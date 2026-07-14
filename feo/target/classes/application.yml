@@ -1,0 +1,18 @@
+server:
+  port: ${FEO_PORT:4577}
+
+spring:
+  application:
+    name: feo
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+feo:
+  worker-id: ${FEO_WORKER_ID:feo-local}
+  backend-base-url: ${FEO_BACKEND_BASE_URL:http://191.252.181.168}
+  pending-limit: ${FEO_PENDING_LIMIT:1}
+  output-dir: ${FEO_OUTPUT_DIR:/tmp/feo}

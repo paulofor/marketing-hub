@@ -141,6 +141,8 @@ test('chat uses local fallback when Codex App Server is unavailable', async () =
 
   assert.equal(response.body.mode, 'local_fallback');
   assert.match(response.body.answer, /visual casual|ocasiao/);
+  assert.equal(response.body.shouldGenerateImage, true);
+  assert.match(response.body.imagePrompt, /croqui editorial premium/);
   assert.ok(response.body.sandboxId);
   globalThis.fetch = originalFetch;
 });
@@ -166,6 +168,7 @@ test('chat uses local fallback when Codex account is not authenticated', async (
 
   assert.equal(response.body.mode, 'local_fallback');
   assert.match(response.body.answer, /visual casual|ocasiao/);
+  assert.equal(response.body.shouldGenerateImage, true);
   globalThis.fetch = originalFetch;
 });
 
@@ -193,6 +196,7 @@ test('chat uses local fallback when Codex thread start does not return thread id
 
   assert.equal(response.body.mode, 'local_fallback');
   assert.match(response.body.answer, /visual casual|ocasiao/);
+  assert.equal(response.body.shouldGenerateImage, true);
   globalThis.fetch = originalFetch;
 });
 
@@ -205,6 +209,7 @@ test('chat fallback handles greeting before style recommendation', async () => {
 
   assert.equal(response.body.mode, 'local_fallback');
   assert.match(response.body.answer, /Me diga a ocasiao/);
+  assert.equal(response.body.shouldGenerateImage, false);
   globalThis.fetch = originalFetch;
 });
 
@@ -242,7 +247,56 @@ test('chat answers only through Codex App Server', async () => {
 
   assert.equal(response.body.mode, 'codex_app_server');
   assert.match(response.body.answer, /alfaiataria/);
+  assert.equal(response.body.shouldGenerateImage, true);
+  assert.match(response.body.imagePrompt, /alfaiataria/);
   assert.ok(response.body.sandboxId);
+  globalThis.fetch = originalFetch;
+});
+
+test('chat preserves structured visual contract returned by Codex App Server', async () => {
+  mockResearchFetch();
+  const listeners = new Map<string, (params: unknown) => void>();
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    onNotification: (method: string, listener: (params: unknown) => void) => {
+      listeners.set(method, listener);
+      return () => listeners.delete(method);
+    },
+    request: async (method: string) => {
+      if (method === 'account/read') {
+        return { authMode: 'chatgpt' };
+      }
+      if (method === 'thread/start') {
+        return { threadId: 'thread-fashion-structured-test' };
+      }
+      if (method === 'turn/start') {
+        setTimeout(() => {
+          listeners.get('turn/completed')?.({
+            text: JSON.stringify({
+              answer: 'Use vestido midi azul frio com sandalia nude e brinco pequeno.',
+              shouldGenerateImage: true,
+              visualBrief: 'Croqui de vestido midi azul frio com sandalia nude.',
+              imagePrompt: 'Croqui editorial de moda com vestido midi azul frio e sandalia nude.',
+            }),
+          });
+        }, 0);
+        return {};
+      }
+      return {};
+    },
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .post('/api/fashion-chat/messages')
+    .send({ message: 'Look para jantar elegante', customerId: 'teste' })
+    .expect(200);
+
+  assert.equal(response.body.mode, 'codex_app_server');
+  assert.equal(response.body.answer, 'Use vestido midi azul frio com sandalia nude e brinco pequeno.');
+  assert.equal(response.body.shouldGenerateImage, true);
+  assert.equal(response.body.visualBrief, 'Croqui de vestido midi azul frio com sandalia nude.');
+  assert.equal(response.body.imagePrompt, 'Croqui editorial de moda com vestido midi azul frio e sandalia nude.');
   globalThis.fetch = originalFetch;
 });
 
@@ -295,8 +349,10 @@ test('chat accepts connected executable account contract before starting Codex t
   assert.equal(turnStartRecord.input?.[0]?.type, 'text');
   assert.match(turnStartRecord.input?.[0]?.text ?? '', /Que roupa usar em uma reuniao casual\?/);
   assert.match(turnStartRecord.input?.[0]?.text ?? '', /Use imagem somente quando for necessario/);
-  assert.match(turnStartRecord.input?.[0]?.text ?? '', /croqui de moda editorial/);
-  assert.match(turnStartRecord.input?.[0]?.text ?? '', /nunca fotos, 3D, catalogo generico ou ilustracao infantil/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /Contrato obrigatorio de saida/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /croqui editorial e croqui tecnico leve/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /Evitar sempre:/);
+  assert.match(turnStartRecord.input?.[0]?.text ?? '', /Render 3D/);
   globalThis.fetch = originalFetch;
 });
 

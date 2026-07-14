@@ -205,6 +205,27 @@ paths:
       responses:
         '200':
           description: Experimento duplicado
+  /api/experiments/{id}/construction:
+    get:
+      tags: [Experiments]
+      summary: Consultar como o experimento foi construído
+      description: Retorna uma leitura consolidada da origem, tese comercial, oferta, plano de validação e ativos já construídos para a aba Construção.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Construção consolidada do experimento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentConstruction'
+        '404':
+          description: Experimento não encontrado
   /api/experiments/{experimentId}/funnel/analytics:
     get:
       tags: [Experiments]
@@ -1370,6 +1391,47 @@ components:
         journeyTemplateId:
           type: integer
         journeyTemplateName:
+          type: string
+    ExperimentConstruction:
+      type: object
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        experimentName:
+          type: string
+        creationSource:
+          type: string
+          enum: [SYSTEM_FLOW, MANUAL_FLOW]
+        manualFlow:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentConstructionSection'
+    ExperimentConstructionSection:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentConstructionItem'
+    ExperimentConstructionItem:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
           type: string
     ExperimentLandingAnalytics:
       type: object

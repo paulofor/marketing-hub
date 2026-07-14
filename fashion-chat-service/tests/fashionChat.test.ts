@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import test from 'node:test';
 import request from 'supertest';
 import type { CodexAppServerClient } from '../src/codexAppServerClient.js';
@@ -12,6 +14,18 @@ function mockResearchFetch() {
       status: 200,
       headers: { 'content-type': 'text/html' },
     });
+}
+
+async function writeTinyPng(cwd: string) {
+  const imagePath = path.join(cwd, 'fashion-visual.png');
+  await fs.writeFile(
+    imagePath,
+    Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lT7L4wAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  );
+  return imagePath;
 }
 
 test('health returns service status', async () => {
@@ -216,6 +230,8 @@ test('chat fallback handles greeting before style recommendation', async () => {
 test('chat answers only through Codex App Server', async () => {
   mockResearchFetch();
   const listeners = new Map<string, (params: unknown) => void>();
+  let turnStarts = 0;
+  let imageCwd = '';
   const fakeCodexAppServerClient = {
     isReady: () => true,
     health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
@@ -223,16 +239,28 @@ test('chat answers only through Codex App Server', async () => {
       listeners.set(method, listener);
       return () => listeners.delete(method);
     },
-    request: async (method: string) => {
+    request: async (method: string, params?: unknown) => {
       if (method === 'account/read') {
         return { authMode: 'chatgpt' };
       }
       if (method === 'thread/start') {
+        const cwd = (params as { cwd?: string } | undefined)?.cwd;
+        if (turnStarts > 0 && cwd) {
+          imageCwd = cwd;
+        }
         return { threadId: 'thread-fashion-test' };
       }
       if (method === 'turn/start') {
+        turnStarts += 1;
         setTimeout(() => {
-          listeners.get('turn/completed')?.({ text: 'Use alfaiataria leve, base neutra e um acessorio de cor.' });
+          if (turnStarts === 1) {
+            listeners.get('turn/completed')?.({ text: 'Use alfaiataria leve, base neutra e um acessorio de cor.' });
+            return;
+          }
+          void writeTinyPng(imageCwd).then((imagePath) => {
+            listeners.get('item/completed')?.({ item: { type: 'imageGeneration', status: 'completed', result: 'ok', savedPath: imagePath } });
+            listeners.get('turn/completed')?.({ status: 'completed' });
+          });
         }, 0);
         return {};
       }
@@ -249,6 +277,7 @@ test('chat answers only through Codex App Server', async () => {
   assert.match(response.body.answer, /alfaiataria/);
   assert.equal(response.body.shouldGenerateImage, true);
   assert.match(response.body.imagePrompt, /alfaiataria/);
+  assert.match(response.body.imageUrl, /^data:image\/png;base64,/);
   assert.ok(response.body.sandboxId);
   globalThis.fetch = originalFetch;
 });
@@ -256,6 +285,8 @@ test('chat answers only through Codex App Server', async () => {
 test('chat preserves structured visual contract returned by Codex App Server', async () => {
   mockResearchFetch();
   const listeners = new Map<string, (params: unknown) => void>();
+  let turnStarts = 0;
+  let imageCwd = '';
   const fakeCodexAppServerClient = {
     isReady: () => true,
     health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
@@ -263,22 +294,34 @@ test('chat preserves structured visual contract returned by Codex App Server', a
       listeners.set(method, listener);
       return () => listeners.delete(method);
     },
-    request: async (method: string) => {
+    request: async (method: string, params?: unknown) => {
       if (method === 'account/read') {
         return { authMode: 'chatgpt' };
       }
       if (method === 'thread/start') {
+        const cwd = (params as { cwd?: string } | undefined)?.cwd;
+        if (turnStarts > 0 && cwd) {
+          imageCwd = cwd;
+        }
         return { threadId: 'thread-fashion-structured-test' };
       }
       if (method === 'turn/start') {
+        turnStarts += 1;
         setTimeout(() => {
-          listeners.get('turn/completed')?.({
-            text: JSON.stringify({
-              answer: 'Use vestido midi azul frio com sandalia nude e brinco pequeno.',
-              shouldGenerateImage: true,
-              visualBrief: 'Croqui de vestido midi azul frio com sandalia nude.',
-              imagePrompt: 'Croqui editorial de moda com vestido midi azul frio e sandalia nude.',
-            }),
+          if (turnStarts === 1) {
+            listeners.get('turn/completed')?.({
+              text: JSON.stringify({
+                answer: 'Use vestido midi azul frio com sandalia nude e brinco pequeno.',
+                shouldGenerateImage: true,
+                visualBrief: 'Croqui de vestido midi azul frio com sandalia nude.',
+                imagePrompt: 'Croqui editorial de moda com vestido midi azul frio e sandalia nude.',
+              }),
+            });
+            return;
+          }
+          void writeTinyPng(imageCwd).then((imagePath) => {
+            listeners.get('item/completed')?.({ item: { type: 'imageGeneration', status: 'completed', result: 'ok', savedPath: imagePath } });
+            listeners.get('turn/completed')?.({ status: 'completed' });
           });
         }, 0);
         return {};
@@ -297,6 +340,7 @@ test('chat preserves structured visual contract returned by Codex App Server', a
   assert.equal(response.body.shouldGenerateImage, true);
   assert.equal(response.body.visualBrief, 'Croqui de vestido midi azul frio com sandalia nude.');
   assert.equal(response.body.imagePrompt, 'Croqui editorial de moda com vestido midi azul frio e sandalia nude.');
+  assert.match(response.body.imageUrl, /^data:image\/png;base64,/);
   globalThis.fetch = originalFetch;
 });
 
@@ -306,6 +350,8 @@ test('chat accepts connected executable account contract before starting Codex t
   const calls: string[] = [];
   let threadStartParams: unknown;
   let turnStartParams: unknown;
+  let turnStarts = 0;
+  let imageCwd = '';
   const fakeCodexAppServerClient = {
     isReady: () => true,
     health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
@@ -319,13 +365,27 @@ test('chat accepts connected executable account contract before starting Codex t
         return { connected: true, status: 'connected', executable: true, blockReason: null };
       }
       if (method === 'thread/start') {
-        threadStartParams = params;
+        if (!threadStartParams) {
+          threadStartParams = params;
+        } else {
+          imageCwd = (params as { cwd?: string } | undefined)?.cwd ?? '';
+        }
         return { thread: { id: 'thread-fashion-connected-test' } };
       }
       if (method === 'turn/start') {
-        turnStartParams = params;
+        turnStarts += 1;
+        if (!turnStartParams) {
+          turnStartParams = params;
+        }
         setTimeout(() => {
-          listeners.get('turn/completed')?.({ text: 'Use camisa fluida, calca reta e um ponto de cor discreto.' });
+          if (turnStarts === 1) {
+            listeners.get('turn/completed')?.({ text: 'Use camisa fluida, calca reta e um ponto de cor discreto.' });
+            return;
+          }
+          void writeTinyPng(imageCwd).then((imagePath) => {
+            listeners.get('item/completed')?.({ item: { type: 'imageGeneration', status: 'completed', result: 'ok', savedPath: imagePath } });
+            listeners.get('turn/completed')?.({ status: 'completed' });
+          });
         }, 0);
         return {};
       }
@@ -340,7 +400,8 @@ test('chat accepts connected executable account contract before starting Codex t
 
   assert.equal(response.body.mode, 'codex_app_server');
   assert.match(response.body.answer, /camisa fluida/);
-  assert.deepEqual(calls, ['account/read', 'thread/start', 'turn/start']);
+  assert.match(response.body.imageUrl, /^data:image\/png;base64,/);
+  assert.deepEqual(calls, ['account/read', 'thread/start', 'turn/start', 'account/read', 'thread/start', 'turn/start']);
   assert.ok(threadStartParams && typeof threadStartParams === 'object');
   assert.equal((threadStartParams as { model?: string }).model, 'gpt-5.5');
   assert.ok(turnStartParams && typeof turnStartParams === 'object');

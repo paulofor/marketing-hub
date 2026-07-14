@@ -42,6 +42,7 @@ O servico tenta usar o Codex App Server como resposta principal:
 
 - nao usa `OPENAI_API_KEY`;
 - nao usa cliente OpenAI direto;
+- quando a resposta pede imagem, abre um segundo turno no Codex App Server, aciona a geracao nativa de imagem, captura o `savedPath` do item `imageGeneration` e devolve a imagem como `data:image/...` em `imageUrl`;
 - se o Codex App Server nao estiver pronto ou autenticado, `POST /api/fashion-chat/messages` responde em modo `local_fallback` para nao quebrar a conversa do cliente;
 - a prontidao operacional em `GET /health/ready` so retorna `200` quando o Codex App Server estiver pronto e autenticado;
 - `FASHION_CHAT_FORCE_FALLBACK=true` forca o modo local para validacao operacional.

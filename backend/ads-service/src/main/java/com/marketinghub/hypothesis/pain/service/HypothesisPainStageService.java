@@ -17,7 +17,6 @@ import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
-import com.marketinghub.mds.productevidence.v1.service.ProductEvidenceWorkflowService;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
@@ -77,7 +76,7 @@ public class HypothesisPainStageService {
     private final AiPromptSchemaTemplateRepository templateRepository;
     private final HypothesisPainCostCalculator costCalculator;
     private final HypothesisPipelineContentGuard contentGuard;
-    private final ProductEvidenceWorkflowService productEvidenceWorkflowService;
+    private final HypothesisProductEvidenceGate productEvidenceGate;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
     public HypothesisPainStageService(
@@ -87,14 +86,14 @@ public class HypothesisPainStageService {
             AiPromptSchemaTemplateRepository templateRepository,
             HypothesisPainCostCalculator costCalculator,
             HypothesisPipelineContentGuard contentGuard,
-            ProductEvidenceWorkflowService productEvidenceWorkflowService) {
+            HypothesisProductEvidenceGate productEvidenceGate) {
         this.marketNicheRepository = marketNicheRepository;
         this.enrichmentProfileReader = enrichmentProfileReader;
         this.executionRepository = executionRepository;
         this.templateRepository = templateRepository;
         this.costCalculator = costCalculator;
         this.contentGuard = contentGuard;
-        this.productEvidenceWorkflowService = productEvidenceWorkflowService;
+        this.productEvidenceGate = productEvidenceGate;
     }
 
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
@@ -302,8 +301,8 @@ public class HypothesisPainStageService {
         if (!StringUtils.hasText(latestOpenCompletedProofResponse(marketNicheId))) {
             return PROOF_STAGE_CODE;
         }
-        if (!productEvidenceWorkflowService.hasApprovedEvidencePack(marketNicheId)) {
-            productEvidenceWorkflowService.ensureProductEvidenceStarted(marketNicheId);
+        if (!productEvidenceGate.hasApprovedEvidencePack(marketNicheId)) {
+            productEvidenceGate.ensureProductEvidenceStarted(marketNicheId);
             throw new IllegalStateException(
                     "A base científica foi iniciada e precisa concluir antes da etapa Oferta para o nicho: " + marketNicheId);
         }
@@ -593,7 +592,7 @@ public class HypothesisPainStageService {
             requireCompletedResult(marketNicheId);
             requireCompletedMechanism(marketNicheId);
             requireCompletedProof(marketNicheId);
-            productEvidenceWorkflowService.requireApprovedEvidencePack(marketNicheId);
+            productEvidenceGate.requireApprovedEvidencePack(marketNicheId);
         }
     }
 
@@ -843,8 +842,8 @@ public class HypothesisPainStageService {
         MarketNiche niche = marketNicheRepository.findById(execution.getMarketNicheId())
                 .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + execution.getMarketNicheId()));
         if (PROOF_STAGE_CODE.equals(execution.getStageCode())
-                && !productEvidenceWorkflowService.hasApprovedEvidencePack(execution.getMarketNicheId())) {
-            productEvidenceWorkflowService.ensureProductEvidenceStarted(execution.getMarketNicheId());
+                && !productEvidenceGate.hasApprovedEvidencePack(execution.getMarketNicheId())) {
+            productEvidenceGate.ensureProductEvidenceStarted(execution.getMarketNicheId());
             log.info(
                     "[HypothesisPipeline] Fluxo automático aguardando base científica antes da Oferta marketNicheId={} idJob={}",
                     execution.getMarketNicheId(),

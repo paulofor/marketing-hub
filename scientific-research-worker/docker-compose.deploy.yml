@@ -1,7 +1,6 @@
 services:
   scientific-research-worker:
     image: ${SCIENTIFIC_RESEARCH_WORKER_IMAGE:-ghcr.io/marketing-hub-org/marketing-hub/scientific-research-worker:latest}
-    build: null
     environment:
       SCIENTIFIC_RESEARCH_BACKEND_BASE_URL: ${SCIENTIFIC_RESEARCH_BACKEND_BASE_URL:-http://191.252.181.168}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}

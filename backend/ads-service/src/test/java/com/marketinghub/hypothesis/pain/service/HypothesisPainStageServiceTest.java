@@ -21,7 +21,6 @@ import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
-import com.marketinghub.mds.productevidence.v1.service.ProductEvidenceWorkflowService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -55,7 +54,7 @@ class HypothesisPainStageServiceTest {
     private HypothesisPainCostCalculator costCalculator;
 
     @Mock
-    private ProductEvidenceWorkflowService productEvidenceWorkflowService;
+    private HypothesisProductEvidenceGate productEvidenceGate;
 
     private HypothesisPainStageService service;
 
@@ -69,8 +68,8 @@ class HypothesisPainStageServiceTest {
                 templateRepository,
                 costCalculator,
                 new HypothesisPipelineContentGuard(new ObjectMapper()),
-                productEvidenceWorkflowService);
-        lenient().when(productEvidenceWorkflowService.hasApprovedEvidencePack(anyLong())).thenReturn(true);
+                productEvidenceGate);
+        lenient().when(productEvidenceGate.hasApprovedEvidencePack(anyLong())).thenReturn(true);
         mockActiveTemplate("hypothesis-pain");
         mockActiveTemplate("hypothesis-result");
         mockActiveTemplate("hypothesis-mechanism");

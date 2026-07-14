@@ -23,6 +23,12 @@ public class ProductEvidenceInternalController {
         this.workflowService = workflowService;
     }
 
+    /** Inicia a pesquisa científica de produto para um nicho quando o fluxo manual exigir evidência antes da oferta. */
+    @PostMapping("/market-niches/{marketNicheId}/stage-executions/start")
+    public void start(@PathVariable Long marketNicheId) {
+        workflowService.ensureProductEvidenceStarted(marketNicheId);
+    }
+
     /** Lista pendências canônicas de uma etapa para consumo pelo scientific-research-worker. */
     @GetMapping("/{stageCode}/stage-executions/pending")
     public List<ProductEvidenceStagePendingResponse> pending(

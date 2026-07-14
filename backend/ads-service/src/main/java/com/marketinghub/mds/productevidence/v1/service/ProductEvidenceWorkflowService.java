@@ -3,18 +3,22 @@ package com.marketinghub.mds.productevidence.v1.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.mds.productevidence.v1.MdsProductEvidenceStageExecution;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.mds.MdsProductEvidenceStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -43,6 +47,7 @@ public class ProductEvidenceWorkflowService {
 
     private final MdsProductEvidenceStageExecutionRepository executionRepository;
     private final HypothesisPainStageExecutionRepository hypothesisExecutionRepository;
+    private final HypothesisRepository hypothesisRepository;
     private final MarketNicheRepository marketNicheRepository;
     private final ObjectMapper objectMapper;
 
@@ -50,10 +55,12 @@ public class ProductEvidenceWorkflowService {
     public ProductEvidenceWorkflowService(
             MdsProductEvidenceStageExecutionRepository executionRepository,
             HypothesisPainStageExecutionRepository hypothesisExecutionRepository,
+            HypothesisRepository hypothesisRepository,
             MarketNicheRepository marketNicheRepository,
             ObjectMapper objectMapper) {
         this.executionRepository = executionRepository;
         this.hypothesisExecutionRepository = hypothesisExecutionRepository;
+        this.hypothesisRepository = hypothesisRepository;
         this.marketNicheRepository = marketNicheRepository;
         this.objectMapper = objectMapper;
     }
@@ -230,14 +237,39 @@ public class ProductEvidenceWorkflowService {
 
     /** Monta a entrada inicial da pesquisa científica a partir das etapas concluídas da hipótese. */
     private Map<String, Object> buildInitialInput(Long marketNicheId, MarketNiche niche) {
+        Optional<Hypothesis> latestHypothesis = latestHypothesis(marketNicheId);
         Map<String, Object> input = new LinkedHashMap<>();
         input.put("marketNicheId", marketNicheId);
         input.put("marketName", niche.getName());
-        input.put("pain", latestStageText(marketNicheId, HYPOTHESIS_PAIN));
-        input.put("result", latestStageText(marketNicheId, HYPOTHESIS_RESULT));
-        input.put("mechanism", latestStageText(marketNicheId, HYPOTHESIS_MECHANISM));
-        input.put("proof", latestStageText(marketNicheId, HYPOTHESIS_PROOF));
+        input.put("hypothesisId", latestHypothesis.map(Hypothesis::getId).map(String::valueOf).orElse(""));
+        input.put("hypothesisTitle", latestHypothesis.map(Hypothesis::getTitle).orElse(""));
+        input.put("persona", latestHypothesis.map(Hypothesis::getPersona).orElse(""));
+        input.put("pain", firstUseful(latestStageText(marketNicheId, HYPOTHESIS_PAIN), latestHypothesis.map(Hypothesis::getProblem).orElse("")));
+        input.put("result", firstUseful(latestStageText(marketNicheId, HYPOTHESIS_RESULT), latestHypothesis.map(Hypothesis::getPromise).orElse("")));
+        input.put("mechanism", firstUseful(latestStageText(marketNicheId, HYPOTHESIS_MECHANISM), latestHypothesis.map(this::resolveMechanism).orElse("")));
+        input.put("proof", firstUseful(latestStageText(marketNicheId, HYPOTHESIS_PROOF), latestHypothesis.map(Hypothesis::getEntrega).orElse("")));
         return input;
+    }
+
+    /** Busca a hipótese manual/sistêmica mais recente do nicho para preencher pesquisa sem pipeline completo. */
+    private Optional<Hypothesis> latestHypothesis(Long marketNicheId) {
+        return hypothesisRepository.findByMarketNicheId(marketNicheId).stream()
+                .max(Comparator.comparing(
+                        Hypothesis::getCreatedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())));
+    }
+
+    /** Resolve o mecanismo mais específico disponível na hipótese. */
+    private String resolveMechanism(Hypothesis hypothesis) {
+        return firstUseful(hypothesis.getUniqueMechanism(), hypothesis.getMechanism());
+    }
+
+    /** Retorna o primeiro texto preenchido para compor o contrato científico. */
+    private String firstUseful(String first, String second) {
+        if (StringUtils.hasText(first)) {
+            return first;
+        }
+        return StringUtils.hasText(second) ? second : "";
     }
 
     /** Retorna a resposta concluída mais recente de uma etapa da hipótese. */

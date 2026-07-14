@@ -36,6 +36,26 @@ tags:
     description: Pipeline interno de base científica obrigatória para ofertas.
 
 paths:
+  /api/internal/scientific-research/product-evidence/v1/market-niches/{marketNicheId}/stage-executions/start:
+    post:
+      tags: [ProductEvidence]
+      operationId: startProductEvidenceForMarketNiche
+      summary: Inicia a pesquisa científica de produto para um nicho manual ou sistêmico.
+      parameters:
+        - name: marketNicheId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Pesquisa científica iniciada ou já existente.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/internal/scientific-research/product-evidence/v1/{stageCode}/stage-executions/pending:
     get:
       tags: [ProductEvidence]

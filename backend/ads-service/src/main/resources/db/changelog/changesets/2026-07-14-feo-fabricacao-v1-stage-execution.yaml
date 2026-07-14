@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-14-feo-fabricacao-v1-stage-execution
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: feo_fabricacao_v1_stage_execution
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE feo_fabricacao_v1_stage_execution (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                experiment_id BIGINT NOT NULL,
+                job_id VARCHAR(64) NOT NULL,
+                stage_code VARCHAR(80) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                input_payload LONGTEXT NOT NULL,
+                output_payload LONGTEXT NULL,
+                artifacts_payload LONGTEXT NULL,
+                metrics_payload LONGTEXT NULL,
+                block_reason LONGTEXT NULL,
+                next_stage_code VARCHAR(80) NULL,
+                worker_id VARCHAR(191) NULL,
+                error_message LONGTEXT NULL,
+                started_at DATETIME(6) NULL,
+                finished_at DATETIME(6) NULL,
+                created_at DATETIME(6) NOT NULL,
+                updated_at DATETIME(6) NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_feo_fabricacao_v1_stage_execution_experiment
+                  FOREIGN KEY (experiment_id) REFERENCES experiment(id),
+                KEY idx_feo_fabricacao_v1_stage_status_created (stage_code, status, created_at),
+                KEY idx_feo_fabricacao_v1_experiment_created (experiment_id, created_at),
+                KEY idx_feo_fabricacao_v1_job_stage (job_id, stage_code)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

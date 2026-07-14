@@ -72,6 +72,14 @@ class FeoFabricacaoV1ContractTest {
         assertThat(result.nextStageCode()).isNull();
         assertThat(result.output().pdf().contentType()).isEqualTo("application/pdf");
         assertThat(result.output().pdf().content()).startsWith("%PDF".getBytes());
+        assertThat(new String(result.output().html().content(), java.nio.charset.StandardCharsets.UTF_8))
+                .contains("Experiencia de entrega premium")
+                .contains("Diagnostico inicial")
+                .contains("Template preenchivel")
+                .contains("Gate de qualidade comercial");
+        assertThat(new String(result.output().spreadsheet().content(), java.nio.charset.StandardCharsets.UTF_8))
+                .contains("acao_7_dias")
+                .contains("criterio_conclusao");
         assertThat(result.output().spreadsheet().name()).endsWith(".csv");
         assertThat(result.output().zipPackage().contentType()).isEqualTo("application/zip");
         assertThat(result.artifacts()).extracting("type").contains("FINAL_HTML", "FINAL_PDF", "FINAL_SPREADSHEET", "FINAL_ZIP");

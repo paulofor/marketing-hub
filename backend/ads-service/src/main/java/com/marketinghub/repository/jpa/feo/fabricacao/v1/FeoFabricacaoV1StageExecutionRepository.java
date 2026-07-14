@@ -49,4 +49,10 @@ public interface FeoFabricacaoV1StageExecutionRepository extends JpaRepository<F
 
     /** Lista histórico recente da FEO para um experimento. */
     List<FeoFabricacaoV1StageExecution> findTop20ByExperimentIdOrderByCreatedAtDesc(Long experimentId);
+
+    /** Busca a montagem final mais recente concluída para publicar artefatos no ZIP do experimento. */
+    Optional<FeoFabricacaoV1StageExecution> findFirstByExperimentIdAndStageCodeAndStatusOrderByFinishedAtDesc(
+            Long experimentId,
+            String stageCode,
+            FeoFabricacaoV1StageStatus status);
 }

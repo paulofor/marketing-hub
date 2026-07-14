@@ -150,10 +150,12 @@ test('chat uses local fallback when Codex App Server is unavailable', async () =
   mockResearchFetch();
   const response = await request(createApp())
     .post('/api/fashion-chat/messages')
+    .set('X-Job-Id', 'fashion-chat-local-test')
     .send({ message: 'Que roupa usar em uma reuniao casual?', customerId: 'teste' })
     .expect(200);
 
   assert.equal(response.body.mode, 'local_fallback');
+  assert.equal(response.body.jobId, 'fashion-chat-local-test');
   assert.match(response.body.answer, /visual casual|ocasiao/);
   assert.equal(response.body.shouldGenerateImage, true);
   assert.match(response.body.imagePrompt, /croqui editorial premium/);
@@ -332,15 +334,69 @@ test('chat preserves structured visual contract returned by Codex App Server', a
 
   const response = await request(createApp(fakeCodexAppServerClient))
     .post('/api/fashion-chat/messages')
-    .send({ message: 'Look para jantar elegante', customerId: 'teste' })
+    .send({ message: 'Look para jantar elegante', customerId: 'teste', jobId: 'fashion-chat-structured-test' })
     .expect(200);
 
   assert.equal(response.body.mode, 'codex_app_server');
+  assert.equal(response.body.jobId, 'fashion-chat-structured-test');
   assert.equal(response.body.answer, 'Use vestido midi azul frio com sandalia nude e brinco pequeno.');
   assert.equal(response.body.shouldGenerateImage, true);
   assert.equal(response.body.visualBrief, 'Croqui de vestido midi azul frio com sandalia nude.');
   assert.equal(response.body.imagePrompt, 'Croqui editorial de moda com vestido midi azul frio e sandalia nude.');
   assert.match(response.body.imageUrl, /^data:image\/png;base64,/);
+  globalThis.fetch = originalFetch;
+});
+
+test('chat keeps textual response when image generation fails', async () => {
+  mockResearchFetch();
+  const listeners = new Map<string, (params: unknown) => void>();
+  let turnStarts = 0;
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    onNotification: (method: string, listener: (params: unknown) => void) => {
+      listeners.set(method, listener);
+      return () => listeners.delete(method);
+    },
+    request: async (method: string) => {
+      if (method === 'account/read') {
+        return { authMode: 'chatgpt' };
+      }
+      if (method === 'thread/start') {
+        return { threadId: 'thread-fashion-image-failure-test' };
+      }
+      if (method === 'turn/start') {
+        turnStarts += 1;
+        setTimeout(() => {
+          if (turnStarts === 1) {
+            listeners.get('turn/completed')?.({
+              text: JSON.stringify({
+                answer: 'Use vestido de manga longa, meia fina e casaco estruturado.',
+                shouldGenerateImage: true,
+                imagePrompt: 'Croqui editorial de vestido de manga longa para festa no inverno.',
+              }),
+            });
+            return;
+          }
+          listeners.get('error')?.({ error: 'CODEX_IMAGE_EMPTY_PAYLOAD' });
+        }, 0);
+        return {};
+      }
+      return {};
+    },
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .post('/api/fashion-chat/messages')
+    .send({ message: 'Uma festa a noite no inverno', customerId: 'teste', jobId: 'fashion-chat-image-failure-test' })
+    .expect(200);
+
+  assert.equal(response.body.mode, 'codex_app_server');
+  assert.equal(response.body.jobId, 'fashion-chat-image-failure-test');
+  assert.match(response.body.answer, /vestido de manga longa/);
+  assert.equal(response.body.shouldGenerateImage, true);
+  assert.equal(response.body.imageUrl, undefined);
+  assert.equal(response.body.imageError, 'CODEX_IMAGE_EMPTY_PAYLOAD');
   globalThis.fetch = originalFetch;
 });
 

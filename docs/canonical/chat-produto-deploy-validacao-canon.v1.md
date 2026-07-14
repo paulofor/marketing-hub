@@ -69,6 +69,12 @@ Também é obrigatório validar:
 
 No caso do Chat Moda, o serviço estava autenticado, mas o modelo configurado inicialmente era recusado pela conta. A correção foi usar modelo aceito pelo ambiente e validar resposta real pelo backend.
 
+## Regra de rastreabilidade e resiliência
+
+Toda mensagem de chat de produto deve carregar um `jobId` ou `correlationId` ponta a ponta, do backend principal ao serviço executor, e os logs precisam registrar início, conclusão, modo de resposta e erro quando existir.
+
+Quando o chat gerar mídia complementar, como imagem, a falha dessa mídia não pode derrubar a conversa textual. A resposta deve retornar `200` com o texto útil, preservar o briefing/prompt quando houver e expor `imageError` ou campo equivalente para diagnóstico operacional. Falhas transitórias do serviço executor podem receber retry curto e controlado no backend, desde que o payload seja o mesmo e a operação seja segura para repetição.
+
 ## Procedimento obrigatório de diagnóstico
 
 Quando um chat publicado apresentar erro na tela, seguir esta ordem:
@@ -118,7 +124,9 @@ Todo novo chat de produto deve nascer com:
 
 - endpoint backend canônico;
 - proxy `/api/` validado no frontend publicado;
+- `jobId`/correlationId propagado pelo backend, serviço executor e logs;
 - logs de request, resposta, modo de execução e erro;
+- fallback textual quando uma mídia complementar falhar;
 - teste automatizado do serviço de chat;
 - teste manual ponta a ponta pela tela;
 - validação explícita de que a resposta veio da integração real.

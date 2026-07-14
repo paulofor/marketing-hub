@@ -10,6 +10,7 @@ import { FashionPromptTemplateLoader } from './promptTemplates.js';
 export interface FashionChatRequest {
   message: string;
   customerId?: string;
+  jobId?: string;
 }
 
 export interface FashionChatResponse {
@@ -21,6 +22,7 @@ export interface FashionChatResponse {
   imageError?: string;
   mode: 'codex_app_server' | 'local_fallback';
   sandboxId: string;
+  jobId: string;
   research: FashionResearchResult;
 }
 
@@ -41,23 +43,31 @@ export class FashionChatService {
 
   async answer(request: FashionChatRequest): Promise<FashionChatResponse> {
     const message = request.message.trim();
+    const jobId = request.jobId?.trim() || `fashion-chat-${Date.now()}`;
     const sandboxDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fashion-chat-'));
     const sandboxId = path.basename(sandboxDir);
+    console.info(`Fashion chat answer start jobId=${jobId} sandboxId=${sandboxId}`);
     const research = await this.researchService.research(message);
     const prompt = await this.buildPrompt(message, request.customerId, research);
     await fs.writeFile(path.join(sandboxDir, 'fashion-question.md'), prompt, 'utf-8');
 
     if (this.shouldForceFallback() || !this.codexAppServerClient?.isReady()) {
-      return this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, sandboxDir, research);
+      const response = await this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, sandboxDir, research, jobId);
+      console.info(`Fashion chat answer completed jobId=${jobId} sandboxId=${sandboxId} mode=${response.mode} imageError=${response.imageError ?? 'none'}`);
+      return response;
     }
 
     try {
       const answer = await this.answerWithCodexAppServer(prompt, sandboxDir);
-      return this.buildResponse(this.parseStructuredAnswer(answer), 'codex_app_server', sandboxId, sandboxDir, research);
+      const response = await this.buildResponse(this.parseStructuredAnswer(answer), 'codex_app_server', sandboxId, sandboxDir, research, jobId);
+      console.info(`Fashion chat answer completed jobId=${jobId} sandboxId=${sandboxId} mode=${response.mode} imageError=${response.imageError ?? 'none'}`);
+      return response;
     } catch (err) {
       if (this.isRecoverableCodexError(err)) {
-        console.warn(`Fashion chat using local fallback: ${err instanceof Error ? err.message : String(err)}`);
-        return this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, sandboxDir, research);
+        console.warn(`Fashion chat using local fallback jobId=${jobId}: ${err instanceof Error ? err.message : String(err)}`);
+        const response = await this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, sandboxDir, research, jobId);
+        console.info(`Fashion chat answer completed jobId=${jobId} sandboxId=${sandboxId} mode=${response.mode} imageError=${response.imageError ?? 'none'}`);
+        return response;
       }
       throw err;
     }
@@ -142,6 +152,7 @@ export class FashionChatService {
     sandboxId: string,
     sandboxDir: string,
     research: FashionResearchResult,
+    jobId: string,
   ): Promise<FashionChatResponse> {
     const response: FashionChatResponse = {
       answer: this.cleanAnswer(structured.answer),
@@ -150,12 +161,25 @@ export class FashionChatService {
       imagePrompt: structured.imagePrompt,
       mode,
       sandboxId,
+      jobId,
       research,
     };
     if (structured.shouldGenerateImage && structured.imagePrompt?.trim()) {
-      const image = await this.imageGenerator.generate({ prompt: structured.imagePrompt, sandboxId, sandboxDir });
-      response.imageUrl = image.imageUrl;
-      response.imageError = image.error;
+      try {
+        console.info(`Fashion chat image generation start jobId=${jobId} sandboxId=${sandboxId}`);
+        const image = await this.imageGenerator.generate({ prompt: structured.imagePrompt, sandboxId, sandboxDir });
+        response.imageUrl = image.imageUrl;
+        response.imageError = image.error;
+        if (image.error) {
+          console.warn(`Fashion chat image generation failed jobId=${jobId} sandboxId=${sandboxId} error=${image.error}`);
+        } else {
+          console.info(`Fashion chat image generation completed jobId=${jobId} sandboxId=${sandboxId}`);
+        }
+      } catch (err) {
+        const imageError = err instanceof Error ? err.message : String(err);
+        console.error(`Fashion chat image generation crashed jobId=${jobId} sandboxId=${sandboxId}: ${imageError}`, err);
+        response.imageError = imageError || 'FASHION_IMAGE_GENERATION_FAILED';
+      }
     }
     return response;
   }

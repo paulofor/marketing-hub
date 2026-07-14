@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { Request, Response } from 'express';
 import morgan from 'morgan';
+import { randomUUID } from 'node:crypto';
 import { CodexAppServerClient } from './codexAppServerClient.js';
 import { cancelCodexLogin, logoutCodexAccount, readCodexAccount, startCodexLogin } from './codexAppServerAuth.js';
 import { FashionChatService } from './fashionChatService.js';
@@ -119,17 +120,20 @@ export function createApp(codexAppServerClient?: CodexAppServerClient) {
   app.post('/api/fashion-chat/messages', async (req: Request, res: Response) => {
     const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
     const customerId = typeof req.body?.customerId === 'string' ? req.body.customerId.trim() : undefined;
+    const jobId = resolveJobId(req);
     if (!message) {
       return res.status(400).json({ error: 'message e obrigatorio' });
     }
     try {
-      const response = await chatService.answer({ message, customerId });
+      console.info(`Fashion chat request received jobId=${jobId} customerId=${customerId ?? 'none'}`);
+      const response = await chatService.answer({ message, customerId, jobId });
+      console.info(`Fashion chat request finished jobId=${jobId} mode=${response.mode} imageError=${response.imageError ?? 'none'}`);
       return res.json(response);
     } catch (err) {
       const messageText = err instanceof Error ? err.message : 'FASHION_CHAT_FAILED';
-      console.error(`Fashion chat failed: ${messageText}`, err);
+      console.error(`Fashion chat failed jobId=${jobId}: ${messageText}`, err);
       const status = messageText.startsWith('CODEX_APP_SERVER') || messageText === 'CODEX_NOT_AUTHENTICATED' ? 503 : 500;
-      return res.status(status).json({ error: messageText });
+      return res.status(status).json({ error: messageText, jobId });
     }
   });
 
@@ -138,4 +142,17 @@ export function createApp(codexAppServerClient?: CodexAppServerClient) {
 
 function validateString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function resolveJobId(req: Request): string {
+  const bodyJobId = validateString(req.body?.jobId);
+  const headerJobId = validateHeader(req.headers['x-job-id']) ?? validateHeader(req.headers['x-correlation-id']);
+  return bodyJobId ?? headerJobId ?? `fashion-chat-${randomUUID()}`;
+}
+
+function validateHeader(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return validateString(value[0]);
+  }
+  return validateString(value);
 }

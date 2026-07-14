@@ -246,6 +246,46 @@ test('chat answers only through Codex App Server', async () => {
   globalThis.fetch = originalFetch;
 });
 
+test('chat accepts connected executable account contract before starting Codex turn', async () => {
+  mockResearchFetch();
+  const listeners = new Map<string, (params: unknown) => void>();
+  const calls: string[] = [];
+  const fakeCodexAppServerClient = {
+    isReady: () => true,
+    health: () => ({ status: 'ready', ready: true, restartAttempts: 0 }),
+    onNotification: (method: string, listener: (params: unknown) => void) => {
+      listeners.set(method, listener);
+      return () => listeners.delete(method);
+    },
+    request: async (method: string) => {
+      calls.push(method);
+      if (method === 'account/read') {
+        return { connected: true, status: 'connected', executable: true, blockReason: null };
+      }
+      if (method === 'thread/start') {
+        return { threadId: 'thread-fashion-connected-test' };
+      }
+      if (method === 'turn/start') {
+        setTimeout(() => {
+          listeners.get('turn/completed')?.({ text: 'Use camisa fluida, calca reta e um ponto de cor discreto.' });
+        }, 0);
+        return {};
+      }
+      return {};
+    },
+  } as unknown as CodexAppServerClient;
+
+  const response = await request(createApp(fakeCodexAppServerClient))
+    .post('/api/fashion-chat/messages')
+    .send({ message: 'Que roupa usar em uma reuniao casual?', customerId: 'teste' })
+    .expect(200);
+
+  assert.equal(response.body.mode, 'codex_app_server');
+  assert.match(response.body.answer, /camisa fluida/);
+  assert.deepEqual(calls, ['account/read', 'thread/start', 'turn/start']);
+  globalThis.fetch = originalFetch;
+});
+
 test('chat validates required message', async () => {
   await request(createApp()).post('/api/fashion-chat/messages').send({ message: ' ' }).expect(400);
 });

@@ -10,9 +10,6 @@ type ChatMessage = {
   sandboxId?: string;
 };
 
-const serviceUrl =
-  import.meta.env.VITE_FASHION_CHAT_SERVICE_URL || "http://191.252.210.83:8094";
-
 const nameCandidates = [
   "Mia Estilo",
   "Clara Look",
@@ -20,6 +17,8 @@ const nameCandidates = [
   "Lia Closet",
   "Bella Combina",
 ];
+
+export const fashionChatMessageEndpoint = "/api/fashion-chat/messages";
 
 function normalizeFashionText(value: string) {
   return value
@@ -226,7 +225,7 @@ export default function FashionChatPage() {
     setStatus("Consultando especialista");
 
     try {
-      const response = await fetch(`${serviceUrl}/api/fashion-chat/messages`, {
+      const response = await fetch(fashionChatMessageEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

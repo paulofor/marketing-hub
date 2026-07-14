@@ -6,6 +6,7 @@ import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
+import com.marketinghub.mds.productevidence.v1.service.ProductEvidenceWorkflowService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
@@ -42,6 +43,7 @@ public class HypothesisPipelineFinalizationService {
     private final HypothesisRepository hypothesisRepository;
     private final HypothesisFrameworkMapperSupport frameworkMapperSupport;
     private final HypothesisPipelineContentGuard contentGuard;
+    private final ProductEvidenceWorkflowService productEvidenceWorkflowService;
 
     /** Inicializa a etapa de fechamento com os repositórios e o normalizador canônico do framework. */
     public HypothesisPipelineFinalizationService(
@@ -49,12 +51,14 @@ public class HypothesisPipelineFinalizationService {
             HypothesisPainStageExecutionRepository executionRepository,
             HypothesisRepository hypothesisRepository,
             HypothesisFrameworkMapperSupport frameworkMapperSupport,
-            HypothesisPipelineContentGuard contentGuard) {
+            HypothesisPipelineContentGuard contentGuard,
+            ProductEvidenceWorkflowService productEvidenceWorkflowService) {
         this.marketNicheRepository = marketNicheRepository;
         this.executionRepository = executionRepository;
         this.hypothesisRepository = hypothesisRepository;
         this.frameworkMapperSupport = frameworkMapperSupport;
         this.contentGuard = contentGuard;
+        this.productEvidenceWorkflowService = productEvidenceWorkflowService;
     }
 
     /** Fecha o framework concluído em uma hipótese BACKLOG pronta para gerar experimento. */
@@ -68,6 +72,7 @@ public class HypothesisPipelineFinalizationService {
         String mechanism = requireCompletedStageText(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo");
         String proof = requireCompletedStageText(marketNicheId, PROOF_STAGE_CODE, "Prova");
         String offer = requireCompletedStageText(marketNicheId, OFFER_STAGE_CODE, "Oferta");
+        productEvidenceWorkflowService.requireApprovedEvidencePack(marketNicheId);
         Hypothesis hypothesis = Hypothesis.builder()
                 .marketNiche(niche)
                 .title(title)

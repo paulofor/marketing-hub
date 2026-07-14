@@ -32,8 +32,66 @@ tags:
     description: Recuperação de relatórios de descoberta.
   - name: Health
     description: Operação e healthcheck.
+  - name: ProductEvidence
+    description: Pipeline interno de base científica obrigatória para ofertas.
 
 paths:
+  /api/internal/scientific-research/product-evidence/v1/{stageCode}/stage-executions/pending:
+    get:
+      tags: [ProductEvidence]
+      operationId: listProductEvidencePendingStageExecutions
+      summary: Lista pendências de uma etapa científica para o scientific-research-worker.
+      parameters:
+        - $ref: '#/components/parameters/ProductEvidenceStageCode'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 5
+      responses:
+        '200':
+          description: Pendências disponíveis para execução.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductEvidenceStagePending'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/internal/scientific-research/product-evidence/v1/{stageCode}/stage-executions/{executionId}/callback:
+    post:
+      tags: [ProductEvidence]
+      operationId: receiveProductEvidenceStageCallback
+      summary: Recebe resultado ou falha de uma etapa científica.
+      parameters:
+        - $ref: '#/components/parameters/ProductEvidenceStageCode'
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductEvidenceStageCallback'
+      responses:
+        '200':
+          description: Callback recebido.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /internal/mechanism-discovery/search:
     post:
       tags: [Discovery]
@@ -163,6 +221,18 @@ paths:
 
 components:
   parameters:
+    ProductEvidenceStageCode:
+      name: stageCode
+      in: path
+      required: true
+      description: Código canônico da etapa científica.
+      schema:
+        type: string
+        enum:
+          - source-discovery
+          - evidence-synthesis
+          - deliverable-composer
+
     ReportId:
       name: id
       in: path
@@ -193,6 +263,71 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
 
   schemas:
+    ProductEvidenceStagePending:
+      type: object
+      additionalProperties: false
+      required:
+        - jobId
+        - executionId
+        - productIdea
+        - scientificQuestion
+        - input
+        - callbackUrl
+      properties:
+        jobId:
+          type: string
+        executionId:
+          type: string
+        experimentCode:
+          type: string
+        productIdea:
+          type: string
+        scientificQuestion:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+        callbackUrl:
+          type: string
+
+    ProductEvidenceStageCallback:
+      type: object
+      additionalProperties: false
+      properties:
+        jobId:
+          type: string
+        executionId:
+          type: string
+        status:
+          type: string
+          enum:
+            - COMPLETED
+            - BLOCKED
+            - CONCLUIDO
+            - BLOQUEADO
+        output:
+          type: object
+          additionalProperties: true
+        artifacts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        rootCause:
+          type: string
+        commercialImpact:
+          type: string
+        recommendedAction:
+          type: string
+        nextStageCode:
+          type: string
+          description: Aceita enum Java do worker ou slug externo.
+          examples: [EVIDENCE_SYNTHESIS]
+        errorType:
+          type: string
+        errorMessage:
+          type: string
+
     MechanismDiscoverySearchRequest:
       type: object
       additionalProperties: false

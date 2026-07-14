@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-14-mds-product-evidence-stage-execution
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: mds_product_evidence_stage_execution
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mds_product_evidence_stage_execution (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                job_id VARCHAR(64) NOT NULL,
+                market_niche_id BIGINT NOT NULL,
+                stage_code VARCHAR(100) NOT NULL,
+                status VARCHAR(50) NOT NULL,
+                product_idea LONGTEXT NOT NULL,
+                scientific_question LONGTEXT NOT NULL,
+                input_payload LONGTEXT NOT NULL,
+                output_payload LONGTEXT NULL,
+                artifacts_payload LONGTEXT NULL,
+                root_cause LONGTEXT NULL,
+                commercial_impact LONGTEXT NULL,
+                recommended_action LONGTEXT NULL,
+                error_type VARCHAR(191) NULL,
+                error_message LONGTEXT NULL,
+                created_at DATETIME(6) NOT NULL,
+                processing_started_at DATETIME(6) NULL,
+                completed_at DATETIME(6) NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_mds_product_evidence_market_niche
+                  FOREIGN KEY (market_niche_id) REFERENCES market_niche(id),
+                KEY idx_mds_product_evidence_stage_status_created (stage_code, status, created_at),
+                KEY idx_mds_product_evidence_niche_stage_status (market_niche_id, stage_code, status),
+                KEY idx_mds_product_evidence_niche_status_created (market_niche_id, status, created_at)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

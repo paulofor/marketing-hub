@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { CodexAppServerClient } from './codexAppServerClient.js';
+import { FashionImageGenerator } from './fashionImageGenerator.js';
 import { FashionResearchService, type FashionResearchResult } from './fashionResearch.js';
 import { FashionPromptTemplateLoader } from './promptTemplates.js';
 
@@ -12,9 +13,21 @@ export interface FashionChatRequest {
 
 export interface FashionChatResponse {
   answer: string;
+  shouldGenerateImage: boolean;
+  visualBrief?: string;
+  imagePrompt?: string;
+  imageUrl?: string;
+  imageError?: string;
   mode: 'codex_app_server' | 'local_fallback';
   sandboxId: string;
   research: FashionResearchResult;
+}
+
+interface FashionStructuredAnswer {
+  answer: string;
+  shouldGenerateImage: boolean;
+  visualBrief?: string;
+  imagePrompt?: string;
 }
 
 export class FashionChatService {
@@ -22,6 +35,7 @@ export class FashionChatService {
     private readonly researchService: FashionResearchService,
     private readonly codexAppServerClient?: CodexAppServerClient,
     private readonly promptTemplateLoader = new FashionPromptTemplateLoader(),
+    private readonly imageGenerator = new FashionImageGenerator(),
   ) {}
 
   async answer(request: FashionChatRequest): Promise<FashionChatResponse> {
@@ -33,16 +47,16 @@ export class FashionChatService {
     await fs.writeFile(path.join(sandboxDir, 'fashion-question.md'), prompt, 'utf-8');
 
     if (this.shouldForceFallback() || !this.codexAppServerClient?.isReady()) {
-      return { answer: this.buildFallbackAnswer(message, research), mode: 'local_fallback', sandboxId, research };
+      return this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, research);
     }
 
     try {
       const answer = await this.answerWithCodexAppServer(prompt, sandboxDir);
-      return { answer: this.cleanAnswer(answer), mode: 'codex_app_server', sandboxId, research };
+      return this.buildResponse(this.parseStructuredAnswer(answer), 'codex_app_server', sandboxId, research);
     } catch (err) {
       if (this.isRecoverableCodexError(err)) {
         console.warn(`Fashion chat using local fallback: ${err instanceof Error ? err.message : String(err)}`);
-        return { answer: this.buildFallbackAnswer(message, research), mode: 'local_fallback', sandboxId, research };
+        return this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, research);
       }
       throw err;
     }
@@ -109,6 +123,8 @@ export class FashionChatService {
       '',
       templates.visualStyle,
       '',
+      templates.responseContract,
+      '',
       `Cliente: ${customerId?.trim() || 'cliente-piloto'}`,
       `Pergunta: ${message}`,
       '',
@@ -117,6 +133,75 @@ export class FashionChatService {
       '',
       'Resposta final em portugues do Brasil:',
     ].join('\n');
+  }
+
+  private async buildResponse(
+    structured: FashionStructuredAnswer,
+    mode: FashionChatResponse['mode'],
+    sandboxId: string,
+    research: FashionResearchResult,
+  ): Promise<FashionChatResponse> {
+    const response: FashionChatResponse = {
+      answer: this.cleanAnswer(structured.answer),
+      shouldGenerateImage: structured.shouldGenerateImage,
+      visualBrief: structured.visualBrief,
+      imagePrompt: structured.imagePrompt,
+      mode,
+      sandboxId,
+      research,
+    };
+    if (structured.shouldGenerateImage && structured.imagePrompt?.trim()) {
+      const image = await this.imageGenerator.generate({ prompt: structured.imagePrompt, sandboxId });
+      response.imageUrl = image.imageUrl;
+      response.imageError = image.error;
+    }
+    return response;
+  }
+
+  private parseStructuredAnswer(rawAnswer: string): FashionStructuredAnswer {
+    const trimmed = rawAnswer.trim();
+    const jsonText = this.extractJsonObject(trimmed);
+    if (jsonText) {
+      try {
+        const parsed = JSON.parse(jsonText) as Partial<FashionStructuredAnswer>;
+        const answer = typeof parsed.answer === 'string' && parsed.answer.trim() ? parsed.answer : trimmed;
+        const imagePrompt = typeof parsed.imagePrompt === 'string' ? parsed.imagePrompt.trim() : undefined;
+        const visualBrief = typeof parsed.visualBrief === 'string' ? parsed.visualBrief.trim() : undefined;
+        return {
+          answer,
+          shouldGenerateImage: parsed.shouldGenerateImage === true && Boolean(imagePrompt),
+          visualBrief,
+          imagePrompt,
+        };
+      } catch (err) {
+        console.warn(`Fashion chat structured answer parse failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    return this.buildFallbackStructuredAnswer(trimmed);
+  }
+
+  private buildFallbackStructuredAnswer(answer: string): FashionStructuredAnswer {
+    const clean = this.cleanAnswer(answer);
+    const shouldGenerateImage = this.shouldCreateVisualForAnswer(clean);
+    return {
+      answer: clean,
+      shouldGenerateImage,
+      visualBrief: shouldGenerateImage ? `Croqui de moda baseado nesta recomendacao: ${clean}` : undefined,
+      imagePrompt: shouldGenerateImage ? this.buildImagePromptFromAnswer(clean) : undefined,
+    };
+  }
+
+  private extractJsonObject(value: string): string | undefined {
+    const fenced = value.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]?.trim();
+    if (fenced?.startsWith('{') && fenced.endsWith('}')) {
+      return fenced;
+    }
+    const start = value.indexOf('{');
+    const end = value.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      return value.slice(start, end + 1);
+    }
+    return undefined;
   }
 
   private cleanAnswer(answer: string): string {
@@ -149,10 +234,14 @@ export class FashionChatService {
     );
   }
 
-  private buildFallbackAnswer(message: string, research: FashionResearchResult): string {
+  private buildFallbackAnswer(message: string, research: FashionResearchResult): FashionStructuredAnswer {
     const lowerMessage = message.toLowerCase();
     if (this.isGreetingOnly(lowerMessage)) {
-      return 'Oi! Me diga a ocasiao, o clima e uma peca que voce quer usar. Com isso eu monto uma recomendacao curta de look, cores e combinacao.';
+      return {
+        answer:
+          'Oi! Me diga a ocasiao, o clima e uma peca que voce quer usar. Com isso eu monto uma recomendacao curta de look, cores e combinacao.',
+        shouldGenerateImage: false,
+      };
     }
     const occasion = this.detectOccasion(lowerMessage);
     const palette = this.detectPalette(lowerMessage);
@@ -162,7 +251,7 @@ export class FashionChatService {
       .slice(0, 180);
     const evidence = sourceHint ? ` Considerando a pesquisa, mantenha a proposta atual e facil de executar: ${sourceHint}` : '';
 
-    return this.cleanAnswer(
+    return this.buildFallbackStructuredAnswer(
       [
         `Para ${occasion}, va de base ${palette}, caimento bem ajustado e uma terceira peca leve para deixar o look intencional.`,
         'Combine uma peca principal lisa com textura discreta ou acessorio de cor; isso melhora presenca sem parecer exagerado.',
@@ -170,6 +259,38 @@ export class FashionChatService {
         `${evidence} Se quiser refinar, me diga ocasiao, clima e uma peca que voce quer usar.`,
       ].join(' '),
     );
+  }
+
+  private shouldCreateVisualForAnswer(answer: string): boolean {
+    const normalized = answer
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return [
+      'look',
+      'vestido',
+      'blazer',
+      'alfaiataria',
+      'saia',
+      'calca',
+      'camisa',
+      'cor',
+      'cores',
+      'silhueta',
+      'acessorio',
+      'textura',
+      'estampa',
+    ].some((term) => normalized.includes(term));
+  }
+
+  private buildImagePromptFromAnswer(answer: string): string {
+    return [
+      'Desenho de estilista de moda, croqui editorial premium em folha branca de sketchbook.',
+      'Representar fielmente a recomendacao de look a seguir, incluindo pecas, cores, proporcao, textura, estampa e ocasiao descritas.',
+      `Recomendacao: ${answer}`,
+      'Figura feminina alongada em pose elegante, traco preto fino de caneta/lapis, acabamento leve, moderno e sofisticado.',
+      'Evitar foto realista, render 3D, catalogo generico, ilustracao infantil, fundo carregado e texto dentro da imagem.',
+    ].join(' ');
   }
 
   private detectOccasion(message: string): string {

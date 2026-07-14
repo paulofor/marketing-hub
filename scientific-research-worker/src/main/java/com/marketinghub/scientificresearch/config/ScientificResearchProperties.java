@@ -32,6 +32,8 @@ public class ScientificResearchProperties {
 
     private String openAiApiKey = "";
 
+    private String openAiApiKeyFile = "";
+
     @NotBlank
     private String openAiModel = "gpt-4.1";
 
@@ -123,6 +125,20 @@ public class ScientificResearchProperties {
      */
     public void setOpenAiApiKey(String openAiApiKey) {
         this.openAiApiKey = openAiApiKey;
+    }
+
+    /**
+     * Retorna o caminho do arquivo que contém a chave de API da OpenAI.
+     */
+    public String getOpenAiApiKeyFile() {
+        return openAiApiKeyFile;
+    }
+
+    /**
+     * Define o caminho do arquivo que contém a chave de API da OpenAI.
+     */
+    public void setOpenAiApiKeyFile(String openAiApiKeyFile) {
+        this.openAiApiKeyFile = openAiApiKeyFile;
     }
 
     /**

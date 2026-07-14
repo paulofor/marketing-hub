@@ -3,6 +3,8 @@ package com.marketinghub.hypothesis.service.finalizeHypothesis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +14,7 @@ import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
+import com.marketinghub.mds.productevidence.v1.service.ProductEvidenceWorkflowService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
@@ -38,6 +41,9 @@ class HypothesisPipelineFinalizationServiceTest {
     @Mock
     private HypothesisRepository hypothesisRepository;
 
+    @Mock
+    private ProductEvidenceWorkflowService productEvidenceWorkflowService;
+
     private HypothesisPipelineFinalizationService service;
 
     /** Prepara a etapa de fechamento com dependências isoladas para cada teste. */
@@ -48,7 +54,9 @@ class HypothesisPipelineFinalizationServiceTest {
                 executionRepository,
                 hypothesisRepository,
                 new HypothesisFrameworkMapperSupport(new ObjectMapper()),
-                new HypothesisPipelineContentGuard(new ObjectMapper()));
+                new HypothesisPipelineContentGuard(new ObjectMapper()),
+                productEvidenceWorkflowService);
+        lenient().when(productEvidenceWorkflowService.hasApprovedEvidencePack(anyLong())).thenReturn(true);
     }
 
     /** Deve materializar o framework concluído como hipótese BACKLOG fora da etapa Dor. */

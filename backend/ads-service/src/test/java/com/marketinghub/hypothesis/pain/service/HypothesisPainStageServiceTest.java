@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.hypothesis.service.HypothesisPipelineContentGuard;
+import com.marketinghub.mds.productevidence.v1.service.ProductEvidenceWorkflowService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +54,9 @@ class HypothesisPainStageServiceTest {
     @Mock
     private HypothesisPainCostCalculator costCalculator;
 
+    @Mock
+    private ProductEvidenceWorkflowService productEvidenceWorkflowService;
+
     private HypothesisPainStageService service;
 
     /** Prepara o serviço com dependências isoladas para cada teste. */
@@ -63,7 +68,9 @@ class HypothesisPainStageServiceTest {
                 executionRepository,
                 templateRepository,
                 costCalculator,
-                new HypothesisPipelineContentGuard(new ObjectMapper()));
+                new HypothesisPipelineContentGuard(new ObjectMapper()),
+                productEvidenceWorkflowService);
+        lenient().when(productEvidenceWorkflowService.hasApprovedEvidencePack(anyLong())).thenReturn(true);
         mockActiveTemplate("hypothesis-pain");
         mockActiveTemplate("hypothesis-result");
         mockActiveTemplate("hypothesis-mechanism");

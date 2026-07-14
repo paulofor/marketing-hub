@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { CodexAppServerClient } from './codexAppServerClient.js';
-import { FashionImageGenerator } from './fashionImageGenerator.js';
+import { CodexFashionImageGenerator } from './codexFashionImageGenerator.js';
+import type { FashionImageGeneratorPort } from './fashionImageGenerator.js';
 import { FashionResearchService, type FashionResearchResult } from './fashionResearch.js';
 import { FashionPromptTemplateLoader } from './promptTemplates.js';
 
@@ -35,7 +36,7 @@ export class FashionChatService {
     private readonly researchService: FashionResearchService,
     private readonly codexAppServerClient?: CodexAppServerClient,
     private readonly promptTemplateLoader = new FashionPromptTemplateLoader(),
-    private readonly imageGenerator = new FashionImageGenerator(),
+    private readonly imageGenerator: FashionImageGeneratorPort = new CodexFashionImageGenerator(codexAppServerClient),
   ) {}
 
   async answer(request: FashionChatRequest): Promise<FashionChatResponse> {
@@ -47,16 +48,16 @@ export class FashionChatService {
     await fs.writeFile(path.join(sandboxDir, 'fashion-question.md'), prompt, 'utf-8');
 
     if (this.shouldForceFallback() || !this.codexAppServerClient?.isReady()) {
-      return this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, research);
+      return this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, sandboxDir, research);
     }
 
     try {
       const answer = await this.answerWithCodexAppServer(prompt, sandboxDir);
-      return this.buildResponse(this.parseStructuredAnswer(answer), 'codex_app_server', sandboxId, research);
+      return this.buildResponse(this.parseStructuredAnswer(answer), 'codex_app_server', sandboxId, sandboxDir, research);
     } catch (err) {
       if (this.isRecoverableCodexError(err)) {
         console.warn(`Fashion chat using local fallback: ${err instanceof Error ? err.message : String(err)}`);
-        return this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, research);
+        return this.buildResponse(this.buildFallbackAnswer(message, research), 'local_fallback', sandboxId, sandboxDir, research);
       }
       throw err;
     }
@@ -139,6 +140,7 @@ export class FashionChatService {
     structured: FashionStructuredAnswer,
     mode: FashionChatResponse['mode'],
     sandboxId: string,
+    sandboxDir: string,
     research: FashionResearchResult,
   ): Promise<FashionChatResponse> {
     const response: FashionChatResponse = {
@@ -151,7 +153,7 @@ export class FashionChatService {
       research,
     };
     if (structured.shouldGenerateImage && structured.imagePrompt?.trim()) {
-      const image = await this.imageGenerator.generate({ prompt: structured.imagePrompt, sandboxId });
+      const image = await this.imageGenerator.generate({ prompt: structured.imagePrompt, sandboxId, sandboxDir });
       response.imageUrl = image.imageUrl;
       response.imageError = image.error;
     }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.scientificresearch.config.ScientificResearchProperties;
 import com.marketinghub.scientificresearch.productevidence.v1.pipeline.StageContext;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +40,7 @@ public class ScientificEvidenceOpenAiClient {
             ScientificResearchProperties properties) {
         this.webClient = builder
                 .baseUrl(properties.getOpenAiBaseUrl())
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getOpenAiApiKey())
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + resolveOpenAiApiKey(properties))
                 .build();
         this.objectMapper = objectMapper;
         this.promptLoader = promptLoader;
@@ -158,5 +160,24 @@ public class ScientificEvidenceOpenAiClient {
      */
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    /**
+     * Resolve a chave OpenAI por variável direta ou arquivo de segredo montado no container.
+     */
+    private String resolveOpenAiApiKey(ScientificResearchProperties properties) {
+        if (properties.getOpenAiApiKey() != null && !properties.getOpenAiApiKey().isBlank()) {
+            return properties.getOpenAiApiKey().trim();
+        }
+        String keyFile = properties.getOpenAiApiKeyFile();
+        if (keyFile == null || keyFile.isBlank()) {
+            return "";
+        }
+        try {
+            return Files.readString(Path.of(keyFile)).trim();
+        } catch (Exception ex) {
+            log.error("Falha ao ler arquivo de chave OpenAI no scientific-research-worker path={}", keyFile, ex);
+            return "";
+        }
     }
 }

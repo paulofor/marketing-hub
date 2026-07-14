@@ -1,3 +1,12 @@
+## 2026-07-14 — Hipóteses: oferta bloqueada sem base científica MDS
+
+- decisão aplicada: usar o `scientific-research-worker` como etapa obrigatória antes de construir Oferta.
+- causa-raiz: o pipeline Dor → Resultado → Mecanismo → Prova → Oferta podia avançar para empacotamento comercial sem `scientificEvidencePack` persistido e auditável.
+- foi feito: backend passa a expor fila/callback interno para `product-evidence v1` do MDS e inicia a pesquisa científica após a etapa Prova.
+- foi feito: Oferta e fechamento da hipótese ficam bloqueados até a conclusão do entregável científico `deliverable-composer`.
+- impacto esperado: o sistema reduz risco de promessa sem sustentação, melhora credibilidade da oferta e cria insumo científico reutilizável para página, criativos e produto.
+- prevenção de recorrência: testes cobrem bloqueio da oferta, contrato `pending` do worker e callback que enfileira a próxima etapa científica.
+
 ## 2026-07-13 — Experimentos: página com vídeo bloqueia campanha sem vídeo aprovado
 
 - causa-raiz: a liberação de campanha bloqueava apenas vídeos já marcados como obrigatórios, mas não inferia a dependência comercial quando a variante/tipo de página escolhido era de vídeo humano.

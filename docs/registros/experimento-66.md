@@ -166,6 +166,98 @@ Próximo passo operacional para o experimento 66:
 4. revisar manualmente o novo ZIP PDE;
 5. só depois retomar página de venda/tráfego.
 
+## Decisão de plataforma PDE multi-produto
+
+Data: `2026-07-15`.
+
+Decisão do usuário:
+
+- O site do produto deve rodar em Docker.
+- Deve ter frontend React e backend Java/Spring Boot/Maven.
+- A solução deve ser independente do restante do sistema.
+- O motor deve ser reutilizável para diversos produtos, não um front/back diferente para cada produto.
+
+Documento canônico criado:
+
+- `docs/canonical/pde-platform-canon.v1.md`
+
+### Alternativas avaliadas
+
+1. **Front/back separado para cada produto**
+   - Benefício: liberdade total de experiência.
+   - Risco: custo alto, manutenção difícil e baixa velocidade para escalar vários produtos.
+   - Aderência ao objetivo de vendas em escala: baixa.
+
+2. **Um único PDE genérico para todos os produtos**
+   - Benefício: velocidade e manutenção simples.
+   - Risco: experiência ficar genérica demais se o produto não carregar identidade, missões e materiais próprios.
+   - Aderência ao objetivo de vendas em escala: boa.
+
+3. **Motor comum + configuração por produto**
+   - Benefício: escala, mantém identidade individual e permite o FEO fabricar muitos produtos.
+   - Risco: exige modelagem inicial mais cuidadosa.
+   - Aderência ao objetivo de vendas em escala: melhor.
+
+Escolha aplicada: **motor comum + configuração por produto**.
+
+### Implementação inicial criada
+
+Módulo novo:
+
+- `pde-platform/`
+
+Componentes:
+
+- `pde-platform/backend`: backend Java 21, Spring Boot 3 e Maven;
+- `pde-platform/frontend`: frontend React 18, Vite e TypeScript;
+- `pde-platform/docker-compose.yml`: execução Docker do conjunto;
+- produto inicial configurado: `metodo-musa-7-dias`.
+
+Funções já implementadas na v1 local:
+
+- catálogo público do produto PDE;
+- endpoint de liberação de acesso para validação local;
+- endpoint de webhook Pepper inicial para compra aprovada;
+- workspace por token de acesso;
+- controle de missões concluídas;
+- frontend com hero, diagnóstico, progresso, missões de 7 dias e biblioteca de materiais.
+
+### Validação local da PDE Platform
+
+Validações executadas:
+
+- `mvn -f pde-platform/backend/pom.xml test`
+  - resultado: `BUILD SUCCESS`;
+  - testes: `2`, falhas `0`, erros `0`.
+- `npm install --include=dev`
+  - resultado: dependências instaladas;
+  - `npm audit --omit=dev`: `0 vulnerabilities`.
+- `npm run build`
+  - resultado: build React/Vite concluído com sucesso.
+- Backend local:
+  - URL: `http://localhost:8096`;
+  - endpoint validado: `GET /api/pde/products/metodo-musa-7-dias`;
+  - endpoint validado: `POST /api/pde/access/dev`;
+  - endpoint validado: `GET /api/pde/access/{token}/workspace`;
+  - endpoint validado: `POST /api/pde/access/{token}/missions/dia-1-ruido-visual/complete`;
+  - progresso após concluir a primeira missão: `14%`.
+- Frontend local:
+  - URL: `http://localhost:5176`;
+  - proxy `/api` validado contra o backend local.
+
+Limitação real de ambiente:
+
+- `docker version` falhou porque o daemon Docker não está disponível em `/var/run/docker.sock`.
+- Os arquivos Docker e `docker-compose.yml` foram criados, mas não foi possível executar containers neste ambiente.
+
+Próximos passos antes de uso comercial:
+
+1. Persistir acessos e progresso em banco.
+2. Validar assinatura/autenticidade do webhook Pepper com a documentação final da conta.
+3. Conectar o FEO para publicar o pacote PDE no catálogo do motor.
+4. Configurar domínio/SSL.
+5. Validar fluxo real: Pepper compra aprovada -> webhook -> acesso -> experiência -> materiais.
+
 ## Entregáveis reais do pacote
 
 O pacote FEO foi tratado como um Kit de Transformação Aplicável, com:

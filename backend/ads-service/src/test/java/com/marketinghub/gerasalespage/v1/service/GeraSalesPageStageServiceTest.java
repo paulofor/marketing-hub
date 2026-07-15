@@ -7,6 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.deliverable.Deliverable;
+import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
@@ -14,12 +16,15 @@ import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.productai.ProductAiSubtype;
+import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +44,8 @@ class GeraSalesPageStageServiceTest {
     @Mock
     private AiPromptSchemaTemplateRepository templateRepository;
     @Mock
+    private DeliverablePackageRepository deliverablePackageRepository;
+    @Mock
     private GeraSalesPagePublicationAuditService publicationAuditService;
     @Mock
     private ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
@@ -54,6 +61,7 @@ class GeraSalesPageStageServiceTest {
                 experimentRepository,
                 executionRepository,
                 templateRepository,
+                deliverablePackageRepository,
                 publicationAuditService,
                 promptSchemaUsageService,
                 objectMapper);
@@ -151,6 +159,60 @@ class GeraSalesPageStageServiceTest {
                 .hasMessageContaining("checkout");
     }
 
+    /** Deve incluir o pacote FEO real no pending para a página materializar os entregáveis vendidos. */
+    @Test
+    void pendingShouldIncludeLatestFeoDeliverablePackage() {
+        Experiment experiment = new Experiment();
+        experiment.setId(66L);
+        experiment.setName("MUSA-H001-E004");
+        experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=musa");
+        completeCommercialContract(experiment);
+        GeraSalesPageStageExecution execution = GeraSalesPageStageExecution.builder()
+                .idJob("job-musa")
+                .experimentId(66L)
+                .stageCode(GeraSalesPageStageCode.OFFER_BRIEF.code())
+                .status("INICIADO")
+                .executionRequestedAt(Instant.now())
+                .build();
+        execution.setExperiment(experiment);
+        Deliverable first = Deliverable.builder()
+                .id(33L)
+                .title("entregaveis/kit-02-plano-rapido-de-execucao-de-7-dias.html")
+                .description("Plano de execucao - Tabela de 7 dias com ação, tempo estimado, evidência e ajuste.")
+                .build();
+        Deliverable second = Deliverable.builder()
+                .id(34L)
+                .title("entregaveis/kit-03-checklist-de-aplicacao-sem-travar.html")
+                .description("Checklist - Checklist marcável para executar sem esquecer pontos críticos.")
+                .build();
+        DeliverablePackage deliverablePackage = DeliverablePackage.builder()
+                .id(7L)
+                .name("Pacote Final - Metodo MUSA - Arquitetura de Presenca Elegante Acessivel - FEO #3")
+                .description("Kit operacional de transformação aplicável.")
+                .deliverables(new LinkedHashSet<>(List.of(second, first)))
+                .createdAt(Instant.parse("2026-07-15T00:54:38Z"))
+                .build();
+
+        when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
+                "gera-sales-page-v1", GeraSalesPageStageCode.OFFER_BRIEF.code()))
+                .thenReturn(Optional.of(template(GeraSalesPageStageCode.OFFER_BRIEF.code())));
+        when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+                GeraSalesPageStageCode.OFFER_BRIEF.code(), "INICIADO"))
+                .thenReturn(List.of(execution));
+        when(deliverablePackageRepository.findByExperimentIdOrderByCreatedAtDesc(66L))
+                .thenReturn(List.of(deliverablePackage));
+
+        List<GeraSalesPagePendingResponse> pending = service.pending(GeraSalesPageStageCode.OFFER_BRIEF.code());
+
+        Map<String, Object> packagePayload = castMap(pending.get(0).experiment().get("feoDeliverablePackage"));
+        assertThat(packagePayload.get("id")).isEqualTo(7L);
+        assertThat(packagePayload.get("name")).isEqualTo(deliverablePackage.getName());
+        List<Map<String, Object>> deliverables = castList(packagePayload.get("deliverables"));
+        assertThat(deliverables).hasSize(2);
+        assertThat(deliverables.get(0).get("title")).isEqualTo(first.getTitle());
+        assertThat(deliverables.get(1).get("title")).isEqualTo(second.getTitle());
+    }
+
     /** Deve bloquear o início quando a etapa Oferta ainda não preencheu contrato comercial. */
     @Test
     void rebuildShouldRejectExperimentWithoutCommercialContract() {
@@ -224,5 +286,17 @@ class GeraSalesPageStageServiceTest {
         experiment.setFunnelPromise("Enxergar riscos e encaixes em 7 dias");
         experiment.setPrimaryCta("Comprar o Mapa 7D");
         experiment.setUnitPrice(BigDecimal.valueOf(29.90));
+    }
+
+    /** Converte payload genérico para mapa tipado usado nas asserções do teste. */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> castMap(Object value) {
+        return (Map<String, Object>) value;
+    }
+
+    /** Converte payload genérico para lista tipada usada nas asserções do teste. */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> castList(Object value) {
+        return (List<Map<String, Object>>) value;
     }
 }

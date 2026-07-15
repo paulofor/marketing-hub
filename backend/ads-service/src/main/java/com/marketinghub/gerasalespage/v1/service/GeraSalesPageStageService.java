@@ -2,6 +2,8 @@ package com.marketinghub.gerasalespage.v1.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.deliverable.Deliverable;
+import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
@@ -11,9 +13,11 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.productai.ProductAiSubtype;
+import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -42,6 +46,7 @@ public class GeraSalesPageStageService {
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
     private final AiPromptSchemaTemplateRepository templateRepository;
+    private final DeliverablePackageRepository deliverablePackageRepository;
     private final GeraSalesPagePublicationAuditService publicationAuditService;
     private final ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
     private final ObjectMapper objectMapper;
@@ -51,12 +56,14 @@ public class GeraSalesPageStageService {
             ExperimentRepository experimentRepository,
             GeraSalesPageStageExecutionRepository executionRepository,
             AiPromptSchemaTemplateRepository templateRepository,
+            DeliverablePackageRepository deliverablePackageRepository,
             GeraSalesPagePublicationAuditService publicationAuditService,
             ExperimentAiPromptSchemaUsageService promptSchemaUsageService,
             ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.templateRepository = templateRepository;
+        this.deliverablePackageRepository = deliverablePackageRepository;
         this.publicationAuditService = publicationAuditService;
         this.promptSchemaUsageService = promptSchemaUsageService;
         this.objectMapper = objectMapper;
@@ -219,6 +226,40 @@ public class GeraSalesPageStageService {
         payload.put("salesPageDestination", salesPageDestination(experiment));
         payload.put("unitPrice", experiment.getUnitPrice());
         payload.put("hypothesisFramework", parseJsonOrText(experiment.getHypothesisFrameworkJsonForPending()));
+        payload.put("feoDeliverablePackage", latestFeoDeliverablePackage(experiment.getId()));
+        return payload;
+    }
+
+    /** Monta o pacote FEO mais recente para a página vender entregáveis reais, não itens genéricos. */
+    private Map<String, Object> latestFeoDeliverablePackage(Long experimentId) {
+        return deliverablePackageRepository.findByExperimentIdOrderByCreatedAtDesc(experimentId)
+                .stream()
+                .findFirst()
+                .map(this::deliverablePackagePayload)
+                .orElseGet(Map::of);
+    }
+
+    /** Converte pacote FEO em payload simples e ordenado para os prompts do GeraSalesPage. */
+    private Map<String, Object> deliverablePackagePayload(DeliverablePackage deliverablePackage) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", deliverablePackage.getId());
+        payload.put("name", deliverablePackage.getName());
+        payload.put("description", deliverablePackage.getDescription());
+        payload.put("createdAt", deliverablePackage.getCreatedAt());
+        payload.put("deliverables", deliverablePackage.getDeliverables()
+                .stream()
+                .sorted(Comparator.comparing(Deliverable::getId))
+                .map(this::deliverablePayload)
+                .toList());
+        return payload;
+    }
+
+    /** Converte um entregável FEO para dados comerciais seguros usados na página de venda. */
+    private Map<String, Object> deliverablePayload(Deliverable deliverable) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", deliverable.getId());
+        payload.put("title", deliverable.getTitle());
+        payload.put("description", deliverable.getDescription());
         return payload;
     }
 

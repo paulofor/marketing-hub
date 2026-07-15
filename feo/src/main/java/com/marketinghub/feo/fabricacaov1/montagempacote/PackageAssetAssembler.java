@@ -1,5 +1,7 @@
 package com.marketinghub.feo.fabricacaov1.montagempacote;
 
+import com.marketinghub.feo.fabricacaov1.contract.DeliverableContent;
+import com.marketinghub.feo.fabricacaov1.contract.DeliverableSection;
 import com.marketinghub.feo.fabricacaov1.contract.DeliverableSpec;
 import com.marketinghub.feo.fabricacaov1.contract.DigitalAssetFinal;
 import com.marketinghub.feo.fabricacaov1.contract.FabricationContext;
@@ -17,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.slf4j.Logger;
@@ -142,31 +145,44 @@ public class PackageAssetAssembler {
                     <p><strong>Resultado de entrada:</strong> ao final do primeiro ciclo, o cliente deve saber exatamente qual acao tomar, qual erro evitar e qual criterio observar.</p>
                     <p><strong>Regra de foco:</strong> remover complexidade antes de adicionar profundidade. O produto deve economizar esforco mental.</p>
                   </div>
-                  <h2>Execucao guiada por entregavel</h2>
+                  <h2>Workbooks de aplicacao por entregavel</h2>
                 """);
-        for (DeliverableSpec spec : input.plan().deliverables()) {
+        for (DeliverableContent content : input.contentPackage().deliverables()) {
             html.append("<div class=\"box\"><h3>")
-                    .append(escape(spec.consumptionOrder()))
-                    .append(". ")
-                    .append(escape(spec.title()))
+                    .append(escape(content.code()))
+                    .append(" - ")
+                    .append(escape(content.title()))
                     .append("</h3><p>")
-                    .append(escape(spec.role()))
-                    .append("</p><p><strong>Resultado esperado:</strong> ")
-                    .append(escape(resultFor(spec, context)))
-                    .append("</p><p><strong>Passo de aplicacao:</strong></p><ol>")
-                    .append("<li>Separe uma situacao real do seu contexto atual.</li>")
-                    .append("<li>Use o mecanismo central para escolher uma decisao simples.</li>")
-                    .append("<li>Registre o antes, a acao e o criterio que indicara progresso.</li>")
-                    .append("</ol><p><strong>Template preenchivel:</strong></p><table><tbody>")
-                    .append("<tr><th>Situacao atual</th><td>________________________________________________</td></tr>")
-                    .append("<tr><th>Acao escolhida</th><td>________________________________________________</td></tr>")
-                    .append("<tr><th>Barreira que pode atrapalhar</th><td>________________________________________________</td></tr>")
-                    .append("<tr><th>Criterio de conclusao</th><td>________________________________________________</td></tr>")
-                    .append("</tbody></table><p><strong>Componentes do entregavel:</strong></p><ul>");
-            for (String section : spec.sections()) {
-                html.append("<li>").append(escape(section)).append("</li>");
+                    .append(escape(content.headline()))
+                    .append("</p><p><strong>Resultado para o comprador:</strong> ")
+                    .append(escape(content.buyerOutcome()))
+                    .append("</p><p><strong>Primeira vitoria:</strong> ")
+                    .append(escape(content.firstWin()))
+                    .append("</p>");
+            for (DeliverableSection section : content.sections()) {
+                html.append("<h4>")
+                        .append(escape(section.title()))
+                        .append("</h4><p>")
+                        .append(escape(section.explanation()))
+                        .append("</p><p><strong>Acao:</strong> ")
+                        .append(escape(section.actionStep()))
+                        .append("</p>");
             }
-            html.append("</ul></div>");
+            html.append("<p><strong>Checklist de execucao:</strong></p><ul>");
+            for (String item : content.checklist()) {
+                html.append("<li>").append(escape(item)).append("</li>");
+            }
+            html.append("</ul><p><strong>Template preenchivel:</strong></p><table><tbody>");
+            for (String field : content.templateFields()) {
+                html.append("<tr><th>").append(escape(field)).append("</th><td>________________________________________________</td></tr>");
+            }
+            html.append("</tbody></table><p><strong>Erros a evitar:</strong></p><ul>");
+            for (String mistake : content.commonMistakes()) {
+                html.append("<li>").append(escape(mistake)).append("</li>");
+            }
+            html.append("</ul><p><strong>Criterio de conclusao:</strong> ")
+                    .append(escape(content.completionCriteria()))
+                    .append("</p></div>");
         }
         html.append("""
                 </section>
@@ -193,6 +209,9 @@ public class PackageAssetAssembler {
                     <li>Cada entregavel reduz dor, esforco ou incerteza de aplicacao.</li>
                     <li>O pacote nao promete resultado automatico nem altera o mecanismo validado.</li>
                   </ul>
+                  <p><strong>Score FEO:</strong> """).append(input.contentPackage().qualityScore()).append("""
+                 /100 - """).append(escape(input.contentPackage().qualityGate())).append("""
+                </p>
                 </section>
                 <section>
                   <h2>Limites de promessa</h2>
@@ -202,20 +221,6 @@ public class PackageAssetAssembler {
                 </html>
                 """);
         return html.toString();
-    }
-
-    /**
-     * Define resultado pratico esperado para um entregavel especifico.
-     */
-    private String resultFor(DeliverableSpec spec, FabricationContext context) {
-        String format = spec.format() == null ? "" : spec.format();
-        if (format.contains("CSV")) {
-            return "transformar informacoes soltas em acompanhamento preenchivel e verificavel.";
-        }
-        if (format.contains("PDF")) {
-            return "guiar uma decisao pratica alinhada ao resultado prometido: " + context.promisedResult();
-        }
-        return "entregar clareza operacional sem exigir conhecimento tecnico do cliente.";
     }
 
     /**
@@ -240,15 +245,19 @@ public class PackageAssetAssembler {
      */
     private String buildSpreadsheet(PackageAssemblyInput input) {
         StringBuilder csv = new StringBuilder();
-        csv.append("ordem,codigo,titulo,formato,papel,acao_7_dias,criterio_conclusao,criterios_qualidade\n");
+        csv.append("ordem,codigo,titulo,formato,papel,primeira_vitoria,criterio_conclusao,criterios_qualidade\n");
+        Map<String, DeliverableContent> contents = input.contentPackage().deliverables().stream()
+                .collect(java.util.stream.Collectors.toMap(DeliverableContent::code, item -> item));
         for (DeliverableSpec spec : input.plan().deliverables()) {
+            DeliverableContent content = contents.get(spec.code());
             csv.append(csv(spec.consumptionOrder())).append(',')
                     .append(csv(spec.code())).append(',')
                     .append(csv(spec.title())).append(',')
                     .append(csv(spec.format())).append(',')
                     .append(csv(spec.role())).append(',')
-                    .append(csv("Aplicar em uma situacao real e registrar antes, acao e evidencia.")).append(',')
-                    .append(csv("Cliente consegue decidir o proximo passo sem suporte externo.")).append(',')
+                    .append(csv(content == null ? "Executar a primeira acao do entregavel." : content.firstWin())).append(',')
+                    .append(csv(content == null ? "Cliente consegue decidir o proximo passo sem suporte externo."
+                            : content.completionCriteria())).append(',')
                     .append(csv(String.join(" | ", spec.qualityCriteria()))).append('\n');
         }
         return csv.toString();

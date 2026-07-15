@@ -118,6 +118,6 @@
 
 - Módulo executor: `feo`.
 - Pacote protegido: `com.marketinghub.feo.fabricacaov1`.
-- Etapas protegidas: `planejamento-entregaveis` e `montagem-pacote`.
+- Etapas protegidas: `planejamento-entregaveis`, `redacao-entregaveis` e `montagem-pacote`.
 - Ponto inicial canônico de consumo pelo executor: `/api/internal/feo/fabricacao/v1/<stage>/stage-executions/pending`.
-- Aplicação: protocolo padrão módulo aplicado no executor responsável por transformar oferta validada em entregáveis digitais profissionais, com núcleo genérico `pipeline`, etapas concretas plugáveis, geração de HTML/PDF/CSV/ZIP e ArchUnit bloqueando dependência do núcleo em etapas concretas, dependência entre etapas, ciclos e tecnologia concreta no núcleo. O backend permanece como fonte de verdade para fila, persistência, callbacks e entrega ao usuário.
+- Aplicação: protocolo padrão módulo aplicado no executor responsável por transformar oferta validada em entregáveis digitais profissionais, com núcleo genérico `pipeline`, etapas concretas plugáveis, redação de conteúdo premium por entregável, geração de HTML/PDF/CSV/ZIP e ArchUnit bloqueando dependência do núcleo em etapas concretas, dependência entre etapas, ciclos e tecnologia concreta no núcleo. O backend permanece como fonte de verdade para fila, persistência, callbacks e entrega ao usuário.

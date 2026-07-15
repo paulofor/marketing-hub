@@ -192,6 +192,12 @@ class ArquiteturaTest {
             Map.entry("dossiersynthesis", "dossier-synthesis"));
     private static final Map<String, String> MOIS_SALES_PAGE_PATTERNS_V1_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("pagepatternextraction", "page-pattern-extraction"));
+    private static final String FEO_FABRICACAO_V1_PACKAGE = "com.marketinghub.feo.fabricacao.v1";
+    private static final String FEO_FABRICACAO_V1_EXECUTOR_MODULE = "feo";
+    private static final List<String> FEO_FABRICACAO_V1_STAGES = List.of(
+            "planejamento-entregaveis",
+            "redacao-entregaveis",
+            "montagem-pacote");
 
     @ArchTest
     static final ArchRule experimentPromiseGenerationMustNotAccessOpenAiDirectly = classes()
@@ -200,6 +206,49 @@ class ArquiteturaTest {
             .should(notDependOnOpenAiRuntime())
             .because("[ARQUITETURA] [BACKEND][Experimentos] o backend não pode acessar OpenAI diretamente; "
                     + "deve apenas persistir solicitações e expor pending para o AI Worker executar a etapa");
+
+    @ArchTest
+    static final ArchRule feoFabricacaoV1BackendMustNotAssumeExecutorResponsibility = classes()
+            .that()
+            .resideInAPackage(FEO_FABRICACAO_V1_PACKAGE + "..")
+            .should(notAssumeOperationalExecutionResponsibilityForFeoFabricacaoV1())
+            .because("[ARQUITETURA] [BACKEND][FEO fabricacao v1] o backend deve persistir fila, contratos, "
+                    + "pendencias e callbacks; a execucao operacional pertence ao modulo " + FEO_FABRICACAO_V1_EXECUTOR_MODULE);
+
+    @ArchTest
+    static void feoFabricacaoV1BackendMustExposeCanonicalStructure(JavaClasses classes) {
+        long controllers = classes.stream()
+                .filter(javaClass -> javaClass.getPackageName().equals(FEO_FABRICACAO_V1_PACKAGE + ".controller"))
+                .filter(javaClass -> javaClass.isAnnotatedWith(RestController.class))
+                .count();
+        if (controllers != 1) {
+            throw new AssertionError("[ARQUITETURA] [BACKEND][FEO fabricacao v1] deve existir exatamente um controller canonico em "
+                    + FEO_FABRICACAO_V1_PACKAGE + ".controller; encontrados=" + controllers);
+        }
+        long services = classes.stream()
+                .filter(javaClass -> javaClass.getPackageName().equals(FEO_FABRICACAO_V1_PACKAGE + ".service"))
+                .filter(javaClass -> javaClass.isAnnotatedWith(Service.class))
+                .count();
+        if (services != 1) {
+            throw new AssertionError("[ARQUITETURA] [BACKEND][FEO fabricacao v1] deve existir exatamente um service canonico em "
+                    + FEO_FABRICACAO_V1_PACKAGE + ".service; encontrados=" + services);
+        }
+        boolean hasPending = classes.stream()
+                .filter(javaClass -> javaClass.getPackageName().equals(FEO_FABRICACAO_V1_PACKAGE + ".controller"))
+                .flatMap(javaClass -> javaClass.getMethods().stream())
+                .anyMatch(method -> method.isAnnotatedWith(GetMapping.class) && method.getName().equals("pending"));
+        if (!hasPending) {
+            throw new AssertionError("[ARQUITETURA] [BACKEND][FEO fabricacao v1] deve expor endpoint interno pending canonico "
+                    + "/api/internal/feo/fabricacao/v1/{stageCode}/stage-executions/pending");
+        }
+        boolean stagesDocumented = FEO_FABRICACAO_V1_STAGES.contains("planejamento-entregaveis")
+                && FEO_FABRICACAO_V1_STAGES.contains("redacao-entregaveis")
+                && FEO_FABRICACAO_V1_STAGES.contains("montagem-pacote");
+        if (!stagesDocumented) {
+            throw new AssertionError("[ARQUITETURA] [BACKEND][FEO fabricacao v1] deve registrar as etapas canonicas "
+                    + "planejamento-entregaveis, redacao-entregaveis e montagem-pacote");
+        }
+    }
 
     @ArchTest
     static final ArchRule moisMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -2267,6 +2316,60 @@ class ArquiteturaTest {
         String targetStage = extractFacebookAdsStage(targetClass.getPackageName());
         String targetLayer = extractFacebookAdsStageLayer(targetClass.getPackageName());
         return sourceStage != null && sourceStage.equals(targetStage) && "service".equals(targetLayer);
+    }
+
+    /**
+     * Bloqueia responsabilidades operacionais de execução no backend FEO fabricacao v1.
+     */
+    private static ArchCondition<JavaClass> notAssumeOperationalExecutionResponsibilityForFeoFabricacaoV1() {
+        List<String> forbiddenDependencyNames = List.of(
+                "org.springframework.scheduling.annotation.Scheduled",
+                "org.springframework.web.reactive.function.client.WebClient",
+                "org.jsoup.Jsoup",
+                "com.openhtmltopdf",
+                "java.util.zip.ZipOutputStream",
+                "software.amazon.awssdk.services.s3",
+                "com.microsoft.playwright",
+                "org.openqa.selenium");
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][FEO fabricacao v1] nao assume execucao operacional externa") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (hasForbiddenFeoFabricacaoV1ExecutionName(item)) {
+                    events.add(SimpleConditionEvent.violated(item,
+                            "[ARQUITETURA] [BACKEND][FEO fabricacao v1] classe=" + item.getName()
+                                    + " tem nome de worker/runner/processor/nucleo operacional. "
+                                    + "O backend deve apenas persistir fila, expor pending e receber callbacks; "
+                                    + "a execucao operacional fica no modulo " + FEO_FABRICACAO_V1_EXECUTOR_MODULE + "."));
+                }
+                item.getDirectDependenciesFromSelf().stream()
+                        .filter(dependency -> forbiddenDependencyNames.stream().anyMatch(name ->
+                                dependency.getTargetClass().getName().startsWith(name)
+                                        || dependency.getTargetClass().getName().contains(name)))
+                        .forEach(dependency -> events.add(SimpleConditionEvent.violated(item,
+                                "[ARQUITETURA] [BACKEND][FEO fabricacao v1] " + item.getName()
+                                        + " depende de tecnologia operacional " + dependency.getTargetClass().getName()
+                                        + "; geracao de conteudo, PDF, ZIP, polling e integracoes externas pertencem ao modulo "
+                                        + FEO_FABRICACAO_V1_EXECUTOR_MODULE)));
+            }
+        };
+    }
+
+    /**
+     * Identifica nomes de classes que indicariam executor dentro do backend FEO.
+     */
+    private static boolean hasForbiddenFeoFabricacaoV1ExecutionName(JavaClass javaClass) {
+        String simpleName = javaClass.getSimpleName();
+        return simpleName.equals("PipelineWorker")
+                || simpleName.equals("StageProcessor")
+                || simpleName.equals("StageContext")
+                || simpleName.equals("StageResult")
+                || simpleName.equals("StageArtifact")
+                || simpleName.endsWith("Worker")
+                || simpleName.endsWith("Runner")
+                || simpleName.endsWith("Poller")
+                || simpleName.endsWith("Scheduler")
+                || simpleName.endsWith("Processor");
     }
 
     /**

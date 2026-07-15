@@ -62,7 +62,7 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
                 plan,
                 List.of(artifact),
                 Map.of("deliverableCount", plan.deliverables().size(), "qualityGate", "PLAN_READY"),
-                StageCode.MONTAGEM_PACOTE);
+                StageCode.REDACAO_ENTREGAVEIS);
     }
 
     /**

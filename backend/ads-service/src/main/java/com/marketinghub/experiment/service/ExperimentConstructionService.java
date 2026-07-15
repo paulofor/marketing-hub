@@ -1,12 +1,16 @@
 package com.marketinghub.experiment.service;
 
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCreationSource;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.service.construction.ExperimentConstructionDto;
 import com.marketinghub.experiment.service.construction.ExperimentConstructionItemDto;
 import com.marketinghub.experiment.service.construction.ExperimentConstructionSectionDto;
+import com.marketinghub.experiment.service.construction.ExperimentConstructionStepDto;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,10 +26,12 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ExperimentConstructionService {
     private final ExperimentRepository experimentRepository;
+    private final CreativeRepository creativeRepository;
 
-    /** Inicializa o serviço com o repositório oficial de experimentos. */
-    public ExperimentConstructionService(ExperimentRepository experimentRepository) {
+    /** Inicializa o serviço com as fontes oficiais de construção do experimento. */
+    public ExperimentConstructionService(ExperimentRepository experimentRepository, CreativeRepository creativeRepository) {
         this.experimentRepository = experimentRepository;
+        this.creativeRepository = creativeRepository;
     }
 
     /** Retorna a construção comercial e operacional do experimento informado. */
@@ -51,7 +57,70 @@ public class ExperimentConstructionService {
                 manualFlow,
                 experiment.getCreatedAt(),
                 experiment.getUpdatedAt(),
+                buildFlowSteps(experiment, niche, hypothesis),
                 sections);
+    }
+
+    /** Monta as etapas do cockpit com validação calculada no backend. */
+    private List<ExperimentConstructionStepDto> buildFlowSteps(Experiment experiment, MarketNiche niche, Hypothesis hypothesis) {
+        boolean hasNichePain = niche != null
+                && StringUtils.hasText(niche.getName())
+                && StringUtils.hasText(firstText(experiment.getSinglePain(), hypothesis != null ? hypothesis.getProblem() : null));
+        boolean hasHypothesis = StringUtils.hasText(experiment.getHypothesis())
+                || (hypothesis != null && StringUtils.hasText(hypothesis.getPersona()));
+        boolean hasMdsMechanism = hypothesis != null
+                && StringUtils.hasText(firstText(hypothesis.getUniqueMechanism(), hypothesis.getMechanism()));
+        boolean hasOfferProof = StringUtils.hasText(firstText(experiment.getFunnelPromise(), hypothesis != null ? hypothesis.getPromise() : null))
+                && StringUtils.hasText(experiment.getPrimaryCta())
+                && (experiment.getUnitPrice() != null
+                        || experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT);
+        boolean hasExperimentAssets = creativeRepository.existsByExperimentIdAndStatus(experiment.getId(), CreativeStatus.READY)
+                || StringUtils.hasText(experiment.getAdCopy())
+                || StringUtils.hasText(experiment.getAdImageBriefing());
+        boolean hasFeoDeliverables = StringUtils.hasText(experiment.getLandingPageDeliverables());
+        boolean hasFunnelReady = StringUtils.hasText(experiment.getLandingPageHtml())
+                && StringUtils.hasText(experiment.getFollowUpActionUrl());
+
+        return List.of(
+                step("niche-pain", "Nicho/dor",
+                        "Confirmar público, dor raiz e desejo que reduzem esforço ou afastam dor.",
+                        "overview", "Ver base", hasNichePain),
+                step("hypothesis", "Hipótese",
+                        "Organizar a aposta comercial sem fechar promessa antes da evidência.",
+                        "content-structure", "Ver estrutura", hasHypothesis),
+                step("mds", "MDS",
+                        "Descobrir mecanismo plausível, limites e evidências para sustentar a promessa.",
+                        "content-structure", "Preparar mecanismo", hasMdsMechanism),
+                step("offer-proof", "Oferta/prova",
+                        "Transformar mecanismo em promessa, prova, isca, produto e CTA coerentes.",
+                        "landing", "Construir oferta", hasOfferProof),
+                step("experiment", "Experimento",
+                        "Materializar criativos, landing e publicação para medir resposta real.",
+                        "creatives", "Criar ativos", hasExperimentAssets),
+                step("feo", "FEO",
+                        "Fabricar entregáveis após a oferta estar validada ou pronta para teste controlado.",
+                        "deliverables", "Ver entregáveis", hasFeoDeliverables),
+                step("funnel", "Funil",
+                        "Medir leads, compra, custo, taxa e aprendizado comercial para decidir escala.",
+                        "funnel", "Medir venda", hasFunnelReady));
+    }
+
+    /** Cria uma etapa do fluxo com rótulo padronizado de validação. */
+    private ExperimentConstructionStepDto step(
+            String code,
+            String title,
+            String description,
+            String tab,
+            String action,
+            boolean validated) {
+        return new ExperimentConstructionStepDto(
+                code,
+                title,
+                description,
+                tab,
+                action,
+                validated,
+                validated ? "Validado" : null);
     }
 
     /** Monta a seção que mostra o ponto de partida do fluxo manual. */

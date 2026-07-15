@@ -210,6 +210,91 @@ Checkout criado para o produto:
 
 Observação: o checkout existe, mas o destino oficial de campanha não deve ser o checkout direto. Para tráfego pago, o destino correto deve ser uma página de venda auditada pelo GeraSalesPage.
 
+## Decisão Pepper como checkout automatizável
+
+Data: `2026-07-15`.
+
+Decisão do usuário:
+
+- Usar a **Pepper** como caminho preferencial para automatizar criação de produto/oferta do experimento 66.
+- Manter o **PDE/área de membros dentro do Marketing Hub**, porque a experiência guiada, progresso, uso do MDS/research e melhoria contínua do produto devem continuar sob controle do sistema.
+- Não depender de área de membros externa como núcleo do produto.
+
+### Justificativa estratégica
+
+A Pepper é mais aderente ao Marketing Hub do que a Kiwify para a fábrica automática porque a documentação pública informa API para:
+
+- criar produto;
+- criar oferta;
+- listar/editar produtos e ofertas;
+- criar transações PIX;
+- obter checkout;
+- consultar transações.
+
+Isso permite que o Marketing Hub crie e atualize ofertas em escala, sem depender de preenchimento manual em tela para cada novo produto.
+
+### Alternativas avaliadas
+
+1. **Continuar só com Mercado Pago**
+   - Benefício: já existe checkout criado para o experimento 66.
+   - Risco: menor aderência ao mercado de infoprodutos, menos recursos comerciais prontos e menor flexibilidade para ofertas digitais em escala.
+   - Uso recomendado: fallback operacional e validação rápida.
+
+2. **Usar Kiwify**
+   - Benefício: boa plataforma para checkout, área de membros e assinatura.
+   - Risco: automação de criação de produto por API é menos clara; depender de login manual reduz escalabilidade do Marketing Hub.
+   - Uso recomendado: apenas se operação manual/semi-manual for aceitável.
+
+3. **Usar Pepper + PDE próprio no Marketing Hub**
+   - Benefício: maior automação comercial, checkout externo, URL de oferta e controle total da experiência pelo Marketing Hub.
+   - Risco: exige integração técnica com token oficial, webhook e mapeamento de status de compra.
+   - Uso recomendado: melhor caminho para fábrica automática de produtos digitais.
+
+Escolha aplicada: **alternativa 3**.
+
+### Modelo operacional definido
+
+Fluxo alvo:
+
+1. O FEO gera o PDE do experimento 66.
+2. O GeraSalesPage publica a página de venda auditada.
+3. O Marketing Hub cria o produto na Pepper:
+   - `title`: `Método MUSA - Experiência Guiada de 7 Dias`;
+   - `description`: experiência guiada com diagnóstico, missões, exemplos visuais, e-book, checklists e templates;
+   - `product_type`: `curso` para pagamento único, ou `recorrencia` quando virar assinatura;
+   - `price`: `4700`;
+   - `sale_page`: URL pública auditada pelo GeraSalesPage;
+   - `cover`: URL pública da capa/mockup do PDE.
+4. O Marketing Hub cria uma oferta na Pepper para o produto.
+5. A URL da oferta Pepper vira o checkout oficial da página de venda.
+6. O webhook da Pepper confirma compra aprovada.
+7. O Marketing Hub libera acesso ao PDE/área de membros.
+8. O sistema registra venda, origem, experimento, produto, oferta e status de entrega.
+
+### Regra de segurança
+
+Não usar token pessoal de sessão, login/senha ou credencial ampla de navegador.
+
+Para integração Pepper, aceitar apenas:
+
+- token/API key oficial da Pepper;
+- preferencialmente revogável;
+- preferencialmente com escopo limitado;
+- armazenado como variável de ambiente;
+- nunca registrado em arquivo, log, relatório ou commit.
+
+### Próximo passo necessário
+
+Antes de implementar a criação automática real na Pepper, obter:
+
+- token oficial da API Pepper;
+- confirmação do endpoint de webhooks e eventos de compra aprovada;
+- payload real de exemplo da Pepper;
+- URL pública final da página de venda auditada;
+- URL pública da capa/mockup do PDE.
+
+Enquanto esses itens não existem, o experimento 66 continua usando Mercado Pago como checkout já criado, mas a direção de integração principal passa a ser Pepper.
+
 ## Criativos aprovados para teste inicial
 
 Foram definidos 5 criativos/ângulos:

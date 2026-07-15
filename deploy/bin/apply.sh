@@ -90,11 +90,40 @@ cleanup_previous_tags() {
     | xargs -r docker image rm >/dev/null 2>&1 || true
 }
 
+remove_conflicting_container() {
+  local service_name="$1"
+  local container_name="$2"
+  local container_id
+  local compose_project
+  local compose_service
+  local expected_project
+
+  container_id="$(docker ps -aq --filter "name=^/${container_name}$" | head -n 1)"
+  if [[ -z "${container_id}" ]]; then
+    return 0
+  fi
+
+  compose_project="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' "${container_id}" 2>/dev/null || true)"
+  compose_service="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.service" }}' "${container_id}" 2>/dev/null || true)"
+  expected_project="$(basename "${DEPLOY_DIR}")"
+
+  if [[ "${compose_project}" == "${expected_project}" && "${compose_service}" == "${service_name}" ]]; then
+    log "Container ${container_name} pertence ao compose atual; docker compose fará a recriação quando necessário."
+    return 0
+  fi
+
+  log "Removendo container conflitante ${container_name} antes do compose up (id=${container_id}, composeProject=${compose_project:-none}, composeService=${compose_service:-none})"
+  docker rm -f "${container_id}" >/dev/null
+}
+
 if [[ "${IMAGE_TAG}" != "latest" ]]; then
   tag_image_if_exists "${BACKEND_IMAGE}:${IMAGE_TAG}" "${BACKEND_IMAGE}:latest"
   tag_image_if_exists "${FRONTEND_IMAGE}:${IMAGE_TAG}" "${FRONTEND_IMAGE}:latest"
   tag_image_if_exists "${VIDEO_IMAGE}:${IMAGE_TAG}" "${VIDEO_IMAGE}:latest"
 fi
+
+remove_conflicting_container "backend" "marketinghub-backend"
+remove_conflicting_container "frontend" "marketinghub-frontend"
 
 run_with_heartbeat \
   "recriar somente backend/frontend" \

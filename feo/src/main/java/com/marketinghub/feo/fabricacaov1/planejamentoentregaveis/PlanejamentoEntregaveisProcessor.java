@@ -147,7 +147,7 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
             case "PROVA_TANGIVEL" -> "Preview tangivel do antes e depois";
             case "BIBLIOTECA_APOIO" -> "Biblioteca de apoio - e-book, checklists e templates";
             case "RITUAL_ACOMPANHAMENTO" -> "Ritual de acompanhamento e checkpoints";
-            case "BONUS_ANTI_OBJECAO" -> "Bonus anti-objecao para remover friccao";
+            case "BONUS_ANTI_OBJECAO" -> "Apoio para destravar e remover friccao";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Guia de primeiros resultados percebidos";
             default -> "Material complementar - " + input.offerName();
         };
@@ -172,19 +172,19 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
      */
     private String roleFor(String componentType, FabricationContext input) {
         return switch (componentType) {
-            case "COMECE_AQUI" -> "Organiza a experiencia e faz o comprador entender a ordem de uso em menos de um minuto.";
+            case "COMECE_AQUI" -> "Organiza a experiencia e ajuda você a entender a ordem de uso em menos de um minuto.";
             case "DIAGNOSTICO_GUIADO" -> "Transforma percepção vaga em ponto de partida claro para a experiência guiada.";
             case "MISSOES_7_DIAS" -> "Conduz a aplicação diária para reduzir esforço e criar sensação de acompanhamento.";
-            case "PAINEL_PROGRESSO" -> "Mostra avanço, checkpoints e evidências para o comprador perceber transformação.";
+            case "PAINEL_PROGRESSO" -> "Mostra avanço, checkpoints e evidências para você perceber transformação.";
             case "PLANO_EXECUCAO_RAPIDA" -> "Entrega o caminho principal para gerar " + input.promisedResult() + ".";
-            case "CHECKLIST_APLICACAO" -> "Reduz esforco mental e evita que o comprador fique travado na execucao.";
+            case "CHECKLIST_APLICACAO" -> "Reduz esforco mental e evita que você fique travada na execucao.";
             case "TEMPLATES_PRONTOS" -> "Transforma a promessa em material copiavel, editavel e imediatamente aplicavel.";
-            case "EXEMPLO_PREENCHIDO" -> "Mostra como o resultado deve parecer quando o comprador aplicar corretamente.";
+            case "EXEMPLO_PREENCHIDO" -> "Mostra como o resultado deve parecer quando você aplicar corretamente.";
             case "PROVA_TANGIVEL" -> "Materializa visualmente a transformacao prometida e aumenta confianca de uso.";
             case "BIBLIOTECA_APOIO" -> "Reúne e-book, checklists e templates como apoio à experiência principal.";
             case "RITUAL_ACOMPANHAMENTO" -> "Cria sensacao de suporte, ritmo e continuidade sem depender de atendimento manual.";
-            case "BONUS_ANTI_OBJECAO" -> "Remove a objecao mais provavel antes de ela impedir a aplicacao.";
-            case "GUIA_PRIMEIROS_RESULTADOS" -> "Ajuda o comprador a reconhecer progresso e valor percebido rapidamente.";
+            case "BONUS_ANTI_OBJECAO" -> "Remove a trava mais provavel antes de ela impedir a aplicacao.";
+            case "GUIA_PRIMEIROS_RESULTADOS" -> "Ajuda você a reconhecer progresso e valor percebido rapidamente.";
             default -> "Aumenta profundidade percebida sem criar uma promessa nova.";
         };
     }
@@ -213,7 +213,7 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
             case "TEMPLATES_PRONTOS" -> List.of("Campos editaveis", "Modelo base", "Como preencher", "Exemplo de uso", "Quando reutilizar");
             case "PROVA_TANGIVEL" -> List.of("Estado antes", "Estado depois", "Miniresultado", "Sinais de progresso", "Limites da prova");
             case "RITUAL_ACOMPANHAMENTO" -> List.of("Ritmo diario", "Checkpoint", "Lembrete", "Revisao", "Continuidade");
-            case "BONUS_ANTI_OBJECAO" -> List.of("Objecao", "Resposta operacional", "Atalho", "FAQ", "Proxima acao");
+            case "BONUS_ANTI_OBJECAO" -> List.of("Trava", "Resposta simples", "Atalho", "Perguntas frequentes", "Proxima acao");
             case "BIBLIOTECA_APOIO" -> List.of("E-book", "Checklists", "Templates", "Exemplos", "Como consultar sem travar");
             default -> List.of("Objetivo", "Quando usar", "Passo a passo", "Modelo preenchivel", "Criterio de conclusao");
         };

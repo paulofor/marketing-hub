@@ -46,6 +46,19 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
             "sha256",
             "json",
             "ready_for_premium_review");
+    private static final List<String> PROHIBITED_FINAL_TERMS = List.of(
+            "mecanismo",
+            "pesquisa",
+            "princípio científico",
+            "princípios científicos",
+            "princípio de pesquisa",
+            "teoria acadêmica",
+            "cliente",
+            "comprador",
+            "compradora",
+            "criterios_qualidade",
+            "criterio_conclusao",
+            "bonus_anti_objecao");
 
     private final PackageAssetAssembler assembler;
 
@@ -80,7 +93,7 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
                     List.of());
         }
         PackageAssemblyOutput output = assembler.assemble(input);
-        prohibitedTerms = prohibitedTerms(output);
+        prohibitedTerms = prohibitedFinalTerms(output);
         if (!prohibitedTerms.isEmpty()) {
             return StageResult.blocked(
                     "Pacote final da cliente contém termos técnicos proibidos: " + String.join(", ", prohibitedTerms),
@@ -128,6 +141,21 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
         Set<String> found = new LinkedHashSet<>();
         for (String term : PROHIBITED_CLIENT_TERMS) {
             if (text.contains(term)) {
+                found.add(term);
+            }
+        }
+        return new ArrayList<>(found);
+    }
+
+    /** Localiza termos de bastidor que nao podem aparecer no ZIP final publico. */
+    private List<String> prohibitedFinalTerms(PackageAssemblyOutput output) {
+        StringBuilder text = new StringBuilder();
+        text.append(text(output.experienceSite()));
+        text.append(text(output.spreadsheet()));
+        text.append(textFromZip(output.zipPackage()));
+        Set<String> found = new LinkedHashSet<>(prohibitedTerms(text.toString().toLowerCase()));
+        for (String term : PROHIBITED_FINAL_TERMS) {
+            if (text.toString().toLowerCase().contains(term)) {
                 found.add(term);
             }
         }

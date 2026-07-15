@@ -179,19 +179,26 @@ class FeoFabricacaoV1ContractTest {
         assertThat(new String(result.output().experienceSite().content(), java.nio.charset.StandardCharsets.UTF_8))
                 .contains("Produto Digital Experiencial")
                 .contains("Dia 0 - Diagnóstico MUSA")
-                .contains("Mecanismo aplicado")
+                .contains("Seu mapa de aplicação")
                 .contains("Jornada guiada de 7 dias")
                 .contains("Biblioteca de apoio")
                 .contains("02-ebook-principal.pdf")
                 .contains("03-plano-checklists-e-templates.csv")
+                .doesNotContain("Mecanismo aplicado")
+                .doesNotContain("pesquisa")
+                .doesNotContain("cliente")
+                .doesNotContain("comprador")
                 .doesNotContain("Score FEO")
                 .doesNotContain("Fabricado pela FEO")
                 .doesNotContain("MDS");
         assertThat(new String(result.output().spreadsheet().content(), java.nio.charset.StandardCharsets.UTF_8))
                 .contains("primeira_vitoria")
                 .contains("material_pronto")
-                .contains("bonus_anti_objecao")
-                .contains("criterio_conclusao");
+                .contains("apoio_para_travar_menos")
+                .contains("quando_considerar_concluido")
+                .doesNotContain("bonus_anti_objecao")
+                .doesNotContain("criterio_conclusao")
+                .doesNotContain("criterios_qualidade");
         assertThat(result.output().spreadsheet().name()).endsWith(".csv");
         assertThat(result.output().zipPackage().contentType()).isEqualTo("application/zip");
         assertThat(zipEntries(result.output().zipPackage().content()))
@@ -199,6 +206,15 @@ class FeoFabricacaoV1ContractTest {
                 .contains("01-experiencia-guiada/index.html", "02-ebook-principal.pdf", "03-plano-checklists-e-templates.csv", "README.txt")
                 .doesNotContain("00-fonte-editorial-interna.html", "manifesto.txt", "relatorio-fabricacao.txt")
                 .noneMatch(name -> name.startsWith("entregaveis/"));
+        assertThat(zipText(result.output().zipPackage().content()).toLowerCase())
+                .doesNotContain("mecanismo")
+                .doesNotContain("pesquisa")
+                .doesNotContain("princípio científico")
+                .doesNotContain("cliente")
+                .doesNotContain("comprador")
+                .doesNotContain("criterios_qualidade")
+                .doesNotContain("criterio_conclusao")
+                .doesNotContain("bonus_anti_objecao");
         assertThat(result.artifacts()).extracting("type").contains("FINAL_EXPERIENCE_SITE", "FINAL_PDF", "FINAL_SPREADSHEET", "FINAL_ZIP");
     }
 
@@ -251,6 +267,24 @@ class FeoFabricacaoV1ContractTest {
             }
         }
         return names;
+    }
+
+    /**
+     * Extrai texto dos arquivos publicos do ZIP para validar linguagem final.
+     */
+    private String zipText(byte[] content) throws java.io.IOException {
+        StringBuilder text = new StringBuilder();
+        try (ZipInputStream zip = new ZipInputStream(new java.io.ByteArrayInputStream(content))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (entry.getName().endsWith(".html")
+                        || entry.getName().endsWith(".txt")
+                        || entry.getName().endsWith(".csv")) {
+                    text.append(new String(zip.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)).append('\n');
+                }
+            }
+        }
+        return text.toString();
     }
 
     /**

@@ -41,6 +41,7 @@ public class FeoFabricacaoV1Service {
     private static final Logger log = LoggerFactory.getLogger(FeoFabricacaoV1Service.class);
     private static final String STAGE_PLANEJAMENTO = "planejamento-entregaveis";
     private static final String STAGE_REDACAO = "redacao-entregaveis";
+    private static final String STAGE_ATIVOS_VISUAIS = "geracao-ativos-visuais";
     private static final String STAGE_MONTAGEM = "montagem-pacote";
     private static final Duration RUNNING_RETRY_AFTER = Duration.ofMinutes(15);
     private static final TypeReference<LinkedHashMap<String, Object>> MAP_TYPE = new TypeReference<>() {};
@@ -205,7 +206,11 @@ public class FeoFabricacaoV1Service {
             enqueueContentWriting(execution, request);
             return;
         }
-        if (STAGE_REDACAO.equals(execution.getStageCode()) && STAGE_MONTAGEM.equals(request.nextStageCode())) {
+        if (STAGE_REDACAO.equals(execution.getStageCode()) && STAGE_ATIVOS_VISUAIS.equals(request.nextStageCode())) {
+            enqueueVisualAssetGeneration(execution, request);
+            return;
+        }
+        if (STAGE_ATIVOS_VISUAIS.equals(execution.getStageCode()) && STAGE_MONTAGEM.equals(request.nextStageCode())) {
             enqueuePackageAssembly(execution, request);
         }
     }
@@ -225,7 +230,20 @@ public class FeoFabricacaoV1Service {
         executionRepository.save(next);
     }
 
-    /** Enfileira montagem final somente após existir conteúdo redigido e aprovado pelo gate. */
+    /** Enfileira geração visual após existir conteúdo redigido e aprovado pelo gate. */
+    private void enqueueVisualAssetGeneration(FeoFabricacaoV1StageExecution execution, FeoFabricacaoV1CompleteRequest request) {
+        Map<String, Object> assemblyInput = objectMapper.convertValue(request.output(), MAP_TYPE);
+        FeoFabricacaoV1StageExecution next = FeoFabricacaoV1StageExecution.builder()
+                .experiment(execution.getExperiment())
+                .jobId(execution.getJobId())
+                .stageCode(STAGE_ATIVOS_VISUAIS)
+                .status(FeoFabricacaoV1StageStatus.PENDING)
+                .inputPayload(toJson(assemblyInput))
+                .build();
+        executionRepository.save(next);
+    }
+
+    /** Enfileira montagem final somente após existir conteúdo e imagens editoriais aprovadas. */
     private void enqueuePackageAssembly(FeoFabricacaoV1StageExecution execution, FeoFabricacaoV1CompleteRequest request) {
         Map<String, Object> assemblyInput = objectMapper.convertValue(request.output(), MAP_TYPE);
         FeoFabricacaoV1StageExecution next = FeoFabricacaoV1StageExecution.builder()
@@ -248,18 +266,17 @@ public class FeoFabricacaoV1Service {
         }
         Map<String, Object> output = objectMapper.convertValue(request.output(), MAP_TYPE);
         Map<String, Object> manifest = objectMapper.convertValue(output.get("manifest"), MAP_TYPE);
-        String packageTitle = stringValue(manifest.get("packageTitle"), "Pacote FEO - Experimento " + execution.getExperiment().getId())
-                + " - FEO #" + execution.getId();
+        String packageTitle = stringValue(manifest.get("packageTitle"), "Pacote Cliente - Experimento " + execution.getExperiment().getId());
         List<Map<String, Object>> items = objectMapper.convertValue(manifest.get("items"), ARTIFACT_LIST_TYPE);
         LinkedHashSet<Deliverable> deliverables = new LinkedHashSet<>();
         for (Map<String, Object> item : items) {
             Deliverable deliverable = deliverableRepository.save(Deliverable.builder()
                     .niche(execution.getExperiment().getNiche())
                     .title(stringValue(item.get("fileName"), "Entregável FEO"))
-                    .description(stringValue(item.get("role"), "Entregável final fabricado pela FEO."))
+                    .description(stringValue(item.get("role"), "Entregável final do produto digital."))
                     .content(toJson(item))
                     .model("feo.fabricacao.v1")
-                    .prompt("Fabricado pela FEO a partir do contexto validado do experimento.")
+                    .prompt("Materializado a partir do contexto comercial aprovado do experimento.")
                     .build());
             deliverables.add(deliverable);
         }
@@ -268,7 +285,7 @@ public class FeoFabricacaoV1Service {
                 .name(packageTitle)
                 .description(toJson(output.get("report")))
                 .model("feo.fabricacao.v1")
-                .prompt("Pacote final materializado pela etapa montagem-pacote da FEO.")
+                .prompt("Pacote final materializado para entrega ao comprador.")
                 .deliverables(deliverables)
                 .build());
     }

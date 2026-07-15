@@ -386,6 +386,81 @@ Status após revisão:
 - Checkout: pode existir, mas não deve receber tráfego enquanto o produto entregue estiver nesse estado.
 - Próximo passo: **regenerar/reconstruir o pacote FEO do experimento 66 com fronteira limpa entre cliente e auditoria interna**.
 
+## Correção sistêmica do FEO para imagens e e-books ricos
+
+Data: `2026-07-15`.
+
+Decisão do usuário:
+
+- O FEO deve usar gerador de imagens da OpenAI.
+- O pacote final não deve criar HTML para a cliente.
+- O produto deve conter itens mais ricos: e-books com capa bonita, infográficos, figuras internas e materiais realmente interessantes.
+- A referência de qualidade deve vir dos produtos de sucesso: prova visual do que a pessoa recebe, materiais aplicáveis, redução de esforço e sensação de produto completo.
+
+Alternativas avaliadas:
+
+1. **Limpar apenas o PDF atual**
+   - Benefício: rápido.
+   - Risco: continua raso, sem imagens e sem corrigir vazamento de metadados.
+   - Aderência a vendas: baixa.
+
+2. **Inserir imagens dentro da montagem atual**
+   - Benefício: gera visual com menos mudança.
+   - Risco: mistura texto, imagem, auditoria e ZIP final na mesma responsabilidade.
+   - Aderência a vendas: média.
+
+3. **Criar etapa explícita de geração de ativos visuais dentro do pipeline FEO**
+   - Benefício: separa redação, imagens e montagem; permite auditar request/response da OpenAI sem vazar isso para a cliente; força o pacote a nascer com capa, infográfico e figuras internas.
+   - Risco: exige ajuste no backend e no worker.
+   - Aderência a vendas: alta.
+
+Escolha aplicada: **alternativa 3**.
+
+Mudança preparada no código:
+
+- Nova etapa no FEO: `geracao-ativos-visuais`.
+- Sequência do pipeline:
+  1. `planejamento-entregaveis`
+  2. `redacao-entregaveis`
+  3. `geracao-ativos-visuais`
+  4. `montagem-pacote`
+- Integração OpenAI no módulo executor `feo`, via endpoint oficial de geração de imagens.
+- Modelo configurável por ambiente:
+  - `FEO_IMAGE_MODEL`, padrão `gpt-image-2`;
+  - `FEO_IMAGE_QUALITY`, padrão `high`;
+  - `OPENAI_API_KEY`;
+  - `OPENAI_BASE_URL`.
+- A etapa bloqueia se não houver chave OpenAI, para não entregar pacote pobre sem imagens reais.
+- O ZIP público da compradora passa a conter:
+  - `01-ebook-principal.pdf`;
+  - `02-plano-checklists-e-templates.csv`;
+  - imagens em `imagens/`;
+  - `README.txt`.
+- O ZIP público não deve conter:
+  - arquivos HTML;
+  - relatório de fabricação;
+  - manifesto técnico;
+  - hashes, JSON, prompts, status, score ou termos internos.
+
+Tipos de imagem exigidos:
+
+- capa editorial do e-book;
+- infográfico do plano de 7 dias;
+- mapa visual do mecanismo;
+- figura conceitual de antes/depois.
+
+Fonte técnica usada para a integração:
+
+- Documentação oficial OpenAI: `gpt-image-2` é modelo de geração/edição de imagens e expõe endpoint `/v1/images/generations`.
+- A referência oficial de geração de imagens indica retorno base64 para modelos GPT Image, adequado para armazenar a imagem no pacote final.
+
+Status:
+
+- Código preparado localmente.
+- Testes do backend FEO passaram.
+- Testes do módulo FEO passaram.
+- Ainda falta deploy/reprocessamento do experimento 66 para gerar um novo ZIP real com imagens OpenAI.
+
 ## Validação após aplicação do Liquibase
 
 Data da validação: `2026-07-15T03:44:09Z`.

@@ -9,6 +9,7 @@ public record DeliverableContentPackage(
         String requestId,
         String packageTitle,
         List<DeliverableContent> deliverables,
+        List<VisualAssetSpec> visualAssets,
         int qualityScore,
         String qualityGate,
         List<String> reviewerNotes) {

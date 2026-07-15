@@ -108,6 +108,7 @@ public class FeoBackendClient implements StageBackendPort {
         Object input = switch (stageCode) {
             case PLANEJAMENTO_ENTREGAVEIS -> objectMapper.convertValue(item.input(), FabricationContext.class);
             case REDACAO_ENTREGAVEIS -> objectMapper.convertValue(item.input(), PackageAssemblyInput.class);
+            case GERACAO_ATIVOS_VISUAIS -> objectMapper.convertValue(item.input(), PackageAssemblyInput.class);
             case MONTAGEM_PACOTE -> objectMapper.convertValue(item.input(), PackageAssemblyInput.class);
         };
         return new StageExecution<>(

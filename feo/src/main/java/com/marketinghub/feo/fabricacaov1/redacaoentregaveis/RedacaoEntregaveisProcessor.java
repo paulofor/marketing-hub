@@ -9,6 +9,7 @@ import com.marketinghub.feo.fabricacaov1.contract.DeliverableSection;
 import com.marketinghub.feo.fabricacaov1.contract.DeliverableSpec;
 import com.marketinghub.feo.fabricacaov1.contract.FabricationContext;
 import com.marketinghub.feo.fabricacaov1.contract.PackageAssemblyInput;
+import com.marketinghub.feo.fabricacaov1.contract.VisualAssetSpec;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageArtifact;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageCode;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageContext;
@@ -83,7 +84,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                     toJson(contentPackage));
             return StageResult.blocked("Conteúdo dos entregáveis abaixo do gate mínimo da FEO.", List.of(artifact));
         }
-        PackageAssemblyInput output = new PackageAssemblyInput(input.context(), input.plan(), contentPackage);
+        PackageAssemblyInput output = new PackageAssemblyInput(input.context(), input.plan(), contentPackage, List.of());
         StageArtifact artifact = context.artifactStore().store(
                 "FEO_DELIVERABLE_CONTENT_PACKAGE",
                 "feo-deliverable-content-package.json",
@@ -96,7 +97,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                         "qualityScore", contentPackage.qualityScore(),
                         "qualityGate", contentPackage.qualityGate(),
                         "deliverableCount", contentPackage.deliverables().size()),
-                StageCode.MONTAGEM_PACOTE);
+                StageCode.GERACAO_ATIVOS_VISUAIS);
     }
 
     /**
@@ -110,13 +111,61 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 context.requestId(),
                 plan.packageTitle(),
                 contents,
+                visualAssetsFor(context),
                 score(contents),
                 "PREMIUM_CONTENT_READY",
                 List.of(
                         "O pacote contém método, plano, materiais prontos, prova, ritual e bônus anti-objeção.",
+                        "O pacote exige capa, infográficos e figuras internas para aumentar valor percebido.",
                         "Cada entregável tem primeira vitória clara para o comprador.",
                         "Cada entregável contém aplicação, checklist, template e critério de conclusão.",
                         "A promessa central foi preservada sem criar garantia nova."));
+    }
+
+    /**
+     * Planeja imagens editoriais obrigatórias para o pacote parecer produto premium, não relatório técnico.
+     */
+    private List<VisualAssetSpec> visualAssetsFor(FabricationContext context) {
+        return List.of(
+                new VisualAssetSpec(
+                        "VIS-01",
+                        "Capa editorial do e-book principal",
+                        "EBOOK_COVER",
+                        "cover",
+                        "Crie uma capa vertical premium para um e-book digital chamado '" + safe(context.offerName())
+                                + "'. Público: " + safe(context.niche())
+                                + ". Promessa: " + safe(context.centralPromise())
+                                + ". Direção visual: editorial feminino sofisticado, elegante, acessível, claro, sem luxo ostensivo, com composição limpa, título legível, sensação de método prático e transformação em 7 dias. Não use termos técnicos, métricas, logos de plataformas ou aparência de relatório.",
+                        "1024x1536",
+                        "png"),
+                new VisualAssetSpec(
+                        "VIS-02",
+                        "Infográfico do plano de 7 dias",
+                        "INFOGRAPHIC",
+                        "inside-ebook",
+                        "Crie um infográfico vertical em português mostrando uma jornada de 7 dias para aplicar a promessa: "
+                                + safe(context.centralPromise())
+                                + ". Use blocos claros, ícones simples, setas suaves, espaço para leitura em PDF e linguagem de cliente final. Não inclua CTR, CPL, lead, experimento, FEO, score, JSON ou qualquer termo técnico.",
+                        "1024x1536",
+                        "png"),
+                new VisualAssetSpec(
+                        "VIS-03",
+                        "Mapa visual de presença elegante",
+                        "CONCEPT_MAP",
+                        "inside-ebook",
+                        "Crie um mapa visual rico em português conectando cabelo, pele, roupa, perfume, acessórios, ocasião e orçamento para explicar o mecanismo: "
+                                + safe(context.coreMechanism())
+                                + ". Estética editorial, útil, feminina e aplicável. A imagem deve ajudar a compradora a entender o método de relance, sem parecer slide corporativo.",
+                        "1536x1024",
+                        "png"),
+                new VisualAssetSpec(
+                        "VIS-04",
+                        "Antes e depois conceitual da aplicação",
+                        "BEFORE_AFTER",
+                        "inside-ebook",
+                        "Crie uma figura antes/depois conceitual para um produto de presença elegante acessível. Antes: escolhas dispersas, excesso de tentativa, visual sem coerência. Depois: detalhes coordenados, presença intencional, rotina simples. Não mostre transformação corporal, não prometa resultado automático e não use texto técnico.",
+                        "1536x1024",
+                        "png"));
     }
 
     /**

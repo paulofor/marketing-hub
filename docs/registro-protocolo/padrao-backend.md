@@ -70,6 +70,6 @@
 - **Backend:** `backend/ads-service`.
 - **Pacote protegido:** `com.marketinghub.feo.fabricacao.v1`.
 - **Executor operacional externo:** `feo`.
-- **Etapas protegidas:** `planejamento-entregaveis`, `redacao-entregaveis` e `montagem-pacote`.
+- **Etapas protegidas:** `planejamento-entregaveis`, `redacao-entregaveis`, `geracao-ativos-visuais` e `montagem-pacote`.
 - **Endpoint pending canônico:** `/api/internal/feo/fabricacao/v1/{stageCode}/stage-executions/pending`.
-- **Aplicação:** protocolo padrão backend aplicado para manter o backend como fonte de verdade de fila, contratos, persistência, pendências e callbacks da FEO, sem deslocar geração de conteúdo, PDF, ZIP, polling ou integrações operacionais para o backend.
+- **Aplicação:** protocolo padrão backend aplicado para manter o backend como fonte de verdade de fila, contratos, persistência, pendências e callbacks da FEO, sem deslocar geração de conteúdo, imagens OpenAI, PDF, ZIP, polling ou integrações operacionais para o backend.

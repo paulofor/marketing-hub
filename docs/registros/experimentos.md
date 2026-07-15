@@ -5825,3 +5825,12 @@
 - Validação local: testes do módulo `feo` passaram; testes focados do backend para ZIP/FEO passaram; smoke test local gerou `/tmp/musa-feo-premium.zip` com `01-pacote-final.html`, `02-pacote-final.pdf`, `03-manifesto-entregaveis.csv`, manifesto e relatório.
 - Reforço 2026-07-15: a FEO passa a ter etapa intermediária `redacao-entregaveis`, impedindo montagem final quando só existe plano/manifesto. Cada entregável agora precisa gerar conteúdo aplicável com primeira vitória, seções guiadas, checklist, template, erros a evitar, critério de conclusão e score mínimo antes do pacote final.
 - Reforço 2026-07-15 (Kit de Transformação Aplicável): a etapa de planejamento da FEO passa a gerar obrigatoriamente componentes de produto baseados nos padrões de páginas quentes da biblioteca de vendas: manifesto de uso, plano de 7 dias, checklist, templates prontos, exemplo preenchido, prova tangível, ritual de acompanhamento, bônus anti-objeção e guia de primeiros resultados. A redação bloqueia kit incompleto e exige material pronto, prova, ritual e bônus em cada entregável. A montagem inclui HTML/PDF/CSV consolidados e arquivos HTML individuais no ZIP para cada componente do comprador.
+
+## 2026-07-15 — Checkout Mercado Pago do experimento 66
+
+- Foi criado checkout real no Mercado Pago para o produto `Método MUSA - Presença Elegante em 7 Dias`, valor `R$47`, com referência `marketinghub-experiment-66`.
+- O experimento 66 foi atualizado com a URL de checkout como destino comercial intermediário para desbloquear o GeraSalesPage v1.
+- O draft local da página `sales-page-exp66.html` passou a apontar os CTAs para o checkout real e removeu o texto de "checkout pendente".
+- Validação operacional: o endpoint do ZIP oficial do experimento 66 respondeu `200` com `experimento-66-entregaveis.zip`.
+- Bloqueio restante: o start do GeraSalesPage v1 passou do bloqueio de checkout para o bloqueio de template, retornando ausência de template ativo para `sales-page-offer-brief`; a tabela `ai_prompt_schema_template` não possui linhas para `gera-sales-page-v1` no banco remoto.
+- Próximo passo: restaurar/semear os templates ativos do GeraSalesPage no banco remoto a partir dos changelogs versionados antes de republicar a página auditada e liberar tráfego.

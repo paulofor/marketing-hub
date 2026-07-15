@@ -90,12 +90,15 @@ class FeoFabricacaoV1ContractTest {
         assertThat(contentPackage.qualityScore()).isGreaterThanOrEqualTo(80);
         assertThat(contentPackage.visualAssets()).hasSizeGreaterThanOrEqualTo(4);
         assertThat(contentPackage.reviewerNotes().getFirst()).contains("método", "plano", "materiais prontos");
+        assertThat(contentPackage.reviewerNotes()).anyMatch(note -> note.contains("MDS"));
         assertThat(contentPackage.deliverables().getFirst().sections()).hasSizeGreaterThanOrEqualTo(4);
+        assertThat(contentPackage.deliverables().getFirst().appliedPrinciple()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().readyToUseAsset()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().tangibleProof()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().ritualStep()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().antiObjectionBonus()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().templateFields()).contains("Situação atual");
+        assertThat(contentPackage.deliverables().getFirst().templateFields()).contains("Princípio aplicado");
     }
 
     /**
@@ -143,8 +146,10 @@ class FeoFabricacaoV1ContractTest {
         assertThat(new String(result.output().html().content(), java.nio.charset.StandardCharsets.UTF_8))
                 .contains("Comece por aqui")
                 .contains("O que você recebe")
+                .contains("Como a pesquisa vira transformação prática")
                 .contains("Diagnostico inicial")
                 .contains("Workbooks de aplicacao por entregavel")
+                .contains("Princípio aplicado")
                 .contains("Materiais prontos do comprador")
                 .contains("Bonus anti-objecao")
                 .contains("Erros a evitar")

@@ -107,6 +107,7 @@ public class PackageAssetAssembler {
                 </p>
                   <p><strong>Resultado buscado:</strong> """).append(escape(context.promisedResult())).append("""
                 </p>
+                  <p><strong>Base do método:</strong> princípios práticos derivados da pesquisa MDS, traduzidos em decisões simples de cabelo, pele, roupa, perfume, ocasião e compra consciente.</p>
                 </section>
                 <section>
                   <h2>Comece por aqui</h2>
@@ -125,6 +126,11 @@ public class PackageAssetAssembler {
                   <h2>Mecanismo central</h2>
                   <div class="box">""").append(escape(context.coreMechanism())).append("""
                 </div>
+                  <h2>Como a pesquisa vira transformação prática</h2>
+                  <div class="box premium">
+                    <p>Os princípios científicos não aparecem como aula técnica. Eles foram convertidos em regras de aplicação: reduzir esforço mental, organizar sinais visuais, criar comparação antes/depois e facilitar escolhas com o que você já tem.</p>
+                    <p>O foco do método é transformar conhecimento em decisão prática, não em excesso de informação.</p>
+                  </div>
                 """);
         appendVisual(html, input, "INFOGRAPHIC");
         appendVisual(html, input, "CONCEPT_MAP");
@@ -177,6 +183,8 @@ public class PackageAssetAssembler {
                     .append(escape(content.title()))
                     .append("</h3><p>")
                     .append(escape(content.headline()))
+                    .append("</p><p><strong>Princípio aplicado:</strong> ")
+                    .append(escape(content.appliedPrinciple()))
                     .append("</p><p><strong>Resultado para o comprador:</strong> ")
                     .append(escape(content.buyerOutcome()))
                     .append("</p><p><strong>Primeira vitoria:</strong> ")
@@ -469,6 +477,9 @@ public class PackageAssetAssembler {
                 </h1>
                   <div class="box"><strong>Promessa preservada:</strong> """).append(escape(context.centralPromise())).append("""
                 </div>
+                  <h2>Principio aplicado</h2>
+                  <p>""").append(escape(content.appliedPrinciple())).append("""
+                </p>
                   <h2>Resultado para o comprador</h2>
                   <p>""").append(escape(content.buyerOutcome())).append("""
                 </p>

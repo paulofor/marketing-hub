@@ -461,6 +461,40 @@ Status:
 - Testes do módulo FEO passaram.
 - Ainda falta deploy/reprocessamento do experimento 66 para gerar um novo ZIP real com imagens OpenAI.
 
+### Complemento — MDS como base do produto comercial
+
+Data: `2026-07-15`.
+
+Diretriz reforçada pelo usuário:
+
+- A base dos produtos gerados pelo FEO deve ser os princípios científicos obtidos no MDS/research.
+- Esses princípios não devem aparecer como relatório técnico ou teoria crua.
+- O FEO deve transformar a base científica em produto comercial de alto impacto, com aplicação prática, percepção de transformação e redução de esforço para a cliente.
+
+Correção aplicada no módulo `feo`:
+
+- O conteúdo público dos entregáveis agora possui campo de `princípio aplicado`.
+- A redação dos materiais traduz sinais do MDS em:
+  - regra prática;
+  - exercício;
+  - decisão guiada;
+  - exemplo preenchido;
+  - comparação antes/depois;
+  - critério visual de progresso.
+- O e-book passa a explicar que a pesquisa vira transformação prática, sem expor linguagem técnica.
+- A montagem do pacote agora bloqueia termos proibidos no material da cliente, como `CTR`, `CPL`, `pré-venda`, `score FEO`, `promessa validada`, `mecanismo validado`, `experimento`, `tráfego`, `checkout`, `sha256`, `JSON` e `READY_FOR_PREMIUM_REVIEW`.
+
+Validação executada:
+
+- `mvn -f feo/pom.xml test`
+  - resultado: `BUILD SUCCESS`
+  - testes: `9`, falhas: `0`, erros: `0`
+
+Conclusão:
+
+- A causa-raiz começou a ser corrigida no pipeline, não apenas no PDF do experimento 66.
+- O próximo ZIP do 66 deve ser regenerado pelo FEO antes de qualquer entrega ao cliente.
+
 ## Validação após aplicação do Liquibase
 
 Data da validação: `2026-07-15T03:44:09Z`.

@@ -10,6 +10,7 @@ public record DeliverableContent(
         String title,
         String componentType,
         String headline,
+        String appliedPrinciple,
         String buyerOutcome,
         String firstWin,
         String readyToUseAsset,

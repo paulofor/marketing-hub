@@ -116,6 +116,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 "PREMIUM_CONTENT_READY",
                 List.of(
                         "O pacote contém método, plano, materiais prontos, prova, ritual e bônus anti-objeção.",
+                        "Os princípios do MDS foram traduzidos em exercício, decisão e critério visual de progresso.",
                         "O pacote exige capa, infográficos e figuras internas para aumentar valor percebido.",
                         "Cada entregável tem primeira vitória clara para o comprador.",
                         "Cada entregável contém aplicação, checklist, template e critério de conclusão.",
@@ -178,6 +179,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 spec.componentType(),
                 "Use " + spec.title() + " para transformar " + shortText(context.centralPromise())
                         + " em uma decisão prática.",
+                appliedPrinciple(context, spec),
                 resultText(context, spec),
                 firstWin(context, spec),
                 readyToUseAsset(context, spec),
@@ -186,42 +188,70 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 antiObjectionBonus(context, spec),
                 List.of(
                         new DeliverableSection(
-                                "Diagnóstico de partida",
-                                "Antes de executar, o cliente registra a situação real que gera dor, esforço ou indecisão. "
-                                        + "Isso evita consumo passivo e cria ponto de comparação.",
-                                "Escreva a situação atual em uma frase e destaque o maior custo de não agir."),
+                                "Espelho do ponto de partida",
+                                "A compradora registra como se sente hoje diante do espelho, da rotina e das escolhas que fazem a presença parecer menos intencional. "
+                                        + "O objetivo é transformar percepção vaga em um ponto de comparação simples.",
+                                "Escreva uma frase começando com: hoje minha presença parece menos elegante quando..."),
                         new DeliverableSection(
-                                "Aplicação do mecanismo",
-                                "O entregável usa o mecanismo validado para reduzir complexidade e transformar a promessa em uma ação simples.",
-                                "Escolha uma ação de baixo esforço que esteja diretamente ligada ao mecanismo: "
-                                        + safe(context.coreMechanism())),
+                                "Princípio aplicado do MDS",
+                                "O princípio científico entra como uma regra prática: reduzir carga mental, criar contraste percebido e organizar sinais visuais para facilitar decisão. "
+                                        + "A cliente não recebe teoria crua; recebe um modo simples de aplicar o mecanismo.",
+                                "Transforme o princípio em uma decisão concreta usando esta regra: "
+                                        + appliedPrinciple(context, spec)),
                         new DeliverableSection(
-                                "Decisão guiada",
-                                "O comprador converte leitura em escolha concreta, com prioridade, prazo e evidência mínima.",
-                                "Defina o que será feito hoje, o que será ignorado e qual sinal mostrará progresso."),
+                                "Aplicação guiada no corpo, roupa e rotina",
+                                "A compradora escolhe um ajuste visível e possível: cabelo, pele, roupa, perfume, acessório, ocasião ou compra evitada. "
+                                        + "Isso reduz esforço e cria sensação de transformação real.",
+                                "Escolha um ajuste de até 20 minutos, registre o que será mantido, removido e combinado."),
+                        new DeliverableSection(
+                                "Exemplo preenchido e comparação visual",
+                                "O exemplo mostra como uma decisão pequena muda a percepção do conjunto sem exigir luxo, compra impulsiva ou transformação radical.",
+                                "Preencha o exemplo com uma situação real e compare antes/depois usando uma foto, espelho ou descrição."),
                         new DeliverableSection(
                                 "Revisão de valor percebido",
-                                "A revisão mostra ao comprador o que mudou e aumenta a sensação de avanço real.",
-                                "Compare antes e depois usando o critério de conclusão do entregável.")),
+                                "A revisão mostra o que mudou, qual esforço foi poupado e qual próximo ajuste mantém a evolução sem virar perfeccionismo.",
+                                "Marque uma evidência de progresso e escolha o próximo microajuste de menor esforço.")),
                 List.of(
-                        "A promessa validada aparece de forma explícita.",
+                        "A promessa do produto aparece de forma explícita.",
                         "Existe uma primeira ação executável em até 20 minutos.",
+                        "O princípio do MDS foi convertido em regra de aplicação, não em teoria acadêmica.",
                         "O comprador sabe o que preencher, decidir ou revisar.",
                         "O conteúdo não cria promessa maior que: " + safe(context.promisedResult()),
                         "Há critério objetivo para saber se o entregável foi concluído."),
                 List.of(
                         "Situação atual",
+                        "Princípio aplicado",
                         "Dor ou esforço que será reduzido",
                         "Ação escolhida",
+                        "Detalhe visual ou sensorial ajustado",
+                        "O que vou reaproveitar antes de comprar",
                         "Prazo de execução",
                         "Evidência de progresso",
                         "Próxima decisão"),
                 List.of(
                         "Consumir o material como leitura e não preencher nada.",
+                        "Usar a explicação científica como desculpa para não executar.",
                         "Tentar resolver todos os problemas ao mesmo tempo.",
                         "Trocar o mecanismo por uma promessa nova não validada.",
                         "Pular o diagnóstico inicial e perder a comparação de progresso."),
                 "O entregável está concluído quando o comprador consegue explicar a situação, escolher uma ação, executar o primeiro passo e apontar uma evidência de progresso.");
+    }
+
+    /**
+     * Traduz os sinais do MDS em um princípio comercial aplicável pela compradora.
+     */
+    private String appliedPrinciple(FabricationContext context, DeliverableSpec spec) {
+        String base = safe(context.coreMechanism());
+        String proof = safe(context.proofSummary());
+        return switch (safe(spec.componentType())) {
+            case "PLANO_EXECUCAO_RAPIDA" -> "quebrar a mudança em microdecisões diárias para reduzir esforço mental e aumentar consistência percebida";
+            case "CHECKLIST_APLICACAO" -> "usar pistas visuais simples para diminuir esquecimento, dúvida e compra por impulso";
+            case "TEMPLATES_PRONTOS" -> "transformar conhecimento em campos preenchíveis para evitar página em branco";
+            case "EXEMPLO_PREENCHIDO" -> "modelar uma aplicação realista para acelerar reconhecimento de padrão";
+            case "PROVA_TANGIVEL" -> "comparar antes/depois por coerência de sinais, não por luxo ou transformação corporal";
+            case "BONUS_ANTI_OBJECAO" -> "substituir a objeção por uma ação mínima que preserva avanço";
+            default -> "aplicar o mecanismo '" + base + "' com apoio da evidência '" + proof + "' em uma decisão simples e observável";
+        };
     }
 
     /**
@@ -380,7 +410,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
      * Normaliza texto nulo para preservar a montagem.
      */
     private String safe(String value) {
-        return value == null || value.isBlank() ? "a promessa validada" : value.trim();
+        return value == null || value.isBlank() ? "a promessa do produto" : value.trim();
     }
 
     /**

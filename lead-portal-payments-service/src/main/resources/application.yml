@@ -67,6 +67,10 @@ digital-product:
       experiment51-product-name: ${DIGITAL_PRODUCT_EXP51_PRODUCT_NAME:Mapa de Recorrência 7D}
       experiment51-delivery-page-url: ${DIGITAL_PRODUCT_EXP51_DELIVERY_PAGE_URL:https://pagamentopalf.site/obrigado-exp51-mapa-recorrencia-7d.html}
       experiment51-download-url: ${DIGITAL_PRODUCT_EXP51_DOWNLOAD_URL:https://pagamentopalf.site/downloads/mapa-recorrencia-7d-entrega-v0-7xQ9mR4pL2.zip}
+      experiment66-reference: ${DIGITAL_PRODUCT_EXP66_REFERENCE:marketinghub-experiment-66}
+      experiment66-product-name: ${DIGITAL_PRODUCT_EXP66_PRODUCT_NAME:Método MUSA - Presença Elegante em 7 Dias}
+      experiment66-delivery-page-url: ${DIGITAL_PRODUCT_EXP66_DELIVERY_PAGE_URL:https://pagamentopalf.site/obrigado-exp66-metodo-musa.html}
+      experiment66-download-url: ${DIGITAL_PRODUCT_EXP66_DOWNLOAD_URL:https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip}
 
 product-ai:
   delivery:

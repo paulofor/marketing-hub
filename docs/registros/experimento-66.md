@@ -258,6 +258,98 @@ Observação operacional:
 - Auditar a página publicada.
 - Confirmar que o destino da campanha aponta para a página auditada, não para o checkout direto.
 - Validar fluxo de compra e entrega do produto digital.
+
+## Diagnóstico da revisão de qualidade do GeraSalesPage
+
+Data da validação: `2026-07-15T03:53:30Z`.
+
+Resultado remoto por leitura via MCP:
+
+- `sales-page-offer-brief`: `CONCLUIDO`
+- `sales-page-wireframe`: `CONCLUIDO`
+- `sales-page-copy`: `CONCLUIDO`
+- `sales-page-visual-plan`: `CONCLUIDO`
+- `sales-page-html`: `CONCLUIDO`
+- `sales-page-checkout-quality-review`: `FALHA`
+- `sales-page-publication-package`: ainda não criado
+
+Causa da reprovação:
+
+- a página gerada ainda expôs linguagem interna para a cliente, como `Pacote Final`, `FEO #3` e nome técnico do pacote;
+- a página não explicou com clareza como a compradora recebe o produto após o pagamento aprovado.
+
+Conclusão:
+
+- o problema não era mais ausência de checkout, template ou worker parado;
+- a causa-raiz era contrato/prompt insuficiente para impedir linguagem interna e ausência de instrução de entrega pós-compra;
+- além disso, o serviço de pagamento ainda estava preparado para entrega automática do experimento 51, mas não do experimento 66.
+
+## Correção preparada para fechar entrega e nova geração
+
+Data: `2026-07-15`.
+
+Ações feitas no repositório, sem alteração manual direta no banco:
+
+- adicionado suporte configurável ao produto digital do experimento 66 no `lead-portal-payments-service`;
+- configurada referência `marketinghub-experiment-66`;
+- configurado nome público `Método MUSA - Presença Elegante em 7 Dias`;
+- configurada página de entrega `https://pagamentopalf.site/obrigado-exp66-metodo-musa.html`;
+- configurado download `https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip`;
+- baixado o ZIP real do backend para `lead-portal-payments-service/docker/proxy/html/downloads/experimento-66-entregaveis.zip`;
+- criada página pública de entrega `obrigado-exp66-metodo-musa.html`;
+- criado endpoint de reenvio `/api/v1/digital-product-deliveries/exp66/email`;
+- criado changeset `2026-07-15-gera-sales-page-exp66-delivery-v8.yaml` para ativar prompts `v8` nas etapas:
+  - `sales-page-copy`;
+  - `sales-page-html`;
+  - `sales-page-checkout-quality-review`;
+  - `sales-page-publication-package`.
+
+Objetivo do `v8`:
+
+- impedir termos internos na página pública;
+- forçar nomes públicos como `Kit MUSA` e `Método MUSA`;
+- explicar entrega digital por e-mail após pagamento aprovado;
+- informar página de entrega e ZIP real;
+- manter a revisão de qualidade bloqueando página que não explique entrega, checkout, preço e entregáveis reais.
+
+Próximo passo operacional:
+
+- validar testes locais;
+- aplicar o Liquibase `v8` no ambiente remoto;
+- executar `POST /api/experiments/66/gerasalespage/v1/rebuild`;
+- aguardar nova revisão;
+- liberar tráfego somente se `sales-page-publication-package` concluir e o readiness remover o bloqueio `GERA_SALES_PAGE`.
+
+## Validação local da correção preparada
+
+Data: `2026-07-15T04:01:03Z`.
+
+Validações executadas:
+
+- `mvn -f backend/ads-service/pom.xml -Dtest=AiPromptSchemaTemplateChangelogTest test`
+  - resultado: `BUILD SUCCESS`
+  - testes: `3`, falhas: `0`, erros: `0`
+- `mvn -f lead-portal-payments-service/pom.xml -Dtest=DigitalProductPostPurchaseEmailServiceTest test`
+  - resultado: `BUILD SUCCESS`
+  - testes: `2`, falhas: `0`, erros: `0`
+- `mvn -f backend/ads-service/pom.xml -Dliquibase.url=offline:mysql?version=5.7 -Dliquibase.changeLogFile=src/main/resources/db/changelog/db.changelog-master.yaml liquibase:validate`
+  - resultado: `BUILD SUCCESS`
+  - Liquibase: `No validation errors found`
+- validação de include relativo no master:
+  - resultado: nenhum `include` relativo sem `relativeToChangelogFile: true`.
+
+Validação remota antes de rebuild:
+
+- `https://pagamentopalf.site/obrigado-exp66-metodo-musa.html`: `404`
+- `https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip`: `404`
+- `https://pagamentopalf.site/api/v1/digital-product-deliveries/exp66/email`: `404`
+- banco remoto ainda possui apenas templates `v7` ativos para `gera-sales-page-v1`; nenhum template `v8` aplicado até esta validação.
+
+Decisão:
+
+- não executar rebuild remoto ainda;
+- se o rebuild for executado antes do deploy do serviço de pagamento e antes do Liquibase `v8`, a página pode continuar reprovando ou prometer uma entrega que ainda não existe em produção;
+- próximo passo correto: publicar/deployar as alterações do `lead-portal-payments-service` e aplicar o Liquibase `v8`; depois disso, executar o rebuild do GeraSalesPage do experimento 66.
 - Só depois liberar Facebook Ads.
 
 ## Verificação de aderência aos objetivos da semana 3

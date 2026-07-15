@@ -11,6 +11,7 @@ import com.marketinghub.payments.repository.DigitalProductDeliveryEmailRepositor
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -49,14 +50,15 @@ public class DigitalProductPostPurchaseEmailService {
                     paymentDetails.id(), paymentDetails.status());
             return;
         }
-        if (!isExperiment51(paymentDetails.externalReference())) {
+        Optional<DigitalProductConfig> productConfig = supportedProduct(paymentDetails.externalReference());
+        if (productConfig.isEmpty()) {
             log.info("Pagamento {} não pertence a produto digital suportado (externalReference={})",
                     paymentDetails.id(), paymentDetails.externalReference());
             return;
         }
 
         DigitalProductDeliveryEmail delivery = repository.findByPaymentId(paymentDetails.id())
-                .orElseGet(() -> createPendingDelivery(paymentDetails));
+                .orElseGet(() -> createPendingDelivery(paymentDetails, productConfig.get()));
         send(delivery, paymentDetails);
     }
 
@@ -71,17 +73,23 @@ public class DigitalProductPostPurchaseEmailService {
         if (!"approved".equalsIgnoreCase(paymentDetails.status())) {
             throw new IllegalStateException("Pagamento " + paymentDetails.id() + " ainda não aprovado");
         }
-        if (!isExperiment51(paymentDetails.externalReference())) {
-            throw new IllegalStateException("Pagamento " + paymentDetails.id() + " não pertence ao experimento 51");
-        }
+        DigitalProductConfig productConfig = supportedProduct(paymentDetails.externalReference())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Pagamento " + paymentDetails.id() + " não pertence a produto digital suportado"));
         if (!StringUtils.hasText(recipientEmail)) {
             throw new IllegalArgumentException("Email do comprador é obrigatório");
         }
         DigitalProductDeliveryEmail delivery = repository.findByPaymentId(paymentDetails.id())
-                .orElseGet(() -> createPendingDelivery(paymentDetails, recipientEmail, recipientName));
+                .orElseGet(() -> createPendingDelivery(paymentDetails, recipientEmail, recipientName, productConfig));
         delivery.setRecipientEmail(recipientEmail.trim());
         if (StringUtils.hasText(recipientName)) {
             delivery.setRecipientName(recipientName.trim());
+        }
+        if (!StringUtils.hasText(delivery.getDeliveryPageUrl())) {
+            delivery.setDeliveryPageUrl(productConfig.deliveryPageUrl());
+        }
+        if (!StringUtils.hasText(delivery.getDownloadUrl())) {
+            delivery.setDownloadUrl(resolveDownloadUrl(paymentDetails.metadata(), productConfig));
         }
         delivery.setStatus(DigitalProductDeliveryEmailStatus.PENDING);
         delivery.setLastError(null);
@@ -91,7 +99,8 @@ public class DigitalProductPostPurchaseEmailService {
     }
 
     /** Cria o registro pendente a partir dos dados do pagamento aprovado. */
-    private DigitalProductDeliveryEmail createPendingDelivery(MercadoPagoPaymentDetails paymentDetails) {
+    private DigitalProductDeliveryEmail createPendingDelivery(MercadoPagoPaymentDetails paymentDetails,
+                                                              DigitalProductConfig productConfig) {
         String recipientEmail = paymentDetails.email();
         if (!StringUtils.hasText(recipientEmail)) {
             throw new IllegalStateException("Pagamento " + paymentDetails.id() + " não possui email do comprador");
@@ -101,9 +110,9 @@ public class DigitalProductPostPurchaseEmailService {
         delivery.setExternalReference(paymentDetails.externalReference());
         delivery.setRecipientEmail(recipientEmail);
         delivery.setRecipientName(resolveBuyerName(paymentDetails.metadata()));
-        delivery.setProductName(resolveProductName(paymentDetails));
-        delivery.setDeliveryPageUrl(properties.getExperiment51DeliveryPageUrl());
-        delivery.setDownloadUrl(resolveDownloadUrl(paymentDetails.metadata()));
+        delivery.setProductName(resolveProductName(paymentDetails, productConfig));
+        delivery.setDeliveryPageUrl(productConfig.deliveryPageUrl());
+        delivery.setDownloadUrl(resolveDownloadUrl(paymentDetails.metadata(), productConfig));
         delivery.setStatus(DigitalProductDeliveryEmailStatus.PENDING);
         return repository.save(delivery);
     }
@@ -111,15 +120,16 @@ public class DigitalProductPostPurchaseEmailService {
     /** Cria registro pendente usando email informado manualmente pelo comprador. */
     private DigitalProductDeliveryEmail createPendingDelivery(MercadoPagoPaymentDetails paymentDetails,
                                                               String recipientEmail,
-                                                              String recipientName) {
+                                                              String recipientName,
+                                                              DigitalProductConfig productConfig) {
         DigitalProductDeliveryEmail delivery = new DigitalProductDeliveryEmail();
         delivery.setPaymentId(paymentDetails.id());
         delivery.setExternalReference(paymentDetails.externalReference());
         delivery.setRecipientEmail(recipientEmail.trim());
         delivery.setRecipientName(StringUtils.hasText(recipientName) ? recipientName.trim() : null);
-        delivery.setProductName(resolveProductName(paymentDetails));
-        delivery.setDeliveryPageUrl(properties.getExperiment51DeliveryPageUrl());
-        delivery.setDownloadUrl(resolveDownloadUrl(paymentDetails.metadata()));
+        delivery.setProductName(resolveProductName(paymentDetails, productConfig));
+        delivery.setDeliveryPageUrl(productConfig.deliveryPageUrl());
+        delivery.setDownloadUrl(resolveDownloadUrl(paymentDetails.metadata(), productConfig));
         delivery.setStatus(DigitalProductDeliveryEmailStatus.PENDING);
         return repository.save(delivery);
     }
@@ -160,11 +170,32 @@ public class DigitalProductPostPurchaseEmailService {
         }
     }
 
-    /** Verifica se a referência externa representa o produto do experimento 51. */
-    private boolean isExperiment51(String externalReference) {
-        return StringUtils.hasText(externalReference)
-                && externalReference.trim().toLowerCase(Locale.ROOT)
-                .equals(properties.getExperiment51Reference().toLowerCase(Locale.ROOT));
+    /** Resolve qual produto digital direto corresponde à referência do Mercado Pago. */
+    private Optional<DigitalProductConfig> supportedProduct(String externalReference) {
+        if (!StringUtils.hasText(externalReference)) {
+            return Optional.empty();
+        }
+        String normalized = externalReference.trim().toLowerCase(Locale.ROOT);
+        if (normalized.equals(normalize(properties.getExperiment51Reference()))) {
+            return Optional.of(new DigitalProductConfig(
+                    properties.getExperiment51Reference(),
+                    properties.getExperiment51ProductName(),
+                    properties.getExperiment51DeliveryPageUrl(),
+                    properties.getExperiment51DownloadUrl()));
+        }
+        if (normalized.equals(normalize(properties.getExperiment66Reference()))) {
+            return Optional.of(new DigitalProductConfig(
+                    properties.getExperiment66Reference(),
+                    properties.getExperiment66ProductName(),
+                    properties.getExperiment66DeliveryPageUrl(),
+                    properties.getExperiment66DownloadUrl()));
+        }
+        return Optional.empty();
+    }
+
+    /** Normaliza referência configurada para comparação estável. */
+    private String normalize(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : "";
     }
 
     /** Resolve o nome do comprador quando veio nos metadados. */
@@ -173,7 +204,7 @@ public class DigitalProductPostPurchaseEmailService {
     }
 
     /** Resolve o nome do produto priorizando descrição real do pagamento. */
-    private String resolveProductName(MercadoPagoPaymentDetails paymentDetails) {
+    private String resolveProductName(MercadoPagoPaymentDetails paymentDetails, DigitalProductConfig productConfig) {
         if (StringUtils.hasText(paymentDetails.description())) {
             return paymentDetails.description();
         }
@@ -181,15 +212,15 @@ public class DigitalProductPostPurchaseEmailService {
         if (StringUtils.hasText(metadataProductName)) {
             return metadataProductName;
         }
-        return properties.getExperiment51ProductName();
+        return productConfig.productName();
     }
 
     /** Resolve a URL de download configurada nos metadados ou no fallback do experimento. */
-    private String resolveDownloadUrl(Map<String, Object> metadata) {
+    private String resolveDownloadUrl(Map<String, Object> metadata, DigitalProductConfig productConfig) {
         String metadataDeliveryUrl = asString(metadata, "delivery_url", "deliveryUrl", "download_url", "downloadUrl");
         return StringUtils.hasText(metadataDeliveryUrl)
                 ? metadataDeliveryUrl
-                : properties.getExperiment51DownloadUrl();
+                : productConfig.downloadUrl();
     }
 
     /** Acrescenta o payment_id à página de entrega para consulta posterior do pagamento. */
@@ -217,4 +248,11 @@ public class DigitalProductPostPurchaseEmailService {
         }
         return null;
     }
+
+    /** Guarda os dados de entrega de cada produto digital vendido por checkout direto. */
+    private record DigitalProductConfig(
+            String reference,
+            String productName,
+            String deliveryPageUrl,
+            String downloadUrl) {}
 }

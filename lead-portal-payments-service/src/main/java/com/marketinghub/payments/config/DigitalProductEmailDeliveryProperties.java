@@ -19,6 +19,11 @@ public class DigitalProductEmailDeliveryProperties {
     private String experiment51DeliveryPageUrl = "https://pagamentopalf.site/obrigado-exp51-mapa-recorrencia-7d.html";
     private String experiment51DownloadUrl =
             "https://pagamentopalf.site/downloads/mapa-recorrencia-7d-entrega-v0-7xQ9mR4pL2.zip";
+    private String experiment66Reference = "marketinghub-experiment-66";
+    private String experiment66ProductName = "Método MUSA - Presença Elegante em 7 Dias";
+    private String experiment66DeliveryPageUrl = "https://pagamentopalf.site/obrigado-exp66-metodo-musa.html";
+    private String experiment66DownloadUrl =
+            "https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip";
 
     /** Indica se o envio automático está ativo. */
     public boolean isEnabled() {
@@ -108,5 +113,45 @@ public class DigitalProductEmailDeliveryProperties {
     /** Define a URL de download do produto do experimento 51. */
     public void setExperiment51DownloadUrl(String experiment51DownloadUrl) {
         this.experiment51DownloadUrl = experiment51DownloadUrl;
+    }
+
+    /** Retorna a referência Mercado Pago do experimento 66. */
+    public String getExperiment66Reference() {
+        return experiment66Reference;
+    }
+
+    /** Define a referência Mercado Pago do experimento 66. */
+    public void setExperiment66Reference(String experiment66Reference) {
+        this.experiment66Reference = experiment66Reference;
+    }
+
+    /** Retorna o nome comercial do produto do experimento 66. */
+    public String getExperiment66ProductName() {
+        return experiment66ProductName;
+    }
+
+    /** Define o nome comercial do produto do experimento 66. */
+    public void setExperiment66ProductName(String experiment66ProductName) {
+        this.experiment66ProductName = experiment66ProductName;
+    }
+
+    /** Retorna a página de entrega do experimento 66. */
+    public String getExperiment66DeliveryPageUrl() {
+        return experiment66DeliveryPageUrl;
+    }
+
+    /** Define a página de entrega do experimento 66. */
+    public void setExperiment66DeliveryPageUrl(String experiment66DeliveryPageUrl) {
+        this.experiment66DeliveryPageUrl = experiment66DeliveryPageUrl;
+    }
+
+    /** Retorna a URL de download do produto do experimento 66. */
+    public String getExperiment66DownloadUrl() {
+        return experiment66DownloadUrl;
+    }
+
+    /** Define a URL de download do produto do experimento 66. */
+    public void setExperiment66DownloadUrl(String experiment66DownloadUrl) {
+        this.experiment66DownloadUrl = experiment66DownloadUrl;
     }
 }

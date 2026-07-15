@@ -6,7 +6,7 @@ package com.marketinghub.feo.fabricacaov1.contract;
 public record PackageAssemblyOutput(
         OfferDeliveryManifest manifest,
         FabricationReport report,
-        DigitalAssetFinal html,
+        DigitalAssetFinal experienceSite,
         DigitalAssetFinal pdf,
         DigitalAssetFinal spreadsheet,
         DigitalAssetFinal zipPackage) {

@@ -4,6 +4,7 @@
 
 - Objetivo comercial: transformar o experimento 66 em uma oferta low-ticket validável, com foco em vendas.
 - Produto: `Método MUSA - Presença Elegante em 7 Dias`.
+- Direção de produto atual: `PDE - Produto Digital Experiencial`.
 - Preço definido: `R$47`.
 - Regra de execução: priorizar ações pelo sistema, endpoints e APIs oficiais.
 - Uso de banco de dados: apenas leitura/diagnóstico, salvo decisão explícita em contrário.
@@ -21,9 +22,9 @@ Até este registro, a orientação operacional é:
 
 ## Decisão comercial
 
-O experimento 66 não deve ser tratado como pesquisa de mecanismos nem como PDF isolado.
+O experimento 66 não deve ser tratado como pesquisa de mecanismos, PDF isolado ou pacote de arquivos soltos.
 
-A direção escolhida é vender um kit aplicável:
+A direção escolhida é vender uma experiência guiada com materiais de apoio:
 
 **Método MUSA - Presença Elegante em 7 Dias**
 
@@ -34,6 +35,136 @@ Promessa:
 CTA principal:
 
 > Quero meu Kit MUSA por R$47
+
+## Decisão PDE - Produto Digital Experiencial
+
+Data: `2026-07-15`.
+
+Decisão do usuário:
+
+- Trabalhar com o formato 4: **site/experiência orientada + e-book + checklists + templates**.
+- Evoluir o FEO para fabricar PDE, não apenas entregáveis.
+- A base do produto continua sendo os princípios científicos obtidos no MDS/research, mas traduzidos para transformação prática, emocional e comercial.
+
+### Alternativas avaliadas
+
+1. **E-book bonito com figuras**
+   - Potencial estimado: `55% a 65%`.
+   - Benefício: simples de fabricar e entregar.
+   - Risco: ainda parece conteúdo para ler, com menor sensação de acompanhamento.
+   - Aderência ao objetivo de vendas: média.
+
+2. **Kit de entregáveis baixáveis**
+   - Potencial estimado: `65% a 75%`.
+   - Benefício: tangível, prático e melhor que PDF isolado.
+   - Risco: exige disciplina da cliente e pode parecer pasta de arquivos.
+   - Aderência ao objetivo de vendas: boa.
+
+3. **Site/experiência orientada**
+   - Potencial estimado: `78% a 88%`.
+   - Benefício: reduz esforço, guia aplicação, aumenta percepção de acompanhamento.
+   - Risco: se vier sem biblioteca de apoio, pode parecer leve demais.
+   - Aderência ao objetivo de vendas: alta.
+
+4. **PDE completo: experiência guiada + e-book + checklists + templates**
+   - Potencial estimado: `88% a 94%`.
+   - Benefício: combina experiência conduzida, prova visual e materiais baixáveis.
+   - Risco: exige pipeline mais cuidadoso e gate de qualidade mais forte.
+   - Aderência ao objetivo de vendas: melhor.
+
+Escolha aplicada: **alternativa 4**.
+
+### Novo posicionamento do produto
+
+Não vender como:
+
+> Você recebe um PDF e alguns materiais.
+
+Vender como:
+
+> Você entra em uma experiência guiada de 7 dias para construir sua presença elegante, com diagnóstico, missões diárias, exemplos visuais, checklists e materiais prontos.
+
+### Novo padrão esperado do FEO
+
+O FEO deve fabricar um **Produto Digital Experiencial** com:
+
+1. `01-experiencia-guiada/index.html`
+   - diagnóstico inicial;
+   - jornada de 7 dias;
+   - missões diárias;
+   - checkpoints;
+   - painel de progresso;
+   - biblioteca de apoio.
+
+2. `02-ebook-principal.pdf`
+   - capa bonita;
+   - figuras internas;
+   - explicação aplicada dos princípios MDS;
+   - guia de uso da experiência.
+
+3. `03-plano-checklists-e-templates.csv`
+   - campos preenchíveis;
+   - checklist de execução;
+   - templates de decisão;
+   - evidência de progresso.
+
+4. `imagens/`
+   - capa editorial;
+   - infográfico de 7 dias;
+   - mapa visual do mecanismo;
+   - antes/depois conceitual.
+
+5. `README.txt`
+   - ordem simples de uso;
+   - promessa;
+   - aviso de que a experiência é guiada e os arquivos são apoio.
+
+### Regra de qualidade
+
+O PDE não pode expor termos internos como `FEO`, `experimento`, `CTR`, `CPL`, `lead`, `checkout`, `score`, `JSON`, `sha256`, `promessa validada` ou `mecanismo validado` no produto da cliente.
+
+O e-book e a experiência devem transformar a ciência do MDS em:
+
+- decisão guiada;
+- microação diária;
+- exemplo visual;
+- checklist;
+- campo preenchível;
+- evidência de progresso;
+- redução de esforço percebido.
+
+### Implementação local preparada
+
+Mudança feita no módulo executor `feo`:
+
+- o plano do FEO passou a nascer como `PDE - Produto Digital Experiencial`;
+- foram adicionados componentes de experiência:
+  - diagnóstico guiado;
+  - missões de 7 dias;
+  - painel de progresso;
+  - biblioteca de apoio;
+- a montagem final agora gera `01-experiencia-guiada/index.html` como produto principal;
+- o e-book virou apoio em `02-ebook-principal.pdf`;
+- os checklists/templates viraram apoio em `03-plano-checklists-e-templates.csv`;
+- o ZIP final passou a ser `00-metodo-musa-produto-digital-experiencial.zip`;
+- o artefato técnico da montagem passou de `FINAL_HTML` para `FINAL_EXPERIENCE_SITE`.
+
+Validações executadas:
+
+- `mvn -f feo/pom.xml test`
+  - resultado: `BUILD SUCCESS`;
+  - testes: `9`, falhas `0`, erros `0`.
+- `mvn -f backend/ads-service/pom.xml -Dtest=FeoFabricacaoV1ServiceTest test`
+  - resultado: `BUILD SUCCESS`;
+  - testes: `6`, falhas `0`, erros `0`.
+
+Próximo passo operacional para o experimento 66:
+
+1. fazer deploy do backend/worker FEO com a evolução PDE;
+2. garantir `OPENAI_API_KEY` configurada no worker;
+3. reprocessar o experimento 66 pelo FEO;
+4. revisar manualmente o novo ZIP PDE;
+5. só depois retomar página de venda/tráfego.
 
 ## Entregáveis reais do pacote
 
@@ -432,12 +563,13 @@ Mudança preparada no código:
   - `OPENAI_BASE_URL`.
 - A etapa bloqueia se não houver chave OpenAI, para não entregar pacote pobre sem imagens reais.
 - O ZIP público da compradora passa a conter:
-  - `01-ebook-principal.pdf`;
-  - `02-plano-checklists-e-templates.csv`;
+  - `01-experiencia-guiada/index.html`;
+  - `02-ebook-principal.pdf`;
+  - `03-plano-checklists-e-templates.csv`;
   - imagens em `imagens/`;
   - `README.txt`.
 - O ZIP público não deve conter:
-  - arquivos HTML;
+  - HTML técnico, wrappers internos ou relatório de sistema;
   - relatório de fabricação;
   - manifesto técnico;
   - hashes, JSON, prompts, status, score ou termos internos.

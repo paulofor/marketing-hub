@@ -29,11 +29,15 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
 
     private static final Set<String> REQUIRED_COMPONENTS = Set.of(
             "COMECE_AQUI",
+            "DIAGNOSTICO_GUIADO",
+            "MISSOES_7_DIAS",
+            "PAINEL_PROGRESSO",
             "PLANO_EXECUCAO_RAPIDA",
             "CHECKLIST_APLICACAO",
             "TEMPLATES_PRONTOS",
             "EXEMPLO_PREENCHIDO",
             "PROVA_TANGIVEL",
+            "BIBLIOTECA_APOIO",
             "RITUAL_ACOMPANHAMENTO",
             "BONUS_ANTI_OBJECAO",
             "GUIA_PRIMEIROS_RESULTADOS");
@@ -115,7 +119,8 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 score(contents),
                 "PREMIUM_CONTENT_READY",
                 List.of(
-                        "O pacote contém método, plano, materiais prontos, prova, ritual e bônus anti-objeção.",
+                        "O PDE contém experiência guiada, método, plano, materiais prontos, prova, ritual e bônus anti-objeção.",
+                        "A experiência guiada é o produto principal; e-book, checklists, templates e imagens são biblioteca de apoio.",
                         "Os princípios do MDS foram traduzidos em exercício, decisão e critério visual de progresso.",
                         "O pacote exige capa, infográficos e figuras internas para aumentar valor percebido.",
                         "Cada entregável tem primeira vitória clara para o comprador.",
@@ -245,10 +250,14 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
         String proof = safe(context.proofSummary());
         return switch (safe(spec.componentType())) {
             case "PLANO_EXECUCAO_RAPIDA" -> "quebrar a mudança em microdecisões diárias para reduzir esforço mental e aumentar consistência percebida";
+            case "DIAGNOSTICO_GUIADO" -> "transformar percepção vaga em ponto de partida visual para orientar a jornada de aplicação";
+            case "MISSOES_7_DIAS" -> "converter o método em microações diárias para criar sensação de acompanhamento e progresso";
+            case "PAINEL_PROGRESSO" -> "usar evidências simples para a cliente perceber avanço sem depender de perfeccionismo";
             case "CHECKLIST_APLICACAO" -> "usar pistas visuais simples para diminuir esquecimento, dúvida e compra por impulso";
             case "TEMPLATES_PRONTOS" -> "transformar conhecimento em campos preenchíveis para evitar página em branco";
             case "EXEMPLO_PREENCHIDO" -> "modelar uma aplicação realista para acelerar reconhecimento de padrão";
             case "PROVA_TANGIVEL" -> "comparar antes/depois por coerência de sinais, não por luxo ou transformação corporal";
+            case "BIBLIOTECA_APOIO" -> "organizar materiais de apoio para reforçar a experiência sem virar excesso de conteúdo";
             case "BONUS_ANTI_OBJECAO" -> "substituir a objeção por uma ação mínima que preserva avanço";
             default -> "aplicar o mecanismo '" + base + "' com apoio da evidência '" + proof + "' em uma decisão simples e observável";
         };
@@ -261,8 +270,12 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
         return switch (safe(spec.componentType())) {
             case "PLANO_EXECUCAO_RAPIDA" -> "Ao finalizar, o comprador tem um plano de 7 dias para chegar mais perto de "
                     + safe(context.promisedResult()) + ".";
+            case "DIAGNOSTICO_GUIADO" -> "Ao finalizar, o comprador sabe qual ponto ajustar primeiro na experiência.";
+            case "MISSOES_7_DIAS" -> "Ao finalizar, o comprador percorreu uma sequência guiada com ações pequenas e progressivas.";
+            case "PAINEL_PROGRESSO" -> "Ao finalizar, o comprador tem evidências marcadas de avanço percebido.";
             case "TEMPLATES_PRONTOS" -> "Ao finalizar, o comprador tem materiais preenchidos que reduzem o esforço de começar.";
             case "PROVA_TANGIVEL" -> "Ao finalizar, o comprador enxerga o antes, o depois e o miniresultado esperado.";
+            case "BIBLIOTECA_APOIO" -> "Ao finalizar, o comprador sabe qual arquivo usar em cada momento da experiência.";
             case "RITUAL_ACOMPANHAMENTO" -> "Ao finalizar, o comprador sabe quando agir, revisar e continuar sem suporte manual.";
             case "BONUS_ANTI_OBJECAO" -> "Ao finalizar, o comprador tem resposta prática para a objeção que mais trava a aplicação.";
             default -> "Ao finalizar este entregável, o comprador deve estar mais perto de "

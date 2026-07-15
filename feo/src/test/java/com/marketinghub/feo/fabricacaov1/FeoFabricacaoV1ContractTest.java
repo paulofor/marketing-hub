@@ -56,9 +56,13 @@ class FeoFabricacaoV1ContractTest {
         assertThat(result.output().deliverables()).hasSizeGreaterThanOrEqualTo(9);
         assertThat(result.output().deliverables()).extracting("componentType")
                 .contains(
+                        "DIAGNOSTICO_GUIADO",
+                        "MISSOES_7_DIAS",
+                        "PAINEL_PROGRESSO",
                         "PLANO_EXECUCAO_RAPIDA",
                         "TEMPLATES_PRONTOS",
                         "PROVA_TANGIVEL",
+                        "BIBLIOTECA_APOIO",
                         "RITUAL_ACOMPANHAMENTO",
                         "BONUS_ANTI_OBJECAO");
         assertThat(result.artifacts()).extracting("name").contains("feo-offer-deliverable-plan.json");
@@ -122,7 +126,7 @@ class FeoFabricacaoV1ContractTest {
     }
 
     /**
-     * Confirma que a montagem gera PDF, planilha CSV e ZIP com conteúdo de produto final.
+     * Confirma que a montagem gera experiência guiada, PDF, planilha CSV e ZIP com conteúdo de produto final.
      */
     @Test
     void montagemDeveGerarPdfPlanilhaEZip() throws java.io.IOException {
@@ -143,18 +147,14 @@ class FeoFabricacaoV1ContractTest {
         assertThat(result.nextStageCode()).isNull();
         assertThat(result.output().pdf().contentType()).isEqualTo("application/pdf");
         assertThat(result.output().pdf().content()).startsWith("%PDF".getBytes());
-        assertThat(new String(result.output().html().content(), java.nio.charset.StandardCharsets.UTF_8))
-                .contains("Comece por aqui")
-                .contains("O que você recebe")
-                .contains("Como a pesquisa vira transformação prática")
-                .contains("Diagnostico inicial")
-                .contains("Workbooks de aplicacao por entregavel")
-                .contains("Princípio aplicado")
-                .contains("Materiais prontos do comprador")
-                .contains("Bonus anti-objecao")
-                .contains("Erros a evitar")
-                .contains("Template preenchivel")
-                .contains("Checklist final de aplicação")
+        assertThat(new String(result.output().experienceSite().content(), java.nio.charset.StandardCharsets.UTF_8))
+                .contains("Produto Digital Experiencial")
+                .contains("Dia 0 - Diagnóstico MUSA")
+                .contains("Mecanismo aplicado")
+                .contains("Jornada guiada de 7 dias")
+                .contains("Biblioteca de apoio")
+                .contains("02-ebook-principal.pdf")
+                .contains("03-plano-checklists-e-templates.csv")
                 .doesNotContain("Score FEO")
                 .doesNotContain("Fabricado pela FEO");
         assertThat(new String(result.output().spreadsheet().content(), java.nio.charset.StandardCharsets.UTF_8))
@@ -166,9 +166,9 @@ class FeoFabricacaoV1ContractTest {
         assertThat(result.output().zipPackage().contentType()).isEqualTo("application/zip");
         assertThat(zipEntries(result.output().zipPackage().content()))
                 .anyMatch(name -> name.startsWith("imagens/vis-"))
-                .contains("01-ebook-principal.pdf", "02-plano-checklists-e-templates.csv", "README.txt")
+                .contains("01-experiencia-guiada/index.html", "02-ebook-principal.pdf", "03-plano-checklists-e-templates.csv", "README.txt")
                 .doesNotContain("00-fonte-editorial-interna.html", "manifesto.txt", "relatorio-fabricacao.txt");
-        assertThat(result.artifacts()).extracting("type").contains("FINAL_HTML", "FINAL_PDF", "FINAL_SPREADSHEET", "FINAL_ZIP");
+        assertThat(result.artifacts()).extracting("type").contains("FINAL_EXPERIENCE_SITE", "FINAL_PDF", "FINAL_SPREADSHEET", "FINAL_ZIP");
     }
 
     /**

@@ -57,7 +57,7 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
     }
 
     /**
-     * Gera HTML, PDF, planilha CSV, manifesto e ZIP do produto final.
+     * Gera experiencia guiada, PDF, planilha CSV, manifesto e ZIP do produto final.
      */
     @Override
     public StageResult<PackageAssemblyOutput> process(StageContext<PackageAssemblyInput> context) {
@@ -73,7 +73,7 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
         }
         PackageAssemblyOutput output = assembler.assemble(input);
         List<StageArtifact> artifacts = List.of(
-                toArtifact(context, "FINAL_HTML", output.html()),
+                toArtifact(context, "FINAL_EXPERIENCE_SITE", output.experienceSite()),
                 toArtifact(context, "FINAL_PDF", output.pdf()),
                 toArtifact(context, "FINAL_SPREADSHEET", output.spreadsheet()),
                 toArtifact(context, "FINAL_ZIP", output.zipPackage()));

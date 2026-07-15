@@ -243,7 +243,7 @@ class FacebookAdsCampaignControllerTest {
                 .instagramAccount(instagramAccount)
                 .leadPortalFlow(leadPortalFlow)
                 .build();
-        when(creativeRepository.existsByExperimentIdAndStatus(1L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(1L, CreativeStatus.READY)).thenReturn(true);
         when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(1L)).thenReturn(List.of(
                 ExperimentTargetingSelection.builder()
                         .candidateType(TargetingCandidateType.INTEREST)
@@ -347,7 +347,7 @@ class FacebookAdsCampaignControllerTest {
         when(experimentService.listByStatusAndPlatform(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK))
                 .thenReturn(List.of(experiment));
         when(campaignRepository.existsByExperimentId(53L)).thenReturn(false);
-        when(creativeRepository.existsByExperimentIdAndStatus(53L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(53L, CreativeStatus.READY)).thenReturn(true);
         when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(53L)).thenReturn(List.of(
                 ExperimentTargetingSelection.builder()
                         .candidateType(TargetingCandidateType.INTEREST)

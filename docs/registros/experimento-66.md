@@ -1002,3 +1002,33 @@ Próximas ações:
 - Após publicação, validar se `follow_up_action_url` passou a apontar para a página auditada, mantendo o checkout separado nos botões.
 - Testar acesso público da página, clique no checkout e entrega do produto.
 - Só liberar tráfego depois desses pontos.
+
+## Critério de exibição dos entregáveis na página de venda
+
+Data: `2026-07-15`.
+
+Pergunta do usuário:
+
+- Se a seção interna `Entregáveis vinculados`, com itens como `MDS/MUSA - ...`, será mostrada na página de venda.
+
+Decisão:
+
+- Não mostrar esse bloco cru na página de venda.
+- A lista técnica pode existir na administração e na auditoria interna para rastrear quais materiais alimentam o produto.
+- A página pública deve mostrar uma seção comercial do tipo **O que você recebe**, com nomes simples, concretos e orientados a benefício.
+
+Exemplo de transformação esperada:
+
+- Interno: `MDS/MUSA - Guia de assinatura olfativa acessível por ocasião`.
+- Público: `Guia de assinatura olfativa acessível`.
+- Benefício: `Aprenda a escolher perfume e presença sensorial para criar memória sem depender de perfume caro`.
+
+Ajuste aplicado:
+
+- O payload do GeraSalesPage passou a enviar `publicTitle` e `publicDescription` para cada entregável FEO.
+- Os prompts v8 do GeraSalesPage foram reforçados para usar `publicTitle/publicDescription` na página pública e bloquear exposição de `MDS/MUSA`, `FEO`, `Pacote Final`, `pipeline`, `stage` e linguagem de produção.
+
+Critério comercial:
+
+- A compradora precisa entender claramente o que recebe e por que aquilo facilita a transformação.
+- Ela não deve ver rastreabilidade, origem MDS/research, nomes de pacote interno, arquivos HTML, IDs ou linguagem técnica.

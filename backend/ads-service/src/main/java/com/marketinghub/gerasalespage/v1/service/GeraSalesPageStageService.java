@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -42,6 +43,8 @@ public class GeraSalesPageStageService {
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
     private static final String STATUS_REPLACED = "SUBSTITUIDO";
+    private static final Pattern TECHNICAL_DELIVERABLE_PREFIX =
+            Pattern.compile("^(MDS/MUSA|MDS|FEO|entregaveis|entregáveis)\\s*[-/:]\\s*", Pattern.CASE_INSENSITIVE);
 
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
@@ -259,8 +262,35 @@ public class GeraSalesPageStageService {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("id", deliverable.getId());
         payload.put("title", deliverable.getTitle());
+        payload.put("publicTitle", publicDeliverableTitle(deliverable.getTitle()));
         payload.put("description", deliverable.getDescription());
+        payload.put("publicDescription", publicDeliverableDescription(deliverable.getDescription()));
         return payload;
+    }
+
+    /** Converte nomes técnicos de entregáveis em títulos seguros para copy pública. */
+    private String publicDeliverableTitle(String title) {
+        if (!StringUtils.hasText(title)) {
+            return "";
+        }
+        String publicTitle = title.trim();
+        publicTitle = TECHNICAL_DELIVERABLE_PREFIX.matcher(publicTitle).replaceFirst("");
+        int slashIndex = publicTitle.lastIndexOf('/');
+        if (slashIndex >= 0 && slashIndex < publicTitle.length() - 1) {
+            publicTitle = publicTitle.substring(slashIndex + 1);
+        }
+        publicTitle = publicTitle.replaceFirst("\\.[A-Za-z0-9]+$", "");
+        publicTitle = publicTitle.replaceFirst("^kit-\\d+-", "");
+        publicTitle = publicTitle.replace('-', ' ');
+        return publicTitle.trim().replaceAll("\\s+", " ");
+    }
+
+    /** Remove prefixos internos da descrição usada como benefício público do entregável. */
+    private String publicDeliverableDescription(String description) {
+        if (!StringUtils.hasText(description)) {
+            return "";
+        }
+        return TECHNICAL_DELIVERABLE_PREFIX.matcher(description.trim()).replaceFirst("").replaceAll("\\s+", " ");
     }
 
     /** Classifica o destino comercial para o worker nao confundir funil Produto IA com checkout direto. */

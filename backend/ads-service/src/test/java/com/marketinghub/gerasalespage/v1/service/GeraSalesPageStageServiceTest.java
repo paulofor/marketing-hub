@@ -177,7 +177,7 @@ class GeraSalesPageStageServiceTest {
         execution.setExperiment(experiment);
         Deliverable first = Deliverable.builder()
                 .id(33L)
-                .title("entregaveis/kit-02-plano-rapido-de-execucao-de-7-dias.html")
+                .title("MDS/MUSA - Guia de assinatura olfativa acessivel por ocasiao")
                 .description("Plano de execucao - Tabela de 7 dias com ação, tempo estimado, evidência e ajuste.")
                 .build();
         Deliverable second = Deliverable.builder()
@@ -210,7 +210,11 @@ class GeraSalesPageStageServiceTest {
         List<Map<String, Object>> deliverables = castList(packagePayload.get("deliverables"));
         assertThat(deliverables).hasSize(2);
         assertThat(deliverables.get(0).get("title")).isEqualTo(first.getTitle());
+        assertThat(deliverables.get(0).get("publicTitle"))
+                .isEqualTo("Guia de assinatura olfativa acessivel por ocasiao");
         assertThat(deliverables.get(1).get("title")).isEqualTo(second.getTitle());
+        assertThat(deliverables.get(1).get("publicTitle"))
+                .isEqualTo("checklist de aplicacao sem travar");
     }
 
     /** Deve bloquear o início quando a etapa Oferta ainda não preencheu contrato comercial. */

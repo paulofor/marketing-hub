@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -35,7 +36,10 @@ public class FeoBackendClient implements StageBackendPort {
     /**
      * Recebe dependencias de HTTP e serializacao para consumir o backend.
      */
-    public FeoBackendClient(WebClient feoBackendWebClient, ObjectMapper objectMapper, FeoProperties properties) {
+    public FeoBackendClient(
+            @Qualifier("feoBackendWebClient") WebClient feoBackendWebClient,
+            ObjectMapper objectMapper,
+            FeoProperties properties) {
         this.webClient = feoBackendWebClient;
         this.objectMapper = objectMapper;
         this.properties = properties;

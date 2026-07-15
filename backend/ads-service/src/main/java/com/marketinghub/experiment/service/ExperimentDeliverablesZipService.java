@@ -63,6 +63,10 @@ public class ExperimentDeliverablesZipService {
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Experiment not found: " + experimentId));
+        byte[] finalFeoZip = latestFeoFinalZip(experimentId);
+        if (finalFeoZip.length > 0) {
+            return finalFeoZip;
+        }
         Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
         List<Deliverable> deliverables = nicheId != null
                 ? deliverableRepository.findByNicheIdOrderByCreatedAtDesc(nicheId)
@@ -201,6 +205,31 @@ public class ExperimentDeliverablesZipService {
             }
             writeBytes(zip, "feo/" + slug(name, "artefato-feo") + extensionFrom(name), content);
         }
+    }
+
+    /** Retorna diretamente o ZIP final público da FEO quando ele já existir. */
+    private byte[] latestFeoFinalZip(Long experimentId) {
+        FeoFabricacaoV1StageExecution execution = feoExecutionRepository
+                .findFirstByExperimentIdAndStageCodeAndStatusOrderByFinishedAtDesc(
+                        experimentId,
+                        STAGE_MONTAGEM,
+                        FeoFabricacaoV1StageStatus.COMPLETED)
+                .orElse(null);
+        if (execution == null || !StringUtils.hasText(execution.getArtifactsPayload())) {
+            return new byte[0];
+        }
+        List<Map<String, Object>> artifacts = readArtifacts(execution.getArtifactsPayload());
+        for (Map<String, Object> artifact : artifacts) {
+            String type = stringValue(artifact.get("type"), "");
+            String name = stringValue(artifact.get("name"), "");
+            if ("FINAL_ZIP".equals(type) || name.endsWith(".zip")) {
+                byte[] content = artifactBytes(artifact.get("content"));
+                if (content.length > 0) {
+                    return content;
+                }
+            }
+        }
+        return new byte[0];
     }
 
     /** Escreve um arquivo de texto no ZIP usando UTF-8. */

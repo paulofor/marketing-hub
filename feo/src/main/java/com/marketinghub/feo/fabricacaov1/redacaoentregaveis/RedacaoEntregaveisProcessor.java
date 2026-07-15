@@ -120,9 +120,9 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 "PREMIUM_CONTENT_READY",
                 List.of(
                         "O PDE contém experiência guiada, método, plano, materiais prontos, prova, ritual e bônus anti-objeção.",
-                        "A experiência guiada é o produto principal; e-book, checklists, templates e imagens são biblioteca de apoio.",
-                        "Os princípios do MDS foram traduzidos em exercício, decisão e critério visual de progresso.",
-                        "O pacote exige capa, infográficos e figuras internas para aumentar valor percebido.",
+                        "A experiência guiada é o produto principal; e-book, checklists, templates e exemplos são biblioteca de apoio.",
+                        "Os princípios de pesquisa foram traduzidos em exercício, decisão e critério visual de progresso.",
+                        "O pacote deve parecer produto final, com estrutura clara, exemplos e materiais de aplicação.",
                         "Cada entregável tem primeira vitória clara para o comprador.",
                         "Cada entregável contém aplicação, checklist, template e critério de conclusão.",
                         "A promessa central foi preservada sem criar garantia nova."));
@@ -141,7 +141,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                         "Crie uma capa vertical premium para um e-book digital chamado '" + safe(context.offerName())
                                 + "'. Público: " + safe(context.niche())
                                 + ". Promessa: " + safe(context.centralPromise())
-                                + ". Direção visual: editorial feminino sofisticado, elegante, acessível, claro, sem luxo ostensivo, com composição limpa, título legível, sensação de método prático e transformação em 7 dias. Não use termos técnicos, métricas, logos de plataformas ou aparência de relatório.",
+                                + ". Direção visual: editorial feminino sofisticado, elegante, acessível, claro, sem luxo ostensivo, com composição limpa, título legível, sensação de método prático e transformação em 7 dias. Não use termos técnicos, métricas, siglas internas, logos de plataformas ou aparência de relatório.",
                         "1024x1536",
                         "png"),
                 new VisualAssetSpec(
@@ -151,7 +151,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                         "inside-ebook",
                         "Crie um infográfico vertical em português mostrando uma jornada de 7 dias para aplicar a promessa: "
                                 + safe(context.centralPromise())
-                                + ". Use blocos claros, ícones simples, setas suaves, espaço para leitura em PDF e linguagem de cliente final. Não inclua CTR, CPL, lead, experimento, FEO, score, JSON ou qualquer termo técnico.",
+                                + ". Use blocos claros, ícones simples, setas suaves, espaço para leitura em PDF e linguagem de cliente final. Não inclua CTR, CPL, lead, experimento, FEO, MDS, score, JSON ou qualquer termo técnico.",
                         "1024x1536",
                         "png"),
                 new VisualAssetSpec(
@@ -161,7 +161,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                         "inside-ebook",
                         "Crie um mapa visual rico em português conectando cabelo, pele, roupa, perfume, acessórios, ocasião e orçamento para explicar o mecanismo: "
                                 + safe(context.coreMechanism())
-                                + ". Estética editorial, útil, feminina e aplicável. A imagem deve ajudar a compradora a entender o método de relance, sem parecer slide corporativo.",
+                                + ". Estética editorial, útil, feminina e aplicável. A imagem deve ajudar a compradora a entender o método de relance, sem parecer slide corporativo e sem usar siglas internas.",
                         "1536x1024",
                         "png"),
                 new VisualAssetSpec(
@@ -198,7 +198,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                                         + "O objetivo é transformar percepção vaga em um ponto de comparação simples.",
                                 "Escreva uma frase começando com: hoje minha presença parece menos elegante quando..."),
                         new DeliverableSection(
-                                "Princípio aplicado do MDS",
+                                "Princípio aplicado",
                                 "O princípio científico entra como uma regra prática: reduzir carga mental, criar contraste percebido e organizar sinais visuais para facilitar decisão. "
                                         + "A cliente não recebe teoria crua; recebe um modo simples de aplicar o mecanismo.",
                                 "Transforme o princípio em uma decisão concreta usando esta regra: "
@@ -219,7 +219,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 List.of(
                         "A promessa do produto aparece de forma explícita.",
                         "Existe uma primeira ação executável em até 20 minutos.",
-                        "O princípio do MDS foi convertido em regra de aplicação, não em teoria acadêmica.",
+                        "O princípio de pesquisa foi convertido em regra de aplicação, não em teoria acadêmica.",
                         "O comprador sabe o que preencher, decidir ou revisar.",
                         "O conteúdo não cria promessa maior que: " + safe(context.promisedResult()),
                         "Há critério objetivo para saber se o entregável foi concluído."),
@@ -237,13 +237,13 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                         "Consumir o material como leitura e não preencher nada.",
                         "Usar a explicação científica como desculpa para não executar.",
                         "Tentar resolver todos os problemas ao mesmo tempo.",
-                        "Trocar o mecanismo por uma promessa nova não validada.",
+                        "Trocar o método por uma promessa nova que o produto não entrega.",
                         "Pular o diagnóstico inicial e perder a comparação de progresso."),
                 "O entregável está concluído quando o comprador consegue explicar a situação, escolher uma ação, executar o primeiro passo e apontar uma evidência de progresso.");
     }
 
     /**
-     * Traduz os sinais do MDS em um princípio comercial aplicável pela compradora.
+     * Traduz sinais de pesquisa em um princípio comercial aplicável pela compradora.
      */
     private String appliedPrinciple(FabricationContext context, DeliverableSpec spec) {
         String base = safe(context.coreMechanism());

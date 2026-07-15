@@ -10,6 +10,7 @@ import com.marketinghub.feo.fabricacaov1.pipeline.StageCode;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageContext;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageProcessor;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageResult;
+import com.marketinghub.feo.infrastructure.config.FeoProperties;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,13 +24,15 @@ public class GeracaoAtivosVisuaisProcessor implements StageProcessor<PackageAsse
 
     private final VisualAssetGenerator generator;
     private final ObjectMapper objectMapper;
+    private final FeoProperties properties;
 
     /**
      * Recebe gerador de imagens e serializador para publicar auditoria separada do produto.
      */
-    public GeracaoAtivosVisuaisProcessor(VisualAssetGenerator generator, ObjectMapper objectMapper) {
+    public GeracaoAtivosVisuaisProcessor(VisualAssetGenerator generator, ObjectMapper objectMapper, FeoProperties properties) {
         this.generator = generator;
         this.objectMapper = objectMapper;
+        this.properties = properties;
     }
 
     /**
@@ -41,15 +44,43 @@ public class GeracaoAtivosVisuaisProcessor implements StageProcessor<PackageAsse
     }
 
     /**
-     * Gera todos os ativos visuais obrigatórios e bloqueia montagem se faltar imagem.
+     * Gera ativos visuais quando habilitado e permite montagem quando imagem externa nao estiver disponivel.
      */
     @Override
     public StageResult<PackageAssemblyInput> process(StageContext<PackageAssemblyInput> context) {
         PackageAssemblyInput input = context.input();
+        if (!properties.visualAssetsEnabled()) {
+            PackageAssemblyInput output = new PackageAssemblyInput(
+                    input.context(),
+                    input.plan(),
+                    input.contentPackage(),
+                    List.of());
+            StageArtifact artifact = context.artifactStore().store(
+                    "FEO_VISUAL_ASSETS_SKIPPED",
+                    "feo-visual-assets-skipped.json",
+                    "application/json",
+                    toJson(Map.of(
+                            "reason", "Imagens externas desativadas para priorizar pacote final entregavel",
+                            "plannedAssets", plannedAssets(input))));
+            return StageResult.completedWithNext(
+                    output,
+                    List.of(artifact),
+                    Map.of("visualAssetCount", 0, "qualityGate", "VISUAL_ASSETS_OPTIONAL_SKIPPED"),
+                    StageCode.MONTAGEM_PACOTE);
+        }
         if (input.contentPackage() == null
                 || input.contentPackage().visualAssets() == null
                 || input.contentPackage().visualAssets().isEmpty()) {
-            return StageResult.blocked("FEO sem plano de imagens editoriais para enriquecer o pacote.", List.of());
+            PackageAssemblyInput output = new PackageAssemblyInput(
+                    input.context(),
+                    input.plan(),
+                    input.contentPackage(),
+                    List.of());
+            return StageResult.completedWithNext(
+                    output,
+                    List.of(),
+                    Map.of("visualAssetCount", 0, "qualityGate", "VISUAL_ASSETS_NOT_PLANNED"),
+                    StageCode.MONTAGEM_PACOTE);
         }
         List<VisualAsset> generated = new ArrayList<>();
         try {
@@ -62,7 +93,16 @@ public class GeracaoAtivosVisuaisProcessor implements StageProcessor<PackageAsse
                     "feo-visual-assets-rejected.json",
                     "application/json",
                     toJson(input.contentPackage().visualAssets()));
-            return StageResult.blocked("Geração de imagens FEO falhou: " + ex.getMessage(), List.of(artifact));
+            PackageAssemblyInput output = new PackageAssemblyInput(
+                    input.context(),
+                    input.plan(),
+                    input.contentPackage(),
+                    generated);
+            return StageResult.completedWithNext(
+                    output,
+                    List.of(artifact),
+                    Map.of("visualAssetCount", generated.size(), "qualityGate", "VISUAL_ASSETS_OPTIONAL_FAILED"),
+                    StageCode.MONTAGEM_PACOTE);
         }
         PackageAssemblyInput output = new PackageAssemblyInput(
                 input.context(),
@@ -79,6 +119,16 @@ public class GeracaoAtivosVisuaisProcessor implements StageProcessor<PackageAsse
                 List.of(artifact),
                 Map.of("visualAssetCount", generated.size(), "qualityGate", "VISUAL_ASSETS_READY"),
                 StageCode.MONTAGEM_PACOTE);
+    }
+
+    /**
+     * Retorna plano de imagens sem exigir que o pacote tenha essa secao.
+     */
+    private List<VisualAssetSpec> plannedAssets(PackageAssemblyInput input) {
+        if (input.contentPackage() == null || input.contentPackage().visualAssets() == null) {
+            return List.of();
+        }
+        return input.contentPackage().visualAssets();
     }
 
     /**

@@ -11,9 +11,15 @@ import com.marketinghub.feo.fabricacaov1.pipeline.StageCode;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageContext;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageProcessor;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageResult;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.zip.ZipInputStream;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,9 +34,11 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
             "pré-venda",
             "pre-venda",
             "score feo",
+            "feo v1",
             "fabricado pela feo",
             "promessa validada",
             "mecanismo validado",
+            "mds",
             "experimento",
             "tráfego",
             "trafego",
@@ -72,6 +80,12 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
                     List.of());
         }
         PackageAssemblyOutput output = assembler.assemble(input);
+        prohibitedTerms = prohibitedTerms(output);
+        if (!prohibitedTerms.isEmpty()) {
+            return StageResult.blocked(
+                    "Pacote final da cliente contém termos técnicos proibidos: " + String.join(", ", prohibitedTerms),
+                    List.of());
+        }
         List<StageArtifact> artifacts = List.of(
                 toArtifact(context, "FINAL_EXPERIENCE_SITE", output.experienceSite()),
                 toArtifact(context, "FINAL_PDF", output.pdf()),
@@ -97,12 +111,61 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
      */
     private List<String> prohibitedTerms(PackageAssemblyInput input) {
         String text = input.contentPackage().deliverables().toString().toLowerCase();
-        List<String> found = new ArrayList<>();
+        return prohibitedTerms(text);
+    }
+
+    /** Varre os arquivos finais textuais para impedir vazamento de termos internos no produto. */
+    private List<String> prohibitedTerms(PackageAssemblyOutput output) {
+        StringBuilder text = new StringBuilder();
+        text.append(text(output.experienceSite()));
+        text.append(text(output.spreadsheet()));
+        text.append(textFromZip(output.zipPackage()));
+        return prohibitedTerms(text.toString().toLowerCase());
+    }
+
+    /** Localiza termos proibidos em texto público do pacote final. */
+    private List<String> prohibitedTerms(String text) {
+        Set<String> found = new LinkedHashSet<>();
         for (String term : PROHIBITED_CLIENT_TERMS) {
             if (text.contains(term)) {
                 found.add(term);
             }
         }
-        return found;
+        return new ArrayList<>(found);
+    }
+
+    /** Converte ativo textual em string para gate de qualidade. */
+    private String text(DigitalAssetFinal asset) {
+        if (asset == null || asset.content() == null || asset.contentType() == null) {
+            return "";
+        }
+        if (asset.contentType().startsWith("text/")) {
+            return new String(asset.content(), StandardCharsets.UTF_8);
+        }
+        return "";
+    }
+
+    /** Lê arquivos textuais dentro do ZIP final para gate de qualidade. */
+    private String textFromZip(DigitalAssetFinal asset) {
+        if (asset == null || asset.content() == null) {
+            return "";
+        }
+        StringBuilder text = new StringBuilder();
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(asset.content()), StandardCharsets.UTF_8)) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (isTextEntry(entry.getName())) {
+                    text.append(new String(zip.readAllBytes(), StandardCharsets.UTF_8)).append('\n');
+                }
+            }
+        } catch (IOException ex) {
+            text.append("zip ilegivel");
+        }
+        return text.toString();
+    }
+
+    /** Indica se uma entrada do ZIP deve ser varrida como texto público. */
+    private boolean isTextEntry(String name) {
+        return name != null && (name.endsWith(".html") || name.endsWith(".txt") || name.endsWith(".csv"));
     }
 }

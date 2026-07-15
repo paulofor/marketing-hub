@@ -107,7 +107,7 @@ public class PackageAssetAssembler {
                 </p>
                   <p><strong>Resultado buscado:</strong> """).append(escape(context.promisedResult())).append("""
                 </p>
-                  <p><strong>Base do método:</strong> princípios práticos derivados da pesquisa MDS, traduzidos em decisões simples de cabelo, pele, roupa, perfume, ocasião e compra consciente.</p>
+                  <p><strong>Base do método:</strong> princípios práticos de imagem, autocuidado e decisão, traduzidos em escolhas simples de cabelo, pele, roupa, perfume, ocasião e compra consciente.</p>
                 </section>
                 <section>
                   <h2>Comece por aqui</h2>
@@ -121,7 +121,7 @@ public class PackageAssetAssembler {
                   </div>
                   <h2>O que você recebe</h2>
                   <div class="box proof">
-                    <p>Um e-book com plano de execução, checklists, templates, exemplos preenchidos, figuras de apoio, guia anti-impulso e uma rotina simples para perceber avanço em 7 dias.</p>
+                    <p>Um e-book com plano de execução, checklists, templates, exemplos preenchidos, guia anti-impulso e uma rotina simples para perceber avanço em 7 dias.</p>
                   </div>
                   <h2>Mecanismo central</h2>
                   <div class="box">""").append(escape(context.coreMechanism())).append("""
@@ -241,19 +241,20 @@ public class PackageAssetAssembler {
                   </table>
                 </section>
                 <section>
-                  <h2>Materiais prontos do comprador</h2>
+                  <h2>Materiais prontos do pacote</h2>
                   <table>
                     <thead><tr><th>Componente</th><th>Arquivo no ZIP</th><th>Uso esperado</th></tr></thead>
                     <tbody>
                 """);
-        for (DeliverableContent content : input.contentPackage().deliverables()) {
-            html.append("<tr><td>")
-                    .append(escape(componentLabel(content.componentType())))
-                    .append("</td><td>entregaveis/")
-                    .append(escape(deliverableFileName(content)))
-                    .append("</td><td>")
-                    .append(escape(content.readyToUseAsset()))
-                    .append("</td></tr>");
+        html.append("""
+                      <tr><td>Experiência guiada</td><td>01-experiencia-guiada/index.html</td><td>Começar pelo diagnóstico, seguir as missões de 7 dias e marcar progresso.</td></tr>
+                      <tr><td>E-book principal</td><td>02-ebook-principal.pdf</td><td>Aprofundar o método, consultar exemplos e revisar a lógica de aplicação.</td></tr>
+                      <tr><td>Planilha de aplicação</td><td>03-plano-checklists-e-templates.csv</td><td>Preencher ações, checkpoints, evidências e próximos ajustes.</td></tr>
+                """);
+        if (!visualAssets(input).isEmpty()) {
+            html.append("""
+                      <tr><td>Figuras de apoio</td><td>imagens/</td><td>Consultar capa, infográfico, mapa visual e antes/depois conceitual.</td></tr>
+                """);
         }
         html.append("""
                     </tbody>
@@ -361,7 +362,7 @@ public class PackageAssetAssembler {
                       <h2>Mecanismo aplicado</h2>
                       <p>""").append(escape(context.coreMechanism())).append("""
                 </p>
-                      <div class="note">A ciência do MDS entra aqui como decisão prática: reduzir esforço mental, organizar sinais visuais e criar pequenas evidências de progresso.</div>
+                      <div class="note">A pesquisa entra aqui como decisão prática: reduzir esforço mental, organizar sinais visuais e criar pequenas evidências de progresso.</div>
                 """);
         appendExperienceVisual(html, input, "CONCEPT_MAP");
         html.append("""
@@ -380,20 +381,22 @@ public class PackageAssetAssembler {
                     .append(escape(dayCheckpoint(day)))
                     .append("</span></div></div></div>");
         }
-        html.append("""
-                    </section>
+        html.append("</section>");
+        if (!visualAssets(input).isEmpty()) {
+            html.append("""
                     <section>
                       <h2>Prova visual da transformação</h2>
                       <p>Use as figuras abaixo como referência conceitual. O objetivo é coerência e intenção, não luxo caro nem transformação radical.</p>
                 """);
-        appendExperienceVisual(html, input, "INFOGRAPHIC");
-        appendExperienceVisual(html, input, "BEFORE_AFTER");
+            appendExperienceVisual(html, input, "INFOGRAPHIC");
+            appendExperienceVisual(html, input, "BEFORE_AFTER");
+            html.append("</section>");
+        }
         html.append("""
-                    </section>
                     <section>
                       <h2>Biblioteca de apoio</h2>
                       <div class="library">
-                        <div class="card"><h3>02-ebook-principal.pdf</h3><p>Guia editorial com capa, figuras internas e explicação prática do método.</p></div>
+                        <div class="card"><h3>02-ebook-principal.pdf</h3><p>Guia editorial com explicação prática do método, exemplos e plano de aplicação.</p></div>
                         <div class="card"><h3>03-plano-checklists-e-templates.csv</h3><p>Planilha para preencher ações, evidências, checkpoints e próximos ajustes.</p></div>
                 """);
         for (DeliverableContent content : input.contentPackage().deliverables()) {
@@ -479,7 +482,7 @@ public class PackageAssetAssembler {
                     String.valueOf(order++),
                     asset.sha256()));
         }
-        for (VisualAsset visualAsset : input.visualAssets()) {
+        for (VisualAsset visualAsset : visualAssets(input)) {
             items.add(new ManifestItem(
                     visualAsset.fileName(),
                     visualAsset.contentType(),
@@ -521,7 +524,7 @@ public class PackageAssetAssembler {
             addZip(zip, experience.name(), experience.content());
             addZip(zip, pdf.name(), pdf.content());
             addZip(zip, spreadsheet.name(), spreadsheet.content());
-            for (VisualAsset visualAsset : input.visualAssets()) {
+            for (VisualAsset visualAsset : visualAssets(input)) {
                 addZip(zip, visualAsset.fileName(), visualAsset.content());
             }
             addZip(zip, "README.txt", readme(input, manifest).getBytes(StandardCharsets.UTF_8));
@@ -542,7 +545,8 @@ public class PackageAssetAssembler {
                 + "Use a experiencia para fazer o diagnostico, cumprir as missoes de 7 dias e marcar seu progresso.\n"
                 + "Depois consulte 02-ebook-principal.pdf para aprofundar o metodo.\n"
                 + "Use 03-plano-checklists-e-templates.csv para preencher seu plano.\n"
-                + "As imagens da pasta imagens/ sao figuras de apoio da experiencia e do e-book.\n\n"
+                + imageReadmeLine(input)
+                + "\n"
                 + "Arquivos do pacote:\n"
                 + String.join("\n", manifest.items().stream().map(ManifestItem::fileName).toList())
                 + "\n\nPromessa: " + input.context().centralPromise() + "\n";
@@ -632,13 +636,30 @@ public class PackageAssetAssembler {
      * Busca a primeira imagem do tipo solicitado.
      */
     private VisualAsset visualByType(PackageAssemblyInput input, String assetType) {
-        if (input.visualAssets() == null) {
-            return null;
-        }
-        return input.visualAssets().stream()
+        return visualAssets(input).stream()
                 .filter(asset -> assetType.equals(asset.assetType()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Retorna imagens finais sem quebrar a montagem quando a etapa visual for opcional.
+     */
+    private List<VisualAsset> visualAssets(PackageAssemblyInput input) {
+        if (input.visualAssets() == null) {
+            return List.of();
+        }
+        return input.visualAssets();
+    }
+
+    /**
+     * Explica imagens apenas quando elas realmente existem no ZIP.
+     */
+    private String imageReadmeLine(PackageAssemblyInput input) {
+        if (visualAssets(input).isEmpty()) {
+            return "";
+        }
+        return "As imagens da pasta imagens/ sao figuras de apoio da experiencia e do e-book.\n";
     }
 
     /**
@@ -736,7 +757,7 @@ public class PackageAssetAssembler {
                 contentType,
                 content,
                 sha256(content),
-                List.of("Arquivo gerado pela FEO v1", "Pronto para revisao antes da entrega final"));
+                List.of("Arquivo final do produto", "Pronto para revisao antes da entrega final"));
     }
 
     /**

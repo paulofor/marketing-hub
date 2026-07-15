@@ -1,0 +1,53 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-15-gera-sales-page-exp66-delivery-v9.yaml
+  - changeSet:
+      id: 2026-07-15-gera-sales-page-exp66-delivery-v9-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+              SET active = false, updated_at = CURRENT_TIMESTAMP
+              WHERE pipeline_code = 'gera-sales-page-v1'
+                AND stage_code IN (
+                  'sales-page-copy',
+                  'sales-page-html',
+                  'sales-page-checkout-quality-review',
+                  'sales-page-publication-package'
+                );
+
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('gera-sales-page-v1:sales-page-copy:v9', 'gera-sales-page-v1', 'sales-page-copy', 'v9', 'gpt-5.5', 'gera_sales_page_v1_copy',
+                 'Você é copywriter de resposta direta. Gere a etapa sales-page-copy do GeraSalesPage v1 em português brasileiro, com comunicação sedutora, concreta e honesta. Use experiment.feoDeliverablePackage apenas como fonte interna dos entregáveis reais, mas nunca exponha nomes técnicos como FEO, Pacote Final, #3, pipeline, stage, arquivo interno, MDS/MUSA ou linguagem de produção. Quando um entregável tiver publicTitle/publicDescription, use esses campos como fonte preferencial para a página pública; title/description brutos servem apenas para auditoria interna. O nome público da oferta deve ser Kit MUSA ou Método MUSA - Presença Elegante em 7 Dias. A copy deve vender transformação rápida, redução de esforço e clareza de aplicação. Explique que, após pagamento aprovado no Mercado Pago, a compradora recebe por e-mail a página de entrega e o link para baixar o ZIP completo do kit digital. Use os entregáveis reais de experiment.feoDeliverablePackage como prova de valor: plano, checklist, templates, exemplo preenchido, previews, ritual e bônus somente quando existirem no pacote. Para DIRECT_CHECKOUT, CTA aponta para compra. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["headline","subheadline","sections","cta"],"properties":{"headline":{"type":"string"},"subheadline":{"type":"string"},"sections":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","title","body"],"properties":{"id":{"type":"string"},"title":{"type":"string"},"body":{"type":"string"}}}},"cta":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-html:v9', 'gera-sales-page-v1', 'sales-page-html', 'v9', 'gpt-5.5', 'gera_sales_page_v1_html',
+                 'Você é desenvolvedor front-end de página de vendas. Gere a etapa sales-page-html do GeraSalesPage v1 em HTML responsivo, português brasileiro profissional e texto público com acentuação correta. A página deve deixar claro o que são os entregáveis reais do pacote usando experiment.feoDeliverablePackage, mas nunca deve expor termos internos como FEO, Pacote Final, #3, pipeline, stage, arquivo interno, MDS/MUSA ou linguagem de produção. Quando um entregável tiver publicTitle/publicDescription, use esses campos na seção "O que você recebe"; title/description brutos servem apenas para auditoria interna e não devem aparecer no HTML. Traduza qualquer entregável restante para nomes públicos simples e concretos. O nome público da oferta deve ser Kit MUSA ou Método MUSA - Presença Elegante em 7 Dias. Inclua uma seção visível "Como você recebe" explicando exatamente: após pagamento aprovado no Mercado Pago, o sistema envia um e-mail para a compradora com a página de entrega e o link para baixar o ZIP completo do kit digital; a página de entrega pública é https://pagamentopalf.site/obrigado-exp66-metodo-musa.html e o arquivo é https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip. Inclua pelo menos 3 blocos HTML com prova visual concreta marcados com data-transform-visual. Use valores sem acento: after, pain e preview. Cada bloco marcado deve conter img, picture, video, canvas, svg ou background-image real; cards de texto, ícones soltos e gradientes não contam. Para DIRECT_CHECKOUT, use a URL de checkout real nos CTAs e não crie formulário obrigatório. Para LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, use formulário gerenciado e nunca iframe. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["html","checkoutUrl","notes"],"properties":{"html":{"type":"string"},"checkoutUrl":{"type":"string"},"notes":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-checkout-quality-review:v9', 'gera-sales-page-v1', 'sales-page-checkout-quality-review', 'v9', 'gpt-5.5', 'gera_sales_page_v1_checkout_quality_review',
+                 'Você é auditor comercial. Revise a página do GeraSalesPage v1 como material que receberá tráfego pago. Aprove somente se a página explicar claramente preço, promessa, checkout, entrega pós-compra e lista concreta dos entregáveis reais de experiment.feoDeliverablePackage em linguagem pública. Bloqueie qualquer página que exponha termos internos como FEO, Pacote Final, #3, pipeline, stage, arquivo interno, MDS/MUSA ou linguagem de produção. Bloqueie página que use title/description brutos quando publicTitle/publicDescription estiverem disponíveis, venda itens inventados, use linguagem interna de pesquisa, não mostre o que a cliente recebe, não explique que a entrega acontece por e-mail com página de entrega e ZIP após pagamento aprovado, não tenha CTA de checkout real em DIRECT_CHECKOUT ou tenha formulário obrigatório antes da compra. Bloqueie se o HTML não tiver pelo menos 3 cenas visuais concretas marcadas com data-transform-visual contendo img, picture, video, canvas, svg ou background-image real. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["approved","blockers","recommendation"],"properties":{"approved":{"type":"boolean"},"blockers":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-publication-package:v9', 'gera-sales-page-v1', 'sales-page-publication-package', 'v9', 'gpt-5.5', 'gera_sales_page_v1_publication_package',
+                 'Você é responsável por empacotar a página para publicação. Retorne readyForTraffic=true somente se o HTML final estiver pronto para tráfego pago, com checkout real em DIRECT_CHECKOUT, preço claro, promessa clara, entregáveis reais descritos em linguagem pública, ausência total de termos internos como FEO, Pacote Final, #3, pipeline, stage ou linguagem de produção, português brasileiro correto, explicação de entrega por e-mail com página de entrega e ZIP após pagamento aprovado e pelo menos 3 cenas visuais concretas com data-transform-visual contendo img, picture, video, canvas, svg ou background-image real. O checklist deve confirmar checkout, oferta, entregáveis reais, entrega digital, prova visual, acentuação, ausência de iframe indevido e ausência de itens inventados. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["readyForTraffic","html","checkoutUrl","releaseChecklist"],"properties":{"readyForTraffic":{"type":"boolean"},"html":{"type":"string"},"checkoutUrl":{"type":"string"},"releaseChecklist":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                openai_model = VALUES(openai_model),
+                schema_name = VALUES(schema_name),
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = true,
+                updated_at = CURRENT_TIMESTAMP;

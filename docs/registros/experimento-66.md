@@ -259,3 +259,62 @@ Observação operacional:
 - Confirmar que o destino da campanha aponta para a página auditada, não para o checkout direto.
 - Validar fluxo de compra e entrega do produto digital.
 - Só depois liberar Facebook Ads.
+
+## Verificação de aderência aos objetivos da semana 3
+
+Data da validação: `2026-07-15T03:50:00Z`.
+
+Objetivo analisado:
+
+- Confirmar se o experimento 66 está aderente à direção da semana 3: transformar o FEO em produto low-ticket vendável, com página de venda, checkout, prova visual, criativos, público e funil pronto para medir compra real.
+
+Consultas realizadas:
+
+- `GET /api/experiments/66/construction`
+- `GET /api/experiments/66/readiness`
+- `GET /api/experiments/66/gerasalespage/v1/publications`
+- MCP `db_query` somente leitura em `experiment`, `gera_sales_page_stage_execution` e `gera_sales_page_publication_audit`.
+
+Resultado comercial:
+
+- O experimento está posicionado corretamente como venda low-ticket:
+  - `experiment_type = LOW_TICKET_PRODUCT`;
+  - `campaign_objective = SALES`;
+  - preço `R$47`;
+  - CTA `Quero meu Kit MUSA por R$47`;
+  - métrica principal `Compra aprovada do Kit MUSA`.
+- O checkout Mercado Pago está preenchido em `follow_up_action_url`.
+- Existem `5` criativos prontos.
+- A segmentação está completa.
+- A página draft local existe, mas não substitui a página oficial do GeraSalesPage.
+
+Status do GeraSalesPage remoto:
+
+- `sales-page-offer-brief`: `CONCLUIDO`.
+- `sales-page-wireframe`: `CONCLUIDO`.
+- `sales-page-copy`: `AGUARDANDO_RETORNO_OPENAI`.
+- Ainda não há registro em `gera_sales_page_publication_audit` para o experimento 66.
+- `GET /api/experiments/66/gerasalespage/v1/publications` retornou lista vazia.
+
+Leitura de readiness:
+
+- `hasCreatives = true`
+- `creativeCount = 5`
+- `hasCompleteTargeting = true`
+- `hasLeadPortalFlow = false`
+- bloqueio atual: `GERA_SALES_PAGE`
+- mensagem: experimentos com intenção de compra só podem ser liberados quando o GeraSalesPage v1 concluir e auditar a publicação da página de venda.
+
+Conclusão:
+
+- O experimento 66 está aderente aos objetivos da semana 3 no posicionamento, produto, checkout, criativos e público.
+- Ainda não está pronto para tráfego porque falta a página oficial publicada e auditada pelo GeraSalesPage.
+- A causa do bloqueio não é mais template, checkout, criativo ou público; é apenas a conclusão do pipeline de página de venda e validação do destino final.
+
+Próximas ações:
+
+- Aguardar/conferir retorno da OpenAI para `sales-page-copy`.
+- Confirmar avanço automático para `sales-page-visual-plan`, `sales-page-html`, `sales-page-checkout-quality-review` e `sales-page-publication-package`.
+- Após publicação, validar se `follow_up_action_url` passou a apontar para a página auditada, mantendo o checkout separado nos botões.
+- Testar acesso público da página, clique no checkout e entrega do produto.
+- Só liberar tráfego depois desses pontos.

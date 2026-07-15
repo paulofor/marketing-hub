@@ -24,6 +24,9 @@ databaseChangeLog:
       file: changesets/2026-07-15-gera-sales-page-exp66-delivery-v8.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-15-gera-sales-page-exp66-delivery-v9.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-07-commercial-plan-week-objectives.yaml
       relativeToChangelogFile: true
   - include:

@@ -107,6 +107,7 @@ public class CreativeGenerationService {
             String prompt = buildPipelineImagePrompt(plan, request);
             String imageUrl = imageClient.generateImage(prompt, null,
                     "pipeline-creative-experiment-" + dto.getId() + "-" + plan.variantKey());
+            requireGeneratedImageUrl(dto.getId(), request.getHeadline(), imageUrl);
             request.setImageUrl(imageUrl);
             request.setStatus(CreativeStatus.DRAFT);
             result.add(request);
@@ -123,7 +124,9 @@ public class CreativeGenerationService {
         for (CreateCreativeRequest creative : creatives) {
             normalizeCreativeContract(creative);
             String prompt = defaultImagePrompt(dto, creative);
-            creative.setImageUrl(imageClient.generateImage(prompt, null, "creative-experiment-" + dto.getId()));
+            String imageUrl = imageClient.generateImage(prompt, null, "creative-experiment-" + dto.getId());
+            requireGeneratedImageUrl(dto.getId(), creative.getHeadline(), imageUrl);
+            creative.setImageUrl(imageUrl);
             if (creative.getStatus() == null) {
                 creative.setStatus(CreativeStatus.DRAFT);
             }
@@ -215,6 +218,15 @@ public class CreativeGenerationService {
             boundary = maxLength;
         }
         return trimmed.substring(0, boundary).trim();
+    }
+
+    /** Bloqueia criativo de imagem sem asset visual gerado para evitar aprovação/publicação falsa. */
+    private void requireGeneratedImageUrl(Long experimentId, String headline, String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            throw new IllegalStateException(
+                    "Imagem do criativo não foi gerada; experimento=" + experimentId
+                            + " headline=" + limitText(headline, 80));
+        }
     }
 
     /** Extrai a mensagem raiz para gravar erro operacional legível no backend. */

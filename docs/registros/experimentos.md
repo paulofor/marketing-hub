@@ -5841,3 +5841,11 @@
 - Decisão: criar recovery seed idempotente `v7` para as 7 etapas do GeraSalesPage, preservando venda direta low-ticket, checkout real, entregáveis reais do FEO via `experiment.feoDeliverablePackage` e prova visual obrigatória com `data-transform-visual`.
 - Objetivo comercial: impedir página genérica e garantir que a página de venda explique claramente o que a cliente recebe antes de liberar tráfego.
 - Limitação operacional: o `liquibase:update` executado com `DB_URL/DB_USER/DB_PASS` do sandbox concluiu 1 changeset, mas MCP e backend remoto continuaram retornando `0` templates e `409` no start do experimento 66; portanto essas variáveis não apontam para o mesmo schema operacional do backend. O changeset precisa ser aplicado pelo deploy/Liquibase do ambiente remoto correto antes de iniciar o GeraSalesPage.
+
+## 2026-07-15 — Criativos do experimento 66 não podem ser aprovados sem imagem
+
+- Problema: os 5 criativos do experimento 66 apareciam como aprovados na tela, mas todos exibiam `Imagem não disponível`.
+- Causa-raiz confirmada por MCP: os registros `creative` do experimento 66 estavam `READY`, formato `IMAGE`, com `image_url = null` e `image_hash = null`.
+- Correção aplicada: o AI Worker falha a geração quando a imagem não retorna URL real; o cliente OpenAI preserva erro HTTP para retry; a geração de imagem usa 3 tentativas, sendo tentativas 1 e 2 em Flex e tentativa 3 em Standard/default; o backend rejeita criativo `READY` de imagem sem `imageUrl`; readiness/construção contam apenas criativos aprovados com imagem publicável.
+- Validação: passaram `CreativeImageClientTest`, `CreativeGenerationServiceTest`, `CreativeServiceTest` e `ExperimentReadinessServiceTest`.
+- Próximo passo: após deploy, regerar os criativos do experimento 66 antes de liberar tráfego.

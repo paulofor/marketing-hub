@@ -166,6 +166,98 @@ Próximo passo operacional para o experimento 66:
 4. revisar manualmente o novo ZIP PDE;
 5. só depois retomar página de venda/tráfego.
 
+## Decisão de plataforma PDE multi-produto
+
+Data: `2026-07-15`.
+
+Decisão do usuário:
+
+- O site do produto deve rodar em Docker.
+- Deve ter frontend React e backend Java/Spring Boot/Maven.
+- A solução deve ser independente do restante do sistema.
+- O motor deve ser reutilizável para diversos produtos, não um front/back diferente para cada produto.
+
+Documento canônico criado:
+
+- `docs/canonical/pde-platform-canon.v1.md`
+
+### Alternativas avaliadas
+
+1. **Front/back separado para cada produto**
+   - Benefício: liberdade total de experiência.
+   - Risco: custo alto, manutenção difícil e baixa velocidade para escalar vários produtos.
+   - Aderência ao objetivo de vendas em escala: baixa.
+
+2. **Um único PDE genérico para todos os produtos**
+   - Benefício: velocidade e manutenção simples.
+   - Risco: experiência ficar genérica demais se o produto não carregar identidade, missões e materiais próprios.
+   - Aderência ao objetivo de vendas em escala: boa.
+
+3. **Motor comum + configuração por produto**
+   - Benefício: escala, mantém identidade individual e permite o FEO fabricar muitos produtos.
+   - Risco: exige modelagem inicial mais cuidadosa.
+   - Aderência ao objetivo de vendas em escala: melhor.
+
+Escolha aplicada: **motor comum + configuração por produto**.
+
+### Implementação inicial criada
+
+Módulo novo:
+
+- `pde-platform/`
+
+Componentes:
+
+- `pde-platform/backend`: backend Java 21, Spring Boot 3 e Maven;
+- `pde-platform/frontend`: frontend React 18, Vite e TypeScript;
+- `pde-platform/docker-compose.yml`: execução Docker do conjunto;
+- produto inicial configurado: `metodo-musa-7-dias`.
+
+Funções já implementadas na v1 local:
+
+- catálogo público do produto PDE;
+- endpoint de liberação de acesso para validação local;
+- endpoint de webhook Pepper inicial para compra aprovada;
+- workspace por token de acesso;
+- controle de missões concluídas;
+- frontend com hero, diagnóstico, progresso, missões de 7 dias e biblioteca de materiais.
+
+### Validação local da PDE Platform
+
+Validações executadas:
+
+- `mvn -f pde-platform/backend/pom.xml test`
+  - resultado: `BUILD SUCCESS`;
+  - testes: `2`, falhas `0`, erros `0`.
+- `npm install --include=dev`
+  - resultado: dependências instaladas;
+  - `npm audit --omit=dev`: `0 vulnerabilities`.
+- `npm run build`
+  - resultado: build React/Vite concluído com sucesso.
+- Backend local:
+  - URL: `http://localhost:8096`;
+  - endpoint validado: `GET /api/pde/products/metodo-musa-7-dias`;
+  - endpoint validado: `POST /api/pde/access/dev`;
+  - endpoint validado: `GET /api/pde/access/{token}/workspace`;
+  - endpoint validado: `POST /api/pde/access/{token}/missions/dia-1-ruido-visual/complete`;
+  - progresso após concluir a primeira missão: `14%`.
+- Frontend local:
+  - URL: `http://localhost:5176`;
+  - proxy `/api` validado contra o backend local.
+
+Limitação real de ambiente:
+
+- `docker version` falhou porque o daemon Docker não está disponível em `/var/run/docker.sock`.
+- Os arquivos Docker e `docker-compose.yml` foram criados, mas não foi possível executar containers neste ambiente.
+
+Próximos passos antes de uso comercial:
+
+1. Persistir acessos e progresso em banco.
+2. Validar assinatura/autenticidade do webhook Pepper com a documentação final da conta.
+3. Conectar o FEO para publicar o pacote PDE no catálogo do motor.
+4. Configurar domínio/SSL.
+5. Validar fluxo real: Pepper compra aprovada -> webhook -> acesso -> experiência -> materiais.
+
 ## Entregáveis reais do pacote
 
 O pacote FEO foi tratado como um Kit de Transformação Aplicável, com:
@@ -910,3 +1002,100 @@ Próximas ações:
 - Após publicação, validar se `follow_up_action_url` passou a apontar para a página auditada, mantendo o checkout separado nos botões.
 - Testar acesso público da página, clique no checkout e entrega do produto.
 - Só liberar tráfego depois desses pontos.
+
+## Correção de criativos aprovados sem imagem
+
+Data: `2026-07-15`.
+
+Sintoma observado:
+
+- Na tela do experimento 66, os 5 criativos apareciam em **Aprovados**, mas todos exibiam `Imagem não disponível`.
+
+Validação pelo sistema:
+
+- Consulta somente leitura via MCP na tabela `creative` confirmou 5 registros do experimento 66:
+  - IDs `228`, `229`, `230`, `231`, `232`;
+  - todos com `status = READY`;
+  - todos com `ad_format = IMAGE`;
+  - todos com `image_url = null`;
+  - todos com `image_hash = null`.
+
+Conclusão:
+
+- Os criativos não estavam realmente prontos para tráfego.
+- O problema não era apenas visual no frontend; o backend permitiu criativo de imagem aprovado sem asset visual.
+- Comercialmente, esses 5 criativos devem ser tratados como inválidos até serem regerados com imagem real.
+
+Correção aplicada no código:
+
+- O AI Worker agora bloqueia geração concluída quando a OpenAI/upload não retorna `imageUrl`.
+- O cliente de imagem preserva erro HTTP da OpenAI para permitir retry correto.
+- A regra de retry dos criativos fica explícita:
+  - tentativa 1: Flex;
+  - tentativa 2: Flex;
+  - tentativa 3: Standard/default.
+- O backend passa a rejeitar criativo `READY` de formato `IMAGE` sem `imageUrl`.
+- A prontidão/readiness passa a contar apenas criativos `READY` com imagem publicável.
+- A aba Construção também deixa de considerar criativo aprovado sem imagem como ativo validado.
+
+Validação:
+
+- `mvn -f ai-worker/pom.xml -Dtest=CreativeImageClientTest,CreativeGenerationServiceTest test`: passou.
+- `mvn -f backend/ads-service/pom.xml -Dtest=CreativeServiceTest,ExperimentReadinessServiceTest test`: passou.
+
+Próximo passo operacional:
+
+- Fazer deploy do backend e do AI Worker.
+- Regerar os 5 criativos do experimento 66.
+- Confirmar novamente no banco/sistema que cada criativo aprovado possui `image_url` real antes de liberar tráfego.
+
+## Critério de exibição dos entregáveis na página de venda
+
+Data: `2026-07-15`.
+
+Pergunta do usuário:
+
+- Se a seção interna `Entregáveis vinculados`, com itens como `MDS/MUSA - ...`, será mostrada na página de venda.
+
+Decisão:
+
+- Não mostrar esse bloco cru na página de venda.
+- A lista técnica pode existir na administração e na auditoria interna para rastrear quais materiais alimentam o produto.
+- A página pública deve mostrar uma seção comercial do tipo **O que você recebe**, com nomes simples, concretos e orientados a benefício.
+
+Exemplo de transformação esperada:
+
+- Interno: `MDS/MUSA - Guia de assinatura olfativa acessível por ocasião`.
+- Público: `Guia de assinatura olfativa acessível`.
+- Benefício: `Aprenda a escolher perfume e presença sensorial para criar memória sem depender de perfume caro`.
+
+Ajuste aplicado:
+
+- O payload do GeraSalesPage passou a enviar `publicTitle` e `publicDescription` para cada entregável FEO.
+- Os prompts v8 do GeraSalesPage foram reforçados para usar `publicTitle/publicDescription` na página pública e bloquear exposição de `MDS/MUSA`, `FEO`, `Pacote Final`, `pipeline`, `stage` e linguagem de produção.
+
+Critério comercial:
+
+- A compradora precisa entender claramente o que recebe e por que aquilo facilita a transformação.
+- Ela não deve ver rastreabilidade, origem MDS/research, nomes de pacote interno, arquivos HTML, IDs ou linguagem técnica.
+
+## Objetivo da Semana 3 com PDE
+
+Data: `2026-07-15`.
+
+Decisão registrada no planejamento comercial pelo endpoint do sistema:
+
+- Semana 3 passa a focar o experimento 66 como **PDE completo**, não como pacote de arquivos soltos.
+- O objetivo comercial é elevar o potencial estimado de venda para acima de `90%`, condicionado aos gates de produto, página, checkout, criativos, tracking e entrega.
+
+Objetivos gravados para a Semana 3:
+
+1. Publicar o experimento 66 como PDE completo: área guiada de 7 dias, e-book premium, checklists/templates, imagens reais, diagnóstico, progresso e biblioteca de apoio, usando os princípios MDS/research transformados em aplicação comercial simples.
+2. Entregar os elementos que aumentam o potencial estimado de venda para acima de `90%`: página de venda com prova visual clara, checkout real Pepper ou fallback Mercado Pago, webhook/acesso validado, entrega digital testada e oferta de `R$47` sem termos técnicos internos.
+3. Garantir distribuição vendável antes de liberar tráfego: 3 a 5 criativos aprovados com imagem real, tentativa 1 e 2 em modo Flex e tentativa 3 em Standard, público MUSA salvo e rastreamento `page_view`, tempo de sessão, `checkout_click`, compra e acesso ao PDE.
+4. Controlar gasto e aprendizado: liberar tráfego somente depois do PDE, página, checkout, criativos com imagem e tracking passarem no gate; teto adicional de `R$50` a `R$80` e corte se houver 100 acessos válidos sem checkout/interesse ou qualquer falha de entrega/acesso.
+
+Observação:
+
+- A meta `>90%` é tratada como potencial estimado de venda do formato, não garantia de venda.
+- Tráfego continua bloqueado até o produto PDE, a página, o checkout, a entrega e os criativos com imagem real passarem nos gates.

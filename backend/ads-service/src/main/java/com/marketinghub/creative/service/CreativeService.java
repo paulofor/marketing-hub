@@ -69,6 +69,7 @@ public class CreativeService {
     public Creative create(Long experimentId, CreateCreativeRequest request) {
         try {
             Experiment exp = experimentRepository.findById(experimentId).orElseThrow();
+            validateReadyCreativeHasImage(request);
             Creative creative = Creative.builder()
                     .experiment(exp)
                     .format(request.getFormat())
@@ -108,6 +109,7 @@ public class CreativeService {
     @Transactional
     public Creative update(Long id, CreateCreativeRequest request) {
         Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
+        validateReadyCreativeHasImage(request);
         creative.setFormat(request.getFormat());
         creative.setHeadline(request.getHeadline());
         creative.setPrimaryText(request.getPrimaryText());
@@ -179,10 +181,23 @@ public class CreativeService {
      * Recalcula se o experimento possui criativos aprovados.
      */
     private void refreshExperimentApproval(Experiment experiment) {
-        boolean hasApprovedCreatives = repository.existsByExperimentIdAndStatus(
+        boolean hasApprovedCreatives = repository.existsByExperimentIdAndStatusAndUsableImage(
                 experiment.getId(), CreativeStatus.READY);
         experiment.setCreativeApproved(hasApprovedCreatives);
         experimentRepository.save(experiment);
+    }
+
+    /**
+     * Impede que criativo de imagem seja aprovado sem asset visual publicável.
+     */
+    private void validateReadyCreativeHasImage(CreateCreativeRequest request) {
+        if (request == null || request.getStatus() != CreativeStatus.READY) {
+            return;
+        }
+        String format = StringUtils.hasText(request.getFormat()) ? request.getFormat().trim() : "IMAGE";
+        if ("IMAGE".equalsIgnoreCase(format) && !StringUtils.hasText(request.getImageUrl())) {
+            throw new IllegalArgumentException("Criativo de imagem aprovado precisa ter imagem gerada.");
+        }
     }
 
     /**

@@ -92,7 +92,7 @@ class ExperimentReadinessServiceTest {
         Experiment experiment = buildExperiment(experimentId, 16L);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
-        when(creativeRepository.countByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(0L);
+        when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(experimentId, CreativeStatus.READY)).thenReturn(0L);
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
         assertThat(summary.hasCreatives()).isFalse();
@@ -124,7 +124,7 @@ class ExperimentReadinessServiceTest {
         experiment.setLeadPortalFlow(flow);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
-        when(creativeRepository.countByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(2L);
+        when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(experimentId, CreativeStatus.READY)).thenReturn(2L);
         mockPublishableSelection(experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         mockCompletedGeraLandingStages(experimentId);
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
@@ -145,7 +145,7 @@ class ExperimentReadinessServiceTest {
         experiment.setCreativeApproved(false);
         experiment.setFollowUpActionUrl("https://example.com/landing/22");
 
-        when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(experimentId, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(experimentId, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
@@ -158,7 +158,7 @@ class ExperimentReadinessServiceTest {
         Experiment experiment = buildExperiment(39L, 49L);
         experiment.setFollowUpActionUrl("https://example.com/landing/39");
 
-        when(creativeRepository.existsByExperimentIdAndStatus(39L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(39L, CreativeStatus.READY)).thenReturn(true);
         when(experimentVideoAssetService.hasRequiredVideoBlockingRelease(39L)).thenReturn(true);
         mockPublishableSelection(39L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
 
@@ -175,7 +175,7 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl("https://example.com/sales/46");
         completeCommercialContract(experiment);
 
-        when(creativeRepository.existsByExperimentIdAndStatus(46L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(46L, CreativeStatus.READY)).thenReturn(true);
         when(salesPageTypeSelectionRepository.existsByExperimentIdAndSalesPageTypeCodeAndActiveTrue(
                 46L,
                 "HUMAN_VIDEO_SALES_PAGE")).thenReturn(true);
@@ -201,7 +201,7 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl("https://example.com/sales/47");
         completeCommercialContract(experiment);
 
-        when(creativeRepository.existsByExperimentIdAndStatus(47L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(47L, CreativeStatus.READY)).thenReturn(true);
         when(salesPageTypeSelectionRepository.existsByExperimentIdAndSalesPageTypeCodeAndActiveTrue(
                 47L,
                 "HUMAN_VIDEO_SALES_PAGE")).thenReturn(true);
@@ -226,7 +226,7 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl("https://example.com/landing/44");
         completeCommercialContract(experiment);
 
-        when(creativeRepository.existsByExperimentIdAndStatus(44L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(44L, CreativeStatus.READY)).thenReturn(true);
         when(salesPageAbTestService.hasReadyActiveTest(44L)).thenReturn(false);
         mockPublishableSelection(44L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         mockCompletedGeraSalesPagePublication(44L);
@@ -249,7 +249,7 @@ class ExperimentReadinessServiceTest {
         experiment.setCampaignObjective(ExperimentCampaignObjective.LEADS);
         experiment.setFollowUpActionUrl("https://example.com/landing/45");
 
-        when(creativeRepository.existsByExperimentIdAndStatus(45L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(45L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(45L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
@@ -264,7 +264,7 @@ class ExperimentReadinessServiceTest {
         experiment.getNiche().setFacebookPixelId("pixel-exp56");
         completeCommercialContract(experiment);
 
-        when(creativeRepository.existsByExperimentIdAndStatus(56L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(56L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(56L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         mockCompletedGeraSalesPagePublication(56L);
         mockSalesPageAudit(
@@ -286,7 +286,7 @@ class ExperimentReadinessServiceTest {
         experiment.getNiche().setFacebookPixelId("pixel-exp60");
         completeCommercialContract(experiment);
 
-        when(creativeRepository.existsByExperimentIdAndStatus(60L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(60L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(60L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         mockCompletedGeraSalesPagePublication(60L);
         mockSalesPageAudit(
@@ -319,7 +319,7 @@ class ExperimentReadinessServiceTest {
         experiment.getNiche().setFacebookPixelId("pixel-exp57");
         completeCommercialContract(experiment);
 
-        when(creativeRepository.existsByExperimentIdAndStatus(57L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(57L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(57L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         mockCompletedGeraSalesPagePublication(57L);
         mockSalesPageAudit(
@@ -340,7 +340,7 @@ class ExperimentReadinessServiceTest {
         experiment.getNiche().setFacebookPixelId("pixel-exp53");
         completeCommercialContract(experiment);
 
-        when(creativeRepository.existsByExperimentIdAndStatus(53L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(53L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(53L, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);
         mockCompletedGeraSalesPagePublication(53L);
         mockSalesPageAudit(
@@ -361,7 +361,7 @@ class ExperimentReadinessServiceTest {
         experiment.getNiche().setFacebookPixelId("pixel-exp61");
         completeCommercialContract(experiment);
 
-        when(creativeRepository.existsByExperimentIdAndStatus(61L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(61L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(61L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         mockCompletedGeraSalesPagePublication(61L);
         mockSalesPageAudit(
@@ -382,7 +382,7 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc");
         experiment.getNiche().setFacebookPixelId("pixel-exp56");
 
-        when(creativeRepository.existsByExperimentIdAndStatus(56L, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(56L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(56L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
 
         assertThat(service.computeMissingConfiguration(experiment))

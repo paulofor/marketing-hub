@@ -1,0 +1,16 @@
+services:
+  pde-platform-backend:
+    build:
+      context: ./backend
+    container_name: pde-platform-backend
+    ports:
+      - "8096:8096"
+
+  pde-platform-frontend:
+    build:
+      context: ./frontend
+    container_name: pde-platform-frontend
+    depends_on:
+      - pde-platform-backend
+    ports:
+      - "5176:80"

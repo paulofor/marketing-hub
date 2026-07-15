@@ -31,6 +31,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -151,6 +152,26 @@ class CreativeServiceTest {
 
         Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
         assertThat(afterApproval.isCreativeApproved()).isTrue();
+    }
+
+    /** Garante que criativo de imagem não possa ser aprovado sem imagem gerada. */
+    @Test
+    void shouldRejectReadyImageCreativeWithoutImageUrl() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+
+        CreateCreativeRequest createRequest = new CreateCreativeRequest();
+        createRequest.setHeadline("Headline");
+        createRequest.setPrimaryText("Primary");
+        createRequest.setFormat("IMAGE");
+        createRequest.setStatus(CreativeStatus.READY);
+
+        assertThatThrownBy(() -> service.create(exp.getId(), createRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("precisa ter imagem");
+
+        Experiment afterAttempt = experimentRepository.findById(exp.getId()).orElseThrow();
+        assertThat(afterAttempt.isCreativeApproved()).isFalse();
     }
 
     /** Garante que CTAs livres longos não quebram o limite físico da coluna. */

@@ -326,18 +326,18 @@ describe("CommercialPlanningPage", () => {
     expect(rankingItems[2]).toHaveTextContent("45s");
   });
 
-  it("renderiza objetivos semanais como texto e mostra campo apenas para novo objetivo", async () => {
+  it("renderiza objetivos para a proxima semana como texto e mostra campo apenas para novo objetivo", async () => {
     const user = userEvent.setup();
     renderPage();
 
-    expect(screen.getByText("Objetivos da semana")).toBeTruthy();
+    expect(screen.getByText("Objetivos para a próxima semana")).toBeTruthy();
     expect(screen.getByText(/checkout_click/)).toBeTruthy();
     expect(screen.queryByDisplayValue(/checkout_click/)).toBeNull();
-    expect(screen.queryByLabelText("Novo objetivo da semana 1")).toBeNull();
+    expect(screen.queryByLabelText("Novo objetivo para a semana 2")).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Inserir novo" }));
 
-    expect(screen.getByLabelText("Novo objetivo da semana 1")).toBeTruthy();
+    expect(screen.getByLabelText("Novo objetivo para a semana 2")).toBeTruthy();
     expect(screen.getByText("Salvar novo")).toBeTruthy();
   });
 
@@ -353,9 +353,9 @@ describe("CommercialPlanningPage", () => {
 
     renderPage();
 
-    expect(screen.getByText("Objetivos da semana")).toBeTruthy();
+    expect(screen.getByText("Objetivos para a próxima semana")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Inserir novo" })).toBeNull();
-    expect(screen.queryByLabelText("Novo objetivo da semana 1")).toBeNull();
+    expect(screen.queryByLabelText("Novo objetivo para a semana 2")).toBeNull();
   });
 
   it("usa valores seguros quando status vem fora do contrato", () => {

@@ -211,6 +211,7 @@ function WeeklyObjectiveEditor({
   const [isAddingObjective, setIsAddingObjective] = useState(false);
   const [newObjectiveText, setNewObjectiveText] = useState("");
   const objectivesEditable = week.objectivesEditable === true;
+  const objectiveWeekNumber = week.weekNumber + 1;
 
   useEffect(() => {
     setObjectives(normalizeObjectives(week.objectives));
@@ -242,7 +243,7 @@ function WeeklyObjectiveEditor({
   return (
     <div className="commercial-planning-week-objectives">
       <div className="commercial-planning-week-objectives-header">
-        <h4>Objetivos da semana</h4>
+        <h4>Objetivos para a próxima semana</h4>
         {objectivesEditable ? (
           <button
             className="btn btn-sm btn-outline-primary"
@@ -278,12 +279,12 @@ function WeeklyObjectiveEditor({
       {isAddingObjective && objectivesEditable ? (
         <div className="commercial-planning-week-objective-form">
           <textarea
-            aria-label={`Novo objetivo da semana ${week.weekNumber}`}
+            aria-label={`Novo objetivo para a semana ${objectiveWeekNumber}`}
             className="form-control form-control-sm"
             rows={2}
             value={newObjectiveText}
             onChange={(event) => setNewObjectiveText(event.target.value)}
-            placeholder="Descreva o novo objetivo da semana"
+            placeholder="Descreva o novo objetivo para a próxima semana"
           />
           <button
             className="btn btn-sm btn-primary"

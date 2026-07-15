@@ -212,10 +212,49 @@ Escolha recomendada:
 
 **Primeiro procurar endpoint/rotina existente; se não existir, criar seed versionado ou changelog rastreável. Não alterar direto no banco como primeira opção.**
 
+## Validação após aplicação do Liquibase
+
+Data da validação: `2026-07-15T03:44:09Z`.
+
+Resultado:
+
+- O changeset `2026-07-15-gera-sales-page-template-recovery-v7-001` apareceu no `DATABASECHANGELOG` remoto com `EXECTYPE=EXECUTED`.
+- A tabela `ai_prompt_schema_template` passou a ter `7` templates ativos para `pipeline_code='gera-sales-page-v1'`.
+- Todos os templates ativos estão na versão `v7`:
+  - `sales-page-offer-brief`;
+  - `sales-page-wireframe`;
+  - `sales-page-copy`;
+  - `sales-page-visual-plan`;
+  - `sales-page-html`;
+  - `sales-page-checkout-quality-review`;
+  - `sales-page-publication-package`.
+
+Validação pelo sistema:
+
+- O endpoint `POST /api/experiments/66/gerasalespage/v1/start` deixou de retornar bloqueio por template ausente.
+- O backend criou a execução `a01d8ebb-e836-49cc-aecf-dad904f869a0` para a etapa `sales-page-offer-brief`.
+- A execução foi criada usando o template `gera-sales-page-v1:sales-page-offer-brief:v7`.
+- O endpoint `GET /api/internal/gerasalespage/v1/sales-page-offer-brief/stage-executions/pending` passou a entregar ao worker o contexto completo do experimento, incluindo checkout, preço, promessa e entregáveis reais do FEO.
+- O AI Worker consumiu a execução e o status remoto passou para `AGUARDANDO_RETORNO_OPENAI`.
+- Em nova consulta, a etapa `sales-page-offer-brief` apareceu como `CONCLUIDO`, com `openai_model='gpt-5.5'`.
+- O backend criou automaticamente a próxima etapa `sales-page-wireframe`, usando `gera-sales-page-v1:sales-page-wireframe:v7`, com status `INICIADO`.
+
+Conclusão:
+
+- O Liquibase deu certo.
+- O bloqueio de template do GeraSalesPage foi removido.
+- A primeira etapa do GeraSalesPage foi concluída.
+- A página oficial ainda não está publicada; o pipeline está em execução na etapa `sales-page-wireframe`.
+
+Observação operacional:
+
+- Houve registros transitórios de `Connection refused` do AI Worker ao acessar `http://191.252.181.168:80`, mas o job foi consumido depois.
+- Até esta validação, não foi feita alteração manual direta no banco; as consultas foram somente leitura via MCP.
+
 ## Pendências para ficar pronto para tráfego
 
-- Restaurar/semear templates ativos do GeraSalesPage v1.
-- Rodar novamente o GeraSalesPage para gerar a página oficial.
+- Acompanhar a conclusão da etapa `sales-page-wireframe`.
+- Acompanhar a conclusão das próximas etapas do GeraSalesPage v1 até `sales-page-publication-package`.
 - Auditar a página publicada.
 - Confirmar que o destino da campanha aponta para a página auditada, não para o checkout direto.
 - Validar fluxo de compra e entrega do produto digital.

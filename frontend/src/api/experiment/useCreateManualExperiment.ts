@@ -14,14 +14,14 @@ export interface CreateManualExperiment {
   hypothesisStatement?: string;
   persona: string;
   problem: string;
-  promise: string;
-  mechanism: string;
+  promise?: string;
+  mechanism?: string;
   proof?: string;
   successSignal?: string;
   offerName?: string;
-  leadMagnet: string;
+  leadMagnet?: string;
   productName?: string;
-  primaryCta: string;
+  primaryCta?: string;
   testPrice?: number;
   promiseLimit?: string;
   validationType?: string;

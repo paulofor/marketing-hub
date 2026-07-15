@@ -37,10 +37,12 @@ public class ExperimentConstructionService {
         Hypothesis hypothesis = experiment.getHypothesisRef();
         boolean manualFlow = experiment.getCreationSource() == ExperimentCreationSource.MANUAL_FLOW;
         List<ExperimentConstructionSectionDto> sections = new ArrayList<>();
-        sections.add(buildOriginSection(experiment, niche, hypothesis, manualFlow));
-        sections.add(buildCommercialThesisSection(experiment, hypothesis));
-        sections.add(buildOfferSection(experiment, hypothesis));
-        sections.add(buildCampaignSection(experiment));
+        sections.add(buildNichePainSection(experiment, niche, hypothesis, manualFlow));
+        sections.add(buildHypothesisSection(experiment, hypothesis));
+        sections.add(buildMdsMechanismSection(hypothesis));
+        sections.add(buildOfferProofSection(experiment, hypothesis));
+        sections.add(buildExperimentFeoSection(experiment));
+        sections.add(buildFunnelSection(experiment));
         sections.add(buildArtifactsSection(experiment));
         return new ExperimentConstructionDto(
                 experiment.getId(),
@@ -52,43 +54,53 @@ public class ExperimentConstructionService {
                 sections);
     }
 
-    /** Monta a seção que mostra a cadeia criada pelo fluxo. */
-    private ExperimentConstructionSectionDto buildOriginSection(
+    /** Monta a seção que mostra o ponto de partida do fluxo manual. */
+    private ExperimentConstructionSectionDto buildNichePainSection(
             Experiment experiment,
             MarketNiche niche,
             Hypothesis hypothesis,
             boolean manualFlow) {
         List<ExperimentConstructionItemDto> items = new ArrayList<>();
         add(items, "Fluxo de criação", manualFlow ? "Manual, sem execução de IA" : "Fluxo sistêmico");
-        add(items, "Nicho criado/usado", niche != null ? niche.getName() : null);
+        add(items, "Nicho", niche != null ? niche.getName() : null);
         add(items, "Descrição do nicho", niche != null ? niche.getDescription() : null);
-        add(items, "Base de público", niche != null ? niche.getBaseSegmentation() : null);
-        add(items, "Hipótese vinculada", hypothesis != null ? hypothesis.getTitle() : null);
+        add(items, "Público inicial", niche != null ? niche.getBaseSegmentation() : null);
+        add(items, "Dor principal", firstText(experiment.getSinglePain(), hypothesis != null ? hypothesis.getProblem() : null));
         add(items, "Experimento", experiment.getName());
         return new ExperimentConstructionSectionDto(
-                "Origem e cadeia criada",
-                "Mostra a trilha oficial usada para transformar a entrada manual em experimento publicável.",
+                "1. Nicho/dor",
+                "Base inicial para entender público, dor raiz, desejo e contexto antes de definir solução.",
                 items);
     }
 
-    /** Monta a seção com a tese comercial do experimento. */
-    private ExperimentConstructionSectionDto buildCommercialThesisSection(Experiment experiment, Hypothesis hypothesis) {
+    /** Monta a seção com a hipótese inicial que orienta a construção. */
+    private ExperimentConstructionSectionDto buildHypothesisSection(Experiment experiment, Hypothesis hypothesis) {
         List<ExperimentConstructionItemDto> items = new ArrayList<>();
         add(items, "Público/persona", hypothesis != null ? hypothesis.getPersona() : null);
-        add(items, "Dor principal", firstText(experiment.getSinglePain(), hypothesis != null ? hypothesis.getProblem() : null));
-        add(items, "Promessa", firstText(experiment.getFunnelPromise(), hypothesis != null ? hypothesis.getPromise() : null));
-        add(items, "Mecanismo", hypothesis != null ? firstText(hypothesis.getUniqueMechanism(), hypothesis.getMechanism()) : null);
         add(items, "Narrativa do experimento", experiment.getHypothesis());
-        add(items, "Prova ou regra de sucesso", hypothesis != null ? hypothesis.getSuccessRule() : null);
+        add(items, "Sinal esperado", hypothesis != null ? hypothesis.getSuccessRule() : null);
         return new ExperimentConstructionSectionDto(
-                "Tese comercial",
-                "Resume a aposta de venda que este experimento tenta validar.",
+                "2. Hipótese",
+                "Aposta comercial inicial que será refinada por MDS, oferta, prova e métricas reais.",
                 items);
     }
 
-    /** Monta a seção de oferta e produto testado. */
-    private ExperimentConstructionSectionDto buildOfferSection(Experiment experiment, Hypothesis hypothesis) {
+    /** Monta a seção que explicita a descoberta do mecanismo pelo MDS. */
+    private ExperimentConstructionSectionDto buildMdsMechanismSection(Hypothesis hypothesis) {
         List<ExperimentConstructionItemDto> items = new ArrayList<>();
+        add(items, "Mecanismo atual", hypothesis != null ? firstText(hypothesis.getUniqueMechanism(), hypothesis.getMechanism()) : null);
+        add(items, "Uso esperado do MDS", "Descobrir mecanismo plausível, evidências, limites e linguagem segura antes da promessa final.");
+        return new ExperimentConstructionSectionDto(
+                "3. MDS descobre mecanismo",
+                "O mecanismo não deve ser inventado na entrada; deve nascer de evidência e virar justificativa racional da oferta.",
+                items);
+    }
+
+    /** Monta a seção de oferta, prova e produto testado. */
+    private ExperimentConstructionSectionDto buildOfferProofSection(Experiment experiment, Hypothesis hypothesis) {
+        List<ExperimentConstructionItemDto> items = new ArrayList<>();
+        add(items, "Promessa", firstText(experiment.getFunnelPromise(), hypothesis != null ? hypothesis.getPromise() : null));
+        add(items, "Prova ou regra de sucesso", hypothesis != null ? hypothesis.getSuccessRule() : null);
         add(items, "Recompensa/isca", firstText(experiment.getFreeReward(), hypothesis != null ? hypothesis.getEntrega() : null));
         add(items, "CTA principal", experiment.getPrimaryCta());
         add(items, "Tipo de experimento", enumText(experiment.getExperimentType()));
@@ -96,25 +108,35 @@ public class ExperimentConstructionService {
         add(items, "Preço de teste", experiment.getUnitPrice() != null ? "R$ " + experiment.getUnitPrice() : null);
         add(items, "Oferta da hipótese", hypothesis != null ? enumText(hypothesis.getOfferType()) : null);
         return new ExperimentConstructionSectionDto(
-                "Oferta e produto testado",
-                "Mostra o que foi prometido ao lead e qual ação comercial o teste quer provocar.",
+                "4. Oferta e prova",
+                "Transforma dor e mecanismo em promessa, prova, isca, produto, preço e CTA coerentes.",
                 items);
     }
 
-    /** Monta a seção de campanha, métrica e critérios de validação. */
-    private ExperimentConstructionSectionDto buildCampaignSection(Experiment experiment) {
+    /** Monta a seção de materialização do experimento e dos entregáveis FEO. */
+    private ExperimentConstructionSectionDto buildExperimentFeoSection(Experiment experiment) {
         List<ExperimentConstructionItemDto> items = new ArrayList<>();
         add(items, "Canal/plataforma", enumText(experiment.getPlatform()));
         add(items, "Objetivo de campanha", enumText(experiment.getCampaignObjective()));
+        add(items, "Ângulos criativos", experiment.getCreativeTextPrompt());
+        add(items, "Entregáveis FEO", statusText(experiment.getLandingPageDeliverables()));
+        return new ExperimentConstructionSectionDto(
+                "5. Experimento e FEO",
+                "Materializa criativos, landing e entregáveis depois que a tese comercial estiver clara.",
+                items);
+    }
+
+    /** Monta a seção de campanha, métrica e critérios de validação do funil. */
+    private ExperimentConstructionSectionDto buildFunnelSection(Experiment experiment) {
+        List<ExperimentConstructionItemDto> items = new ArrayList<>();
         add(items, "Orçamento diário", experiment.getDailyBudget() != null ? "R$ " + experiment.getDailyBudget() : null);
         add(items, "CPL alvo", experiment.getKpiTargetCpl() != null ? "R$ " + experiment.getKpiTargetCpl() : null);
         add(items, "Tamanho de amostra", experiment.getSampleSize() != null ? String.valueOf(experiment.getSampleSize()) : null);
         add(items, "Variável principal", experiment.getPrimaryVariable());
         add(items, "Métrica principal", experiment.getPrimaryMetric());
-        add(items, "Ângulos criativos", experiment.getCreativeTextPrompt());
         return new ExperimentConstructionSectionDto(
-                "Plano de validação",
-                "Explica como a aposta deve ser testada em mídia e quais sinais importam.",
+                "6. Funil mede venda",
+                "Mostra como o experimento deve produzir evidência de lead, intenção de compra, custo e aprendizado.",
                 items);
     }
 

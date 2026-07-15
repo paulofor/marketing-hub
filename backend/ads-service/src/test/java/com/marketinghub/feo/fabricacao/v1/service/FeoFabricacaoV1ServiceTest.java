@@ -70,9 +70,14 @@ class FeoFabricacaoV1ServiceTest {
                 ArgumentCaptor.forClass(FeoFabricacaoV1StageExecution.class);
         verify(executionRepository).save(captor.capture());
         assertThat(captor.getValue().getInputPayload())
-                .contains("Método MUSA")
-                .contains("Checklist elegante")
-                .contains("Arquitetura de Presença Elegante Acessível");
+                .contains("Método MUSA - Presença Elegante em 7 Dias")
+                .contains("Diagnóstico de presença elegante acessível")
+                .contains("Plano guiado de 7 dias")
+                .contains("Arquitetura de Presença Elegante Acessível")
+                .doesNotContain("FEO #")
+                .doesNotContain("CTR")
+                .doesNotContain("CPL")
+                .doesNotContain("pré-venda");
     }
 
     /** Deve marcar pending como running e entregar o contrato esperado pelo worker FEO. */
@@ -256,7 +261,7 @@ class FeoFabricacaoV1ServiceTest {
 
         ArgumentCaptor<DeliverablePackage> packageCaptor = ArgumentCaptor.forClass(DeliverablePackage.class);
         verify(deliverablePackageRepository).save(packageCaptor.capture());
-        assertThat(packageCaptor.getValue().getName()).isEqualTo("Pacote Final MUSA");
+        assertThat(packageCaptor.getValue().getName()).isEqualTo("Pacote Final MUSA - pacote 8");
         assertThat(packageCaptor.getValue().getDeliverables()).hasSize(1);
     }
 

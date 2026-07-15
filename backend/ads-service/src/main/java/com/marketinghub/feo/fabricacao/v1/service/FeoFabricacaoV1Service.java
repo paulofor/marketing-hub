@@ -164,6 +164,7 @@ public class FeoFabricacaoV1Service {
     private Map<String, Object> buildFabricationContext(Experiment experiment) {
         Hypothesis hypothesis = experiment.getHypothesisRef();
         DeliverablePackage latestPackage = latestPackage(experiment.getId());
+        boolean musaContext = isMusaContext(experiment, latestPackage, hypothesis);
         List<String> deliverables = latestPackage != null
                 ? latestPackage.getDeliverables().stream().map(Deliverable::getTitle).toList()
                 : fallbackDeliverables(hypothesis);
@@ -171,17 +172,114 @@ public class FeoFabricacaoV1Service {
         Map<String, Object> context = new LinkedHashMap<>();
         context.put("requestId", "experiment-" + experiment.getId());
         context.put("experimentId", String.valueOf(experiment.getId()));
-        context.put("offerName", latestPackage != null ? latestPackage.getName() : experiment.getName());
+        context.put("offerName", publicOfferName(experiment, latestPackage));
         context.put("niche", experiment.getNiche() != null ? experiment.getNiche().getName() : null);
-        context.put("centralPromise", firstText(experiment.getFunnelPromise(), hypothesis != null ? hypothesis.getPromise() : null, experiment.getHypothesis()));
-        context.put("promisedResult", firstText(experiment.getFreeReward(), experiment.getSinglePain(), hypothesis != null ? hypothesis.getEntrega() : null));
-        context.put("coreMechanism", firstText(hypothesis != null ? hypothesis.getUniqueMechanism() : null, hypothesis != null ? hypothesis.getMechanism() : null));
-        context.put("proofSummary", firstText(experiment.getLandingPageQualityReview(), hypothesis != null ? hypothesis.getSuccessRule() : null));
-        context.put("deliverables", deliverables);
+        context.put("centralPromise", publicPromise(experiment, latestPackage, hypothesis));
+        context.put("promisedResult", publicResult(experiment, latestPackage, hypothesis));
+        context.put("coreMechanism", publicMechanism(experiment, latestPackage, hypothesis));
+        context.put("proofSummary", publicProofSummary(experiment, hypothesis, musaContext));
+        context.put("deliverables", publicDeliverables(deliverables, musaContext));
         context.put("validationSignals", List.of(
-                "Gate atual permite definição de oferta e fabricação de entregáveis.",
-                "FEO não libera tráfego nem altera promessa comercial validada."));
+                "Produto pronto para revisão editorial de entrega.",
+                "Pacote gerado para orientar aplicação prática da cliente."));
         return context;
+    }
+
+    /** Define nome público do produto sem rótulos internos de pacote ou FEO. */
+    private String publicOfferName(Experiment experiment, DeliverablePackage latestPackage) {
+        String source = latestPackage != null ? latestPackage.getName() : experiment.getName();
+        if (containsMusa(source) || containsMusa(experiment.getHypothesis())) {
+            return "Método MUSA - Presença Elegante em 7 Dias";
+        }
+        return cleanPublicText(source);
+    }
+
+    /** Define promessa pública que pode aparecer para a compradora. */
+    private String publicPromise(Experiment experiment, DeliverablePackage latestPackage, Hypothesis hypothesis) {
+        String source = firstText(experiment.getFunnelPromise(), experiment.getHypothesis(), hypothesis != null ? hypothesis.getPromise() : null);
+        if (containsMusa(source) || containsMusa(latestPackage != null ? latestPackage.getName() : null)) {
+            return "Monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformação radical.";
+        }
+        return cleanPublicText(source);
+    }
+
+    /** Define resultado público esperado para orientar o conteúdo final. */
+    private String publicResult(Experiment experiment, DeliverablePackage latestPackage, Hypothesis hypothesis) {
+        String source = firstText(experiment.getFreeReward(), experiment.getSinglePain(), hypothesis != null ? hypothesis.getEntrega() : null);
+        if (containsMusa(source) || containsMusa(latestPackage != null ? latestPackage.getName() : null)) {
+            return "Sair com diagnóstico, plano de 7 dias, checklists e templates para aplicar microajustes de presença elegante no dia a dia.";
+        }
+        return cleanPublicText(source);
+    }
+
+    /** Define mecanismo em linguagem de cliente, sem expor validação interna. */
+    private String publicMechanism(Experiment experiment, DeliverablePackage latestPackage, Hypothesis hypothesis) {
+        String source = firstText(hypothesis != null ? hypothesis.getUniqueMechanism() : null, hypothesis != null ? hypothesis.getMechanism() : null);
+        if (containsMusa(source) || containsMusa(latestPackage != null ? latestPackage.getName() : null)) {
+            return "Arquitetura de Presença Elegante Acessível: diagnóstico de ruído visual, microajustes coordenados e escolhas conscientes com o que a cliente já tem.";
+        }
+        return cleanPublicText(source);
+    }
+
+    /** Identifica contexto comercial MUSA mesmo quando o texto veio de nome técnico. */
+    private boolean containsMusa(String value) {
+        return value != null && value.toLowerCase(java.util.Locale.ROOT).contains("musa");
+    }
+
+    /** Identifica se o contexto deve usar o contrato publico curado do produto MUSA. */
+    private boolean isMusaContext(Experiment experiment, DeliverablePackage latestPackage, Hypothesis hypothesis) {
+        return containsMusa(latestPackage != null ? latestPackage.getName() : null)
+                || containsMusa(experiment.getName())
+                || containsMusa(experiment.getHypothesis())
+                || containsMusa(hypothesis != null ? hypothesis.getPromise() : null)
+                || containsMusa(hypothesis != null ? hypothesis.getEntrega() : null);
+    }
+
+    /** Define prova em linguagem publica sem metricas ou termos de campanha. */
+    private String publicProofSummary(Experiment experiment, Hypothesis hypothesis, boolean musaContext) {
+        if (musaContext) {
+            return "Produto estruturado para transformar decisões abstratas de aparência em diagnóstico, microações de 7 dias, checklists e evidências simples de evolução.";
+        }
+        return cleanPublicText(firstText(
+                experiment.getLandingPageQualityReview(),
+                hypothesis != null ? hypothesis.getSuccessRule() : null));
+    }
+
+    /** Define entregaveis publicos sem reaproveitar títulos internos de campanhas antigas. */
+    private List<String> publicDeliverables(List<String> deliverables, boolean musaContext) {
+        if (musaContext) {
+            return List.of(
+                    "Diagnóstico de presença elegante acessível",
+                    "Plano guiado de 7 dias",
+                    "Checklist de cabelo, pele, roupa, perfume e ocasião",
+                    "Templates de decisão de compra consciente",
+                    "Painel simples de progresso e próxima ação");
+        }
+        return deliverables.stream()
+                .map(this::cleanPublicText)
+                .filter(StringUtils::hasText)
+                .toList();
+    }
+
+    /** Remove marcadores internos de fabricação de textos enviados ao worker FEO. */
+    private String cleanPublicText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim()
+                .replaceAll("(?i)^pacote\\s+final\\s*-\\s*", "")
+                .replaceAll("(?i)\\s*-\\s*FEO\\s*#?\\d+\\s*$", "")
+                .replaceAll("(?i)\\bFEO\\b\\s*#?\\d*", "")
+                .replaceAll("(?i)\\bpromessa\\s+validada\\b", "promessa do produto")
+                .replaceAll("(?i)\\bmecanismo\\s+validado\\b", "método do produto")
+                .replaceAll("(?i)\\bCTR\\b", "interesse inicial")
+                .replaceAll("(?i)\\bCPL\\b", "custo de aquisição")
+                .replaceAll("(?i)\\bpré-venda\\b", "apresentação do produto")
+                .replaceAll("(?i)\\bpre-venda\\b", "apresentação do produto")
+                .replaceAll("(?i)\\bcheckout\\b", "página de compra")
+                .replaceAll("(?i)\\btráfego\\b", "divulgação")
+                .replaceAll("(?i)\\btrafego\\b", "divulgação")
+                .trim();
     }
 
     /** Busca o pacote mais recente vinculado ao experimento. */
@@ -266,7 +364,9 @@ public class FeoFabricacaoV1Service {
         }
         Map<String, Object> output = objectMapper.convertValue(request.output(), MAP_TYPE);
         Map<String, Object> manifest = objectMapper.convertValue(output.get("manifest"), MAP_TYPE);
-        String packageTitle = stringValue(manifest.get("packageTitle"), "Pacote Cliente - Experimento " + execution.getExperiment().getId());
+        String packageTitle = packageTitleForPersistence(
+                stringValue(manifest.get("packageTitle"), "Pacote Cliente - Experimento " + execution.getExperiment().getId()),
+                execution);
         List<Map<String, Object>> items = objectMapper.convertValue(manifest.get("items"), ARTIFACT_LIST_TYPE);
         LinkedHashSet<Deliverable> deliverables = new LinkedHashSet<>();
         for (Map<String, Object> item : items) {
@@ -288,6 +388,11 @@ public class FeoFabricacaoV1Service {
                 .prompt("Pacote final materializado para entrega ao comprador.")
                 .deliverables(deliverables)
                 .build());
+    }
+
+    /** Gera nome persistido unico para permitir refabricacoes do mesmo pacote final. */
+    private String packageTitleForPersistence(String packageTitle, FeoFabricacaoV1StageExecution execution) {
+        return packageTitle + " - pacote " + execution.getId();
     }
 
     /** Localiza execução pelo id e etapa informada no callback. */

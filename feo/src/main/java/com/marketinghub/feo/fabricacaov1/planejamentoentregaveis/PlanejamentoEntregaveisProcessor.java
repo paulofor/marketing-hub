@@ -13,7 +13,6 @@ import com.marketinghub.feo.fabricacaov1.pipeline.StageResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
@@ -113,7 +112,6 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
             int index = specs.size() + 1;
             specs.add(specFor(input, component, index));
         }
-        appendOriginalDeliverables(input, specs);
         return specs;
     }
 
@@ -134,30 +132,6 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
     }
 
     /**
-     * Inclui entregaveis originais como anexos quando ainda nao foram cobertos pelo kit.
-     */
-    private void appendOriginalDeliverables(FabricationContext input, List<DeliverableSpec> specs) {
-        Set<String> plannedTitles = specs.stream()
-                .map(spec -> normalize(spec.title()))
-                .collect(java.util.stream.Collectors.toSet());
-        for (String deliverable : input.deliverables()) {
-            if (isBlank(deliverable) || plannedTitles.contains(normalize(deliverable))) {
-                continue;
-            }
-            int index = specs.size() + 1;
-            specs.add(new DeliverableSpec(
-                    "ANX-" + String.format("%02d", index),
-                    deliverable.trim(),
-                    "MATERIAL_COMPLEMENTAR",
-                    inferFormat(deliverable),
-                    "Material complementar que aprofunda o kit sem substituir o plano principal.",
-                    String.valueOf(index),
-                    qualityCriteriaFor("MATERIAL_COMPLEMENTAR", input),
-                    sectionsFor("MATERIAL_COMPLEMENTAR")));
-        }
-    }
-
-    /**
      * Define titulo comercial para cada componente obrigatorio do produto.
      */
     private String titleFor(String componentType, FabricationContext input) {
@@ -171,7 +145,7 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
             case "TEMPLATES_PRONTOS" -> "Templates prontos para preencher e usar";
             case "EXEMPLO_PREENCHIDO" -> "Exemplo preenchido do resultado esperado";
             case "PROVA_TANGIVEL" -> "Preview tangivel do antes e depois";
-            case "BIBLIOTECA_APOIO" -> "Biblioteca de apoio - e-book, imagens e templates";
+            case "BIBLIOTECA_APOIO" -> "Biblioteca de apoio - e-book, checklists e templates";
             case "RITUAL_ACOMPANHAMENTO" -> "Ritual de acompanhamento e checkpoints";
             case "BONUS_ANTI_OBJECAO" -> "Bonus anti-objecao para remover friccao";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Guia de primeiros resultados percebidos";
@@ -194,20 +168,6 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
     }
 
     /**
-     * Infere o formato final mais apropriado pelo nome do entregavel original.
-     */
-    private String inferFormat(String deliverable) {
-        String lower = deliverable.toLowerCase();
-        if (lower.contains("planilha") || lower.contains("calculadora") || lower.contains("mapa")) {
-            return "CSV_PLANILHA";
-        }
-        if (lower.contains("checklist") || lower.contains("roteiro") || lower.contains("guia") || lower.contains("plano")) {
-            return "PDF";
-        }
-        return "HTML_PDF";
-    }
-
-    /**
      * Define o papel comercial de cada componente no produto final.
      */
     private String roleFor(String componentType, FabricationContext input) {
@@ -221,11 +181,11 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
             case "TEMPLATES_PRONTOS" -> "Transforma a promessa em material copiavel, editavel e imediatamente aplicavel.";
             case "EXEMPLO_PREENCHIDO" -> "Mostra como o resultado deve parecer quando o comprador aplicar corretamente.";
             case "PROVA_TANGIVEL" -> "Materializa visualmente a transformacao prometida e aumenta confianca de uso.";
-            case "BIBLIOTECA_APOIO" -> "Reúne e-book, imagens, checklists e templates como apoio à experiência principal.";
+            case "BIBLIOTECA_APOIO" -> "Reúne e-book, checklists e templates como apoio à experiência principal.";
             case "RITUAL_ACOMPANHAMENTO" -> "Cria sensacao de suporte, ritmo e continuidade sem depender de atendimento manual.";
             case "BONUS_ANTI_OBJECAO" -> "Remove a objecao mais provavel antes de ela impedir a aplicacao.";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Ajuda o comprador a reconhecer progresso e valor percebido rapidamente.";
-            default -> "Aumenta profundidade percebida sem alterar a promessa validada.";
+            default -> "Aumenta profundidade percebida sem criar uma promessa nova.";
         };
     }
 
@@ -234,7 +194,7 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
      */
     private List<String> qualityCriteriaFor(String componentType, FabricationContext input) {
         return List.of(
-                "Preserva a promessa validada: " + input.centralPromise(),
+                "Mantem a promessa publica do produto: " + input.centralPromise(),
                 "Reduz esforco de aplicacao do comprador",
                 "Entrega material pronto para usar, preencher ou revisar",
                 "Inclui prova, exemplo ou criterio visivel de progresso",
@@ -254,16 +214,9 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
             case "PROVA_TANGIVEL" -> List.of("Estado antes", "Estado depois", "Miniresultado", "Sinais de progresso", "Limites da prova");
             case "RITUAL_ACOMPANHAMENTO" -> List.of("Ritmo diario", "Checkpoint", "Lembrete", "Revisao", "Continuidade");
             case "BONUS_ANTI_OBJECAO" -> List.of("Objecao", "Resposta operacional", "Atalho", "FAQ", "Proxima acao");
-            case "BIBLIOTECA_APOIO" -> List.of("E-book", "Checklists", "Templates", "Imagens", "Como consultar sem travar");
+            case "BIBLIOTECA_APOIO" -> List.of("E-book", "Checklists", "Templates", "Exemplos", "Como consultar sem travar");
             default -> List.of("Objetivo", "Quando usar", "Passo a passo", "Modelo preenchivel", "Criterio de conclusao");
         };
-    }
-
-    /**
-     * Normaliza texto para comparar entregaveis sem sensibilidade a caixa.
-     */
-    private String normalize(String value) {
-        return value == null ? "" : value.trim().toLowerCase();
     }
 
     /**

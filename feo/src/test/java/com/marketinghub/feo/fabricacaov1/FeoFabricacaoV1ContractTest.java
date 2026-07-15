@@ -22,6 +22,7 @@ import com.marketinghub.feo.fabricacaov1.pipeline.StageResult;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageStatus;
 import com.marketinghub.feo.fabricacaov1.planejamentoentregaveis.PlanejamentoEntregaveisProcessor;
 import com.marketinghub.feo.fabricacaov1.redacaoentregaveis.RedacaoEntregaveisProcessor;
+import com.marketinghub.feo.infrastructure.config.FeoProperties;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +95,7 @@ class FeoFabricacaoV1ContractTest {
         assertThat(contentPackage.qualityScore()).isGreaterThanOrEqualTo(80);
         assertThat(contentPackage.visualAssets()).hasSizeGreaterThanOrEqualTo(4);
         assertThat(contentPackage.reviewerNotes().getFirst()).contains("método", "plano", "materiais prontos");
-        assertThat(contentPackage.reviewerNotes()).anyMatch(note -> note.contains("MDS"));
+        assertThat(contentPackage.reviewerNotes()).anyMatch(note -> note.contains("pesquisa"));
         assertThat(contentPackage.deliverables().getFirst().sections()).hasSizeGreaterThanOrEqualTo(4);
         assertThat(contentPackage.deliverables().getFirst().appliedPrinciple()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().readyToUseAsset()).isNotBlank();
@@ -111,7 +112,10 @@ class FeoFabricacaoV1ContractTest {
     @Test
     void geracaoVisualDeveGerarCapaInfograficosEFiguras() {
         PackageAssemblyInput input = redacaoCompleta();
-        GeracaoAtivosVisuaisProcessor processor = new GeracaoAtivosVisuaisProcessor(new FakeVisualAssetGenerator(), new ObjectMapper());
+        GeracaoAtivosVisuaisProcessor processor = new GeracaoAtivosVisuaisProcessor(
+                new FakeVisualAssetGenerator(),
+                new ObjectMapper(),
+                feoProperties(true));
 
         StageResult<PackageAssemblyInput> result = processor.process(new StageContext<>(
                 new StageExecution<>("job-1", "exec-3", StageCode.GERACAO_ATIVOS_VISUAIS, input, Map.of()),
@@ -126,11 +130,36 @@ class FeoFabricacaoV1ContractTest {
     }
 
     /**
+     * Confirma que imagens externas desabilitadas nao bloqueiam a montagem do pacote final.
+     */
+    @Test
+    void geracaoVisualDesabilitadaDevePermitirMontagemSemImagens() {
+        PackageAssemblyInput input = redacaoCompleta();
+        GeracaoAtivosVisuaisProcessor processor = new GeracaoAtivosVisuaisProcessor(
+                new FakeVisualAssetGenerator(),
+                new ObjectMapper(),
+                feoProperties(false));
+
+        StageResult<PackageAssemblyInput> result = processor.process(new StageContext<>(
+                new StageExecution<>("job-1", "exec-3", StageCode.GERACAO_ATIVOS_VISUAIS, input, Map.of()),
+                input,
+                new InMemoryArtifactStore()));
+
+        assertThat(result.status()).isEqualTo(StageStatus.COMPLETED);
+        assertThat(result.nextStageCode()).isEqualTo(StageCode.MONTAGEM_PACOTE);
+        assertThat(result.output().visualAssets()).isEmpty();
+        assertThat(result.metrics()).containsEntry("qualityGate", "VISUAL_ASSETS_OPTIONAL_SKIPPED");
+    }
+
+    /**
      * Confirma que a montagem gera experiência guiada, PDF, planilha CSV e ZIP com conteúdo de produto final.
      */
     @Test
     void montagemDeveGerarPdfPlanilhaEZip() throws java.io.IOException {
-        PackageAssemblyInput input = new GeracaoAtivosVisuaisProcessor(new FakeVisualAssetGenerator(), new ObjectMapper())
+        PackageAssemblyInput input = new GeracaoAtivosVisuaisProcessor(
+                        new FakeVisualAssetGenerator(),
+                        new ObjectMapper(),
+                        feoProperties(true))
                 .process(new StageContext<>(
                         new StageExecution<>("job-1", "exec-3", StageCode.GERACAO_ATIVOS_VISUAIS, redacaoCompleta(), Map.of()),
                         redacaoCompleta(),
@@ -156,7 +185,8 @@ class FeoFabricacaoV1ContractTest {
                 .contains("02-ebook-principal.pdf")
                 .contains("03-plano-checklists-e-templates.csv")
                 .doesNotContain("Score FEO")
-                .doesNotContain("Fabricado pela FEO");
+                .doesNotContain("Fabricado pela FEO")
+                .doesNotContain("MDS");
         assertThat(new String(result.output().spreadsheet().content(), java.nio.charset.StandardCharsets.UTF_8))
                 .contains("primeira_vitoria")
                 .contains("material_pronto")
@@ -167,8 +197,26 @@ class FeoFabricacaoV1ContractTest {
         assertThat(zipEntries(result.output().zipPackage().content()))
                 .anyMatch(name -> name.startsWith("imagens/vis-"))
                 .contains("01-experiencia-guiada/index.html", "02-ebook-principal.pdf", "03-plano-checklists-e-templates.csv", "README.txt")
-                .doesNotContain("00-fonte-editorial-interna.html", "manifesto.txt", "relatorio-fabricacao.txt");
+                .doesNotContain("00-fonte-editorial-interna.html", "manifesto.txt", "relatorio-fabricacao.txt")
+                .noneMatch(name -> name.startsWith("entregaveis/"));
         assertThat(result.artifacts()).extracting("type").contains("FINAL_EXPERIENCE_SITE", "FINAL_PDF", "FINAL_SPREADSHEET", "FINAL_ZIP");
+    }
+
+    /**
+     * Monta configuracao de teste com geracao visual controlada.
+     */
+    private FeoProperties feoProperties(boolean visualAssetsEnabled) {
+        return new FeoProperties(
+                "feo-test",
+                "http://backend",
+                1,
+                "/tmp/feo",
+                "https://api.openai.com",
+                "test-key",
+                "",
+                "fake-image-model",
+                "low",
+                visualAssetsEnabled);
     }
 
     /**

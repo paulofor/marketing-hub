@@ -45,6 +45,7 @@ public class OpenAiVisualAssetGenerator implements VisualAssetGenerator {
         if (!properties.hasOpenAiApiKey()) {
             throw new IllegalStateException("OPENAI_API_KEY não configurada para gerar imagens FEO");
         }
+        String openAiApiKey = properties.resolvedOpenAiApiKey();
         Map<String, Object> request = Map.of(
                 "model", properties.imageModel(),
                 "prompt", spec.prompt(),
@@ -54,7 +55,7 @@ public class OpenAiVisualAssetGenerator implements VisualAssetGenerator {
                 "n", 1);
         OpenAiImageResponse response = openAiWebClient.post()
                 .uri("/v1/images/generations")
-                .headers(headers -> headers.setBearerAuth(properties.openaiApiKey()))
+                .headers(headers -> headers.setBearerAuth(openAiApiKey))
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(OpenAiImageResponse.class)

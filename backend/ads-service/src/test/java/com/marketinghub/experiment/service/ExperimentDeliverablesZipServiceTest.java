@@ -15,6 +15,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.feo.fabricacao.v1.FeoFabricacaoV1StageExecutionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.LinkedHashSet;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: validar a montagem do ZIP de entregáveis do experimento. */
@@ -108,6 +110,67 @@ class ExperimentDeliverablesZipServiceTest {
         assertThat(entries.get("feo/01-pacote-final-html.html")).contains("Premium FEO");
     }
 
+    /** Deve devolver diretamente o ZIP público final da FEO quando existir artefato FINAL_ZIP. */
+    @Test
+    void generateShouldReturnFinalFeoZipWhenAvailable() throws Exception {
+        ExperimentRepository experimentRepository = org.mockito.Mockito.mock(ExperimentRepository.class);
+        DeliverableRepository deliverableRepository = org.mockito.Mockito.mock(DeliverableRepository.class);
+        DeliverablePackageRepository packageRepository = org.mockito.Mockito.mock(DeliverablePackageRepository.class);
+        FeoFabricacaoV1StageExecutionRepository feoRepository =
+                org.mockito.Mockito.mock(FeoFabricacaoV1StageExecutionRepository.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ExperimentDeliverablesZipService service = new ExperimentDeliverablesZipService(
+                experimentRepository,
+                deliverableRepository,
+                packageRepository,
+                feoRepository,
+                objectMapper);
+
+        Experiment experiment = Experiment.builder()
+                .id(66L)
+                .name("MUSA-H001-E004")
+                .niche(MarketNiche.builder().id(10L).name("Mulheres urbanas").build())
+                .build();
+        byte[] publicZip = zipWith(Map.of(
+                "01-experiencia-guiada/index.html",
+                "<html>Experiência guiada Método MUSA</html>",
+                "02-ebook-principal.pdf",
+                "%PDF fake",
+                "03-plano-checklists-e-templates.csv",
+                "dia,acao",
+                "README.txt",
+                "Comece pela experiência guiada"));
+        FeoFabricacaoV1StageExecution feoExecution = FeoFabricacaoV1StageExecution.builder()
+                .id(23L)
+                .experiment(experiment)
+                .stageCode("montagem-pacote")
+                .status(FeoFabricacaoV1StageStatus.COMPLETED)
+                .artifactsPayload(objectMapper.writeValueAsString(List.of(Map.of(
+                        "type",
+                        "FINAL_ZIP",
+                        "name",
+                        "00-metodo-musa-produto-digital-experiencial.zip",
+                        "content",
+                        Base64.getEncoder().encodeToString(publicZip)))))
+                .build();
+
+        when(experimentRepository.findById(66L)).thenReturn(Optional.of(experiment));
+        when(feoRepository.findFirstByExperimentIdAndStageCodeAndStatusOrderByFinishedAtDesc(
+                        66L,
+                        "montagem-pacote",
+                        FeoFabricacaoV1StageStatus.COMPLETED))
+                .thenReturn(Optional.of(feoExecution));
+
+        java.util.Map<String, String> entries = readZip(service.generate(66L));
+
+        assertThat(entries.keySet())
+                .contains("01-experiencia-guiada/index.html", "02-ebook-principal.pdf", "03-plano-checklists-e-templates.csv", "README.txt")
+                .noneMatch(name -> name.startsWith("entregaveis/"))
+                .noneMatch(name -> name.startsWith("pacotes/"))
+                .noneMatch(name -> name.startsWith("feo/"));
+        assertThat(entries.get("01-experiencia-guiada/index.html")).contains("Método MUSA");
+    }
+
     /** Lê o ZIP gerado em memória para facilitar asserções de conteúdo. */
     private java.util.Map<String, String> readZip(byte[] zip) throws Exception {
         java.util.Map<String, String> entries = new java.util.LinkedHashMap<>();
@@ -118,5 +181,18 @@ class ExperimentDeliverablesZipServiceTest {
             }
         }
         return entries;
+    }
+
+    /** Monta um ZIP simples para validar o retorno direto do pacote final. */
+    private byte[] zipWith(Map<String, String> entries) throws Exception {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(bytes, StandardCharsets.UTF_8)) {
+            for (Map.Entry<String, String> entry : entries.entrySet()) {
+                zip.putNextEntry(new java.util.zip.ZipEntry(entry.getKey()));
+                zip.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
+                zip.closeEntry();
+            }
+        }
+        return bytes.toByteArray();
     }
 }

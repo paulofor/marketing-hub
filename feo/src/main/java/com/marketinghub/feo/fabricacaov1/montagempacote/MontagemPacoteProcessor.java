@@ -11,6 +11,7 @@ import com.marketinghub.feo.fabricacaov1.pipeline.StageCode;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageContext;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageProcessor;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageResult;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,23 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyInput, PackageAssemblyOutput> {
+
+    private static final List<String> PROHIBITED_CLIENT_TERMS = List.of(
+            "ctr",
+            "cpl",
+            "pré-venda",
+            "pre-venda",
+            "score feo",
+            "fabricado pela feo",
+            "promessa validada",
+            "mecanismo validado",
+            "experimento",
+            "tráfego",
+            "trafego",
+            "checkout",
+            "sha256",
+            "json",
+            "ready_for_premium_review");
 
     private final PackageAssetAssembler assembler;
 
@@ -39,7 +57,7 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
     }
 
     /**
-     * Gera HTML, PDF, planilha CSV, manifesto e ZIP do produto final.
+     * Gera experiencia guiada, PDF, planilha CSV, manifesto e ZIP do produto final.
      */
     @Override
     public StageResult<PackageAssemblyOutput> process(StageContext<PackageAssemblyInput> context) {
@@ -47,9 +65,15 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
         if (input.contentPackage() == null || input.contentPackage().deliverables().isEmpty()) {
             return StageResult.blocked("Montagem FEO sem conteúdos finais redigidos.", List.of());
         }
+        List<String> prohibitedTerms = prohibitedTerms(input);
+        if (!prohibitedTerms.isEmpty()) {
+            return StageResult.blocked(
+                    "Pacote da cliente contém termos técnicos proibidos: " + String.join(", ", prohibitedTerms),
+                    List.of());
+        }
         PackageAssemblyOutput output = assembler.assemble(input);
         List<StageArtifact> artifacts = List.of(
-                toArtifact(context, "FINAL_HTML", output.html()),
+                toArtifact(context, "FINAL_EXPERIENCE_SITE", output.experienceSite()),
                 toArtifact(context, "FINAL_PDF", output.pdf()),
                 toArtifact(context, "FINAL_SPREADSHEET", output.spreadsheet()),
                 toArtifact(context, "FINAL_ZIP", output.zipPackage()));
@@ -66,5 +90,19 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
      */
     private StageArtifact toArtifact(StageContext<PackageAssemblyInput> context, String type, DigitalAssetFinal asset) {
         return context.artifactStore().store(type, asset.name(), asset.contentType(), asset.content());
+    }
+
+    /**
+     * Varre conteúdo público para impedir vazamento de auditoria técnica para a compradora.
+     */
+    private List<String> prohibitedTerms(PackageAssemblyInput input) {
+        String text = input.contentPackage().deliverables().toString().toLowerCase();
+        List<String> found = new ArrayList<>();
+        for (String term : PROHIBITED_CLIENT_TERMS) {
+            if (text.contains(term)) {
+                found.add(term);
+            }
+        }
+        return found;
     }
 }

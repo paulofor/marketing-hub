@@ -16,3 +16,7 @@ feo:
   backend-base-url: ${FEO_BACKEND_BASE_URL:http://191.252.181.168}
   pending-limit: ${FEO_PENDING_LIMIT:1}
   output-dir: ${FEO_OUTPUT_DIR:/tmp/feo}
+  openai-base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+  openai-api-key: ${OPENAI_API_KEY:}
+  image-model: ${FEO_IMAGE_MODEL:gpt-image-2}
+  image-quality: ${FEO_IMAGE_QUALITY:high}

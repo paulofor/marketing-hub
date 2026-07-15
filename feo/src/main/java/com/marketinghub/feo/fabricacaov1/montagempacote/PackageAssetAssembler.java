@@ -10,6 +10,7 @@ import com.marketinghub.feo.fabricacaov1.contract.ManifestItem;
 import com.marketinghub.feo.fabricacaov1.contract.OfferDeliveryManifest;
 import com.marketinghub.feo.fabricacaov1.contract.PackageAssemblyInput;
 import com.marketinghub.feo.fabricacaov1.contract.PackageAssemblyOutput;
+import com.marketinghub.feo.fabricacaov1.contract.VisualAsset;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -38,18 +40,18 @@ public class PackageAssetAssembler {
      * Converte plano aprovado em pacote final de entrega.
      */
     public PackageAssemblyOutput assemble(PackageAssemblyInput input) {
-        String html = buildHtml(input);
-        byte[] htmlBytes = html.getBytes(StandardCharsets.UTF_8);
-        byte[] pdfBytes = renderPdf(html);
+        String ebookHtml = buildHtml(input);
+        byte[] pdfBytes = renderPdf(ebookHtml);
+        byte[] experienceBytes = buildExperienceSite(input).getBytes(StandardCharsets.UTF_8);
         byte[] spreadsheetBytes = buildSpreadsheet(input).getBytes(StandardCharsets.UTF_8);
-        DigitalAssetFinal htmlAsset = asset("01-pacote-final.html", "text/html; charset=UTF-8", htmlBytes);
-        DigitalAssetFinal pdfAsset = asset("02-pacote-final.pdf", "application/pdf", pdfBytes);
-        DigitalAssetFinal spreadsheetAsset = asset("03-manifesto-entregaveis.csv", "text/csv; charset=UTF-8", spreadsheetBytes);
-        OfferDeliveryManifest manifest = manifest(input, List.of(htmlAsset, pdfAsset, spreadsheetAsset));
+        DigitalAssetFinal experienceAsset = asset("01-experiencia-guiada/index.html", "text/html; charset=UTF-8", experienceBytes);
+        DigitalAssetFinal pdfAsset = asset("02-ebook-principal.pdf", "application/pdf", pdfBytes);
+        DigitalAssetFinal spreadsheetAsset = asset("03-plano-checklists-e-templates.csv", "text/csv; charset=UTF-8", spreadsheetBytes);
+        OfferDeliveryManifest manifest = manifest(input, List.of(experienceAsset, pdfAsset, spreadsheetAsset));
         FabricationReport report = report(input, manifest);
-        byte[] zipBytes = buildZip(input, htmlAsset, pdfAsset, spreadsheetAsset, manifest, report);
-        DigitalAssetFinal zipAsset = asset("00-pacote-entregaveis-feo.zip", "application/zip", zipBytes);
-        return new PackageAssemblyOutput(manifest, report, htmlAsset, pdfAsset, spreadsheetAsset, zipAsset);
+        byte[] zipBytes = buildZip(input, experienceAsset, pdfAsset, spreadsheetAsset, manifest, report);
+        DigitalAssetFinal zipAsset = asset("00-metodo-musa-produto-digital-experiencial.zip", "application/zip", zipBytes);
+        return new PackageAssemblyOutput(manifest, report, experienceAsset, pdfAsset, spreadsheetAsset, zipAsset);
     }
 
     /**
@@ -66,7 +68,9 @@ public class PackageAssetAssembler {
                 </title>
                   <style>
                     body { font-family: Arial, sans-serif; color: #17202a; margin: 36px; line-height: 1.55; }
-                    .cover { border-bottom: 5px solid #138a72; padding-bottom: 24px; margin-bottom: 28px; }
+                    .cover { border-bottom: 5px solid #138a72; padding-bottom: 24px; margin-bottom: 28px; page-break-after: always; }
+                    .cover-image { width: 100%; max-height: 860px; margin-bottom: 22px; }
+                    .visual { width: 100%; max-height: 720px; border: 1px solid #d5dfdc; margin: 14px 0; }
                     h1 { font-size: 32px; margin: 0 0 12px; color: #123b3a; }
                     h2 { color: #123b3a; margin-top: 30px; border-bottom: 1px solid #d5dfdc; padding-bottom: 6px; }
                     h3 { margin-bottom: 8px; color: #1d5f58; }
@@ -83,37 +87,55 @@ public class PackageAssetAssembler {
                 </head>
                 <body>
                 <section class="cover">
-                  <p class="pill">Produto digital final</p>
-                  <p class="pill">Fabricado pela FEO v1</p>
+                """);
+        VisualAsset cover = visualByType(input, "EBOOK_COVER");
+        if (cover != null) {
+            html.append("<img class=\"cover-image\" src=\"")
+                    .append(dataUri(cover))
+                    .append("\" alt=\"")
+                    .append(escape(cover.title()))
+                    .append("\" />");
+        }
+        html.append("""
+                  <p class="pill">E-book prático</p>
+                  <p class="pill">Plano guiado de 7 dias</p>
                   <h1>""").append(escape(context.offerName())).append("""
                 </h1>
-                  <p><strong>Nicho:</strong> """).append(escape(context.niche())).append("""
+                  <p><strong>Para quem é:</strong> """).append(escape(context.niche())).append("""
                 </p>
-                  <p><strong>Promessa validada:</strong> """).append(escape(context.centralPromise())).append("""
+                  <p><strong>Promessa:</strong> """).append(escape(context.centralPromise())).append("""
                 </p>
-                  <p><strong>Resultado prometido:</strong> """).append(escape(context.promisedResult())).append("""
+                  <p><strong>Resultado buscado:</strong> """).append(escape(context.promisedResult())).append("""
                 </p>
+                  <p><strong>Base do método:</strong> princípios práticos derivados da pesquisa MDS, traduzidos em decisões simples de cabelo, pele, roupa, perfume, ocasião e compra consciente.</p>
                 </section>
                 <section>
-                  <h2>Experiencia de entrega premium</h2>
+                  <h2>Comece por aqui</h2>
                   <div class="box premium">
-                    <p>Este pacote foi organizado para ser usado como produto final, nao como relatorio interno. O cliente deve conseguir abrir, entender a promessa, executar os passos e perceber progresso sem depender de explicacao adicional.</p>
+                    <p>Este material foi feito para aplicação prática. Abra o plano de 7 dias, escolha um ajuste pequeno e use os checklists para sair da tentativa solta para uma presença mais intencional.</p>
                   </div>
                   <div class="grid">
                     <div class="cell"><strong>Aplicacao rapida</strong><br />Primeira acao em ate 20 minutos para reduzir ansiedade e aumentar percepcao de valor.</div>
                     <div class="cell"><strong>Progresso visivel</strong><br />Checklist e criterios de conclusao para o cliente saber quando terminou cada etapa.</div>
-                    <div class="cell"><strong>Promessa preservada</strong><br />Todo conteudo fica dentro do mecanismo e do resultado validados pelo experimento.</div>
+                    <div class="cell"><strong>Clareza de escolha</strong><br />Você entende o que manter, o que ajustar e o que evitar comprar por impulso.</div>
                   </div>
-                  <h2>Mapa do Kit de Transformacao Aplicavel</h2>
+                  <h2>O que você recebe</h2>
                   <div class="box proof">
-                    <p><strong>O produto nao e um PDF bonito.</strong> Ele entrega metodo pratico, plano de execucao, materiais prontos, prova tangivel, ritual de acompanhamento, bonus anti-objecao e reducao clara de esforco.</p>
+                    <p>Um e-book com plano de execução, checklists, templates, exemplos preenchidos, figuras de apoio, guia anti-impulso e uma rotina simples para perceber avanço em 7 dias.</p>
                   </div>
                   <h2>Mecanismo central</h2>
                   <div class="box">""").append(escape(context.coreMechanism())).append("""
                 </div>
-                  <h2>Prova e limites de confianca</h2>
-                  <div class="box">""").append(escape(context.proofSummary())).append("""
-                </div>
+                  <h2>Como a pesquisa vira transformação prática</h2>
+                  <div class="box premium">
+                    <p>Os princípios científicos não aparecem como aula técnica. Eles foram convertidos em regras de aplicação: reduzir esforço mental, organizar sinais visuais, criar comparação antes/depois e facilitar escolhas com o que você já tem.</p>
+                    <p>O foco do método é transformar conhecimento em decisão prática, não em excesso de informação.</p>
+                  </div>
+                """);
+        appendVisual(html, input, "INFOGRAPHIC");
+        appendVisual(html, input, "CONCEPT_MAP");
+        appendVisual(html, input, "BEFORE_AFTER");
+        html.append("""
                   <h2>Como usar este pacote</h2>
                   <ol>
                     <li>Leia o diagnostico inicial e marque o ponto de partida real.</li>
@@ -161,6 +183,8 @@ public class PackageAssetAssembler {
                     .append(escape(content.title()))
                     .append("</h3><p>")
                     .append(escape(content.headline()))
+                    .append("</p><p><strong>Princípio aplicado:</strong> ")
+                    .append(escape(content.appliedPrinciple()))
                     .append("</p><p><strong>Resultado para o comprador:</strong> ")
                     .append(escape(content.buyerOutcome()))
                     .append("</p><p><strong>Primeira vitoria:</strong> ")
@@ -236,22 +260,160 @@ public class PackageAssetAssembler {
                   </table>
                 </section>
                 <section>
-                  <h2>Gate de qualidade comercial</h2>
+                  <h2>Checklist final de aplicação</h2>
                   <ul>
-                    <li>O cliente entende a promessa em menos de um minuto.</li>
-                    <li>Existe uma primeira acao clara antes de qualquer explicacao longa.</li>
-                    <li>Cada entregavel reduz dor, esforco ou incerteza de aplicacao.</li>
-                    <li>O pacote contem metodo, plano, templates, exemplo preenchido, prova tangivel, ritual e bonus anti-objecao.</li>
-                    <li>O pacote nao promete resultado automatico nem altera o mecanismo validado.</li>
+                    <li>Você escolheu um foco de presença para os próximos 7 dias.</li>
+                    <li>Você marcou os detalhes que mais geram ruído hoje.</li>
+                    <li>Você definiu uma combinação possível com o que já tem.</li>
+                    <li>Você separou o que pode comprar depois do que pode reaproveitar agora.</li>
+                    <li>Você registrou um antes/depois simples para perceber progresso.</li>
                   </ul>
-                  <p><strong>Score FEO:</strong> """).append(input.contentPackage().qualityScore()).append("""
-                 /100 - """).append(escape(input.contentPackage().qualityGate())).append("""
-                </p>
                 </section>
                 <section>
-                  <h2>Limites de promessa</h2>
-                  <p>Este pacote materializa a oferta validada. Ele nao promete resultado automatico, nao altera o mecanismo validado e depende da aplicacao correta pelo cliente.</p>
+                  <h2>Observação honesta</h2>
+                  <p>O material não promete transformação automática. Ele organiza decisões pequenas e aplicáveis para você reduzir tentativa, compra por impulso e incoerência visual.</p>
                 </section>
+                </body>
+                </html>
+                """);
+        return html.toString();
+    }
+
+    /**
+     * Monta a experiencia guiada do PDE como produto principal consumido pela compradora.
+     */
+    private String buildExperienceSite(PackageAssemblyInput input) {
+        FabricationContext context = input.context();
+        StringBuilder html = new StringBuilder();
+        html.append("""
+                <!doctype html>
+                <html lang="pt-BR">
+                <head>
+                  <meta charset="utf-8" />
+                  <meta name="viewport" content="width=device-width, initial-scale=1" />
+                  <title>""").append(escape(context.offerName())).append("""
+                </title>
+                  <style>
+                    :root { --ink:#16211f; --muted:#64716d; --brand:#176b5d; --soft:#edf7f3; --line:#d8e5e0; --gold:#b77b22; }
+                    * { box-sizing: border-box; }
+                    body { margin: 0; font-family: Arial, sans-serif; color: var(--ink); background: #fbfcfb; line-height: 1.5; }
+                    header, main, footer { max-width: 1120px; margin: 0 auto; padding: 28px 20px; }
+                    header { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items: center; min-height: 92vh; }
+                    h1 { font-size: 44px; line-height: 1.05; margin: 12px 0; color: #103c36; letter-spacing: 0; }
+                    h2 { font-size: 25px; margin: 0 0 14px; color: #103c36; }
+                    h3 { margin: 0 0 8px; color: #174b43; }
+                    p { margin: 0 0 12px; }
+                    .eyebrow { color: var(--brand); font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0; }
+                    .hero-img, .visual { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: white; }
+                    .promise { font-size: 18px; color: #33413d; max-width: 680px; }
+                    .cta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+                    .btn { border: 0; background: var(--brand); color: white; padding: 12px 16px; border-radius: 6px; font-weight: 700; text-decoration: none; }
+                    .ghost { background: white; color: var(--brand); border: 1px solid var(--brand); }
+                    section { padding: 28px 0; border-top: 1px solid var(--line); }
+                    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+                    .card { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 16px; min-height: 132px; }
+                    .mission { display: grid; grid-template-columns: 80px 1fr; gap: 14px; align-items: start; }
+                    .day { background: var(--soft); color: var(--brand); border-radius: 8px; padding: 12px; font-weight: 700; text-align: center; }
+                    .check { display: flex; gap: 10px; align-items: start; margin: 8px 0; }
+                    .check input { margin-top: 4px; }
+                    .library { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+                    .note { background: #fff8ea; border-left: 5px solid var(--gold); padding: 14px; border-radius: 6px; }
+                    @media (max-width: 760px) { header, .grid, .library { grid-template-columns: 1fr; } h1 { font-size: 34px; } header { min-height: auto; } }
+                  </style>
+                </head>
+                <body>
+                  <header>
+                    <div>
+                      <div class="eyebrow">Produto Digital Experiencial</div>
+                      <h1>""").append(escape(context.offerName())).append("""
+                </h1>
+                      <p class="promise">""").append(escape(context.centralPromise())).append("""
+                </p>
+                      <div class="cta-row">
+                        <a class="btn" href="#diagnostico">Começar diagnóstico</a>
+                        <a class="btn ghost" href="#jornada">Ver jornada de 7 dias</a>
+                      </div>
+                    </div>
+                    <div>
+                """);
+        VisualAsset cover = visualByType(input, "EBOOK_COVER");
+        if (cover != null) {
+            html.append("<img class=\"hero-img\" src=\"../")
+                    .append(escape(cover.fileName()))
+                    .append("\" alt=\"")
+                    .append(escape(cover.title()))
+                    .append("\" />");
+        }
+        html.append("""
+                    </div>
+                  </header>
+                  <main>
+                    <section id="diagnostico">
+                      <h2>Dia 0 - Diagnóstico MUSA</h2>
+                      <p>Antes de mexer em roupa, maquiagem ou compra, marque o que hoje mais cria ruído na sua presença.</p>
+                      <div class="grid">
+                        <label class="card"><input type="checkbox" /> Meu visual parece quase certo, mas falta coerência.</label>
+                        <label class="card"><input type="checkbox" /> Eu compro itens novos, mas continuo sem saber combinar.</label>
+                        <label class="card"><input type="checkbox" /> Cabelo, pele, roupa, perfume ou acessórios não conversam entre si.</label>
+                      </div>
+                    </section>
+                    <section>
+                      <h2>Mecanismo aplicado</h2>
+                      <p>""").append(escape(context.coreMechanism())).append("""
+                </p>
+                      <div class="note">A ciência do MDS entra aqui como decisão prática: reduzir esforço mental, organizar sinais visuais e criar pequenas evidências de progresso.</div>
+                """);
+        appendExperienceVisual(html, input, "CONCEPT_MAP");
+        html.append("""
+                    </section>
+                    <section id="jornada">
+                      <h2>Jornada guiada de 7 dias</h2>
+                """);
+        for (int day = 1; day <= 7; day++) {
+            html.append("<div class=\"card mission\"><div class=\"day\">Dia ")
+                    .append(day)
+                    .append("</div><div><h3>")
+                    .append(escape(dayTitle(day)))
+                    .append("</h3><p>")
+                    .append(escape(dayAction(day)))
+                    .append("</p><div class=\"check\"><input type=\"checkbox\" /><span>")
+                    .append(escape(dayCheckpoint(day)))
+                    .append("</span></div></div></div>");
+        }
+        html.append("""
+                    </section>
+                    <section>
+                      <h2>Prova visual da transformação</h2>
+                      <p>Use as figuras abaixo como referência conceitual. O objetivo é coerência e intenção, não luxo caro nem transformação radical.</p>
+                """);
+        appendExperienceVisual(html, input, "INFOGRAPHIC");
+        appendExperienceVisual(html, input, "BEFORE_AFTER");
+        html.append("""
+                    </section>
+                    <section>
+                      <h2>Biblioteca de apoio</h2>
+                      <div class="library">
+                        <div class="card"><h3>02-ebook-principal.pdf</h3><p>Guia editorial com capa, figuras internas e explicação prática do método.</p></div>
+                        <div class="card"><h3>03-plano-checklists-e-templates.csv</h3><p>Planilha para preencher ações, evidências, checkpoints e próximos ajustes.</p></div>
+                """);
+        for (DeliverableContent content : input.contentPackage().deliverables()) {
+            html.append("<div class=\"card\"><h3>")
+                    .append(escape(content.title()))
+                    .append("</h3><p>")
+                    .append(escape(content.firstWin()))
+                    .append("</p></div>");
+        }
+        html.append("""
+                      </div>
+                    </section>
+                    <section>
+                      <h2>Fechamento</h2>
+                      <p>Ao final dos 7 dias, registre o que ficou mais coerente, o que você deixou de comprar por impulso e qual próximo microajuste manterá sua presença alinhada.</p>
+                    </section>
+                  </main>
+                  <footer>
+                    <p>Experiência guiada do Método MUSA. Use os arquivos de apoio dentro deste pacote para preencher seu plano.</p>
+                  </footer>
                 </body>
                 </html>
                 """);
@@ -317,14 +479,13 @@ public class PackageAssetAssembler {
                     String.valueOf(order++),
                     asset.sha256()));
         }
-        for (DeliverableContent content : input.contentPackage().deliverables()) {
-            byte[] bytes = buildDeliverableHtml(input.context(), content).getBytes(StandardCharsets.UTF_8);
+        for (VisualAsset visualAsset : input.visualAssets()) {
             items.add(new ManifestItem(
-                    "entregaveis/" + deliverableFileName(content),
-                    "text/html; charset=UTF-8",
-                    componentLabel(content.componentType()) + " - " + content.readyToUseAsset(),
+                    visualAsset.fileName(),
+                    visualAsset.contentType(),
+                    "Imagem editorial: " + visualAsset.title(),
                     String.valueOf(order++),
-                    sha256(bytes)));
+                    sha256(visualAsset.content())));
         }
         return new OfferDeliveryManifest(input.context().requestId(), input.plan().packageTitle(), items);
     }
@@ -350,29 +511,141 @@ public class PackageAssetAssembler {
      */
     private byte[] buildZip(
             PackageAssemblyInput input,
-            DigitalAssetFinal html,
+            DigitalAssetFinal experience,
             DigitalAssetFinal pdf,
             DigitalAssetFinal spreadsheet,
             OfferDeliveryManifest manifest,
             FabricationReport report) {
         try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 ZipOutputStream zip = new ZipOutputStream(bytes, StandardCharsets.UTF_8)) {
-            addZip(zip, html.name(), html.content());
+            addZip(zip, experience.name(), experience.content());
             addZip(zip, pdf.name(), pdf.content());
             addZip(zip, spreadsheet.name(), spreadsheet.content());
-            for (DeliverableContent content : input.contentPackage().deliverables()) {
-                addZip(zip,
-                        "entregaveis/" + deliverableFileName(content),
-                        buildDeliverableHtml(input.context(), content).getBytes(StandardCharsets.UTF_8));
+            for (VisualAsset visualAsset : input.visualAssets()) {
+                addZip(zip, visualAsset.fileName(), visualAsset.content());
             }
-            addZip(zip, "manifesto.txt", manifest.toString().getBytes(StandardCharsets.UTF_8));
-            addZip(zip, "relatorio-fabricacao.txt", report.toString().getBytes(StandardCharsets.UTF_8));
+            addZip(zip, "README.txt", readme(input, manifest).getBytes(StandardCharsets.UTF_8));
             zip.finish();
             return bytes.toByteArray();
         } catch (IOException ex) {
             log.error("Falha ao montar ZIP da FEO", ex);
             throw new IllegalStateException("Falha ao montar ZIP da FEO", ex);
         }
+    }
+
+    /**
+     * Cria orientação simples para a compradora abrir o pacote.
+     */
+    private String readme(PackageAssemblyInput input, OfferDeliveryManifest manifest) {
+        return "Metodo MUSA - Produto Digital Experiencial\n\n"
+                + "Comece pelo arquivo 01-experiencia-guiada/index.html.\n"
+                + "Use a experiencia para fazer o diagnostico, cumprir as missoes de 7 dias e marcar seu progresso.\n"
+                + "Depois consulte 02-ebook-principal.pdf para aprofundar o metodo.\n"
+                + "Use 03-plano-checklists-e-templates.csv para preencher seu plano.\n"
+                + "As imagens da pasta imagens/ sao figuras de apoio da experiencia e do e-book.\n\n"
+                + "Arquivos do pacote:\n"
+                + String.join("\n", manifest.items().stream().map(ManifestItem::fileName).toList())
+                + "\n\nPromessa: " + input.context().centralPromise() + "\n";
+    }
+
+    /**
+     * Adiciona imagem editorial ao PDF quando o ativo existir.
+     */
+    private void appendVisual(StringBuilder html, PackageAssemblyInput input, String assetType) {
+        VisualAsset visual = visualByType(input, assetType);
+        if (visual == null) {
+            return;
+        }
+        html.append("<h2>")
+                .append(escape(visual.title()))
+                .append("</h2><img class=\"visual\" src=\"")
+                .append(dataUri(visual))
+                .append("\" alt=\"")
+                .append(escape(visual.title()))
+                .append("\" />");
+    }
+
+    /**
+     * Adiciona imagem na experiencia guiada usando caminho relativo dentro do ZIP.
+     */
+    private void appendExperienceVisual(StringBuilder html, PackageAssemblyInput input, String assetType) {
+        VisualAsset visual = visualByType(input, assetType);
+        if (visual == null) {
+            return;
+        }
+        html.append("<img class=\"visual\" src=\"../")
+                .append(escape(visual.fileName()))
+                .append("\" alt=\"")
+                .append(escape(visual.title()))
+                .append("\" />");
+    }
+
+    /**
+     * Define o titulo comercial de cada dia da experiencia.
+     */
+    private String dayTitle(int day) {
+        return switch (day) {
+            case 1 -> "Escolher o foco de presença";
+            case 2 -> "Organizar cabelo, pele e detalhe principal";
+            case 3 -> "Montar uma combinação coerente";
+            case 4 -> "Criar assinatura olfativa acessível";
+            case 5 -> "Usar o checklist de 12 minutos";
+            case 6 -> "Evitar uma compra por impulso";
+            case 7 -> "Registrar antes/depois e próximos passos";
+            default -> "Microajuste de presença";
+        };
+    }
+
+    /**
+     * Define a ação prática de cada dia da experiência.
+     */
+    private String dayAction(int day) {
+        return switch (day) {
+            case 1 -> "Marque o ruído visual mais forte e escolha uma única área para ajustar primeiro.";
+            case 2 -> "Faça um ajuste simples de cabelo, pele, unha ou acabamento antes de pensar em comprar algo.";
+            case 3 -> "Separe uma roupa possível com o que você já tem e escolha um ponto de cor ou contraste.";
+            case 4 -> "Defina um perfume ou cheiro-base para uma ocasião real da sua semana.";
+            case 5 -> "Passe pelo checklist rápido antes de sair ou gravar conteúdo.";
+            case 6 -> "Revise uma compra desejada e veja se ela resolve o foco escolhido ou só aumenta tentativa.";
+            case 7 -> "Compare seu ponto de partida com o estado atual e escolha o próximo microajuste.";
+            default -> "Execute uma ação pequena e registre a evidência de progresso.";
+        };
+    }
+
+    /**
+     * Define o checkpoint de conclusão de cada dia da experiência.
+     */
+    private String dayCheckpoint(int day) {
+        return switch (day) {
+            case 1 -> "Tenho uma frase clara sobre o que quero ajustar.";
+            case 2 -> "Fiz um ajuste visível sem depender de compra.";
+            case 3 -> "Tenho uma combinação possível para repetir.";
+            case 4 -> "Escolhi uma assinatura olfativa por ocasião.";
+            case 5 -> "Completei o checklist sem travar.";
+            case 6 -> "Decidi reaproveitar, adiar ou comprar com intenção.";
+            case 7 -> "Registrei uma evidência de progresso e o próximo passo.";
+            default -> "Concluí a microação do dia.";
+        };
+    }
+
+    /**
+     * Busca a primeira imagem do tipo solicitado.
+     */
+    private VisualAsset visualByType(PackageAssemblyInput input, String assetType) {
+        if (input.visualAssets() == null) {
+            return null;
+        }
+        return input.visualAssets().stream()
+                .filter(asset -> assetType.equals(asset.assetType()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Converte a imagem em URI embutida para renderização do PDF.
+     */
+    private String dataUri(VisualAsset visual) {
+        return "data:" + visual.contentType() + ";base64," + Base64.getEncoder().encodeToString(visual.content());
     }
 
     /**
@@ -411,6 +684,9 @@ public class PackageAssetAssembler {
                 </h1>
                   <div class="box"><strong>Promessa preservada:</strong> """).append(escape(context.centralPromise())).append("""
                 </div>
+                  <h2>Principio aplicado</h2>
+                  <p>""").append(escape(content.appliedPrinciple())).append("""
+                </p>
                   <h2>Resultado para o comprador</h2>
                   <p>""").append(escape(content.buyerOutcome())).append("""
                 </p>
@@ -469,11 +745,15 @@ public class PackageAssetAssembler {
     private String componentLabel(String componentType) {
         return switch (componentType == null ? "" : componentType) {
             case "COMECE_AQUI" -> "Comece aqui";
+            case "DIAGNOSTICO_GUIADO" -> "Diagnostico guiado";
+            case "MISSOES_7_DIAS" -> "Missoes de 7 dias";
+            case "PAINEL_PROGRESSO" -> "Painel de progresso";
             case "PLANO_EXECUCAO_RAPIDA" -> "Plano de execucao";
             case "CHECKLIST_APLICACAO" -> "Checklist";
             case "TEMPLATES_PRONTOS" -> "Templates prontos";
             case "EXEMPLO_PREENCHIDO" -> "Exemplo preenchido";
             case "PROVA_TANGIVEL" -> "Prova tangivel";
+            case "BIBLIOTECA_APOIO" -> "Biblioteca de apoio";
             case "RITUAL_ACOMPANHAMENTO" -> "Ritual de acompanhamento";
             case "BONUS_ANTI_OBJECAO" -> "Bonus anti-objecao";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Guia de primeiros resultados";

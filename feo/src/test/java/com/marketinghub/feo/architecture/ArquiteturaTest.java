@@ -26,6 +26,7 @@ class ArquiteturaTest {
     private static final Set<String> STAGE_PACKAGES = Set.of(
             "com.marketinghub.feo.fabricacaov1.planejamentoentregaveis",
             "com.marketinghub.feo.fabricacaov1.redacaoentregaveis",
+            "com.marketinghub.feo.fabricacaov1.geracaoativosvisuais",
             "com.marketinghub.feo.fabricacaov1.montagempacote");
 
     private static final DescribedPredicate<JavaClass> CLASSES_DE_ETAPA =

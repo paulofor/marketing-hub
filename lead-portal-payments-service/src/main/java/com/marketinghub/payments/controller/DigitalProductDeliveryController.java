@@ -38,6 +38,20 @@ public class DigitalProductDeliveryController {
     @PostMapping("/exp51/email")
     public ResponseEntity<DigitalProductDeliveryEmailRetryResponse> sendExperiment51Email(
             @Valid @RequestBody DigitalProductDeliveryEmailRetryRequest request) {
+        return sendDigitalProductEmail(request, "51");
+    }
+
+    /** Valida o pagamento e reenvia a entrega digital do experimento 66 para o email informado. */
+    @PostMapping("/exp66/email")
+    public ResponseEntity<DigitalProductDeliveryEmailRetryResponse> sendExperiment66Email(
+            @Valid @RequestBody DigitalProductDeliveryEmailRetryRequest request) {
+        return sendDigitalProductEmail(request, "66");
+    }
+
+    /** Executa o fluxo comum de reenvio após confirmar o pagamento no Mercado Pago. */
+    private ResponseEntity<DigitalProductDeliveryEmailRetryResponse> sendDigitalProductEmail(
+            DigitalProductDeliveryEmailRetryRequest request,
+            String experimentCode) {
         try {
             Optional<MercadoPagoPaymentDetails> paymentDetails = checkoutService.fetchPayment(request.paymentId());
             if (paymentDetails.isEmpty()) {
@@ -55,8 +69,8 @@ public class DigitalProductDeliveryController {
                             ? "Email enviado com sucesso."
                             : "Não foi possível enviar o email agora."));
         } catch (Exception ex) {
-            log.error("Falha ao reenviar entrega digital do experimento 51 (paymentId={})",
-                    request.paymentId(), ex);
+            log.error("Falha ao reenviar entrega digital do experimento {} (paymentId={})",
+                    experimentCode, request.paymentId(), ex);
             return ResponseEntity.badRequest().body(new DigitalProductDeliveryEmailRetryResponse(
                     "FAILED",
                     ex.getMessage()));

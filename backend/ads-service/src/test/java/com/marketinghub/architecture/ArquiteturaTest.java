@@ -197,6 +197,7 @@ class ArquiteturaTest {
     private static final List<String> FEO_FABRICACAO_V1_STAGES = List.of(
             "planejamento-entregaveis",
             "redacao-entregaveis",
+            "geracao-ativos-visuais",
             "montagem-pacote");
 
     @ArchTest
@@ -243,10 +244,11 @@ class ArquiteturaTest {
         }
         boolean stagesDocumented = FEO_FABRICACAO_V1_STAGES.contains("planejamento-entregaveis")
                 && FEO_FABRICACAO_V1_STAGES.contains("redacao-entregaveis")
+                && FEO_FABRICACAO_V1_STAGES.contains("geracao-ativos-visuais")
                 && FEO_FABRICACAO_V1_STAGES.contains("montagem-pacote");
         if (!stagesDocumented) {
             throw new AssertionError("[ARQUITETURA] [BACKEND][FEO fabricacao v1] deve registrar as etapas canonicas "
-                    + "planejamento-entregaveis, redacao-entregaveis e montagem-pacote");
+                    + "planejamento-entregaveis, redacao-entregaveis, geracao-ativos-visuais e montagem-pacote");
         }
     }
 

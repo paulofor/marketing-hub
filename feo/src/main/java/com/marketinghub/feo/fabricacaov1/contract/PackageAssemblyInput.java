@@ -6,5 +6,6 @@ package com.marketinghub.feo.fabricacaov1.contract;
 public record PackageAssemblyInput(
         FabricationContext context,
         DeliverablePlan plan,
-        DeliverableContentPackage contentPackage) {
+        DeliverableContentPackage contentPackage,
+        java.util.List<VisualAsset> visualAssets) {
 }

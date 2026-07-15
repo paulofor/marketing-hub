@@ -6,6 +6,7 @@ package com.marketinghub.feo.fabricacaov1.pipeline;
 public enum StageCode {
     PLANEJAMENTO_ENTREGAVEIS("planejamento-entregaveis"),
     REDACAO_ENTREGAVEIS("redacao-entregaveis"),
+    GERACAO_ATIVOS_VISUAIS("geracao-ativos-visuais"),
     MONTAGEM_PACOTE("montagem-pacote");
 
     private final String code;

@@ -24,11 +24,15 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
 
     private static final List<String> REQUIRED_COMPONENTS = List.of(
             "COMECE_AQUI",
+            "DIAGNOSTICO_GUIADO",
+            "MISSOES_7_DIAS",
+            "PAINEL_PROGRESSO",
             "PLANO_EXECUCAO_RAPIDA",
             "CHECKLIST_APLICACAO",
             "TEMPLATES_PRONTOS",
             "EXEMPLO_PREENCHIDO",
             "PROVA_TANGIVEL",
+            "BIBLIOTECA_APOIO",
             "RITUAL_ACOMPANHAMENTO",
             "BONUS_ANTI_OBJECAO",
             "GUIA_PRIMEIROS_RESULTADOS");
@@ -63,7 +67,7 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
 
         DeliverablePlan plan = new DeliverablePlan(
                 input.requestId(),
-                "Pacote Final - " + input.offerName(),
+                "PDE - Produto Digital Experiencial - " + input.offerName(),
                 buildSpecs(input));
         StageArtifact artifact = context.artifactStore().store(
                 "FEO_OFFER_DELIVERABLE_PLAN",
@@ -114,7 +118,7 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
     }
 
     /**
-     * Cria uma especificacao obrigatoria do Kit de Transformacao Aplicavel.
+     * Cria uma especificacao obrigatoria do Produto Digital Experiencial.
      */
     private DeliverableSpec specFor(FabricationContext input, String componentType, int index) {
         String code = "KIT-" + String.format("%02d", index);
@@ -159,11 +163,15 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
     private String titleFor(String componentType, FabricationContext input) {
         return switch (componentType) {
             case "COMECE_AQUI" -> "Manifesto Comece Aqui - ordem de uso do kit";
+            case "DIAGNOSTICO_GUIADO" -> "Diagnostico MUSA - ponto de partida da presença";
+            case "MISSOES_7_DIAS" -> "Experiencia guiada - missoes de 7 dias";
+            case "PAINEL_PROGRESSO" -> "Painel de progresso e checkpoints";
             case "PLANO_EXECUCAO_RAPIDA" -> "Plano rapido de execucao de 7 dias";
             case "CHECKLIST_APLICACAO" -> "Checklist de aplicacao sem travar";
             case "TEMPLATES_PRONTOS" -> "Templates prontos para preencher e usar";
             case "EXEMPLO_PREENCHIDO" -> "Exemplo preenchido do resultado esperado";
             case "PROVA_TANGIVEL" -> "Preview tangivel do antes e depois";
+            case "BIBLIOTECA_APOIO" -> "Biblioteca de apoio - e-book, imagens e templates";
             case "RITUAL_ACOMPANHAMENTO" -> "Ritual de acompanhamento e checkpoints";
             case "BONUS_ANTI_OBJECAO" -> "Bonus anti-objecao para remover friccao";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Guia de primeiros resultados percebidos";
@@ -176,6 +184,8 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
      */
     private String formatFor(String componentType) {
         return switch (componentType) {
+            case "DIAGNOSTICO_GUIADO", "MISSOES_7_DIAS", "PAINEL_PROGRESSO" -> "EXPERIENCIA_GUIADA";
+            case "BIBLIOTECA_APOIO" -> "BIBLIOTECA_DIGITAL";
             case "CHECKLIST_APLICACAO", "TEMPLATES_PRONTOS", "BONUS_ANTI_OBJECAO" -> "HTML_CSV_PREENCHIVEL";
             case "EXEMPLO_PREENCHIDO", "PROVA_TANGIVEL" -> "HTML_PDF_AMOSTRA";
             case "RITUAL_ACOMPANHAMENTO" -> "HTML_CALENDARIO";
@@ -203,11 +213,15 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
     private String roleFor(String componentType, FabricationContext input) {
         return switch (componentType) {
             case "COMECE_AQUI" -> "Organiza a experiencia e faz o comprador entender a ordem de uso em menos de um minuto.";
+            case "DIAGNOSTICO_GUIADO" -> "Transforma percepção vaga em ponto de partida claro para a experiência guiada.";
+            case "MISSOES_7_DIAS" -> "Conduz a aplicação diária para reduzir esforço e criar sensação de acompanhamento.";
+            case "PAINEL_PROGRESSO" -> "Mostra avanço, checkpoints e evidências para o comprador perceber transformação.";
             case "PLANO_EXECUCAO_RAPIDA" -> "Entrega o caminho principal para gerar " + input.promisedResult() + ".";
             case "CHECKLIST_APLICACAO" -> "Reduz esforco mental e evita que o comprador fique travado na execucao.";
             case "TEMPLATES_PRONTOS" -> "Transforma a promessa em material copiavel, editavel e imediatamente aplicavel.";
             case "EXEMPLO_PREENCHIDO" -> "Mostra como o resultado deve parecer quando o comprador aplicar corretamente.";
             case "PROVA_TANGIVEL" -> "Materializa visualmente a transformacao prometida e aumenta confianca de uso.";
+            case "BIBLIOTECA_APOIO" -> "Reúne e-book, imagens, checklists e templates como apoio à experiência principal.";
             case "RITUAL_ACOMPANHAMENTO" -> "Cria sensacao de suporte, ritmo e continuidade sem depender de atendimento manual.";
             case "BONUS_ANTI_OBJECAO" -> "Remove a objecao mais provavel antes de ela impedir a aplicacao.";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Ajuda o comprador a reconhecer progresso e valor percebido rapidamente.";
@@ -232,11 +246,15 @@ public class PlanejamentoEntregaveisProcessor implements StageProcessor<Fabricat
      */
     private List<String> sectionsFor(String componentType) {
         return switch (componentType) {
+            case "DIAGNOSTICO_GUIADO" -> List.of("Perguntas iniciais", "Ponto de partida", "Prioridade de ajuste", "Sinal de progresso", "Primeira missao");
+            case "MISSOES_7_DIAS" -> List.of("Dia 1", "Dia 2", "Dias 3 a 5", "Dias 6 e 7", "Fechamento da jornada");
+            case "PAINEL_PROGRESSO" -> List.of("Checklist de avanço", "Evidência registrada", "Obstáculo", "Próximo microajuste", "Conclusão");
             case "PLANO_EXECUCAO_RAPIDA" -> List.of("Dia 1", "Dia 2", "Dias 3 a 5", "Dias 6 e 7", "Criterio de conclusao");
             case "TEMPLATES_PRONTOS" -> List.of("Campos editaveis", "Modelo base", "Como preencher", "Exemplo de uso", "Quando reutilizar");
             case "PROVA_TANGIVEL" -> List.of("Estado antes", "Estado depois", "Miniresultado", "Sinais de progresso", "Limites da prova");
             case "RITUAL_ACOMPANHAMENTO" -> List.of("Ritmo diario", "Checkpoint", "Lembrete", "Revisao", "Continuidade");
             case "BONUS_ANTI_OBJECAO" -> List.of("Objecao", "Resposta operacional", "Atalho", "FAQ", "Proxima acao");
+            case "BIBLIOTECA_APOIO" -> List.of("E-book", "Checklists", "Templates", "Imagens", "Como consultar sem travar");
             default -> List.of("Objetivo", "Quando usar", "Passo a passo", "Modelo preenchivel", "Criterio de conclusao");
         };
     }

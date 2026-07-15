@@ -3,6 +3,7 @@ com/marketinghub/feo/fabricacaov1/contract/ManifestItem.class
 com/marketinghub/feo/fabricacaov1/pipeline/ArtifactStore.class
 com/marketinghub/feo/fabricacaov1/contract/DigitalAssetFinal.class
 com/marketinghub/feo/infrastructure/config/WebClientConfiguration.class
+com/marketinghub/feo/fabricacaov1/geracaoativosvisuais/GeracaoAtivosVisuaisProcessor.class
 com/marketinghub/feo/fabricacaov1/contract/DeliverableSpec.class
 com/marketinghub/feo/fabricacaov1/pipeline/StageResult.class
 com/marketinghub/feo/fabricacaov1/pipeline/FeoExecutionScheduler.class
@@ -11,6 +12,7 @@ com/marketinghub/feo/fabricacaov1/planejamentoentregaveis/PlanejamentoEntregavei
 com/marketinghub/feo/fabricacaov1/pipeline/StageCode.class
 com/marketinghub/feo/fabricacaov1/contract/OfferDeliveryManifest.class
 com/marketinghub/feo/fabricacaov1/contract/FabricationReport.class
+com/marketinghub/feo/fabricacaov1/contract/VisualAsset.class
 com/marketinghub/feo/infrastructure/backend/FeoBackendClient.class
 com/marketinghub/feo/fabricacaov1/pipeline/PipelineWorker.class
 com/marketinghub/feo/infrastructure/backend/FeoBackendClient$1.class
@@ -19,6 +21,7 @@ com/marketinghub/feo/infrastructure/backend/FeoBackendClient$BackendStageExecuti
 com/marketinghub/feo/fabricacaov1/montagempacote/PackageAssetAssembler.class
 com/marketinghub/feo/fabricacaov1/pipeline/InMemoryArtifactStore.class
 com/marketinghub/feo/fabricacaov1/redacaoentregaveis/RedacaoEntregaveisProcessor.class
+com/marketinghub/feo/fabricacaov1/geracaoativosvisuais/VisualAssetGenerator.class
 com/marketinghub/feo/fabricacaov1/pipeline/StageExecution.class
 com/marketinghub/feo/infrastructure/config/FeoProperties.class
 com/marketinghub/feo/fabricacaov1/pipeline/StageArtifact.class
@@ -28,7 +31,11 @@ com/marketinghub/feo/fabricacaov1/contract/DeliverableSection.class
 com/marketinghub/feo/fabricacaov1/pipeline/StageStatus.class
 com/marketinghub/feo/fabricacaov1/contract/PackageAssemblyOutput.class
 com/marketinghub/feo/infrastructure/backend/FeoBackendClient$2.class
+com/marketinghub/feo/fabricacaov1/contract/VisualAssetSpec.class
+com/marketinghub/feo/fabricacaov1/geracaoativosvisuais/OpenAiVisualAssetGenerator$OpenAiImageData.class
 com/marketinghub/feo/FeoApplication.class
+com/marketinghub/feo/fabricacaov1/geracaoativosvisuais/OpenAiVisualAssetGenerator.class
+com/marketinghub/feo/fabricacaov1/geracaoativosvisuais/OpenAiVisualAssetGenerator$OpenAiImageResponse.class
 com/marketinghub/feo/fabricacaov1/contract/FabricationContext.class
 com/marketinghub/feo/fabricacaov1/contract/DeliverableContent.class
 com/marketinghub/feo/fabricacaov1/contract/DeliverableContentPackage.class

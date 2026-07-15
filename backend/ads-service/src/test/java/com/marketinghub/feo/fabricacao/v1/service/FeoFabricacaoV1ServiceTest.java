@@ -135,9 +135,9 @@ class FeoFabricacaoV1ServiceTest {
         assertThat(captor.getAllValues().get(1).getInputPayload()).contains("\"plan\"");
     }
 
-    /** Deve enfileirar montagem somente após a redação gerar conteúdo final. */
+    /** Deve enfileirar geração visual após a redação gerar conteúdo final. */
     @Test
-    void shouldEnqueuePackageAssemblyAfterContentWritingCompletion() {
+    void shouldEnqueueVisualAssetsAfterContentWritingCompletion() {
         FeoFabricacaoV1StageExecution execution = FeoFabricacaoV1StageExecution.builder()
                 .id(9L)
                 .jobId("job-1")
@@ -160,9 +160,47 @@ class FeoFabricacaoV1ServiceTest {
                         Map.of(
                                 "context", Map.of("requestId", "experiment-66"),
                                 "plan", Map.of("packageTitle", "Pacote Final"),
-                                "contentPackage", Map.of("qualityScore", 92)),
+                                "contentPackage", Map.of("qualityScore", 92, "visualAssets", List.of(Map.of("code", "VIS-01")))),
                         List.of(),
                         Map.of("qualityScore", 92),
+                        null,
+                        "geracao-ativos-visuais"));
+
+        ArgumentCaptor<FeoFabricacaoV1StageExecution> captor =
+                ArgumentCaptor.forClass(FeoFabricacaoV1StageExecution.class);
+        verify(executionRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().get(1).getStageCode()).isEqualTo("geracao-ativos-visuais");
+        assertThat(captor.getAllValues().get(1).getInputPayload()).contains("\"contentPackage\"");
+    }
+
+    /** Deve enfileirar montagem somente após a geração de imagens editoriais. */
+    @Test
+    void shouldEnqueuePackageAssemblyAfterVisualAssetGenerationCompletion() {
+        FeoFabricacaoV1StageExecution execution = FeoFabricacaoV1StageExecution.builder()
+                .id(11L)
+                .jobId("job-1")
+                .experiment(experiment())
+                .stageCode("geracao-ativos-visuais")
+                .status(FeoFabricacaoV1StageStatus.RUNNING)
+                .inputPayload("{\"context\":{\"requestId\":\"experiment-66\"},\"contentPackage\":{\"qualityScore\":92}}")
+                .build();
+        when(executionRepository.findByIdAndStageCode(11L, "geracao-ativos-visuais"))
+                .thenReturn(Optional.of(execution));
+        when(executionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.complete(
+                "geracao-ativos-visuais",
+                11L,
+                new FeoFabricacaoV1CompleteRequest(
+                        "feo-worker",
+                        "job-1",
+                        "COMPLETED",
+                        Map.of(
+                                "context", Map.of("requestId", "experiment-66"),
+                                "contentPackage", Map.of("qualityScore", 92),
+                                "visualAssets", List.of(Map.of("fileName", "imagens/vis-01.png"))),
+                        List.of(),
+                        Map.of("visualAssetCount", 1),
                         null,
                         "montagem-pacote"));
 
@@ -170,7 +208,7 @@ class FeoFabricacaoV1ServiceTest {
                 ArgumentCaptor.forClass(FeoFabricacaoV1StageExecution.class);
         verify(executionRepository, org.mockito.Mockito.times(2)).save(captor.capture());
         assertThat(captor.getAllValues().get(1).getStageCode()).isEqualTo("montagem-pacote");
-        assertThat(captor.getAllValues().get(1).getInputPayload()).contains("\"contentPackage\"");
+        assertThat(captor.getAllValues().get(1).getInputPayload()).contains("\"visualAssets\"");
     }
 
     /** Deve materializar pacote e entregáveis finais quando a montagem termina. */
@@ -218,7 +256,7 @@ class FeoFabricacaoV1ServiceTest {
 
         ArgumentCaptor<DeliverablePackage> packageCaptor = ArgumentCaptor.forClass(DeliverablePackage.class);
         verify(deliverablePackageRepository).save(packageCaptor.capture());
-        assertThat(packageCaptor.getValue().getName()).isEqualTo("Pacote Final MUSA - FEO #8");
+        assertThat(packageCaptor.getValue().getName()).isEqualTo("Pacote Final MUSA");
         assertThat(packageCaptor.getValue().getDeliverables()).hasSize(1);
     }
 

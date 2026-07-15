@@ -1078,3 +1078,24 @@ Critério comercial:
 
 - A compradora precisa entender claramente o que recebe e por que aquilo facilita a transformação.
 - Ela não deve ver rastreabilidade, origem MDS/research, nomes de pacote interno, arquivos HTML, IDs ou linguagem técnica.
+
+## Objetivo da Semana 3 com PDE
+
+Data: `2026-07-15`.
+
+Decisão registrada no planejamento comercial pelo endpoint do sistema:
+
+- Semana 3 passa a focar o experimento 66 como **PDE completo**, não como pacote de arquivos soltos.
+- O objetivo comercial é elevar o potencial estimado de venda para acima de `90%`, condicionado aos gates de produto, página, checkout, criativos, tracking e entrega.
+
+Objetivos gravados para a Semana 3:
+
+1. Publicar o experimento 66 como PDE completo: área guiada de 7 dias, e-book premium, checklists/templates, imagens reais, diagnóstico, progresso e biblioteca de apoio, usando os princípios MDS/research transformados em aplicação comercial simples.
+2. Entregar os elementos que aumentam o potencial estimado de venda para acima de `90%`: página de venda com prova visual clara, checkout real Pepper ou fallback Mercado Pago, webhook/acesso validado, entrega digital testada e oferta de `R$47` sem termos técnicos internos.
+3. Garantir distribuição vendável antes de liberar tráfego: 3 a 5 criativos aprovados com imagem real, tentativa 1 e 2 em modo Flex e tentativa 3 em Standard, público MUSA salvo e rastreamento `page_view`, tempo de sessão, `checkout_click`, compra e acesso ao PDE.
+4. Controlar gasto e aprendizado: liberar tráfego somente depois do PDE, página, checkout, criativos com imagem e tracking passarem no gate; teto adicional de `R$50` a `R$80` e corte se houver 100 acessos válidos sem checkout/interesse ou qualquer falha de entrega/acesso.
+
+Observação:
+
+- A meta `>90%` é tratada como potencial estimado de venda do formato, não garantia de venda.
+- Tráfego continua bloqueado até o produto PDE, a página, o checkout, a entrega e os criativos com imagem real passarem nos gates.

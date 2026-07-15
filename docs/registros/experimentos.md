@@ -5834,3 +5834,10 @@
 - Validação operacional: o endpoint do ZIP oficial do experimento 66 respondeu `200` com `experimento-66-entregaveis.zip`.
 - Bloqueio restante: o start do GeraSalesPage v1 passou do bloqueio de checkout para o bloqueio de template, retornando ausência de template ativo para `sales-page-offer-brief`; a tabela `ai_prompt_schema_template` não possui linhas para `gera-sales-page-v1` no banco remoto.
 - Próximo passo: restaurar/semear os templates ativos do GeraSalesPage no banco remoto a partir dos changelogs versionados antes de republicar a página auditada e liberar tráfego.
+# 2026-07-15 — Recovery dos templates GeraSalesPage v1 para experimento 66
+
+- Contexto: ao iniciar o próximo passo do experimento 66, o backend remoto bloqueou o GeraSalesPage com `Template ativo de prompt/schema não encontrado para sales-page-offer-brief`.
+- Confirmação via MCP: `ai_prompt_schema_template` tinha `0` registros para `pipeline_code='gera-sales-page-v1'`.
+- Decisão: criar recovery seed idempotente `v7` para as 7 etapas do GeraSalesPage, preservando venda direta low-ticket, checkout real, entregáveis reais do FEO via `experiment.feoDeliverablePackage` e prova visual obrigatória com `data-transform-visual`.
+- Objetivo comercial: impedir página genérica e garantir que a página de venda explique claramente o que a cliente recebe antes de liberar tráfego.
+- Limitação operacional: o `liquibase:update` executado com `DB_URL/DB_USER/DB_PASS` do sandbox concluiu 1 changeset, mas MCP e backend remoto continuaram retornando `0` templates e `409` no start do experimento 66; portanto essas variáveis não apontam para o mesmo schema operacional do backend. O changeset precisa ser aplicado pelo deploy/Liquibase do ambiente remoto correto antes de iniciar o GeraSalesPage.

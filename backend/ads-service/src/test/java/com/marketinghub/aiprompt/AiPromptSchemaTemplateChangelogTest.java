@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 class AiPromptSchemaTemplateChangelogTest {
     private static final Path PROMPT_SCHEMA_CHANGELOG = Path.of(
             "src/main/resources/db/changelog/changesets/2026-07-02-experiment-ai-prompt-schema-usage.yaml");
+    private static final Path GERA_SALES_PAGE_RECOVERY_CHANGELOG = Path.of(
+            "src/main/resources/db/changelog/changesets/2026-07-15-gera-sales-page-template-recovery-v7.yaml");
 
     /** Garante que a etapa Prova use o mesmo campo de evidencias aceito pelo AI Worker. */
     @Test
@@ -24,5 +26,24 @@ class AiPromptSchemaTemplateChangelogTest {
                 .contains(changeSetId)
                 .contains("\"evidenceSignals\"")
                 .doesNotContain("\"proofSignals\"");
+    }
+
+    /** Garante que o recovery do GeraSalesPage recrie todas as etapas comerciais com pacote FEO real. */
+    @Test
+    void geraSalesPageRecoveryShouldSeedAllCommercialTemplates() throws IOException {
+        String changelog = Files.readString(GERA_SALES_PAGE_RECOVERY_CHANGELOG, StandardCharsets.UTF_8);
+
+        assertThat(changelog)
+                .contains("gera-sales-page-v1:sales-page-offer-brief:v7")
+                .contains("gera-sales-page-v1:sales-page-wireframe:v7")
+                .contains("gera-sales-page-v1:sales-page-copy:v7")
+                .contains("gera-sales-page-v1:sales-page-visual-plan:v7")
+                .contains("gera-sales-page-v1:sales-page-html:v7")
+                .contains("gera-sales-page-v1:sales-page-checkout-quality-review:v7")
+                .contains("gera-sales-page-v1:sales-page-publication-package:v7")
+                .contains("experiment.feoDeliverablePackage")
+                .contains("DIRECT_CHECKOUT")
+                .contains("data-transform-visual")
+                .contains("ON DUPLICATE KEY UPDATE");
     }
 }

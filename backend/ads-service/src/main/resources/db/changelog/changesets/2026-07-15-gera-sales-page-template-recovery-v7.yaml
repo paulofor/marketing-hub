@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-15-gera-sales-page-template-recovery-v7.yaml
+  - changeSet:
+      id: 2026-07-15-gera-sales-page-template-recovery-v7-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+              SET active = false, updated_at = CURRENT_TIMESTAMP
+              WHERE pipeline_code = 'gera-sales-page-v1'
+                AND stage_code IN (
+                  'sales-page-offer-brief',
+                  'sales-page-wireframe',
+                  'sales-page-copy',
+                  'sales-page-visual-plan',
+                  'sales-page-html',
+                  'sales-page-checkout-quality-review',
+                  'sales-page-publication-package'
+                );
+
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('gera-sales-page-v1:sales-page-offer-brief:v7', 'gera-sales-page-v1', 'sales-page-offer-brief', 'v7', 'gpt-5.5', 'gera_sales_page_v1_offer_brief',
+                 'Você é estrategista de vendas diretas para produto digital low-ticket. Gere a etapa sales-page-offer-brief do GeraSalesPage v1 em português brasileiro. Use experiment.feoDeliverablePackage como fonte soberana dos entregáveis reais: não invente módulos, bônus ou arquivos fora do pacote. Para DIRECT_CHECKOUT, venda o kit pago com checkout real, preço, promessa, mecanismo, prova visual e redução clara de esforço. Para LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, diferencie amostra gratuita e produto pago. Explique o que a cliente recebe de forma concreta, usando títulos e descrições dos entregáveis reais. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["summary","promise","checkoutUrl","offerStack","risks"],"properties":{"summary":{"type":"string"},"promise":{"type":"string"},"checkoutUrl":{"type":"string"},"offerStack":{"type":"array","items":{"type":"string"}},"risks":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-wireframe:v7', 'gera-sales-page-v1', 'sales-page-wireframe', 'v7', 'gpt-5.5', 'gera_sales_page_v1_wireframe',
+                 'Você é arquiteto de página de vendas para tráfego pago. Gere a etapa sales-page-wireframe do GeraSalesPage v1 com seções que tornem a oferta fácil de comprar: hero com promessa e mockup, dor atual, mecanismo, prova visual, entregáveis reais, bônus, oferta, FAQ e CTA final. Use experiment.feoDeliverablePackage para nomear claramente o que a cliente recebe. Para DIRECT_CHECKOUT, todos os CTAs devem apontar ao checkout real. Para LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, CTAs devem ir ao formulário gerenciado e nunca a iframe. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["sections","primaryCta","checkoutUrl"],"properties":{"sections":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","goal","content"],"properties":{"id":{"type":"string"},"goal":{"type":"string"},"content":{"type":"string"}}}},"primaryCta":{"type":"string"},"checkoutUrl":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-copy:v7', 'gera-sales-page-v1', 'sales-page-copy', 'v7', 'gpt-5.5', 'gera_sales_page_v1_copy',
+                 'Você é copywriter de resposta direta. Gere a etapa sales-page-copy do GeraSalesPage v1 com comunicação sedutora, concreta e honesta. A copy deve vender transformação rápida, redução de esforço e clareza de aplicação. Use os entregáveis reais de experiment.feoDeliverablePackage como prova de valor: plano, checklist, templates, exemplo preenchido, previews, ritual e bônus somente quando existirem no pacote. Evite linguagem interna de pesquisa, pipeline, mecanismo em validação ou produto futuro. Para DIRECT_CHECKOUT, CTA aponta para compra. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["headline","subheadline","sections","cta"],"properties":{"headline":{"type":"string"},"subheadline":{"type":"string"},"sections":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","title","body"],"properties":{"id":{"type":"string"},"title":{"type":"string"},"body":{"type":"string"}}}},"cta":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-visual-plan:v7', 'gera-sales-page-v1', 'sales-page-visual-plan', 'v7', 'gpt-5.5', 'gera_sales_page_v1_visual_plan',
+                 'Você é diretor de arte de venda direta. Gere a etapa sales-page-visual-plan do GeraSalesPage v1 com foco em prova visual concreta da transformação. Planeje obrigatoriamente 3 a 5 cenas visuais: depois desejado, dor atual, preview/mockup do kit, contexto real de uso e reforço de confiança. Cada imageBrief deve indicar sectionId, purpose e prompt com imagem realista ou mockup tangível dos entregáveis reais de experiment.feoDeliverablePackage. Não use ícones, cards genéricos, gradientes ou decoração abstrata como prova. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["visualDirection","imageBriefs","trustElements"],"properties":{"visualDirection":{"type":"string"},"imageBriefs":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["sectionId","purpose","prompt"],"properties":{"sectionId":{"type":"string"},"purpose":{"type":"string"},"prompt":{"type":"string"}}}},"trustElements":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-html:v7', 'gera-sales-page-v1', 'sales-page-html', 'v7', 'gpt-5.5', 'gera_sales_page_v1_html',
+                 'Você é desenvolvedor front-end de página de vendas. Gere a etapa sales-page-html do GeraSalesPage v1 em HTML responsivo, português brasileiro profissional e texto público com acentuação correta. A página deve deixar claro o que são os entregáveis reais do pacote usando experiment.feoDeliverablePackage; não invente entregáveis. Inclua pelo menos 3 blocos HTML com prova visual concreta marcados com data-transform-visual. Use valores sem acento: after, pain e preview. Cada bloco marcado deve conter img, picture, video, canvas, svg ou background-image real; cards de texto, ícones soltos e gradientes não contam. Para DIRECT_CHECKOUT, use a URL de checkout real nos CTAs e não crie formulário obrigatório. Para LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, use formulário gerenciado e nunca iframe. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["html","checkoutUrl","notes"],"properties":{"html":{"type":"string"},"checkoutUrl":{"type":"string"},"notes":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-checkout-quality-review:v7', 'gera-sales-page-v1', 'sales-page-checkout-quality-review', 'v7', 'gpt-5.5', 'gera_sales_page_v1_checkout_quality_review',
+                 'Você é auditor comercial. Revise a página do GeraSalesPage v1 como material que receberá tráfego pago. Aprove somente se a página explicar claramente preço, promessa, checkout, entrega e lista concreta dos entregáveis reais de experiment.feoDeliverablePackage. Bloqueie página que venda itens inventados, use linguagem interna de pesquisa, não mostre o que a cliente recebe, não tenha CTA de checkout real em DIRECT_CHECKOUT ou tenha formulário obrigatório antes da compra. Bloqueie se o HTML não tiver pelo menos 3 cenas visuais concretas marcadas com data-transform-visual contendo img, picture, video, canvas, svg ou background-image real. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["approved","blockers","recommendation"],"properties":{"approved":{"type":"boolean"},"blockers":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-publication-package:v7', 'gera-sales-page-v1', 'sales-page-publication-package', 'v7', 'gpt-5.5', 'gera_sales_page_v1_publication_package',
+                 'Você é responsável por empacotar a página para publicação. Retorne readyForTraffic=true somente se o HTML final estiver pronto para tráfego pago, com checkout real em DIRECT_CHECKOUT, preço claro, promessa clara, entregáveis reais descritos, ausência de linguagem interna, português brasileiro correto e pelo menos 3 cenas visuais concretas com data-transform-visual contendo img, picture, video, canvas, svg ou background-image real. O checklist deve confirmar checkout, oferta, entregáveis reais, prova visual, acentuação, ausência de iframe indevido e ausência de itens inventados. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["readyForTraffic","html","checkoutUrl","releaseChecklist"],"properties":{"readyForTraffic":{"type":"boolean"},"html":{"type":"string"},"checkoutUrl":{"type":"string"},"releaseChecklist":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                openai_model = VALUES(openai_model),
+                schema_name = VALUES(schema_name),
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = true,
+                updated_at = CURRENT_TIMESTAMP;

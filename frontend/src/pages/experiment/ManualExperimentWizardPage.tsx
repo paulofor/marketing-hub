@@ -1,6 +1,6 @@
 import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ClipboardList, FlaskConical, Layers, Megaphone } from "lucide-react";
+import { FlaskConical, Layers, Megaphone, SearchCheck } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import {
@@ -48,16 +48,7 @@ export default function ManualExperimentWizardPage() {
   const createManualExperiment = useCreateManualExperiment();
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
   const requiredFieldsComplete = useMemo(
-    () =>
-      Boolean(
-        form.nicheName &&
-          form.persona &&
-          form.problem &&
-          form.promise &&
-          form.mechanism &&
-          form.leadMagnet &&
-          form.primaryCta,
-      ),
+    () => Boolean(form.nicheName && form.persona && form.problem),
     [form],
   );
 
@@ -67,8 +58,12 @@ export default function ManualExperimentWizardPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const experiment = await createManualExperiment.mutateAsync(toPayload(form));
-    navigate(`/experiments/${experiment.id}`);
+    const experiment = await createManualExperiment.mutateAsync(
+      toPayload(form),
+    );
+    navigate(`/experiments/${experiment.id}`, {
+      state: { initialTab: "construction" },
+    });
   }
 
   return (
@@ -78,8 +73,8 @@ export default function ManualExperimentWizardPage() {
         <div>
           <span className="badge text-bg-warning mb-2">Fluxo manual</span>
           <p className="text-muted mb-0">
-            Cria a cadeia oficial Nicho, Hipótese, Contrato Comercial e
-            Experimento sem acionar as IAs.
+            Registra somente o brief inicial. Mecanismo, oferta, prova,
+            entregáveis e métricas são conduzidos na aba Construção.
           </p>
         </div>
         <Link className="btn btn-outline-secondary" to="/experiments">
@@ -90,8 +85,8 @@ export default function ManualExperimentWizardPage() {
       <form onSubmit={handleSubmit}>
         <WizardSection
           icon={<Layers size={20} />}
-          title="Nicho"
-          subtitle="Público e oportunidade de mercado"
+          title="1. Nicho e dor"
+          subtitle="O mínimo necessário para iniciar investigação comercial sem inventar solução cedo demais"
         >
           <div className="row g-3">
             <TextField
@@ -102,7 +97,7 @@ export default function ManualExperimentWizardPage() {
               required
             />
             <TextField
-              label="Público"
+              label="Público inicial"
               name="nicheAudience"
               value={form.nicheAudience}
               onChange={updateField}
@@ -115,18 +110,26 @@ export default function ManualExperimentWizardPage() {
               placeholder="Ex.: Marie Claire, editorias de beleza, saúde e carreira"
             />
             <TextAreaField
-              label="Dores observadas"
+              label="Dor observada"
               name="pains"
               value={form.pains}
               onChange={updateField}
+              required
+            />
+            <TextAreaField
+              label="Desejo ou alívio buscado"
+              name="desires"
+              value={form.desires}
+              onChange={updateField}
+              placeholder="Ex.: reduzir esforço, ganhar controle, parecer mais profissional, vender com menos fricção"
             />
           </div>
         </WizardSection>
 
         <WizardSection
           icon={<FlaskConical size={20} />}
-          title="Hipótese"
-          subtitle="Aposta comercial a validar"
+          title="2. Hipótese inicial"
+          subtitle="A aposta de mercado antes da pesquisa MDS e antes da fabricação FEO"
         >
           <div className="row g-3">
             <TextField
@@ -137,103 +140,60 @@ export default function ManualExperimentWizardPage() {
               required
             />
             <TextField
-              label="Dor principal"
+              label="Dor principal em uma frase"
               name="problem"
               value={form.problem}
               onChange={updateField}
               required
             />
-            <TextField
-              label="Promessa"
-              name="promise"
-              value={form.promise}
-              onChange={updateField}
-              required
-            />
-            <TextField
-              label="Mecanismo"
-              name="mechanism"
-              value={form.mechanism}
-              onChange={updateField}
-              required
-            />
             <TextAreaField
-              label="Hipótese em uma frase"
+              label="Hipótese de valor"
               name="hypothesisStatement"
               value={form.hypothesisStatement}
               onChange={updateField}
+              placeholder="Ex.: acreditamos que este público vai responder a uma proposta que reduz uma dor concreta com menor esforço percebido."
             />
             <TextAreaField
-              label="Prova ou evidência"
-              name="proof"
-              value={form.proof}
+              label="Sinal de sucesso esperado"
+              name="successSignal"
+              value={form.successSignal}
               onChange={updateField}
+              placeholder="Ex.: envio de formulário, clique em compra, resposta qualificada, lead pedindo acesso ao material."
             />
           </div>
         </WizardSection>
 
         <WizardSection
-          icon={<ClipboardList size={20} />}
-          title="Contrato Comercial"
-          subtitle="Oferta mínima testável"
+          icon={<SearchCheck size={20} />}
+          title="3. Insumos para MDS e Construção"
+          subtitle="Contexto que ajuda a descobrir mecanismo, prova e oferta sem fechar a promessa antes da evidência"
         >
           <div className="row g-3">
-            <TextField
-              label="Nome da oferta"
-              name="offerName"
-              value={form.offerName}
+            <TextAreaField
+              label="Canais prováveis"
+              name="likelyChannels"
+              value={form.likelyChannels}
               onChange={updateField}
-            />
-            <TextField
-              label="Isca ou recompensa"
-              name="leadMagnet"
-              value={form.leadMagnet}
-              onChange={updateField}
-              required
-            />
-            <TextField
-              label="Produto em validação"
-              name="productName"
-              value={form.productName}
-              onChange={updateField}
-            />
-            <TextField
-              label="CTA principal"
-              name="primaryCta"
-              value={form.primaryCta}
-              onChange={updateField}
-              required
-            />
-            <TextField
-              label="Preço de teste"
-              name="testPrice"
-              type="number"
-              value={form.testPrice}
-              onChange={updateField}
-            />
-            <TextField
-              label="Tipo de validação"
-              name="validationType"
-              value={form.validationType}
-              onChange={updateField}
+              placeholder="Ex.: Meta Ads, Instagram, Google, WhatsApp, e-mail."
             />
             <TextAreaField
-              label="Limite da promessa"
+              label="Restrições ou cuidados da promessa"
               name="promiseLimit"
               value={form.promiseLimit}
               onChange={updateField}
+              placeholder="Ex.: não prometer cura, renda garantida ou resultado absoluto."
             />
           </div>
         </WizardSection>
 
         <WizardSection
           icon={<Megaphone size={20} />}
-          title="Experimento"
-          subtitle="Canal, criativos e critérios de decisão"
+          title="4. Parâmetros iniciais de teste"
+          subtitle="Configuração operacional preliminar; a campanha final será refinada na Construção"
         >
           <div className="row g-3">
             <TextField
-              label="Canal"
+              label="Canal inicial"
               name="experimentChannel"
               value={form.experimentChannel}
               onChange={updateField}
@@ -260,13 +220,13 @@ export default function ManualExperimentWizardPage() {
               onChange={updateField}
             />
             <TextAreaField
-              label="Ângulos de criativo"
+              label="Ângulos ou observações iniciais"
               name="creativeAngles"
               value={form.creativeAngles}
               onChange={updateField}
             />
             <TextAreaField
-              label="Critério de aprovação"
+              label="Critério inicial de aprovação"
               name="successCriteria"
               value={form.successCriteria}
               onChange={updateField}
@@ -282,17 +242,19 @@ export default function ManualExperimentWizardPage() {
 
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 border-top pt-3">
           <span className="text-muted small">
-            O experimento será salvo como <strong>MANUAL_FLOW</strong> e
-            planejado para captação de leads.
+            O experimento será salvo como <strong>MANUAL_FLOW</strong> e aberto
+            na aba Construção para completar MDS, oferta, prova, FEO e funil.
           </span>
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={!requiredFieldsComplete || createManualExperiment.isPending}
+            disabled={
+              !requiredFieldsComplete || createManualExperiment.isPending
+            }
           >
             {createManualExperiment.isPending
               ? "Criando..."
-              : "Criar experimento manual"}
+              : "Criar e abrir Construção"}
           </button>
         </div>
       </form>
@@ -363,21 +325,27 @@ function TextAreaField({
   value,
   onChange,
   placeholder,
+  required,
 }: {
   label: string;
   name: keyof CreateManualExperiment;
   value: string;
   onChange: (name: keyof CreateManualExperiment, value: string) => void;
   placeholder?: string;
+  required?: boolean;
 }) {
   return (
     <div className="col-12">
-      <label className="form-label">{label}</label>
+      <label className="form-label">
+        {label}
+        {required ? <span className="text-danger"> *</span> : null}
+      </label>
       <textarea
         className="form-control"
         rows={3}
         value={value}
         placeholder={placeholder}
+        required={required}
         onChange={(event) => onChange(name, event.target.value)}
       />
     </div>

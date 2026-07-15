@@ -12,8 +12,10 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.finance.CurrencyConversionProperties;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekExperimentDto;
+import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
 import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.repository.jpa.planning.CommercialPlanWeekObjectiveRepository;
 import java.time.Clock;
@@ -55,12 +57,23 @@ class CommercialPlanWeeklyExperimentServiceTest {
         when(planService.getPlan(1L)).thenReturn(plan);
     }
 
-    /** Deve liberar edicao de objetivos dois dias antes ate dois dias depois do fim da semana. */
+    /** Deve liberar edicao dos objetivos da proxima semana dois dias antes ate dois dias depois do fim da semana atual. */
     @Test
     void listWeeksMarksObjectivesEditableOnlyInsideWindow() {
         CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 8));
         when(objectiveRepository.findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(any(), any()))
-                .thenReturn(List.of());
+                .thenAnswer(invocation -> {
+                    Integer weekNumber = invocation.getArgument(1);
+                    if (Integer.valueOf(2).equals(weekNumber)) {
+                        return List.of(CommercialPlanWeekObjective.builder()
+                                .id(20L)
+                                .weekNumber(2)
+                                .sequenceOrder(1)
+                                .objectiveText("Objetivo cadastrado para a semana seguinte.")
+                                .build());
+                    }
+                    return List.of();
+                });
         when(jdbcTemplate.query(
                         anyString(),
                         any(RowMapper.class),
@@ -84,6 +97,9 @@ class CommercialPlanWeeklyExperimentServiceTest {
         assertThat(weeks.get(0).objectivesEditable()).isTrue();
         assertThat(weeks.get(1).objectivesEditable()).isFalse();
         assertThat(weeks.get(0).objectiveEditWindowMessage()).contains("2026-07-09");
+        assertThat(weeks.get(0).objectives())
+                .extracting(CommercialPlanWeekObjectiveDto::objectiveText)
+                .containsExactly("Objetivo cadastrado para a semana seguinte.");
     }
 
     /** Deve calcular tempo medio com todas as sessoes de analytics, alinhado ao detalhe do experimento. */
@@ -134,7 +150,7 @@ class CommercialPlanWeeklyExperimentServiceTest {
         assertThat(sql).doesNotContain("where event_times.elapsed_ms is not null");
     }
 
-    /** Deve impedir gravacao de objetivos quando a semana esta fora da janela comercial. */
+    /** Deve impedir gravacao de objetivos da proxima semana quando a semana atual esta fora da janela comercial. */
     @Test
     void updateObjectivesRejectsWeekOutsideEditWindow() {
         CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 8));
@@ -145,7 +161,33 @@ class CommercialPlanWeeklyExperimentServiceTest {
                         new UpdateCommercialPlanWeekObjectivesRequest(List.of())))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Objetivos disponiveis");
-        verify(objectiveRepository, never()).deleteByPlanIdAndWeekNumber(1L, 2);
+        verify(objectiveRepository, never()).deleteByPlanIdAndWeekNumber(1L, 3);
+    }
+
+    /** Deve gravar os objetivos na semana seguinte ao card editado. */
+    @Test
+    void updateObjectivesStoresNextWeekObjectivesFromCurrentWeekCard() {
+        CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 15));
+        when(objectiveRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<?> objectives = service.updateObjectives(
+                1L,
+                2,
+                new UpdateCommercialPlanWeekObjectivesRequest(
+                        List.of(new UpdateCommercialPlanWeekObjectivesRequest.Item(
+                                null,
+                                1,
+                                "Focar a semana 3 em prova comercial real.",
+                                12))));
+
+        verify(objectiveRepository).deleteByPlanIdAndWeekNumber(1L, 3);
+        assertThat(objectives).hasSize(1);
+        ArgumentCaptor<Iterable<CommercialPlanWeekObjective>> captor = ArgumentCaptor.forClass(Iterable.class);
+        verify(objectiveRepository).saveAll(captor.capture());
+        CommercialPlanWeekObjective saved = captor.getValue().iterator().next();
+        assertThat(saved.getWeekNumber()).isEqualTo(3);
+        assertThat(saved.getObjectiveText()).isEqualTo("Focar a semana 3 em prova comercial real.");
+        assertThat(saved.getScore()).isEqualTo(10);
     }
 
     /** Cria o servico com data fixa para testar a regra de disponibilidade. */

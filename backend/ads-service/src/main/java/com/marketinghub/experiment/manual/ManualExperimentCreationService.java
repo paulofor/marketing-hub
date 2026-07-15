@@ -36,6 +36,10 @@ public class ManualExperimentCreationService {
     private static final BigDecimal DEFAULT_KPI_TARGET_CPL = new BigDecimal("10.00");
     private static final BigDecimal DEFAULT_DAILY_BUDGET = new BigDecimal("50.00");
     private static final int DEFAULT_SAMPLE_SIZE = 100;
+    private static final String PENDING_PROMISE = "Pendente na Construção: definir promessa após MDS";
+    private static final String PENDING_MECHANISM = "Pendente na Construção: descobrir mecanismo com MDS";
+    private static final String PENDING_LEAD_MAGNET = "Pendente na Construção: definir isca ou entrega inicial";
+    private static final String PENDING_CTA = "Pendente na Construção: definir CTA principal";
 
     private final MarketNicheRepository nicheRepository;
     private final HypothesisRepository hypothesisRepository;
@@ -72,10 +76,6 @@ public class ManualExperimentCreationService {
         requireText(request.getNicheName(), "nicheName required");
         requireText(request.getPersona(), "persona required");
         requireText(request.getProblem(), "problem required");
-        requireText(request.getPromise(), "promise required");
-        requireText(request.getMechanism(), "mechanism required");
-        requireText(request.getLeadMagnet(), "leadMagnet required");
-        requireText(request.getPrimaryCta(), "primaryCta required");
         if (request.getDailyBudget() != null && request.getDailyBudget().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget must be greater than zero");
         }
@@ -118,12 +118,12 @@ public class ManualExperimentCreationService {
         return Hypothesis.builder()
                 .marketNiche(niche)
                 .title(buildHypothesisTitle(niche))
-                .promise(request.getPromise())
+                .promise(resolvePromise(request))
                 .problem(request.getProblem())
                 .persona(request.getPersona())
-                .mechanism(request.getMechanism())
-                .uniqueMechanism(request.getMechanism())
-                .entrega(request.getLeadMagnet())
+                .mechanism(resolveMechanism(request))
+                .uniqueMechanism(resolveMechanism(request))
+                .entrega(resolveLeadMagnet(request))
                 .successRule(joinLines(
                         request.getSuccessSignal(),
                         labeled("Criterio de sucesso", request.getSuccessCriteria())))
@@ -147,9 +147,9 @@ public class ManualExperimentCreationService {
                 .hypothesisRef(hypothesis)
                 .hypothesis(resolveNarrative(request))
                 .singlePain(request.getProblem())
-                .freeReward(request.getLeadMagnet())
-                .funnelPromise(request.getPromise())
-                .primaryCta(request.getPrimaryCta())
+                .freeReward(resolveLeadMagnet(request))
+                .funnelPromise(resolvePromise(request))
+                .primaryCta(resolvePrimaryCta(request))
                 .experimentType(ExperimentType.NICHE_TEST)
                 .campaignObjective(ExperimentCampaignObjective.LEADS)
                 .kpiTargetCpl(resolveKpiTargetCpl(request))
@@ -169,6 +169,26 @@ public class ManualExperimentCreationService {
     /** Resolve o KPI de CPL informado ou aplica um padrão conservador para teste manual. */
     private BigDecimal resolveKpiTargetCpl(ManualExperimentCreationRequest request) {
         return request.getKpiTargetCpl() != null ? request.getKpiTargetCpl() : DEFAULT_KPI_TARGET_CPL;
+    }
+
+    /** Resolve a promessa ou marca a pendência para a aba Construção. */
+    private String resolvePromise(ManualExperimentCreationRequest request) {
+        return StringUtils.hasText(request.getPromise()) ? request.getPromise().trim() : PENDING_PROMISE;
+    }
+
+    /** Resolve o mecanismo ou marca a pendência para pesquisa MDS. */
+    private String resolveMechanism(ManualExperimentCreationRequest request) {
+        return StringUtils.hasText(request.getMechanism()) ? request.getMechanism().trim() : PENDING_MECHANISM;
+    }
+
+    /** Resolve a isca inicial ou marca a pendência de oferta. */
+    private String resolveLeadMagnet(ManualExperimentCreationRequest request) {
+        return StringUtils.hasText(request.getLeadMagnet()) ? request.getLeadMagnet().trim() : PENDING_LEAD_MAGNET;
+    }
+
+    /** Resolve o CTA principal ou marca a pendência de oferta. */
+    private String resolvePrimaryCta(ManualExperimentCreationRequest request) {
+        return StringUtils.hasText(request.getPrimaryCta()) ? request.getPrimaryCta().trim() : PENDING_CTA;
     }
 
     /** Define o tipo de oferta da hipótese de acordo com o objetivo declarado no teste. */
@@ -237,10 +257,9 @@ public class ManualExperimentCreationService {
         if (StringUtils.hasText(request.getHypothesisStatement())) {
             return request.getHypothesisStatement();
         }
-        return "%s quer %s por meio de %s".formatted(
+        return "%s sofre com %s; mecanismo, promessa, oferta e prova devem ser definidos na Construção com apoio do MDS e validação do funil.".formatted(
                 request.getPersona().trim(),
-                request.getPromise().trim(),
-                request.getMechanism().trim());
+                request.getProblem().trim());
     }
 
     /** Prefixa um valor opcional com rótulo legível. */

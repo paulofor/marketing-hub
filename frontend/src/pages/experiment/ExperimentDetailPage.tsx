@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useExperiment } from "../../api/experiment/useExperiment";
@@ -323,6 +323,7 @@ export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
   const navigate = useNavigate();
+  const location = useLocation();
   const { data, isLoading } = useExperiment(expId);
   const videoAssetsQuery = useExperimentVideoAssets(expId);
   const geraSalesPagePublications = useGeraSalesPagePublications(expId);
@@ -345,7 +346,9 @@ export default function ExperimentDetailPage() {
     data ? String(data.hypothesisId) : undefined,
   );
   const { data: presets } = useMetricPresets();
-  const [tab, setTab] = useState("overview");
+  const initialTab = (location.state as { initialTab?: string } | null)
+    ?.initialTab;
+  const [tab, setTab] = useState(initialTab || "overview");
   const tabsSectionRef = useRef<HTMLDivElement | null>(null);
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
@@ -2871,7 +2874,10 @@ export default function ExperimentDetailPage() {
             </div>
           </Tabs.Content>
           <Tabs.Content value="construction" asChild>
-            <ExperimentConstructionTab experimentId={expId} />
+            <ExperimentConstructionTab
+              experimentId={expId}
+              onSelectTab={setTab}
+            />
           </Tabs.Content>
           <Tabs.Content value="execucao" asChild>
             <div className="d-flex flex-column gap-3">

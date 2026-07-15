@@ -2,7 +2,60 @@ import { useExperimentConstruction } from "../../api/experiment/useExperimentCon
 
 interface ExperimentConstructionTabProps {
   experimentId?: string;
+  onSelectTab?: (tab: string) => void;
 }
+
+const FLOW_STEPS = [
+  {
+    title: "Nicho/dor",
+    description:
+      "Confirmar público, dor raiz e desejo que reduzem esforço ou afastam dor.",
+    tab: "overview",
+    action: "Ver base",
+  },
+  {
+    title: "Hipótese",
+    description:
+      "Organizar a aposta comercial sem fechar promessa antes da evidência.",
+    tab: "content-structure",
+    action: "Ver estrutura",
+  },
+  {
+    title: "MDS",
+    description:
+      "Descobrir mecanismo plausível, limites e evidências para sustentar a promessa.",
+    tab: "content-structure",
+    action: "Preparar mecanismo",
+  },
+  {
+    title: "Oferta/prova",
+    description:
+      "Transformar mecanismo em promessa, prova, isca, produto e CTA coerentes.",
+    tab: "landing",
+    action: "Construir oferta",
+  },
+  {
+    title: "Experimento",
+    description:
+      "Materializar criativos, landing e publicação para medir resposta real.",
+    tab: "creatives",
+    action: "Criar ativos",
+  },
+  {
+    title: "FEO",
+    description:
+      "Fabricar entregáveis após a oferta estar validada ou pronta para teste controlado.",
+    tab: "deliverables",
+    action: "Ver entregáveis",
+  },
+  {
+    title: "Funil",
+    description:
+      "Medir leads, compra, custo, taxa e aprendizado comercial para decidir escala.",
+    tab: "funnel",
+    action: "Medir venda",
+  },
+];
 
 function formatConstructionValue(value: string) {
   const lines = value.split("\n");
@@ -16,6 +69,7 @@ function formatConstructionValue(value: string) {
 
 export default function ExperimentConstructionTab({
   experimentId,
+  onSelectTab,
 }: ExperimentConstructionTabProps) {
   const { data, isLoading, error } = useExperimentConstruction(experimentId);
 
@@ -44,14 +98,39 @@ export default function ExperimentConstructionTab({
           <div>
             <h5 className="mb-1">Construção do experimento manual</h5>
             <p className="text-muted small mb-0">
-              Leitura consolidada do backend sobre a cadeia, tese, oferta,
-              validação e ativos que originaram este teste.
+              Cockpit para conduzir o fluxo Nicho/dor → hipótese → MDS → oferta
+              → prova → experimento → FEO → funil.
             </p>
           </div>
           <span className="badge text-bg-warning align-self-start">
             Fluxo manual
           </span>
         </div>
+      </div>
+
+      <div className="row g-2">
+        {FLOW_STEPS.map((step, index) => (
+          <div className="col-12 col-md-6 col-xl-4" key={step.title}>
+            <div className="border rounded-3 p-3 h-100 bg-white">
+              <div className="d-flex align-items-start justify-content-between gap-2">
+                <div>
+                  <span className="badge text-bg-light mb-2">{index + 1}</span>
+                  <h6 className="mb-1">{step.title}</h6>
+                </div>
+                {onSelectTab ? (
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    type="button"
+                    onClick={() => onSelectTab(step.tab)}
+                  >
+                    {step.action}
+                  </button>
+                ) : null}
+              </div>
+              <p className="small text-muted mb-0">{step.description}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {data.sections.map((section) => (

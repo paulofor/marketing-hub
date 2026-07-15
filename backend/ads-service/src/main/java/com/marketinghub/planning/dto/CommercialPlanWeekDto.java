@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Responsabilidade: expor o consolidado semanal de experimentos do planejamento comercial. */
+/** Responsabilidade: expor o consolidado semanal com objetivos da próxima semana. */
 public record CommercialPlanWeekDto(
         Integer weekNumber,
         LocalDate startDate,

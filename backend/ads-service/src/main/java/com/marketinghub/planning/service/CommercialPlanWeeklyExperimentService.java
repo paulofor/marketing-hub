@@ -67,7 +67,7 @@ public class CommercialPlanWeeklyExperimentService {
         this.clock = clock;
     }
 
-    /** Lista as semanas do mês do plano com os experimentos criados em cada período. */
+    /** Lista as semanas do mês do plano com experimentos do período e objetivos da próxima semana. */
     @Transactional(readOnly = true)
     public List<CommercialPlanWeekDto> listWeeks(Long planId) {
         CommercialPlan plan = planService.getPlan(planId);
@@ -79,7 +79,9 @@ public class CommercialPlanWeeklyExperimentService {
         while (!start.isAfter(monthEnd)) {
             LocalDate end = start.plusDays(6).isAfter(monthEnd) ? monthEnd : start.plusDays(6);
             List<CommercialPlanWeekExperimentDto> experiments = listExperiments(start, end.plusDays(1));
-            boolean objectivesEditable = isObjectiveEditWindowOpen(end);
+            boolean hasNextWeek = end.isBefore(monthEnd);
+            boolean objectivesEditable = hasNextWeek && isObjectiveEditWindowOpen(end);
+            Integer objectiveWeekNumber = weekNumber + 1;
             weeks.add(new CommercialPlanWeekDto(
                     weekNumber,
                     start,
@@ -89,7 +91,7 @@ public class CommercialPlanWeeklyExperimentService {
                     sumRevenue(experiments),
                     objectivesEditable,
                     objectiveEditWindowMessage(end, objectivesEditable),
-                    listObjectives(plan, weekNumber),
+                    hasNextWeek ? listObjectives(plan, objectiveWeekNumber) : List.of(),
                     experiments));
             start = end.plusDays(1);
             weekNumber++;
@@ -97,7 +99,7 @@ public class CommercialPlanWeeklyExperimentService {
         return weeks;
     }
 
-    /** Atualiza os objetivos avaliaveis de uma semana do plano. */
+    /** Atualiza os objetivos da próxima semana a partir do card semanal informado. */
     @Transactional
     public List<CommercialPlanWeekObjectiveDto> updateObjectives(
             Long planId,
@@ -108,7 +110,9 @@ public class CommercialPlanWeeklyExperimentService {
         if (!isObjectiveEditWindowOpen(period.endDate())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, objectiveEditWindowMessage(period.endDate(), false));
         }
-        objectiveRepository.deleteByPlanIdAndWeekNumber(planId, weekNumber);
+        Integer objectiveWeekNumber = weekNumber + 1;
+        resolveWeekPeriod(plan, objectiveWeekNumber);
+        objectiveRepository.deleteByPlanIdAndWeekNumber(planId, objectiveWeekNumber);
         List<CommercialPlanWeekObjective> objectives = new ArrayList<>();
         List<UpdateCommercialPlanWeekObjectivesRequest.Item> items =
                 request == null || request.objectives() == null ? List.of() : request.objectives();
@@ -119,7 +123,7 @@ public class CommercialPlanWeeklyExperimentService {
             }
             objectives.add(CommercialPlanWeekObjective.builder()
                     .plan(plan)
-                    .weekNumber(weekNumber)
+                    .weekNumber(objectiveWeekNumber)
                     .sequenceOrder(nextOrder)
                     .objectiveText(item.objectiveText().trim())
                     .score(normalizeScore(item.score()))

@@ -270,8 +270,8 @@ class ExperimentControllerTest {
                 .andExpect(jsonPath("$.experimentId").value(experiment.getId()))
                 .andExpect(jsonPath("$.creationSource").value("MANUAL_FLOW"))
                 .andExpect(jsonPath("$.manualFlow").value(true))
-                .andExpect(jsonPath("$.sections[0].title").value("Origem e cadeia criada"))
-                .andExpect(jsonPath("$.sections[1].title").value("Tese comercial"))
+                .andExpect(jsonPath("$.sections[0].title").value("1. Nicho/dor"))
+                .andExpect(jsonPath("$.sections[1].title").value("2. Hipótese"))
                 .andExpect(jsonPath("$.sections[1].items[0].label").value("Público/persona"))
                 .andExpect(jsonPath("$.sections[1].items[0].value").value("Mulheres urbanas"));
     }

@@ -1003,6 +1003,52 @@ Próximas ações:
 - Testar acesso público da página, clique no checkout e entrega do produto.
 - Só liberar tráfego depois desses pontos.
 
+## Correção de criativos aprovados sem imagem
+
+Data: `2026-07-15`.
+
+Sintoma observado:
+
+- Na tela do experimento 66, os 5 criativos apareciam em **Aprovados**, mas todos exibiam `Imagem não disponível`.
+
+Validação pelo sistema:
+
+- Consulta somente leitura via MCP na tabela `creative` confirmou 5 registros do experimento 66:
+  - IDs `228`, `229`, `230`, `231`, `232`;
+  - todos com `status = READY`;
+  - todos com `ad_format = IMAGE`;
+  - todos com `image_url = null`;
+  - todos com `image_hash = null`.
+
+Conclusão:
+
+- Os criativos não estavam realmente prontos para tráfego.
+- O problema não era apenas visual no frontend; o backend permitiu criativo de imagem aprovado sem asset visual.
+- Comercialmente, esses 5 criativos devem ser tratados como inválidos até serem regerados com imagem real.
+
+Correção aplicada no código:
+
+- O AI Worker agora bloqueia geração concluída quando a OpenAI/upload não retorna `imageUrl`.
+- O cliente de imagem preserva erro HTTP da OpenAI para permitir retry correto.
+- A regra de retry dos criativos fica explícita:
+  - tentativa 1: Flex;
+  - tentativa 2: Flex;
+  - tentativa 3: Standard/default.
+- O backend passa a rejeitar criativo `READY` de formato `IMAGE` sem `imageUrl`.
+- A prontidão/readiness passa a contar apenas criativos `READY` com imagem publicável.
+- A aba Construção também deixa de considerar criativo aprovado sem imagem como ativo validado.
+
+Validação:
+
+- `mvn -f ai-worker/pom.xml -Dtest=CreativeImageClientTest,CreativeGenerationServiceTest test`: passou.
+- `mvn -f backend/ads-service/pom.xml -Dtest=CreativeServiceTest,ExperimentReadinessServiceTest test`: passou.
+
+Próximo passo operacional:
+
+- Fazer deploy do backend e do AI Worker.
+- Regerar os 5 criativos do experimento 66.
+- Confirmar novamente no banco/sistema que cada criativo aprovado possui `image_url` real antes de liberar tráfego.
+
 ## Critério de exibição dos entregáveis na página de venda
 
 Data: `2026-07-15`.

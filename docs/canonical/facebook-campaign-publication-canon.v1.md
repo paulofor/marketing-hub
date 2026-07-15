@@ -17,6 +17,7 @@
 > - formaliza a coleta periódica de sugestões oficiais da Meta para campanhas ativas, com persistência exclusiva via backend
 > - formaliza que campanhas de experimento usam orçamento diário no nível do ad set (`budgetMode=ADSET`) e que orçamento de campanha é reservado para etapa futura de escala
 > - formaliza que solicitações de targeting por IA devem usar GPT-5.5 em modo Flex e gerar seeds orientados à taxonomia Meta Ads, mantendo a validação oficial de existência no Facebook Ads Worker
+> - formaliza que criativo de imagem só pode ser tratado como aprovado/publicável quando possuir `image_url` real
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -99,7 +100,8 @@ As solicitações de targeting feitas pelo usuário no contexto de nichos, hipó
 Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critérios usados pelo cartão **Campanha de Facebook Ads** e pelo `facebook-ads-worker`. **Todos os itens abaixo precisam estar resolvidos** para que o worker gere conjuntos de anúncios.
 
 1. **Criativos aprovados**
-   - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'`.
+   - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'` e asset visual publicável.
+   - Para criativos de formato `IMAGE`, `READY` só é válido quando `creative.image_url` estiver preenchido com uma URL real. Criativo `IMAGE` sem `image_url` deve permanecer bloqueado, não pode contar na prontidão e não pode aparecer como aprovado publicável na UI.
    - O botão **Gerar anúncios do pipeline** pode produzir até 3 anúncios (texto + prompt) via Worker AI (`gpt-image-2`). Eles entram como `DRAFT` e precisam ser aprovados antes da liberação.
    - Quando múltiplos criativos `READY` existem, o worker publica todos no mesmo ad set para preservar as variações aprovadas.
    - A criação, edição, aprovação e exclusão do criativo pertencem exclusivamente ao módulo Experimentos. O módulo Facebook não pode criar ou alterar criativos; ele apenas expõe contrato de leitura para consumo operacional.

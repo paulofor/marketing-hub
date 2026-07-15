@@ -2,6 +2,7 @@ package com.marketinghub.worker.creative;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -103,6 +104,41 @@ class CreativeGenerationServiceTest {
                 org.mockito.ArgumentMatchers.anyString());
         assertThat(promptCaptor.getValue()).contains(saved.getPrimaryText());
         assertThat(promptCaptor.getValue()).contains("Nao incluir texto, letras, numeros");
+    }
+
+    /** Garante que o worker não cria criativo quando a imagem não foi gerada. */
+    @Test
+    void shouldFailPendingGenerationWhenImageUrlIsEmpty() {
+        CreativeGenerationBackendClient backendClient = mock(CreativeGenerationBackendClient.class);
+        CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
+        CreativeImageClient imageClient = mock(CreativeImageClient.class);
+        CreativeGenerationService service =
+                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+        ExperimentDto experiment = pendingExperiment();
+        CreateCreativeRequest generated = new CreateCreativeRequest();
+        generated.setHeadline("Headline");
+        generated.setPrimaryText("Texto principal");
+        generated.setStatus(CreativeStatus.DRAFT);
+
+        when(backendClient.listPending(5)).thenReturn(List.of(experiment));
+        when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
+                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+        when(imageClient.generateImage(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(" ");
+
+        CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
+
+        assertThat(summary.succeeded()).isZero();
+        assertThat(summary.failed()).isEqualTo(1);
+        verify(backendClient, never()).createCreative(
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.any());
+        verify(backendClient).markFailed(
+                org.mockito.ArgumentMatchers.eq(49L),
+                org.mockito.ArgumentMatchers.contains("Imagem do criativo não foi gerada"));
     }
 
     /** Cria um experimento pendente mínimo para o cenário de teste. */

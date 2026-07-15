@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository for creatives.
+ * Responsabilidade: consultar e persistir criativos vinculados a experimentos.
  */
 public interface CreativeRepository extends JpaRepository<Creative, Long> {
     /** Lista os criativos vinculados ao experimento informado. */
@@ -18,6 +18,18 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
 
     /** Verifica se existe criativo do experimento no status informado. */
     boolean existsByExperimentIdAndStatus(Long experimentId, CreativeStatus status);
+
+    /** Verifica se existe criativo aprovado com imagem publicável no experimento. */
+    @Query("""
+            select case when count(c) > 0 then true else false end
+              from Creative c
+             where c.experiment.id = :experimentId
+               and c.status = :status
+               and c.imageUrl is not null
+               and trim(c.imageUrl) <> ''
+            """)
+    boolean existsByExperimentIdAndStatusAndUsableImage(@Param("experimentId") Long experimentId,
+                                                        @Param("status") CreativeStatus status);
 
     /** Busca um criativo carregando também o experimento vinculado. */
     @Query("select c from Creative c join fetch c.experiment where c.id = :id")
@@ -28,4 +40,16 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
 
     /** Conta os criativos do experimento que estão no status informado. */
     long countByExperimentIdAndStatus(Long experimentId, CreativeStatus status);
+
+    /** Conta criativos aprovados com imagem publicável no experimento informado. */
+    @Query("""
+            select count(c)
+              from Creative c
+             where c.experiment.id = :experimentId
+               and c.status = :status
+               and c.imageUrl is not null
+               and trim(c.imageUrl) <> ''
+            """)
+    long countByExperimentIdAndStatusAndUsableImage(@Param("experimentId") Long experimentId,
+                                                    @Param("status") CreativeStatus status);
 }

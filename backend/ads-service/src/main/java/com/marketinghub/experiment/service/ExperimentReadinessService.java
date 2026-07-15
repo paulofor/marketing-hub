@@ -90,7 +90,7 @@ public class ExperimentReadinessService {
     @Transactional(readOnly = true)
     public ExperimentReadinessSummaryDto summarize(Long experimentId) {
         Experiment experiment = experimentService.get(experimentId);
-        long creativeCount = creativeRepository.countByExperimentIdAndStatus(experimentId, CreativeStatus.READY);
+        long creativeCount = creativeRepository.countByExperimentIdAndStatusAndUsableImage(experimentId, CreativeStatus.READY);
         boolean hasCreatives = creativeCount > 0;
 
         long leadPortalFlowCount = hasReadyLeadPortalFlow(experiment) ? 1L : 0L;
@@ -284,12 +284,12 @@ public class ExperimentReadinessService {
         return hasSelectedTargeting(experiment.getId());
     }
 
-    /** Verifica a aprovação real dos criativos pela fonte canônica: registros READY. */
+    /** Verifica a aprovação real dos criativos pela fonte canônica: registros READY com imagem publicável. */
     private boolean hasApprovedCreative(Experiment experiment) {
         if (experiment == null || experiment.getId() == null) {
             return false;
         }
-        return creativeRepository.existsByExperimentIdAndStatus(experiment.getId(), CreativeStatus.READY);
+        return creativeRepository.existsByExperimentIdAndStatusAndUsableImage(experiment.getId(), CreativeStatus.READY);
     }
 
     /** Verifica se existe fluxo aprovado do portal do lead vinculado ao experimento. */

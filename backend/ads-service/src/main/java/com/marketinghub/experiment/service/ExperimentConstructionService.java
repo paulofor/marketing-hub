@@ -74,7 +74,7 @@ public class ExperimentConstructionService {
                 && StringUtils.hasText(experiment.getPrimaryCta())
                 && (experiment.getUnitPrice() != null
                         || experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT);
-        boolean hasExperimentAssets = creativeRepository.existsByExperimentIdAndStatus(experiment.getId(), CreativeStatus.READY)
+        boolean hasExperimentAssets = creativeRepository.existsByExperimentIdAndStatusAndUsableImage(experiment.getId(), CreativeStatus.READY)
                 || StringUtils.hasText(experiment.getAdCopy())
                 || StringUtils.hasText(experiment.getAdImageBriefing());
         boolean hasFeoDeliverables = StringUtils.hasText(experiment.getLandingPageDeliverables());

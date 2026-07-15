@@ -19,6 +19,7 @@ import com.marketinghub.feo.fabricacaov1.pipeline.StageStatus;
 import com.marketinghub.feo.fabricacaov1.planejamentoentregaveis.PlanejamentoEntregaveisProcessor;
 import com.marketinghub.feo.fabricacaov1.redacaoentregaveis.RedacaoEntregaveisProcessor;
 import java.util.Map;
+import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -46,7 +47,14 @@ class FeoFabricacaoV1ContractTest {
 
         assertThat(result.status()).isEqualTo(StageStatus.COMPLETED);
         assertThat(result.nextStageCode()).isEqualTo(StageCode.REDACAO_ENTREGAVEIS);
-        assertThat(result.output().deliverables()).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(result.output().deliverables()).hasSizeGreaterThanOrEqualTo(9);
+        assertThat(result.output().deliverables()).extracting("componentType")
+                .contains(
+                        "PLANO_EXECUCAO_RAPIDA",
+                        "TEMPLATES_PRONTOS",
+                        "PROVA_TANGIVEL",
+                        "RITUAL_ACOMPANHAMENTO",
+                        "BONUS_ANTI_OBJECAO");
         assertThat(result.artifacts()).extracting("name").contains("feo-offer-deliverable-plan.json");
     }
 
@@ -74,7 +82,12 @@ class FeoFabricacaoV1ContractTest {
         assertThat(result.nextStageCode()).isEqualTo(StageCode.MONTAGEM_PACOTE);
         DeliverableContentPackage contentPackage = result.output().contentPackage();
         assertThat(contentPackage.qualityScore()).isGreaterThanOrEqualTo(80);
+        assertThat(contentPackage.reviewerNotes().getFirst()).contains("método", "plano", "materiais prontos");
         assertThat(contentPackage.deliverables().getFirst().sections()).hasSizeGreaterThanOrEqualTo(4);
+        assertThat(contentPackage.deliverables().getFirst().readyToUseAsset()).isNotBlank();
+        assertThat(contentPackage.deliverables().getFirst().tangibleProof()).isNotBlank();
+        assertThat(contentPackage.deliverables().getFirst().ritualStep()).isNotBlank();
+        assertThat(contentPackage.deliverables().getFirst().antiObjectionBonus()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().templateFields()).contains("Situação atual");
     }
 
@@ -82,7 +95,7 @@ class FeoFabricacaoV1ContractTest {
      * Confirma que a montagem gera PDF, planilha CSV e ZIP com conteúdo de produto final.
      */
     @Test
-    void montagemDeveGerarPdfPlanilhaEZip() {
+    void montagemDeveGerarPdfPlanilhaEZip() throws java.io.IOException {
         PlanejamentoEntregaveisProcessor planejamento = new PlanejamentoEntregaveisProcessor(new ObjectMapper());
         FabricationContext context = FabricationContext.sample();
         DeliverablePlan plan = planejamento.process(new StageContext<>(
@@ -110,16 +123,38 @@ class FeoFabricacaoV1ContractTest {
         assertThat(result.output().pdf().content()).startsWith("%PDF".getBytes());
         assertThat(new String(result.output().html().content(), java.nio.charset.StandardCharsets.UTF_8))
                 .contains("Experiencia de entrega premium")
+                .contains("Mapa do Kit de Transformacao Aplicavel")
                 .contains("Diagnostico inicial")
                 .contains("Workbooks de aplicacao por entregavel")
+                .contains("Materiais prontos do comprador")
+                .contains("Bonus anti-objecao")
                 .contains("Erros a evitar")
                 .contains("Template preenchivel")
                 .contains("Gate de qualidade comercial");
         assertThat(new String(result.output().spreadsheet().content(), java.nio.charset.StandardCharsets.UTF_8))
                 .contains("primeira_vitoria")
+                .contains("material_pronto")
+                .contains("bonus_anti_objecao")
                 .contains("criterio_conclusao");
         assertThat(result.output().spreadsheet().name()).endsWith(".csv");
         assertThat(result.output().zipPackage().contentType()).isEqualTo("application/zip");
+        assertThat(zipEntries(result.output().zipPackage().content()))
+                .anyMatch(name -> name.startsWith("entregaveis/kit-"))
+                .contains("01-pacote-final.html", "02-pacote-final.pdf", "03-manifesto-entregaveis.csv");
         assertThat(result.artifacts()).extracting("type").contains("FINAL_HTML", "FINAL_PDF", "FINAL_SPREADSHEET", "FINAL_ZIP");
+    }
+
+    /**
+     * Lista entradas de um ZIP gerado em memória.
+     */
+    private java.util.List<String> zipEntries(byte[] content) throws java.io.IOException {
+        java.util.List<String> names = new java.util.ArrayList<>();
+        try (ZipInputStream zip = new ZipInputStream(new java.io.ByteArrayInputStream(content))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                names.add(entry.getName());
+            }
+        }
+        return names;
     }
 }

@@ -14,8 +14,10 @@ import com.marketinghub.feo.fabricacaov1.pipeline.StageCode;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageContext;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageProcessor;
 import com.marketinghub.feo.fabricacaov1.pipeline.StageResult;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,6 +25,17 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemblyInput, PackageAssemblyInput> {
+
+    private static final Set<String> REQUIRED_COMPONENTS = Set.of(
+            "COMECE_AQUI",
+            "PLANO_EXECUCAO_RAPIDA",
+            "CHECKLIST_APLICACAO",
+            "TEMPLATES_PRONTOS",
+            "EXEMPLO_PREENCHIDO",
+            "PROVA_TANGIVEL",
+            "RITUAL_ACOMPANHAMENTO",
+            "BONUS_ANTI_OBJECAO",
+            "GUIA_PRIMEIROS_RESULTADOS");
 
     private final ObjectMapper objectMapper;
 
@@ -51,6 +64,17 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
             return StageResult.blocked("Redação FEO sem contexto ou plano de entregáveis.", List.of());
         }
         DeliverableContentPackage contentPackage = buildContentPackage(input.context(), input.plan());
+        List<String> missingComponents = missingComponents(contentPackage);
+        if (!missingComponents.isEmpty()) {
+            StageArtifact artifact = context.artifactStore().store(
+                    "FEO_DELIVERABLE_CONTENT_REJECTED",
+                    "feo-deliverable-content-rejected.json",
+                    "application/json",
+                    toJson(contentPackage));
+            return StageResult.blocked(
+                    "Kit de Transformação Aplicável incompleto: " + String.join(", ", missingComponents),
+                    List.of(artifact));
+        }
         if (contentPackage.qualityScore() < 80) {
             StageArtifact artifact = context.artifactStore().store(
                     "FEO_DELIVERABLE_CONTENT_REJECTED",
@@ -89,6 +113,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 score(contents),
                 "PREMIUM_CONTENT_READY",
                 List.of(
+                        "O pacote contém método, plano, materiais prontos, prova, ritual e bônus anti-objeção.",
                         "Cada entregável tem primeira vitória clara para o comprador.",
                         "Cada entregável contém aplicação, checklist, template e critério de conclusão.",
                         "A promessa central foi preservada sem criar garantia nova."));
@@ -101,10 +126,15 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
         return new DeliverableContent(
                 spec.code(),
                 spec.title(),
+                spec.componentType(),
                 "Use " + spec.title() + " para transformar " + shortText(context.centralPromise())
                         + " em uma decisão prática.",
                 resultText(context, spec),
                 firstWin(context, spec),
+                readyToUseAsset(context, spec),
+                tangibleProof(context, spec),
+                ritualStep(context, spec),
+                antiObjectionBonus(context, spec),
                 List.of(
                         new DeliverableSection(
                                 "Diagnóstico de partida",
@@ -149,18 +179,86 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
      * Define o resultado funcional do entregável para o comprador.
      */
     private String resultText(FabricationContext context, DeliverableSpec spec) {
-        return "Ao finalizar este entregável, o comprador deve estar mais perto de "
-                + safe(context.promisedResult()) + " usando o papel do ativo: " + safe(spec.role());
+        return switch (safe(spec.componentType())) {
+            case "PLANO_EXECUCAO_RAPIDA" -> "Ao finalizar, o comprador tem um plano de 7 dias para chegar mais perto de "
+                    + safe(context.promisedResult()) + ".";
+            case "TEMPLATES_PRONTOS" -> "Ao finalizar, o comprador tem materiais preenchidos que reduzem o esforço de começar.";
+            case "PROVA_TANGIVEL" -> "Ao finalizar, o comprador enxerga o antes, o depois e o miniresultado esperado.";
+            case "RITUAL_ACOMPANHAMENTO" -> "Ao finalizar, o comprador sabe quando agir, revisar e continuar sem suporte manual.";
+            case "BONUS_ANTI_OBJECAO" -> "Ao finalizar, o comprador tem resposta prática para a objeção que mais trava a aplicação.";
+            default -> "Ao finalizar este entregável, o comprador deve estar mais perto de "
+                    + safe(context.promisedResult()) + " usando o papel do ativo: " + safe(spec.role());
+        };
     }
 
     /**
      * Define uma primeira vitória rápida para aumentar valor percebido.
      */
     private String firstWin(FabricationContext context, DeliverableSpec spec) {
+        if ("COMECE_AQUI".equals(spec.componentType())) {
+            return "Entender a ordem de consumo e iniciar pelo primeiro ativo sem dúvida.";
+        }
+        if ("EXEMPLO_PREENCHIDO".equals(spec.componentType())) {
+            return "Comparar o próprio preenchimento com uma amostra pronta e corrigir a rota.";
+        }
         if (spec.format() != null && spec.format().contains("CSV")) {
             return "Preencher a primeira linha com uma situação real e enxergar prioridade sem depender de memória.";
         }
         return "Tomar uma decisão prática alinhada à promessa: " + safe(context.centralPromise());
+    }
+
+    /**
+     * Define o material pronto que o comprador recebe em cada componente.
+     */
+    private String readyToUseAsset(FabricationContext context, DeliverableSpec spec) {
+        return switch (safe(spec.componentType())) {
+            case "PLANO_EXECUCAO_RAPIDA" -> "Tabela de 7 dias com ação, tempo estimado, evidência e ajuste.";
+            case "CHECKLIST_APLICACAO" -> "Checklist marcável para executar sem esquecer pontos críticos.";
+            case "TEMPLATES_PRONTOS" -> "Modelos copiáveis com campos de situação, decisão, prazo e evidência.";
+            case "EXEMPLO_PREENCHIDO" -> "Amostra preenchida com cenário realista do nicho: " + safe(context.niche()) + ".";
+            case "PROVA_TANGIVEL" -> "Quadro antes/depois e miniresultado demonstrável da promessa.";
+            case "RITUAL_ACOMPANHAMENTO" -> "Calendário de checkpoints, lembretes e revisão.";
+            case "BONUS_ANTI_OBJECAO" -> "FAQ operacional e atalho para continuar mesmo com pouca clareza.";
+            case "GUIA_PRIMEIROS_RESULTADOS" -> "Roteiro para reconhecer progresso em 20 minutos, 24 horas e 7 dias.";
+            default -> "Material complementar pronto para revisão e aplicação.";
+        };
+    }
+
+    /**
+     * Define a prova tangivel que aumenta valor percebido do produto.
+     */
+    private String tangibleProof(FabricationContext context, DeliverableSpec spec) {
+        return switch (safe(spec.componentType())) {
+            case "PROVA_TANGIVEL" -> "Antes: esforço disperso. Depois: ação priorizada pelo mecanismo "
+                    + safe(context.coreMechanism()) + ".";
+            case "EXEMPLO_PREENCHIDO" -> "Exemplo preenchido mostra o nível de detalhe esperado e evita página em branco.";
+            case "PLANO_EXECUCAO_RAPIDA" -> "A prova aparece quando o comprador conclui o Dia 1 com uma decisão registrada.";
+            default -> "A prova mínima é o comprador conseguir apontar uma evidência de progresso sem depender de opinião externa.";
+        };
+    }
+
+    /**
+     * Define ritual de uso para criar sensação de acompanhamento.
+     */
+    private String ritualStep(FabricationContext context, DeliverableSpec spec) {
+        return switch (safe(spec.componentType())) {
+            case "RITUAL_ACOMPANHAMENTO" -> "Abrir o kit no mesmo horário por 7 dias, marcar um checkpoint e registrar a próxima ação.";
+            case "PLANO_EXECUCAO_RAPIDA" -> "Executar uma ação curta por dia e revisar a evidência antes de avançar.";
+            case "CHECKLIST_APLICACAO" -> "Marcar o checklist antes de encerrar cada sessão de aplicação.";
+            default -> "Usar após o plano principal, sempre registrando ação, prazo e evidência.";
+        };
+    }
+
+    /**
+     * Define bonus anti-objecao sem criar promessa comercial nova.
+     */
+    private String antiObjectionBonus(FabricationContext context, DeliverableSpec spec) {
+        return switch (safe(spec.componentType())) {
+            case "BONUS_ANTI_OBJECAO" -> "Se eu não souber por onde começar, uso o atalho de menor esforço e executo só o primeiro campo.";
+            case "TEMPLATES_PRONTOS" -> "Se eu não tiver ideias, copio o modelo base e substituo apenas os campos essenciais.";
+            case "PROVA_TANGIVEL" -> "Se eu duvidar do resultado, comparo o antes/depois operacional sem assumir garantia automática.";
+            default -> "Se houver dúvida, voltar ao manifesto, escolher um único entregável e concluir o critério mínimo.";
+        };
     }
 
     /**
@@ -172,6 +270,12 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
             return 0;
         }
         for (DeliverableContent content : contents) {
+            if (isBlank(content.readyToUseAsset())
+                    || isBlank(content.tangibleProof())
+                    || isBlank(content.ritualStep())
+                    || isBlank(content.antiObjectionBonus())) {
+                points -= 15;
+            }
             if (content.sections().size() < 4) {
                 points -= 10;
             }
@@ -186,6 +290,22 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
             }
         }
         return Math.max(0, points);
+    }
+
+    /**
+     * Lista componentes obrigatorios ausentes do Kit de Transformacao Aplicavel.
+     */
+    private List<String> missingComponents(DeliverableContentPackage contentPackage) {
+        Set<String> present = contentPackage.deliverables().stream()
+                .map(DeliverableContent::componentType)
+                .collect(java.util.stream.Collectors.toSet());
+        List<String> missing = new ArrayList<>();
+        for (String required : REQUIRED_COMPONENTS) {
+            if (!present.contains(required)) {
+                missing.add(required);
+            }
+        }
+        return missing;
     }
 
     /**
@@ -212,5 +332,12 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
      */
     private String safe(String value) {
         return value == null || value.isBlank() ? "a promessa validada" : value.trim();
+    }
+
+    /**
+     * Indica se um texto obrigatorio esta vazio.
+     */
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

@@ -101,13 +101,13 @@ public class PackageAssetAssembler {
                   <p class="pill">Plano guiado de 7 dias</p>
                   <h1>""").append(escape(context.offerName())).append("""
                 </h1>
-                  <p><strong>Para quem é:</strong> """).append(escape(context.niche())).append("""
+                  <p><strong>Para quem é:</strong> """).append(escape(publicText(context.niche()))).append("""
                 </p>
-                  <p><strong>Promessa:</strong> """).append(escape(context.centralPromise())).append("""
+                  <p><strong>Promessa:</strong> """).append(escape(publicText(context.centralPromise()))).append("""
                 </p>
-                  <p><strong>Resultado buscado:</strong> """).append(escape(context.promisedResult())).append("""
+                  <p><strong>Resultado buscado:</strong> """).append(escape(publicText(context.promisedResult()))).append("""
                 </p>
-                  <p><strong>Base do método:</strong> princípios práticos de imagem, autocuidado e decisão, traduzidos em escolhas simples de cabelo, pele, roupa, perfume, ocasião e compra consciente.</p>
+                  <p><strong>Base do método:</strong> um caminho simples para escolher melhor, combinar detalhes e perceber avanço sem depender de compras caras ou mudança radical.</p>
                 </section>
                 <section>
                   <h2>Comece por aqui</h2>
@@ -116,20 +116,20 @@ public class PackageAssetAssembler {
                   </div>
                   <div class="grid">
                     <div class="cell"><strong>Aplicacao rapida</strong><br />Primeira acao em ate 20 minutos para reduzir ansiedade e aumentar percepcao de valor.</div>
-                    <div class="cell"><strong>Progresso visivel</strong><br />Checklist e criterios de conclusao para o cliente saber quando terminou cada etapa.</div>
+                    <div class="cell"><strong>Progresso visivel</strong><br />Checklist simples para você saber quando terminou cada etapa.</div>
                     <div class="cell"><strong>Clareza de escolha</strong><br />Você entende o que manter, o que ajustar e o que evitar comprar por impulso.</div>
                   </div>
                   <h2>O que você recebe</h2>
                   <div class="box proof">
                     <p>Um e-book com plano de execução, checklists, templates, exemplos preenchidos, guia anti-impulso e uma rotina simples para perceber avanço em 7 dias.</p>
                   </div>
-                  <h2>Mecanismo central</h2>
-                  <div class="box">""").append(escape(context.coreMechanism())).append("""
+                  <h2>O caminho que vamos seguir</h2>
+                  <div class="box">""").append(escape(publicText(context.coreMechanism()))).append("""
                 </div>
-                  <h2>Como a pesquisa vira transformação prática</h2>
+                  <h2>Por que isso funciona no dia a dia</h2>
                   <div class="box premium">
-                    <p>Os princípios científicos não aparecem como aula técnica. Eles foram convertidos em regras de aplicação: reduzir esforço mental, organizar sinais visuais, criar comparação antes/depois e facilitar escolhas com o que você já tem.</p>
-                    <p>O foco do método é transformar conhecimento em decisão prática, não em excesso de informação.</p>
+                    <p>Você deixa de tentar melhorar tudo ao mesmo tempo e passa a escolher pequenos ajustes que combinam entre si.</p>
+                    <p>O foco é reduzir dúvida, evitar compra por impulso e criar uma presença mais coerente com o que você já tem.</p>
                   </div>
                 """);
         appendVisual(html, input, "INFOGRAPHIC");
@@ -141,7 +141,7 @@ public class PackageAssetAssembler {
                     <li>Leia o diagnostico inicial e marque o ponto de partida real.</li>
                     <li>Execute o entregavel principal antes de consumir bonus ou materiais complementares.</li>
                     <li>Preencha o template de aplicacao para transformar leitura em decisao concreta.</li>
-                    <li>Use os criterios de conclusao para validar se houve progresso percebido.</li>
+                    <li>Use os checkpoints para validar se houve progresso percebido.</li>
                   </ol>
                 </section>
                 <section>
@@ -160,7 +160,7 @@ public class PackageAssetAssembler {
                     .append("</td><td>")
                     .append(escape(spec.format()))
                     .append("</td><td>")
-                    .append(escape(spec.role()))
+                    .append(escape(publicText(spec.role())))
                     .append("</td></tr>");
         }
         html.append("""
@@ -170,8 +170,8 @@ public class PackageAssetAssembler {
                 <section>
                   <h2>Diagnostico inicial</h2>
                   <div class="box premium">
-                    <p><strong>Sintoma principal:</strong> o cliente sente dor porque ainda nao consegue transformar a situacao atual em uma sequencia simples de acao.</p>
-                    <p><strong>Resultado de entrada:</strong> ao final do primeiro ciclo, o cliente deve saber exatamente qual acao tomar, qual erro evitar e qual criterio observar.</p>
+                    <p><strong>Sintoma principal:</strong> você sente que alguns detalhes quase funcionam, mas o conjunto ainda não transmite a presença que deseja.</p>
+                    <p><strong>Resultado de entrada:</strong> ao final do primeiro ciclo, você sabe qual acao tomar, qual erro evitar e qual sinal observar.</p>
                     <p><strong>Regra de foco:</strong> remover complexidade antes de adicionar profundidade. O produto deve economizar esforco mental.</p>
                   </div>
                   <h2>Workbooks de aplicacao por entregavel</h2>
@@ -182,29 +182,29 @@ public class PackageAssetAssembler {
                     .append(" - ")
                     .append(escape(content.title()))
                     .append("</h3><p>")
-                    .append(escape(content.headline()))
-                    .append("</p><p><strong>Princípio aplicado:</strong> ")
-                    .append(escape(content.appliedPrinciple()))
-                    .append("</p><p><strong>Resultado para o comprador:</strong> ")
-                    .append(escape(content.buyerOutcome()))
+                    .append(escape(publicText(content.headline())))
+                    .append("</p><p><strong>Regra simples:</strong> ")
+                    .append(escape(publicText(content.appliedPrinciple())))
+                    .append("</p><p><strong>O que você conquista:</strong> ")
+                    .append(escape(publicText(content.buyerOutcome())))
                     .append("</p><p><strong>Primeira vitoria:</strong> ")
-                    .append(escape(content.firstWin()))
+                    .append(escape(publicText(content.firstWin())))
                     .append("</p><p><strong>Material pronto para usar:</strong> ")
-                    .append(escape(content.readyToUseAsset()))
+                    .append(escape(publicText(content.readyToUseAsset())))
                     .append("</p><p><strong>Prova tangivel:</strong> ")
-                    .append(escape(content.tangibleProof()))
+                    .append(escape(publicText(content.tangibleProof())))
                     .append("</p><p><strong>Ritual ou acompanhamento:</strong> ")
-                    .append(escape(content.ritualStep()))
-                    .append("</p><p><strong>Bonus anti-objecao:</strong> ")
-                    .append(escape(content.antiObjectionBonus()))
+                    .append(escape(publicText(content.ritualStep())))
+                    .append("</p><p><strong>Apoio para destravar:</strong> ")
+                    .append(escape(publicText(content.antiObjectionBonus())))
                     .append("</p>");
             for (DeliverableSection section : content.sections()) {
                 html.append("<h4>")
                         .append(escape(section.title()))
                         .append("</h4><p>")
-                        .append(escape(section.explanation()))
+                        .append(escape(publicText(section.explanation())))
                         .append("</p><p><strong>Acao:</strong> ")
-                        .append(escape(section.actionStep()))
+                        .append(escape(publicText(section.actionStep())))
                         .append("</p>");
             }
             html.append("<p><strong>Checklist de execucao:</strong></p><ul>");
@@ -220,7 +220,7 @@ public class PackageAssetAssembler {
                 html.append("<li>").append(escape(mistake)).append("</li>");
             }
             html.append("</ul><p><strong>Criterio de conclusao:</strong> ")
-                    .append(escape(content.completionCriteria()))
+                    .append(escape(publicText(content.completionCriteria())))
                     .append("</p></div>");
         }
         html.append("""
@@ -328,7 +328,7 @@ public class PackageAssetAssembler {
                       <div class="eyebrow">Produto Digital Experiencial</div>
                       <h1>""").append(escape(context.offerName())).append("""
                 </h1>
-                      <p class="promise">""").append(escape(context.centralPromise())).append("""
+                      <p class="promise">""").append(escape(publicText(context.centralPromise()))).append("""
                 </p>
                       <div class="cta-row">
                         <a class="btn" href="#diagnostico">Começar diagnóstico</a>
@@ -359,10 +359,10 @@ public class PackageAssetAssembler {
                       </div>
                     </section>
                     <section>
-                      <h2>Mecanismo aplicado</h2>
-                      <p>""").append(escape(context.coreMechanism())).append("""
+                      <h2>Seu mapa de aplicação</h2>
+                      <p>""").append(escape(publicText(context.coreMechanism()))).append("""
                 </p>
-                      <div class="note">A pesquisa entra aqui como decisão prática: reduzir esforço mental, organizar sinais visuais e criar pequenas evidências de progresso.</div>
+                      <div class="note">Você vai reduzir dúvida, organizar sinais visuais e criar pequenas evidências de progresso.</div>
                 """);
         appendExperienceVisual(html, input, "CONCEPT_MAP");
         html.append("""
@@ -403,7 +403,7 @@ public class PackageAssetAssembler {
             html.append("<div class=\"card\"><h3>")
                     .append(escape(content.title()))
                     .append("</h3><p>")
-                    .append(escape(content.firstWin()))
+                    .append(escape(publicText(content.firstWin())))
                     .append("</p></div>");
         }
         html.append("""
@@ -445,7 +445,7 @@ public class PackageAssetAssembler {
      */
     private String buildSpreadsheet(PackageAssemblyInput input) {
         StringBuilder csv = new StringBuilder();
-        csv.append("ordem,codigo,componente,titulo,formato,papel,primeira_vitoria,material_pronto,prova_tangivel,ritual,bonus_anti_objecao,criterio_conclusao,criterios_qualidade\n");
+        csv.append("ordem,codigo,componente,titulo,formato,papel,primeira_vitoria,material_pronto,prova_tangivel,ritual,apoio_para_travar_menos,quando_considerar_concluido,pontos_de_atencao\n");
         Map<String, DeliverableContent> contents = input.contentPackage().deliverables().stream()
                 .collect(java.util.stream.Collectors.toMap(DeliverableContent::code, item -> item));
         for (DeliverableSpec spec : input.plan().deliverables()) {
@@ -453,17 +453,17 @@ public class PackageAssetAssembler {
             csv.append(csv(spec.consumptionOrder())).append(',')
                     .append(csv(spec.code())).append(',')
                     .append(csv(componentLabel(spec.componentType()))).append(',')
-                    .append(csv(spec.title())).append(',')
+                    .append(csv(publicText(spec.title()))).append(',')
                     .append(csv(spec.format())).append(',')
-                    .append(csv(spec.role())).append(',')
-                    .append(csv(content == null ? "Executar a primeira acao do entregavel." : content.firstWin())).append(',')
-                    .append(csv(content == null ? "Material pronto para uso." : content.readyToUseAsset())).append(',')
-                    .append(csv(content == null ? "Evidencia de progresso." : content.tangibleProof())).append(',')
-                    .append(csv(content == null ? "Checkpoint de aplicacao." : content.ritualStep())).append(',')
-                    .append(csv(content == null ? "FAQ operacional." : content.antiObjectionBonus())).append(',')
-                    .append(csv(content == null ? "Cliente consegue decidir o proximo passo sem suporte externo."
-                            : content.completionCriteria())).append(',')
-                    .append(csv(String.join(" | ", spec.qualityCriteria()))).append('\n');
+                    .append(csv(publicText(spec.role()))).append(',')
+                    .append(csv(content == null ? "Executar a primeira acao do material." : publicText(content.firstWin()))).append(',')
+                    .append(csv(content == null ? "Material pronto para uso." : publicText(content.readyToUseAsset()))).append(',')
+                    .append(csv(content == null ? "Evidencia de progresso." : publicText(content.tangibleProof()))).append(',')
+                    .append(csv(content == null ? "Checkpoint de aplicacao." : publicText(content.ritualStep()))).append(',')
+                    .append(csv(content == null ? "Atalho para continuar com menos dúvida." : publicText(content.antiObjectionBonus()))).append(',')
+                    .append(csv(content == null ? "Você consegue decidir o proximo passo sem depender de suporte externo."
+                            : publicText(content.completionCriteria()))).append(',')
+                    .append(csv(publicText(String.join(" | ", spec.qualityCriteria())))).append('\n');
         }
         return csv.toString();
     }
@@ -505,8 +505,9 @@ public class PackageAssetAssembler {
                 manifest.items().stream().map(ManifestItem::fileName).toList(),
                 List.of(
                         "Revisar capa, promessa e primeiro exercicio antes de publicar",
-                        "Importar o CSV no Google Sheets para acompanhar aplicacao do cliente",
-                        "Conectar o ZIP ao fluxo oficial de entrega do comprador somente apos revisao premium"));
+                        "Conferir se o pacote abre corretamente antes de entregar",
+                        "Usar o CSV como acompanhamento da aplicação",
+                        "Entregar o ZIP somente quando a revisão final estiver aprovada"));
     }
 
     /**
@@ -550,6 +551,46 @@ public class PackageAssetAssembler {
                 + "Arquivos do pacote:\n"
                 + String.join("\n", manifest.items().stream().map(ManifestItem::fileName).toList())
                 + "\n\nPromessa: " + input.context().centralPromise() + "\n";
+    }
+
+    /**
+     * Converte termos de bastidor em linguagem direta de uso pela compradora.
+     */
+    private String publicText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replaceAll("(?i)\\barquitetura de presença elegante acessível\\b", "Mapa de Presença Elegante")
+                .replaceAll("(?i)\\bmecanismo\\b", "método")
+                .replaceAll("(?i)\\bprincípios científicos\\b", "regras simples")
+                .replaceAll("(?i)\\bprincípio científico\\b", "regra simples")
+                .replaceAll("(?i)\\bprincípio de pesquisa\\b", "regra simples")
+                .replaceAll("(?i)\\bprincípio aplicado\\b", "regra simples")
+                .replaceAll("(?i)\\bpesquisa\\b", "orientação")
+                .replaceAll("(?i)\\bteoria acadêmica\\b", "explicação pesada")
+                .replaceAll("(?i)\\ba cliente\\b", "você")
+                .replaceAll("(?i)\\ba compradora\\b", "você")
+                .replaceAll("(?i)\\bo comprador\\b", "você")
+                .replaceAll("(?i)\\bcliente\\b", "você")
+                .replaceAll("(?i)\\bcompradora\\b", "você")
+                .replaceAll("(?i)\\bcomprador\\b", "você")
+                .replaceAll("(?i)\\bo você\\b", "você")
+                .replaceAll("(?i)\\ba você\\b", "você")
+                .replaceAll("(?i)\\bdo você\\b", "do seu")
+                .replaceAll("(?i)\\bda você\\b", "da sua")
+                .replaceAll("(?i)\\bpara o você\\b", "para você")
+                .replaceAll("(?i)\\bquando o você\\b", "quando você")
+                .replaceAll("(?i)\\bque o você\\b", "que você")
+                .replaceAll("(?i)\\bcom o você\\b", "com você")
+                .replaceAll("(?i)\\bajuda o você\\b", "ajuda você")
+                .replaceAll("(?i)\\bfaz o você\\b", "ajuda você a")
+                .replaceAll("(?i)\\bcritérios\\b", "pontos")
+                .replaceAll("(?i)\\bcriterios\\b", "pontos")
+                .replaceAll("(?i)\\bbonus anti-objecao\\b", "apoio para destravar")
+                .replaceAll("(?i)\\banti-objecao\\b", "para destravar")
+                .replaceAll("(?i)\\bobjecao\\b", "trava")
+                .trim();
     }
 
     /**
@@ -705,23 +746,23 @@ public class PackageAssetAssembler {
                 </h1>
                   <div class="box"><strong>Promessa preservada:</strong> """).append(escape(context.centralPromise())).append("""
                 </div>
-                  <h2>Principio aplicado</h2>
-                  <p>""").append(escape(content.appliedPrinciple())).append("""
+                  <h2>Regra simples</h2>
+                  <p>""").append(escape(publicText(content.appliedPrinciple()))).append("""
                 </p>
-                  <h2>Resultado para o comprador</h2>
-                  <p>""").append(escape(content.buyerOutcome())).append("""
+                  <h2>O que você conquista</h2>
+                  <p>""").append(escape(publicText(content.buyerOutcome()))).append("""
                 </p>
                   <h2>Material pronto para usar</h2>
                   <p>""").append(escape(content.readyToUseAsset())).append("""
                 </p>
                   <h2>Prova tangivel</h2>
-                  <p>""").append(escape(content.tangibleProof())).append("""
+                  <p>""").append(escape(publicText(content.tangibleProof()))).append("""
                 </p>
                   <h2>Ritual de uso</h2>
                   <p>""").append(escape(content.ritualStep())).append("""
                 </p>
-                  <h2>Bonus anti-objecao</h2>
-                  <p>""").append(escape(content.antiObjectionBonus())).append("""
+                  <h2>Apoio para destravar</h2>
+                  <p>""").append(escape(publicText(content.antiObjectionBonus()))).append("""
                 </p>
                   <h2>Execucao guiada</h2>
                 """);
@@ -776,7 +817,7 @@ public class PackageAssetAssembler {
             case "PROVA_TANGIVEL" -> "Prova tangivel";
             case "BIBLIOTECA_APOIO" -> "Biblioteca de apoio";
             case "RITUAL_ACOMPANHAMENTO" -> "Ritual de acompanhamento";
-            case "BONUS_ANTI_OBJECAO" -> "Bonus anti-objecao";
+            case "BONUS_ANTI_OBJECAO" -> "Apoio para destravar";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Guia de primeiros resultados";
             default -> "Material complementar";
         };

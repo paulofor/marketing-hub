@@ -12,4 +12,5 @@ public record ExperimentConstructionDto(
         boolean manualFlow,
         Instant createdAt,
         Instant updatedAt,
+        List<ExperimentConstructionStepDto> flowSteps,
         List<ExperimentConstructionSectionDto> sections) {}

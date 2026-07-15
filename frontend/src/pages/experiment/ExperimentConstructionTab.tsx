@@ -1,61 +1,10 @@
+import { CheckCircle2 } from "lucide-react";
 import { useExperimentConstruction } from "../../api/experiment/useExperimentConstruction";
 
 interface ExperimentConstructionTabProps {
   experimentId?: string;
   onSelectTab?: (tab: string) => void;
 }
-
-const FLOW_STEPS = [
-  {
-    title: "Nicho/dor",
-    description:
-      "Confirmar público, dor raiz e desejo que reduzem esforço ou afastam dor.",
-    tab: "overview",
-    action: "Ver base",
-  },
-  {
-    title: "Hipótese",
-    description:
-      "Organizar a aposta comercial sem fechar promessa antes da evidência.",
-    tab: "content-structure",
-    action: "Ver estrutura",
-  },
-  {
-    title: "MDS",
-    description:
-      "Descobrir mecanismo plausível, limites e evidências para sustentar a promessa.",
-    tab: "content-structure",
-    action: "Preparar mecanismo",
-  },
-  {
-    title: "Oferta/prova",
-    description:
-      "Transformar mecanismo em promessa, prova, isca, produto e CTA coerentes.",
-    tab: "landing",
-    action: "Construir oferta",
-  },
-  {
-    title: "Experimento",
-    description:
-      "Materializar criativos, landing e publicação para medir resposta real.",
-    tab: "creatives",
-    action: "Criar ativos",
-  },
-  {
-    title: "FEO",
-    description:
-      "Fabricar entregáveis após a oferta estar validada ou pronta para teste controlado.",
-    tab: "deliverables",
-    action: "Ver entregáveis",
-  },
-  {
-    title: "Funil",
-    description:
-      "Medir leads, compra, custo, taxa e aprendizado comercial para decidir escala.",
-    tab: "funnel",
-    action: "Medir venda",
-  },
-];
 
 function formatConstructionValue(value: string) {
   const lines = value.split("\n");
@@ -109,12 +58,24 @@ export default function ExperimentConstructionTab({
       </div>
 
       <div className="row g-2">
-        {FLOW_STEPS.map((step, index) => (
+        {data.flowSteps.map((step, index) => (
           <div className="col-12 col-md-6 col-xl-4" key={step.title}>
-            <div className="border rounded-3 p-3 h-100 bg-white">
+            <div
+              className={`border rounded-3 p-3 h-100 bg-white ${
+                step.validated ? "border-success-subtle" : ""
+              }`}
+            >
               <div className="d-flex align-items-start justify-content-between gap-2">
                 <div>
-                  <span className="badge text-bg-light mb-2">{index + 1}</span>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <span className="badge text-bg-light">{index + 1}</span>
+                    {step.validated ? (
+                      <span className="badge text-bg-success d-inline-flex align-items-center gap-1">
+                        <CheckCircle2 size={14} aria-hidden="true" />
+                        {step.validationLabel ?? "Validado"}
+                      </span>
+                    ) : null}
+                  </div>
                   <h6 className="mb-1">{step.title}</h6>
                 </div>
                 {onSelectTab ? (

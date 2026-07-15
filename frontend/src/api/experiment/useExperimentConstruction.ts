@@ -13,6 +13,16 @@ export interface ExperimentConstructionSection {
   items: ExperimentConstructionItem[];
 }
 
+export interface ExperimentConstructionStep {
+  code: string;
+  title: string;
+  description: string;
+  tab: string;
+  action: string;
+  validated: boolean;
+  validationLabel?: string | null;
+}
+
 export interface ExperimentConstruction {
   experimentId: number;
   experimentName: string;
@@ -20,6 +30,7 @@ export interface ExperimentConstruction {
   manualFlow: boolean;
   createdAt?: string | null;
   updatedAt?: string | null;
+  flowSteps: ExperimentConstructionStep[];
   sections: ExperimentConstructionSection[];
 }
 

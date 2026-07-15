@@ -212,6 +212,180 @@ Escolha recomendada:
 
 **Primeiro procurar endpoint/rotina existente; se não existir, criar seed versionado ou changelog rastreável. Não alterar direto no banco como primeira opção.**
 
+## Revisão crítica dos entregáveis FEO
+
+Data da revisão: `2026-07-15`.
+
+Motivo:
+
+- O PDF `feo/02-pacote-final-pdf.pdf` foi revisado visualmente e apresentou linguagem técnica de campanha dentro do material que seria entregue à compradora.
+- Exemplo crítico visto no PDF: seção `Prova e limites de confiança` com `CTR`, `CPL`, conversão de lead, clique de intenção de compra e critério de pré-venda.
+
+Conclusão objetiva:
+
+**O pacote FEO atual do experimento 66 não está aprovado para entrega ao cliente e não deve ser vendido/publicado como produto final.**
+
+### Evidências do ZIP oficial
+
+Arquivo analisado:
+
+- `lead-portal-payments-service/docker/proxy/html/downloads/experimento-66-entregaveis.zip`
+
+Conteúdo identificado:
+
+- `README.txt`
+- `feo/01-pacote-final-html.html`
+- `feo/02-pacote-final-pdf.pdf`
+- `feo/03-manifesto-entregaveis-csv.csv`
+- 31 arquivos em `entregaveis/`
+- 2 arquivos em `pacotes/`
+
+Problemas encontrados:
+
+1. **Métrica interna apareceu no produto final**
+   - `CTR`, `CPL`, taxa de lead, clique de intenção de compra e critério de pré-venda aparecem dentro do PDF.
+   - Isso é dado de validação de campanha, não conteúdo para compradora.
+
+2. **Promessa antiga de pesquisa contaminou o produto**
+   - O pacote ainda usa a promessa interna: `Descobrir quais mecanismos de imagem, autocuidado e percepção social podem sustentar uma oferta MUSA de alto valor antes de criar a promessa final`.
+   - Para cliente final, a promessa correta deve ser: montar presença elegante em 7 dias sem depender de luxo caro, compras impulsivas ou transformação radical.
+
+3. **O PDF fala como relatório de sistema, não como produto de transformação**
+   - Termos como `promessa validada`, `mecanismo validado`, `gate de qualidade comercial`, `Score FEO`, `Fabricado pela FEO v1`, `READY_FOR_PREMIUM_REVIEW` e `contexto validado do experimento` não devem aparecer para a compradora.
+
+4. **Há wrappers técnicos sendo tratados como entregáveis**
+   - Arquivos como `029-01-pacote-final-html.html`, `030-02-pacote-final-pdf.html`, `031-03-manifesto-entregaveis-csv.html` e vários `entregaveis-kit-*` mostram JSON, `sha256`, `contentType`, `consumptionOrder` e `Prompt e rastreabilidade`.
+   - Isso deve ficar em relatório interno, nunca no pacote comprado.
+
+5. **Os entregáveis individuais estão muito rasos**
+   - Vários materiais têm apenas descrição, conteúdo pronto para uso e rastreabilidade.
+   - Falta corpo real de execução: instruções passo a passo, campos preenchíveis úteis, exemplo preenchido real, checklist acionável e orientação visual concreta.
+
+6. **Há duplicação e confusão de versão**
+   - Existem materiais antigos bons como base (`012` a `016` e `022` a `028`), mas também existem versões embrulhadas pelo FEO (`032` a `047`) que repetem metadados em vez de entregar valor.
+   - A compradora receberia arquivos demais sem clareza de ordem e com nomes técnicos.
+
+7. **A linguagem ainda não está emocional/comercial o suficiente**
+   - O produto promete elegância acessível, mas o material fala de decisão, evidência, critério e mecanismo.
+   - Para vender e reter satisfação, precisa falar de espelho, rotina, roupa, cabelo, pele, perfume, presença, orçamento, reaproveitamento e segurança para sair de casa se sentindo mais alinhada.
+
+### O que é aproveitável
+
+Materiais com boa direção estratégica, mas ainda rasos:
+
+- `012-checklist-12-detalhes-de-elegancia-acessivel.html`
+- `013-rotina-30-dias-de-presenca-sofisticada.html`
+- `014-guia-de-compras-inteligentes-sem-luxo.html`
+- `015-mapa-de-assinatura-pessoal-cabelo-perfume-e-imagem.html`
+- `016-mini-auditoria-visual-antes-e-depois.html`
+- `022-mds-musa-diagnostico-de-ruido-visual-e-coerencia-de-presenca.html`
+- `023-mds-musa-mapa-de-paleta-base-contraste-e-ponto-de-cor.html`
+- `024-mds-musa-guia-de-assinatura-olfativa-acessivel-por-ocasiao.html`
+- `025-mds-musa-checklist-12-minutos-de-cabelo-pele-unha-roupa-e-acessorios.html`
+- `026-mds-musa-matriz-ocasiao-presenca.html`
+- `027-mds-musa-plano-7-dias-de-microajustes-de-presenca-elegante.html`
+- `028-mds-musa-lista-de-compras-anti-impulso-e-reaproveitamento-elegante.html`
+
+Esses materiais devem virar a base do novo produto, mas precisam ser reescritos como guias completos, não como cards descritivos.
+
+### O que deve ser removido do pacote da cliente
+
+- `CTR`
+- `CPL`
+- `lead`
+- `pré-venda`
+- `critério de sucesso`
+- `score`
+- `gate`
+- `FEO`
+- `fabricado pela FEO`
+- `promessa validada`
+- `mecanismo validado`
+- `experimento`
+- `tráfego`
+- `checkout`
+- `sha256`
+- `contentType`
+- `JSON`
+- `Prompt e rastreabilidade`
+- `READY_FOR_PREMIUM_REVIEW`
+- qualquer campo de auditoria, hash, status, template, modelo ou id técnico.
+
+### Alternativas avaliadas
+
+1. **Corrigir apenas o texto do PDF atual**
+   - Benefício: mais rápido.
+   - Risco: mantém estrutura errada, duplicação e arquivos técnicos.
+   - Aderência ao objetivo de venda: baixa.
+
+2. **Remover só os trechos técnicos e publicar**
+   - Benefício: reduz o erro mais visível.
+   - Risco: o produto continua raso e com baixa percepção de valor.
+   - Aderência ao objetivo de venda: média/baixa.
+
+3. **Refazer o pacote da cliente a partir dos materiais bons, separando auditoria interna de entrega final**
+   - Benefício: gera produto vendável, claro, aplicável e compatível com R$47.
+   - Risco: exige regenerar/revisar FEO e ajustar o montador para não vazar metadados.
+   - Aderência ao objetivo de venda: alta.
+
+Escolha recomendada:
+
+**Alternativa 3.**
+
+### Novo padrão obrigatório para o pacote da cliente
+
+O pacote final do experimento 66 deve conter, no máximo, uma estrutura limpa:
+
+1. `Comece aqui - ordem de uso`
+2. `Plano de 7 dias`
+3. `Diagnóstico de presença elegante`
+4. `Checklist 12 minutos`
+5. `Mapa de paleta, contraste e ponto de cor`
+6. `Guia de assinatura olfativa acessível`
+7. `Matriz ocasião-presença`
+8. `Lista de compras anti-impulso`
+9. `Mini-auditoria antes/depois`
+10. `Bônus: reaproveitamento elegante com orçamento limitado`
+
+Cada arquivo precisa ter:
+
+- promessa em linguagem de compradora;
+- para quem é;
+- tempo estimado de uso;
+- passo a passo;
+- campos preenchíveis;
+- exemplo preenchido real;
+- checklist final;
+- erro comum;
+- miniresultado esperado.
+
+### Correção de causa-raiz necessária
+
+O problema não é apenas o experimento 66. A causa-raiz está na montagem do FEO:
+
+- o pacote final usa campos internos de validação como se fossem conteúdo de comprador;
+- a montagem coloca relatório, auditoria e rastreabilidade dentro do ZIP público;
+- o gate de qualidade atual aprova presença de estrutura, mas não bloqueia vazamento de termos técnicos;
+- não existe separação forte entre `produto para cliente` e `relatório interno de fabricação`.
+
+Correção sistêmica recomendada antes de liberar venda:
+
+1. Criar separação explícita entre:
+   - pacote final da compradora;
+   - relatório interno FEO;
+   - manifesto técnico/auditável.
+2. Adicionar bloqueio de termos proibidos no pacote da compradora.
+3. Regenerar o FEO do experimento 66 com a promessa comercial atual.
+4. Revisar manualmente o novo ZIP antes de conectar à entrega pós-compra.
+5. Só depois retomar GeraSalesPage/tráfego.
+
+Status após revisão:
+
+- Produto comercial: **reprovado para entrega**.
+- Página de venda: **não deve ser publicada usando o pacote atual como prova final**.
+- Checkout: pode existir, mas não deve receber tráfego enquanto o produto entregue estiver nesse estado.
+- Próximo passo: **regenerar/reconstruir o pacote FEO do experimento 66 com fronteira limpa entre cliente e auditoria interna**.
+
 ## Validação após aplicação do Liquibase
 
 Data da validação: `2026-07-15T03:44:09Z`.

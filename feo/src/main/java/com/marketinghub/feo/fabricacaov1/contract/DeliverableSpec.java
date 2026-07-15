@@ -8,6 +8,7 @@ import java.util.List;
 public record DeliverableSpec(
         String code,
         String title,
+        String componentType,
         String format,
         String role,
         String consumptionOrder,

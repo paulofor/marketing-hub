@@ -4079,6 +4079,8 @@ export default function ExperimentDetailPage() {
             <ExperimentContentGenerationTab
               experimentId={expId}
               experimentName={data?.name}
+              experiment={data}
+              niche={niche}
               hypothesis={hyp}
               campaignAngle={data?.campaignAngle}
               adCopy={data?.adCopy}

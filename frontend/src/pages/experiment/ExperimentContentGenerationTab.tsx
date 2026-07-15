@@ -11,6 +11,8 @@ import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
+import type { MarketNiche } from "../../api/niche/useNiches";
+import type { Experiment } from "../../api/experiment/useExperiments";
 import {
   CampaignAngleSummary,
   hasCampaignAngleContent,
@@ -103,12 +105,7 @@ const SECTION_LABEL_BY_KEY: Record<ContentGenerationSectionKey, string> =
   );
 
 type RequestUiStatus =
-  | "IDLE"
-  | "PENDING"
-  | "PROCESSING"
-  | "COMPLETED"
-  | "FAILED"
-  | "INVALIDATED";
+  "IDLE" | "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "INVALIDATED";
 
 interface SectionRequestState {
   status: RequestUiStatus;
@@ -143,10 +140,7 @@ interface AutoQueueState {
 }
 
 type LandingImageFlowStatus =
-  | "NOT_STARTED"
-  | "STARTED"
-  | "PROCESSING"
-  | "COMPLETED";
+  "NOT_STARTED" | "STARTED" | "PROCESSING" | "COMPLETED";
 
 const ALL_CONTENT_GENERATION_SECTION_KEYS: ContentGenerationSectionKey[] = [
   "campaign-angle",
@@ -568,6 +562,8 @@ const SECTION_API_PATHS: Record<ContentGenerationSectionKey, string> = {
 interface ExperimentContentGenerationTabProps {
   experimentId: string;
   experimentName?: string;
+  experiment?: Experiment;
+  niche?: MarketNiche;
   hypothesis?: Hypothesis;
   campaignAngle?: string | null;
   adCopy?: string | null;
@@ -673,6 +669,14 @@ function formatDateTimeWithTimezone(value?: string) {
     minute: "2-digit",
     second: "2-digit",
     timeZoneName: "short",
+  });
+}
+
+function formatCurrencyValue(value?: number | null) {
+  if (value == null) return undefined;
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
   });
 }
 
@@ -1146,6 +1150,8 @@ function getErrorMessage(error: unknown) {
 export default function ExperimentContentGenerationTab({
   experimentId,
   experimentName,
+  experiment,
+  niche,
   hypothesis,
   campaignAngle,
   adCopy,
@@ -2261,6 +2267,10 @@ export default function ExperimentContentGenerationTab({
                           <>
                             <CampaignAngleSummaryPanel
                               isLoading={isLoadingCampaignAngles}
+                              experimentName={experimentName}
+                              experiment={experiment}
+                              niche={niche}
+                              hypothesis={hypothesis}
                               savedAngle={persistedCampaignAngle}
                               fallbackAngle={
                                 campaignAngleGenerations[0]?.fields
@@ -4417,6 +4427,10 @@ function AdCopyHistoryList({ generations, isLoading }: AdCopyHistoryListProps) {
 
 interface CampaignAngleSummaryPanelProps {
   isLoading: boolean;
+  experimentName?: string;
+  experiment?: Experiment;
+  niche?: MarketNiche;
+  hypothesis?: Hypothesis;
   savedAngle?: CampaignAngleSummary;
   fallbackAngle?: CampaignAngleSummary;
   fallbackTimestamp?: string;
@@ -4425,6 +4439,10 @@ interface CampaignAngleSummaryPanelProps {
 
 function CampaignAngleSummaryPanel({
   isLoading,
+  experimentName,
+  experiment,
+  niche,
+  hypothesis,
   savedAngle,
   fallbackAngle,
   fallbackTimestamp,
@@ -4443,10 +4461,124 @@ function CampaignAngleSummaryPanel({
       ? "Última geração do Worker IA"
       : "Aguardando geração";
   const rawText = rawContent?.trim();
+  const resolvedPrimaryPain =
+    resolvedAngle?.primaryPain ?? experiment?.singlePain ?? hypothesis?.problem;
+  const resolvedPromise =
+    resolvedAngle?.primaryPromise ??
+    experiment?.funnelPromise ??
+    hypothesis?.promise;
+  const resolvedMechanism =
+    resolvedAngle?.mechanismSummary ??
+    hypothesis?.uniqueMechanism ??
+    hypothesis?.mechanism;
+  const resolvedProof = resolvedAngle?.proofSummary ?? hypothesis?.successRule;
+  const resolvedCta =
+    resolvedAngle?.primaryCTA ?? resolvedAngle?.cta ?? experiment?.primaryCta;
+  const resolvedPrice = formatCurrencyValue(
+    experiment?.unitPrice ?? hypothesis?.price,
+  );
+  const resolvedBudget = formatCurrencyValue(experiment?.dailyBudget);
+  const resolvedCpl = formatCurrencyValue(
+    experiment?.kpiTargetCpl ??
+      experiment?.kpiTarget ??
+      hypothesis?.kpiTargetCpl,
+  );
+
+  const contextSections = [
+    {
+      title: "Relacionado ao nicho",
+      subtitle: "Território de mercado",
+      items: [
+        { label: "Nicho criado/usado", value: niche?.name },
+        { label: "Descrição do nicho", value: niche?.description },
+        { label: "Base de público", value: niche?.baseSegmentation },
+      ],
+    },
+    {
+      title: "Relacionado à hipótese",
+      subtitle: "Aposta comercial",
+      items: [
+        { label: "Hipótese vinculada", value: hypothesis?.title },
+        { label: "Público/persona", value: hypothesis?.persona },
+        { label: "Dor principal", value: resolvedPrimaryPain },
+        { label: "Promessa", value: resolvedPromise },
+        { label: "Mecanismo", value: resolvedMechanism },
+        { label: "Prova ou regra de sucesso", value: resolvedProof },
+      ],
+    },
+    {
+      title: "Relacionado ao experimento",
+      subtitle: "Teste operacional",
+      items: [
+        { label: "Experimento", value: experimentName ?? experiment?.name },
+        { label: "Narrativa do experimento", value: experiment?.hypothesis },
+        { label: "CTA", value: resolvedCta },
+        { label: "Recompensa/isca", value: experiment?.freeReward },
+        { label: "Preço", value: resolvedPrice },
+        { label: "Canal", value: experiment?.platform },
+        { label: "Orçamento diário", value: resolvedBudget },
+        { label: "CPL alvo", value: resolvedCpl },
+        { label: "Métrica", value: experiment?.primaryMetric },
+        {
+          label: "Criativos/ativos construídos",
+          value:
+            experiment?.creativesToGenerate != null
+              ? `${experiment.creativesToGenerate} criativo(s) planejado(s)`
+              : undefined,
+        },
+      ],
+    },
+  ];
 
   return (
     <div className="card border-0 shadow-sm">
       <div className="card-body">
+        <div className="mb-4">
+          <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+              <p className="text-uppercase text-muted small fw-semibold mb-1">
+                Mapa do experimento
+              </p>
+              <h6 className="mb-1">Nicho → Hipótese → Experimento</h6>
+              <p className="text-muted small mb-0">
+                Nicho é o território de mercado, hipótese é a aposta de venda e
+                experimento é o teste operacional dessa aposta.
+              </p>
+            </div>
+            <span className="badge text-bg-light">Separação comercial</span>
+          </div>
+          <div className="row g-3">
+            {contextSections.map((section) => (
+              <div className="col-12 col-xl-4" key={section.title}>
+                <div className="border rounded p-3 h-100 bg-body-tertiary">
+                  <p className="text-uppercase small fw-semibold text-muted mb-1">
+                    {section.title}
+                  </p>
+                  <h6 className="mb-3">{section.subtitle}</h6>
+                  <dl className="mb-0 d-flex flex-column gap-2">
+                    {section.items.map((item) => (
+                      <div key={item.label}>
+                        <dt className="small text-muted fw-semibold">
+                          {item.label}
+                        </dt>
+                        <dd className="mb-0">
+                          {item.value ? (
+                            item.value
+                          ) : (
+                            <span className="text-muted">
+                              Ainda não informado.
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
           <div>
             <p className="text-uppercase text-muted small fw-semibold mb-1">

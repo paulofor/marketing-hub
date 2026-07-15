@@ -44,6 +44,9 @@ public class MontagemPacoteProcessor implements StageProcessor<PackageAssemblyIn
     @Override
     public StageResult<PackageAssemblyOutput> process(StageContext<PackageAssemblyInput> context) {
         PackageAssemblyInput input = context.input();
+        if (input.contentPackage() == null || input.contentPackage().deliverables().isEmpty()) {
+            return StageResult.blocked("Montagem FEO sem conteúdos finais redigidos.", List.of());
+        }
         PackageAssemblyOutput output = assembler.assemble(input);
         List<StageArtifact> artifacts = List.of(
                 toArtifact(context, "FINAL_HTML", output.html()),

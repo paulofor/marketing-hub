@@ -64,3 +64,12 @@
 - Módulo executor externo: `video-management-service`.
 - Fluxo protegido: solicitação de render em `/api/sales-videos/profiles/{profileId}/request-render`, pending canônico legado em `/internal/video/jobs`, callbacks internos de claim/heartbeat/progress/complete/fail/expired e upload interno de artefatos em `/internal/video/assets`.
 - Aplicação: protocolo padrão backend aplicado por regra ArchUnit em `ArquiteturaTest`, exigindo backend como fonte de verdade para job/eventos/status, persistência auditável da execução e gate de compliance antes de render produtivo.
+
+## 2026-07-15 — FEO fabricacao v1
+
+- **Backend:** `backend/ads-service`.
+- **Pacote protegido:** `com.marketinghub.feo.fabricacao.v1`.
+- **Executor operacional externo:** `feo`.
+- **Etapas protegidas:** `planejamento-entregaveis`, `redacao-entregaveis` e `montagem-pacote`.
+- **Endpoint pending canônico:** `/api/internal/feo/fabricacao/v1/{stageCode}/stage-executions/pending`.
+- **Aplicação:** protocolo padrão backend aplicado para manter o backend como fonte de verdade de fila, contratos, persistência, pendências e callbacks da FEO, sem deslocar geração de conteúdo, PDF, ZIP, polling ou integrações operacionais para o backend.

@@ -100,9 +100,9 @@ class FeoFabricacaoV1ServiceTest {
         assertThat(execution.getStatus()).isEqualTo(FeoFabricacaoV1StageStatus.RUNNING);
     }
 
-    /** Deve enfileirar montagem quando o planejamento conclui com próxima etapa contratada. */
+    /** Deve enfileirar redação quando o planejamento conclui com próxima etapa contratada. */
     @Test
-    void shouldEnqueuePackageAssemblyAfterPlanningCompletion() {
+    void shouldEnqueueContentWritingAfterPlanningCompletion() {
         FeoFabricacaoV1StageExecution execution = FeoFabricacaoV1StageExecution.builder()
                 .id(7L)
                 .jobId("job-1")
@@ -126,13 +126,51 @@ class FeoFabricacaoV1ServiceTest {
                         List.of(),
                         Map.of("deliverableCount", 1),
                         null,
+                        "redacao-entregaveis"));
+
+        ArgumentCaptor<FeoFabricacaoV1StageExecution> captor =
+                ArgumentCaptor.forClass(FeoFabricacaoV1StageExecution.class);
+        verify(executionRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().get(1).getStageCode()).isEqualTo("redacao-entregaveis");
+        assertThat(captor.getAllValues().get(1).getInputPayload()).contains("\"plan\"");
+    }
+
+    /** Deve enfileirar montagem somente após a redação gerar conteúdo final. */
+    @Test
+    void shouldEnqueuePackageAssemblyAfterContentWritingCompletion() {
+        FeoFabricacaoV1StageExecution execution = FeoFabricacaoV1StageExecution.builder()
+                .id(9L)
+                .jobId("job-1")
+                .experiment(experiment())
+                .stageCode("redacao-entregaveis")
+                .status(FeoFabricacaoV1StageStatus.RUNNING)
+                .inputPayload("{\"context\":{\"requestId\":\"experiment-66\"},\"plan\":{\"packageTitle\":\"Pacote\"}}")
+                .build();
+        when(executionRepository.findByIdAndStageCode(9L, "redacao-entregaveis"))
+                .thenReturn(Optional.of(execution));
+        when(executionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.complete(
+                "redacao-entregaveis",
+                9L,
+                new FeoFabricacaoV1CompleteRequest(
+                        "feo-worker",
+                        "job-1",
+                        "COMPLETED",
+                        Map.of(
+                                "context", Map.of("requestId", "experiment-66"),
+                                "plan", Map.of("packageTitle", "Pacote Final"),
+                                "contentPackage", Map.of("qualityScore", 92)),
+                        List.of(),
+                        Map.of("qualityScore", 92),
+                        null,
                         "montagem-pacote"));
 
         ArgumentCaptor<FeoFabricacaoV1StageExecution> captor =
                 ArgumentCaptor.forClass(FeoFabricacaoV1StageExecution.class);
         verify(executionRepository, org.mockito.Mockito.times(2)).save(captor.capture());
         assertThat(captor.getAllValues().get(1).getStageCode()).isEqualTo("montagem-pacote");
-        assertThat(captor.getAllValues().get(1).getInputPayload()).contains("\"plan\"");
+        assertThat(captor.getAllValues().get(1).getInputPayload()).contains("\"contentPackage\"");
     }
 
     /** Deve materializar pacote e entregáveis finais quando a montagem termina. */

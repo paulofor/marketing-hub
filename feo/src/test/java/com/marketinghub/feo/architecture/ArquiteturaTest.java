@@ -25,6 +25,7 @@ class ArquiteturaTest {
     private static final String PIPELINE_ROOT = "com.marketinghub.feo.fabricacaov1.pipeline";
     private static final Set<String> STAGE_PACKAGES = Set.of(
             "com.marketinghub.feo.fabricacaov1.planejamentoentregaveis",
+            "com.marketinghub.feo.fabricacaov1.redacaoentregaveis",
             "com.marketinghub.feo.fabricacaov1.montagempacote");
 
     private static final DescribedPredicate<JavaClass> CLASSES_DE_ETAPA =

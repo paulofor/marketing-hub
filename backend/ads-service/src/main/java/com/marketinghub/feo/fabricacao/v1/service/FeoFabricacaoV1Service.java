@@ -40,6 +40,7 @@ public class FeoFabricacaoV1Service {
 
     private static final Logger log = LoggerFactory.getLogger(FeoFabricacaoV1Service.class);
     private static final String STAGE_PLANEJAMENTO = "planejamento-entregaveis";
+    private static final String STAGE_REDACAO = "redacao-entregaveis";
     private static final String STAGE_MONTAGEM = "montagem-pacote";
     private static final Duration RUNNING_RETRY_AFTER = Duration.ofMinutes(15);
     private static final TypeReference<LinkedHashMap<String, Object>> MAP_TYPE = new TypeReference<>() {};
@@ -198,14 +199,35 @@ public class FeoFabricacaoV1Service {
         return List.of(hypothesis.getEntrega().trim());
     }
 
-    /** Enfileira montagem do pacote após o planejamento retornar um plano aprovado pelo contrato. */
+    /** Enfileira a próxima etapa permitida após o worker concluir a etapa atual. */
     private void enqueueNextStageWhenAllowed(FeoFabricacaoV1StageExecution execution, FeoFabricacaoV1CompleteRequest request) {
-        if (!STAGE_PLANEJAMENTO.equals(execution.getStageCode()) || !STAGE_MONTAGEM.equals(request.nextStageCode())) {
+        if (STAGE_PLANEJAMENTO.equals(execution.getStageCode()) && STAGE_REDACAO.equals(request.nextStageCode())) {
+            enqueueContentWriting(execution, request);
             return;
         }
+        if (STAGE_REDACAO.equals(execution.getStageCode()) && STAGE_MONTAGEM.equals(request.nextStageCode())) {
+            enqueuePackageAssembly(execution, request);
+        }
+    }
+
+    /** Enfileira redação dos entregáveis após o planejamento gerar o plano. */
+    private void enqueueContentWriting(FeoFabricacaoV1StageExecution execution, FeoFabricacaoV1CompleteRequest request) {
         Map<String, Object> assemblyInput = new LinkedHashMap<>();
         assemblyInput.put("context", fromJson(execution.getInputPayload(), MAP_TYPE));
         assemblyInput.put("plan", request.output());
+        FeoFabricacaoV1StageExecution next = FeoFabricacaoV1StageExecution.builder()
+                .experiment(execution.getExperiment())
+                .jobId(execution.getJobId())
+                .stageCode(STAGE_REDACAO)
+                .status(FeoFabricacaoV1StageStatus.PENDING)
+                .inputPayload(toJson(assemblyInput))
+                .build();
+        executionRepository.save(next);
+    }
+
+    /** Enfileira montagem final somente após existir conteúdo redigido e aprovado pelo gate. */
+    private void enqueuePackageAssembly(FeoFabricacaoV1StageExecution execution, FeoFabricacaoV1CompleteRequest request) {
+        Map<String, Object> assemblyInput = objectMapper.convertValue(request.output(), MAP_TYPE);
         FeoFabricacaoV1StageExecution next = FeoFabricacaoV1StageExecution.builder()
                 .experiment(execution.getExperiment())
                 .jobId(execution.getJobId())

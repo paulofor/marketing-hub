@@ -1,0 +1,182 @@
+name: CI - PDE Platform Metodo MUSA
+
+on:
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "pde-platform/**"
+      - ".github/workflows/pde-platform-metodo-musa-ci.yml"
+  pull_request:
+    paths:
+      - "pde-platform/**"
+      - ".github/workflows/pde-platform-metodo-musa-ci.yml"
+  workflow_dispatch:
+
+env:
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
+  BACKEND_IMAGE_NAME: pde-platform-backend
+  FRONTEND_IMAGE_NAME: pde-platform-frontend
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pde-platform/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Run tests
+        run: mvn -B test
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pde-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: pde-platform/frontend/package-lock.json
+      - name: Install deps
+        run: npm ci --include=dev
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - frontend
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-tag: ${{ steps.image_tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Backend image metadata
+        id: meta_backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ github.sha }}
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: pde-platform/backend
+          file: pde-platform/backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta_backend.outputs.tags }}
+          labels: ${{ steps.meta_backend.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache,mode=max
+      - name: Frontend image metadata
+        id: meta_frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ github.sha }}
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: pde-platform/frontend
+          file: pde-platform/frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta_frontend.outputs.tags }}
+          labels: ${{ steps.meta_frontend.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache,mode=max
+      - name: Expose image tag
+        id: image_tag
+        run: echo "value=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy to Metodo MUSA host
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - frontend
+      - docker
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DEPLOY_HOST: 191.252.102.54
+      DEPLOY_USER: root
+      REMOTE_PATH: ${{ secrets.PDE_PLATFORM_REMOTE_PATH != '' && secrets.PDE_PLATFORM_REMOTE_PATH || '/root/pde-platform' }}
+      IMAGE_TAG: ${{ needs.docker.outputs['image-tag'] }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+      PDE_PLATFORM_NETWORK: ${{ secrets.PDE_PLATFORM_NETWORK != '' && secrets.PDE_PLATFORM_NETWORK || 'public-net' }}
+      PDE_PLATFORM_FRONTEND_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_PORT || '5176' }}
+      PDE_PLATFORM_BACKEND_PORT: ${{ secrets.PDE_PLATFORM_BACKEND_PORT != '' && secrets.PDE_PLATFORM_BACKEND_PORT || '8096' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "${VPS_SSH_KEY}" ]; then
+            echo "Erro: nenhuma chave SSH foi encontrada nos secrets esperados." >&2
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+          printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -o ConnectTimeout=60" >> "$GITHUB_ENV"
+      - name: Sync compose file
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
+          rsync -az --delete \
+            -e "ssh ${SSH_COMMON_ARGS}" \
+            --include 'docker-compose.deploy.yml' \
+            --exclude '*' \
+            pde-platform/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
+      - name: Publish PDE Platform
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && cd ${REMOTE_PATH} \
+            && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
+            && (docker network inspect ${PDE_PLATFORM_NETWORK} >/dev/null 2>&1 || docker network create ${PDE_PLATFORM_NETWORK}) \
+            && export PDE_PLATFORM_BACKEND_IMAGE='${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_FRONTEND_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_NETWORK='${PDE_PLATFORM_NETWORK}' \
+            && export PDE_PLATFORM_FRONTEND_PORT='${PDE_PLATFORM_FRONTEND_PORT}' \
+            && export PDE_PLATFORM_BACKEND_PORT='${PDE_PLATFORM_BACKEND_PORT}' \
+            && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
+            && docker compose -f docker-compose.deploy.yml pull \
+            && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
+            && docker image prune -af"
+      - name: Validate public container ports
+        run: |
+          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_PORT}/" > /dev/null
+          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}/actuator/health"

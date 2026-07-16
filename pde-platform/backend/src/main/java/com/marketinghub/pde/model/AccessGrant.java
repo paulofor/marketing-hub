@@ -23,6 +23,20 @@ public class AccessGrant {
         this.createdAt = createdAt;
     }
 
+    /** Cria um acesso com progresso ja persistido anteriormente. */
+    public AccessGrant(
+            String token,
+            String productSlug,
+            String email,
+            String source,
+            Instant createdAt,
+            Set<String> completedMissionIds) {
+        this(token, productSlug, email, source, createdAt);
+        if (completedMissionIds != null) {
+            this.completedMissionIds.addAll(completedMissionIds);
+        }
+    }
+
     /** Retorna o token público de acesso da cliente. */
     public String getToken() {
         return token;

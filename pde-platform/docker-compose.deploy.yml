@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "${PDE_PLATFORM_BACKEND_PORT:-8096}:8096"
+    volumes:
+      - pde-platform-data:/data/pde
     networks:
       - pde-platform-net
 
@@ -30,3 +32,6 @@ networks:
   pde-platform-net:
     name: ${PDE_PLATFORM_NETWORK:-public-net}
     external: true
+
+volumes:
+  pde-platform-data:

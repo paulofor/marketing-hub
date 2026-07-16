@@ -28,6 +28,7 @@
         <p id="statusText">Se o pagamento foi aprovado, o acesso ao kit aparece nesta página. Se ficar pendente, acompanhe a confirmação do Mercado Pago.</p>
         <div class="cta-row hidden" id="downloadActions">
           <a class="btn" id="downloadButton" href="https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip" download>Baixar Kit MUSA agora</a>
+          <a class="btn secondary" id="pdeButton" href="http://191.252.102.54:5176/" target="_blank" rel="noreferrer">Entrar na Área MUSA</a>
           <a class="btn secondary" href="https://pagamentopalf.site/sales-page-exp66.html">Voltar para a página de venda</a>
         </div>
       </div>
@@ -41,13 +42,14 @@
         <li><span class="check">✓</span><span><b>Templates e exemplo preenchido</b> para transformar o método em decisões práticas.</span></li>
         <li><span class="check">✓</span><span><b>Preview antes/depois</b> para tangibilizar a lógica dos ajustes.</span></li>
         <li><span class="check">✓</span><span><b>Bônus anti-impulso</b> com lista de compras, reaproveitamento e checkpoints.</span></li>
+        <li><span class="check">✓</span><span><b>Área MUSA</b> para acompanhar as missões, marcar progresso e consultar a biblioteca digital.</span></li>
       </ul>
       <div class="details">
         <div class="detail"><span>Produto</span><b>Método MUSA</b></div>
         <div class="detail"><span>Preço</span><b>R$ 47</b></div>
-        <div class="detail"><span>Formato</span><b>Arquivo ZIP</b></div>
+        <div class="detail"><span>Entrega imediata</span><b>ZIP + Área MUSA</b></div>
       </div>
-      <p class="micro">Se o download não iniciar, toque novamente no botão. Em celular, o arquivo pode aparecer na pasta Downloads.</p>
+      <p class="micro">O ZIP é a entrega imediata da compra. A Área MUSA é a experiência guiada para acompanhar os 7 dias e consultar os materiais da biblioteca.</p>
     </section>
   </main>
 
@@ -56,6 +58,7 @@
   var experimentId = 66;
   var endpoint = '/mh-api/experiments/' + experimentId + '/funnel/events';
   var downloadUrl = 'https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip';
+  var pdeUrl = 'http://191.252.102.54:5176/';
   var startedAt = Date.now();
   var params = new URLSearchParams(window.location.search || '');
   var status = (params.get('status') || params.get('collection_status') || params.get('result') || '').toLowerCase();
@@ -85,7 +88,7 @@
     document.getElementById('contentsCard').classList.toggle('hidden', !allowDownload);
   }
   if (isApproved()) {
-    setState('success','✓','Pagamento aprovado. Seu Kit MUSA está liberado.','Compra confirmada','Clique no botão abaixo para baixar o pacote completo do Método MUSA.','Obrigado pela compra. Baixe o ZIP e comece pelo manifesto e pelo plano de 7 dias.',true);
+    setState('success','✓','Pagamento aprovado. Seu Método MUSA está liberado.','Compra confirmada','Baixe o ZIP para ter a entrega imediata e entre na Área MUSA para seguir a experiência guiada de 7 dias.','Obrigado pela compra. Comece pelo ZIP e use a Área MUSA para acompanhar as missões.',true);
   } else if (isPending()) {
     setState('pending','!','Pagamento em processamento','Ainda estamos aguardando confirmação','O Mercado Pago ainda não confirmou a aprovação. Assim que aprovar, volte por este link ou pela confirmação da compra.','Seu pedido foi recebido, mas a entrega só deve ser acessada após a aprovação.',false);
   } else if (status === 'failure' || status === 'rejected' || status === 'cancelled' || status === 'canceled') {
@@ -125,10 +128,13 @@
   }
   postEvent('ABERTURA_EMAIL_COMPRA','post_purchase_page_view');
   if (isApproved()) {
-    postEvent('COMPRA','mercadopago_return_approved',{downloadUrl:downloadUrl});
+    postEvent('COMPRA','mercadopago_return_approved',{downloadUrl:downloadUrl,pdeUrl:pdeUrl});
   }
   document.getElementById('downloadButton').addEventListener('click', function(){
     postEvent('DOWNLOAD_MATERIAL_PAGO','download_click',{downloadUrl:downloadUrl});
+  });
+  document.getElementById('pdeButton').addEventListener('click', function(){
+    postEvent('ACESSO_AREA_MUSA','pde_area_click',{pdeUrl:pdeUrl});
   });
 })();
 </script>

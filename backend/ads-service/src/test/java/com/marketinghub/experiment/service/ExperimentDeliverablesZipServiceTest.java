@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar a montagem do ZIP de entregáveis do experimento. */
 class ExperimentDeliverablesZipServiceTest {
 
-    /** Deve incluir artefato final, entregáveis do nicho e pacotes do experimento no ZIP. */
+    /** Deve incluir apenas materiais comerciais do nicho e pacotes do produto no ZIP. */
     @Test
     void generateShouldIncludeExperimentDeliverablesFiles() throws Exception {
         ExperimentRepository experimentRepository = org.mockito.Mockito.mock(ExperimentRepository.class);
@@ -97,17 +97,21 @@ class ExperimentDeliverablesZipServiceTest {
         java.util.Map<String, String> entries = readZip(zip);
         assertThat(entries)
                 .containsKey("README.txt")
-                .containsKey("landing-page-deliverables.json")
-                .containsKey("entregaveis/007-checklist-de-elegancia.html")
-                .containsKey("pacotes/003-pacote-inicial.html")
-                .containsKey("feo/01-pacote-final-html.html");
-        assertThat(entries.get("README.txt")).contains("Experimento 65");
-        assertThat(entries.get("entregaveis/007-checklist-de-elegancia.html"))
+                .containsKey("materiais/checklist-de-elegancia.html")
+                .containsKey("planos/pacote-inicial.html");
+        assertThat(entries)
+                .doesNotContainKey("landing-page-deliverables.json")
+                .doesNotContainKey("feo/01-pacote-final-html.html");
+        assertThat(entries.get("README.txt"))
+                .contains("Materiais do produto")
+                .doesNotContain("Experimento 65")
+                .doesNotContain("Hipotese");
+        assertThat(entries.get("materiais/checklist-de-elegancia.html"))
                 .contains("<html")
                 .contains("Conteudo aprovado")
-                .contains("Prompt usado");
+                .doesNotContain("Prompt usado")
+                .doesNotContain("rastreabilidade");
         assertThat(entries.keySet()).noneMatch(name -> name.endsWith(".md"));
-        assertThat(entries.get("feo/01-pacote-final-html.html")).contains("Premium FEO");
     }
 
     /** Deve devolver diretamente o ZIP público final da FEO quando existir artefato FINAL_ZIP. */

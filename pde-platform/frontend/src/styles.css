@@ -151,9 +151,20 @@ h3 {
   padding: 0 12px;
 }
 
+.form-message {
+  color: #7a2444;
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin: 10px 0 0;
+}
+
 .experience-card {
   align-content: end;
-  background: #2d2024;
+  background:
+    linear-gradient(180deg, rgba(45, 32, 36, 0.18), rgba(45, 32, 36, 0.9)),
+    #2d2024;
+  background-position: center;
+  background-size: cover;
   color: #fff8f3;
   display: grid;
   min-height: 360px;
@@ -163,9 +174,7 @@ h3 {
 }
 
 .experience-card::before {
-  background:
-    linear-gradient(135deg, rgba(214, 167, 92, 0.72), rgba(122, 36, 68, 0.18)),
-    url("data:image/svg+xml,%3Csvg width='280' height='280' viewBox='0 0 280 280' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 210C90 40 180 40 250 205' stroke='%23fff8f3' stroke-width='8' fill='none' opacity='.38'/%3E%3Cpath d='M78 200h126M96 164h86M118 128h44' stroke='%23fff8f3' stroke-width='6' opacity='.54'/%3E%3C/svg%3E");
+  background: linear-gradient(135deg, rgba(214, 167, 92, 0.38), rgba(122, 36, 68, 0.2));
   content: "";
   inset: 0;
   position: absolute;
@@ -338,6 +347,14 @@ h3 {
 .material-card p {
   color: #6b5a51;
   font-size: 0.94rem;
+}
+
+.material-card a {
+  color: #7a2444;
+  display: inline-flex;
+  font-weight: 800;
+  margin-top: 8px;
+  text-decoration: none;
 }
 
 .completion-band {

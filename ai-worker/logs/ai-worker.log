@@ -1,0 +1,400 @@
+2026-07-16T05:04:19.128Z  INFO 11802 --- [main] c.m.worker.AiWorkerApplication           : Starting AiWorkerApplication using Java 21.0.11 with PID 11802 (/root/ai-hub/src/ai-hub-4453d34c-776f-44aa-b4b7-a9a0f61eb4ac-kE82qh/repo/ai-worker/target/classes started by root in /root/ai-hub/src/ai-hub-4453d34c-776f-44aa-b4b7-a9a0f61eb4ac-kE82qh/repo/ai-worker)
+2026-07-16T05:04:19.129Z  INFO 11802 --- [main] c.m.worker.AiWorkerApplication           : No active profile set, falling back to 1 default profile: "default"
+2026-07-16T05:04:20.122Z  INFO 11802 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 4568 (http)
+2026-07-16T05:04:20.132Z  INFO 11802 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-16T05:04:20.132Z  INFO 11802 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.20]
+2026-07-16T05:04:20.177Z  INFO 11802 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-07-16T05:04:20.177Z  INFO 11802 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1025 ms
+2026-07-16T05:04:21.681Z  WARN 11802 --- [main] o.s.b.a.f.FreeMarkerAutoConfiguration    : Cannot find template location(s): [classpath:/templates/] (please add some templates, check your FreeMarker configuration, or set spring.freemarker.check-template-location=false)
+2026-07-16T05:04:21.696Z  INFO 11802 --- [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 4 endpoint(s) beneath base path '/worker-observability'
+2026-07-16T05:04:21.744Z  INFO 11802 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 4568 (http) with context path ''
+2026-07-16T05:04:21.755Z  INFO 11802 --- [main] c.m.worker.AiWorkerApplication           : Started AiWorkerApplication in 2.875 seconds (process running for 3.065)
+2026-07-16T05:04:21.763Z  INFO 11802 --- [scheduling-1] c.m.w.l.i.LeadPortalImagePackageClient   : Calling marketing hub backend GET http://191.252.181.168/api/worker/image-packages/recent
+2026-07-16T05:04:22.168Z  INFO 11802 --- [scheduling-1] PortalSimpleFormStyleGenerationScheduler : LeadPortalSimpleFormStyleGenerationScheduler iniciado
+2026-07-16T05:04:22.168Z  INFO 11802 --- [scheduling-1] s.BackendLeadPortalSimpleFormStyleClient : Buscando estilos pendentes para geração em http://191.252.181.168/api/internal/lead-portal/simple-form-styles/pending?limit=20
+2026-07-16T05:04:22.292Z  INFO 11802 --- [scheduling-1] PortalSimpleFormStyleGenerationScheduler : LeadPortalSimpleFormStyleGenerationScheduler finalizado em 124 ms
+2026-07-16T05:04:22.293Z  INFO 11802 --- [scheduling-1] c.m.w.s.SalesVideoScriptJobScheduler     : Processamento de Avatar Sales Video desabilitado via configuração
+2026-07-16T05:05:00.985Z  INFO 11802 --- [scheduling-1] xperimentPipelineGenerationWorkerService : Experiment pipeline worker cycle started
+2026-07-16T05:05:00.986Z  INFO 11802 --- [scheduling-1] c.m.w.e.ExperimentPipelineBackendClient  : Fetching pending experiment pipeline jobs from http://191.252.181.168/api/internal/experiment-pipeline/jobs/pending?limit=20
+2026-07-16T05:05:01.117Z  INFO 11802 --- [scheduling-1] c.m.w.e.ExperimentPipelineBackendClient  : Backend returned 0 pending experiment pipeline job(s)
+2026-07-16T05:05:01.117Z  INFO 11802 --- [scheduling-1] xperimentPipelineGenerationWorkerService : Experiment pipeline worker found 0 pending job(s)
+2026-07-16T05:05:01.117Z  INFO 11802 --- [scheduling-1] .e.ExperimentPipelineGenerationScheduler : ExperimentPipelineGenerationScheduler finished (elapsedMs=132)
+2026-07-16T05:05:01.118Z  INFO 11802 --- [scheduling-1] c.m.w.c.CreativeGenerationBackendClient  : Buscando criativos pendentes em http://191.252.181.168/api/experiments/creatives/stage-executions/pending?limit=5
+2026-07-16T05:05:01.443Z  INFO 11802 --- [scheduling-1] c.m.w.creative.CreativeChatGptClient     : Executando prompt de criativos 66 no modo Flex da OpenAI
+2026-07-16T05:05:03.324Z ERROR 11802 --- [scheduling-1] c.m.w.c.CreativeGenerationService        : Falha ao processar geração de criativos. experimentId=66
+
+org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest: 400 Bad Request from POST https://api.openai.com/v1/responses
+	at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: 
+Error has been observed at the following site(s):
+	*__checkpoint ⇢ 400 BAD_REQUEST from POST https://api.openai.com/v1/responses [DefaultWebClient]
+Original Stack Trace:
+		at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at org.springframework.web.reactive.function.client.DefaultClientResponse.lambda$createException$1(DefaultClientResponse.java:214) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onNext(FluxMap.java:106) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:162) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxDefaultIfEmpty$DefaultIfEmptySubscriber.onNext(FluxDefaultIfEmpty.java:122) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:129) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxContextWrite$ContextWriteSubscriber.onNext(FluxContextWrite.java:107) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onNext(FluxMapFuseable.java:299) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxFilterFuseable$FilterFuseableConditionalSubscriber.onNext(FluxFilterFuseable.java:337) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2097) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.MonoCollect$CollectSubscriber.onComplete(MonoCollect.java:145) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxPeek$PeekSubscriber.onComplete(FluxPeek.java:260) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.netty.channel.FluxReceive.onInboundComplete(FluxReceive.java:415) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.onInboundComplete(ChannelOperations.java:446) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:500) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:793) ~[reactor-netty-http-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:114) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.timeout.IdleStateHandler.channelRead(IdleStateHandler.java:289) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.timeout.IdleStateHandler.channelRead(IdleStateHandler.java:289) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1475) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decodeJdkCompatible(SslHandler.java:1338) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decode(SslHandler.java:1387) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:801) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:146) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Mono.block(Mono.java:1807) ~[reactor-core-3.6.5.jar:3.6.5]
+		at com.marketinghub.worker.creative.CreativeChatGptClient.executeFlexRequests(CreativeChatGptClient.java:188) ~[classes/:na]
+		at com.marketinghub.worker.creative.CreativeChatGptClient.generateCreatives(CreativeChatGptClient.java:123) ~[classes/:na]
+		at com.marketinghub.worker.creative.CreativeGenerationService.generateDefaultCreatives(CreativeGenerationService.java:120) ~[classes/:na]
+		at com.marketinghub.worker.creative.CreativeGenerationService.processExperiment(CreativeGenerationService.java:81) ~[classes/:na]
+		at com.marketinghub.worker.creative.CreativeGenerationService.processPending(CreativeGenerationService.java:55) ~[classes/:na]
+		at com.marketinghub.worker.creative.CreativeGenerationScheduler.run(CreativeGenerationScheduler.java:31) ~[classes/:na]
+		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+		at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.12.5.jar:1.12.5]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.concurrent.ReschedulingRunnable.run(ReschedulingRunnable.java:96) ~[spring-context-6.1.6.jar:6.1.6]
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+		at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[na:na]
+		at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-07-16T05:05:03.481Z  INFO 11802 --- [scheduling-1] c.m.w.c.CreativeGenerationScheduler      : CreativeGenerationScheduler finished. total=1 succeeded=0 failed=1
+2026-07-16T05:05:03.482Z  INFO 11802 --- [scheduling-1] c.m.w.t.TargetingElementScheduler        : TargetingElementScheduler started
+2026-07-16T05:05:03.482Z  INFO 11802 --- [scheduling-1] c.m.w.t.BackendTargetingElementClient    : Buscando pendências de targeting no backend em http://191.252.181.168/api/internal/targeting-elements/generation/pending?limit=20
+2026-07-16T05:05:03.620Z  INFO 11802 --- [scheduling-1] c.m.w.t.TargetingElementScheduler        : TargetingElementScheduler finished
+2026-07-16T05:05:03.620Z  INFO 11802 --- [scheduling-1] h.HypothesisFrameworkGenerationScheduler : HypothesisFrameworkGenerationScheduler started (thread=scheduling-1)
+2026-07-16T05:05:03.620Z  INFO 11802 --- [scheduling-1] pothesisFrameworkGenerationWorkerService : Hypothesis framework generation polling pending jobs (workerId=hypothesis-framework-6b9ec1094e13)
+2026-07-16T05:05:03.759Z  INFO 11802 --- [scheduling-1] pothesisFrameworkGenerationWorkerService : Hypothesis framework generation fetched 0 pending job(s)
+2026-07-16T05:05:03.759Z  INFO 11802 --- [scheduling-1] h.HypothesisFrameworkGenerationScheduler : HypothesisFrameworkGenerationScheduler cycle completed successfully
+2026-07-16T05:05:03.759Z  INFO 11802 --- [scheduling-1] h.HypothesisFrameworkGenerationScheduler : HypothesisFrameworkGenerationScheduler finished (elapsedMs=139)
+2026-07-16T05:05:03.890Z  INFO 11802 --- [scheduling-1] c.m.w.adset.TargetingAdSetScheduler      : TargetingAdSetScheduler started
+2026-07-16T05:05:03.890Z  INFO 11802 --- [scheduling-1] c.m.w.adset.BackendExperimentClient      : Calling backend GET http://191.252.181.168/api/facebook-adsets/experiments-ready
+2026-07-16T05:05:04.872Z  WARN 11802 --- [scheduling-1] c.m.w.adset.BackendExperimentClient      : Experiment 21 has no approved targeting package, skipping
+2026-07-16T05:05:04.872Z  WARN 11802 --- [scheduling-1] c.m.w.adset.BackendExperimentClient      : Experiment 55 has no approved targeting package, skipping
+2026-07-16T05:05:04.872Z  INFO 11802 --- [scheduling-1] c.m.w.adset.TargetingAdSetScheduler      : TargetingAdSetScheduler finished
+2026-07-16T05:05:22.168Z  INFO 11802 --- [scheduling-1] c.m.w.l.i.LeadPortalImagePackageClient   : Calling marketing hub backend GET http://191.252.181.168/api/worker/image-packages/recent
+2026-07-16T05:05:22.293Z  INFO 11802 --- [scheduling-1] PortalSimpleFormStyleGenerationScheduler : LeadPortalSimpleFormStyleGenerationScheduler iniciado
+2026-07-16T05:05:22.293Z  INFO 11802 --- [scheduling-1] s.BackendLeadPortalSimpleFormStyleClient : Buscando estilos pendentes para geração em http://191.252.181.168/api/internal/lead-portal/simple-form-styles/pending?limit=20
+2026-07-16T05:05:22.419Z  INFO 11802 --- [scheduling-1] PortalSimpleFormStyleGenerationScheduler : LeadPortalSimpleFormStyleGenerationScheduler finalizado em 126 ms
+2026-07-16T05:06:00.000Z  INFO 11802 --- [scheduling-1] c.m.w.t.TargetingRequestScheduler        : TargetingRequestScheduler started
+2026-07-16T05:06:00.000Z  INFO 11802 --- [scheduling-1] c.m.w.t.BackendTargetingRequestClient    : Fetching pending targeting requests from http://191.252.181.168/api/internal/targeting/requests/pending?limit=20
+2026-07-16T05:06:00.130Z  INFO 11802 --- [scheduling-1] c.m.w.t.TargetingRequestChatGptClient    : Executando targeting request targeting-request-6c99901f-f785-4cf0-920c-1dee196e6fce no modo Flex com modelo gpt-5.5
+2026-07-16T05:06:00.253Z ERROR 11802 --- [scheduling-1] .m.w.t.TargetingRequestGenerationService : Failed to generate targeting candidates for request 6c99901f-f785-4cf0-920c-1dee196e6fce
+
+org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest: 400 Bad Request from POST https://api.openai.com/v1/responses
+	at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: 
+Error has been observed at the following site(s):
+	*__checkpoint ⇢ 400 BAD_REQUEST from POST https://api.openai.com/v1/responses [DefaultWebClient]
+Original Stack Trace:
+		at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at org.springframework.web.reactive.function.client.DefaultClientResponse.lambda$createException$1(DefaultClientResponse.java:214) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onNext(FluxMap.java:106) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:162) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxDefaultIfEmpty$DefaultIfEmptySubscriber.onNext(FluxDefaultIfEmpty.java:122) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:129) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxContextWrite$ContextWriteSubscriber.onNext(FluxContextWrite.java:107) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onNext(FluxMapFuseable.java:299) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxFilterFuseable$FilterFuseableConditionalSubscriber.onNext(FluxFilterFuseable.java:337) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2097) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.MonoCollect$CollectSubscriber.onComplete(MonoCollect.java:145) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxPeek$PeekSubscriber.onComplete(FluxPeek.java:260) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.netty.channel.FluxReceive.onInboundComplete(FluxReceive.java:415) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.onInboundComplete(ChannelOperations.java:446) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:500) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:793) ~[reactor-netty-http-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:114) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1475) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decodeJdkCompatible(SslHandler.java:1338) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decode(SslHandler.java:1387) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:801) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:104) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Mono.block(Mono.java:1779) ~[reactor-core-3.6.5.jar:3.6.5]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestChatGptClient.executeFlexRequests(TargetingRequestChatGptClient.java:152) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestChatGptClient.generateCandidates(TargetingRequestChatGptClient.java:93) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestGenerationService.handleRequest(TargetingRequestGenerationService.java:58) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestGenerationService.processPending(TargetingRequestGenerationService.java:50) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestScheduler.run(TargetingRequestScheduler.java:22) ~[classes/:na]
+		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+		at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.12.5.jar:1.12.5]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.concurrent.ReschedulingRunnable.run(ReschedulingRunnable.java:96) ~[spring-context-6.1.6.jar:6.1.6]
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+		at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[na:na]
+		at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-07-16T05:06:00.255Z  INFO 11802 --- [scheduling-1] c.m.w.t.TargetingRequestChatGptClient    : Executando targeting request targeting-request-a70d9639-d49f-4add-b8c9-04f4c53af2c8 no modo Flex com modelo gpt-5.5
+2026-07-16T05:06:00.371Z ERROR 11802 --- [scheduling-1] .m.w.t.TargetingRequestGenerationService : Failed to generate targeting candidates for request a70d9639-d49f-4add-b8c9-04f4c53af2c8
+
+org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest: 400 Bad Request from POST https://api.openai.com/v1/responses
+	at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: 
+Error has been observed at the following site(s):
+	*__checkpoint ⇢ 400 BAD_REQUEST from POST https://api.openai.com/v1/responses [DefaultWebClient]
+Original Stack Trace:
+		at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at org.springframework.web.reactive.function.client.DefaultClientResponse.lambda$createException$1(DefaultClientResponse.java:214) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onNext(FluxMap.java:106) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:162) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxDefaultIfEmpty$DefaultIfEmptySubscriber.onNext(FluxDefaultIfEmpty.java:122) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:129) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxContextWrite$ContextWriteSubscriber.onNext(FluxContextWrite.java:107) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onNext(FluxMapFuseable.java:299) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxFilterFuseable$FilterFuseableConditionalSubscriber.onNext(FluxFilterFuseable.java:337) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2097) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.MonoCollect$CollectSubscriber.onComplete(MonoCollect.java:145) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxPeek$PeekSubscriber.onComplete(FluxPeek.java:260) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.netty.channel.FluxReceive.onInboundComplete(FluxReceive.java:415) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.onInboundComplete(ChannelOperations.java:446) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:500) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:793) ~[reactor-netty-http-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:114) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1475) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decodeJdkCompatible(SslHandler.java:1338) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decode(SslHandler.java:1387) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:801) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:104) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Mono.block(Mono.java:1779) ~[reactor-core-3.6.5.jar:3.6.5]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestChatGptClient.executeFlexRequests(TargetingRequestChatGptClient.java:152) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestChatGptClient.generateCandidates(TargetingRequestChatGptClient.java:93) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestGenerationService.handleRequest(TargetingRequestGenerationService.java:58) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestGenerationService.processPending(TargetingRequestGenerationService.java:50) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestScheduler.run(TargetingRequestScheduler.java:22) ~[classes/:na]
+		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+		at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.12.5.jar:1.12.5]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.concurrent.ReschedulingRunnable.run(ReschedulingRunnable.java:96) ~[spring-context-6.1.6.jar:6.1.6]
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+		at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[na:na]
+		at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-07-16T05:06:00.373Z  INFO 11802 --- [scheduling-1] c.m.w.t.TargetingRequestChatGptClient    : Executando targeting request targeting-request-889c5c8c-aaf8-4399-a9e6-0f9f2c519b97 no modo Flex com modelo gpt-5.5
+2026-07-16T05:06:00.505Z ERROR 11802 --- [scheduling-1] .m.w.t.TargetingRequestGenerationService : Failed to generate targeting candidates for request 889c5c8c-aaf8-4399-a9e6-0f9f2c519b97
+
+org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest: 400 Bad Request from POST https://api.openai.com/v1/responses
+	at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: 
+Error has been observed at the following site(s):
+	*__checkpoint ⇢ 400 BAD_REQUEST from POST https://api.openai.com/v1/responses [DefaultWebClient]
+Original Stack Trace:
+		at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at org.springframework.web.reactive.function.client.DefaultClientResponse.lambda$createException$1(DefaultClientResponse.java:214) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onNext(FluxMap.java:106) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:162) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxDefaultIfEmpty$DefaultIfEmptySubscriber.onNext(FluxDefaultIfEmpty.java:122) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:129) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxContextWrite$ContextWriteSubscriber.onNext(FluxContextWrite.java:107) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onNext(FluxMapFuseable.java:299) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxFilterFuseable$FilterFuseableConditionalSubscriber.onNext(FluxFilterFuseable.java:337) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2097) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.MonoCollect$CollectSubscriber.onComplete(MonoCollect.java:145) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxPeek$PeekSubscriber.onComplete(FluxPeek.java:260) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.netty.channel.FluxReceive.onInboundComplete(FluxReceive.java:415) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.onInboundComplete(ChannelOperations.java:446) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:500) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:793) ~[reactor-netty-http-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:114) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1475) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decodeJdkCompatible(SslHandler.java:1338) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decode(SslHandler.java:1387) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:801) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:104) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Mono.block(Mono.java:1779) ~[reactor-core-3.6.5.jar:3.6.5]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestChatGptClient.executeFlexRequests(TargetingRequestChatGptClient.java:152) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestChatGptClient.generateCandidates(TargetingRequestChatGptClient.java:93) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestGenerationService.handleRequest(TargetingRequestGenerationService.java:58) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestGenerationService.processPending(TargetingRequestGenerationService.java:50) ~[classes/:na]
+		at com.marketinghub.worker.targetingrequest.TargetingRequestScheduler.run(TargetingRequestScheduler.java:22) ~[classes/:na]
+		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+		at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.12.5.jar:1.12.5]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.concurrent.ReschedulingRunnable.run(ReschedulingRunnable.java:96) ~[spring-context-6.1.6.jar:6.1.6]
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+		at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[na:na]
+		at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-07-16T05:06:00.506Z  INFO 11802 --- [scheduling-1] c.m.w.t.TargetingRequestScheduler        : TargetingRequestScheduler finished
+2026-07-16T05:06:00.640Z  INFO 11802 --- [scheduling-1] h.HypothesisFrameworkGenerationScheduler : HypothesisFrameworkGenerationScheduler started (thread=scheduling-1)
+2026-07-16T05:06:00.641Z  INFO 11802 --- [scheduling-1] pothesisFrameworkGenerationWorkerService : Hypothesis framework generation polling pending jobs (workerId=hypothesis-framework-6b9ec1094e13)
+2026-07-16T05:06:00.771Z  INFO 11802 --- [scheduling-1] pothesisFrameworkGenerationWorkerService : Hypothesis framework generation fetched 0 pending job(s)
+2026-07-16T05:06:00.771Z  INFO 11802 --- [scheduling-1] h.HypothesisFrameworkGenerationScheduler : HypothesisFrameworkGenerationScheduler cycle completed successfully
+2026-07-16T05:06:00.771Z  INFO 11802 --- [scheduling-1] h.HypothesisFrameworkGenerationScheduler : HypothesisFrameworkGenerationScheduler finished (elapsedMs=131)
+2026-07-16T05:06:00.771Z  INFO 11802 --- [scheduling-1] c.m.w.c.CreativeGenerationBackendClient  : Buscando criativos pendentes em http://191.252.181.168/api/experiments/creatives/stage-executions/pending?limit=5
+2026-07-16T05:06:00.974Z  INFO 11802 --- [scheduling-1] c.m.w.c.CreativeGenerationScheduler      : CreativeGenerationScheduler finished. total=0 succeeded=0 failed=0
+2026-07-16T05:06:02.081Z  INFO 11802 --- [scheduling-1] xperimentPipelineGenerationWorkerService : Experiment pipeline worker cycle started
+2026-07-16T05:06:02.081Z  INFO 11802 --- [scheduling-1] c.m.w.e.ExperimentPipelineBackendClient  : Fetching pending experiment pipeline jobs from http://191.252.181.168/api/internal/experiment-pipeline/jobs/pending?limit=20
+2026-07-16T05:06:02.208Z  INFO 11802 --- [scheduling-1] c.m.w.e.ExperimentPipelineBackendClient  : Backend returned 0 pending experiment pipeline job(s)
+2026-07-16T05:06:02.209Z  INFO 11802 --- [scheduling-1] xperimentPipelineGenerationWorkerService : Experiment pipeline worker found 0 pending job(s)
+2026-07-16T05:06:02.209Z  INFO 11802 --- [scheduling-1] .e.ExperimentPipelineGenerationScheduler : ExperimentPipelineGenerationScheduler finished (elapsedMs=128)

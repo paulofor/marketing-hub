@@ -251,6 +251,35 @@ h3 {
   padding: 26px;
 }
 
+.start-here-panel {
+  background: #fff8f3;
+  border: 1px solid rgba(214, 167, 92, 0.5);
+  margin-bottom: 22px;
+  padding: 20px;
+}
+
+.start-here-panel h2 {
+  font-size: 1.65rem;
+  margin-bottom: 10px;
+}
+
+.start-here-panel p {
+  color: #5a4a42;
+  margin-bottom: 16px;
+}
+
+.inline-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #7a2444;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 850;
+  gap: 6px;
+  padding: 0;
+}
+
 .diagnostic-panel svg,
 .section-heading svg,
 .completion-band svg {

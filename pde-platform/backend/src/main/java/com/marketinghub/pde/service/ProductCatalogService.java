@@ -48,7 +48,7 @@ public class ProductCatalogService {
                                 1,
                                 "Sair do quase bom",
                                 "A presenca cresce quando voce identifica o detalhe que mais apaga o conjunto.",
-                                "Escolha uma combinacao real e marque o que hoje gera ruido: excesso, falta de acabamento, cor solta, peca sem intencao ou acessorio perdido.",
+                                "Hoje voce nao vai tentar mudar tudo. Vista ou separe uma combinacao real, olhe cabelo, pele, roupa, perfume e acessorios, escolha o detalhe que mais apaga sua presenca e ajuste apenas esse ponto.",
                                 "Frase preenchida: eu me sinto arrumada, mas pouco marcante quando...",
                                 "Compare a sensacao antes/depois de remover ou ajustar um detalhe."),
                         new MissionDto(

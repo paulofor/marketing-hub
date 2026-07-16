@@ -27,8 +27,8 @@
         <h2 id="statusTitle">Verificando pedido</h2>
         <p id="statusText">Se o pagamento foi aprovado, o acesso ao kit aparece nesta página. Se ficar pendente, acompanhe a confirmação do Mercado Pago.</p>
         <div class="cta-row hidden" id="downloadActions">
-          <a class="btn" id="downloadButton" href="https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip" download>Baixar Kit MUSA agora</a>
-          <a class="btn secondary" id="pdeButton" href="http://191.252.102.54:5176/" target="_blank" rel="noreferrer">Entrar na Área MUSA</a>
+          <a class="btn" id="pdeButton" href="http://191.252.102.54:5176/" target="_blank" rel="noreferrer">Começar Dia 1 na Área MUSA</a>
+          <a class="btn secondary" id="downloadButton" href="https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip" download>Baixar materiais de apoio</a>
           <a class="btn secondary" href="https://pagamentopalf.site/sales-page-exp66.html">Voltar para a página de venda</a>
         </div>
       </div>
@@ -49,7 +49,7 @@
         <div class="detail"><span>Preço</span><b>R$ 47</b></div>
         <div class="detail"><span>Entrega imediata</span><b>ZIP + Área MUSA</b></div>
       </div>
-      <p class="micro">O ZIP é a entrega imediata da compra. A Área MUSA é a experiência guiada para acompanhar os 7 dias e consultar os materiais da biblioteca.</p>
+      <p class="micro">Comece pela Área MUSA: ela mostra a missão do Dia 1 e guia os 7 dias. O ZIP fica como biblioteca complementar para consulta e download.</p>
     </section>
   </main>
 
@@ -88,7 +88,7 @@
     document.getElementById('contentsCard').classList.toggle('hidden', !allowDownload);
   }
   if (isApproved()) {
-    setState('success','✓','Pagamento aprovado. Seu Método MUSA está liberado.','Compra confirmada','Baixe o ZIP para ter a entrega imediata e entre na Área MUSA para seguir a experiência guiada de 7 dias.','Obrigado pela compra. Comece pelo ZIP e use a Área MUSA para acompanhar as missões.',true);
+    setState('success','✓','Pagamento aprovado. Seu Método MUSA está liberado.','Compra confirmada','Comece pelo Dia 1 na Área MUSA. Depois, use o ZIP apenas como biblioteca de apoio para consultar os materiais quando precisar.','Obrigado pela compra. Sua primeira ação é abrir a Área MUSA e seguir a missão do Dia 1.',true);
   } else if (isPending()) {
     setState('pending','!','Pagamento em processamento','Ainda estamos aguardando confirmação','O Mercado Pago ainda não confirmou a aprovação. Assim que aprovar, volte por este link ou pela confirmação da compra.','Seu pedido foi recebido, mas a entrega só deve ser acessada após a aprovação.',false);
   } else if (status === 'failure' || status === 'rejected' || status === 'cancelled' || status === 'canceled') {

@@ -82,7 +82,7 @@ const fallbackProduct: ProductExperience = {
       day: 1,
       title: 'Sair do quase bom',
       principle: 'A presenca cresce quando voce identifica o detalhe que mais apaga o conjunto.',
-      action: 'Escolha uma combinacao real e marque o que hoje gera ruido: excesso, falta de acabamento, cor solta, peca sem intencao ou acessorio perdido.',
+      action: 'Hoje voce nao vai tentar mudar tudo. Vista ou separe uma combinacao real, olhe cabelo, pele, roupa, perfume e acessorios, escolha o detalhe que mais apaga sua presenca e ajuste apenas esse ponto.',
       evidence: 'Frase preenchida: eu me sinto arrumada, mas pouco marcante quando...',
       visualCue: 'Compare a sensacao antes/depois de remover ou ajustar um detalhe.',
     },
@@ -198,6 +198,7 @@ function App() {
 
   const currentProduct = workspace?.product ?? product;
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
+  const firstMission = currentProduct.missions[0];
 
   return (
     <main className="app-shell">
@@ -264,6 +265,21 @@ function App() {
         </aside>
 
         <section className="mission-panel">
+          {firstMission && (
+            <article className="start-here-panel">
+              <p className="section-kicker">Comece aqui</p>
+              <h2>Dia 1: {firstMission.title}</h2>
+              <p>
+                A primeira missao e escolher uma combinacao real, identificar o detalhe que mais
+                apaga sua presenca e escrever a frase de diagnostico. Voce termina o dia sabendo
+                exatamente o que ajustar antes de pensar em comprar algo novo.
+              </p>
+              <button className="inline-action" onClick={() => setActiveMissionId(firstMission.id)}>
+                Abrir orientacao do Dia 1
+                <ChevronRight size={17} />
+              </button>
+            </article>
+          )}
           <div className="mission-tabs">
             {currentProduct.missions.map((mission) => (
               <button

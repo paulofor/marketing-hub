@@ -1,0 +1,32 @@
+services:
+  pde-platform-backend:
+    image: ${PDE_PLATFORM_BACKEND_IMAGE:?PDE_PLATFORM_BACKEND_IMAGE is required}
+    container_name: pde-platform-backend
+    restart: unless-stopped
+    ports:
+      - "${PDE_PLATFORM_BACKEND_PORT:-8096}:8096"
+    networks:
+      - pde-platform-net
+
+  pde-platform-frontend:
+    image: ${PDE_PLATFORM_FRONTEND_IMAGE:?PDE_PLATFORM_FRONTEND_IMAGE is required}
+    container_name: pde-platform-frontend
+    depends_on:
+      pde-platform-backend:
+        condition: service_started
+    restart: unless-stopped
+    ports:
+      - "${PDE_PLATFORM_FRONTEND_PORT:-5176}:80"
+    networks:
+      - pde-platform-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+networks:
+  pde-platform-net:
+    name: ${PDE_PLATFORM_NETWORK:-public-net}
+    external: true

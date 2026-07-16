@@ -4,11 +4,25 @@ import java.time.Instant;
 import lombok.Data;
 
 /**
- * Data transfer object for {@link com.marketinghub.product.Product}.
+ * Responsabilidade: expor os dados do produto comercial para o frontend.
  */
 @Data
 public class ProductDto {
     private Long id;
+    private String slug;
+    private String name;
+    private String publicUrl;
+    private String colorPalette;
+    private String targetAudience;
+    private String languageStyle;
+    private String codeModules;
+    private String productType;
+    private String commercialStatus;
+    private java.math.BigDecimal currentPriceBrl;
+    private java.util.UUID primaryHypothesisId;
+    private String primaryHypothesis;
+    private String associatedExperiments;
+    private String commercialNotes;
     private String niche;
     private String avatar;
     private Long instagramAccountId;

@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-16-product-commercial-catalog.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-16-image-generation-request.yaml
       relativeToChangelogFile: true
   - include:

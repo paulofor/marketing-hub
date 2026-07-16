@@ -1,5 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Check, ChevronRight, KeyRound, Library, LogIn, Sparkles, Target } from 'lucide-react';
+import {
+  BookOpen,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  ClipboardCheck,
+  KeyRound,
+  LayoutDashboard,
+  Library,
+  LogIn,
+  Sparkles,
+  Target,
+  User,
+} from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
@@ -199,6 +212,7 @@ function App() {
   const currentProduct = workspace?.product ?? product;
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
+  const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id)) ?? currentProduct.missions[0];
 
   if (!workspace) {
     return (
@@ -255,58 +269,84 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">Produto Digital Experiencial</p>
-          <h1>{currentProduct.name}</h1>
-          <p className="promise">{currentProduct.promise}</p>
-          <div className="hero-actions">
-            <button className="primary-button" disabled>
-              <KeyRound size={18} />
-              Area liberada
-            </button>
-            <span className="price-pill">{currentProduct.priceLabel}</span>
+    <main className="app-shell dashboard-shell">
+      <section className="dashboard-header">
+        <div className="dashboard-title">
+          <div className="dashboard-icon">
+            <LayoutDashboard size={22} />
           </div>
-          <p className="workspace-email">Acesso liberado para {workspace.email}</p>
+          <div>
+            <p className="eyebrow">Painel da cliente</p>
+            <h1>Area MUSA</h1>
+            <p>{currentProduct.promise}</p>
+          </div>
         </div>
-        <div
-          className="experience-card"
-          style={{
-            backgroundImage: currentProduct.theme.imageUrl
-              ? `linear-gradient(180deg, rgba(45, 32, 36, 0.18), rgba(45, 32, 36, 0.9)), url(${currentProduct.theme.imageUrl})`
-              : undefined,
-          }}
-        >
-          <div className="cover-mark">
-            <Sparkles size={32} />
+        <div className="account-card">
+          <User size={18} />
+          <div>
+            <span>Acesso liberado</span>
+            <strong>{workspace.email}</strong>
           </div>
-          <p>Experiencia guiada</p>
-          <strong>Diagnostico + 7 missoes + biblioteca premium</strong>
-          <span>{currentProduct.audience}</span>
         </div>
       </section>
 
-      <section className="progress-band">
-        <div>
-          <p className="section-kicker">Progresso</p>
-          <h2>{workspace ? `${workspace.progressPercent}% concluido` : 'Aguardando liberacao de acesso'}</h2>
-        </div>
-        <div className="progress-track" aria-label="Progresso da experiencia">
-          <span style={{ width: `${workspace?.progressPercent ?? 0}%` }} />
-        </div>
+      <section className="dashboard-overview" aria-label="Resumo da Area MUSA">
+        <article className="status-card status-card-wide">
+          <div className="status-card-heading">
+            <ClipboardCheck size={20} />
+            <span>Progresso da jornada</span>
+          </div>
+          <strong>{workspace.progressPercent}% concluido</strong>
+          <div className="progress-track" aria-label="Progresso da experiencia">
+            <span style={{ width: `${workspace.progressPercent}%` }} />
+          </div>
+          <p>
+            {workspace.completedMissions} de {workspace.totalMissions} missoes concluidas.
+          </p>
+        </article>
+        <article className="status-card">
+          <CalendarDays size={20} />
+          <span>Proxima missao</span>
+          <strong>{nextMission ? `Dia ${nextMission.day}` : 'Finalizada'}</strong>
+          <p>{nextMission?.title ?? currentProduct.completionOffer}</p>
+        </article>
+        <article className="status-card">
+          <Library size={20} />
+          <span>Biblioteca</span>
+          <strong>{currentProduct.supportMaterials.length} materiais</strong>
+          <p>E-book, experiencia guiada e arquivos de apoio.</p>
+        </article>
+        <article className="status-card">
+          <KeyRound size={20} />
+          <span>Produto ativo</span>
+          <strong>{currentProduct.priceLabel}</strong>
+          <p>Metodo MUSA liberado para uso.</p>
+        </article>
       </section>
 
-      <section className="workspace-grid">
-        <aside className="diagnostic-panel">
-          <Target size={22} />
-          <h2>{currentProduct.diagnostic.title}</h2>
-          <p>{currentProduct.diagnostic.intro}</p>
-          <ul>
-            {currentProduct.diagnostic.questions.map((question) => (
-              <li key={question}>{question}</li>
-            ))}
-          </ul>
+      <section className="dashboard-main">
+        <aside className="customer-sidebar">
+          <div
+            className="mini-cover"
+            style={{
+              backgroundImage: currentProduct.theme.imageUrl
+                ? `linear-gradient(180deg, rgba(45, 32, 36, 0.06), rgba(45, 32, 36, 0.72)), url(${currentProduct.theme.imageUrl})`
+                : undefined,
+            }}
+          >
+            <Sparkles size={24} />
+            <span>Metodo MUSA</span>
+          </div>
+          <div className="diagnostic-panel">
+            <Target size={22} />
+            <h2>{currentProduct.diagnostic.title}</h2>
+            <p>{currentProduct.diagnostic.intro}</p>
+            <ul>
+              {currentProduct.diagnostic.questions.map((question) => (
+                <li key={question}>{question}</li>
+              ))}
+            </ul>
+          </div>
         </aside>
 
         <section className="mission-panel">
@@ -325,12 +365,13 @@ function App() {
               </button>
             </article>
           )}
-          <div className="mission-tabs">
+          <div className="mission-tabs" aria-label="Dias da experiencia">
             {currentProduct.missions.map((mission) => (
               <button
                 key={mission.id}
                 className={mission.id === activeMission?.id ? 'active' : ''}
                 onClick={() => setActiveMissionId(mission.id)}
+                title={`Dia ${mission.day}: ${mission.title}`}
               >
                 {completedMissionIds.has(mission.id) ? <Check size={16} /> : mission.day}
               </button>
@@ -339,7 +380,7 @@ function App() {
 
           {activeMission && (
             <article className="mission-detail">
-              <p className="section-kicker">Dia {activeMission.day}</p>
+              <p className="section-kicker">Missao ativa - Dia {activeMission.day}</p>
               <h2>{activeMission.title}</h2>
               <div className="mission-block">
                 <strong>Principio aplicado</strong>
@@ -374,7 +415,7 @@ function App() {
         <div className="section-heading">
           <Library size={22} />
           <div>
-            <p className="section-kicker">Biblioteca</p>
+            <p className="section-kicker">Biblioteca da cliente</p>
             <h2>Materiais de apoio do metodo</h2>
           </div>
         </div>

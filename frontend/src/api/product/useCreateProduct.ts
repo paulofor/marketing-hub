@@ -3,6 +3,20 @@ import axios from "axios";
 import { Product } from "./useProducts";
 
 export interface CreateProduct {
+  slug?: string;
+  name?: string;
+  publicUrl?: string;
+  colorPalette?: string;
+  targetAudience?: string;
+  languageStyle?: string;
+  codeModules?: string;
+  productType?: string;
+  commercialStatus?: string;
+  currentPriceBrl?: number;
+  primaryHypothesisId?: string;
+  primaryHypothesis?: string;
+  associatedExperiments?: string;
+  commercialNotes?: string;
   niche: string;
   marketNicheId?: number;
   avatar: string;

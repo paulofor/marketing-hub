@@ -1,0 +1,149 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-16-product-commercial-catalog-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - not:
+            columnExists:
+              tableName: product
+              columnName: slug
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN slug VARCHAR(191) NULL AFTER id,
+                ADD COLUMN name VARCHAR(191) NULL AFTER slug,
+                ADD COLUMN public_url VARCHAR(512) NULL AFTER name,
+                ADD COLUMN color_palette LONGTEXT NULL AFTER public_url,
+                ADD COLUMN target_audience LONGTEXT NULL AFTER color_palette,
+                ADD COLUMN language_style LONGTEXT NULL AFTER target_audience,
+                ADD COLUMN code_modules LONGTEXT NULL AFTER language_style,
+                ADD COLUMN product_type VARCHAR(64) NULL AFTER code_modules,
+                ADD COLUMN commercial_status VARCHAR(64) NULL AFTER product_type,
+                ADD COLUMN current_price_brl DECIMAL(10,2) NULL AFTER commercial_status,
+                ADD COLUMN primary_hypothesis_id BINARY(16) NULL AFTER current_price_brl,
+                ADD COLUMN primary_hypothesis LONGTEXT NULL AFTER primary_hypothesis_id,
+                ADD COLUMN associated_experiments LONGTEXT NULL AFTER primary_hypothesis,
+                ADD COLUMN commercial_notes LONGTEXT NULL AFTER associated_experiments;
+  - changeSet:
+      id: 2026-07-16-product-commercial-catalog-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - not:
+            indexExists:
+              tableName: product
+              indexName: uk_product_slug
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE UNIQUE INDEX uk_product_slug ON product (slug);
+  - changeSet:
+      id: 2026-07-16-product-commercial-catalog-003
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO product (
+                slug,
+                name,
+                public_url,
+                color_palette,
+                target_audience,
+                language_style,
+                code_modules,
+                product_type,
+                commercial_status,
+                current_price_brl,
+                primary_hypothesis,
+                associated_experiments,
+                commercial_notes,
+                niche,
+                avatar,
+                explicit_pain,
+                promise,
+                unique_mechanism,
+                tripwire,
+                risk_reversal,
+                social_proof,
+                checkout_monetization,
+                funnel,
+                creative_volume,
+                storytelling,
+                ai_cost,
+                created_at,
+                updated_at
+              )
+              SELECT
+                'metodo-musa-7-dias',
+                'Método MUSA - Presença Elegante em 7 Dias',
+                'http://191.252.102.54:5176/',
+                'Primária #7a2444; destaque #d6a75c; fundo #fff8f3.',
+                'Mulheres urbanas que querem presença mais elegante, marcante e segura com escolhas acessíveis e sem esforço excessivo.',
+                'Elegante, íntimo, prático, feminino, direto, sem jargão técnico e com promessa de reduzir esforço.',
+                'pde-platform; lead-portal-payments-service; backend/ads-service; frontend.',
+                'PDE - Produto Digital Experiencial',
+                'VALIDACAO_COMERCIAL',
+                47.00,
+                'Mulher quer parecer mais elegante e marcante sem gastar com luxo, trocar o guarda-roupa inteiro ou depender de compras impulsivas.',
+                'Experimento 66',
+                'Primeiro produto canônico do Marketing Hub. Produto deve se vincular principalmente à hipótese/oferta, manter nicho como contexto estratégico e acumular experimentos como histórico de validação e escala.',
+                'presença pessoal / estilo acessível / autocuidado feminino prático',
+                'Mulheres que querem elevar imagem pessoal com passos simples, aplicáveis e emocionalmente prazerosos.',
+                'A cliente sente que não transmite a presença elegante que deseja e não sabe o que ajustar sem gastar muito.',
+                'Presença mais elegante, marcante e segura em 7 dias com orientações simples de aplicação diária.',
+                'Método guiado de microdecisões visuais e comportamentais que reduz esforço e evita compras impulsivas.',
+                'Produto digital experiencial com acesso à Área MUSA e materiais práticos.',
+                'Entrega digital imediata e experiência guiada de baixo risco para testar a transformação.',
+                'Prova inicial via página de venda, página de obrigado, Área MUSA e experimento 66.',
+                'Preço inicial R$47, com potencial de upsell para diagnóstico, consultoria ou continuidade.',
+                'Compra direta, obrigado com acesso à Área MUSA, ativação por login simples e progressão por missões.',
+                'Criativos focados em antes/depois de presença, erro de imagem, elegância acessível e ritual de 7 dias.',
+                'Da sensação de estar apagada para a presença elegante percebida sem depender de luxo.',
+                0.00,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+              ON DUPLICATE KEY UPDATE
+                name = VALUES(name),
+                public_url = VALUES(public_url),
+                color_palette = VALUES(color_palette),
+                target_audience = VALUES(target_audience),
+                language_style = VALUES(language_style),
+                code_modules = VALUES(code_modules),
+                product_type = VALUES(product_type),
+                commercial_status = VALUES(commercial_status),
+                current_price_brl = VALUES(current_price_brl),
+                primary_hypothesis = VALUES(primary_hypothesis),
+                associated_experiments = VALUES(associated_experiments),
+                commercial_notes = VALUES(commercial_notes),
+                updated_at = CURRENT_TIMESTAMP;

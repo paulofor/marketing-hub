@@ -3,8 +3,23 @@ import axios from "axios";
 
 export interface Product {
   id: number;
+  slug?: string;
+  name?: string;
+  publicUrl?: string;
+  colorPalette?: string;
+  targetAudience?: string;
+  languageStyle?: string;
+  codeModules?: string;
+  productType?: string;
+  commercialStatus?: string;
+  currentPriceBrl?: number;
+  primaryHypothesisId?: string;
+  primaryHypothesis?: string;
+  associatedExperiments?: string;
+  commercialNotes?: string;
   niche: string;
   avatar: string;
+  marketNicheId?: number;
   instagramAccountId?: number;
   explicitPain: string;
   promise: string;

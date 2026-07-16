@@ -15,9 +15,19 @@ function splitText(value?: string) {
     .filter(Boolean);
 }
 
+function isMusaProduct(product: { slug?: string; name?: string }) {
+  const slug = product.slug?.toLowerCase() ?? "";
+  const name = product.name?.toLowerCase() ?? "";
+  return slug === "metodo-musa-7-dias" || name.includes("método musa") || name.includes("metodo musa");
+}
+
+function extractHexColor(value: string) {
+  return value.match(/#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/)?.[0];
+}
+
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
-  const products = Array.isArray(data) ? data : [];
+  const products = (Array.isArray(data) ? data : []).filter(isMusaProduct);
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
@@ -35,7 +45,6 @@ export default function ProductListPage() {
 
       <div className="row g-3">
         {products.map((product) => {
-          const modules = splitText(product.codeModules);
           const colors = splitText(product.colorPalette);
           return (
             <div className="col-12" key={product.id}>
@@ -90,17 +99,24 @@ export default function ProductListPage() {
                     <div className="product-catalog-card__panel">
                       <h3 className="h6">Linguagem</h3>
                       <p>{product.languageStyle || product.storytelling || "Não informada"}</p>
-                      <h3 className="h6">Módulos</h3>
-                      <div className="product-catalog-card__tags">
-                        {modules.length > 0
-                          ? modules.map((module) => <span key={module}>{module}</span>)
-                          : <span>Não informado</span>}
-                      </div>
                       {colors.length > 0 && (
                         <>
-                          <h3 className="h6 mt-3">Paleta</h3>
-                          <div className="product-catalog-card__tags">
-                            {colors.map((color) => <span key={color}>{color}</span>)}
+                          <h3 className="h6 mt-3">Cores</h3>
+                          <div className="product-catalog-card__colors">
+                            {colors.map((color) => {
+                              const hexColor = extractHexColor(color);
+                              return (
+                                <span key={color}>
+                                  {hexColor && (
+                                    <i
+                                      aria-hidden="true"
+                                      style={{ backgroundColor: hexColor }}
+                                    />
+                                  )}
+                                  {color}
+                                </span>
+                              );
+                            })}
                           </div>
                         </>
                       )}

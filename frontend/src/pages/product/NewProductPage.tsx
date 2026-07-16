@@ -11,6 +11,19 @@ export default function NewProductPage() {
   const accounts = Array.isArray(accountsData) ? accountsData : [];
   const niches = Array.isArray(nichesData) ? nichesData : [];
   const [form, setForm] = useState({
+    slug: "",
+    name: "",
+    publicUrl: "",
+    colorPalette: "",
+    targetAudience: "",
+    languageStyle: "",
+    codeModules: "",
+    productType: "PDE - Produto Digital Experiencial",
+    commercialStatus: "VALIDACAO_COMERCIAL",
+    currentPriceBrl: "",
+    primaryHypothesis: "",
+    associatedExperiments: "",
+    commercialNotes: "",
     niche: "",
     marketNicheId: "",
     avatar: "",
@@ -33,13 +46,101 @@ export default function NewProductPage() {
       ...form,
       marketNicheId: Number(form.marketNicheId) || undefined,
       instagramAccountId: Number(form.instagramAccountId) || undefined,
+      currentPriceBrl: Number(form.currentPriceBrl) || undefined,
       aiCost: Number(form.aiCost),
     });
   };
 
   return (
     <div>
-      <PageTitle>Novo Produto</PageTitle>
+      <PageTitle>Novo Produto Comercial</PageTitle>
+      <div className="row g-3">
+        <div className="col-12 col-lg-6">
+          <label className="form-label mb-1">Nome comercial *</label>
+          <input
+            className="form-control"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </div>
+        <div className="col-12 col-lg-3">
+          <label className="form-label mb-1">Slug *</label>
+          <input
+            className="form-control"
+            value={form.slug}
+            onChange={(e) => setForm({ ...form, slug: e.target.value })}
+          />
+        </div>
+        <div className="col-12 col-lg-3">
+          <label className="form-label mb-1">Preço atual</label>
+          <input
+            className="form-control"
+            inputMode="decimal"
+            value={form.currentPriceBrl}
+            onChange={(e) => setForm({ ...form, currentPriceBrl: e.target.value })}
+          />
+        </div>
+      </div>
+      <label className="form-label mt-3 mb-1">URL pública</label>
+      <input
+        className="form-control mb-2"
+        value={form.publicUrl}
+        onChange={(e) => setForm({ ...form, publicUrl: e.target.value })}
+      />
+      <div className="row g-3">
+        <div className="col-12 col-lg-6">
+          <label className="form-label mb-1">Tipo</label>
+          <input
+            className="form-control"
+            value={form.productType}
+            onChange={(e) => setForm({ ...form, productType: e.target.value })}
+          />
+        </div>
+        <div className="col-12 col-lg-6">
+          <label className="form-label mb-1">Status comercial</label>
+          <input
+            className="form-control"
+            value={form.commercialStatus}
+            onChange={(e) => setForm({ ...form, commercialStatus: e.target.value })}
+          />
+        </div>
+      </div>
+      <textarea
+        className="form-control mt-3 mb-2"
+        placeholder="Paleta de cores"
+        value={form.colorPalette}
+        onChange={(e) => setForm({ ...form, colorPalette: e.target.value })}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Público alvo"
+        value={form.targetAudience}
+        onChange={(e) => setForm({ ...form, targetAudience: e.target.value })}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Estilo de linguagem"
+        value={form.languageStyle}
+        onChange={(e) => setForm({ ...form, languageStyle: e.target.value })}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Módulos de código"
+        value={form.codeModules}
+        onChange={(e) => setForm({ ...form, codeModules: e.target.value })}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Hipótese/oferta principal"
+        value={form.primaryHypothesis}
+        onChange={(e) => setForm({ ...form, primaryHypothesis: e.target.value })}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Experimentos associados"
+        value={form.associatedExperiments}
+        onChange={(e) => setForm({ ...form, associatedExperiments: e.target.value })}
+      />
       <label className="form-label mb-1">Nicho *</label>
       <select
         className="form-select mb-2"
@@ -135,6 +236,12 @@ export default function NewProductPage() {
         placeholder="Volume Criativo"
         value={form.creativeVolume}
         onChange={(e) => setForm({ ...form, creativeVolume: e.target.value })}
+      />
+      <textarea
+        className="form-control mb-2"
+        placeholder="Observações comerciais"
+        value={form.commercialNotes}
+        onChange={(e) => setForm({ ...form, commercialNotes: e.target.value })}
       />
       <textarea
         className="form-control mb-2"

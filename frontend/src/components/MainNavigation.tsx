@@ -200,6 +200,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Campanhas",
     items: [
       { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
+      { to: "/products", label: "Cadastro de Produtos", icon: Package },
       {
         to: "/lead-portal/metrics",
         label: "Envio de imagem no portal",

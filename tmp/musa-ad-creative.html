@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Método MUSA - Criativo</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, Arial, sans-serif;
+        background: #f6f1ed;
+      }
+
+      .ad {
+        width: 1080px;
+        height: 1080px;
+        position: relative;
+        overflow: hidden;
+        background:
+          linear-gradient(135deg, rgba(126, 34, 58, 0.14), transparent 38%),
+          linear-gradient(315deg, rgba(41, 84, 84, 0.14), transparent 34%),
+          #f8f3ef;
+        color: #2a2422;
+        padding: 78px;
+      }
+
+      .kicker {
+        color: #7e223a;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .title {
+        width: 610px;
+        margin: 22px 0 18px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 78px;
+        line-height: 0.95;
+        font-weight: 700;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        width: 540px;
+        margin: 0;
+        font-size: 32px;
+        line-height: 1.2;
+        color: #594d49;
+      }
+
+      .product-stack {
+        position: absolute;
+        right: 78px;
+        bottom: 96px;
+        width: 430px;
+        height: 620px;
+      }
+
+      .screen,
+      .book,
+      .cards {
+        position: absolute;
+        border: 2px solid rgba(42, 36, 34, 0.14);
+        box-shadow: 0 24px 55px rgba(42, 36, 34, 0.2);
+      }
+
+      .screen {
+        top: 0;
+        right: 0;
+        width: 330px;
+        height: 470px;
+        background: #fffdfb;
+        border-radius: 30px;
+        padding: 28px;
+        transform: rotate(3deg);
+      }
+
+      .screen-top {
+        height: 18px;
+        width: 92px;
+        border-radius: 20px;
+        background: #2f5956;
+        margin: 0 auto 30px;
+      }
+
+      .day {
+        color: #7e223a;
+        font-weight: 800;
+        font-size: 24px;
+        margin-bottom: 16px;
+      }
+
+      .screen h2 {
+        font-size: 34px;
+        line-height: 1.02;
+        margin: 0 0 24px;
+      }
+
+      .progress {
+        height: 16px;
+        border-radius: 16px;
+        background: #eadbd3;
+        margin: 22px 0;
+        overflow: hidden;
+      }
+
+      .progress span {
+        display: block;
+        width: 62%;
+        height: 100%;
+        background: #2f5956;
+      }
+
+      .check {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        color: #594d49;
+        font-size: 22px;
+        margin-top: 18px;
+      }
+
+      .check::before {
+        content: "";
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #7e223a;
+        flex: 0 0 auto;
+      }
+
+      .book {
+        left: 0;
+        bottom: 0;
+        width: 300px;
+        height: 420px;
+        border-radius: 12px;
+        background: linear-gradient(160deg, #7e223a, #b85b73 52%, #ecd6cd);
+        padding: 34px;
+        color: white;
+        transform: rotate(-7deg);
+      }
+
+      .book small {
+        display: block;
+        font-size: 18px;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 52px;
+      }
+
+      .book h3 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 46px;
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .book p {
+        margin-top: 24px;
+        font-size: 22px;
+        line-height: 1.2;
+      }
+
+      .cards {
+        left: 96px;
+        bottom: 38px;
+        width: 300px;
+        height: 172px;
+        background: #fffdfb;
+        border-radius: 14px;
+        padding: 24px;
+        transform: rotate(6deg);
+      }
+
+      .cards strong {
+        display: block;
+        color: #2f5956;
+        font-size: 24px;
+        margin-bottom: 18px;
+      }
+
+      .line {
+        height: 10px;
+        border-radius: 10px;
+        background: #eadbd3;
+        margin: 14px 0;
+      }
+
+      .line.short {
+        width: 62%;
+      }
+
+      .offer {
+        position: absolute;
+        left: 78px;
+        bottom: 96px;
+        width: 500px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .pill {
+        width: fit-content;
+        border-radius: 999px;
+        padding: 18px 28px;
+        background: #2f5956;
+        color: white;
+        font-weight: 800;
+        font-size: 28px;
+      }
+
+      .benefits {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .benefit {
+        min-height: 86px;
+        padding: 18px;
+        border: 1px solid rgba(42, 36, 34, 0.12);
+        background: rgba(255, 253, 251, 0.72);
+        font-size: 22px;
+        line-height: 1.12;
+        color: #3d3430;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="ad">
+      <div class="kicker">Experiência guiada</div>
+      <h1 class="title">Presença elegante em 7 dias</h1>
+      <p class="subtitle">Um ritual simples para parecer mais marcante usando melhor o que você já tem.</p>
+
+      <section class="offer">
+        <div class="benefits">
+          <div class="benefit">Diagnóstico inicial de presença</div>
+          <div class="benefit">7 missões práticas e rápidas</div>
+          <div class="benefit">E-book, checklist e templates</div>
+          <div class="benefit">Lista anti-compra impulsiva</div>
+        </div>
+        <div class="pill">Método MUSA por R$47</div>
+      </section>
+
+      <section class="product-stack" aria-label="Mockup do Método MUSA">
+        <div class="screen">
+          <div class="screen-top"></div>
+          <div class="day">Dia 3 de 7</div>
+          <h2>Acabamento que muda a percepção</h2>
+          <div class="progress"><span></span></div>
+          <div class="check">Cabelo alinhado</div>
+          <div class="check">Acessório intencional</div>
+          <div class="check">Perfume na ocasião certa</div>
+        </div>
+        <div class="book">
+          <small>Método MUSA</small>
+          <h3>Presença Elegante</h3>
+          <p>Guia de apoio para 7 dias</p>
+        </div>
+        <div class="cards">
+          <strong>Checklist MUSA</strong>
+          <div class="line"></div>
+          <div class="line"></div>
+          <div class="line short"></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

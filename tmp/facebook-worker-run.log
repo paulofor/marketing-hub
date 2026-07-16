@@ -1,0 +1,380 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2026-07-16T05:13:44.275Z  INFO 12775 --- [facebook-ads-worker] [           main] c.m.f.FacebookAdsWorkerApplication       : Starting FacebookAdsWorkerApplication using Java 21.0.11 with PID 12775 (/root/ai-hub/src/ai-hub-4453d34c-776f-44aa-b4b7-a9a0f61eb4ac-kE82qh/repo/facebook-ads-worker/target/classes started by root in /root/ai-hub/src/ai-hub-4453d34c-776f-44aa-b4b7-a9a0f61eb4ac-kE82qh/repo/facebook-ads-worker)
+2026-07-16T05:13:44.277Z  INFO 12775 --- [facebook-ads-worker] [           main] c.m.f.FacebookAdsWorkerApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-07-16T05:13:44.807Z  INFO 12775 --- [facebook-ads-worker] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JDBC repositories in DEFAULT mode.
+2026-07-16T05:13:44.822Z  INFO 12775 --- [facebook-ads-worker] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 12 ms. Found 0 JDBC repository interfaces.
+2026-07-16T05:13:45.112Z  INFO 12775 --- [facebook-ads-worker] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-07-16T05:13:45.120Z  INFO 12775 --- [facebook-ads-worker] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-16T05:13:45.121Z  INFO 12775 --- [facebook-ads-worker] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.20]
+2026-07-16T05:13:45.150Z  INFO 12775 --- [facebook-ads-worker] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-07-16T05:13:45.151Z  INFO 12775 --- [facebook-ads-worker] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 847 ms
+2026-07-16T05:13:45.438Z  INFO 12775 --- [facebook-ads-worker] [           main] c.m.f.FacebookAdsService                 : Configured Facebook Graph API version: v23.0
+2026-07-16T05:13:45.872Z  INFO 12775 --- [facebook-ads-worker] [           main] com.zaxxer.hikari.HikariDataSource       : marketingHubPool - Starting...
+2026-07-16T05:13:49.962Z  INFO 12775 --- [facebook-ads-worker] [           main] com.zaxxer.hikari.pool.HikariPool        : marketingHubPool - Added connection com.mysql.cj.jdbc.ConnectionImpl@40dee07b
+2026-07-16T05:13:49.963Z  INFO 12775 --- [facebook-ads-worker] [           main] com.zaxxer.hikari.HikariDataSource       : marketingHubPool - Start completed.
+2026-07-16T05:13:50.032Z  INFO 12775 --- [facebook-ads-worker] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 4 endpoint(s) beneath base path '/worker-observability'
+2026-07-16T05:13:50.073Z  INFO 12775 --- [facebook-ads-worker] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2026-07-16T05:13:50.083Z  INFO 12775 --- [facebook-ads-worker] [           main] c.m.f.FacebookAdsWorkerApplication       : Started FacebookAdsWorkerApplication in 6.049 seconds (process running for 6.233)
+2026-07-16T05:13:50.091Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Requesting Facebook worker configuration from backend: url==>http://191.252.181.168/api/accounts/facebook/worker-config, params={}
+2026-07-16T05:13:50.551Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Received Facebook worker configuration response from backend: url<==http://191.252.181.168/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"939323521124952","accessToken":"EAALKZCklBIpoBRp8TLLvqERh459ZBdy2L3H1NAzasViZAGa9FLJJxH227vaJ99xvqjr9SbWqbQavpNDwiyXghDm3GZAq3qa5cDl5M7eLPRsw6MrxFLLlxanSLOgrQUWAZBT0OMYZC70DXZBobQzLhKZAT2UyiqNIZCpb0jAAfZA2RZAojXXmlxYyjgoCYJAJfen4sfGJnJb1Iqn","systemUserAccessToken":"EAALKZCklBIpoBRPrMY5ZBnwKiqZAavOWuAOdDZBE69CD5YC7L1t6B7AVEyw5BwE9TJaySajAlR2DoYoMC4Q2ZBbLcOYmuRqG3BhRgxdx2iwniUKd48S2CyZCaY22e9JJMvPefi8CoSZBc2juarNGTGVumExY2qTdA9ZC8lgcV69ZCeCCh2MmCzqEyKU0QR9N5NwZDZD","pixelOwnerBusinessId":"1337293866974593","appId":"786143452930714","appSecret":"050a9e2d05d33c783ebef4c0d12c095d","defaultPageId":null,"defaultInstagramActorId":null,"defaultWebsiteUrl":"http://191.252.92.222:3000/accounts/facebook","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"%s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":null,"adSetTargetCountry":"BR"}
+2026-07-16T05:13:50.557Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.FacebookAdsService                 : Facebook access token updated: previousToken=null, newToken=EAA...Iqn
+2026-07-16T05:13:51.198Z  WARN 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignMetricsService   : Could not sync Facebook status snapshot for campaign : 400 Bad Request from GET https://graph.facebook.com/v23.0/
+
+org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest: 400 Bad Request from GET https://graph.facebook.com/v23.0/
+	at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: 
+Error has been observed at the following site(s):
+	*__checkpoint ⇢ 400 BAD_REQUEST from GET https://graph.facebook.com/v23.0/ [DefaultWebClient]
+Original Stack Trace:
+		at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at org.springframework.web.reactive.function.client.DefaultClientResponse.lambda$createException$1(DefaultClientResponse.java:214) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onNext(FluxMap.java:106) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:162) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxDefaultIfEmpty$DefaultIfEmptySubscriber.onNext(FluxDefaultIfEmpty.java:122) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:129) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxContextWrite$ContextWriteSubscriber.onNext(FluxContextWrite.java:107) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onNext(FluxMapFuseable.java:299) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxFilterFuseable$FilterFuseableConditionalSubscriber.onNext(FluxFilterFuseable.java:337) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2097) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.MonoCollect$CollectSubscriber.onComplete(MonoCollect.java:145) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxPeek$PeekSubscriber.onComplete(FluxPeek.java:260) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.netty.channel.FluxReceive.onInboundComplete(FluxReceive.java:415) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.onInboundComplete(ChannelOperations.java:446) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:500) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:793) ~[reactor-netty-http-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:114) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1475) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decodeJdkCompatible(SslHandler.java:1338) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.ssl.SslHandler.decode(SslHandler.java:1387) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:801) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:104) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Mono.block(Mono.java:1779) ~[reactor-core-3.6.5.jar:3.6.5]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignStatusSnapshotClient.fetch(FacebookCampaignStatusSnapshotClient.java:34) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.syncStatusSnapshot(FacebookCampaignMetricsService.java:139) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.processTarget(FacebookCampaignMetricsService.java:103) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.syncCampaignMetrics(FacebookCampaignMetricsService.java:94) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsScheduler.scheduleMetricsSync(FacebookCampaignMetricsScheduler.java:16) ~[classes/:na]
+		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+		at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.12.5.jar:1.12.5]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.6.jar:6.1.6]
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+		at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358) ~[na:na]
+		at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-07-16T05:13:51.292Z ERROR 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.FacebookAdsService                 : Facebook API GET request failed: path<==/v23.0/insights?access_token=EAA...Iqn&date_preset=maximum&fields=campaign_name,reach,impressions,clicks,spend,actions,date_start,date_stop&time_increment=all_days, status=400, responseBody={"e..."}}, errorDetails={"type":"GraphMethodException","code":100,"error_subcode":33,"message":"Unsupported get request. Object with ID 'insights' does not exist, cannot be loaded due to missing permissions, or does not support this operation. Please read the Graph API documentation at https://developers.facebook.com/docs/graph-api","fbtrace_id":"AQHt0FbDUT-7tnmIk_pQB_H"}
+
+org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest: 400 Bad Request from GET https://graph.facebook.com/v23.0/insights
+	at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+	at org.springframework.web.reactive.function.client.DefaultClientResponse.lambda$createException$1(DefaultClientResponse.java:214) ~[spring-webflux-6.1.6.jar:6.1.6]
+	at reactor.core.publisher.FluxMap$MapSubscriber.onNext(FluxMap.java:106) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:162) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxDefaultIfEmpty$DefaultIfEmptySubscriber.onNext(FluxDefaultIfEmpty.java:122) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxOnAssembly$OnAssemblySubscriber.onNext(FluxOnAssembly.java:539) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:129) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxContextWrite$ContextWriteSubscriber.onNext(FluxContextWrite.java:107) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onNext(FluxMapFuseable.java:299) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxFilterFuseable$FilterFuseableConditionalSubscriber.onNext(FluxFilterFuseable.java:337) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2097) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.MonoCollect$CollectSubscriber.onComplete(MonoCollect.java:145) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxPeek$PeekSubscriber.onComplete(FluxPeek.java:260) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.netty.channel.FluxReceive.onInboundComplete(FluxReceive.java:415) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+	at reactor.netty.channel.ChannelOperations.onInboundComplete(ChannelOperations.java:446) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+	at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:500) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+	at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:793) ~[reactor-netty-http-1.1.18.jar:1.1.18]
+	at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:114) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1475) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.ssl.SslHandler.decodeJdkCompatible(SslHandler.java:1338) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.ssl.SslHandler.decode(SslHandler.java:1387) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:801) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:104) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Mono.block(Mono.java:1779) ~[reactor-core-3.6.5.jar:3.6.5]
+		at com.marketinghub.facebookadsworker.FacebookAdsService.executeGet(FacebookAdsService.java:2702) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.FacebookAdsService.getCampaignInsights(FacebookAdsService.java:2289) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.processTarget(FacebookCampaignMetricsService.java:104) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.syncCampaignMetrics(FacebookCampaignMetricsService.java:94) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsScheduler.scheduleMetricsSync(FacebookCampaignMetricsScheduler.java:16) ~[classes/:na]
+		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+		at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.12.5.jar:1.12.5]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.6.jar:6.1.6]
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+		at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358) ~[na:na]
+		at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+		... 1 common frames omitted
+
+2026-07-16T05:13:51.295Z  WARN 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignMetricsService   : Unexpected error while syncing metrics for campaign : 400 Bad Request from GET https://graph.facebook.com/v23.0/insights
+
+org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest: 400 Bad Request from GET https://graph.facebook.com/v23.0/insights
+	at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:307) ~[spring-webflux-6.1.6.jar:6.1.6]
+	at org.springframework.web.reactive.function.client.DefaultClientResponse.lambda$createException$1(DefaultClientResponse.java:214) ~[spring-webflux-6.1.6.jar:6.1.6]
+	at reactor.core.publisher.FluxMap$MapSubscriber.onNext(FluxMap.java:106) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:162) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxDefaultIfEmpty$DefaultIfEmptySubscriber.onNext(FluxDefaultIfEmpty.java:122) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxOnAssembly$OnAssemblySubscriber.onNext(FluxOnAssembly.java:539) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:129) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxContextWrite$ContextWriteSubscriber.onNext(FluxContextWrite.java:107) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onNext(FluxMapFuseable.java:299) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxFilterFuseable$FilterFuseableConditionalSubscriber.onNext(FluxFilterFuseable.java:337) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2097) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.MonoCollect$CollectSubscriber.onComplete(MonoCollect.java:145) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxPeek$PeekSubscriber.onComplete(FluxPeek.java:260) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+	at reactor.netty.channel.FluxReceive.onInboundComplete(FluxReceive.java:415) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+	at reactor.netty.channel.ChannelOperations.onInboundComplete(ChannelOperations.java:446) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+	at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:500) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+	at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:793) ~[reactor-netty-http-1.1.18.jar:1.1.18]
+	at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:114) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1475) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.ssl.SslHandler.decodeJdkCompatible(SslHandler.java:1338) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.ssl.SslHandler.decode(SslHandler.java:1387) ~[netty-handler-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:801) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:104) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Mono.block(Mono.java:1779) ~[reactor-core-3.6.5.jar:3.6.5]
+		at com.marketinghub.facebookadsworker.FacebookAdsService.executeGet(FacebookAdsService.java:2702) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.FacebookAdsService.getCampaignInsights(FacebookAdsService.java:2289) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.processTarget(FacebookCampaignMetricsService.java:104) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.syncCampaignMetrics(FacebookCampaignMetricsService.java:94) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsScheduler.scheduleMetricsSync(FacebookCampaignMetricsScheduler.java:16) ~[classes/:na]
+		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+		at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.12.5.jar:1.12.5]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.6.jar:6.1.6]
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+		at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358) ~[na:na]
+		at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+		... 1 common frames omitted
+
+2026-07-16T05:13:51.425Z  WARN 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignMetricsService   : Could not report metrics error for campaign : 404 Not Found from POST http://191.252.181.168/api/facebook-campaigns/metrics-error
+
+org.springframework.web.reactive.function.client.WebClientResponseException$NotFound: 404 Not Found from POST http://191.252.181.168/api/facebook-campaigns/metrics-error
+	at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:310) ~[spring-webflux-6.1.6.jar:6.1.6]
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: 
+Error has been observed at the following site(s):
+	*__checkpoint ⇢ 404 NOT_FOUND from POST http://191.252.181.168/api/facebook-campaigns/metrics-error [DefaultWebClient]
+Original Stack Trace:
+		at org.springframework.web.reactive.function.client.WebClientResponseException.create(WebClientResponseException.java:310) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at org.springframework.web.reactive.function.client.DefaultClientResponse.lambda$createException$1(DefaultClientResponse.java:214) ~[spring-webflux-6.1.6.jar:6.1.6]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onNext(FluxMap.java:106) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:162) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxDefaultIfEmpty$DefaultIfEmptySubscriber.onNext(FluxDefaultIfEmpty.java:122) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:129) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxContextWrite$ContextWriteSubscriber.onNext(FluxContextWrite.java:107) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onNext(FluxMapFuseable.java:299) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxFilterFuseable$FilterFuseableConditionalSubscriber.onNext(FluxFilterFuseable.java:337) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2097) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.MonoCollect$CollectSubscriber.onComplete(MonoCollect.java:145) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxPeek$PeekSubscriber.onComplete(FluxPeek.java:260) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.netty.channel.FluxReceive.onInboundComplete(FluxReceive.java:415) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.onInboundComplete(ChannelOperations.java:446) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperations.terminate(ChannelOperations.java:500) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at reactor.netty.http.client.HttpClientOperations.onInboundNext(HttpClientOperations.java:793) ~[reactor-netty-http-1.1.18.jar:1.1.18]
+		at reactor.netty.channel.ChannelOperationsHandler.channelRead(ChannelOperationsHandler.java:114) ~[reactor-netty-core-1.1.18.jar:1.1.18]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler$DelegatingChannelHandlerContext.fireChannelRead(CombinedChannelDuplexHandler.java:436) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318) ~[netty-codec-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.CombinedChannelDuplexHandler.channelRead(CombinedChannelDuplexHandler.java:251) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919) ~[netty-transport-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:801) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:501) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:399) ~[netty-transport-classes-epoll-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.109.Final.jar:4.1.109.Final]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+	Suppressed: java.lang.Exception: #block terminated with an error
+		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:104) ~[reactor-core-3.6.5.jar:3.6.5]
+		at reactor.core.publisher.Mono.block(Mono.java:1779) ~[reactor-core-3.6.5.jar:3.6.5]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.reportMetricsError(FacebookCampaignMetricsService.java:369) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.processTarget(FacebookCampaignMetricsService.java:130) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService.syncCampaignMetrics(FacebookCampaignMetricsService.java:94) ~[classes/:na]
+		at com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsScheduler.scheduleMetricsSync(FacebookCampaignMetricsScheduler.java:16) ~[classes/:na]
+		at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+		at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at io.micrometer.observation.Observation.observe(Observation.java:499) ~[micrometer-observation-1.12.5.jar:1.12.5]
+		at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124) ~[spring-context-6.1.6.jar:6.1.6]
+		at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-6.1.6.jar:6.1.6]
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+		at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358) ~[na:na]
+		at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+		at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-07-16T05:13:51.426Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Requesting Facebook worker configuration from backend: url==>http://191.252.181.168/api/accounts/facebook/worker-config, params={}
+2026-07-16T05:13:51.574Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Received Facebook worker configuration response from backend: url<==http://191.252.181.168/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"939323521124952","accessToken":"EAALKZCklBIpoBRp8TLLvqERh459ZBdy2L3H1NAzasViZAGa9FLJJxH227vaJ99xvqjr9SbWqbQavpNDwiyXghDm3GZAq3qa5cDl5M7eLPRsw6MrxFLLlxanSLOgrQUWAZBT0OMYZC70DXZBobQzLhKZAT2UyiqNIZCpb0jAAfZA2RZAojXXmlxYyjgoCYJAJfen4sfGJnJb1Iqn","systemUserAccessToken":"EAALKZCklBIpoBRPrMY5ZBnwKiqZAavOWuAOdDZBE69CD5YC7L1t6B7AVEyw5BwE9TJaySajAlR2DoYoMC4Q2ZBbLcOYmuRqG3BhRgxdx2iwniUKd48S2CyZCaY22e9JJMvPefi8CoSZBc2juarNGTGVumExY2qTdA9ZC8lgcV69ZCeCCh2MmCzqEyKU0QR9N5NwZDZD","pixelOwnerBusinessId":"1337293866974593","appId":"786143452930714","appSecret":"050a9e2d05d33c783ebef4c0d12c095d","defaultPageId":null,"defaultInstagramActorId":null,"defaultWebsiteUrl":"http://191.252.92.222:3000/accounts/facebook","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"%s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":null,"adSetTargetCountry":"BR"}
+2026-07-16T05:13:51.574Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Requesting experiments ready for Facebook campaigns from backend: url==>http://191.252.181.168/api/facebook-campaigns/experiments-ready, params={}
+2026-07-16T05:13:52.563Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Received experiments response from backend: url<==http://191.252.181.168/api/facebook-campaigns/experiments-ready, response=[]
+2026-07-16T05:13:52.564Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Requesting Facebook worker configuration from backend: url==>http://191.252.181.168/api/accounts/facebook/worker-config, params={}
+2026-07-16T05:13:52.697Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Received Facebook worker configuration response from backend: url<==http://191.252.181.168/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"939323521124952","accessToken":"EAALKZCklBIpoBRp8TLLvqERh459ZBdy2L3H1NAzasViZAGa9FLJJxH227vaJ99xvqjr9SbWqbQavpNDwiyXghDm3GZAq3qa5cDl5M7eLPRsw6MrxFLLlxanSLOgrQUWAZBT0OMYZC70DXZBobQzLhKZAT2UyiqNIZCpb0jAAfZA2RZAojXXmlxYyjgoCYJAJfen4sfGJnJb1Iqn","systemUserAccessToken":"EAALKZCklBIpoBRPrMY5ZBnwKiqZAavOWuAOdDZBE69CD5YC7L1t6B7AVEyw5BwE9TJaySajAlR2DoYoMC4Q2ZBbLcOYmuRqG3BhRgxdx2iwniUKd48S2CyZCaY22e9JJMvPefi8CoSZBc2juarNGTGVumExY2qTdA9ZC8lgcV69ZCeCCh2MmCzqEyKU0QR9N5NwZDZD","pixelOwnerBusinessId":"1337293866974593","appId":"786143452930714","appSecret":"050a9e2d05d33c783ebef4c0d12c095d","defaultPageId":null,"defaultInstagramActorId":null,"defaultWebsiteUrl":"http://191.252.92.222:3000/accounts/facebook","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"%s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":null,"adSetTargetCountry":"BR"}
+2026-07-16T05:13:52.697Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Requesting Facebook campaign stop requests from backend: url==>http://191.252.181.168/api/facebook-campaigns/stop-requests, params={}
+2026-07-16T05:13:52.830Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Received stop requests from backend: url<==http://191.252.181.168/api/facebook-campaigns/stop-requests, response=[]
+2026-07-16T05:13:52.830Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.f.FacebookInterestValidationService : Requesting pending Facebook interests for validation: url==>http://191.252.181.168/api/facebook-interests/pending, params={}
+2026-07-16T05:13:52.983Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.f.FacebookInterestValidationService : Received pending Facebook interests from backend: url<==http://191.252.181.168/api/facebook-interests/pending, response=[]
+2026-07-16T05:13:52.984Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.TargetingBackendClient           : Requesting targeting elements pending Meta Ads enrichment: url==>http://191.252.181.168/api/internal/targeting/elements/metaads-pending, params=limit=100
+2026-07-16T05:13:53.129Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.TargetingBackendClient           : Received targeting elements pending Meta Ads enrichment: url<==http://191.252.181.168/api/internal/targeting/elements/metaads-pending, response=[]
+2026-07-16T05:13:53.130Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookTokenRenewalService      : Requesting Facebook accounts eligible for token renewal from backend: url==>http://191.252.181.168/api/accounts/facebook/renewal/eligible, params={}
+2026-07-16T05:13:53.258Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookTokenRenewalService      : Received eligible Facebook accounts response from backend: url<==http://191.252.181.168/api/accounts/facebook/renewal/eligible, response=[]
+2026-07-16T05:13:53.259Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.m.MetaAudienceBackendClient        : Requesting pending Meta audiences: url==>http://191.252.181.168/api/internal/meta-audiences/pending?limit=5
+2026-07-16T05:13:53.390Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.m.MetaAudienceBackendClient        : Received pending Meta audiences: url<==http://191.252.181.168/api/internal/meta-audiences/pending?limit=5, response=[]
+2026-07-16T05:14:07.564Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Requesting Facebook worker configuration from backend: url==>http://191.252.181.168/api/accounts/facebook/worker-config, params={}
+2026-07-16T05:14:07.695Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Received Facebook worker configuration response from backend: url<==http://191.252.181.168/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"939323521124952","accessToken":"EAALKZCklBIpoBRp8TLLvqERh459ZBdy2L3H1NAzasViZAGa9FLJJxH227vaJ99xvqjr9SbWqbQavpNDwiyXghDm3GZAq3qa5cDl5M7eLPRsw6MrxFLLlxanSLOgrQUWAZBT0OMYZC70DXZBobQzLhKZAT2UyiqNIZCpb0jAAfZA2RZAojXXmlxYyjgoCYJAJfen4sfGJnJb1Iqn","systemUserAccessToken":"EAALKZCklBIpoBRPrMY5ZBnwKiqZAavOWuAOdDZBE69CD5YC7L1t6B7AVEyw5BwE9TJaySajAlR2DoYoMC4Q2ZBbLcOYmuRqG3BhRgxdx2iwniUKd48S2CyZCaY22e9JJMvPefi8CoSZBc2juarNGTGVumExY2qTdA9ZC8lgcV69ZCeCCh2MmCzqEyKU0QR9N5NwZDZD","pixelOwnerBusinessId":"1337293866974593","appId":"786143452930714","appSecret":"050a9e2d05d33c783ebef4c0d12c095d","defaultPageId":null,"defaultInstagramActorId":null,"defaultWebsiteUrl":"http://191.252.92.222:3000/accounts/facebook","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"%s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":null,"adSetTargetCountry":"BR"}
+2026-07-16T05:14:07.696Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Requesting experiments ready for Facebook campaigns from backend: url==>http://191.252.181.168/api/facebook-campaigns/experiments-ready, params={}
+2026-07-16T05:14:08.682Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Received experiments response from backend: url<==http://191.252.181.168/api/facebook-campaigns/experiments-ready, response=[]
+2026-07-16T05:14:23.683Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Requesting Facebook worker configuration from backend: url==>http://191.252.181.168/api/accounts/facebook/worker-config, params={}
+2026-07-16T05:14:23.824Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Received Facebook worker configuration response from backend: url<==http://191.252.181.168/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"939323521124952","accessToken":"EAALKZCklBIpoBRp8TLLvqERh459ZBdy2L3H1NAzasViZAGa9FLJJxH227vaJ99xvqjr9SbWqbQavpNDwiyXghDm3GZAq3qa5cDl5M7eLPRsw6MrxFLLlxanSLOgrQUWAZBT0OMYZC70DXZBobQzLhKZAT2UyiqNIZCpb0jAAfZA2RZAojXXmlxYyjgoCYJAJfen4sfGJnJb1Iqn","systemUserAccessToken":"EAALKZCklBIpoBRPrMY5ZBnwKiqZAavOWuAOdDZBE69CD5YC7L1t6B7AVEyw5BwE9TJaySajAlR2DoYoMC4Q2ZBbLcOYmuRqG3BhRgxdx2iwniUKd48S2CyZCaY22e9JJMvPefi8CoSZBc2juarNGTGVumExY2qTdA9ZC8lgcV69ZCeCCh2MmCzqEyKU0QR9N5NwZDZD","pixelOwnerBusinessId":"1337293866974593","appId":"786143452930714","appSecret":"050a9e2d05d33c783ebef4c0d12c095d","defaultPageId":null,"defaultInstagramActorId":null,"defaultWebsiteUrl":"http://191.252.92.222:3000/accounts/facebook","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"%s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":null,"adSetTargetCountry":"BR"}
+2026-07-16T05:14:23.824Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Requesting experiments ready for Facebook campaigns from backend: url==>http://191.252.181.168/api/facebook-campaigns/experiments-ready, params={}
+2026-07-16T05:14:24.832Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Received experiments response from backend: url<==http://191.252.181.168/api/facebook-campaigns/experiments-ready, response=[]
+2026-07-16T05:14:39.833Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Requesting Facebook worker configuration from backend: url==>http://191.252.181.168/api/accounts/facebook/worker-config, params={}
+2026-07-16T05:14:39.962Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Received Facebook worker configuration response from backend: url<==http://191.252.181.168/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"939323521124952","accessToken":"EAALKZCklBIpoBRp8TLLvqERh459ZBdy2L3H1NAzasViZAGa9FLJJxH227vaJ99xvqjr9SbWqbQavpNDwiyXghDm3GZAq3qa5cDl5M7eLPRsw6MrxFLLlxanSLOgrQUWAZBT0OMYZC70DXZBobQzLhKZAT2UyiqNIZCpb0jAAfZA2RZAojXXmlxYyjgoCYJAJfen4sfGJnJb1Iqn","systemUserAccessToken":"EAALKZCklBIpoBRPrMY5ZBnwKiqZAavOWuAOdDZBE69CD5YC7L1t6B7AVEyw5BwE9TJaySajAlR2DoYoMC4Q2ZBbLcOYmuRqG3BhRgxdx2iwniUKd48S2CyZCaY22e9JJMvPefi8CoSZBc2juarNGTGVumExY2qTdA9ZC8lgcV69ZCeCCh2MmCzqEyKU0QR9N5NwZDZD","pixelOwnerBusinessId":"1337293866974593","appId":"786143452930714","appSecret":"050a9e2d05d33c783ebef4c0d12c095d","defaultPageId":null,"defaultInstagramActorId":null,"defaultWebsiteUrl":"http://191.252.92.222:3000/accounts/facebook","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"%s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":null,"adSetTargetCountry":"BR"}
+2026-07-16T05:14:39.963Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Requesting experiments ready for Facebook campaigns from backend: url==>http://191.252.181.168/api/facebook-campaigns/experiments-ready, params={}
+2026-07-16T05:14:40.974Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Received experiments response from backend: url<==http://191.252.181.168/api/facebook-campaigns/experiments-ready, response=[]
+2026-07-16T05:14:55.974Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Requesting Facebook worker configuration from backend: url==>http://191.252.181.168/api/accounts/facebook/worker-config, params={}
+2026-07-16T05:14:56.102Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Received Facebook worker configuration response from backend: url<==http://191.252.181.168/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"939323521124952","accessToken":"EAALKZCklBIpoBRp8TLLvqERh459ZBdy2L3H1NAzasViZAGa9FLJJxH227vaJ99xvqjr9SbWqbQavpNDwiyXghDm3GZAq3qa5cDl5M7eLPRsw6MrxFLLlxanSLOgrQUWAZBT0OMYZC70DXZBobQzLhKZAT2UyiqNIZCpb0jAAfZA2RZAojXXmlxYyjgoCYJAJfen4sfGJnJb1Iqn","systemUserAccessToken":"EAALKZCklBIpoBRPrMY5ZBnwKiqZAavOWuAOdDZBE69CD5YC7L1t6B7AVEyw5BwE9TJaySajAlR2DoYoMC4Q2ZBbLcOYmuRqG3BhRgxdx2iwniUKd48S2CyZCaY22e9JJMvPefi8CoSZBc2juarNGTGVumExY2qTdA9ZC8lgcV69ZCeCCh2MmCzqEyKU0QR9N5NwZDZD","pixelOwnerBusinessId":"1337293866974593","appId":"786143452930714","appSecret":"050a9e2d05d33c783ebef4c0d12c095d","defaultPageId":null,"defaultInstagramActorId":null,"defaultWebsiteUrl":"http://191.252.92.222:3000/accounts/facebook","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"%s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":null,"adSetTargetCountry":"BR"}
+2026-07-16T05:14:56.103Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Requesting experiments ready for Facebook campaigns from backend: url==>http://191.252.181.168/api/facebook-campaigns/experiments-ready, params={}
+2026-07-16T05:14:57.031Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Received experiments response from backend: url<==http://191.252.181.168/api/facebook-campaigns/experiments-ready, response=[]
+2026-07-16T05:15:12.032Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Requesting Facebook worker configuration from backend: url==>http://191.252.181.168/api/accounts/facebook/worker-config, params={}
+2026-07-16T05:15:12.165Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] .m.f.c.FacebookWorkerConfigurationClient : Received Facebook worker configuration response from backend: url<==http://191.252.181.168/api/accounts/facebook/worker-config, response={"accountId":1,"adAccountId":"939323521124952","accessToken":"EAALKZCklBIpoBRp8TLLvqERh459ZBdy2L3H1NAzasViZAGa9FLJJxH227vaJ99xvqjr9SbWqbQavpNDwiyXghDm3GZAq3qa5cDl5M7eLPRsw6MrxFLLlxanSLOgrQUWAZBT0OMYZC70DXZBobQzLhKZAT2UyiqNIZCpb0jAAfZA2RZAojXXmlxYyjgoCYJAJfen4sfGJnJb1Iqn","systemUserAccessToken":"EAALKZCklBIpoBRPrMY5ZBnwKiqZAavOWuAOdDZBE69CD5YC7L1t6B7AVEyw5BwE9TJaySajAlR2DoYoMC4Q2ZBbLcOYmuRqG3BhRgxdx2iwniUKd48S2CyZCaY22e9JJMvPefi8CoSZBc2juarNGTGVumExY2qTdA9ZC8lgcV69ZCeCCh2MmCzqEyKU0QR9N5NwZDZD","pixelOwnerBusinessId":"1337293866974593","appId":"786143452930714","appSecret":"050a9e2d05d33c783ebef4c0d12c095d","defaultPageId":null,"defaultInstagramActorId":null,"defaultWebsiteUrl":"http://191.252.92.222:3000/accounts/facebook","defaultLeadGenFormId":null,"defaultCreativeMessageTemplate":"%s","defaultCallToActionType":"LEARN_MORE","adSetDailyBudget":"2000","adSetBillingEvent":"IMPRESSIONS","adSetOptimizationGoal":"LINK_CLICKS","adSetDestinationType":"WEBSITE","adSetBidStrategy":"LOWEST_COST_WITHOUT_CAP","adSetBidAmount":null,"adSetTargetCountry":"BR"}
+2026-07-16T05:15:12.165Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Requesting experiments ready for Facebook campaigns from backend: url==>http://191.252.181.168/api/facebook-campaigns/experiments-ready, params={}
+2026-07-16T05:15:13.250Z  INFO 12775 --- [facebook-ads-worker] [   scheduling-1] c.m.f.f.FacebookCampaignService          : Received experiments response from backend: url<==http://191.252.181.168/api/facebook-campaigns/experiments-ready, response=[]
+[0m[0m2026-07-16T05:15:22.643Z  INFO 12775 --- [facebook-ads-worker] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : marketingHubPool - Shutdown initiated...
+2026-07-16T05:15:22.645Z  INFO 12775 --- [facebook-ads-worker] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : marketingHubPool - Shutdown completed.

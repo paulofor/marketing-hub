@@ -11,6 +11,7 @@ import com.marketinghub.feo.fabricacaov1.contract.PackageAssemblyOutput;
 import com.marketinghub.feo.fabricacaov1.contract.VisualAsset;
 import com.marketinghub.feo.fabricacaov1.contract.VisualAssetSpec;
 import com.marketinghub.feo.fabricacaov1.geracaoativosvisuais.GeracaoAtivosVisuaisProcessor;
+import com.marketinghub.feo.fabricacaov1.geracaoativosvisuais.TemplateVisualAssetFactory;
 import com.marketinghub.feo.fabricacaov1.geracaoativosvisuais.VisualAssetGenerator;
 import com.marketinghub.feo.fabricacaov1.montagempacote.MontagemPacoteProcessor;
 import com.marketinghub.feo.fabricacaov1.montagempacote.PackageAssetAssembler;
@@ -23,10 +24,14 @@ import com.marketinghub.feo.fabricacaov1.pipeline.StageStatus;
 import com.marketinghub.feo.fabricacaov1.planejamentoentregaveis.PlanejamentoEntregaveisProcessor;
 import com.marketinghub.feo.fabricacaov1.redacaoentregaveis.RedacaoEntregaveisProcessor;
 import com.marketinghub.feo.infrastructure.config.FeoProperties;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipInputStream;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -133,7 +138,7 @@ class FeoFabricacaoV1ContractTest {
      * Confirma que imagens externas desabilitadas nao bloqueiam a montagem do pacote final.
      */
     @Test
-    void geracaoVisualDesabilitadaDevePermitirMontagemSemImagens() {
+    void geracaoVisualDesabilitadaDeveGerarImagensLocaisParaNaoEntregarPdfSemVisual() {
         PackageAssemblyInput input = redacaoCompleta();
         GeracaoAtivosVisuaisProcessor processor = new GeracaoAtivosVisuaisProcessor(
                 new FakeVisualAssetGenerator(),
@@ -147,8 +152,9 @@ class FeoFabricacaoV1ContractTest {
 
         assertThat(result.status()).isEqualTo(StageStatus.COMPLETED);
         assertThat(result.nextStageCode()).isEqualTo(StageCode.MONTAGEM_PACOTE);
-        assertThat(result.output().visualAssets()).isEmpty();
-        assertThat(result.metrics()).containsEntry("qualityGate", "VISUAL_ASSETS_OPTIONAL_SKIPPED");
+        assertThat(result.output().visualAssets()).hasSize(input.contentPackage().visualAssets().size());
+        assertThat(result.output().visualAssets()).extracting("model").containsOnly("local-editorial-template");
+        assertThat(result.metrics()).containsEntry("qualityGate", "VISUAL_ASSETS_TEMPLATE_READY");
     }
 
     /**
@@ -176,6 +182,12 @@ class FeoFabricacaoV1ContractTest {
         assertThat(result.nextStageCode()).isNull();
         assertThat(result.output().pdf().contentType()).isEqualTo("application/pdf");
         assertThat(result.output().pdf().content()).startsWith("%PDF".getBytes());
+        assertThat(pdfImageDimensions(result.output().pdf().content()))
+                .hasSizeGreaterThanOrEqualTo(4)
+                .allSatisfy(size -> {
+                    assertThat(size.width()).isGreaterThanOrEqualTo(1000);
+                    assertThat(size.height()).isGreaterThanOrEqualTo(900);
+                });
         assertThat(new String(result.output().experienceSite().content(), java.nio.charset.StandardCharsets.UTF_8))
                 .contains("Método MUSA")
                 .contains("Dia 0 - Diagnóstico MUSA")
@@ -250,6 +262,12 @@ class FeoFabricacaoV1ContractTest {
         java.nio.file.Files.write(dir.resolve("03-plano-checklists-e-templates.csv"), output.spreadsheet().content());
         java.nio.file.Files.write(dir.resolve("00-metodo-musa-produto-digital-experiencial.zip"), output.zipPackage().content());
 
+        assertThat(pdfImageDimensions(output.pdf().content()))
+                .hasSizeGreaterThanOrEqualTo(4)
+                .allSatisfy(size -> {
+                    assertThat(size.width()).isGreaterThanOrEqualTo(1000);
+                    assertThat(size.height()).isGreaterThanOrEqualTo(900);
+                });
         String publicZipText = zipText(output.zipPackage().content()).toLowerCase();
         assertThat(publicZipText)
                 .contains("para quando você se olha pronta")
@@ -369,30 +387,39 @@ class FeoFabricacaoV1ContractTest {
     }
 
     /**
-     * Gera uma imagem PNG mínima para validar montagem sem chamar OpenAI.
+     * Lista dimensões das imagens renderizadas dentro do PDF.
+     */
+    private java.util.List<ImageSize> pdfImageDimensions(byte[] content) throws java.io.IOException {
+        java.util.List<ImageSize> dimensions = new java.util.ArrayList<>();
+        try (PDDocument document = PDDocument.load(content)) {
+            for (PDPage page : document.getPages()) {
+                for (COSName name : page.getResources().getXObjectNames()) {
+                    PDXObject object = page.getResources().getXObject(name);
+                    if (object instanceof PDImageXObject image) {
+                        dimensions.add(new ImageSize(image.getWidth(), image.getHeight()));
+                    }
+                }
+            }
+        }
+        return dimensions;
+    }
+
+    /**
+     * Representa tamanho de imagem embutida no PDF.
+     */
+    private record ImageSize(int width, int height) {}
+
+    /**
+     * Gera uma imagem PNG editorial para validar montagem sem chamar OpenAI.
      */
     private static class FakeVisualAssetGenerator implements VisualAssetGenerator {
-
-        private static final byte[] PNG = Base64.getDecoder().decode(
-                "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGP48PohVsQwtCQAZISvAYTTpXsAAAAASUVORK5CYII=");
 
         /**
          * Retorna ativo visual determinístico para testes de contrato.
          */
         @Override
         public VisualAsset generate(VisualAssetSpec spec) {
-            return new VisualAsset(
-                    spec.code(),
-                    spec.title(),
-                    spec.assetType(),
-                    "imagens/" + spec.code().toLowerCase() + ".png",
-                    "image/png",
-                    PNG,
-                    spec.prompt(),
-                    "fake-image-model",
-                    "{}",
-                    "{}",
-                    List.of("Imagem fake de teste"));
+            return TemplateVisualAssetFactory.create(spec);
         }
     }
 }

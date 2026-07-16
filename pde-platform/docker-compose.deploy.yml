@@ -5,6 +5,10 @@ services:
     restart: unless-stopped
     ports:
       - "${PDE_PLATFORM_BACKEND_PORT:-8096}:8096"
+    environment:
+      PDE_ACCESS_JDBC_URL: ${PDE_ACCESS_JDBC_URL:-}
+      PDE_ACCESS_JDBC_USERNAME: ${PDE_ACCESS_JDBC_USERNAME:-}
+      PDE_ACCESS_JDBC_PASSWORD: ${PDE_ACCESS_JDBC_PASSWORD:-}
     volumes:
       - pde-platform-data:/data/pde
     networks:

@@ -8,6 +8,9 @@ spring:
 pde:
   access:
     storage-path: ${PDE_ACCESS_STORAGE_PATH:/data/pde/access-grants.json}
+    jdbc-url: ${PDE_ACCESS_JDBC_URL:}
+    jdbc-username: ${PDE_ACCESS_JDBC_USERNAME:}
+    jdbc-password: ${PDE_ACCESS_JDBC_PASSWORD:}
 
 management:
   endpoints:

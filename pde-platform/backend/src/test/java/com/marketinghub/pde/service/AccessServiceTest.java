@@ -53,4 +53,22 @@ class AccessServiceTest {
         assertThat(workspace.completedMissionIds()).containsExactly("dia-1-ruido-visual");
         assertThat(workspace.progressPercent()).isEqualTo(14);
     }
+
+    /** Confirma que cadastro e login reutilizam o mesmo acesso por produto e e-mail. */
+    @Test
+    void registersCustomerAndLogsInWithSameAccess() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        AccessResponse registered = accessService.registerCustomer("metodo-musa-7-dias", "Cliente@Sandbox.Local");
+        AccessResponse login = accessService.loginCustomer("metodo-musa-7-dias", "cliente@sandbox.local");
+        AccessResponse duplicateRegister = accessService.registerCustomer("metodo-musa-7-dias", "cliente@sandbox.local");
+
+        assertThat(login.token()).isEqualTo(registered.token());
+        assertThat(duplicateRegister.token()).isEqualTo(registered.token());
+        assertThat(login.accessUrl()).isEqualTo("/access/" + registered.token());
+    }
 }

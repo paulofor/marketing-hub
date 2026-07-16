@@ -1320,3 +1320,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-07-13-facebook-campaign-publication-key.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-16-pde-access-grants.yaml
+      relativeToChangelogFile: true

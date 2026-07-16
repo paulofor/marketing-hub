@@ -79,40 +79,41 @@ jobs:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Backend image metadata
-        id: meta_backend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=${{ github.sha }}
+      - name: Define Docker image metadata
+        id: image_metadata
+        run: |
+          {
+            echo "backend_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "EOF"
+            echo "frontend_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "EOF"
+            echo "labels<<EOF"
+            echo "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+            echo "org.opencontainers.image.revision=${GITHUB_SHA}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - name: Build and push backend image
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/backend
           file: pde-platform/backend/Dockerfile
           push: true
-          tags: ${{ steps.meta_backend.outputs.tags }}
-          labels: ${{ steps.meta_backend.outputs.labels }}
+          tags: ${{ steps.image_metadata.outputs.backend_tags }}
+          labels: ${{ steps.image_metadata.outputs.labels }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache,mode=max
-      - name: Frontend image metadata
-        id: meta_frontend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=${{ github.sha }}
       - name: Build and push frontend image
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/frontend
           file: pde-platform/frontend/Dockerfile
           push: true
-          tags: ${{ steps.meta_frontend.outputs.tags }}
-          labels: ${{ steps.meta_frontend.outputs.labels }}
+          tags: ${{ steps.image_metadata.outputs.frontend_tags }}
+          labels: ${{ steps.image_metadata.outputs.labels }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache,mode=max
       - name: Expose image tag

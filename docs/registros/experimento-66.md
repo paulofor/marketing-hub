@@ -1171,3 +1171,124 @@ Conclusão comercial:
 Status de PR:
 
 - Nenhum PR foi criado ou preparado nesta etapa.
+
+## Plano comercial e hospedagem de imagens para venda inicial
+
+Data: `2026-07-16`.
+
+Situação atual:
+
+- O experimento 66 está em boa direção comercial, mas ainda não deve ser escalado automaticamente.
+- O produto já foi melhorado pelo FEO com e-book novo, experiência guiada, checklist/CSV e ZIP.
+- O PDF passou a ter imagem, linguagem mais emocional e aparência mais próxima de produto premium.
+- A base da `pde-platform` já existe para o `metodo-musa-7-dias`, com frontend React e backend Spring Boot.
+- A área logada ainda é MVP: acesso de teste, progresso em memória, sem banco real, sem login real e sem integração Pepper completa.
+
+Decisão comercial:
+
+- Não vender o experimento 66 como apenas e-book.
+- O e-book isolado parece barato, comparável e reduz o valor percebido.
+- A oferta deve ser vendida como uma experiência guiada de 7 dias, em que o e-book é material de apoio dentro do pacote.
+
+Oferta recomendada:
+
+**MUSA 7 - Presença Marcante em 7 Dias**
+
+Promessa pública:
+
+> Um ritual guiado para você parecer mais elegante, intencional e marcante usando melhor o que já tem, sem depender de compras caras.
+
+Entregáveis comerciais:
+
+- Área MUSA com progresso diário.
+- Diagnóstico inicial de presença.
+- 7 missões práticas.
+- E-book bonito como guia de apoio.
+- Checklist de looks, acessórios, acabamento e intenção.
+- Templates/frases de autoavaliação.
+- Bônus: lista anti-compra impulsiva para reforçar economia.
+
+### Alternativas avaliadas
+
+1. **Vender agora só o PDF**
+   - Benefício: é o caminho mais rápido.
+   - Risco: menor valor percebido e maior comparação com e-books baratos.
+   - Custo/esforço: baixo.
+   - Aderência ao objetivo de vendas em escala: baixa a média.
+
+2. **Parar tudo e construir a plataforma completa**
+   - Benefício: melhor produto final.
+   - Risco: demora mais e pode consumir tempo antes de validar desejo real de compra.
+   - Custo/esforço: alto.
+   - Aderência ao objetivo de vendas em escala: boa no longo prazo, fraca para validação rápida.
+
+3. **Vender como experiência guiada usando o PDF novo e uma primeira Área MUSA simples**
+   - Benefício: aumenta valor percebido, mantém velocidade e permite cobrar mais que um e-book comum.
+   - Risco: a área simples precisa parecer premium o suficiente para não quebrar expectativa.
+   - Custo/esforço: médio.
+   - Aderência ao objetivo de vendas em escala: alta para validação comercial.
+
+Escolha:
+
+- Seguir a alternativa 3.
+- A prioridade agora é colocar uma versão vendável no ar que pareça premium, gere desejo e permita medir compra real.
+- O sistema perfeito deve vir depois da validação de venda, ativação e conclusão dos 7 dias.
+
+### Plano de funil vendável simples
+
+Fluxo recomendado:
+
+1. Landing com promessa emocional forte.
+2. Checkout Pepper como direção preferencial; Mercado Pago segue como fallback enquanto Pepper não estiver completo.
+3. Pós-compra libera a Área MUSA.
+4. Área MUSA mostra progresso dos 7 dias.
+5. E-book fica dentro da área como guia de apoio, não como produto principal.
+6. Preço inicial: `R$47` ou `R$67`.
+7. Upsell futuro: `Clube MUSA mensal`, com novos desafios de presença.
+
+Métricas mínimas antes de escalar:
+
+- `page_view`;
+- tempo de sessão;
+- clique no checkout;
+- início de checkout;
+- compra aprovada;
+- acesso à Área MUSA;
+- ativação do dia 1;
+- conclusão dos 7 dias.
+
+### Plano de hospedagem das imagens do produto
+
+Decisão:
+
+- Hospedar as imagens públicas do Método MUSA no host comercial do Lead Portal Payments, `191.252.102.54`, publicado via `https://pagamentopalf.site`.
+
+Justificativa:
+
+- O Método MUSA já usa esse domínio para entrega pública:
+  - `https://pagamentopalf.site/obrigado-exp66-metodo-musa.html`;
+  - `https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip`.
+- O host tem função comercial direta: checkout, obrigado, downloads e páginas de venda.
+- Evita colocar imagem pública de produto no backend principal `191.252.181.168`, que deve ficar reservado para API e pipeline.
+- Evita o host `191.252.120.96`, que concentra muitos workers e serviços auxiliares.
+- Evita o host `177.153.62.107`, que tem espaço livre medido, mas é mais operacional/worker do que comercial.
+- Evita o host `191.252.210.83`, associado a MCP/fashion chat, sem função principal de ativos comerciais.
+
+Pasta sugerida:
+
+- `https://pagamentopalf.site/metodo-musa/assets/`
+
+Exemplo de URL pública:
+
+- `https://pagamentopalf.site/metodo-musa/assets/capa-metodo-musa.webp`
+
+Evolução futura:
+
+- Se o tráfego pago escalar e houver volume relevante de acesso a imagens, migrar os ativos estáticos para Cloudflare R2/CDN.
+- Para a venda inicial do experimento 66, o host mais coerente e menos arriscado é `191.252.102.54` com domínio `pagamentopalf.site`.
+
+Conclusão:
+
+- O experimento 66 deve ser tratado como uma experiência guiada premium de 7 dias, não como PDF.
+- A infraestrutura inicial deve favorecer velocidade de venda e mensuração.
+- Tráfego pago só deve ser liberado depois de landing, checkout, entrega, imagens públicas, Área MUSA e métricas mínimas estarem validadas.

@@ -57,7 +57,11 @@ O backend PDE deve:
 - controlar diagnóstico e progresso;
 - registrar missões concluídas;
 - expor biblioteca de materiais;
-- preparar base para assinatura/continuidade.
+- preparar base para assinatura/continuidade;
+- ser a única API consumida pelo frontend PDE;
+- acessar banco de dados ou serviços internos quando isso for necessário para entregar a experiência PDE.
+
+O backend PDE pode acessar dados persistidos diretamente ou por contratos internos definidos para o módulo, desde que preserve a fronteira de produto: o frontend PDE não deve conhecer nem consumir endpoints do backend principal `backend/ads-service`.
 
 ### Frontend PDE
 
@@ -69,6 +73,8 @@ O frontend PDE deve:
 - exibir progresso;
 - disponibilizar biblioteca de apoio;
 - reforçar promessa, transformação e próximos passos.
+
+O frontend PDE deve consumir somente endpoints do próprio backend PDE, preferencialmente sob `/api/pde/...`, usando proxy local/deploy apontado para `pde-platform-backend`. É proibido o frontend PDE chamar diretamente endpoints do `backend/ads-service`, hosts do backend principal, endpoints administrativos do Marketing Hub ou APIs internas de outros módulos. Quando a tela PDE precisar de dados que hoje existam no `ads-service` ou em outro repositório, o contrato deve ser criado no backend PDE, e o backend PDE deve fazer a leitura, persistência ou integração necessária.
 
 ## Contrato mínimo de produto
 

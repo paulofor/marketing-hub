@@ -263,4 +263,30 @@ describe("ExperimentFunnelTab", () => {
       screen.queryByText("Acesso ao formulário de lead"),
     ).not.toBeInTheDocument();
   });
+
+  it("shows the PDE membership subscription funnel with activation after purchase", () => {
+    (useExperimentFunnel as unknown as Mock).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    });
+    (useExperimentFunnelDiagnostics as unknown as Mock).mockReturnValue({
+      data: { diagnostics: [], contextualAlert: null },
+      isLoading: false,
+      isError: false,
+    });
+
+    renderWithClient(
+      <ExperimentFunnelTab
+        experimentId="66"
+        experimentType="PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
+        totalSpend={0}
+      />,
+    );
+
+    expect(screen.getByText(/Assinatura PDE\/MUSA/)).toBeInTheDocument();
+    expect(screen.getByText("Login ou criação de conta")).toBeInTheDocument();
+    expect(screen.getByText("Assinatura aprovada")).toBeInTheDocument();
+    expect(screen.getByText("Primeiro uso/ativação")).toBeInTheDocument();
+  });
 });

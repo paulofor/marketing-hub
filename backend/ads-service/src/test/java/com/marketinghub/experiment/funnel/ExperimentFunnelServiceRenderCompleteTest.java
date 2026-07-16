@@ -192,6 +192,47 @@ class ExperimentFunnelServiceRenderCompleteTest {
     }
 
     /**
+     * Valida que assinatura PDE registra clique real no plano ou checkout.
+     */
+    @Test
+    void registerLandingPageAnalyticsSavesCheckoutClickForPdeMembershipSubscription() {
+        Experiment experiment = Experiment.builder()
+                .id(66L)
+                .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+                .build();
+        when(experimentRepository.findFirstByLeadPortalFlowSlug("musa-ped"))
+                .thenReturn(Optional.empty());
+        when(experimentRepository.findFirstByFollowUpActionUrlFlowSlug("musa-ped"))
+                .thenReturn(Optional.of(experiment));
+        when(eventRepository.save(any(ExperimentFunnelEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.registerLandingPageAnalyticsEvent("musa-ped",
+                new RegisterLandingPageAnalyticsEventRequest(
+                        "checkout-event-musa-1",
+                        "checkout_click",
+                        "visitor-1",
+                        "session-1",
+                        null,
+                        null,
+                        null,
+                        "https://metodomusa.ia.br/musa-ped",
+                        Instant.parse("2026-07-16T21:00:00Z"),
+                        "JUnit",
+                        "mobile",
+                        "android",
+                        390,
+                        844));
+
+        ArgumentCaptor<ExperimentFunnelEvent> eventCaptor = ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
+        verify(eventRepository).save(eventCaptor.capture());
+
+        ExperimentFunnelEvent saved = eventCaptor.getValue();
+        assertEquals(experiment, saved.getExperiment());
+        assertEquals(ExperimentFunnelStage.ACESSO_CHECKOUT, saved.getStage());
+        assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
+    }
+
+    /**
      * Valida que início do formulário vira sinal de visualização qualificada do formulário.
      */
     @Test

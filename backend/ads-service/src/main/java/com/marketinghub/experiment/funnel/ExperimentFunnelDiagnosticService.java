@@ -69,6 +69,10 @@ public class ExperimentFunnelDiagnosticService {
         if (experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT) {
             return config.lowTicketPrioritizedRules();
         }
+        if (experiment != null
+                && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+            return config.pdeMembershipSubscriptionPrioritizedRules();
+        }
         return config.prioritizedRules();
     }
 

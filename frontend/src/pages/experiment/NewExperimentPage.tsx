@@ -143,6 +143,10 @@ export default function NewExperimentPage() {
     !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
   );
   const isLowTicketProduct = form.experimentType === "LOW_TICKET_PRODUCT";
+  const isPdeMembershipSubscriptionFunnel =
+    form.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const isSalesObjectiveExperiment =
+    isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
   const isProductAiExperiment = isLowTicketProduct && Boolean(form.productAiSubtype);
   const selectedProductAiSubtype =
     form.productAiSubtype || "AI_PERSONALIZED_SAMPLE";
@@ -156,16 +160,20 @@ export default function NewExperimentPage() {
       productAiPreparationData?.ready &&
         productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
     );
-  const experimentTypeLabel = isLowTicketProduct
-    ? "Produto low-ticket"
-    : "Teste de nicho";
-  const freeRewardLabel = isLowTicketProduct
+  const experimentTypeLabel = isPdeMembershipSubscriptionFunnel
+    ? "PDE / assinatura MUSA"
+    : isLowTicketProduct
+      ? "Produto low-ticket"
+      : "Teste de nicho";
+  const freeRewardLabel = isSalesObjectiveExperiment
     ? "Prova/preview da oferta"
     : "Isca digital única";
-  const freeRewardPlaceholder = isLowTicketProduct
-    ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
-    : "Ex.: 3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão";
-  const campaignObjective = isLowTicketProduct ? "SALES" : "LEADS";
+  const freeRewardPlaceholder = isPdeMembershipSubscriptionFunnel
+    ? "Ex.: acesso inicial ao diagnóstico MUSA e preview das missões guiadas"
+    : isLowTicketProduct
+      ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
+      : "Ex.: 3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão";
+  const campaignObjective = isSalesObjectiveExperiment ? "SALES" : "LEADS";
 
   useEffect(() => {
     const draft = latestPromiseOptionsDraft.data;
@@ -370,7 +378,7 @@ export default function NewExperimentPage() {
         alert("Informe uma única dor do experimento");
         return;
       }
-      if (!isLowTicketProduct && !form.freeReward.trim()) {
+      if (!isSalesObjectiveExperiment && !form.freeReward.trim()) {
         alert("Informe uma única isca digital");
         return;
       }
@@ -520,10 +528,15 @@ export default function NewExperimentPage() {
         }
       >
         <option value="LOW_TICKET_PRODUCT">Produto low-ticket</option>
+        <option value="PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL">
+          PDE / assinatura MUSA
+        </option>
         <option value="NICHE_TEST">Teste de nicho / lead</option>
       </select>
       <div className="form-text mb-3">
-        {isLowTicketProduct
+        {form.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
+          ? "Fluxo principal: anúncio, tela inicial do PED, login, assinatura, acesso liberado e ativação pós-compra."
+          : isLowTicketProduct
           ? "Fluxo principal: anúncio, página curta, checkout e entrega. Métrica central: compra ou clique no checkout."
           : "Fluxo principal: anúncio, captura de lead e entrega de isca/amostra."}
       </div>
@@ -804,16 +817,20 @@ export default function NewExperimentPage() {
             </div>
           ) : (
             <div className="alert alert-secondary py-2 mb-3" role="status">
-              {isLowTicketProduct
+              {isPdeMembershipSubscriptionFunnel
+                ? "Solicite as opções por IA e escolha uma delas para fixar a dor, a assinatura PDE, a promessa, a prova de valor e o CTA do experimento."
+                : isLowTicketProduct
                 ? "Solicite as opções por IA e escolha uma delas para fixar a dor, o produto low-ticket, a promessa e o CTA de checkout do experimento."
                 : "Solicite as opções por IA e escolha uma delas para fixar a dor, a isca digital, o produto de entrada, a promessa e o CTA do experimento."}
             </div>
           )}
           <div className="alert alert-info py-2 mb-0">
             Objetivo da campanha:{" "}
-            <strong>{isLowTicketProduct ? "Vendas" : "Leads"}</strong>.{" "}
-            {isLowTicketProduct
-              ? "Não coloque formulário antes do checkout neste fluxo."
+            <strong>{isSalesObjectiveExperiment ? "Vendas" : "Leads"}</strong>.{" "}
+            {isPdeMembershipSubscriptionFunnel
+              ? "Otimize para assinatura e acompanhe ativação dentro do PED/MUSA."
+              : isLowTicketProduct
+                ? "Não coloque formulário antes do checkout neste fluxo."
               : "Não use Tráfego nem otimização para cliques neste fluxo."}
           </div>
         </div>
@@ -846,14 +863,22 @@ export default function NewExperimentPage() {
         }}
       />
       <label className="form-label" htmlFor="unitPrice">
-        {isLowTicketProduct ? "Preço do produto (R$)" : "Preço unitário (R$)"}{" "}
+        {isPdeMembershipSubscriptionFunnel
+          ? "Preço da assinatura/plano (R$)"
+          : isLowTicketProduct
+            ? "Preço do produto (R$)"
+            : "Preço unitário (R$)"}{" "}
         <span className="text-danger">*</span>
       </label>
       <input
         id="unitPrice"
         className="form-control mb-2"
         placeholder={
-          isLowTicketProduct ? "Ex.: 27.00" : "Valor por imagem em reais"
+          isPdeMembershipSubscriptionFunnel
+            ? "Ex.: 29.90"
+            : isLowTicketProduct
+              ? "Ex.: 27.00"
+              : "Valor por imagem em reais"
         }
         type="number"
         min="0"
@@ -864,8 +889,10 @@ export default function NewExperimentPage() {
         }
       />
       <div className="form-text mb-2">
-        {isLowTicketProduct
-          ? "Use a faixa recomendada nos planos: R$ 19 a R$ 47 para a primeira venda."
+        {isPdeMembershipSubscriptionFunnel
+          ? "Use o preço do plano que será anunciado para medir assinatura aprovada e ativação."
+          : isLowTicketProduct
+            ? "Use a faixa recomendada nos planos: R$ 19 a R$ 47 para a primeira venda."
           : "Usado para gerar o link de pagamento no Mercado Pago."}
       </div>
       <label className="form-label" htmlFor="imageModel">

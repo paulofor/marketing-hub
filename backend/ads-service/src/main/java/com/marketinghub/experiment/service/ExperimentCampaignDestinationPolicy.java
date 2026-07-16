@@ -37,6 +37,7 @@ public class ExperimentCampaignDestinationPolicy {
     public boolean requiresSalesPageBeforePurchase(Experiment experiment) {
         return experiment != null
                 && (experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
+                || experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
                 || experiment.getCampaignObjective() == ExperimentCampaignObjective.SALES);
     }
 

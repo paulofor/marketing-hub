@@ -44,6 +44,28 @@ public class ExperimentFunnelDiagnosticConfig {
             new ConversionRuleSpec(ExperimentFunnelStage.ACESSO_CHECKOUT, ExperimentFunnelStage.COMPRA, 0.03)
     );
 
+    private static final List<ConversionRuleSpec> PDE_MEMBERSHIP_SUBSCRIPTION_PRIORITIZED_RULES = List.of(
+            new ConversionRuleSpec(
+                    ExperimentFunnelStage.VISUALIZACAO_ANUNCIO,
+                    ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                    0.015
+            ),
+            new ConversionRuleSpec(
+                    ExperimentFunnelStage.VISUALIZACAO_FORM,
+                    ExperimentFunnelStage.ENVIO_FORM,
+                    0.08,
+                    List.of(0.04, 0.02)
+            ),
+            new ConversionRuleSpec(
+                    ExperimentFunnelStage.ENVIO_FORM,
+                    ExperimentFunnelStage.ACESSO_CHECKOUT,
+                    0.05,
+                    List.of(0.03, 0.015)
+            ),
+            new ConversionRuleSpec(ExperimentFunnelStage.ACESSO_CHECKOUT, ExperimentFunnelStage.COMPRA, 0.03),
+            new ConversionRuleSpec(ExperimentFunnelStage.COMPRA, ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO, 0.60)
+    );
+
     /**
      * Retorna as transições do funil que devem ser diagnosticadas pelo backend.
      */
@@ -56,6 +78,13 @@ public class ExperimentFunnelDiagnosticConfig {
      */
     public List<ConversionRuleSpec> lowTicketPrioritizedRules() {
         return LOW_TICKET_PRIORITIZED_RULES;
+    }
+
+    /**
+     * Retorna as transições de assinatura PDE/MUSA, incluindo ativação pós-compra.
+     */
+    public List<ConversionRuleSpec> pdeMembershipSubscriptionPrioritizedRules() {
+        return PDE_MEMBERSHIP_SUBSCRIPTION_PRIORITIZED_RULES;
     }
 
     /**

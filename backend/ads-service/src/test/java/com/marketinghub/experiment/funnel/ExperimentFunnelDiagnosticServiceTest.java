@@ -149,6 +149,35 @@ class ExperimentFunnelDiagnosticServiceTest {
                 .doesNotContain(ExperimentFunnelStage.ENVIO_FORM);
     }
 
+    /** Garante que assinatura PDE diagnostica login, checkout, compra e ativação pós-compra. */
+    @Test
+    void usesMembershipSubscriptionRulesForPdeProduct() {
+        when(experimentRepository.findById(66L)).thenReturn(Optional.of(Experiment.builder()
+                .id(66L)
+                .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+                .build()));
+        when(funnelService.summarize(66L)).thenReturn(stageList(
+                stage(ExperimentFunnelStage.VISUALIZACAO_ANUNCIO, 1000),
+                stage(ExperimentFunnelStage.ACESSO_FORM_LEAD, 80),
+                stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 60),
+                stage(ExperimentFunnelStage.ENVIO_FORM, 12),
+                stage(ExperimentFunnelStage.ACESSO_CHECKOUT, 4),
+                stage(ExperimentFunnelStage.COMPRA, 2),
+                stage(ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO, 1)
+        ));
+
+        ExperimentFunnelDiagnosticsResponseDto response = service.diagnose(66L);
+
+        assertThat(response.diagnostics())
+                .extracting(item -> item.stageKey())
+                .containsExactly(
+                        ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                        ExperimentFunnelStage.ENVIO_FORM,
+                        ExperimentFunnelStage.ACESSO_CHECKOUT,
+                        ExperimentFunnelStage.COMPRA,
+                        ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO);
+    }
+
     private List<ExperimentFunnelStageDto> stageList(ExperimentFunnelStageDto... stages) {
         return Arrays.asList(stages);
     }

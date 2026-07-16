@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-16-experiment-type-pde-membership-subscription-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - columnExists:
+            tableName: experiment
+            columnName: experiment_type
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                MODIFY COLUMN experiment_type VARCHAR(48) NOT NULL DEFAULT 'NICHE_TEST';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                MODIFY COLUMN experiment_type VARCHAR(32) NOT NULL DEFAULT 'NICHE_TEST';

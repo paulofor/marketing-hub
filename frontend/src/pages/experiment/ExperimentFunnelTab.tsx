@@ -87,6 +87,8 @@ export default function ExperimentFunnelTab({
   alterationLocked = false,
 }: ExperimentFunnelTabProps) {
   const isLowTicketProduct = experimentType === "LOW_TICKET_PRODUCT";
+  const isPdeMembershipSubscriptionFunnel =
+    experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
   const { data, isLoading, isError } = useExperimentFunnel(experimentId);
   const diagnosticsQuery = useExperimentFunnelDiagnostics(experimentId);
   const stages = (data ?? []).slice().sort((a, b) => a.order - b.order);
@@ -266,9 +268,112 @@ export default function ExperimentFunnelTab({
       source: null,
     },
   ];
-  const fallbackStages = isLowTicketProduct
-    ? lowTicketFallbackStages
-    : leadFunnelFallbackStages;
+  const pdeMembershipFallbackStages: ExperimentFunnelStageSummary[] = [
+    {
+      stage: "VISUALIZACAO_ANUNCIO",
+      label: "Visualização do anúncio",
+      order: 1,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "ACESSO_FORM_LEAD",
+      label: "Clique no anúncio para o PED/MUSA",
+      order: 2,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "VISUALIZACAO_FORM",
+      label: "Entrada na tela inicial do PED/MUSA",
+      order: 3,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "ENVIO_FORM",
+      label: "Login ou criação de conta",
+      order: 4,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "ABERTURA_EMAIL_AMOSTRA",
+      label: "Visualização da oferta de assinatura",
+      order: 5,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "ACESSO_CHECKOUT",
+      label: "Clique no plano/checkout",
+      order: 6,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "COMPRA",
+      label: "Assinatura aprovada",
+      order: 7,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "ABERTURA_EMAIL_COMPRA",
+      label: "Acesso liberado",
+      order: 8,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "DOWNLOAD_MATERIAL_PAGO",
+      label: "Primeiro uso/ativação",
+      order: 9,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+  ];
+  const fallbackStages = isPdeMembershipSubscriptionFunnel
+    ? pdeMembershipFallbackStages
+    : isLowTicketProduct
+      ? lowTicketFallbackStages
+      : leadFunnelFallbackStages;
   const selectableStages = stages.length > 0 ? stages : fallbackStages;
   const outcomeQuantities = selectableStages.map((stage) => ({
     label: stage.label,
@@ -370,9 +475,11 @@ export default function ExperimentFunnelTab({
           <div>
             <h5 className="card-title mb-1">Funil de vendas do experimento</h5>
             <p className="text-muted small mb-0">
-              {isLowTicketProduct
-                ? "Venda direta low-ticket: anúncio, página de venda, clique no checkout, compra e entrega paga."
-                : "Cada etapa consolida os eventos da jornada (anúncios, Lead Portal e e-mails) para dar visibilidade ao avanço das leads no experimento."}
+              {isPdeMembershipSubscriptionFunnel
+                ? "Assinatura PDE/MUSA: anúncio, tela inicial, login, oferta de assinatura, checkout, acesso liberado e ativação pós-compra."
+                : isLowTicketProduct
+                  ? "Venda direta low-ticket: anúncio, página de venda, clique no checkout, compra e entrega paga."
+                  : "Cada etapa consolida os eventos da jornada (anúncios, Lead Portal e e-mails) para dar visibilidade ao avanço das leads no experimento."}
             </p>
           </div>
           {canResetFunnelMetrics ? (

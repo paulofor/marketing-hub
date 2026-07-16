@@ -10,7 +10,7 @@ public class AccessGrant {
     private final String token;
     private final String productSlug;
     private final String email;
-    private final String source;
+    private String source;
     private final Instant createdAt;
     private final Set<String> completedMissionIds = new LinkedHashSet<>();
 
@@ -55,6 +55,11 @@ public class AccessGrant {
     /** Retorna a origem da liberação, como Pepper ou validação local. */
     public String getSource() {
         return source;
+    }
+
+    /** Atualiza a origem quando um acesso de entrada vira assinatura aprovada. */
+    public void updateSource(String source) {
+        this.source = source;
     }
 
     /** Retorna a data de criação do acesso. */

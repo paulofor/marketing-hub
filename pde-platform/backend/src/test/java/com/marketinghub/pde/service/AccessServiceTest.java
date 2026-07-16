@@ -1,11 +1,14 @@
 package com.marketinghub.pde.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.AccessResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +31,7 @@ class AccessServiceTest {
         WorkspaceResponse initialWorkspace = accessService.getWorkspace(access.token());
 
         assertThat(initialWorkspace.product().name()).contains("MUSA");
+        assertThat(initialWorkspace.subscriptionStatus()).isEqualTo("TRIAL");
         assertThat(initialWorkspace.progressPercent()).isZero();
 
         accessService.completeMission(access.token(), "dia-1-ruido-visual");
@@ -70,5 +74,126 @@ class AccessServiceTest {
         assertThat(login.token()).isEqualTo(registered.token());
         assertThat(duplicateRegister.token()).isEqualTo(registered.token());
         assertThat(login.accessUrl()).isEqualTo("/access/" + registered.token());
+    }
+
+    /** Confirma que o magic link cria acesso de entrada sem marcar assinatura ativa. */
+    @Test
+    void createsMagicLinkAccessAsTrial() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        var response = accessService.requestMagicLink("metodo-musa-7-dias", "cliente@sandbox.local");
+        String token = response.accessUrl().replace("/access/", "");
+        WorkspaceResponse workspace = accessService.getWorkspace(token);
+
+        assertThat(response.deliveryStatus()).isEqualTo("EMAIL_NOT_CONFIGURED");
+        assertThat(workspace.subscriptionStatus()).isEqualTo("TRIAL");
+        assertThat(workspace.accessSource()).isEqualTo("MAGIC_LINK");
+    }
+
+    /** Confirma que checkout aprovado libera assinatura ativa para a cliente. */
+    @Test
+    void marksCheckoutAccessAsActiveSubscription() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
+        WorkspaceResponse workspace = accessService.getWorkspace(access.token());
+
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.accessSource()).isEqualTo("CHECKOUT");
+    }
+
+    /** Confirma que uma assinatura aprovada promove acesso criado antes pelo magic link. */
+    @Test
+    void promotesMagicLinkAccessAfterCheckoutApproval() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        accessService.requestMagicLink("metodo-musa-7-dias", "cliente@sandbox.local");
+        AccessResponse paidAccess = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "PEPPER");
+        WorkspaceResponse workspace = accessService.getWorkspace(paidAccess.token());
+
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.accessSource()).isEqualTo("PEPPER");
+    }
+
+    /** Confirma que retry do checkout nao altera o acesso ativo existente. */
+    @Test
+    void keepsActiveSubscriptionStableOnCheckoutRetry() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        AccessResponse first = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
+        AccessResponse retry = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
+        WorkspaceResponse workspace = accessService.getWorkspace(retry.token());
+
+        assertThat(retry.token()).isEqualTo(first.token());
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.accessSource()).isEqualTo("CHECKOUT");
+    }
+
+    /** Confirma que o contrato de funil aceita eventos de liberação e ativação pós-compra. */
+    @Test
+    void acceptsAccessReleasedAndFirstUseFunnelEvents() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        var released = accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "ACCESS_RELEASED",
+                null,
+                "cliente@sandbox.local",
+                "PEPPER",
+                "test",
+                null,
+                Map.of("accessSource", "PEPPER")));
+        var firstUse = accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "FIRST_USE",
+                null,
+                "cliente@sandbox.local",
+                "PEPPER",
+                "test",
+                null,
+                Map.of("activationType", "material_open")));
+
+        assertThat(released.eventType()).isEqualTo("ACCESS_RELEASED");
+        assertThat(firstUse.eventType()).isEqualTo("FIRST_USE");
+    }
+
+    /** Confirma que eventos fora do contrato continuam bloqueados. */
+    @Test
+    void rejectsUnsupportedFunnelEvent() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        assertThrows(IllegalArgumentException.class, () -> accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "INSTAGRAM_LOGIN_COMPLETED",
+                null,
+                "cliente@sandbox.local",
+                "INSTAGRAM",
+                "test",
+                null,
+                Map.of())));
     }
 }

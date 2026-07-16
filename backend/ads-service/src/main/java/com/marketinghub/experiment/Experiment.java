@@ -69,7 +69,7 @@ public class Experiment {
     /** Tipo comercial do experimento para orientar funil, objetivo e métricas. */
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "experiment_type", length = 32, nullable = false)
+    @Column(name = "experiment_type", length = 48, nullable = false)
     private ExperimentType experimentType = ExperimentType.NICHE_TEST;
 
     /** Subtipo de Produto IA herdado da hipótese ou definido explicitamente para rastrear o experimento. */

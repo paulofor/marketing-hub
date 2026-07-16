@@ -6,6 +6,8 @@ import java.util.List;
 public record WorkspaceResponse(
         ProductExperienceResponse product,
         String email,
+        String accessSource,
+        String subscriptionStatus,
         int completedMissions,
         int totalMissions,
         int progressPercent,

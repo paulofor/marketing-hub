@@ -16,7 +16,10 @@ export interface InstagramAccountSummary {
 }
 
 export type ExperimentStage = "AD" | "LANDING" | "SAMPLE" | "SALES";
-export type ExperimentType = "NICHE_TEST" | "LOW_TICKET_PRODUCT";
+export type ExperimentType =
+  | "NICHE_TEST"
+  | "LOW_TICKET_PRODUCT"
+  | "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
 export type ExperimentCreationSource = "SYSTEM_FLOW" | "MANUAL_FLOW";
 export type ProductAiSubtype =
   | "AI_VISUAL_PREVIEW"

@@ -465,7 +465,7 @@ public class GeraSalesPagePublicationAuditService {
                   }
                   if (testParam || sessionStorage.getItem('mh_internal_test') === 'true') return;
                   var flowSlug = '%s';
-                  var endpoint = flowSlug ? '/mh-api/public/lead-portal/flows/' + encodeURIComponent(flowSlug) + '/page-analytics' : '';
+                  var endpoint = flowSlug ? '/mh-api/internal/lead-portal/flows/' + encodeURIComponent(flowSlug) + '/page-analytics' : '';
                   var sessionId = localStorage.getItem('mh_session_id') || (Date.now() + '-' + Math.random().toString(16).slice(2));
                   localStorage.setItem('mh_session_id', sessionId);
                   function emit(eventType, extra) {
@@ -482,11 +482,11 @@ public class GeraSalesPagePublicationAuditService {
                     }, extra || {});
                     var sent = false;
                     try {
-                      sent = !!(navigator.sendBeacon && navigator.sendBeacon(endpoint, new Blob([new URLSearchParams(payload).toString()], {type:'application/x-www-form-urlencoded'})));
+                      sent = !!(navigator.sendBeacon && navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type:'application/json'})));
                     } catch (ignored) {}
                     if (sent) return;
                     try {
-                      fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(payload), keepalive:true});
+                      fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), keepalive:true});
                     } catch (ignored) {}
                   }
                   function start() {

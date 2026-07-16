@@ -146,6 +146,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "IA e Conteúdo",
     items: [
       { to: "/ai-services", label: "IA", icon: Bot },
+      { to: "/ai/image-generator", label: "Gerador de Imagens", icon: Image },
       { to: "/openai-models", label: "Modelos OpenAI", icon: Cpu },
       { to: "/agents", label: "Agentes", icon: Bot },
       { to: "/agent-themes", label: "Temas de agente", icon: Layers },

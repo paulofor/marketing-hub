@@ -26,7 +26,7 @@ class GeraSalesPageProcessorTest {
                 .contains("page_view")
                 .contains("section_view_time")
                 .contains("checkout_click")
-                .contains("/mh-api/public/lead-portal/flows/")
+                .contains("/mh-api/internal/lead-portal/flows/")
                 .contains("sendBeacon")
                 .contains("</body>");
     }

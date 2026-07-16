@@ -2888,6 +2888,7 @@ export default function ExperimentDetailPage() {
             <ExperimentFunnelTab
               experimentId={expId}
               experimentType={data?.experimentType}
+              campaignMetric={data?.campaignMetric}
               totalSpend={data?.campaignMetric?.spend}
               spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
               alterationLocked={alterationLocked}

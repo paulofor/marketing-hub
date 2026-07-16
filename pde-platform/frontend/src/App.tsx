@@ -58,8 +58,8 @@ type Workspace = {
 const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
   name: 'Metodo MUSA - Experiencia Guiada de 7 Dias',
-  promise: 'Monte em 7 dias uma presenca mais elegante, marcante e coerente sem depender de luxo caro.',
-  audience: 'Mulheres que querem parecer mais alinhadas, sofisticadas e seguras usando escolhas acessiveis.',
+  promise: 'Monte em 7 dias uma presenca mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformacao radical.',
+  audience: 'Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessiveis.',
   priceLabel: 'R$47',
   theme: {
     primary: '#7a2444',
@@ -69,29 +69,29 @@ const fallbackProduct: ProductExperience = {
   },
   diagnostic: {
     title: 'Diagnostico MUSA',
-    intro: 'Identifique os pontos que hoje mais quebram a percepcao de presenca elegante antes de iniciar as missoes.',
+    intro: 'Comece pelo momento do espelho: quando voce esta pronta, mas sente que ainda falta presenca, acabamento ou intencao.',
     questions: [
-      'Qual detalhe mais incomoda quando voce se ve pronta?',
+      'Quando voce se ve pronta, o que faz pensar: esta ok, mas ainda nao esta marcante?',
       'Seu cabelo, pele, roupa, perfume e acessorios parecem conversar entre si?',
-      'Voce compra itens por impulso ou segue uma intencao clara?',
+      'Qual compra voce esta quase fazendo para tentar compensar essa sensacao?',
     ],
   },
   missions: [
     {
       id: 'dia-1-ruido-visual',
       day: 1,
-      title: 'Remover ruido visual',
-      principle: 'A percepcao de elegancia melhora quando os sinais competem menos entre si.',
-      action: 'Escolha uma combinacao real e remova um excesso: cor, brilho, volume, estampa ou acessorio.',
-      evidence: 'Foto antes/depois ou anotacao do item removido.',
-      visualCue: 'Compare uma composicao carregada com uma composicao mais limpa.',
+      title: 'Sair do quase bom',
+      principle: 'A presenca cresce quando voce identifica o detalhe que mais apaga o conjunto.',
+      action: 'Escolha uma combinacao real e marque o que hoje gera ruido: excesso, falta de acabamento, cor solta, peca sem intencao ou acessorio perdido.',
+      evidence: 'Frase preenchida: eu me sinto arrumada, mas pouco marcante quando...',
+      visualCue: 'Compare a sensacao antes/depois de remover ou ajustar um detalhe.',
     },
   ],
   supportMaterials: [
     {
       title: 'E-book Metodo MUSA',
       type: 'PDF',
-      description: 'Guia premium com os principios aplicados e exemplos visuais da experiencia.',
+      description: 'Guia de consulta para entender o metodo, ver exemplos e revisar sua semana.',
       url: '/materials/metodo-musa-ebook.pdf',
     },
   ],

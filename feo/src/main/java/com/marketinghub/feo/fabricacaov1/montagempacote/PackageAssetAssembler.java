@@ -67,22 +67,23 @@ public class PackageAssetAssembler {
                   <title>""").append(escape(context.offerName())).append("""
                 </title>
                   <style>
-                    body { font-family: Arial, sans-serif; color: #17202a; margin: 36px; line-height: 1.55; }
-                    .cover { border-bottom: 5px solid #138a72; padding-bottom: 24px; margin-bottom: 28px; page-break-after: always; }
+                    body { font-family: Arial, sans-serif; color: #2b2024; margin: 36px; line-height: 1.6; background: #fffaf6; }
+                    .cover { border-bottom: 5px solid #7a2444; padding-bottom: 24px; margin-bottom: 28px; page-break-after: always; }
                     .cover-image { width: 100%; max-height: 860px; margin-bottom: 22px; }
-                    .visual { width: 100%; max-height: 720px; border: 1px solid #d5dfdc; margin: 14px 0; }
-                    h1 { font-size: 32px; margin: 0 0 12px; color: #123b3a; }
-                    h2 { color: #123b3a; margin-top: 30px; border-bottom: 1px solid #d5dfdc; padding-bottom: 6px; }
-                    h3 { margin-bottom: 8px; color: #1d5f58; }
-                    .pill { display: inline-block; background: #e8f5f1; padding: 6px 10px; border-radius: 4px; margin: 4px 6px 4px 0; }
-                    .box { border: 1px solid #d5dfdc; padding: 16px; margin: 14px 0; border-radius: 6px; }
-                    .premium { background: #f5fbf8; border-left: 5px solid #138a72; }
-                    .proof { background: #fff8e8; border-left: 5px solid #d7961f; }
+                    .visual { width: 100%; max-height: 720px; border: 1px solid #ead8cf; margin: 14px 0; }
+                    h1 { font-size: 34px; margin: 0 0 12px; color: #24171c; }
+                    h2 { color: #7a2444; margin-top: 30px; border-bottom: 1px solid #ead8cf; padding-bottom: 6px; }
+                    h3 { margin-bottom: 8px; color: #2f5952; }
+                    .pill { display: inline-block; background: #f7e9ee; padding: 6px 10px; border-radius: 4px; margin: 4px 6px 4px 0; }
+                    .box { border: 1px solid #ead8cf; padding: 16px; margin: 14px 0; border-radius: 6px; background: #fff; }
+                    .premium { background: #fff4f7; border-left: 5px solid #7a2444; }
+                    .proof { background: #fff8e8; border-left: 5px solid #d6a75c; }
+                    .scene { font-size: 18px; color: #4c363f; }
                     .grid { display: table; width: 100%; border-spacing: 10px; }
-                    .cell { display: table-cell; width: 33%; border: 1px solid #dce5e2; padding: 12px; vertical-align: top; }
+                    .cell { display: table-cell; width: 33%; border: 1px solid #ead8cf; padding: 12px; vertical-align: top; background: #fff; }
                     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-                    th, td { border: 1px solid #dce5e2; padding: 8px; text-align: left; vertical-align: top; }
-                    th { background: #f2f7f5; }
+                    th, td { border: 1px solid #ead8cf; padding: 8px; text-align: left; vertical-align: top; }
+                    th { background: #fff1e8; }
                   </style>
                 </head>
                 <body>
@@ -97,8 +98,8 @@ public class PackageAssetAssembler {
                     .append("\" />");
         }
         html.append("""
-                  <p class="pill">E-book prático</p>
-                  <p class="pill">Plano guiado de 7 dias</p>
+                  <p class="pill">Presença elegante sem luxo caro</p>
+                  <p class="pill">Jornada guiada de 7 dias</p>
                   <h1>""").append(escape(context.offerName())).append("""
                 </h1>
                   <p><strong>Para quem é:</strong> """).append(escape(publicText(context.niche()))).append("""
@@ -107,47 +108,49 @@ public class PackageAssetAssembler {
                 </p>
                   <p><strong>Resultado buscado:</strong> """).append(escape(publicText(context.promisedResult()))).append("""
                 </p>
+                  <p class="scene">Você já saiu de casa sentindo que estava arrumada, mas não exatamente marcante? Como se nada estivesse errado, mas também nada dissesse quem você é?</p>
                   <p><strong>Base do método:</strong> um caminho simples para escolher melhor, combinar detalhes e perceber avanço sem depender de compras caras ou mudança radical.</p>
                 </section>
                 <section>
                   <h2>Comece por aqui</h2>
                   <div class="box premium">
-                    <p>Este material foi feito para aplicação prática. Abra o plano de 7 dias, escolha um ajuste pequeno e use os checklists para sair da tentativa solta para uma presença mais intencional.</p>
+                    <p>Este material é para a mulher que quer entrar em um lugar com mais intenção, sem parecer montada demais e sem gastar para tentar compensar insegurança.</p>
+                    <p>Você vai escolher um ajuste pequeno por dia, reaproveitar o que já tem e criar uma presença mais coerente no espelho, na rua, no trabalho, no encontro ou no conteúdo que grava.</p>
                   </div>
                   <div class="grid">
-                    <div class="cell"><strong>Aplicacao rapida</strong><br />Primeira acao em ate 20 minutos para reduzir ansiedade e aumentar percepcao de valor.</div>
-                    <div class="cell"><strong>Progresso visivel</strong><br />Checklist simples para você saber quando terminou cada etapa.</div>
-                    <div class="cell"><strong>Clareza de escolha</strong><br />Você entende o que manter, o que ajustar e o que evitar comprar por impulso.</div>
+                    <div class="cell"><strong>Alívio</strong><br />Você para de tentar mudar tudo e escolhe só o detalhe que mais apaga sua presença hoje.</div>
+                    <div class="cell"><strong>Desejo</strong><br />Você monta uma assinatura simples para parecer mais intencional sem luxo ostensivo.</div>
+                    <div class="cell"><strong>Controle</strong><br />Você entende o que manter, o que ajustar e o que evitar comprar por impulso.</div>
                   </div>
                   <h2>O que você recebe</h2>
                   <div class="box proof">
-                    <p>Um e-book com plano de execução, checklists, templates, exemplos preenchidos, guia anti-impulso e uma rotina simples para perceber avanço em 7 dias.</p>
+                    <p>Uma experiência de 7 dias com diagnóstico, missões curtas, e-book, checklists, exemplos preenchidos, guia anti-impulso e uma rotina simples para perceber avanço.</p>
                   </div>
                   <h2>O caminho que vamos seguir</h2>
                   <div class="box">""").append(escape(publicText(context.coreMechanism()))).append("""
                 </div>
                   <h2>Por que isso funciona no dia a dia</h2>
                   <div class="box premium">
-                    <p>Você deixa de tentar melhorar tudo ao mesmo tempo e passa a escolher pequenos ajustes que combinam entre si.</p>
-                    <p>O foco é reduzir dúvida, evitar compra por impulso e criar uma presença mais coerente com o que você já tem.</p>
+                    <p>Você deixa de tentar melhorar tudo ao mesmo tempo e passa a escolher pequenos ajustes que conversam entre si.</p>
+                    <p>O foco é reduzir dúvida, evitar compra por impulso e criar uma presença mais marcante com o que você já tem.</p>
                   </div>
                 """);
         appendVisual(html, input, "INFOGRAPHIC");
         appendVisual(html, input, "CONCEPT_MAP");
         appendVisual(html, input, "BEFORE_AFTER");
         html.append("""
-                  <h2>Como usar este pacote</h2>
+                  <h2>Como usar sem se sobrecarregar</h2>
                   <ol>
-                    <li>Leia o diagnostico inicial e marque o ponto de partida real.</li>
-                    <li>Execute o entregavel principal antes de consumir bonus ou materiais complementares.</li>
-                    <li>Preencha o template de aplicacao para transformar leitura em decisao concreta.</li>
-                    <li>Use os checkpoints para validar se houve progresso percebido.</li>
+                    <li>Leia o diagnóstico inicial e marque o ponto de partida real.</li>
+                    <li>Faça a missão do dia antes de abrir materiais extras.</li>
+                    <li>Preencha o cartão de decisão para transformar leitura em ação concreta.</li>
+                    <li>Use os sinais de progresso para perceber se sua presença ficou mais intencional.</li>
                   </ol>
                 </section>
                 <section>
-                  <h2>Entregaveis</h2>
+                  <h2>Seu kit MUSA</h2>
                   <table>
-                    <thead><tr><th>Ordem</th><th>Componente</th><th>Entregavel</th><th>Formato</th><th>Papel no produto</th></tr></thead>
+                    <thead><tr><th>Ordem</th><th>Momento</th><th>Material</th><th>Tipo</th><th>Por que usar</th></tr></thead>
                     <tbody>
                 """);
         for (DeliverableSpec spec : input.plan().deliverables()) {
@@ -158,7 +161,7 @@ public class PackageAssetAssembler {
                     .append("</td><td>")
                     .append(escape(spec.title()))
                     .append("</td><td>")
-                    .append(escape(spec.format()))
+                    .append(escape(publicFormat(spec.format())))
                     .append("</td><td>")
                     .append(escape(publicText(spec.role())))
                     .append("</td></tr>");
@@ -168,13 +171,13 @@ public class PackageAssetAssembler {
                   </table>
                 </section>
                 <section>
-                  <h2>Diagnostico inicial</h2>
+                  <h2>Diagnóstico inicial</h2>
                   <div class="box premium">
                     <p><strong>Sintoma principal:</strong> você sente que alguns detalhes quase funcionam, mas o conjunto ainda não transmite a presença que deseja.</p>
-                    <p><strong>Resultado de entrada:</strong> ao final do primeiro ciclo, você sabe qual acao tomar, qual erro evitar e qual sinal observar.</p>
-                    <p><strong>Regra de foco:</strong> remover complexidade antes de adicionar profundidade. O produto deve economizar esforco mental.</p>
+                    <p><strong>Resultado de entrada:</strong> ao final do primeiro ciclo, você sabe qual ação tomar, qual erro evitar e qual sinal observar.</p>
+                    <p><strong>Regra de foco:</strong> remover complexidade antes de adicionar profundidade. A experiência deve economizar esforço mental.</p>
                   </div>
-                  <h2>Workbooks de aplicacao por entregavel</h2>
+                  <h2>Cartões de aplicação</h2>
                 """);
         for (DeliverableContent content : input.contentPackage().deliverables()) {
             html.append("<div class=\"box\"><h3>")
@@ -187,15 +190,15 @@ public class PackageAssetAssembler {
                     .append(escape(publicText(content.appliedPrinciple())))
                     .append("</p><p><strong>O que você conquista:</strong> ")
                     .append(escape(publicText(content.buyerOutcome())))
-                    .append("</p><p><strong>Primeira vitoria:</strong> ")
+                    .append("</p><p><strong>Primeira vitória:</strong> ")
                     .append(escape(publicText(content.firstWin())))
                     .append("</p><p><strong>Material pronto para usar:</strong> ")
                     .append(escape(publicText(content.readyToUseAsset())))
-                    .append("</p><p><strong>Prova tangivel:</strong> ")
+                    .append("</p><p><strong>Sinal visível:</strong> ")
                     .append(escape(publicText(content.tangibleProof())))
-                    .append("</p><p><strong>Ritual ou acompanhamento:</strong> ")
+                    .append("</p><p><strong>Ritual:</strong> ")
                     .append(escape(publicText(content.ritualStep())))
-                    .append("</p><p><strong>Apoio para destravar:</strong> ")
+                    .append("</p><p><strong>Quando bater dúvida:</strong> ")
                     .append(escape(publicText(content.antiObjectionBonus())))
                     .append("</p>");
             for (DeliverableSection section : content.sections()) {
@@ -203,53 +206,53 @@ public class PackageAssetAssembler {
                         .append(escape(section.title()))
                         .append("</h4><p>")
                         .append(escape(publicText(section.explanation())))
-                        .append("</p><p><strong>Acao:</strong> ")
+                        .append("</p><p><strong>Ação:</strong> ")
                         .append(escape(publicText(section.actionStep())))
                         .append("</p>");
             }
-            html.append("<p><strong>Checklist de execucao:</strong></p><ul>");
+            html.append("<p><strong>Checklist de execução:</strong></p><ul>");
             for (String item : content.checklist()) {
-                html.append("<li>").append(escape(item)).append("</li>");
+                html.append("<li>").append(escape(publicText(item))).append("</li>");
             }
-            html.append("</ul><p><strong>Template preenchivel:</strong></p><table><tbody>");
+            html.append("</ul><p><strong>Cartão preenchível:</strong></p><table><tbody>");
             for (String field : content.templateFields()) {
                 html.append("<tr><th>").append(escape(field)).append("</th><td>________________________________________________</td></tr>");
             }
             html.append("</tbody></table><p><strong>Erros a evitar:</strong></p><ul>");
             for (String mistake : content.commonMistakes()) {
-                html.append("<li>").append(escape(mistake)).append("</li>");
+                html.append("<li>").append(escape(publicText(mistake))).append("</li>");
             }
-            html.append("</ul><p><strong>Criterio de conclusao:</strong> ")
+            html.append("</ul><p><strong>Quando considerar feito:</strong> ")
                     .append(escape(publicText(content.completionCriteria())))
                     .append("</p></div>");
         }
         html.append("""
                 </section>
                 <section>
-                  <h2>Plano de aplicacao de 7 dias</h2>
+                  <h2>Plano de aplicação de 7 dias</h2>
                   <table>
-                    <thead><tr><th>Dia</th><th>Acao</th><th>Evidencia de progresso</th></tr></thead>
+                    <thead><tr><th>Dia</th><th>Ação</th><th>Sinal de progresso</th></tr></thead>
                     <tbody>
-                      <tr><td>1</td><td>Diagnosticar a situacao atual e escolher um unico foco.</td><td>Problema descrito em uma frase.</td></tr>
-                      <tr><td>2</td><td>Aplicar o entregavel principal no foco escolhido.</td><td>Primeira decisao registrada.</td></tr>
-                      <tr><td>3</td><td>Remover uma friccao ou tarefa desnecessaria.</td><td>Tempo, duvida ou esforco reduzido.</td></tr>
-                      <tr><td>4</td><td>Usar o checklist para revisar a execucao.</td><td>Itens criticos marcados.</td></tr>
-                      <tr><td>5</td><td>Ajustar o plano com base no que funcionou.</td><td>Proxima acao definida.</td></tr>
-                      <tr><td>6</td><td>Repetir a parte que gerou maior clareza.</td><td>Padrao percebido.</td></tr>
-                      <tr><td>7</td><td>Fechar o ciclo com conclusao e proxima melhoria.</td><td>Resumo final e continuidade.</td></tr>
+                      <tr><td>1</td><td>Diagnosticar a situação atual e escolher um único foco.</td><td>Incômodo descrito em uma frase.</td></tr>
+                      <tr><td>2</td><td>Ajustar cabelo, pele ou acabamento antes de pensar em comprar.</td><td>Um detalhe visível melhorado.</td></tr>
+                      <tr><td>3</td><td>Montar uma combinação coerente com o que já existe.</td><td>Uma composição pronta para repetir.</td></tr>
+                      <tr><td>4</td><td>Escolher perfume ou detalhe sensorial por ocasião.</td><td>Assinatura definida para uma situação real.</td></tr>
+                      <tr><td>5</td><td>Usar o checklist de 12 minutos antes de sair.</td><td>Menos dúvida e menos excesso.</td></tr>
+                      <tr><td>6</td><td>Revisar uma compra desejada antes de gastar.</td><td>Decisão: reaproveitar, adiar ou comprar com intenção.</td></tr>
+                      <tr><td>7</td><td>Fechar o ciclo com antes/depois e próximo microajuste.</td><td>Resumo final e continuidade.</td></tr>
                     </tbody>
                   </table>
                 </section>
                 <section>
-                  <h2>Materiais prontos do pacote</h2>
+                  <h2>Materiais prontos</h2>
                   <table>
-                    <thead><tr><th>Componente</th><th>Arquivo no ZIP</th><th>Uso esperado</th></tr></thead>
+                    <thead><tr><th>Material</th><th>Arquivo no ZIP</th><th>Quando usar</th></tr></thead>
                     <tbody>
                 """);
         html.append("""
                       <tr><td>Experiência guiada</td><td>01-experiencia-guiada/index.html</td><td>Começar pelo diagnóstico, seguir as missões de 7 dias e marcar progresso.</td></tr>
-                      <tr><td>E-book principal</td><td>02-ebook-principal.pdf</td><td>Aprofundar o método, consultar exemplos e revisar a lógica de aplicação.</td></tr>
-                      <tr><td>Planilha de aplicação</td><td>03-plano-checklists-e-templates.csv</td><td>Preencher ações, checkpoints, evidências e próximos ajustes.</td></tr>
+                      <tr><td>E-book principal</td><td>02-ebook-principal.pdf</td><td>Consultar exemplos e revisar a lógica de aplicação.</td></tr>
+                      <tr><td>Planilha de aplicação</td><td>03-plano-checklists-e-templates.csv</td><td>Preencher ações, sinais de progresso e próximos ajustes.</td></tr>
                 """);
         if (!visualAssets(input).isEmpty()) {
             html.append("""
@@ -273,6 +276,7 @@ public class PackageAssetAssembler {
                 <section>
                   <h2>Observação honesta</h2>
                   <p>O material não promete transformação automática. Ele organiza decisões pequenas e aplicáveis para você reduzir tentativa, compra por impulso e incoerência visual.</p>
+                  <p>A sensação desejada é simples: sair de casa pensando “agora tem intenção”.</p>
                 </section>
                 </body>
                 </html>
@@ -295,18 +299,19 @@ public class PackageAssetAssembler {
                   <title>""").append(escape(context.offerName())).append("""
                 </title>
                   <style>
-                    :root { --ink:#16211f; --muted:#64716d; --brand:#176b5d; --soft:#edf7f3; --line:#d8e5e0; --gold:#b77b22; }
+                    :root { --ink:#2b2024; --muted:#765f66; --brand:#7a2444; --soft:#fff1e8; --line:#ead8cf; --gold:#d6a75c; --green:#2f5952; }
                     * { box-sizing: border-box; }
-                    body { margin: 0; font-family: Arial, sans-serif; color: var(--ink); background: #fbfcfb; line-height: 1.5; }
+                    body { margin: 0; font-family: Arial, sans-serif; color: var(--ink); background: #fffaf6; line-height: 1.55; }
                     header, main, footer { max-width: 1120px; margin: 0 auto; padding: 28px 20px; }
                     header { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items: center; min-height: 92vh; }
-                    h1 { font-size: 44px; line-height: 1.05; margin: 12px 0; color: #103c36; letter-spacing: 0; }
-                    h2 { font-size: 25px; margin: 0 0 14px; color: #103c36; }
-                    h3 { margin: 0 0 8px; color: #174b43; }
+                    h1 { font-size: 44px; line-height: 1.05; margin: 12px 0; color: #24171c; letter-spacing: 0; }
+                    h2 { font-size: 25px; margin: 0 0 14px; color: #7a2444; }
+                    h3 { margin: 0 0 8px; color: #2f5952; }
                     p { margin: 0 0 12px; }
                     .eyebrow { color: var(--brand); font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0; }
                     .hero-img, .visual { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: white; }
-                    .promise { font-size: 18px; color: #33413d; max-width: 680px; }
+                    .promise { font-size: 18px; color: #4c363f; max-width: 680px; }
+                    .scene { color: #5f4950; font-size: 18px; margin-top: 18px; }
                     .cta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
                     .btn { border: 0; background: var(--brand); color: white; padding: 12px 16px; border-radius: 6px; font-weight: 700; text-decoration: none; }
                     .ghost { background: white; color: var(--brand); border: 1px solid var(--brand); }
@@ -325,11 +330,12 @@ public class PackageAssetAssembler {
                 <body>
                   <header>
                     <div>
-                      <div class="eyebrow">Produto Digital Experiencial</div>
+                      <div class="eyebrow">Método MUSA</div>
                       <h1>""").append(escape(context.offerName())).append("""
                 </h1>
                       <p class="promise">""").append(escape(publicText(context.centralPromise()))).append("""
                 </p>
+                      <p class="scene">Para quando você se olha pronta e sente: está ok, mas ainda não está marcante.</p>
                       <div class="cta-row">
                         <a class="btn" href="#diagnostico">Começar diagnóstico</a>
                         <a class="btn ghost" href="#jornada">Ver jornada de 7 dias</a>
@@ -351,7 +357,7 @@ public class PackageAssetAssembler {
                   <main>
                     <section id="diagnostico">
                       <h2>Dia 0 - Diagnóstico MUSA</h2>
-                      <p>Antes de mexer em roupa, maquiagem ou compra, marque o que hoje mais cria ruído na sua presença.</p>
+                      <p>Antes de mexer em roupa, maquiagem ou compra, marque o que hoje mais cria ruído na sua presença. O objetivo é sair da sensação de “quase bom” para uma escolha com intenção.</p>
                       <div class="grid">
                         <label class="card"><input type="checkbox" /> Meu visual parece quase certo, mas falta coerência.</label>
                         <label class="card"><input type="checkbox" /> Eu compro itens novos, mas continuo sem saber combinar.</label>
@@ -362,7 +368,7 @@ public class PackageAssetAssembler {
                       <h2>Seu mapa de aplicação</h2>
                       <p>""").append(escape(publicText(context.coreMechanism()))).append("""
                 </p>
-                      <div class="note">Você vai reduzir dúvida, organizar sinais visuais e criar pequenas evidências de progresso.</div>
+                      <div class="note">Você vai reduzir dúvida, organizar sinais visuais e criar pequenas evidências de progresso sem depender de luxo caro.</div>
                 """);
         appendExperienceVisual(html, input, "CONCEPT_MAP");
         html.append("""
@@ -412,6 +418,7 @@ public class PackageAssetAssembler {
                     <section>
                       <h2>Fechamento</h2>
                       <p>Ao final dos 7 dias, registre o que ficou mais coerente, o que você deixou de comprar por impulso e qual próximo microajuste manterá sua presença alinhada.</p>
+                      <p>A sensação final que buscamos: você entra na próxima situação com menos dúvida e mais presença.</p>
                     </section>
                   </main>
                   <footer>
@@ -445,7 +452,7 @@ public class PackageAssetAssembler {
      */
     private String buildSpreadsheet(PackageAssemblyInput input) {
         StringBuilder csv = new StringBuilder();
-        csv.append("ordem,codigo,componente,titulo,formato,papel,primeira_vitoria,material_pronto,prova_tangivel,ritual,apoio_para_travar_menos,quando_considerar_concluido,pontos_de_atencao\n");
+        csv.append("\"Ordem\",\"Código\",\"Momento\",\"Material\",\"Tipo\",\"Por que usar\",\"Primeira vitória\",\"Material pronto\",\"Sinal visível\",\"Ritual\",\"Quando bater dúvida\",\"Quando considerar feito\",\"Pontos de atenção\"\n");
         Map<String, DeliverableContent> contents = input.contentPackage().deliverables().stream()
                 .collect(java.util.stream.Collectors.toMap(DeliverableContent::code, item -> item));
         for (DeliverableSpec spec : input.plan().deliverables()) {
@@ -454,7 +461,7 @@ public class PackageAssetAssembler {
                     .append(csv(spec.code())).append(',')
                     .append(csv(componentLabel(spec.componentType()))).append(',')
                     .append(csv(publicText(spec.title()))).append(',')
-                    .append(csv(spec.format())).append(',')
+                    .append(csv(publicFormat(spec.format()))).append(',')
                     .append(csv(publicText(spec.role()))).append(',')
                     .append(csv(content == null ? "Executar a primeira acao do material." : publicText(content.firstWin()))).append(',')
                     .append(csv(content == null ? "Material pronto para uso." : publicText(content.readyToUseAsset()))).append(',')
@@ -569,6 +576,18 @@ public class PackageAssetAssembler {
                 .replaceAll("(?i)\\bprincípio aplicado\\b", "regra simples")
                 .replaceAll("(?i)\\bpesquisa\\b", "orientação")
                 .replaceAll("(?i)\\bteoria acadêmica\\b", "explicação pesada")
+                .replaceAll("(?i)\\bteoria pesada\\b", "explicação pesada")
+                .replaceAll("(?i)\\bentregáveis\\b", "materiais")
+                .replaceAll("(?i)\\bentregaveis\\b", "materiais")
+                .replaceAll("(?i)\\bentregável\\b", "material")
+                .replaceAll("(?i)\\bentregavel\\b", "material")
+                .replaceAll("(?i)\\bativo\\b", "material")
+                .replaceAll("(?i)\\bativos\\b", "materiais")
+                .replaceAll("(?i)\\bcritério de conclusão\\b", "sinal de fechamento")
+                .replaceAll("(?i)\\bcriterio de conclusao\\b", "sinal de fechamento")
+                .replaceAll("(?i)\\bcritério mínimo\\b", "primeiro passo possível")
+                .replaceAll("(?i)\\bcriterio minimo\\b", "primeiro passo possível")
+                .replaceAll("(?i)\\bclaim\\b", "promessa")
                 .replaceAll("(?i)\\ba cliente\\b", "você")
                 .replaceAll("(?i)\\ba compradora\\b", "você")
                 .replaceAll("(?i)\\bo comprador\\b", "você")
@@ -807,19 +826,34 @@ public class PackageAssetAssembler {
     private String componentLabel(String componentType) {
         return switch (componentType == null ? "" : componentType) {
             case "COMECE_AQUI" -> "Comece aqui";
-            case "DIAGNOSTICO_GUIADO" -> "Diagnostico guiado";
-            case "MISSOES_7_DIAS" -> "Missoes de 7 dias";
-            case "PAINEL_PROGRESSO" -> "Painel de progresso";
-            case "PLANO_EXECUCAO_RAPIDA" -> "Plano de execucao";
+            case "DIAGNOSTICO_GUIADO" -> "Espelho MUSA";
+            case "MISSOES_7_DIAS" -> "Missões de 7 dias";
+            case "PAINEL_PROGRESSO" -> "Antes e depois";
+            case "PLANO_EXECUCAO_RAPIDA" -> "Plano de 7 dias";
             case "CHECKLIST_APLICACAO" -> "Checklist";
             case "TEMPLATES_PRONTOS" -> "Templates prontos";
             case "EXEMPLO_PREENCHIDO" -> "Exemplo preenchido";
-            case "PROVA_TANGIVEL" -> "Prova tangivel";
+            case "PROVA_TANGIVEL" -> "Sinal visível";
             case "BIBLIOTECA_APOIO" -> "Biblioteca de apoio";
             case "RITUAL_ACOMPANHAMENTO" -> "Ritual de acompanhamento";
             case "BONUS_ANTI_OBJECAO" -> "Apoio para destravar";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Guia de primeiros resultados";
             default -> "Material complementar";
+        };
+    }
+
+    /**
+     * Converte formatos técnicos em rótulos entendíveis pela compradora.
+     */
+    private String publicFormat(String format) {
+        return switch (format == null ? "" : format) {
+            case "EXPERIENCIA_GUIADA" -> "Experiência guiada";
+            case "BIBLIOTECA_DIGITAL" -> "Biblioteca";
+            case "HTML_CSV_PREENCHIVEL" -> "Checklist preenchível";
+            case "HTML_PDF_AMOSTRA" -> "Exemplo visual";
+            case "HTML_CALENDARIO" -> "Ritual guiado";
+            case "HTML_PDF" -> "PDF de apoio";
+            default -> "Material de apoio";
         };
     }
 

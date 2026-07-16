@@ -95,7 +95,7 @@ class FeoFabricacaoV1ContractTest {
         assertThat(contentPackage.qualityScore()).isGreaterThanOrEqualTo(80);
         assertThat(contentPackage.visualAssets()).hasSizeGreaterThanOrEqualTo(4);
         assertThat(contentPackage.reviewerNotes().getFirst()).contains("método", "plano", "materiais prontos");
-        assertThat(contentPackage.reviewerNotes()).anyMatch(note -> note.contains("pesquisa"));
+        assertThat(contentPackage.reviewerNotes()).anyMatch(note -> note.contains("aprendizados"));
         assertThat(contentPackage.deliverables().getFirst().sections()).hasSizeGreaterThanOrEqualTo(4);
         assertThat(contentPackage.deliverables().getFirst().appliedPrinciple()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().readyToUseAsset()).isNotBlank();
@@ -103,7 +103,7 @@ class FeoFabricacaoV1ContractTest {
         assertThat(contentPackage.deliverables().getFirst().ritualStep()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().antiObjectionBonus()).isNotBlank();
         assertThat(contentPackage.deliverables().getFirst().templateFields()).contains("Situação atual");
-        assertThat(contentPackage.deliverables().getFirst().templateFields()).contains("Princípio aplicado");
+        assertThat(contentPackage.deliverables().getFirst().templateFields()).contains("Regra simples");
     }
 
     /**
@@ -177,7 +177,7 @@ class FeoFabricacaoV1ContractTest {
         assertThat(result.output().pdf().contentType()).isEqualTo("application/pdf");
         assertThat(result.output().pdf().content()).startsWith("%PDF".getBytes());
         assertThat(new String(result.output().experienceSite().content(), java.nio.charset.StandardCharsets.UTF_8))
-                .contains("Produto Digital Experiencial")
+                .contains("Método MUSA")
                 .contains("Dia 0 - Diagnóstico MUSA")
                 .contains("Seu mapa de aplicação")
                 .contains("Jornada guiada de 7 dias")
@@ -192,10 +192,12 @@ class FeoFabricacaoV1ContractTest {
                 .doesNotContain("Fabricado pela FEO")
                 .doesNotContain("MDS");
         assertThat(new String(result.output().spreadsheet().content(), java.nio.charset.StandardCharsets.UTF_8))
-                .contains("primeira_vitoria")
-                .contains("material_pronto")
-                .contains("apoio_para_travar_menos")
-                .contains("quando_considerar_concluido")
+                .contains("Primeira vitória")
+                .contains("Material pronto")
+                .contains("Quando bater dúvida")
+                .contains("Quando considerar feito")
+                .doesNotContain("primeira_vitoria")
+                .doesNotContain("prova_tangivel")
                 .doesNotContain("bonus_anti_objecao")
                 .doesNotContain("criterio_conclusao")
                 .doesNotContain("criterios_qualidade");
@@ -210,12 +212,59 @@ class FeoFabricacaoV1ContractTest {
                 .doesNotContain("mecanismo")
                 .doesNotContain("pesquisa")
                 .doesNotContain("princípio científico")
+                .doesNotContain("entregável")
+                .doesNotContain("entregaveis")
+                .doesNotContain("ativo")
                 .doesNotContain("cliente")
                 .doesNotContain("comprador")
                 .doesNotContain("criterios_qualidade")
                 .doesNotContain("criterio_conclusao")
                 .doesNotContain("bonus_anti_objecao");
         assertThat(result.artifacts()).extracting("type").contains("FINAL_EXPERIENCE_SITE", "FINAL_PDF", "FINAL_SPREADSHEET", "FINAL_ZIP");
+    }
+
+    /**
+     * Gera o pacote local do experimento 66 para leitura manual do PDF e da experiência.
+     */
+    @Test
+    void deveGerarMaterialLocalDoExperimento66ParaRevisao() throws java.io.IOException {
+        PackageAssemblyInput input = new GeracaoAtivosVisuaisProcessor(
+                        new FakeVisualAssetGenerator(),
+                        new ObjectMapper(),
+                        feoProperties(true))
+                .process(new StageContext<>(
+                        new StageExecution<>(
+                                "job-exp-66",
+                                "exec-exp-66-visual",
+                                StageCode.GERACAO_ATIVOS_VISUAIS,
+                                redacaoCompleta(experimento66Context()),
+                                Map.of()),
+                        redacaoCompleta(experimento66Context()),
+                        new InMemoryArtifactStore()))
+                .output();
+        PackageAssemblyOutput output = new PackageAssetAssembler().assemble(input);
+        java.nio.file.Path dir = java.nio.file.Path.of("target", "experimento-66-musa");
+        java.nio.file.Files.createDirectories(dir);
+        java.nio.file.Files.write(dir.resolve("02-ebook-principal.pdf"), output.pdf().content());
+        java.nio.file.Files.write(dir.resolve("01-experiencia-guiada.html"), output.experienceSite().content());
+        java.nio.file.Files.write(dir.resolve("03-plano-checklists-e-templates.csv"), output.spreadsheet().content());
+        java.nio.file.Files.write(dir.resolve("00-metodo-musa-produto-digital-experiencial.zip"), output.zipPackage().content());
+
+        String publicZipText = zipText(output.zipPackage().content()).toLowerCase();
+        assertThat(publicZipText)
+                .contains("para quando você se olha pronta")
+                .contains("está ok, mas ainda não está marcante")
+                .contains("luxo caro")
+                .contains("menos dúvida e mais presença")
+                .doesNotContain("experimento")
+                .doesNotContain("feo")
+                .doesNotContain("json")
+                .doesNotContain("ctr")
+                .doesNotContain("cpl")
+                .doesNotContain("lead")
+                .doesNotContain("mecanismo")
+                .doesNotContain("comprador")
+                .doesNotContain("cliente");
     }
 
     /**
@@ -239,8 +288,14 @@ class FeoFabricacaoV1ContractTest {
      * Executa planejamento e redação para reaproveitar entrada válida nos testes.
      */
     private PackageAssemblyInput redacaoCompleta() {
+        return redacaoCompleta(FabricationContext.sample());
+    }
+
+    /**
+     * Executa planejamento e redação para um contexto específico de revisão local.
+     */
+    private PackageAssemblyInput redacaoCompleta(FabricationContext context) {
         PlanejamentoEntregaveisProcessor planejamento = new PlanejamentoEntregaveisProcessor(new ObjectMapper());
-        FabricationContext context = FabricationContext.sample();
         DeliverablePlan plan = planejamento.process(new StageContext<>(
                         new StageExecution<>("job-1", "exec-1", StageCode.PLANEJAMENTO_ENTREGAVEIS, context, Map.of()),
                         context,
@@ -253,6 +308,32 @@ class FeoFabricacaoV1ContractTest {
                         redacaoInput,
                         new InMemoryArtifactStore()))
                 .output();
+    }
+
+    /**
+     * Monta o contexto comercial validado do experimento 66.
+     */
+    private FabricationContext experimento66Context() {
+        return new FabricationContext(
+                "fabricacao-experimento-66",
+                "66",
+                "Método MUSA - Presença Elegante em 7 Dias",
+                "Mulheres urbanas que querem uma presença mais marcante sem gastar muito",
+                "Monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformação radical.",
+                "Sentir-se mais segura, alinhada e memorável ao entrar em uma situação real usando escolhas acessíveis.",
+                "Mapa de Presença Elegante: reduzir ruído visual, coordenar sinais pessoais e criar uma assinatura repetível com cabelo, pele, roupa, perfume, acessórios e ocasião.",
+                "A jornada usa microajustes, comparação antes/depois e decisão anti-impulso para reduzir esforço e aumentar percepção de presença.",
+                List.of(
+                        "Experiência guiada de 7 dias",
+                        "E-book principal",
+                        "Checklist de presença em 12 minutos",
+                        "Cartões de decisão",
+                        "Lista anti-impulso",
+                        "Exemplo preenchido"),
+                List.of(
+                        "Dor validada: sentir que está arrumada, mas sem presença marcante",
+                        "Oferta definida: Método MUSA por R$47",
+                        "Direção de produto: experiência guiada com e-book, checklists e templates"));
     }
 
     /**

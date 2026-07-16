@@ -119,12 +119,12 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 score(contents),
                 "PREMIUM_CONTENT_READY",
                 List.of(
-                        "O PDE contém experiência guiada, método, plano, materiais prontos, prova, ritual e bônus anti-objeção.",
+                        "O PDE contém experiência guiada, método, plano, materiais prontos, prova, ritual e apoio para destravar.",
                         "A experiência guiada é o produto principal; e-book, checklists, templates e exemplos são biblioteca de apoio.",
-                        "Os princípios de pesquisa foram traduzidos em exercício, decisão e critério visual de progresso.",
-                        "O pacote deve parecer produto final, com estrutura clara, exemplos e materiais de aplicação.",
-                        "Cada entregável tem primeira vitória clara para o comprador.",
-                        "Cada entregável contém aplicação, checklist, template e critério de conclusão.",
+                        "Os aprendizados foram traduzidos em exercício, decisão e sinal visual de progresso.",
+                        "O pacote deve parecer produto final desejável, íntimo, claro e aplicável.",
+                        "Cada material tem primeira vitória clara para a mulher que começou a jornada.",
+                        "Cada material contém aplicação, checklist, template e sinal de fechamento.",
                         "A promessa central foi preservada sem criar garantia nova."));
     }
 
@@ -182,8 +182,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 spec.code(),
                 spec.title(),
                 spec.componentType(),
-                "Use " + spec.title() + " para transformar " + shortText(context.centralPromise())
-                        + " em uma decisão prática.",
+                headlineFor(spec),
                 appliedPrinciple(context, spec),
                 resultText(context, spec),
                 firstWin(context, spec),
@@ -193,40 +192,40 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                 antiObjectionBonus(context, spec),
                 List.of(
                         new DeliverableSection(
-                                "Espelho do ponto de partida",
-                                "A compradora registra como se sente hoje diante do espelho, da rotina e das escolhas que fazem a presença parecer menos intencional. "
-                                        + "O objetivo é transformar percepção vaga em um ponto de comparação simples.",
-                                "Escreva uma frase começando com: hoje minha presença parece menos elegante quando..."),
+                                "O momento do espelho",
+                                "Você registra como se sente hoje quando está pronta para sair, mas ainda percebe que falta presença, acabamento ou intenção. "
+                                        + "O objetivo é transformar esse incômodo em um ponto de partida simples.",
+                                "Complete a frase: hoje eu me sinto arrumada, mas pouco marcante quando..."),
                         new DeliverableSection(
-                                "Princípio aplicado",
-                                "O princípio científico entra como uma regra prática: reduzir carga mental, criar contraste percebido e organizar sinais visuais para facilitar decisão. "
-                                        + "A cliente não recebe teoria crua; recebe um modo simples de aplicar o mecanismo.",
-                                "Transforme o princípio em uma decisão concreta usando esta regra: "
+                                "Regra simples",
+                                "A lógica do método vira uma regra prática: reduzir dúvida, criar contraste com intenção e fazer cabelo, pele, roupa, perfume e acessórios conversarem entre si. "
+                                        + "Você não precisa decorar teoria; precisa saber qual detalhe ajustar hoje.",
+                                "Transforme a regra em uma decisão concreta usando esta orientação: "
                                         + appliedPrinciple(context, spec)),
                         new DeliverableSection(
-                                "Aplicação guiada no corpo, roupa e rotina",
-                                "A compradora escolhe um ajuste visível e possível: cabelo, pele, roupa, perfume, acessório, ocasião ou compra evitada. "
-                                        + "Isso reduz esforço e cria sensação de transformação real.",
-                                "Escolha um ajuste de até 20 minutos, registre o que será mantido, removido e combinado."),
+                                "Ajuste bonito, possível e barato",
+                                "Você escolhe um ajuste visível e possível: cabelo, pele, roupa, perfume, acessório, ocasião ou compra evitada. "
+                                        + "A mudança precisa caber na sua rotina, não em uma versão ideal da sua vida.",
+                                "Escolha um ajuste de até 20 minutos e registre o que será mantido, removido e combinado."),
                         new DeliverableSection(
-                                "Exemplo preenchido e comparação visual",
+                                "Antes e depois de presença",
                                 "O exemplo mostra como uma decisão pequena muda a percepção do conjunto sem exigir luxo, compra impulsiva ou transformação radical.",
-                                "Preencha o exemplo com uma situação real e compare antes/depois usando uma foto, espelho ou descrição."),
+                                "Preencha com uma situação real e compare antes/depois usando foto, espelho ou descrição."),
                         new DeliverableSection(
-                                "Revisão de valor percebido",
+                                "Sensação que deve ficar",
                                 "A revisão mostra o que mudou, qual esforço foi poupado e qual próximo ajuste mantém a evolução sem virar perfeccionismo.",
                                 "Marque uma evidência de progresso e escolha o próximo microajuste de menor esforço.")),
                 List.of(
-                        "A promessa do produto aparece de forma explícita.",
-                        "Existe uma primeira ação executável em até 20 minutos.",
-                        "O princípio de pesquisa foi convertido em regra de aplicação, não em teoria acadêmica.",
-                        "O comprador sabe o que preencher, decidir ou revisar.",
-                        "O conteúdo não cria promessa maior que: " + safe(context.promisedResult()),
-                        "Há critério objetivo para saber se o entregável foi concluído."),
+                        "Escolhi uma situação real da minha semana.",
+                        "A ação cabe em até 20 minutos.",
+                        "Antes de comprar, olhei o que já tenho.",
+                        "Registrei um sinal visível de progresso.",
+                        "Se deu dúvida, voltei para uma única missão.",
+                        "Terminei com uma próxima decisão simples."),
                 List.of(
                         "Situação atual",
-                        "Princípio aplicado",
-                        "Dor ou esforço que será reduzido",
+                        "Regra simples",
+                        "Incômodo que será reduzido",
                         "Ação escolhida",
                         "Detalhe visual ou sensorial ajustado",
                         "O que vou reaproveitar antes de comprar",
@@ -235,11 +234,33 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                         "Próxima decisão"),
                 List.of(
                         "Consumir o material como leitura e não preencher nada.",
-                        "Usar a explicação científica como desculpa para não executar.",
+                        "Esperar clareza perfeita antes de ajustar um detalhe.",
                         "Tentar resolver todos os problemas ao mesmo tempo.",
-                        "Trocar o método por uma promessa nova que o produto não entrega.",
+                        "Comprar algo novo antes de olhar o que já existe.",
                         "Pular o diagnóstico inicial e perder a comparação de progresso."),
-                "O entregável está concluído quando o comprador consegue explicar a situação, escolher uma ação, executar o primeiro passo e apontar uma evidência de progresso.");
+                "Este material cumpriu seu papel quando você consegue explicar a situação, escolher uma ação, executar o primeiro passo e apontar uma evidência de progresso.");
+    }
+
+    /**
+     * Cria uma chamada humana para cada material do pacote.
+     */
+    private String headlineFor(DeliverableSpec spec) {
+        return switch (safe(spec.componentType())) {
+            case "COMECE_AQUI" -> "Comece aqui quando quiser abrir o método sem se perder entre arquivos.";
+            case "DIAGNOSTICO_GUIADO" -> "Use este espelho para descobrir o que hoje deixa sua presença menos marcante.";
+            case "MISSOES_7_DIAS" -> "Siga uma missão por dia para melhorar presença sem gastar mais do que precisa.";
+            case "PAINEL_PROGRESSO" -> "Registre o antes e depois para enxergar o que ficou mais coerente.";
+            case "PLANO_EXECUCAO_RAPIDA" -> "Use este plano quando quiser saber exatamente o que fazer hoje.";
+            case "CHECKLIST_APLICACAO" -> "Passe por este checklist antes de sair, gravar ou entrar em uma situação importante.";
+            case "TEMPLATES_PRONTOS" -> "Preencha estes cartões para decidir roupa, beleza e compras com mais intenção.";
+            case "EXEMPLO_PREENCHIDO" -> "Veja um exemplo realista antes de preencher o seu.";
+            case "PROVA_TANGIVEL" -> "Compare o quase bom com uma presença mais memorável.";
+            case "BIBLIOTECA_APOIO" -> "Consulte esta biblioteca quando quiser revisar sem voltar ao começo.";
+            case "RITUAL_ACOMPANHAMENTO" -> "Use este ritual para manter sua assinatura em semanas corridas.";
+            case "BONUS_ANTI_OBJECAO" -> "Abra este atalho quando bater a sensação de que você não tem roupa, tempo ou ideia.";
+            case "GUIA_PRIMEIROS_RESULTADOS" -> "Use este guia para perceber sinais sutis de que sua presença mudou.";
+            default -> "Use este material para escolher o próximo detalhe com mais intenção.";
+        };
     }
 
     /**
@@ -252,34 +273,38 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
             case "PLANO_EXECUCAO_RAPIDA" -> "quebrar a mudança em microdecisões diárias para reduzir esforço mental e aumentar consistência percebida";
             case "DIAGNOSTICO_GUIADO" -> "transformar percepção vaga em ponto de partida visual para orientar a jornada de aplicação";
             case "MISSOES_7_DIAS" -> "converter o método em microações diárias para criar sensação de acompanhamento e progresso";
-            case "PAINEL_PROGRESSO" -> "usar evidências simples para a cliente perceber avanço sem depender de perfeccionismo";
+            case "PAINEL_PROGRESSO" -> "usar evidências simples para você perceber avanço sem depender de perfeccionismo";
             case "CHECKLIST_APLICACAO" -> "usar pistas visuais simples para diminuir esquecimento, dúvida e compra por impulso";
             case "TEMPLATES_PRONTOS" -> "transformar conhecimento em campos preenchíveis para evitar página em branco";
             case "EXEMPLO_PREENCHIDO" -> "modelar uma aplicação realista para acelerar reconhecimento de padrão";
             case "PROVA_TANGIVEL" -> "comparar antes/depois por coerência de sinais, não por luxo ou transformação corporal";
             case "BIBLIOTECA_APOIO" -> "organizar materiais de apoio para reforçar a experiência sem virar excesso de conteúdo";
             case "BONUS_ANTI_OBJECAO" -> "substituir a objeção por uma ação mínima que preserva avanço";
-            default -> "aplicar o mecanismo '" + base + "' com apoio da evidência '" + proof + "' em uma decisão simples e observável";
+            case "COMECE_AQUI" -> "começar pelo espelho, escolher uma missão e evitar abrir todos os materiais ao mesmo tempo";
+            case "RITUAL_ACOMPANHAMENTO" -> "repetir uma revisão curta para manter sua assinatura mesmo quando a semana estiver corrida";
+            case "GUIA_PRIMEIROS_RESULTADOS" -> "observar sinais pequenos de coerência antes de buscar uma mudança maior";
+            default -> "transformar o método em uma decisão simples e observável";
         };
     }
 
     /**
-     * Define o resultado funcional do entregável para o comprador.
+     * Define o resultado funcional do entregável para a compradora.
      */
     private String resultText(FabricationContext context, DeliverableSpec spec) {
         return switch (safe(spec.componentType())) {
-            case "PLANO_EXECUCAO_RAPIDA" -> "Ao finalizar, o comprador tem um plano de 7 dias para chegar mais perto de "
+            case "PLANO_EXECUCAO_RAPIDA" -> "Ao finalizar, você tem um plano de 7 dias para chegar mais perto de "
                     + safe(context.promisedResult()) + ".";
-            case "DIAGNOSTICO_GUIADO" -> "Ao finalizar, o comprador sabe qual ponto ajustar primeiro na experiência.";
-            case "MISSOES_7_DIAS" -> "Ao finalizar, o comprador percorreu uma sequência guiada com ações pequenas e progressivas.";
-            case "PAINEL_PROGRESSO" -> "Ao finalizar, o comprador tem evidências marcadas de avanço percebido.";
-            case "TEMPLATES_PRONTOS" -> "Ao finalizar, o comprador tem materiais preenchidos que reduzem o esforço de começar.";
-            case "PROVA_TANGIVEL" -> "Ao finalizar, o comprador enxerga o antes, o depois e o miniresultado esperado.";
-            case "BIBLIOTECA_APOIO" -> "Ao finalizar, o comprador sabe qual arquivo usar em cada momento da experiência.";
-            case "RITUAL_ACOMPANHAMENTO" -> "Ao finalizar, o comprador sabe quando agir, revisar e continuar sem suporte manual.";
-            case "BONUS_ANTI_OBJECAO" -> "Ao finalizar, o comprador tem resposta prática para a objeção que mais trava a aplicação.";
-            default -> "Ao finalizar este entregável, o comprador deve estar mais perto de "
-                    + safe(context.promisedResult()) + " usando o papel do ativo: " + safe(spec.role());
+            case "DIAGNOSTICO_GUIADO" -> "Ao finalizar, você sabe qual ponto ajustar primeiro na experiência.";
+            case "MISSOES_7_DIAS" -> "Ao finalizar, você percorreu uma sequência guiada com ações pequenas e progressivas.";
+            case "PAINEL_PROGRESSO" -> "Ao finalizar, você tem evidências marcadas de avanço percebido.";
+            case "TEMPLATES_PRONTOS" -> "Ao finalizar, você tem materiais preenchidos que reduzem o esforço de começar.";
+            case "PROVA_TANGIVEL" -> "Ao finalizar, você enxerga o antes, o depois e o miniresultado esperado.";
+            case "BIBLIOTECA_APOIO" -> "Ao finalizar, você sabe qual arquivo usar em cada momento da experiência.";
+            case "RITUAL_ACOMPANHAMENTO" -> "Ao finalizar, você sabe quando agir, revisar e continuar sem suporte manual.";
+            case "BONUS_ANTI_OBJECAO" -> "Ao finalizar, você tem resposta prática para a trava que mais atrapalha a aplicação.";
+            case "COMECE_AQUI" -> "Ao finalizar, você sabe por onde começar sem se perder entre arquivos, ideias e vontade de mudar tudo.";
+            default -> "Ao finalizar este material, você deve estar mais perto de "
+                    + safe(context.promisedResult()) + ".";
         };
     }
 
@@ -296,7 +321,17 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
         if (spec.format() != null && spec.format().contains("CSV")) {
             return "Preencher a primeira linha com uma situação real e enxergar prioridade sem depender de memória.";
         }
-        return "Tomar uma decisão prática alinhada à promessa: " + safe(context.centralPromise());
+        return switch (safe(spec.componentType())) {
+            case "DIAGNOSTICO_GUIADO" -> "Nomear o detalhe que hoje faz você se sentir arrumada, mas pouco marcante.";
+            case "MISSOES_7_DIAS" -> "Concluir a primeira missão e sentir que a mudança cabe na sua rotina.";
+            case "PAINEL_PROGRESSO" -> "Registrar um antes/depois simples e perceber um sinal de intenção no conjunto.";
+            case "PLANO_EXECUCAO_RAPIDA" -> "Saber exatamente o que fazer hoje sem abrir o armário no impulso.";
+            case "PROVA_TANGIVEL" -> "Ver a diferença entre estar apenas arrumada e parecer mais memorável.";
+            case "BIBLIOTECA_APOIO" -> "Encontrar rapidamente o material certo sem transformar a jornada em estudo.";
+            case "RITUAL_ACOMPANHAMENTO" -> "Criar um momento semanal de 15 minutos para manter sua assinatura.";
+            case "GUIA_PRIMEIROS_RESULTADOS" -> "Reconhecer pequenos sinais de mais presença sem esperar perfeição.";
+            default -> "Escolher o primeiro detalhe que deixa sua presença mais intencional hoje.";
+        };
     }
 
     /**
@@ -310,9 +345,9 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
             case "EXEMPLO_PREENCHIDO" -> "Amostra preenchida com cenário realista do nicho: " + safe(context.niche()) + ".";
             case "PROVA_TANGIVEL" -> "Quadro antes/depois e miniresultado demonstrável da promessa.";
             case "RITUAL_ACOMPANHAMENTO" -> "Calendário de checkpoints, lembretes e revisão.";
-            case "BONUS_ANTI_OBJECAO" -> "FAQ operacional e atalho para continuar mesmo com pouca clareza.";
+            case "BONUS_ANTI_OBJECAO" -> "Perguntas rápidas e atalho para continuar mesmo quando bater dúvida.";
             case "GUIA_PRIMEIROS_RESULTADOS" -> "Roteiro para reconhecer progresso em 20 minutos, 24 horas e 7 dias.";
-            default -> "Material complementar pronto para revisão e aplicação.";
+            default -> "Página de apoio para decidir, preencher e seguir sem recomeçar do zero.";
         };
     }
 
@@ -325,7 +360,7 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
                     + safe(context.coreMechanism()) + ".";
             case "EXEMPLO_PREENCHIDO" -> "Exemplo preenchido mostra o nível de detalhe esperado e evita página em branco.";
             case "PLANO_EXECUCAO_RAPIDA" -> "A prova aparece quando o comprador conclui o Dia 1 com uma decisão registrada.";
-            default -> "A prova mínima é o comprador conseguir apontar uma evidência de progresso sem depender de opinião externa.";
+            default -> "O sinal mínimo é você conseguir apontar o que ficou mais coerente, mais leve ou mais intencional.";
         };
     }
 
@@ -337,7 +372,8 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
             case "RITUAL_ACOMPANHAMENTO" -> "Abrir o kit no mesmo horário por 7 dias, marcar um checkpoint e registrar a próxima ação.";
             case "PLANO_EXECUCAO_RAPIDA" -> "Executar uma ação curta por dia e revisar a evidência antes de avançar.";
             case "CHECKLIST_APLICACAO" -> "Marcar o checklist antes de encerrar cada sessão de aplicação.";
-            default -> "Usar após o plano principal, sempre registrando ação, prazo e evidência.";
+            case "COMECE_AQUI" -> "Ler esta página, escolher o Dia 0 e iniciar sem abrir todos os arquivos de uma vez.";
+            default -> "Usar junto da missão do dia, registrando ação, prazo e evidência.";
         };
     }
 
@@ -348,8 +384,8 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
         return switch (safe(spec.componentType())) {
             case "BONUS_ANTI_OBJECAO" -> "Se eu não souber por onde começar, uso o atalho de menor esforço e executo só o primeiro campo.";
             case "TEMPLATES_PRONTOS" -> "Se eu não tiver ideias, copio o modelo base e substituo apenas os campos essenciais.";
-            case "PROVA_TANGIVEL" -> "Se eu duvidar do resultado, comparo o antes/depois operacional sem assumir garantia automática.";
-            default -> "Se houver dúvida, voltar ao manifesto, escolher um único entregável e concluir o critério mínimo.";
+            case "PROVA_TANGIVEL" -> "Se eu duvidar do resultado, comparo o antes/depois sem exigir perfeição nem mudança radical.";
+            default -> "Se houver dúvida, volte ao começo, escolha uma única missão e conclua o primeiro passo possível.";
         };
     }
 
@@ -409,14 +445,6 @@ public class RedacaoEntregaveisProcessor implements StageProcessor<PackageAssemb
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Falha ao serializar conteúdo FEO", ex);
         }
-    }
-
-    /**
-     * Encurta texto para uso em título funcional.
-     */
-    private String shortText(String value) {
-        String safe = safe(value);
-        return safe.length() <= 90 ? safe : safe.substring(0, 87) + "...";
     }
 
     /**

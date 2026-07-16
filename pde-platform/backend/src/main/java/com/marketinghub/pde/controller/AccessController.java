@@ -2,6 +2,10 @@ package com.marketinghub.pde.controller;
 
 import com.marketinghub.pde.dto.AccessRequest;
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.FunnelEventRequest;
+import com.marketinghub.pde.dto.FunnelEventResponse;
+import com.marketinghub.pde.dto.GoogleAccessRequest;
+import com.marketinghub.pde.dto.MagicLinkResponse;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.service.AccessService;
@@ -52,6 +56,24 @@ public class AccessController {
     @PostMapping("/login")
     public AccessResponse loginCustomer(@Valid @RequestBody AccessRequest request) {
         return accessService.loginCustomer(request.productSlug(), request.email());
+    }
+
+    /** Envia um link magico para a cliente entrar sem senha na Área MUSA. */
+    @PostMapping("/magic-link")
+    public MagicLinkResponse requestMagicLink(@Valid @RequestBody AccessRequest request) {
+        return accessService.requestMagicLink(request.productSlug(), request.email());
+    }
+
+    /** Autentica a cliente pelo Google e cria ou reutiliza o acesso da Área MUSA. */
+    @PostMapping("/google")
+    public AccessResponse loginWithGoogle(@Valid @RequestBody GoogleAccessRequest request) {
+        return accessService.loginWithGoogle(request.productSlug(), request.idToken());
+    }
+
+    /** Registra eventos comerciais da jornada MUSA/PDE para medir o funil de assinatura. */
+    @PostMapping("/events")
+    public FunnelEventResponse recordFunnelEvent(@Valid @RequestBody FunnelEventRequest request) {
+        return accessService.recordFunnelEvent(request);
     }
 
     /** Recebe webhook de compra aprovada pela Pepper e libera acesso ao produto. */

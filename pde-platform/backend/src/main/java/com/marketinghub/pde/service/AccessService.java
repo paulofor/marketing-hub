@@ -1,6 +1,9 @@
 package com.marketinghub.pde.service;
 
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.FunnelEventRequest;
+import com.marketinghub.pde.dto.FunnelEventResponse;
+import com.marketinghub.pde.dto.MagicLinkResponse;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.model.AccessGrant;
@@ -40,6 +43,10 @@ public class AccessService {
     private final String jdbcUrl;
     private final String jdbcUsername;
     private final String jdbcPassword;
+    private final String appBaseUrl;
+    private final boolean exposeMagicLinkInResponse;
+    private final PdeMailService mailService;
+    private final GoogleIdentityService googleIdentityService;
     private final Map<String, AccessGrant> accessByToken = new ConcurrentHashMap<>();
 
     /** Recebe dependências e carrega os acessos persistidos em disco. */
@@ -50,19 +57,27 @@ public class AccessService {
             @Value("${pde.access.storage-path:/data/pde/access-grants.json}") String storagePath,
             @Value("${pde.access.jdbc-url:}") String jdbcUrl,
             @Value("${pde.access.jdbc-username:}") String jdbcUsername,
-            @Value("${pde.access.jdbc-password:}") String jdbcPassword) {
+            @Value("${pde.access.jdbc-password:}") String jdbcPassword,
+            @Value("${pde.access.app-base-url:http://localhost:5176}") String appBaseUrl,
+            @Value("${pde.access.expose-magic-link-in-response:false}") boolean exposeMagicLinkInResponse,
+            PdeMailService mailService,
+            GoogleIdentityService googleIdentityService) {
         this.productCatalogService = productCatalogService;
         this.objectMapper = objectMapper;
         this.storagePath = Path.of(storagePath);
         this.jdbcUrl = jdbcUrl;
         this.jdbcUsername = jdbcUsername;
         this.jdbcPassword = jdbcPassword;
+        this.appBaseUrl = appBaseUrl;
+        this.exposeMagicLinkInResponse = exposeMagicLinkInResponse;
+        this.mailService = mailService;
+        this.googleIdentityService = googleIdentityService;
         loadPersistedAccess();
     }
 
     /** Recebe dependências para testes locais com persistência em arquivo. */
     public AccessService(ProductCatalogService productCatalogService, ObjectMapper objectMapper, String storagePath) {
-        this(productCatalogService, objectMapper, storagePath, "", "", "");
+        this(productCatalogService, objectMapper, storagePath, "", "", "", "http://localhost:5176", true, null, null);
     }
 
     /** Cria um acesso para um produto existente e retorna a URL da área da cliente. */
@@ -70,12 +85,19 @@ public class AccessService {
         productCatalogService.getProduct(productSlug);
         AccessGrant existingGrant = findGrantByEmail(productSlug, email);
         if (existingGrant != null) {
+            boolean promotedToPaid = shouldPromoteToPaidSource(existingGrant, source);
+            if (promotedToPaid) {
+                existingGrant.updateSource(source);
+                persistAccess(existingGrant);
+                recordSubscriptionApprovedIfNeeded(existingGrant, source);
+            }
             return toAccessResponse(existingGrant);
         }
         String token = UUID.randomUUID().toString();
-        AccessGrant grant = new AccessGrant(token, productSlug, email, source, Instant.now());
+        AccessGrant grant = new AccessGrant(token, productSlug, normalizeEmail(email), source, Instant.now());
         accessByToken.put(token, grant);
         persistAccess(grant);
+        recordSubscriptionApprovedIfNeeded(grant, source);
         return toAccessResponse(grant);
     }
 
@@ -91,7 +113,68 @@ public class AccessService {
         if (grant == null) {
             throw new IllegalArgumentException("Cadastro da Area MUSA nao encontrado para este e-mail");
         }
+        recordFunnelEvent(new FunnelEventRequest(
+                productSlug,
+                "LOGIN_COMPLETED",
+                grant.getToken(),
+                grant.getEmail(),
+                "EMAIL",
+                "pde-platform",
+                null,
+                Map.of("method", "legacy_email_login")));
         return toAccessResponse(grant);
+    }
+
+    /** Gera ou reutiliza o acesso e envia um link magico para o e-mail da cliente. */
+    public MagicLinkResponse requestMagicLink(String productSlug, String email) {
+        AccessResponse access = createAccess(productSlug, email, "MAGIC_LINK");
+        String absoluteUrl = buildAbsoluteAccessUrl(access.accessUrl());
+        if (mailService != null && mailService.isConfigured()) {
+            mailService.sendMagicLink(access.email(), absoluteUrl);
+            return new MagicLinkResponse(productSlug, access.email(), "SENT", null);
+        }
+        return new MagicLinkResponse(
+                productSlug,
+                access.email(),
+                "EMAIL_NOT_CONFIGURED",
+                exposeMagicLinkInResponse ? access.accessUrl() : null);
+    }
+
+    /** Autentica ou cria acesso da cliente validada pelo Google. */
+    public AccessResponse loginWithGoogle(String productSlug, String idToken) {
+        if (googleIdentityService == null) {
+            throw new IllegalArgumentException("Login com Google ainda nao configurado para a Area MUSA");
+        }
+        String verifiedEmail = googleIdentityService.verifyEmail(idToken);
+        AccessResponse access = createAccess(productSlug, verifiedEmail, "GOOGLE");
+        recordFunnelEvent(new FunnelEventRequest(
+                productSlug,
+                "LOGIN_COMPLETED",
+                access.token(),
+                access.email(),
+                "GOOGLE",
+                "pde-platform",
+                null,
+                Map.of("method", "google_identity")));
+        return access;
+    }
+
+    /** Registra um evento comercial da jornada PED/MUSA para medição do funil. */
+    public FunnelEventResponse recordFunnelEvent(FunnelEventRequest request) {
+        productCatalogService.getProduct(request.productSlug());
+        String normalizedEventType = normalizeEventType(request.eventType());
+        String eventId = UUID.randomUUID().toString();
+        if (usesJdbcStorage()) {
+            persistFunnelEventInDatabase(eventId, request, normalizedEventType);
+        } else {
+            log.info(
+                    "Evento PDE registrado sem persistencia JDBC; eventId={}, productSlug={}, eventType={}, accessToken={}",
+                    eventId,
+                    request.productSlug(),
+                    normalizedEventType,
+                    request.accessToken());
+        }
+        return new FunnelEventResponse(eventId, normalizedEventType, "RECORDED");
     }
 
     /** Retorna a área de trabalho da cliente com produto e progresso atuais. */
@@ -105,6 +188,8 @@ public class AccessService {
         return new WorkspaceResponse(
                 product,
                 grant.getEmail(),
+                grant.getSource(),
+                resolveSubscriptionStatus(grant),
                 completedMissions,
                 totalMissions,
                 progressPercent,
@@ -155,6 +240,59 @@ public class AccessService {
     /** Normaliza o e-mail para login e unicidade comercial. */
     private String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase();
+    }
+
+    /** Resolve se o acesso atual representa assinatura ativa ou apenas entrada/logon na área. */
+    private String resolveSubscriptionStatus(AccessGrant grant) {
+        return "CHECKOUT".equalsIgnoreCase(grant.getSource()) || "PEPPER".equalsIgnoreCase(grant.getSource())
+                ? "ACTIVE"
+                : "TRIAL";
+    }
+
+    /** Converte URL relativa em URL absoluta para envio por e-mail. */
+    private String buildAbsoluteAccessUrl(String accessUrl) {
+        String normalizedBase = appBaseUrl == null || appBaseUrl.isBlank()
+                ? "http://localhost:5176"
+                : appBaseUrl.replaceAll("/+$", "");
+        return normalizedBase + accessUrl;
+    }
+
+    /** Registra compra ou assinatura aprovada quando a origem representa checkout real. */
+    private void recordSubscriptionApprovedIfNeeded(AccessGrant grant, String source) {
+        if ("CHECKOUT".equalsIgnoreCase(source) || "PEPPER".equalsIgnoreCase(source)) {
+            recordFunnelEvent(new FunnelEventRequest(
+                    grant.getProductSlug(),
+                    "SUBSCRIPTION_APPROVED",
+                    grant.getToken(),
+                    grant.getEmail(),
+                    source,
+                    "pde-platform",
+                    null,
+                    Map.of("accessSource", source)));
+        }
+    }
+
+    /** Define se um acesso gratuito deve ser promovido para origem de assinatura paga. */
+    private boolean shouldPromoteToPaidSource(AccessGrant grant, String source) {
+        return ("CHECKOUT".equalsIgnoreCase(source) || "PEPPER".equalsIgnoreCase(source))
+                && !"CHECKOUT".equalsIgnoreCase(grant.getSource())
+                && !"PEPPER".equalsIgnoreCase(grant.getSource());
+    }
+
+    /** Normaliza e valida os tipos de evento aceitos pelo funil MUSA/PDE. */
+    private String normalizeEventType(String eventType) {
+        String normalized = eventType == null ? "" : eventType.trim().toUpperCase();
+        Set<String> allowed = Set.of(
+                "PED_ENTRY",
+                "LOGIN_STARTED",
+                "LOGIN_COMPLETED",
+                "PAYWALL_VIEWED",
+                "SUBSCRIPTION_CLICKED",
+                "SUBSCRIPTION_APPROVED");
+        if (!allowed.contains(normalized)) {
+            throw new IllegalArgumentException("Evento PDE nao suportado: " + eventType);
+        }
+        return normalized;
     }
 
     /** Carrega acessos persistidos para evitar perda de progresso em reinícios. */
@@ -282,6 +420,44 @@ public class AccessService {
             log.error("Falha ao persistir acesso PDE no banco Marketing Hub; token={}", grant.getToken(), ex);
             throw new IllegalStateException("Nao foi possivel persistir acesso PDE no banco Marketing Hub", ex);
         }
+    }
+
+    /** Persiste evento comercial PED/MUSA no banco Marketing Hub. */
+    private void persistFunnelEventInDatabase(String eventId, FunnelEventRequest request, String eventType) {
+        String sql = """
+                INSERT INTO pde_funnel_event (
+                  event_id, product_slug, access_token, email, normalized_email, event_type,
+                  provider, source, page_url, metadata_json, occurred_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """;
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, eventId);
+            statement.setString(2, request.productSlug());
+            statement.setString(3, blankToNull(request.accessToken()));
+            statement.setString(4, blankToNull(request.email()));
+            statement.setString(5, blankToNull(normalizeEmail(request.email())));
+            statement.setString(6, eventType);
+            statement.setString(7, blankToNull(request.provider()));
+            statement.setString(8, blankToNull(request.source()));
+            statement.setString(9, blankToNull(request.pageUrl()));
+            statement.setString(10, request.metadata() == null ? null : objectMapper.writeValueAsString(request.metadata()));
+            statement.executeUpdate();
+        } catch (SQLException | IOException ex) {
+            log.error(
+                    "Falha ao persistir evento PDE no banco Marketing Hub; eventId={}, productSlug={}, eventType={}",
+                    eventId,
+                    request.productSlug(),
+                    eventType,
+                    ex);
+            throw new IllegalStateException("Nao foi possivel persistir evento PDE no banco Marketing Hub", ex);
+        }
+    }
+
+    /** Converte texto vazio em null para persistência normalizada. */
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     /** Representa o formato persistido do acesso para armazenamento em JSON. */

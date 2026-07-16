@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-16-pde-funnel-events-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: pde_funnel_event
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE pde_funnel_event (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                event_id VARCHAR(36) NOT NULL,
+                product_slug VARCHAR(191) NOT NULL,
+                access_token VARCHAR(36) NULL,
+                email VARCHAR(320) NULL,
+                normalized_email VARCHAR(320) NULL,
+                event_type VARCHAR(60) NOT NULL,
+                provider VARCHAR(80) NULL,
+                source VARCHAR(120) NULL,
+                page_url VARCHAR(1024) NULL,
+                metadata_json JSON NULL,
+                occurred_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_pde_funnel_event_id (event_id),
+                KEY idx_pde_funnel_product_event_time (product_slug, event_type, occurred_at),
+                KEY idx_pde_funnel_access_token (access_token),
+                KEY idx_pde_funnel_email (normalized_email),
+                CONSTRAINT fk_pde_funnel_access_grant
+                  FOREIGN KEY (access_token) REFERENCES pde_access_grant (token)
+                  ON DELETE SET NULL
+              );

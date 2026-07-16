@@ -1327,3 +1327,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-07-16-pde-access-grants.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-16-pde-funnel-events.yaml
+      relativeToChangelogFile: true

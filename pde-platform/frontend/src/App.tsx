@@ -5,10 +5,13 @@ import {
   Check,
   ChevronRight,
   ClipboardCheck,
+  CreditCard,
   Gauge,
   KeyRound,
   Library,
+  Lock,
   LogIn,
+  Mail,
   Sparkles,
   Target,
   User,
@@ -62,11 +65,36 @@ type ProductExperience = {
 type Workspace = {
   product: ProductExperience;
   email: string;
+  accessSource: string;
+  subscriptionStatus: 'ACTIVE' | 'TRIAL';
   completedMissions: number;
   totalMissions: number;
   progressPercent: number;
   completedMissionIds: string[];
 };
+
+type MagicLinkResponse = {
+  productSlug: string;
+  email: string;
+  deliveryStatus: string;
+  accessUrl?: string;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential?: string }) => void;
+          }) => void;
+          renderButton: (element: HTMLElement, options: Record<string, string | number | boolean>) => void;
+        };
+      };
+    };
+  }
+}
 
 const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
@@ -138,6 +166,10 @@ function App() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [devAccessUrl, setDevAccessUrl] = useState('');
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+  const checkoutUrl = (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '';
 
   const activeMission = useMemo(() => {
     const missionList = workspace?.product.missions ?? product.missions;
@@ -145,6 +177,7 @@ function App() {
   }, [activeMissionId, product.missions, workspace]);
 
   useEffect(() => {
+    trackEvent('PED_ENTRY', { source: 'frontend_entry' });
     const tokenFromPath = window.location.pathname.match(/^\/access\/([^/]+)/)?.[1] ?? '';
     if (tokenFromPath) {
       setAccessToken(tokenFromPath);
@@ -163,6 +196,57 @@ function App() {
       });
   }, []);
 
+  useEffect(() => {
+    if (!googleClientId || workspace) {
+      return;
+    }
+    const scriptId = 'google-identity-services';
+    const renderGoogleButton = () => {
+      const container = document.getElementById('google-login-button');
+      if (!container || !window.google) {
+        return;
+      }
+      container.innerHTML = '';
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response) => {
+          if (response.credential) {
+            submitGoogleAccess(response.credential);
+          }
+        },
+      });
+      window.google.accounts.id.renderButton(container, {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        width: 320,
+      });
+    };
+    const existingScript = document.getElementById(scriptId);
+    if (existingScript) {
+      renderGoogleButton();
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = renderGoogleButton;
+    document.head.appendChild(script);
+  }, [googleClientId, workspace]);
+
+  useEffect(() => {
+    if (workspace?.subscriptionStatus === 'TRIAL') {
+      trackEvent('PAYWALL_VIEWED', {
+        accessToken,
+        email: workspace.email,
+        provider: workspace.accessSource,
+        metadata: { placement: 'dashboard_paywall' },
+      });
+    }
+  }, [workspace?.subscriptionStatus, accessToken]);
+
   async function submitAccess() {
     if (!email.trim()) {
       setErrorMessage(authMode === 'login'
@@ -172,23 +256,59 @@ function App() {
     }
     setLoading(true);
     setErrorMessage('');
+    setSuccessMessage('');
+    setDevAccessUrl('');
     try {
-      const response = await fetch(`/api/pde/access/${authMode === 'login' ? 'login' : 'register'}`, {
+      await trackEvent('LOGIN_STARTED', {
+        email,
+        provider: 'EMAIL_MAGIC_LINK',
+        metadata: { authMode },
+      });
+      const response = await fetch('/api/pde/access/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productSlug: product.slug, email }),
       });
       if (!response.ok) {
-        throw new Error(authMode === 'login' ? 'Cadastro nao encontrado.' : 'Nao foi possivel criar o cadastro.');
+        throw new Error('Nao foi possivel enviar o link de acesso.');
+      }
+      const result: MagicLinkResponse = await response.json();
+      setSuccessMessage(result.deliveryStatus === 'SENT'
+        ? 'Enviamos o link de acesso para seu e-mail. Abra o link para continuar.'
+        : 'Link gerado. O envio por e-mail ainda nao esta configurado neste ambiente.');
+      if (result.accessUrl) {
+        setDevAccessUrl(result.accessUrl);
+      }
+    } catch {
+      setErrorMessage('Nao conseguimos enviar seu link agora. Confira o e-mail e tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitGoogleAccess(idToken: string) {
+    setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+    try {
+      await trackEvent('LOGIN_STARTED', {
+        provider: 'GOOGLE',
+        metadata: { authMode: 'google' },
+      });
+      const response = await fetch('/api/pde/access/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productSlug: product.slug, idToken }),
+      });
+      if (!response.ok) {
+        throw new Error('Google nao autorizado.');
       }
       const access = await response.json();
       setAccessToken(access.token);
       window.history.replaceState(null, '', access.accessUrl);
       await loadWorkspace(access.token);
     } catch {
-      setErrorMessage(authMode === 'login'
-        ? 'Nao encontramos esse e-mail. Confira o endereco ou crie seu cadastro para iniciar a Area MUSA.'
-        : 'Nao conseguimos criar seu cadastro agora. Tente novamente em alguns minutos.');
+      setErrorMessage('Nao conseguimos entrar com Google agora. Use o link por e-mail como alternativa.');
     } finally {
       setLoading(false);
     }
@@ -205,6 +325,53 @@ function App() {
     setActiveMissionId(data.product.missions[0]?.id ?? '');
   }
 
+  async function trackEvent(
+    eventType: string,
+    options: {
+      accessToken?: string;
+      email?: string;
+      provider?: string;
+      source?: string;
+      metadata?: Record<string, unknown>;
+    } = {},
+  ) {
+    try {
+      await fetch('/api/pde/access/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productSlug: product.slug,
+          eventType,
+          accessToken: options.accessToken,
+          email: options.email,
+          provider: options.provider,
+          source: options.source ?? 'pde-platform-frontend',
+          pageUrl: window.location.href,
+          metadata: options.metadata,
+        }),
+      });
+    } catch {
+      // Eventos de funil nao devem bloquear login, compra ou consumo da experiencia.
+    }
+  }
+
+  async function handleSubscriptionClick() {
+    if (!workspace) {
+      return;
+    }
+    await trackEvent('SUBSCRIPTION_CLICKED', {
+      accessToken,
+      email: workspace.email,
+      provider: workspace.accessSource,
+      metadata: { priceLabel: currentProduct.priceLabel, checkoutConfigured: Boolean(checkoutUrl) },
+    });
+    if (checkoutUrl) {
+      window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    setErrorMessage('Checkout de assinatura ainda nao configurado para este ambiente.');
+  }
+
   async function completeMission(missionId: string) {
     if (!accessToken) {
       return;
@@ -218,6 +385,7 @@ function App() {
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
   const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id)) ?? currentProduct.missions[0];
+  const hasActiveSubscription = workspace?.subscriptionStatus === 'ACTIVE';
 
   if (!workspace) {
     return (
@@ -252,6 +420,15 @@ function App() {
                 Criar cadastro
               </button>
             </div>
+            {googleClientId && (
+              <div className="social-login-block">
+                <div id="google-login-button" aria-label="Entrar com Google" />
+                <span>Mais rapido para salvar sua jornada antes da assinatura.</span>
+              </div>
+            )}
+            <div className="auth-divider">
+              <span>ou receba seu link por e-mail</span>
+            </div>
             <label className="email-box login-email-box">
               {authMode === 'login' ? 'E-mail cadastrado' : 'E-mail para criar cadastro'}
               <input
@@ -267,14 +444,30 @@ function App() {
               />
             </label>
             {errorMessage && <p className="form-message">{errorMessage}</p>}
+            {successMessage && <p className="form-message success-message">{successMessage}</p>}
             <button className="primary-button login-button" onClick={submitAccess} disabled={loading}>
-              <LogIn size={18} />
+              <Mail size={18} />
               {loading
-                ? (authMode === 'login' ? 'Entrando...' : 'Criando cadastro...')
-                : (authMode === 'login' ? 'Entrar na Area MUSA' : 'Criar cadastro e entrar')}
+                ? 'Enviando link...'
+                : (authMode === 'login' ? 'Receber link de acesso' : 'Criar cadastro por e-mail')}
             </button>
+            {devAccessUrl && (
+              <button
+                className="secondary-button dev-access-button"
+                onClick={() => {
+                  window.history.replaceState(null, '', devAccessUrl);
+                  const token = devAccessUrl.split('/access/')[1] ?? '';
+                  setAccessToken(token);
+                  loadWorkspace(token);
+                }}
+                type="button"
+              >
+                <LogIn size={18} />
+                Abrir acesso de teste
+              </button>
+            )}
             <p className="access-note">
-              Use o mesmo e-mail para manter seu progresso salvo na jornada.
+              Login libera sua area pessoal. A assinatura libera todos os recursos e materiais.
             </p>
           </div>
           <div
@@ -365,11 +558,27 @@ function App() {
         </article>
         <article className="status-card">
           <KeyRound size={20} />
-          <span>Produto ativo</span>
-          <strong>{currentProduct.priceLabel}</strong>
-          <p>Metodo MUSA liberado para uso.</p>
+          <span>{hasActiveSubscription ? 'Produto ativo' : 'Assinatura'}</span>
+          <strong>{hasActiveSubscription ? currentProduct.priceLabel : 'Pendente'}</strong>
+          <p>{hasActiveSubscription ? 'Metodo MUSA liberado para uso.' : 'Assine para liberar todos os recursos.'}</p>
         </article>
       </section>
+
+      {!hasActiveSubscription && (
+        <section className="subscription-paywall" aria-label="Oferta de assinatura MUSA">
+          <div>
+            <p className="section-kicker">Liberar area completa</p>
+            <h2>Assine o Clube MUSA para acessar todas as missoes, biblioteca e proximos desafios.</h2>
+            <p>
+              Seu login ja salvou a entrada na area. A assinatura remove o bloqueio e permite continuar a experiencia completa.
+            </p>
+          </div>
+          <button className="primary-button" onClick={handleSubscriptionClick}>
+            <CreditCard size={18} />
+            Assinar por {currentProduct.priceLabel}
+          </button>
+        </section>
+      )}
 
       <section className="dashboard-header compact-dashboard-header">
         <div className="dashboard-title">
@@ -429,11 +638,19 @@ function App() {
             {currentProduct.missions.map((mission) => (
               <button
                 key={mission.id}
-                className={mission.id === activeMission?.id ? 'active' : ''}
-                onClick={() => setActiveMissionId(mission.id)}
+                className={`${mission.id === activeMission?.id ? 'active' : ''} ${!hasActiveSubscription && mission.id !== firstMission?.id ? 'locked' : ''}`}
+                onClick={() => {
+                  if (!hasActiveSubscription && mission.id !== firstMission?.id) {
+                    handleSubscriptionClick();
+                    return;
+                  }
+                  setActiveMissionId(mission.id);
+                }}
                 title={`Dia ${mission.day}: ${mission.title}`}
               >
-                {completedMissionIds.has(mission.id) ? <Check size={16} /> : mission.day}
+                {!hasActiveSubscription && mission.id !== firstMission?.id
+                  ? <Lock size={15} />
+                  : completedMissionIds.has(mission.id) ? <Check size={16} /> : mission.day}
               </button>
             ))}
           </div>
@@ -460,11 +677,13 @@ function App() {
               </div>
               <button
                 className="secondary-button"
-                disabled={!workspace || completedMissionIds.has(activeMission.id)}
+                disabled={!workspace || completedMissionIds.has(activeMission.id) || !hasActiveSubscription}
                 onClick={() => completeMission(activeMission.id)}
               >
-                <Check size={18} />
-                {completedMissionIds.has(activeMission.id) ? 'Missao concluida' : 'Concluir missao'}
+                {hasActiveSubscription ? <Check size={18} /> : <Lock size={18} />}
+                {hasActiveSubscription
+                  ? (completedMissionIds.has(activeMission.id) ? 'Missao concluida' : 'Concluir missao')
+                  : 'Assine para salvar progresso'}
               </button>
             </article>
           )}
@@ -486,9 +705,16 @@ function App() {
               <span>{material.type}</span>
               <h3>{material.title}</h3>
               <p>{material.description}</p>
-              <a href={material.url} target="_blank" rel="noreferrer">
-                Abrir material
-              </a>
+              {hasActiveSubscription ? (
+                <a href={material.url} target="_blank" rel="noreferrer">
+                  Abrir material
+                </a>
+              ) : (
+                <button className="inline-action" onClick={handleSubscriptionClick}>
+                  <Lock size={16} />
+                  Liberar com assinatura
+                </button>
+              )}
             </article>
           ))}
         </div>

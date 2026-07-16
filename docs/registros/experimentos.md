@@ -5849,3 +5849,9 @@
 - Correção aplicada: o AI Worker falha a geração quando a imagem não retorna URL real; o cliente OpenAI preserva erro HTTP para retry; a geração de imagem usa 3 tentativas, sendo tentativas 1 e 2 em Flex e tentativa 3 em Standard/default; o backend rejeita criativo `READY` de imagem sem `imageUrl`; readiness/construção contam apenas criativos aprovados com imagem publicável.
 - Validação: passaram `CreativeImageClientTest`, `CreativeGenerationServiceTest`, `CreativeServiceTest` e `ExperimentReadinessServiceTest`.
 - Próximo passo: após deploy, regerar os criativos do experimento 66 antes de liberar tráfego.
+## 2026-07-16 — PED/MUSA: login Google, magic link e medição de assinatura
+
+- foi feito: o `pde-platform` passou a suportar entrada por Google ID token e magic link por e-mail, mantendo Instagram fora da fase atual.
+- foi feito: a Área MUSA passou a diferenciar acesso `TRIAL` de assinatura `ACTIVE`, evitando liberar todos os recursos apenas pelo cadastro/login.
+- foi feito: adicionada persistência de eventos comerciais do PED/MUSA em `pde_funnel_event` para medir `PED_ENTRY`, `LOGIN_STARTED`, `LOGIN_COMPLETED`, `PAYWALL_VIEWED`, `SUBSCRIPTION_CLICKED` e `SUBSCRIPTION_APPROVED`.
+- impacto comercial esperado: o funil deixa de medir apenas lead/formulário e passa a apontar gargalos reais de produto de assinatura: entrada, login, paywall, intenção de checkout e assinatura aprovada.

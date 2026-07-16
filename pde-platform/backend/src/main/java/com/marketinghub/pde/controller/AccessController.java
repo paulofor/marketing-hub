@@ -41,6 +41,19 @@ public class AccessController {
         return accessService.createAccess(request.productSlug(), request.email(), "CHECKOUT");
     }
 
+    /** Cadastra uma nova cliente na Área MUSA ou reutiliza o acesso já existente para o e-mail. */
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AccessResponse registerCustomer(@Valid @RequestBody AccessRequest request) {
+        return accessService.registerCustomer(request.productSlug(), request.email());
+    }
+
+    /** Autentica uma cliente já cadastrada pelo e-mail do produto. */
+    @PostMapping("/login")
+    public AccessResponse loginCustomer(@Valid @RequestBody AccessRequest request) {
+        return accessService.loginCustomer(request.productSlug(), request.email());
+    }
+
     /** Recebe webhook de compra aprovada pela Pepper e libera acesso ao produto. */
     @PostMapping("/pepper/webhook")
     @ResponseStatus(HttpStatus.CREATED)

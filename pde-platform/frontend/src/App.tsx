@@ -135,6 +135,7 @@ function App() {
   const [email, setEmail] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [activeMissionId, setActiveMissionId] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -162,28 +163,32 @@ function App() {
       });
   }, []);
 
-  async function createAccess() {
+  async function submitAccess() {
     if (!email.trim()) {
-      setErrorMessage('Informe o e-mail usado na compra para liberar sua Area MUSA.');
+      setErrorMessage(authMode === 'login'
+        ? 'Informe o e-mail cadastrado para entrar na sua Area MUSA.'
+        : 'Informe seu melhor e-mail para criar o cadastro da Area MUSA.');
       return;
     }
     setLoading(true);
     setErrorMessage('');
     try {
-      const response = await fetch('/api/pde/access/checkout', {
+      const response = await fetch(`/api/pde/access/${authMode === 'login' ? 'login' : 'register'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productSlug: product.slug, email }),
       });
       if (!response.ok) {
-        throw new Error('Nao foi possivel liberar o acesso.');
+        throw new Error(authMode === 'login' ? 'Cadastro nao encontrado.' : 'Nao foi possivel criar o cadastro.');
       }
       const access = await response.json();
       setAccessToken(access.token);
       window.history.replaceState(null, '', access.accessUrl);
       await loadWorkspace(access.token);
     } catch {
-      setErrorMessage('Nao conseguimos liberar a Area MUSA agora. Use o ZIP da pagina de obrigado e tente novamente em alguns minutos.');
+      setErrorMessage(authMode === 'login'
+        ? 'Nao encontramos esse e-mail. Confira o endereco ou crie seu cadastro para iniciar a Area MUSA.'
+        : 'Nao conseguimos criar seu cadastro agora. Tente novamente em alguns minutos.');
     } finally {
       setLoading(false);
     }
@@ -225,8 +230,30 @@ function App() {
               Acesse o diagnostico, o Dia 1 e os materiais premium do Metodo MUSA em um ambiente
               simples para seguir a jornada sem procurar arquivos soltos.
             </p>
+            <div className="auth-tabs" aria-label="Tipo de acesso">
+              <button
+                className={authMode === 'login' ? 'active' : ''}
+                onClick={() => {
+                  setAuthMode('login');
+                  setErrorMessage('');
+                }}
+                type="button"
+              >
+                Ja tenho cadastro
+              </button>
+              <button
+                className={authMode === 'register' ? 'active' : ''}
+                onClick={() => {
+                  setAuthMode('register');
+                  setErrorMessage('');
+                }}
+                type="button"
+              >
+                Criar cadastro
+              </button>
+            </div>
             <label className="email-box login-email-box">
-              E-mail usado na compra
+              {authMode === 'login' ? 'E-mail cadastrado' : 'E-mail para criar cadastro'}
               <input
                 type="email"
                 placeholder="seuemail@exemplo.com"
@@ -234,18 +261,20 @@ function App() {
                 onChange={(event) => setEmail(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
-                    createAccess();
+                    submitAccess();
                   }
                 }}
               />
             </label>
             {errorMessage && <p className="form-message">{errorMessage}</p>}
-            <button className="primary-button login-button" onClick={createAccess} disabled={loading}>
+            <button className="primary-button login-button" onClick={submitAccess} disabled={loading}>
               <LogIn size={18} />
-              {loading ? 'Liberando acesso...' : 'Entrar na Area MUSA'}
+              {loading
+                ? (authMode === 'login' ? 'Entrando...' : 'Criando cadastro...')
+                : (authMode === 'login' ? 'Entrar na Area MUSA' : 'Criar cadastro e entrar')}
             </button>
             <p className="access-note">
-              Neste momento inicial, qualquer e-mail valido libera a entrada para validacao da experiencia.
+              Use o mesmo e-mail para manter seu progresso salvo na jornada.
             </p>
           </div>
           <div

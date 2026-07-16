@@ -1,0 +1,61 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-16-pde-access-grants-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: pde_access_grant
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE pde_access_grant (
+                token VARCHAR(36) NOT NULL,
+                product_slug VARCHAR(191) NOT NULL,
+                email VARCHAR(320) NOT NULL,
+                normalized_email VARCHAR(320) NOT NULL,
+                source VARCHAR(40) NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (token),
+                UNIQUE KEY uk_pde_access_product_email (product_slug, normalized_email),
+                KEY idx_pde_access_product (product_slug),
+                KEY idx_pde_access_email (normalized_email)
+              );
+
+  - changeSet:
+      id: 2026-07-16-pde-access-grants-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_access_grant
+        - not:
+            tableExists:
+              tableName: pde_access_mission_completion
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE pde_access_mission_completion (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                access_token VARCHAR(36) NOT NULL,
+                mission_id VARCHAR(191) NOT NULL,
+                completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_pde_access_mission (access_token, mission_id),
+                KEY idx_pde_access_mission_token (access_token),
+                CONSTRAINT fk_pde_access_mission_grant
+                  FOREIGN KEY (access_token) REFERENCES pde_access_grant (token)
+                  ON DELETE CASCADE
+              );

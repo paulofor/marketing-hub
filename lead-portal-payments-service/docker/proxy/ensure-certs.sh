@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PRIMARY_DOMAIN="${CERTBOT_DOMAIN:-pagamentopalf.site}"
-SSL_DOMAINS="${SSL_DOMAINS:-${PRIMARY_DOMAIN} vitrineproduto.online}"
+SSL_DOMAINS="${SSL_DOMAINS:-${PRIMARY_DOMAIN} vitrineproduto.online clubemusa.com.br}"
 
 for DOMAIN in $SSL_DOMAINS; do
   TARGET_CERT_DIR="/etc/nginx/certs/live/${DOMAIN}"
@@ -11,14 +11,12 @@ for DOMAIN in $SSL_DOMAINS; do
 
   mkdir -p "${TARGET_CERT_DIR}"
 
-  if [ -f "${TARGET_CERT_DIR}/fullchain.pem" ] && [ -f "${TARGET_CERT_DIR}/privkey.pem" ]; then
-    echo "[proxy] SSL certificate for ${DOMAIN} already present in ${TARGET_CERT_DIR}, skipping copy"
-    continue
-  fi
-
   if [ -f "${LE_CERT_DIR}/fullchain.pem" ] && [ -f "${LE_CERT_DIR}/privkey.pem" ]; then
     SRC_DIR="${LE_CERT_DIR}"
     echo "[proxy] Using Let's Encrypt certificate for ${DOMAIN}"
+  elif [ -f "${TARGET_CERT_DIR}/fullchain.pem" ] && [ -f "${TARGET_CERT_DIR}/privkey.pem" ]; then
+    echo "[proxy] SSL certificate for ${DOMAIN} already present in ${TARGET_CERT_DIR}, keeping existing copy"
+    continue
   elif [ -f "${FALLBACK_CERT_DIR}/fullchain.pem" ] && [ -f "${FALLBACK_CERT_DIR}/privkey.pem" ]; then
     SRC_DIR="${FALLBACK_CERT_DIR}"
     echo "[proxy] Let's Encrypt certificate not found; using fallback development certificate for ${DOMAIN}" >&2

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   CalendarDays,
@@ -168,6 +168,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [devAccessUrl, setDevAccessUrl] = useState('');
+  const firstUseTrackedRef = useRef(false);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const checkoutUrl = (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '';
 
@@ -372,6 +373,24 @@ function App() {
     setErrorMessage('Checkout de assinatura ainda nao configurado para este ambiente.');
   }
 
+  function trackFirstUse(activationType: string, metadata: Record<string, unknown> = {}) {
+    if (!workspace || !hasActiveSubscription || firstUseTrackedRef.current) {
+      return;
+    }
+    firstUseTrackedRef.current = true;
+    trackEvent('FIRST_USE', {
+      accessToken,
+      email: workspace.email,
+      provider: workspace.accessSource,
+      metadata: { activationType, ...metadata },
+    });
+  }
+
+  function openMission(missionId: string, activationType = 'mission_open') {
+    setActiveMissionId(missionId);
+    trackFirstUse(activationType, { missionId });
+  }
+
   async function completeMission(missionId: string) {
     if (!accessToken) {
       return;
@@ -498,7 +517,7 @@ function App() {
           <h1>Sua presenca elegante comeca hoje.</h1>
           <p className="promise">{currentProduct.promise}</p>
           <div className="musa-hero-actions">
-            <button className="primary-button" onClick={() => setActiveMissionId(firstMission?.id ?? '')}>
+            <button className="primary-button" onClick={() => openMission(firstMission?.id ?? '', 'primary_start')}>
               <Sparkles size={18} />
               Comecar Dia 1
             </button>
@@ -518,7 +537,7 @@ function App() {
           </p>
           <button
             className="secondary-button next-mission-button"
-            onClick={() => setActiveMissionId(nextMission?.id ?? firstMission?.id ?? '')}
+            onClick={() => openMission(nextMission?.id ?? firstMission?.id ?? '', 'next_mission_open')}
           >
             Abrir orientacao
             <ChevronRight size={18} />
@@ -628,7 +647,7 @@ function App() {
                 apaga sua presenca e escrever a frase de diagnostico. Voce termina o dia sabendo
                 exatamente o que ajustar antes de pensar em comprar algo novo.
               </p>
-              <button className="inline-action" onClick={() => setActiveMissionId(firstMission.id)}>
+              <button className="inline-action" onClick={() => openMission(firstMission.id, 'start_here_open')}>
                 Abrir orientacao do Dia 1
                 <ChevronRight size={17} />
               </button>
@@ -644,7 +663,7 @@ function App() {
                     handleSubscriptionClick();
                     return;
                   }
-                  setActiveMissionId(mission.id);
+                  openMission(mission.id, 'mission_tab_open');
                 }}
                 title={`Dia ${mission.day}: ${mission.title}`}
               >
@@ -706,7 +725,12 @@ function App() {
               <h3>{material.title}</h3>
               <p>{material.description}</p>
               {hasActiveSubscription ? (
-                <a href={material.url} target="_blank" rel="noreferrer">
+                <a
+                  href={material.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => trackFirstUse('material_open', { materialTitle: material.title, materialType: material.type })}
+                >
                   Abrir material
                 </a>
               ) : (

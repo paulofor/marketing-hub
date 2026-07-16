@@ -1,11 +1,14 @@
 package com.marketinghub.pde.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.AccessResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.Test;
 
@@ -140,5 +143,57 @@ class AccessServiceTest {
         assertThat(retry.token()).isEqualTo(first.token());
         assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
         assertThat(workspace.accessSource()).isEqualTo("CHECKOUT");
+    }
+
+    /** Confirma que o contrato de funil aceita eventos de liberação e ativação pós-compra. */
+    @Test
+    void acceptsAccessReleasedAndFirstUseFunnelEvents() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        var released = accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "ACCESS_RELEASED",
+                null,
+                "cliente@sandbox.local",
+                "PEPPER",
+                "test",
+                null,
+                Map.of("accessSource", "PEPPER")));
+        var firstUse = accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "FIRST_USE",
+                null,
+                "cliente@sandbox.local",
+                "PEPPER",
+                "test",
+                null,
+                Map.of("activationType", "material_open")));
+
+        assertThat(released.eventType()).isEqualTo("ACCESS_RELEASED");
+        assertThat(firstUse.eventType()).isEqualTo("FIRST_USE");
+    }
+
+    /** Confirma que eventos fora do contrato continuam bloqueados. */
+    @Test
+    void rejectsUnsupportedFunnelEvent() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        assertThrows(IllegalArgumentException.class, () -> accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "INSTAGRAM_LOGIN_COMPLETED",
+                null,
+                "cliente@sandbox.local",
+                "INSTAGRAM",
+                "test",
+                null,
+                Map.of())));
     }
 }

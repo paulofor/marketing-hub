@@ -204,8 +204,20 @@ public class AccessService {
         if (!missionExists) {
             throw new IllegalArgumentException("Missao PDE nao encontrada: " + missionId);
         }
+        boolean firstCompletedMission = grant.getCompletedMissionIds().isEmpty();
         grant.completeMission(missionId);
         persistAccess(grant);
+        if (firstCompletedMission) {
+            recordFunnelEvent(new FunnelEventRequest(
+                    grant.getProductSlug(),
+                    "FIRST_USE",
+                    grant.getToken(),
+                    grant.getEmail(),
+                    grant.getSource(),
+                    "pde-platform",
+                    null,
+                    Map.of("activationType", "mission_completion", "missionId", missionId)));
+        }
     }
 
     /** Busca o acesso pelo token ou falha quando ele não existir. */
@@ -269,6 +281,15 @@ public class AccessService {
                     "pde-platform",
                     null,
                     Map.of("accessSource", source)));
+            recordFunnelEvent(new FunnelEventRequest(
+                    grant.getProductSlug(),
+                    "ACCESS_RELEASED",
+                    grant.getToken(),
+                    grant.getEmail(),
+                    source,
+                    "pde-platform",
+                    null,
+                    Map.of("accessSource", source)));
         }
     }
 
@@ -288,7 +309,9 @@ public class AccessService {
                 "LOGIN_COMPLETED",
                 "PAYWALL_VIEWED",
                 "SUBSCRIPTION_CLICKED",
-                "SUBSCRIPTION_APPROVED");
+                "SUBSCRIPTION_APPROVED",
+                "ACCESS_RELEASED",
+                "FIRST_USE");
         if (!allowed.contains(normalized)) {
             throw new IllegalArgumentException("Evento PDE nao suportado: " + eventType);
         }

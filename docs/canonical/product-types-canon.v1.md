@@ -79,6 +79,17 @@ Visualizacao do anuncio
 → primeiro uso/ativacao
 ```
 
+Eventos operacionais mínimos para esse funil:
+
+- `PED_ENTRY`: entrada na tela inicial do PED/MUSA;
+- `LOGIN_STARTED`: início de login ou criação de conta;
+- `LOGIN_COMPLETED`: login concluído por Google, magic link ou e-mail;
+- `PAYWALL_VIEWED`: visualização da oferta de assinatura;
+- `SUBSCRIPTION_CLICKED`: clique no plano ou checkout;
+- `SUBSCRIPTION_APPROVED`: assinatura ou compra aprovada;
+- `ACCESS_RELEASED`: acesso liberado após assinatura aprovada;
+- `FIRST_USE`: primeiro consumo real da experiência, como abrir missão/material ou concluir a primeira missão.
+
 A compra aprovada nao deve ser tratada como fim do funil. Para produto recorrente, o sistema
 deve medir ativacao pos-compra porque ela antecipa retencao, renovacao, upgrade, cancelamento
 e risco de churn.

@@ -5855,3 +5855,11 @@
 - foi feito: a Área MUSA passou a diferenciar acesso `TRIAL` de assinatura `ACTIVE`, evitando liberar todos os recursos apenas pelo cadastro/login.
 - foi feito: adicionada persistência de eventos comerciais do PED/MUSA em `pde_funnel_event` para medir `PED_ENTRY`, `LOGIN_STARTED`, `LOGIN_COMPLETED`, `PAYWALL_VIEWED`, `SUBSCRIPTION_CLICKED` e `SUBSCRIPTION_APPROVED`.
 - impacto comercial esperado: o funil deixa de medir apenas lead/formulário e passa a apontar gargalos reais de produto de assinatura: entrada, login, paywall, intenção de checkout e assinatura aprovada.
+
+## 2026-07-16 — PED/MUSA: ativação pós-compra instrumentada
+
+- foi feito: o contrato de eventos do PED/MUSA passou a aceitar `ACCESS_RELEASED` e `FIRST_USE`.
+- foi feito: o backend registra `ACCESS_RELEASED` quando uma compra/assinatura `CHECKOUT` ou `PEPPER` libera acesso ativo.
+- foi feito: o backend registra `FIRST_USE` como fallback quando a primeira missão é concluída.
+- foi feito: o frontend registra `FIRST_USE` quando a cliente com assinatura ativa abre uma missão ou material.
+- impacto comercial esperado: o funil de assinatura passa a diferenciar venda aprovada de ativação real, permitindo identificar risco de churn antes de escalar tráfego.

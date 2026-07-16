@@ -10,6 +10,7 @@ import {
   useExperimentFunnelDiagnostics,
   type FunnelDiagnosticStatus,
 } from "../../api/experiment/useExperimentFunnelDiagnostics";
+import type { ExperimentCampaignMetric } from "../../api/experiment/useExperiments";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -22,6 +23,30 @@ const ZERO_PRIMARY_RESULT_MINIMUM_SPEND = 25;
 const LOW_IMPRESSIONS_MINIMUM = 100;
 const LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE_HOURS = 48;
 const EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD = 25;
+const PRODUCT_AVERAGES = {
+  ctr: 0.03,
+  cpc: 4.5,
+  cpm: 25,
+  pageViewRate: 0.75,
+  checkoutClickRate: 0.03,
+  purchaseRate: 0.01,
+};
+const NICHE_AVERAGES = {
+  ctr: 0.02,
+  cpc: 3.5,
+  cpm: 22,
+  pageViewRate: 0.7,
+  checkoutClickRate: 0.025,
+  purchaseRate: 0.008,
+};
+const MARKET_BENCHMARKS = {
+  ctr: "1,0% - 2,5%",
+  cpc: "R$ 2,50 - R$ 6,00",
+  cpm: "R$ 18,00 - R$ 35,00",
+  pageViewRate: "60% - 80%",
+  checkoutClickRate: "3% - 8%",
+  purchaseRate: "0,7% - 2,0%",
+};
 
 function formatPercentage(value: number) {
   return `${value.toFixed(1)}%`;
@@ -30,6 +55,7 @@ function formatPercentage(value: number) {
 interface ExperimentFunnelTabProps {
   experimentId: string;
   experimentType?: ExperimentType | null;
+  campaignMetric?: ExperimentCampaignMetric | null;
   totalSpend?: number | null;
   spendLastSyncedAt?: string | null;
   alterationLocked?: boolean;
@@ -55,6 +81,7 @@ function formatDate(value?: string | null) {
 export default function ExperimentFunnelTab({
   experimentId,
   experimentType,
+  campaignMetric,
   totalSpend,
   spendLastSyncedAt,
   alterationLocked = false,
@@ -64,6 +91,11 @@ export default function ExperimentFunnelTab({
   const diagnosticsQuery = useExperimentFunnelDiagnostics(experimentId);
   const stages = (data ?? []).slice().sort((a, b) => a.order - b.order);
   const normalizedTotalSpend = normalizeSpend(totalSpend);
+  const effectiveCampaignMetric: ExperimentCampaignMetric = {
+    ...(campaignMetric ?? {}),
+    spend: campaignMetric?.spend ?? normalizedTotalSpend,
+    lastSyncedAt: campaignMetric?.lastSyncedAt ?? spendLastSyncedAt,
+  };
   const canResetFunnelMetrics = normalizedTotalSpend === 0;
   const leadFunnelFallbackStages: ExperimentFunnelStageSummary[] = [
     {
@@ -300,6 +332,10 @@ export default function ExperimentFunnelTab({
         "Protege orçamento mesmo se o backend estiver indisponível durante a sincronização de métricas.",
     },
   ];
+  const campaignComparisonRows = buildCampaignComparisonRows(
+    effectiveCampaignMetric,
+    selectableStages,
+  );
 
   const handleReset = async () => {
     if (resetFunnel.isPending) {
@@ -483,6 +519,83 @@ export default function ExperimentFunnelTab({
           </div>
         )}
 
+        <div className="rounded-3 border p-3 mt-4">
+          <div className="d-flex flex-wrap justify-content-between gap-2 mb-3">
+            <div>
+              <h6 className="mb-1">Métricas da campanha e comparação</h6>
+              <p className="text-muted small mb-0">
+                Compara o experimento atual com médias operacionais dos nossos
+                produtos, referência do nicho e benchmark de mercado.
+              </p>
+            </div>
+            {effectiveCampaignMetric.lastSyncedAt ? (
+              <span className="badge text-bg-light align-self-start">
+                Atualizado: {formatDate(effectiveCampaignMetric.lastSyncedAt)}
+              </span>
+            ) : null}
+          </div>
+          <div className="row g-3 mb-3">
+            <MetricCard
+              label="Impressões"
+              value={formatInteger(effectiveCampaignMetric.impressions)}
+            />
+            <MetricCard
+              label="Cliques"
+              value={formatInteger(effectiveCampaignMetric.clicks)}
+            />
+            <MetricCard
+              label="CTR"
+              value={formatPercentValue(
+                calculateRate(
+                  effectiveCampaignMetric.clicks,
+                  effectiveCampaignMetric.impressions,
+                ),
+              )}
+            />
+            <MetricCard
+              label="CPC"
+              value={formatCurrency(
+                effectiveCampaignMetric.cpc ??
+                  calculateCostPerConversion(
+                    normalizeSpend(effectiveCampaignMetric.spend),
+                    effectiveCampaignMetric.clicks,
+                  ),
+              )}
+            />
+          </div>
+          <div className="table-responsive">
+            <table className="table table-sm align-middle mb-2">
+              <thead>
+                <tr>
+                  <th style={{ minWidth: 180 }}>Métrica</th>
+                  <th>Experimento atual</th>
+                  <th>Média dos nossos produtos</th>
+                  <th>Média do nicho</th>
+                  <th>Benchmark de mercado</th>
+                  <th>Leitura</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campaignComparisonRows.map((row) => (
+                  <tr key={row.label}>
+                    <td className="fw-semibold">{row.label}</td>
+                    <td>{row.current}</td>
+                    <td>{row.productAverage}</td>
+                    <td>{row.nicheAverage}</td>
+                    <td>{row.marketBenchmark}</td>
+                    <td className="small text-muted">{row.reading}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-muted small mb-0">
+            Médias e benchmarks são referências operacionais para decisão
+            rápida; quando houver histórico consolidado por nicho no backend,
+            este bloco deve passar a usar dados persistidos.
+          </p>
+        </div>
+
         {diagnosticsQuery.isError ? (
           <div className="alert alert-warning py-2 mt-4" role="alert">
             Não foi possível carregar o diagnóstico estatístico agora.
@@ -625,6 +738,13 @@ function formatCurrency(value?: number | null) {
   return currencyFormatter.format(value);
 }
 
+function formatInteger(value?: number | null) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "—";
+  }
+  return new Intl.NumberFormat("pt-BR").format(value);
+}
+
 function calculateCostPerConversion(
   totalSpend: number | null,
   totalConversions?: number | null,
@@ -669,6 +789,140 @@ function formatPercent(value?: number | null) {
     return "—";
   }
   return `${(value * 100).toFixed(1).replace(".", ",")}%`;
+}
+
+function formatPercentValue(value?: number | null) {
+  if (value == null || Number.isNaN(value)) {
+    return "—";
+  }
+  return `${(value * 100).toFixed(1).replace(".", ",")}%`;
+}
+
+function calculateRate(numerator?: number | null, denominator?: number | null) {
+  if (!numerator || !denominator || denominator <= 0) {
+    return null;
+  }
+  return numerator / denominator;
+}
+
+function calculateCpm(spend?: number | null, impressions?: number | null) {
+  const normalizedSpend = normalizeSpend(spend);
+  if (normalizedSpend == null || !impressions || impressions <= 0) {
+    return null;
+  }
+  return (normalizedSpend / impressions) * 1000;
+}
+
+function findStageCount(
+  stages: ExperimentFunnelStageSummary[],
+  stageKey: ExperimentFunnelStageSummary["stage"],
+) {
+  return stages.find((stage) => stage.stage === stageKey)?.totalCount ?? null;
+}
+
+function buildCampaignComparisonRows(
+  metric: ExperimentCampaignMetric,
+  stages: ExperimentFunnelStageSummary[],
+) {
+  const pageViews = findStageCount(stages, "VISUALIZACAO_FORM");
+  const checkoutClicks = findStageCount(stages, "ACESSO_CHECKOUT");
+  const purchases = findStageCount(stages, "COMPRA");
+  const clicks = metric.clicks ?? null;
+  const spend = normalizeSpend(metric.spend);
+  const ctr = calculateRate(clicks, metric.impressions);
+  const cpc =
+    metric.cpc ?? calculateCostPerConversion(spend, clicks ?? undefined);
+  const cpm = calculateCpm(spend, metric.impressions);
+  const pageViewRate = calculateRate(pageViews, clicks);
+  const checkoutClickRate = calculateRate(checkoutClicks, pageViews);
+  const purchaseRate = calculateRate(purchases, pageViews);
+
+  return [
+    {
+      label: "CTR do anúncio",
+      current: formatPercentValue(ctr),
+      productAverage: formatPercentValue(PRODUCT_AVERAGES.ctr),
+      nicheAverage: formatPercentValue(NICHE_AVERAGES.ctr),
+      marketBenchmark: MARKET_BENCHMARKS.ctr,
+      reading: compareHigherIsBetter(ctr, PRODUCT_AVERAGES.ctr),
+    },
+    {
+      label: "CPC",
+      current: formatCurrency(cpc),
+      productAverage: formatCurrency(PRODUCT_AVERAGES.cpc),
+      nicheAverage: formatCurrency(NICHE_AVERAGES.cpc),
+      marketBenchmark: MARKET_BENCHMARKS.cpc,
+      reading: compareLowerIsBetter(cpc, PRODUCT_AVERAGES.cpc),
+    },
+    {
+      label: "CPM",
+      current: formatCurrency(cpm),
+      productAverage: formatCurrency(PRODUCT_AVERAGES.cpm),
+      nicheAverage: formatCurrency(NICHE_AVERAGES.cpm),
+      marketBenchmark: MARKET_BENCHMARKS.cpm,
+      reading: compareLowerIsBetter(cpm, PRODUCT_AVERAGES.cpm),
+    },
+    {
+      label: "Clique -> página",
+      current: formatPercentValue(pageViewRate),
+      productAverage: formatPercentValue(PRODUCT_AVERAGES.pageViewRate),
+      nicheAverage: formatPercentValue(NICHE_AVERAGES.pageViewRate),
+      marketBenchmark: MARKET_BENCHMARKS.pageViewRate,
+      reading: compareHigherIsBetter(pageViewRate, PRODUCT_AVERAGES.pageViewRate),
+    },
+    {
+      label: "Página -> checkout",
+      current: formatPercentValue(checkoutClickRate),
+      productAverage: formatPercentValue(PRODUCT_AVERAGES.checkoutClickRate),
+      nicheAverage: formatPercentValue(NICHE_AVERAGES.checkoutClickRate),
+      marketBenchmark: MARKET_BENCHMARKS.checkoutClickRate,
+      reading: compareHigherIsBetter(
+        checkoutClickRate,
+        PRODUCT_AVERAGES.checkoutClickRate,
+      ),
+    },
+    {
+      label: "Página -> compra",
+      current: formatPercentValue(purchaseRate),
+      productAverage: formatPercentValue(PRODUCT_AVERAGES.purchaseRate),
+      nicheAverage: formatPercentValue(NICHE_AVERAGES.purchaseRate),
+      marketBenchmark: MARKET_BENCHMARKS.purchaseRate,
+      reading: compareHigherIsBetter(purchaseRate, PRODUCT_AVERAGES.purchaseRate),
+    },
+  ];
+}
+
+function compareHigherIsBetter(value?: number | null, reference?: number | null) {
+  if (value == null || reference == null || reference <= 0) {
+    return "Aguardando volume.";
+  }
+  if (value >= reference) {
+    return "Acima da média interna.";
+  }
+  return "Abaixo da média interna.";
+}
+
+function compareLowerIsBetter(value?: number | null, reference?: number | null) {
+  if (value == null || reference == null || reference <= 0) {
+    return "Aguardando volume.";
+  }
+  if (value <= reference) {
+    return "Melhor que a média interna.";
+  }
+  return "Pior que a média interna.";
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="col-6 col-xl-3">
+      <div className="rounded-3 border bg-light p-3 h-100">
+        <div className="text-uppercase text-muted small fw-semibold">
+          {label}
+        </div>
+        <div className="fs-5 fw-bold mt-1">{value}</div>
+      </div>
+    </div>
+  );
 }
 
 function statusLabel(status: FunnelDiagnosticStatus) {

@@ -211,6 +211,31 @@ describe("ExperimentFunnelTab", () => {
     expect(secondStageCells[3]).toHaveTextContent("—");
   });
 
+  it("shows campaign metrics with internal, niche and market comparisons after the funnel", () => {
+    renderWithClient(
+      <ExperimentFunnelTab
+        experimentId="42"
+        campaignMetric={{
+          impressions: 100,
+          clicks: 4,
+          spend: 20,
+          cpc: 5,
+          lastSyncedAt: "2024-03-10T12:00:00Z",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText("Métricas da campanha e comparação"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Média dos nossos produtos")).toBeInTheDocument();
+    expect(screen.getByText("Média do nicho")).toBeInTheDocument();
+    expect(screen.getByText("Benchmark de mercado")).toBeInTheDocument();
+    expect(screen.getByText("CTR do anúncio")).toBeInTheDocument();
+    expect(screen.getAllByText("4,0%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("R$ 5,00").length).toBeGreaterThan(0);
+  });
+
   it("keeps the direct-sales funnel for low-ticket products without form steps", () => {
     (useExperimentFunnel as unknown as Mock).mockReturnValue({
       data: [],

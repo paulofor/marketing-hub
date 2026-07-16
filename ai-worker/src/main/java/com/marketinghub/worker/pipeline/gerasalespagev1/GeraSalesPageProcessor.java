@@ -260,7 +260,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                   var sessionId=(function(){try{return sessionStorage.getItem(sessionKey);}catch(e){return null;}})()||uid('session');
                   try{sessionStorage.setItem(sessionKey,sessionId);}catch(e){}
                   var slug=(location.pathname.split('/').pop()||'').replace(/\\.html$/,'');
-                  var endpoint='/mh-api/public/lead-portal/flows/'+encodeURIComponent(slug)+'/page-analytics';
+                  var endpoint='/mh-api/internal/lead-portal/flows/'+encodeURIComponent(slug)+'/page-analytics';
                   function deviceType(){return window.innerWidth<768?'mobile':(/ipad|tablet/i.test(navigator.userAgent||'')?'tablet':'desktop');}
                   function operatingSystem(){
                     var userAgent=navigator.userAgent||'';

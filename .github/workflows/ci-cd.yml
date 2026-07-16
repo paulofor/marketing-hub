@@ -4,6 +4,10 @@ name: CI + CD – marketinghub backend
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'backend/ads-service/**'
+      - 'backend/settings.xml'
+      - '.github/workflows/ci-cd.yml'
 
 permissions:
   contents: read
@@ -131,7 +135,3 @@ jobs:
             -Dtransitive=false \
             -DremoteRepositories=github::default::https://maven.pkg.github.com/paulofor/marketing-hub
           ls -la ~/.m2/repository/com/marketinghub/ads-service/0.0.1-SNAPSHOT || true
-
-      - name: Build AI Worker
-        run: cd ../../ai-worker && mvn -s settings.xml package
-

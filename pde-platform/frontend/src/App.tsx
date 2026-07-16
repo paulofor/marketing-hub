@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Check, ChevronRight, KeyRound, Library, Sparkles, Target } from 'lucide-react';
+import { BookOpen, Check, ChevronRight, KeyRound, Library, LogIn, Sparkles, Target } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
@@ -200,6 +200,60 @@ function App() {
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
 
+  if (!workspace) {
+    return (
+      <main className="app-shell login-shell">
+        <section className="login-hero">
+          <div className="login-panel">
+            <p className="eyebrow">Area exclusiva MUSA</p>
+            <h1>Entre na sua experiencia guiada</h1>
+            <p className="promise">
+              Acesse o diagnostico, o Dia 1 e os materiais premium do Metodo MUSA em um ambiente
+              simples para seguir a jornada sem procurar arquivos soltos.
+            </p>
+            <label className="email-box login-email-box">
+              E-mail usado na compra
+              <input
+                type="email"
+                placeholder="seuemail@exemplo.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    createAccess();
+                  }
+                }}
+              />
+            </label>
+            {errorMessage && <p className="form-message">{errorMessage}</p>}
+            <button className="primary-button login-button" onClick={createAccess} disabled={loading}>
+              <LogIn size={18} />
+              {loading ? 'Liberando acesso...' : 'Entrar na Area MUSA'}
+            </button>
+            <p className="access-note">
+              Neste momento inicial, qualquer e-mail valido libera a entrada para validacao da experiencia.
+            </p>
+          </div>
+          <div
+            className="experience-card login-cover"
+            style={{
+              backgroundImage: currentProduct.theme.imageUrl
+                ? `linear-gradient(180deg, rgba(45, 32, 36, 0.16), rgba(45, 32, 36, 0.88)), url(${currentProduct.theme.imageUrl})`
+                : undefined,
+            }}
+          >
+            <div className="cover-mark">
+              <Sparkles size={32} />
+            </div>
+            <p>Metodo MUSA</p>
+            <strong>Diagnostico + 7 missoes + biblioteca premium</strong>
+            <span>{currentProduct.audience}</span>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <section className="hero">
@@ -208,22 +262,13 @@ function App() {
           <h1>{currentProduct.name}</h1>
           <p className="promise">{currentProduct.promise}</p>
           <div className="hero-actions">
-            <button className="primary-button" onClick={createAccess} disabled={loading}>
+            <button className="primary-button" disabled>
               <KeyRound size={18} />
-              {workspace ? 'Area liberada' : 'Liberar minha Area MUSA'}
+              Area liberada
             </button>
             <span className="price-pill">{currentProduct.priceLabel}</span>
           </div>
-          <label className="email-box">
-            E-mail usado na compra
-            <input
-              type="email"
-              placeholder="seuemail@exemplo.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
-          {errorMessage && <p className="form-message">{errorMessage}</p>}
+          <p className="workspace-email">Acesso liberado para {workspace.email}</p>
         </div>
         <div
           className="experience-card"

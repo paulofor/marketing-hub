@@ -22,6 +22,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: montar o arquivo ZIP com os entregáveis vinculados a um experimento. */
 @Service
 public class ExperimentDeliverablesZipService {
+    private static final Logger log = LoggerFactory.getLogger(ExperimentDeliverablesZipService.class);
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm:ss")
             .withZone(ZoneId.of("UTC"));
@@ -77,13 +80,12 @@ public class ExperimentDeliverablesZipService {
         try (ByteArrayOutputStream output = new ByteArrayOutputStream();
                 ZipOutputStream zip = new ZipOutputStream(output, StandardCharsets.UTF_8)) {
             writeText(zip, "README.txt", buildReadme(experiment, deliverables, packages));
-            writeLandingDeliverables(zip, experiment);
             writeDeliverables(zip, deliverables);
             writePackages(zip, packages);
-            writeLatestFeoArtifacts(zip, experimentId);
             zip.finish();
             return output.toByteArray();
         } catch (IOException ex) {
+            log.error("Falha ao gerar ZIP publico de entregaveis para experimentId={}", experimentId, ex);
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Could not generate experiment deliverables zip",
@@ -97,38 +99,26 @@ public class ExperimentDeliverablesZipService {
             List<Deliverable> deliverables,
             List<DeliverablePackage> packages) {
         StringBuilder text = new StringBuilder();
-        text.append("Entregaveis do experimento\n");
-        text.append("==========================\n\n");
-        text.append("Experimento: ").append(safe(experiment.getName())).append("\n");
-        text.append("ID: ").append(experiment.getId()).append("\n");
-        text.append("Nicho: ")
+        text.append("Materiais do produto\n");
+        text.append("====================\n\n");
+        text.append("Produto: ").append(publicProductName(experiment.getName())).append("\n");
+        text.append("Publico: ")
                 .append(experiment.getNiche() != null ? safe(experiment.getNiche().getName()) : "-")
                 .append("\n");
-        text.append("Hipotese: ").append(safe(experiment.getHypothesis())).append("\n\n");
+        text.append("\n");
         text.append("Conteudo do ZIP:\n");
-        text.append("- landing-page-deliverables.json: artefato final do GeraLanding quando existir.\n");
-        text.append("- entregaveis/: versoes HTML prontas para leitura dos entregaveis aprovados.\n");
-        text.append("- pacotes/: versoes HTML prontas para revisao dos pacotes vinculados.\n");
-        text.append("- feo/: artefatos finais premium fabricados pela FEO quando a montagem ja concluiu.\n\n");
+        text.append("- materiais/: materiais principais prontos para leitura e aplicacao.\n");
+        text.append("- planos/: planos, checklists e templates de apoio.\n\n");
         text.append("Totais:\n");
-        text.append("- Entregaveis do nicho: ").append(deliverables.size()).append("\n");
-        text.append("- Pacotes do experimento: ").append(packages.size()).append("\n");
+        text.append("- Materiais: ").append(deliverables.size()).append("\n");
+        text.append("- Planos e pacotes: ").append(packages.size()).append("\n");
         return text.toString();
-    }
-
-    /** Escreve o artefato final de entregáveis da landing quando ele estiver disponível. */
-    private void writeLandingDeliverables(ZipOutputStream zip, Experiment experiment) throws IOException {
-        if (StringUtils.hasText(experiment.getLandingPageDeliverables())) {
-            writeText(zip, "landing-page-deliverables.json", experiment.getLandingPageDeliverables());
-        }
     }
 
     /** Escreve cada entregável aprovado do nicho em um arquivo HTML pronto para leitura. */
     private void writeDeliverables(ZipOutputStream zip, List<Deliverable> deliverables) throws IOException {
         for (Deliverable deliverable : deliverables) {
-            String fileName = "entregaveis/%03d-%s.html".formatted(
-                    deliverable.getId(),
-                    slug(deliverable.getTitle(), "entregavel"));
+            String fileName = "materiais/%s.html".formatted(slug(deliverable.getTitle(), "material"));
             writeText(zip, fileName, renderDeliverable(deliverable));
         }
     }
@@ -136,9 +126,7 @@ public class ExperimentDeliverablesZipService {
     /** Escreve cada pacote vinculado ao experimento em um arquivo HTML pronto para revisão. */
     private void writePackages(ZipOutputStream zip, List<DeliverablePackage> packages) throws IOException {
         for (DeliverablePackage pack : packages) {
-            String fileName = "pacotes/%03d-%s.html".formatted(
-                    pack.getId(),
-                    slug(pack.getName(), "pacote"));
+            String fileName = "planos/%s.html".formatted(slug(pack.getName(), "plano"));
             writeText(zip, fileName, renderPackage(pack));
         }
     }
@@ -146,32 +134,20 @@ public class ExperimentDeliverablesZipService {
     /** Renderiza um entregável individual em HTML de consumo final. */
     private String renderDeliverable(Deliverable deliverable) {
         StringBuilder body = new StringBuilder();
-        appendHero(body, safe(deliverable.getTitle()), "Entregavel do produto");
-        appendDefinitionList(body, List.of(
-                List.of("ID", String.valueOf(deliverable.getId())),
-                List.of("Modelo", safe(deliverable.getModel())),
-                List.of("Criado em", safe(formatInstant(deliverable.getCreatedAt()))),
-                List.of("Atualizado em", safe(formatInstant(deliverable.getUpdatedAt())))));
+        appendHero(body, safe(deliverable.getTitle()), "Material do produto");
         appendSection(body, "Descricao", deliverable.getDescription());
         appendSection(body, "Conteudo pronto para uso", deliverable.getContent());
-        appendSection(body, "Prompt e rastreabilidade", deliverable.getPrompt());
         return wrapHtml(deliverable.getTitle(), body.toString());
     }
 
     /** Renderiza um pacote de entregáveis em HTML de revisão e entrega. */
     private String renderPackage(DeliverablePackage pack) {
         StringBuilder body = new StringBuilder();
-        appendHero(body, safe(pack.getName()), "Pacote de entregaveis");
-        appendDefinitionList(body, List.of(
-                List.of("ID", String.valueOf(pack.getId())),
-                List.of("Modelo", safe(pack.getModel())),
-                List.of("Criado em", safe(formatInstant(pack.getCreatedAt()))),
-                List.of("Atualizado em", safe(formatInstant(pack.getUpdatedAt())))));
+        appendHero(body, safe(pack.getName()), "Plano de aplicacao");
         appendSection(body, "Descricao", pack.getDescription());
-        appendSection(body, "Prompt e rastreabilidade", pack.getPrompt());
-        body.append("<section><h2>Entregaveis vinculados</h2><ul>");
+        body.append("<section><h2>Materiais vinculados</h2><ul>");
         if (pack.getDeliverables() == null || pack.getDeliverables().isEmpty()) {
-            body.append("<li>Nenhum entregavel vinculado.</li>");
+            body.append("<li>Nenhum material vinculado.</li>");
         } else {
             for (Deliverable deliverable : pack.getDeliverables()) {
                 body.append("<li><strong>").append(escape(safe(deliverable.getTitle()))).append("</strong>");
@@ -183,28 +159,6 @@ public class ExperimentDeliverablesZipService {
         }
         body.append("</ul></section>");
         return wrapHtml(pack.getName(), body.toString());
-    }
-
-    /** Inclui os artefatos finais reais da FEO quando a etapa de montagem já foi concluída. */
-    private void writeLatestFeoArtifacts(ZipOutputStream zip, Long experimentId) throws IOException {
-        FeoFabricacaoV1StageExecution execution = feoExecutionRepository
-                .findFirstByExperimentIdAndStageCodeAndStatusOrderByFinishedAtDesc(
-                        experimentId,
-                        STAGE_MONTAGEM,
-                        FeoFabricacaoV1StageStatus.COMPLETED)
-                .orElse(null);
-        if (execution == null || !StringUtils.hasText(execution.getArtifactsPayload())) {
-            return;
-        }
-        List<Map<String, Object>> artifacts = readArtifacts(execution.getArtifactsPayload());
-        for (Map<String, Object> artifact : artifacts) {
-            String name = stringValue(artifact.get("name"), "artefato-feo.bin");
-            byte[] content = artifactBytes(artifact.get("content"));
-            if (content.length == 0) {
-                continue;
-            }
-            writeBytes(zip, "feo/" + slug(name, "artefato-feo") + extensionFrom(name), content);
-        }
     }
 
     /** Retorna diretamente o ZIP final público da FEO quando ele já existir. */
@@ -290,6 +244,15 @@ public class ExperimentDeliverablesZipService {
         return StringUtils.hasText(value) ? value.trim() : "-";
     }
 
+    /** Remove nomes operacionais quando o cadastro ainda usa rótulo interno de experimento. */
+    private String publicProductName(String value) {
+        String name = safe(value);
+        if (name.toLowerCase(Locale.ROOT).matches(".*experimento\\s*\\d+.*")) {
+            return "Produto Digital";
+        }
+        return name;
+    }
+
     /** Converte um texto bruto em blocos HTML simples sem entregar Markdown cru ao comprador. */
     private String renderTextContent(String content) {
         String[] paragraphs = content.split("\\R{2,}");
@@ -352,6 +315,7 @@ public class ExperimentDeliverablesZipService {
         try {
             return objectMapper.readValue(json, ARTIFACT_LIST_TYPE);
         } catch (Exception ex) {
+            log.error("Falha ao ler artefatos FEO do ZIP publico", ex);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not read FEO artifacts", ex);
         }
     }

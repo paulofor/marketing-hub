@@ -5,6 +5,8 @@ services:
     container_name: pde-platform-backend
     ports:
       - "8096:8096"
+    volumes:
+      - pde-platform-data:/data/pde
 
   pde-platform-frontend:
     build:
@@ -14,3 +16,6 @@ services:
       - pde-platform-backend
     ports:
       - "5176:80"
+
+volumes:
+  pde-platform-data:

@@ -5,6 +5,10 @@ spring:
   application:
     name: pde-platform-backend
 
+pde:
+  access:
+    storage-path: ${PDE_ACCESS_STORAGE_PATH:/data/pde/access-grants.json}
+
 management:
   endpoints:
     web:

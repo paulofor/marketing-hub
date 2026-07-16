@@ -65,7 +65,7 @@ const fallbackProduct: ProductExperience = {
     primary: '#7a2444',
     accent: '#d6a75c',
     background: '#fff8f3',
-    imageUrl: '',
+    imageUrl: '/assets/musa-cover.png',
   },
   diagnostic: {
     title: 'Diagnostico MUSA',
@@ -94,6 +94,24 @@ const fallbackProduct: ProductExperience = {
       description: 'Guia de consulta para entender o metodo, ver exemplos e revisar sua semana.',
       url: '/materials/metodo-musa-ebook.pdf',
     },
+    {
+      title: 'Experiencia Guiada MUSA',
+      type: 'HTML',
+      description: 'Versao navegavel da experiencia para consultar a ordem, o diagnostico e as missoes de 7 dias.',
+      url: '/materials/experiencia-guiada-musa.html',
+    },
+    {
+      title: 'Plano, Checklists e Templates',
+      type: 'CSV',
+      description: 'Planilha com a ordem de aplicacao, criterios de conclusao e pontos de atencao de cada material.',
+      url: '/materials/plano-checklists-e-templates.csv',
+    },
+    {
+      title: 'Mapa Visual MUSA',
+      type: 'Infografico',
+      description: 'Resumo visual do metodo: coerencia, reducao de ruido e assinatura pessoal.',
+      url: '/materials/mapa-visual-musa.png',
+    },
   ],
   completionOffer: 'Ao concluir os 7 dias, voce pode continuar no Clube MUSA com novos desafios mensais.',
 };
@@ -101,10 +119,11 @@ const fallbackProduct: ProductExperience = {
 function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [product, setProduct] = useState<ProductExperience>(fallbackProduct);
-  const [email, setEmail] = useState('teste+experimento66@sandbox.local');
+  const [email, setEmail] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [activeMissionId, setActiveMissionId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const activeMission = useMemo(() => {
     const missionList = workspace?.product.missions ?? product.missions;
@@ -112,6 +131,12 @@ function App() {
   }, [activeMissionId, product.missions, workspace]);
 
   useEffect(() => {
+    const tokenFromPath = window.location.pathname.match(/^\/access\/([^/]+)/)?.[1] ?? '';
+    if (tokenFromPath) {
+      setAccessToken(tokenFromPath);
+      loadWorkspace(tokenFromPath).catch(() => setErrorMessage('Nao encontramos esse acesso. Confira o link recebido apos a compra.'));
+      return;
+    }
     fetch('/api/pde/products/metodo-musa-7-dias')
       .then((response) => response.ok ? response.json() : fallbackProduct)
       .then((data: ProductExperience) => {
@@ -125,16 +150,27 @@ function App() {
   }, []);
 
   async function createAccess() {
+    if (!email.trim()) {
+      setErrorMessage('Informe o e-mail usado na compra para liberar sua Area MUSA.');
+      return;
+    }
     setLoading(true);
+    setErrorMessage('');
     try {
-      const response = await fetch('/api/pde/access/dev', {
+      const response = await fetch('/api/pde/access/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productSlug: product.slug, email }),
       });
+      if (!response.ok) {
+        throw new Error('Nao foi possivel liberar o acesso.');
+      }
       const access = await response.json();
       setAccessToken(access.token);
+      window.history.replaceState(null, '', access.accessUrl);
       await loadWorkspace(access.token);
+    } catch {
+      setErrorMessage('Nao conseguimos liberar a Area MUSA agora. Use o ZIP da pagina de obrigado e tente novamente em alguns minutos.');
     } finally {
       setLoading(false);
     }
@@ -142,6 +178,9 @@ function App() {
 
   async function loadWorkspace(token: string) {
     const response = await fetch(`/api/pde/access/${token}/workspace`);
+    if (!response.ok) {
+      throw new Error('Acesso nao encontrado.');
+    }
     const data = await response.json();
     setWorkspace(data);
     setProduct(data.product);
@@ -170,16 +209,29 @@ function App() {
           <div className="hero-actions">
             <button className="primary-button" onClick={createAccess} disabled={loading}>
               <KeyRound size={18} />
-              {workspace ? 'Acesso liberado' : 'Liberar acesso teste'}
+              {workspace ? 'Area liberada' : 'Liberar minha Area MUSA'}
             </button>
             <span className="price-pill">{currentProduct.priceLabel}</span>
           </div>
           <label className="email-box">
-            E-mail de teste
-            <input value={email} onChange={(event) => setEmail(event.target.value)} />
+            E-mail usado na compra
+            <input
+              type="email"
+              placeholder="seuemail@exemplo.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
           </label>
+          {errorMessage && <p className="form-message">{errorMessage}</p>}
         </div>
-        <div className="experience-card">
+        <div
+          className="experience-card"
+          style={{
+            backgroundImage: currentProduct.theme.imageUrl
+              ? `linear-gradient(180deg, rgba(45, 32, 36, 0.18), rgba(45, 32, 36, 0.9)), url(${currentProduct.theme.imageUrl})`
+              : undefined,
+          }}
+        >
           <div className="cover-mark">
             <Sparkles size={32} />
           </div>
@@ -272,6 +324,9 @@ function App() {
               <span>{material.type}</span>
               <h3>{material.title}</h3>
               <p>{material.description}</p>
+              <a href={material.url} target="_blank" rel="noreferrer">
+                Abrir material
+              </a>
             </article>
           ))}
         </div>

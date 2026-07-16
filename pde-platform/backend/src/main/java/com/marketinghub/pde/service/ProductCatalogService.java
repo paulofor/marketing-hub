@@ -33,7 +33,7 @@ public class ProductCatalogService {
                 "Monte em 7 dias uma presenca mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformacao radical.",
                 "Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessiveis.",
                 "R$47",
-                new ThemeDto("#7a2444", "#d6a75c", "#fff8f3", "/assets/musa-cover.svg"),
+                new ThemeDto("#7a2444", "#d6a75c", "#fff8f3", "/assets/musa-cover.png"),
                 new DiagnosticDto(
                         "Diagnostico MUSA",
                         "Comece pelo momento do espelho: quando voce esta pronta, mas sente que ainda falta presenca, acabamento ou intencao.",
@@ -106,15 +106,15 @@ public class ProductCatalogService {
                                 "Guia de consulta para entender o metodo, ver exemplos e revisar sua semana.",
                                 "/materials/metodo-musa-ebook.pdf"),
                         new SupportMaterialDto(
-                                "Checklist de Presenca em 12 Minutos",
-                                "Checklist",
-                                "Sequencia curta para revisar cabelo, pele, roupa, perfume, acessorios e intencao antes de sair.",
-                                "/materials/checklist-presenca-12-minutos.pdf"),
+                                "Experiencia Guiada MUSA",
+                                "HTML",
+                                "Versao navegavel da experiencia para consultar a ordem, o diagnostico e as missoes de 7 dias.",
+                                "/materials/experiencia-guiada-musa.html"),
                         new SupportMaterialDto(
-                                "Lista Anti-Impulso",
-                                "Template",
-                                "Modelo para decidir se uma compra fortalece sua assinatura ou apenas parece urgente.",
-                                "/materials/lista-anti-impulso.csv"),
+                                "Plano, Checklists e Templates",
+                                "CSV",
+                                "Planilha com a ordem de aplicacao, criterios de conclusao e pontos de atencao de cada material.",
+                                "/materials/plano-checklists-e-templates.csv"),
                         new SupportMaterialDto(
                                 "Mapa Visual MUSA",
                                 "Infografico",

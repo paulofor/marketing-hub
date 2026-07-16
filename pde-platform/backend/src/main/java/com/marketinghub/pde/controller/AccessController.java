@@ -34,6 +34,13 @@ public class AccessController {
         return accessService.createAccess(request.productSlug(), request.email(), "DEV");
     }
 
+    /** Libera acesso da cliente a partir do e-mail informado no fluxo de compra. */
+    @PostMapping("/checkout")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AccessResponse createCheckoutAccess(@Valid @RequestBody AccessRequest request) {
+        return accessService.createAccess(request.productSlug(), request.email(), "CHECKOUT");
+    }
+
     /** Recebe webhook de compra aprovada pela Pepper e libera acesso ao produto. */
     @PostMapping("/pepper/webhook")
     @ResponseStatus(HttpStatus.CREATED)

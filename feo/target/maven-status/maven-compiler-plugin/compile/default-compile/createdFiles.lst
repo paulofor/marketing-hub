@@ -26,6 +26,7 @@ com/marketinghub/feo/fabricacaov1/pipeline/StageExecution.class
 com/marketinghub/feo/infrastructure/config/FeoProperties.class
 com/marketinghub/feo/fabricacaov1/pipeline/StageArtifact.class
 com/marketinghub/feo/fabricacaov1/pipeline/StageProcessor.class
+com/marketinghub/feo/fabricacaov1/geracaoativosvisuais/TemplateVisualAssetFactory.class
 com/marketinghub/feo/fabricacaov1/pipeline/StageContext.class
 com/marketinghub/feo/fabricacaov1/contract/DeliverableSection.class
 com/marketinghub/feo/fabricacaov1/pipeline/StageStatus.class

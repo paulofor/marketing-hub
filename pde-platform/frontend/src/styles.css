@@ -64,11 +64,153 @@ input {
 .library-section,
 .completion-band,
 .progress-band,
+.musa-first-fold,
+.next-mission-hero,
+.progress-hero-card,
 .dashboard-header,
 .status-card {
   border: 1px solid rgba(122, 36, 68, 0.14);
   background: rgba(255, 255, 255, 0.86);
   box-shadow: 0 18px 54px rgba(61, 37, 27, 0.08);
+}
+
+.musa-first-fold {
+  align-items: stretch;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.94), rgba(255, 248, 243, 0.78)),
+    url("/assets/musa-cover.png");
+  background-position: center right;
+  background-size: cover;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.76fr) minmax(210px, 0.42fr);
+  margin: 0 auto 18px;
+  max-width: 1220px;
+  overflow: hidden;
+  padding: 28px;
+  position: relative;
+}
+
+.musa-first-fold::before {
+  background: linear-gradient(90deg, rgba(255, 248, 243, 0.98) 0%, rgba(255, 248, 243, 0.9) 52%, rgba(255, 248, 243, 0.5) 100%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.musa-first-fold > * {
+  position: relative;
+}
+
+.musa-hero-copy {
+  align-content: center;
+  display: grid;
+  min-height: 310px;
+  padding: 10px 10px 10px 0;
+}
+
+.musa-hero-copy h1 {
+  font-size: 4.05rem;
+  max-width: 720px;
+}
+
+.musa-hero-copy .promise {
+  font-size: 1.12rem;
+  max-width: 700px;
+}
+
+.musa-hero-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.musa-hero-actions span {
+  color: #5a4a42;
+  font-size: 0.94rem;
+  max-width: 300px;
+}
+
+.next-mission-hero {
+  align-content: center;
+  background: rgba(122, 36, 68, 0.94);
+  border-color: rgba(122, 36, 68, 0.2);
+  color: #fff8f3;
+  display: grid;
+  padding: 24px;
+}
+
+.next-mission-topline {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.next-mission-topline span {
+  color: #f1d49f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.next-mission-topline strong {
+  background: rgba(255, 248, 243, 0.12);
+  color: #fff8f3;
+  font-size: 0.86rem;
+  padding: 7px 10px;
+}
+
+.next-mission-hero h2 {
+  color: #fff8f3;
+  font-size: 2rem;
+  line-height: 1.08;
+}
+
+.next-mission-hero p {
+  color: rgba(255, 248, 243, 0.82);
+  margin-bottom: 6px;
+}
+
+.next-mission-button {
+  background: #fff8f3;
+  color: #7a2444;
+  margin-top: 18px;
+  width: fit-content;
+}
+
+.progress-hero-card {
+  align-content: center;
+  background: rgba(255, 248, 243, 0.95);
+  display: grid;
+  gap: 10px;
+  padding: 22px;
+}
+
+.progress-hero-card svg {
+  color: #2f5952;
+}
+
+.progress-hero-card span {
+  color: #7a2444;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.progress-hero-card strong {
+  color: #24171c;
+  font-size: 3rem;
+  line-height: 0.98;
+}
+
+.progress-hero-card p {
+  color: #6b5a51;
+  font-size: 0.92rem;
+  margin: 0;
 }
 
 .dashboard-header {
@@ -79,6 +221,15 @@ input {
   margin: 0 auto 18px;
   max-width: 1220px;
   padding: 20px 24px;
+}
+
+.compact-dashboard-header {
+  margin-bottom: 18px;
+}
+
+.compact-dashboard-header .dashboard-title h2 {
+  font-size: 1.25rem;
+  margin-bottom: 4px;
 }
 
 .dashboard-title {
@@ -146,9 +297,20 @@ input {
 .dashboard-overview {
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(280px, 1.4fr) repeat(3, minmax(160px, 0.7fr));
+  grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(160px, 0.86fr));
   margin: 0 auto 18px;
   max-width: 1220px;
+}
+
+.dashboard-overview-secondary {
+  opacity: 0.98;
+}
+
+.account-status-card strong {
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-card {
@@ -643,6 +805,7 @@ h3 {
   .workspace-grid,
   .progress-band,
   .material-grid,
+  .musa-first-fold,
   .dashboard-overview,
   .dashboard-main {
     grid-template-columns: 1fr;
@@ -657,6 +820,33 @@ h3 {
     display: grid;
     gap: 16px;
     padding: 20px;
+  }
+
+  .musa-first-fold {
+    padding: 20px;
+  }
+
+  .musa-hero-copy {
+    min-height: unset;
+    padding: 0;
+  }
+
+  .musa-hero-copy h1 {
+    font-size: 2.35rem;
+  }
+
+  .musa-hero-actions {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .musa-hero-actions .primary-button,
+  .next-mission-button {
+    width: 100%;
+  }
+
+  .progress-hero-card strong {
+    font-size: 2.4rem;
   }
 
   .dashboard-title {

@@ -5,8 +5,8 @@ import {
   Check,
   ChevronRight,
   ClipboardCheck,
+  Gauge,
   KeyRound,
-  LayoutDashboard,
   Library,
   LogIn,
   Sparkles,
@@ -299,45 +299,63 @@ function App() {
 
   return (
     <main className="app-shell dashboard-shell">
-      <section className="dashboard-header">
-        <div className="dashboard-title">
-          <div className="dashboard-icon">
-            <LayoutDashboard size={22} />
-          </div>
-          <div>
-            <p className="eyebrow">Painel da cliente</p>
-            <h1>Area MUSA</h1>
-            <p>{currentProduct.promise}</p>
-          </div>
-        </div>
-        <div className="account-card">
-          <User size={18} />
-          <div>
-            <span>Acesso liberado</span>
-            <strong>{workspace.email}</strong>
+      <section className="musa-first-fold">
+        <div className="musa-hero-copy">
+          <p className="eyebrow">Sua Jornada MUSA</p>
+          <h1>Sua presenca elegante comeca hoje.</h1>
+          <p className="promise">{currentProduct.promise}</p>
+          <div className="musa-hero-actions">
+            <button className="primary-button" onClick={() => setActiveMissionId(firstMission?.id ?? '')}>
+              <Sparkles size={18} />
+              Comecar Dia 1
+            </button>
+            <span>Uma missao curta por dia, com evidencias simples de progresso.</span>
           </div>
         </div>
-      </section>
-
-      <section className="dashboard-overview" aria-label="Resumo da Area MUSA">
-        <article className="status-card status-card-wide">
-          <div className="status-card-heading">
-            <ClipboardCheck size={20} />
-            <span>Progresso da jornada</span>
+        <article className="next-mission-hero">
+          <div className="next-mission-topline">
+            <span>Proxima missao</span>
+            <strong>{nextMission ? `Dia ${nextMission.day}` : 'Jornada finalizada'}</strong>
           </div>
-          <strong>{workspace.progressPercent}% concluido</strong>
+          <h2>{nextMission?.title ?? 'Continue sua assinatura MUSA'}</h2>
+          <p>
+            {nextMission
+              ? 'Escolha uma combinacao real, identifique o detalhe que apaga sua presenca e registre a frase que vai guiar seu primeiro ajuste.'
+              : currentProduct.completionOffer}
+          </p>
+          <button
+            className="secondary-button next-mission-button"
+            onClick={() => setActiveMissionId(nextMission?.id ?? firstMission?.id ?? '')}
+          >
+            Abrir orientacao
+            <ChevronRight size={18} />
+          </button>
+        </article>
+        <aside className="progress-hero-card" aria-label="Progresso da jornada MUSA">
+          <Gauge size={24} />
+          <span>Progresso</span>
+          <strong>{workspace.progressPercent}%</strong>
           <div className="progress-track" aria-label="Progresso da experiencia">
             <span style={{ width: `${workspace.progressPercent}%` }} />
           </div>
           <p>
             {workspace.completedMissions} de {workspace.totalMissions} missoes concluidas.
           </p>
+        </aside>
+      </section>
+
+      <section className="dashboard-overview dashboard-overview-secondary" aria-label="Resumo da Area MUSA">
+        <article className="status-card account-status-card">
+          <User size={20} />
+          <span>Acesso liberado</span>
+          <strong>{workspace.email}</strong>
+          <p>Use este e-mail para manter sua jornada salva.</p>
         </article>
         <article className="status-card">
-          <CalendarDays size={20} />
-          <span>Proxima missao</span>
-          <strong>{nextMission ? `Dia ${nextMission.day}` : 'Finalizada'}</strong>
-          <p>{nextMission?.title ?? currentProduct.completionOffer}</p>
+          <ClipboardCheck size={20} />
+          <span>Diagnostico</span>
+          <strong>Comece pelo espelho</strong>
+          <p>Nomeie o que hoje deixa voce arrumada, mas pouco marcante.</p>
         </article>
         <article className="status-card">
           <Library size={20} />
@@ -351,6 +369,19 @@ function App() {
           <strong>{currentProduct.priceLabel}</strong>
           <p>Metodo MUSA liberado para uso.</p>
         </article>
+      </section>
+
+      <section className="dashboard-header compact-dashboard-header">
+        <div className="dashboard-title">
+          <div className="dashboard-icon">
+            <CalendarDays size={22} />
+          </div>
+          <div>
+            <p className="eyebrow">Roteiro guiado</p>
+            <h2>Diagnostico, missao e materiais de apoio</h2>
+            <p>Depois de iniciar o Dia 1, use o diagnostico e a biblioteca apenas como apoio para executar sem se perder.</p>
+          </div>
+        </div>
       </section>
 
       <section className="dashboard-main">

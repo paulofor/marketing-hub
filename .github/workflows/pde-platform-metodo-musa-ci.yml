@@ -52,6 +52,8 @@ jobs:
           cache-dependency-path: pde-platform/frontend/package-lock.json
       - name: Install deps
         run: npm ci --include=dev
+      - name: Validate PDE API boundary
+        run: npm run check:api-boundary
       - name: Build
         run: npm run build
 

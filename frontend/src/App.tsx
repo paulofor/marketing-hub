@@ -81,6 +81,7 @@ import FacebookCampaignExperimentsPage from "./pages/facebook/FacebookCampaignEx
 import FacebookExperimentsReadyPage from "./pages/facebook/FacebookExperimentsReadyPage";
 import GlobalAutomationAlerts from "./components/GlobalAutomationAlerts";
 import AiGenerationListPage from "./pages/ai/AiGenerationListPage";
+import ImageGeneratorPage from "./pages/ai/ImageGeneratorPage";
 import AiWorkerPendingRequestsPage from "./pages/ai/AiWorkerPendingRequestsPage";
 import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPage";
 import EmailSettingsPage from "./pages/settings/EmailSettingsPage";
@@ -338,6 +339,10 @@ export default function App() {
               <Route
                 path="/ai/generations"
                 element={<AiGenerationListPage />}
+              />
+              <Route
+                path="/ai/image-generator"
+                element={<ImageGeneratorPage />}
               />
               <Route
                 path="/ai/pending-requests"

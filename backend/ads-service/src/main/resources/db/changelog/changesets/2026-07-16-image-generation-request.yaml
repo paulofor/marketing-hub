@@ -1,0 +1,84 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-16-01-image-generation-request
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: image_generation_request
+      changes:
+        - createTable:
+            tableName: image_generation_request
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_image_generation_request
+                    nullable: false
+              - column:
+                  name: job_id
+                  type: VARCHAR(96)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_image_generation_request_job_id
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_tier
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: output_format
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prompt
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: openai_request_body
+                  type: LONGTEXT
+              - column:
+                  name: openai_response_body
+                  type: LONGTEXT
+              - column:
+                  name: error_message
+                  type: LONGTEXT
+              - column:
+                  name: openai_response_id
+                  type: VARCHAR(128)
+              - column:
+                  name: started_at
+                  type: DATETIME(6)
+              - column:
+                  name: finished_at
+                  type: DATETIME(6)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: image_generation_request
+            indexName: idx_image_generation_request_created_at
+            columns:
+              - column:
+                  name: created_at

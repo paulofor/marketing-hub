@@ -1099,3 +1099,75 @@ Observação:
 
 - A meta `>90%` é tratada como potencial estimado de venda do formato, não garantia de venda.
 - Tráfego continua bloqueado até o produto PDE, a página, o checkout, a entrega e os criativos com imagem real passarem nos gates.
+
+## Correção do pacote FEO para linguagem de cliente
+
+Data: `2026-07-16`.
+
+Problema identificado pelo usuário:
+
+- O ZIP oficial do experimento 66 ainda continha linguagem de bastidor e informação técnica de construção da peça.
+- O material mencionava termos como `mecanismo`, `pesquisa`, `princípios científicos`, `cliente/comprador` e campos técnicos de planilha.
+- Esse tipo de linguagem não serve para entrega final ao cliente porque expõe o processo interno em vez de vender e entregar transformação percebida.
+
+Diagnóstico:
+
+- O pacote FEO estava misturando duas camadas que precisam ficar separadas:
+  - auditoria interna: rastreabilidade, origem do raciocínio, mecanismos, pesquisa e campos técnicos;
+  - produto público: desejo da cliente, aplicação simples, progresso visível, primeira vitória e facilidade de uso.
+- A causa-raiz não era apenas um texto ruim dentro do ZIP; era falta de gate forte na montagem final para impedir vazamento de linguagem técnica no material público.
+
+Alternativas avaliadas:
+
+1. Corrigir manualmente o ZIP do experimento 66.
+   - Benefício: resolveria rápido o pacote atual.
+   - Risco: o próximo pacote poderia voltar a vazar linguagem técnica.
+   - Esforço: baixo.
+   - Aderência ao objetivo de escala: baixa, porque não corrige o sistema.
+2. Ajustar apenas o prompt de redação do FEO.
+   - Benefício: melhora a geração inicial.
+   - Risco: se algum artefato técnico chegar à montagem, ainda pode aparecer no produto final.
+   - Esforço: médio.
+   - Aderência ao objetivo de escala: média.
+3. Corrigir a montagem final do FEO e adicionar bloqueio de termos técnicos no ZIP público.
+   - Benefício: fecha a causa-raiz e protege os próximos experimentos.
+   - Risco: exige reprocessar e validar o pacote final.
+   - Esforço: médio.
+   - Aderência ao objetivo de escala: alta.
+
+Decisão:
+
+- Seguir a alternativa 3.
+- O FEO precisa gerar produto vendável para a cliente final, não relatório interno de construção.
+- A linguagem pública deve ser orientada a desejo, facilidade, prazer, progresso e aplicação prática.
+
+Correções aplicadas:
+
+- A copy do e-book/HTML foi ajustada para linguagem direta de cliente.
+- A montagem final passou a bloquear termos técnicos no ZIP público.
+- A planilha passou a usar rótulos mais naturais:
+  - `apoio_para_travar_menos`;
+  - `quando_considerar_concluido`;
+  - `pontos_de_atencao`.
+- O pacote oficial do experimento 66 foi refeito pelo backend/FEO.
+
+Validações registradas:
+
+- Testes do módulo FEO executados com sucesso: `10` testes verdes.
+- ZIP oficial baixado por `/api/experiments/66/deliverables.zip`.
+- Varredura do ZIP em HTML, CSV e README não encontrou termos técnicos proibidos.
+- Execução final FEO:
+  - etapa: `montagem-pacote`;
+  - `executionId=34`;
+  - status: `COMPLETED`;
+  - finalização: `2026-07-15T23:54:30Z`.
+
+Conclusão comercial:
+
+- O pacote FEO do experimento 66 passa a estar alinhado com entrega ao cliente final.
+- O material deve comunicar transformação e uso, não engenharia interna do produto.
+- A regra para próximos pacotes é clara: qualquer conteúdo público precisa parecer produto comprado pela cliente, não documentação de bastidor do Marketing Hub.
+
+Status de PR:
+
+- Nenhum PR foi criado ou preparado nesta etapa.

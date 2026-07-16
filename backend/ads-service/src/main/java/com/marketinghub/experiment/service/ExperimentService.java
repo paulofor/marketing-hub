@@ -956,6 +956,7 @@ public class ExperimentService {
     private boolean requiresSalesPageBeforePurchase(Experiment experiment) {
         return experiment != null
                 && (experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
+                || experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
                 || experiment.getCampaignObjective() == ExperimentCampaignObjective.SALES);
     }
 
@@ -1167,6 +1168,7 @@ public class ExperimentService {
         ExperimentCampaignObjective objective = requestedObjective != null
                 ? requestedObjective
                 : resolvedType == ExperimentType.LOW_TICKET_PRODUCT
+                        || resolvedType == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
                         ? ExperimentCampaignObjective.SALES
                         : ExperimentCampaignObjective.LEADS;
         if (resolvedType == ExperimentType.NICHE_TEST

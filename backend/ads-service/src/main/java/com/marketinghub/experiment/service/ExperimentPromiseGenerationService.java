@@ -220,6 +220,14 @@ public class ExperimentPromiseGenerationService {
             sb.append("Recuperacao: prever page_view, checkout_click, purchase, remarketing e abandono de checkout quando disponivel.\n");
             return;
         }
+        if (experimentType == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+            sb.append("\nTipo de experimento: PDE / assinatura MUSA.\n");
+            sb.append("Fluxo principal: anuncio, tela inicial do PED, login/criacao de conta, oferta de assinatura, checkout, assinatura aprovada, acesso liberado e primeiro uso.\n");
+            sb.append("Metrica central: assinatura aprovada e ativacao pos-compra, nao apenas lead ou checkout.\n");
+            sb.append("Regra comercial: a promessa deve vender continuidade, transformacao guiada, facilidade de uso e valor recorrente percebido dentro da area.\n");
+            sb.append("CTA principal: deve levar para entrar no PED/MUSA, escolher plano ou assinar, conforme etapa da campanha.\n");
+            return;
+        }
         sb.append("\nTipo de experimento: Teste de nicho com isca digital.\n");
         sb.append("Fluxo principal: anuncio, landing de captacao, entrega de isca e aprendizado de interesse. ");
         sb.append("Metrica central: lead qualificado/CPL.\n");

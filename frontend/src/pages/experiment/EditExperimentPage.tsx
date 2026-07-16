@@ -187,6 +187,10 @@ export default function EditExperimentPage() {
   const experimentTypeValue = watch("experimentType");
   const productAiSubtypeValue = watch("productAiSubtype");
   const isLowTicketProduct = experimentTypeValue === "LOW_TICKET_PRODUCT";
+  const isPdeMembershipSubscriptionFunnel =
+    experimentTypeValue === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const isSalesObjectiveExperiment =
+    isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
   const stageEntries = playbook ?? [];
   const stageSelectOptions =
     stageEntries.length > 0
@@ -424,7 +428,7 @@ export default function EditExperimentPage() {
         alert("Informe uma única dor do experimento");
         return;
       }
-      if (!isLowTicketProduct && !values.freeReward.trim()) {
+      if (!isSalesObjectiveExperiment && !values.freeReward.trim()) {
         alert("Informe uma única isca digital");
         return;
       }
@@ -507,7 +511,7 @@ export default function EditExperimentPage() {
         productAiSubtype: isLowTicketProduct
           ? values.productAiSubtype || "AI_PERSONALIZED_SAMPLE"
           : null,
-        campaignObjective: isLowTicketProduct ? "SALES" : "LEADS",
+        campaignObjective: isSalesObjectiveExperiment ? "SALES" : "LEADS",
         kpiTarget: Number(values.kpiTarget),
         dailyBudget: parsedDailyBudget,
         unitPrice: parsedUnitPrice,
@@ -603,10 +607,15 @@ export default function EditExperimentPage() {
               }}
             >
               <option value="LOW_TICKET_PRODUCT">Produto low-ticket</option>
+              <option value="PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL">
+                PDE / assinatura MUSA
+              </option>
               <option value="NICHE_TEST">Teste de nicho / lead</option>
             </select>
             <div className="form-text mb-3">
-              {isLowTicketProduct
+              {experimentTypeValue === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
+                ? "Prioriza assinatura: tela inicial do PED, login, checkout, acesso liberado e ativação."
+                : isLowTicketProduct
                 ? "Prioriza venda direta: página curta, checkout e entrega."
                 : "Prioriza captura de lead: isca/amostra antes da venda."}
             </div>
@@ -723,8 +732,10 @@ export default function EditExperimentPage() {
               <div className="card-body">
                 <h2 className="h6">Contrato de promessa única</h2>
                 <p className="text-muted small mb-3">
-                  {isLowTicketProduct
-                    ? "Anúncio, primeira dobra, checkout e entrega devem repetir a mesma dor, promessa comprável e CTA."
+                  {isPdeMembershipSubscriptionFunnel
+                    ? "Anúncio, tela inicial, login, assinatura e ativação devem repetir a mesma dor, promessa comprável e CTA."
+                    : isLowTicketProduct
+                      ? "Anúncio, primeira dobra, checkout e entrega devem repetir a mesma dor, promessa comprável e CTA."
                     : "Anúncio, botão, formulário e entrega devem repetir a mesma dor, isca digital e CTA."}
                 </p>
                 <label className="form-label" htmlFor="singlePain">
@@ -737,10 +748,10 @@ export default function EditExperimentPage() {
                   {...register("singlePain")}
                 />
                 <label className="form-label" htmlFor="freeReward">
-                  {isLowTicketProduct
+                  {isSalesObjectiveExperiment
                     ? "Prova/preview da oferta"
                     : "Isca digital única"}{" "}
-                  {!isLowTicketProduct && (
+                  {!isSalesObjectiveExperiment && (
                     <span className="text-danger">*</span>
                   )}
                 </label>
@@ -748,8 +759,10 @@ export default function EditExperimentPage() {
                   id="freeReward"
                   className="form-control mb-2"
                   placeholder={
-                    isLowTicketProduct
-                      ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
+                    isPdeMembershipSubscriptionFunnel
+                      ? "Ex.: acesso inicial ao diagnóstico MUSA e preview das missões guiadas"
+                      : isLowTicketProduct
+                        ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
                       : "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão"
                   }
                   {...register("freeReward")}
@@ -761,8 +774,10 @@ export default function EditExperimentPage() {
                   id="funnelPromise"
                   className="form-control mb-2"
                   placeholder={
-                    isLowTicketProduct
-                      ? "Comprar um kit pronto para reduzir faltas e remarcações nesta semana"
+                    isPdeMembershipSubscriptionFunnel
+                      ? "Assinar o Método MUSA para seguir uma experiência guiada com progresso"
+                      : isLowTicketProduct
+                        ? "Comprar um kit pronto para reduzir faltas e remarcações nesta semana"
                       : "Receber as 3 mensagens"
                   }
                   {...register("funnelPromise")}
@@ -774,17 +789,21 @@ export default function EditExperimentPage() {
                   id="primaryCta"
                   className="form-control mb-2"
                   placeholder={
-                    isLowTicketProduct
-                      ? "Comprar o kit agora"
+                    isPdeMembershipSubscriptionFunnel
+                      ? "Entrar no MUSA"
+                      : isLowTicketProduct
+                        ? "Comprar o kit agora"
                       : "Receber as 3 mensagens"
                   }
                   {...register("primaryCta")}
                 />
                 <div className="alert alert-info py-2 mb-0">
                   Objetivo da campanha:{" "}
-                  <strong>{isLowTicketProduct ? "Vendas" : "Leads"}</strong>.{" "}
-                  {isLowTicketProduct
-                    ? "Não coloque formulário antes do checkout neste fluxo."
+                  <strong>{isSalesObjectiveExperiment ? "Vendas" : "Leads"}</strong>.{" "}
+                  {isPdeMembershipSubscriptionFunnel
+                    ? "Otimize para assinatura e acompanhe ativação dentro do PED/MUSA."
+                    : isLowTicketProduct
+                      ? "Não coloque formulário antes do checkout neste fluxo."
                     : "Não use Tráfego nem otimização para cliques neste fluxo."}
                 </div>
               </div>

@@ -574,7 +574,7 @@ public class ExperimentFunnelService {
         if ("form_submit".equalsIgnoreCase(eventType)) {
             return ExperimentFunnelStage.ENVIO_FORM;
         }
-        if ("checkout_click".equalsIgnoreCase(eventType) && isLowTicketProduct(experiment)) {
+        if ("checkout_click".equalsIgnoreCase(eventType) && isPurchaseIntentFunnel(experiment)) {
             return ExperimentFunnelStage.ACESSO_CHECKOUT;
         }
         return null;
@@ -871,6 +871,10 @@ public class ExperimentFunnelService {
      */
     private void adaptStagesForExperimentType(Experiment experiment,
                                               Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
+        if (isPdeMembershipSubscriptionFunnel(experiment)) {
+            adaptStagesForPdeMembershipSubscription(stages);
+            return;
+        }
         if (!isLowTicketProduct(experiment)) {
             return;
         }
@@ -883,6 +887,36 @@ public class ExperimentFunnelService {
         renameStage(stages, ExperimentFunnelStage.ACESSO_CHECKOUT,
                 "Clique no checkout",
                 "Cliques reais no checkout da página de venda (checkout_click)");
+    }
+
+    /**
+     * Adapta o funil para produtos PDE com login, assinatura e ativação dentro da área de membros.
+     */
+    private void adaptStagesForPdeMembershipSubscription(Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
+        renameStage(stages, ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                "Clique no anúncio para o PED/MUSA",
+                "Cliques do anúncio para a tela inicial do PED/MUSA (experiment_campaign_metric)");
+        renameStage(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
+                "Entrada na tela inicial do PED/MUSA",
+                "Visualizações da tela inicial do PED/MUSA publicadas pelo GeraSalesPage ou PDE (page_view)");
+        renameStage(stages, ExperimentFunnelStage.ENVIO_FORM,
+                "Login ou criação de conta",
+                "Entradas identificadas na área PDE/MUSA por login ou criação de conta");
+        renameStage(stages, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA,
+                "Visualização da oferta de assinatura",
+                "Visualizações da oferta ou paywall de assinatura dentro do PED/MUSA");
+        renameStage(stages, ExperimentFunnelStage.ACESSO_CHECKOUT,
+                "Clique no plano/checkout",
+                "Cliques reais em plano ou checkout de assinatura");
+        renameStage(stages, ExperimentFunnelStage.COMPRA,
+                "Assinatura aprovada",
+                "Assinaturas aprovadas pelo checkout/webhook");
+        renameStage(stages, ExperimentFunnelStage.ABERTURA_EMAIL_COMPRA,
+                "Acesso liberado",
+                "Liberações de acesso após assinatura aprovada");
+        renameStage(stages, ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO,
+                "Primeiro uso/ativação",
+                "Primeiro uso real da área: missão, diagnóstico ou material consumido");
     }
 
     /**
@@ -904,6 +938,17 @@ public class ExperimentFunnelService {
      * Decide quais etapas aparecem para o tipo comercial do experimento.
      */
     private boolean shouldExposeStage(Experiment experiment, ExperimentFunnelStage stage) {
+        if (isPdeMembershipSubscriptionFunnel(experiment)) {
+            return stage == ExperimentFunnelStage.VISUALIZACAO_ANUNCIO
+                    || stage == ExperimentFunnelStage.ACESSO_FORM_LEAD
+                    || stage == ExperimentFunnelStage.VISUALIZACAO_FORM
+                    || stage == ExperimentFunnelStage.ENVIO_FORM
+                    || stage == ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA
+                    || stage == ExperimentFunnelStage.ACESSO_CHECKOUT
+                    || stage == ExperimentFunnelStage.COMPRA
+                    || stage == ExperimentFunnelStage.ABERTURA_EMAIL_COMPRA
+                    || stage == ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO;
+        }
         if (!isLowTicketProduct(experiment)) {
             return true;
         }
@@ -920,6 +965,21 @@ public class ExperimentFunnelService {
      */
     private boolean isLowTicketProduct(Experiment experiment) {
         return experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT;
+    }
+
+    /**
+     * Identifica se o experimento mede assinatura e ativação de um produto PDE.
+     */
+    private boolean isPdeMembershipSubscriptionFunnel(Experiment experiment) {
+        return experiment != null
+                && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL;
+    }
+
+    /**
+     * Identifica funis em que clique de checkout é evento comercial central.
+     */
+    private boolean isPurchaseIntentFunnel(Experiment experiment) {
+        return isLowTicketProduct(experiment) || isPdeMembershipSubscriptionFunnel(experiment);
     }
 
     /**

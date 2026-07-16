@@ -1939,9 +1939,16 @@ export default function ExperimentDetailPage() {
   const hasAtLeastThreeApprovedCreatives = readinessCreativeCount >= 3;
   const hasAudienceSelection = hasPublisherTargeting;
   const isLowTicketProduct = data.experimentType === "LOW_TICKET_PRODUCT";
-  const experimentTypeLabel = isLowTicketProduct
-    ? "Produto low-ticket"
-    : "Teste de nicho / lead";
+  const isPdeMembershipSubscriptionFunnel =
+    data.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const isSalesObjectiveExperiment =
+    isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
+  const experimentTypeLabel =
+    isPdeMembershipSubscriptionFunnel
+      ? "PDE / assinatura MUSA"
+      : isLowTicketProduct
+        ? "Produto low-ticket"
+        : "Teste de nicho / lead";
   const productAiSubtypeLabel: Record<string, string> = {
     AI_VISUAL_PREVIEW: "Prévia visual IA",
     AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
@@ -2065,10 +2072,10 @@ export default function ExperimentDetailPage() {
       value: data.singlePain || "—",
     },
     {
-      label: isLowTicketProduct ? "Prova/preview da oferta" : "Isca digital",
+      label: isSalesObjectiveExperiment ? "Prova/preview da oferta" : "Isca digital",
       value:
         data.freeReward ||
-        (isLowTicketProduct ? "Sem prova/preview informada" : "—"),
+        (isSalesObjectiveExperiment ? "Sem prova/preview informada" : "—"),
     },
     {
       label: "Promessa do funil",
@@ -2545,8 +2552,10 @@ export default function ExperimentDetailPage() {
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">
             <h5 className="card-title mb-0">
-              {isLowTicketProduct
-                ? "Campanha de Facebook Ads para venda"
+              {isPdeMembershipSubscriptionFunnel
+                ? "Campanha de Facebook Ads para assinatura PDE"
+                : isLowTicketProduct
+                  ? "Campanha de Facebook Ads para venda"
                 : "Campanha de Facebook Ads"}
             </h5>
             <span
@@ -2558,8 +2567,10 @@ export default function ExperimentDetailPage() {
             </span>
           </div>
           <p className="card-text mt-2">
-            {isLowTicketProduct
-              ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
+            {isPdeMembershipSubscriptionFunnel
+              ? "Checklist consolidado para publicar anúncio, entrada no PED/MUSA, checkout, assinatura e ativação pós-compra."
+              : isLowTicketProduct
+                ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
               : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
           </p>
           {isLoadingReadiness ? (
@@ -2588,7 +2599,7 @@ export default function ExperimentDetailPage() {
             </button>
             <div className="small text-body-secondary">
               {isReadyForFacebook
-                ? isLowTicketProduct
+                ? isSalesObjectiveExperiment
                   ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
                   : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
                 : "Resolva os bloqueios para habilitar a liberação automática."}

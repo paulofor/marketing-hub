@@ -73,7 +73,9 @@ public class ExperimentConstructionService {
         boolean hasOfferProof = StringUtils.hasText(firstText(experiment.getFunnelPromise(), hypothesis != null ? hypothesis.getPromise() : null))
                 && StringUtils.hasText(experiment.getPrimaryCta())
                 && (experiment.getUnitPrice() != null
-                        || experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT);
+                        || (experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT
+                                && experiment.getExperimentType()
+                                        != ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL));
         boolean hasExperimentAssets = creativeRepository.existsByExperimentIdAndStatusAndUsableImage(experiment.getId(), CreativeStatus.READY)
                 || StringUtils.hasText(experiment.getAdCopy())
                 || StringUtils.hasText(experiment.getAdImageBriefing());

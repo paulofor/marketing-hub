@@ -276,12 +276,10 @@ function App() {
         throw new Error('Não foi possível enviar o link de acesso.');
       }
       const result: MagicLinkResponse = await response.json();
-      setSuccessMessage(result.deliveryStatus === 'SENT'
-        ? 'Enviamos o link de acesso para seu e-mail. Abra o link para continuar.'
-        : 'Link de teste gerado. Como o envio por e-mail ainda não está configurado neste ambiente, use o botão abaixo para abrir seu acesso.');
       if (result.accessUrl) {
         setDevAccessUrl(result.accessUrl);
       }
+      setSuccessMessage(resolveMagicLinkMessage(result));
     } catch {
       setErrorMessage('Não conseguimos enviar seu link agora. Confira o e-mail e tente novamente.');
     } finally {
@@ -380,6 +378,23 @@ function App() {
     setDevAccessUrl('');
     emailInputRef.current?.focus();
     emailInputRef.current?.select();
+  }
+
+  function resolveMagicLinkMessage(result: MagicLinkResponse) {
+    if (result.deliveryStatus === 'SENT') {
+      return 'Enviamos o link de acesso para seu e-mail. Abra o link para continuar.';
+    }
+    if (result.accessUrl) {
+      return 'Link de teste gerado. Como o envio por e-mail ainda não está configurado neste ambiente, use o botão Entrar para abrir seu acesso.';
+    }
+    return 'O envio por e-mail ainda não está configurado neste ambiente. Configure o envio ou habilite o link de teste para entrar.';
+  }
+
+  function openDevAccess(accessUrl: string) {
+    window.history.replaceState(null, '', accessUrl);
+    const token = accessUrl.split('/access/')[1] ?? '';
+    setAccessToken(token);
+    loadWorkspace(token);
   }
 
   function trackFirstUse(activationType: string, metadata: Record<string, unknown> = {}) {
@@ -493,25 +508,21 @@ function App() {
                 Editar e-mail
               </button>
             )}
-            <button className="primary-button login-button" onClick={submitAccess} disabled={loading}>
-              <Mail size={18} />
-              {loading
-                ? 'Enviando link...'
-                : (authMode === 'login' ? 'Receber meu link' : 'Liberar meu Dia 1')}
-            </button>
-            {devAccessUrl && (
+            {devAccessUrl ? (
               <button
-                className="secondary-button dev-access-button"
-                onClick={() => {
-                  window.history.replaceState(null, '', devAccessUrl);
-                  const token = devAccessUrl.split('/access/')[1] ?? '';
-                  setAccessToken(token);
-                  loadWorkspace(token);
-                }}
+                className="primary-button login-button"
+                onClick={() => openDevAccess(devAccessUrl)}
                 type="button"
               >
                 <LogIn size={18} />
-                Abrir acesso de teste
+                Entrar
+              </button>
+            ) : (
+              <button className="primary-button login-button" onClick={submitAccess} disabled={loading}>
+                <Mail size={18} />
+                {loading
+                  ? 'Enviando link...'
+                  : (authMode === 'login' ? 'Entrar' : 'Liberar meu Dia 1')}
               </button>
             )}
             <p className="access-note">

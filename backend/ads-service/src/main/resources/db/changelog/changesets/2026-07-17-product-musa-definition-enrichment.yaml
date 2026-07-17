@@ -1,0 +1,53 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-17-product-musa-definition-enrichment.yaml
+  - changeSet:
+      id: 2026-07-17-product-musa-definition-enrichment-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: color_palette
+        - columnExists:
+            tableName: product
+            columnName: explicit_pain
+        - columnExists:
+            tableName: product
+            columnName: promise
+        - columnExists:
+            tableName: product
+            columnName: unique_mechanism
+        - columnExists:
+            tableName: product
+            columnName: tripwire
+        - columnExists:
+            tableName: product
+            columnName: social_proof
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET color_palette = '1. Vinho MUSA #7A2444; 2. Dourado acessível #D6A75C; 3. Blush quente #F3C9C1; 4. Creme editorial #FFF8F3; 5. Grafite suave #2F2A2C; 6. Verde oliva discreto #6F7A52; 7. Champanhe luminoso #F7E4C6.',
+                     explicit_pain = 'A cliente sente que sua imagem não acompanha a mulher que ela quer ser vista como: abre o guarda-roupa, se arruma, mas ainda percebe ruído visual, insegurança e a sensação de estar comum, apagada ou menos sofisticada do que gostaria. A dor prática é não saber o que ajustar; a dor emocional é sentir que sua presença não comunica segurança, elegância e valor sem depender de luxo caro.',
+                     promise = 'Em 7 dias, construir uma presença mais elegante, marcante e coerente com microações diárias: reduzir ruído visual, escolher combinações mais intencionais, usar cores e acabamento com mais segurança e sair com a sensação de estar pronta sem trocar o guarda-roupa inteiro.',
+                     unique_mechanism = 'Arquitetura de Presença Elegante Acessível: um sistema guiado de microdecisões visuais e comportamentais que combina limpeza de ruído, escolha de uma peça-sinal, coerência de cor, acabamento, postura e repetição diária. A plausibilidade do mecanismo vem de evidências sobre cognição vestida, percepção social e primeiros julgamentos: Adam e Galinsky (2012), Enclothed cognition, Journal of Experimental Social Psychology, DOI 10.1016/j.jesp.2012.02.008; Slepian, Ferber, Gold e Rutchick (2015), The Cognitive Consequences of Formal Clothing, Social Psychological and Personality Science, DOI 10.1177/1948550615579462; Howlett, Pine, Orakcioglu e Fletcher (2013), The influence of clothing on first impressions, Journal of Fashion Marketing and Management, DOI 10.1108/13612021311305128; Hester e Hehman (2023), Dress is a Fundamental Component of Person Perception, Personality and Social Psychology Review, DOI 10.1177/10888683231157961.',
+                     tripwire = 'Acesso ao Método MUSA como Produto Digital Experiencial: diagnóstico inicial, jornada guiada de 7 dias, missões diárias, checklists, templates de decisão, exemplos visuais, biblioteca de apoio e materiais baixáveis para aplicar a presença elegante com baixo esforço.',
+                     risk_reversal = 'Entrega digital imediata, início gratuito pelo diagnóstico/experiência inicial e compra apenas para liberar as partes de maior valor. A oferta reduz risco porque a cliente enxerga o caminho antes de pagar pelo acesso completo.',
+                     social_proof = 'Prova combinada: prova científica de plausibilidade do mecanismo pelos artigos citados; prova de produto por diagnóstico, missões, checklists, templates e previews visuais; prova operacional pelos experimentos 66 e 67, página de venda, página de obrigado, Área MUSA e entrega do ZIP completo validado no fluxo de pagamento.',
+                     checkout_monetization = 'Preço não exposto no anúncio nem na área pública inicial; a usuária entra no Clube MUSA, faz o diagnóstico, percebe valor e encontra o paywall interno para liberar o acesso completo. Quando houver venda direta, o preço canônico inicial do experimento é R$47.',
+                     funnel = 'Anúncio Meta com dor/resultado -> login Clube MUSA/PDE -> diagnóstico inicial gratuito -> primeiras missões/preview -> paywall interno -> checkout -> liberação de acesso completo por webhook -> consumo da experiência de 7 dias -> oportunidades de upsell ou continuidade.',
+                     creative_volume = 'Criativos devem testar dor de imagem apagada, desejo de presença elegante, antes/depois conceitual, diagnóstico gratuito, peças-sinal, microações de 7 dias, baixo esforço, sofisticação acessível e curiosidade pelo Clube MUSA.',
+                     storytelling = 'Da mulher que se arruma mas ainda sente que falta presença para a mulher que entende quais pequenos ajustes comunicam elegância, segurança e intenção sem depender de luxo, compra impulsiva ou mudança radical.',
+                     commercial_notes = 'Prioridade comercial: reforçar Dor -> Resultado -> Mecanismo -> Prova -> Oferta em todos os ativos. A definição pública deve ser usada como briefing canônico para anúncios, página, área logada e criativos, preservando a promessa de presença elegante acessível em 7 dias e acumulando evidências dos experimentos 66/67.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias';

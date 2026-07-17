@@ -80,3 +80,12 @@ Todo produto cadastrado pode expor uma definição pública em Markdown pela URL
 O parâmetro `{codigoDoProduto}` deve usar preferencialmente o slug estável do produto. O identificador interno numérico pode ser aceito como fallback operacional.
 
 Esse documento deve ser uma ferramenta de Marketing, não um relatório técnico. Deve organizar os pontos comerciais mais importantes do produto: identidade, nicho, público, avatar, hipótese, dor, promessa, mecanismo, estilo de linguagem, oferta, funil, criativos, experimentos associados, aprendizados e próximos ajustes. Detalhes internos como módulos de código, custos técnicos, prompts, banco de dados, workers ou implementação não devem aparecer no documento público.
+
+Quando houver definição comercial suficiente, o documento público deve explicitar os blocos centrais da oferta:
+
+- dor principal, incluindo dor prática e dor emocional/social quando isso aumentar clareza de compra;
+- resultado prometido em termos concretos e imagináveis pelo cliente;
+- mecanismo único com justificativa plausível e, quando houver base científica usada na criação, citar os artigos pelo nome, autores, periódico e DOI/link;
+- oferta com entregáveis compreensíveis pelo comprador, sem termos técnicos internos;
+- prova, separando prova científica, prova de produto, prova visual, prova social ou prova operacional quando existirem;
+- paleta visual completa com 7 itens nomeados e seus códigos de cor.

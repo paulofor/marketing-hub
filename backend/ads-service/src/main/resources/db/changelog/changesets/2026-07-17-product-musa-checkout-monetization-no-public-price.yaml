@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-17-product-musa-checkout-monetization-no-public-price.yaml
+  - changeSet:
+      id: 2026-07-17-product-musa-checkout-monetization-no-public-price-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: checkout_monetization
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET checkout_monetization = 'Preço não exposto no anúncio nem na área pública inicial; a usuária entra no Clube MUSA, faz o diagnóstico, percebe valor e encontra o paywall interno para liberar o acesso completo. O valor do acesso completo deve ser definido em teste comercial separado, sem preço fixado nesta definição pública.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias';

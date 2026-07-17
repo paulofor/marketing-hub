@@ -68,7 +68,8 @@ O backend PDE pode acessar dados persistidos diretamente ou por contratos intern
 O frontend PDE deve:
 
 - exibir uma tela inicial de entrada/login antes da área de orientações;
-- apresentar a experiência guiada;
+- apresentar uma parte inicial da experiência guiada antes da compra;
+- bloquear as partes principais da experiência até a compra do acesso;
 - conduzir a cliente pelo diagnóstico;
 - mostrar missões diárias;
 - exibir progresso;
@@ -79,13 +80,36 @@ O frontend PDE deve consumir somente endpoints do próprio backend PDE, preferen
 
 Essa fronteira deve ser validada automaticamente no CI do PDE frontend antes do build. A validação deve bloquear referências diretas a `ads-service`, ao host do backend principal `191.252.181.168`, à porta `8000` do backend principal ou a endpoints fora do contrato PDE.
 
-### Login e liberação inicial
+### Funil comercial obrigatório Clube MUSA/PDE
 
-A Área MUSA/PDE deve começar por uma tela de entrada simples, com e-mail, antes de mostrar diagnóstico, missões, progresso e biblioteca.
+O Clube MUSA/PDE deve usar um funil de entrada com login antes da compra e paywall interno.
 
-Na fase inicial de validação comercial, esse login é uma barreira de experiência e ativação, não uma autenticação forte. Qualquer e-mail válido pode liberar a área pelo backend PDE, sem validação de compra no momento da entrada.
+Fluxo canônico:
 
-Quando o checkout e o webhook estiverem plenamente validados, a regra deve evoluir para liberação baseada em compra aprovada, preservando a mesma experiência de login para a cliente.
+```text
+Anuncio
+→ tela de login do Clube MUSA/PDE
+→ entrada no sistema
+→ visualizacao da parte inicial gratuita
+→ bloqueio das partes mais importantes
+→ oferta de compra do acesso
+→ checkout
+→ compra aprovada
+→ liberacao do acesso completo
+→ continuidade da experiencia guiada
+```
+
+Regras obrigatórias:
+
+- os anúncios devem direcionar para a tela de login do Clube MUSA/PDE, não diretamente para checkout;
+- o login libera somente a entrada no sistema e a parte inicial gratuita;
+- a parte inicial deve gerar percepção de valor, diagnóstico, orientação ou amostra suficiente para criar desejo de continuidade;
+- as partes mais importantes do produto devem permanecer bloqueadas até a compra do acesso;
+- a compra aprovada libera o acesso completo ao produto PDE comprado;
+- é proibido documentar ou implementar fluxo em que qualquer e-mail válido libere acesso completo sem compra;
+- é proibido tratar o login como equivalente a compra, assinatura ou liberação total.
+
+O objetivo comercial é transformar o anúncio em entrada de relacionamento, permitir que a lead veja valor dentro do sistema e vender o acesso quando ela quiser continuar nas partes de maior valor.
 
 ## Contrato mínimo de produto
 

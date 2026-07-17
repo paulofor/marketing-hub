@@ -41,6 +41,30 @@ O primeiro produto cadastrado é o Método MUSA - Presença Elegante em 7 Dias.
 - Experimento associado inicial: Experimento 66.
 - Hipótese/oferta principal: mulher quer parecer mais elegante e marcante sem gastar com luxo, trocar o guarda-roupa inteiro ou depender de compras impulsivas.
 
+## Funil comercial canônico do Clube MUSA
+
+O Método MUSA/Clube MUSA deve vender acesso por experiência interna com paywall.
+
+Fluxo obrigatório:
+
+```text
+Anuncio
+→ tela de login
+→ entrada no sistema
+→ parte inicial gratuita
+→ bloqueio das partes mais importantes
+→ compra do acesso
+→ acesso completo liberado
+```
+
+Regras comerciais:
+
+- anúncios do Clube MUSA devem levar para a tela de login, não diretamente para checkout;
+- o login permite que a lead entre no sistema e veja uma parte inicial do produto;
+- a parte inicial deve aumentar desejo, confiança e clareza do benefício;
+- as partes de maior valor só podem continuar após compra do acesso;
+- qualquer documentação, criativo, página ou implementação que sugira acesso completo gratuito, compra antes do login ou checkout direto como primeiro destino do anúncio deve ser tratada como fora do padrão canônico do Clube MUSA.
+
 ## Regra de evolução
 
 Novos atributos devem ser adicionados ao cadastro de produto quando ajudarem a aumentar vendas, reduzir retrabalho operacional ou preservar aprendizado comercial. Exemplos: checkout, domínio HTTPS, avatar detalhado, objeções, promessa principal, mecanismo único, upsells, canais ativos, criativos vencedores, métricas de conversão, taxa de ativação e aprendizados por experimento.

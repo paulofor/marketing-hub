@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { describe, it, expect, vi } from "vitest";
@@ -64,7 +64,13 @@ describe("ProductListPage", () => {
       </QueryClientProvider>,
     );
 
-    const formattedLink = await screen.findByRole("link", {
+    const definitionLinks = await screen.findByText(
+      /Links de definição do produto/i,
+    );
+    expect(definitionLinks).not.toHaveTextContent(/Editar dados/i);
+    expect(definitionLinks).not.toHaveTextContent(/Vídeos de venda/i);
+
+    const formattedLink = within(definitionLinks).getByRole("link", {
       name: /Definição formatada/i,
     });
     expect(formattedLink).toHaveAttribute(
@@ -72,7 +78,9 @@ describe("ProductListPage", () => {
       "/api/products/public/metodo-musa-7-dias/marketing-definition",
     );
 
-    const markdownLink = screen.getByRole("link", { name: /Markdown/i });
+    const markdownLink = within(definitionLinks).getByRole("link", {
+      name: /Markdown/i,
+    });
     expect(markdownLink).toHaveAttribute(
       "href",
       "/api/products/public/metodo-musa-7-dias/marketing-definition.md",

@@ -35,6 +35,8 @@ input {
 .login-shell {
   align-items: center;
   display: grid;
+  padding-bottom: 28px;
+  padding-top: 28px;
 }
 
 .hero {
@@ -49,10 +51,10 @@ input {
 .login-hero {
   align-items: stretch;
   display: grid;
-  gap: 28px;
-  grid-template-columns: minmax(0, 0.95fr) minmax(300px, 0.7fr);
+  gap: 0;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 0.74fr);
   margin: 0 auto;
-  max-width: 1040px;
+  max-width: 1180px;
   width: 100%;
 }
 
@@ -396,12 +398,88 @@ input {
 
 .login-panel {
   align-content: center;
+  border-right: 0;
   display: grid;
-  padding: 48px;
+  padding: 44px;
 }
 
 .login-panel h1 {
+  font-size: 3.28rem;
+  line-height: 1.04;
+  margin-bottom: 14px;
+  max-width: 620px;
+}
+
+.login-panel .promise {
+  font-size: 1.04rem;
+  max-width: 600px;
+}
+
+.login-value-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 14px;
+  max-width: 650px;
+}
+
+.login-value-strip span {
+  align-items: center;
+  background: #fff8f3;
+  border: 1px solid rgba(122, 36, 68, 0.12);
+  color: #4d3b35;
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 800;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.login-value-strip svg {
+  color: #7a2444;
+}
+
+.login-preview-card {
+  align-items: center;
+  background:
+    linear-gradient(90deg, rgba(255, 248, 243, 0.96), rgba(247, 228, 198, 0.48)),
+    #fff8f3;
+  border: 1px solid rgba(214, 167, 92, 0.46);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  margin: 0 0 18px;
+  max-width: 560px;
+  padding: 16px 18px;
+}
+
+.login-preview-card span {
+  color: #7a2444;
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 850;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.login-preview-card strong {
+  color: #24171c;
+  display: block;
+  font-size: 1.35rem;
   line-height: 1.12;
+}
+
+.login-preview-card p {
+  color: #6b5a51;
+  font-size: 0.94rem;
+  margin: 6px 0 0;
+  max-width: 420px;
+}
+
+.login-preview-card svg {
+  color: #7a2444;
+  flex: 0 0 auto;
 }
 
 .eyebrow,
@@ -509,8 +587,8 @@ h3 {
   border: 1px solid rgba(122, 36, 68, 0.12);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  margin-top: 24px;
-  max-width: 430px;
+  margin-top: 0;
+  max-width: 460px;
   padding: 4px;
 }
 
@@ -546,7 +624,7 @@ h3 {
 .social-login-block {
   display: grid;
   gap: 8px;
-  margin-top: 22px;
+  margin-top: 14px;
   max-width: 360px;
 }
 
@@ -560,7 +638,7 @@ h3 {
   align-items: center;
   display: flex;
   gap: 10px;
-  margin-top: 22px;
+  margin-top: 18px;
   max-width: 360px;
 }
 
@@ -584,11 +662,12 @@ h3 {
 }
 
 .login-email-box {
-  margin-top: 22px;
+  margin-top: 18px;
 }
 
 .login-button {
   margin-top: 18px;
+  min-width: 240px;
   width: fit-content;
 }
 
@@ -607,6 +686,7 @@ h3 {
   color: #6b5a51;
   font-size: 0.92rem;
   margin: 14px 0 0;
+  max-width: 560px;
 }
 
 .workspace-email {
@@ -629,7 +709,8 @@ h3 {
 }
 
 .login-cover {
-  min-height: 520px;
+  border-left: 0;
+  min-height: 590px;
 }
 
 .experience-card::before {
@@ -649,7 +730,7 @@ h3 {
   display: flex;
   height: 72px;
   justify-content: center;
-  margin-bottom: 80px;
+  margin-bottom: 96px;
   width: 72px;
 }
 
@@ -670,6 +751,32 @@ h3 {
 
 .experience-card span {
   color: rgba(255, 248, 243, 0.78);
+}
+
+.login-cover-content {
+  align-self: end;
+}
+
+.login-unlock-list {
+  align-self: end;
+  border-top: 1px solid rgba(255, 248, 243, 0.22);
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 18px;
+}
+
+.login-unlock-list span {
+  align-items: center;
+  color: rgba(255, 248, 243, 0.88);
+  display: inline-flex;
+  font-size: 0.94rem;
+  font-weight: 750;
+  gap: 8px;
+}
+
+.login-unlock-list svg {
+  color: #f1d49f;
 }
 
 .progress-band {
@@ -987,6 +1094,30 @@ h3 {
 
   .login-cover {
     min-height: 360px;
+  }
+
+  .login-hero {
+    gap: 16px;
+  }
+
+  .login-panel {
+    border-right: 1px solid rgba(122, 36, 68, 0.14);
+  }
+
+  .login-panel h1 {
+    font-size: 2.35rem;
+  }
+
+  .login-value-strip {
+    display: grid;
+  }
+
+  .login-preview-card {
+    align-items: flex-start;
+  }
+
+  .cover-mark {
+    margin-bottom: 72px;
   }
 
   h1 {

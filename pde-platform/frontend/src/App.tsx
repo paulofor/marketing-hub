@@ -423,12 +423,12 @@ function App() {
             <p className="eyebrow">Área exclusiva MUSA</p>
             <h1>Entre na sua experiência guiada</h1>
             <p className="promise">
-              Acesse o diagnóstico, o Dia 1 e os materiais premium do Método MUSA em um ambiente
-              simples para seguir a jornada sem procurar arquivos soltos.
+              Faça login para liberar o diagnóstico e o Dia 1 do Método MUSA. Para continuar
+              pelos Dias 2 a 7 e acessar os materiais principais, compre o acesso completo.
             </p>
             <p className="auth-help">
               Primeiro acesso? Escolha <strong>Criar cadastro</strong>, informe seu e-mail e abra o link de acesso.
-              Se você já entrou antes, use <strong>Já tenho cadastro</strong>.
+              Esse cadastro libera a primeira parte da experiência; a continuação fica bloqueada até a compra.
             </p>
             <div className="auth-tabs" aria-label="Tipo de acesso">
               <button
@@ -506,7 +506,8 @@ function App() {
               </button>
             )}
             <p className="access-note">
-              O login libera sua área pessoal. A assinatura libera todos os recursos e materiais.
+              O Dia 1 fica disponível após o login. Os próximos dias, biblioteca e materiais premium
+              são liberados somente depois da compra.
             </p>
           </div>
           <div
@@ -521,8 +522,8 @@ function App() {
               <Sparkles size={32} />
             </div>
             <p>Método MUSA</p>
-            <strong>Diagnóstico + 7 missões + biblioteca premium</strong>
-            <span>{currentProduct.audience}</span>
+            <strong>Dia 1 liberado no login. Dias 2 a 7 com acesso completo.</strong>
+            <span>Conheça a primeira parte e compre para continuar a jornada MUSA.</span>
           </div>
         </section>
       </main>

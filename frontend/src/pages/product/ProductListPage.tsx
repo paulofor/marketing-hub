@@ -201,6 +201,37 @@ export default function ProductListPage() {
                         </dd>
                       </div>
                     </dl>
+                    <p className="product-catalog-card__description-links">
+                      Ações do produto:{" "}
+                      <Link to={`/products/${product.id}/edit`}>
+                        editar dados
+                      </Link>
+                      {product.slug && (
+                        <>
+                          , abrir{" "}
+                          <a
+                            href={`/api/products/public/${product.slug}/marketing-definition`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            definição formatada
+                          </a>
+                          , baixar{" "}
+                          <a
+                            href={`/api/products/public/${product.slug}/marketing-definition.md`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Markdown
+                          </a>
+                        </>
+                      )}
+                      {" "}ou preparar{" "}
+                      <Link to={`/products/${product.id}/sales-videos`}>
+                        vídeos de venda
+                      </Link>
+                      .
+                    </p>
                   </div>
                   <div className="col-12 col-xl-5">
                     <div className="product-catalog-card__panel">
@@ -244,41 +275,6 @@ export default function ProductListPage() {
                       )}
                     </div>
                   </div>
-                </div>
-
-                <div className="product-catalog-card__actions">
-                  <Link
-                    className="btn btn-sm btn-primary"
-                    to={`/products/${product.id}/edit`}
-                  >
-                    Editar dados
-                  </Link>
-                  {product.slug && (
-                    <>
-                      <a
-                        className="btn btn-sm btn-outline-primary"
-                        href={`/api/products/public/${product.slug}/marketing-definition`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Definição formatada
-                      </a>
-                      <a
-                        className="btn btn-sm btn-outline-secondary"
-                        href={`/api/products/public/${product.slug}/marketing-definition.md`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Markdown
-                      </a>
-                    </>
-                  )}
-                  <Link
-                    className="btn btn-sm btn-outline-primary"
-                    to={`/products/${product.id}/sales-videos`}
-                  >
-                    Vídeos de venda
-                  </Link>
                 </div>
               </section>
             </div>

@@ -154,16 +154,26 @@ public class AccessService {
     /** Gera ou reutiliza o acesso e envia um link magico para o e-mail da cliente. */
     public MagicLinkResponse requestMagicLink(String productSlug, String email) {
         AccessResponse access = createAccess(productSlug, email, "MAGIC_LINK");
-        String absoluteUrl = buildAbsoluteAccessUrl(access.accessUrl());
-        if (mailService != null && mailService.isConfigured()) {
-            mailService.sendMagicLink(access.email(), absoluteUrl);
-            return new MagicLinkResponse(productSlug, access.email(), "SENT", null);
+        return sendAccessLink(productSlug, access.email(), access.accessUrl());
+    }
+
+    /** Envia link magico apenas quando já existe cadastro para o e-mail informado. */
+    public MagicLinkResponse requestExistingMagicLink(String productSlug, String email) {
+        productCatalogService.getProduct(productSlug);
+        AccessGrant grant = findGrantByEmail(productSlug, email);
+        if (grant == null) {
+            throw new IllegalArgumentException("Cadastro da Area MUSA nao encontrado para este e-mail");
         }
-        return new MagicLinkResponse(
+        recordFunnelEvent(new FunnelEventRequest(
                 productSlug,
-                access.email(),
-                "EMAIL_NOT_CONFIGURED",
-                exposeMagicLinkInResponse ? access.accessUrl() : null);
+                "LOGIN_COMPLETED",
+                grant.getToken(),
+                grant.getEmail(),
+                "EMAIL_MAGIC_LINK",
+                "pde-platform",
+                null,
+                Map.of("method", "existing_customer_magic_link")));
+        return sendAccessLink(productSlug, grant.getEmail(), "/access/" + grant.getToken());
     }
 
     /** Autentica ou cria acesso da cliente validada pelo Google. */
@@ -293,6 +303,20 @@ public class AccessService {
                 ? "http://localhost:5176"
                 : appBaseUrl.replaceAll("/+$", "");
         return normalizedBase + accessUrl;
+    }
+
+    /** Envia ou expõe em teste o link de acesso da Área MUSA. */
+    private MagicLinkResponse sendAccessLink(String productSlug, String email, String accessUrl) {
+        String absoluteUrl = buildAbsoluteAccessUrl(accessUrl);
+        if (mailService != null && mailService.isConfigured()) {
+            mailService.sendMagicLink(email, absoluteUrl);
+            return new MagicLinkResponse(productSlug, email, "SENT", null);
+        }
+        return new MagicLinkResponse(
+                productSlug,
+                email,
+                "EMAIL_NOT_CONFIGURED",
+                exposeMagicLinkInResponse ? accessUrl : null);
     }
 
     /** Registra compra ou assinatura aprovada quando a origem representa checkout real. */

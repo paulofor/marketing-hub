@@ -96,6 +96,35 @@ class AccessServiceTest {
         assertThat(workspace.accessSource()).isEqualTo("MAGIC_LINK");
     }
 
+    /** Confirma que login por link exige cadastro anterior e reutiliza o acesso existente. */
+    @Test
+    void sendsExistingCustomerMagicLinkWithoutCreatingNewAccess() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        var firstAccess = accessService.requestMagicLink("metodo-musa-7-dias", "Cliente@Sandbox.Local");
+        var loginLink = accessService.requestExistingMagicLink("metodo-musa-7-dias", "cliente@sandbox.local");
+
+        assertThat(loginLink.deliveryStatus()).isEqualTo("EMAIL_NOT_CONFIGURED");
+        assertThat(loginLink.accessUrl()).isEqualTo(firstAccess.accessUrl());
+    }
+
+    /** Confirma que a tentativa de login sem cadastro orienta a cliente a pedir primeiro acesso. */
+    @Test
+    void rejectsExistingCustomerMagicLinkWhenEmailIsUnknown() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        assertThrows(IllegalArgumentException.class, () ->
+                accessService.requestExistingMagicLink("metodo-musa-7-dias", "cliente@sandbox.local"));
+    }
+
     /** Confirma que checkout aprovado libera assinatura ativa para a cliente. */
     @Test
     void marksCheckoutAccessAsActiveSubscription() {

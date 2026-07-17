@@ -79,11 +79,7 @@ input {
 
 .musa-first-fold {
   align-items: stretch;
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.94), rgba(255, 248, 243, 0.78)),
-    url("/assets/musa-cover.png");
-  background-position: center right;
-  background-size: cover;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.97), rgba(255, 248, 243, 0.9));
   display: grid;
   gap: 18px;
   grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.76fr) minmax(210px, 0.42fr);
@@ -95,7 +91,7 @@ input {
 }
 
 .musa-first-fold::before {
-  background: linear-gradient(90deg, rgba(255, 248, 243, 0.98) 0%, rgba(255, 248, 243, 0.9) 52%, rgba(255, 248, 243, 0.5) 100%);
+  background: linear-gradient(90deg, rgba(255, 248, 243, 0.72) 0%, rgba(255, 248, 243, 0.24) 100%);
   content: "";
   inset: 0;
   position: absolute;
@@ -370,11 +366,10 @@ input {
 
 .mini-cover {
   align-content: end;
-  background:
-    linear-gradient(180deg, rgba(45, 32, 36, 0.08), rgba(45, 32, 36, 0.78)),
-    #2d2024;
+  background: #f6ece4;
+  background-repeat: no-repeat;
   background-position: center;
-  background-size: cover;
+  background-size: contain;
   color: #fff8f3;
   display: grid;
   min-height: 220px;
@@ -382,11 +377,12 @@ input {
 }
 
 .mini-cover svg {
+  color: #7a2444;
   margin-bottom: 66px;
 }
 
 .mini-cover span {
-  color: #f1d49f;
+  color: #7a2444;
   font-size: 0.82rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -695,9 +691,7 @@ h3 {
 
 .experience-card {
   align-content: end;
-  background:
-    linear-gradient(180deg, rgba(45, 32, 36, 0.18), rgba(45, 32, 36, 0.9)),
-    #2d2024;
+  background: #3a242b;
   background-position: center;
   background-size: cover;
   color: #fff8f3;
@@ -709,29 +703,153 @@ h3 {
 }
 
 .login-cover {
+  align-content: start;
   border-left: 0;
-  min-height: 590px;
+  background: linear-gradient(145deg, #6f213f, #3a242b 54%, #2f5952);
+  background-position: center;
+  background-size: cover;
+  gap: 16px;
+  grid-template-rows: auto auto auto auto;
+  min-height: 560px;
 }
 
 .experience-card::before {
-  background: linear-gradient(135deg, rgba(214, 167, 92, 0.38), rgba(122, 36, 68, 0.2));
+  background: linear-gradient(145deg, rgba(122, 36, 68, 0.78) 0%, rgba(58, 36, 43, 0.88) 58%, rgba(47, 89, 82, 0.78) 100%);
   content: "";
   inset: 0;
   position: absolute;
 }
 
+.login-cover::after {
+  background:
+    linear-gradient(90deg, rgba(255, 248, 243, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 248, 243, 0.08) 1px, transparent 1px);
+  background-size: 42px 42px;
+  content: "";
+  inset: 0;
+  opacity: 0.28;
+  position: absolute;
+}
+
 .experience-card > * {
   position: relative;
+  z-index: 1;
 }
 
 .cover-mark {
   align-items: center;
-  background: rgba(255, 248, 243, 0.16);
+  background: rgba(255, 248, 243, 0.13);
+  border: 1px solid rgba(255, 248, 243, 0.16);
   display: flex;
-  height: 72px;
+  height: 54px;
   justify-content: center;
-  margin-bottom: 96px;
-  width: 72px;
+  width: 54px;
+}
+
+.style-preview {
+  align-self: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 340px;
+  width: 100%;
+}
+
+.style-preview span {
+  background: #fff8f3;
+  border: 1px solid rgba(255, 248, 243, 0.44);
+  box-shadow: 0 18px 44px rgba(20, 13, 16, 0.2);
+  display: block;
+  min-height: 118px;
+}
+
+.style-preview span:nth-child(1) {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.86)),
+    #7a2444;
+}
+
+.style-preview span:nth-child(2) {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.82)),
+    #2f5952;
+  transform: translateY(18px);
+}
+
+.style-preview span:nth-child(3) {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.82)),
+    #d6a75c;
+}
+
+.login-editorial-preview {
+  align-self: center;
+  display: grid;
+  margin: 0 auto 4px;
+  max-width: 340px;
+  min-height: 212px;
+  position: relative;
+  width: 100%;
+}
+
+.preview-page {
+  background: #fff8f3;
+  border: 1px solid rgba(255, 248, 243, 0.42);
+  box-shadow: 0 24px 60px rgba(20, 13, 16, 0.26);
+  color: #2d2024;
+  display: grid;
+  gap: 12px;
+  min-height: 212px;
+  padding: 26px;
+  transform: rotate(-2deg);
+}
+
+.experience-card .preview-page span {
+  color: #7a2444;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.experience-card .preview-page strong {
+  color: #24171c;
+  font-size: 2rem;
+  line-height: 1;
+  margin: 0 0 8px;
+}
+
+.experience-card .preview-page i {
+  background: linear-gradient(90deg, rgba(122, 36, 68, 0.22), rgba(214, 167, 92, 0.2));
+  display: block;
+  height: 12px;
+  width: 100%;
+}
+
+.experience-card .preview-page i:nth-child(4) {
+  width: 82%;
+}
+
+.experience-card .preview-page i:nth-child(5) {
+  width: 58%;
+}
+
+.preview-note {
+  align-items: center;
+  background: #f1d49f;
+  bottom: 18px;
+  box-shadow: 0 18px 42px rgba(20, 13, 16, 0.2);
+  color: #4d3212;
+  display: inline-flex;
+  font-weight: 850;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  position: absolute;
+  right: -10px;
+}
+
+.experience-card .preview-note span {
+  color: #4d3212;
 }
 
 .experience-card p {
@@ -744,9 +862,9 @@ h3 {
 
 .experience-card strong {
   display: block;
-  font-size: 1.75rem;
+  font-size: 1.55rem;
   line-height: 1.12;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .experience-card span {
@@ -761,9 +879,9 @@ h3 {
   align-self: end;
   border-top: 1px solid rgba(255, 248, 243, 0.22);
   display: grid;
-  gap: 10px;
-  margin-top: 28px;
-  padding-top: 18px;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 16px;
 }
 
 .login-unlock-list span {
@@ -1094,6 +1212,10 @@ h3 {
 
   .login-cover {
     min-height: 360px;
+  }
+
+  .style-preview span {
+    min-height: 82px;
   }
 
   .login-hero {

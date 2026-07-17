@@ -64,6 +64,12 @@ public class AccessController {
         return accessService.requestMagicLink(request.productSlug(), request.email());
     }
 
+    /** Envia um link magico somente para cliente que já possui cadastro na Área MUSA. */
+    @PostMapping("/login-link")
+    public MagicLinkResponse requestLoginLink(@Valid @RequestBody AccessRequest request) {
+        return accessService.requestExistingMagicLink(request.productSlug(), request.email());
+    }
+
     /** Autentica a cliente pelo Google e cria ou reutiliza o acesso da Área MUSA. */
     @PostMapping("/google")
     public AccessResponse loginWithGoogle(@Valid @RequestBody GoogleAccessRequest request) {

@@ -17,9 +17,11 @@ pde:
     google:
       client-id: ${PDE_GOOGLE_CLIENT_ID:}
   mail:
+    transport: ${PDE_MAIL_TRANSPORT:smtp}
+    aws-region: ${PDE_MAIL_AWS_REGION:us-east-1}
     host: ${PDE_SMTP_HOST:}
     port: ${PDE_SMTP_PORT:1025}
-    from: ${PDE_SMTP_FROM:area-musa@sandbox.local}
+    from: ${PDE_MAIL_FROM:${PDE_SMTP_FROM:area-musa@sandbox.local}}
     username: ${PDE_SMTP_USERNAME:}
     password: ${PDE_SMTP_PASSWORD:}
 

@@ -9,6 +9,14 @@ services:
       PDE_ACCESS_JDBC_URL: ${PDE_ACCESS_JDBC_URL:-}
       PDE_ACCESS_JDBC_USERNAME: ${PDE_ACCESS_JDBC_USERNAME:-}
       PDE_ACCESS_JDBC_PASSWORD: ${PDE_ACCESS_JDBC_PASSWORD:-}
+      PDE_APP_BASE_URL: ${PDE_APP_BASE_URL:-https://clubemusa.com.br}
+      PDE_MAIL_TRANSPORT: ${PDE_MAIL_TRANSPORT:-ses}
+      PDE_MAIL_AWS_REGION: ${PDE_MAIL_AWS_REGION:-us-east-1}
+      PDE_MAIL_FROM: ${PDE_MAIL_FROM:-acesso@clubemusa.com.br}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     volumes:
       - pde-platform-data:/data/pde
     networks:

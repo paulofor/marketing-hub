@@ -4,6 +4,7 @@ import com.marketinghub.pde.dto.AccessResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
 import com.marketinghub.pde.dto.MagicLinkResponse;
+import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.model.AccessGrant;
@@ -99,6 +100,31 @@ public class AccessService {
         persistAccess(grant);
         recordSubscriptionApprovedIfNeeded(grant, source);
         return toAccessResponse(grant);
+    }
+
+    /** Processa o webhook Pepper e libera acesso apenas quando o pagamento foi realizado. */
+    public AccessResponse receivePepperWebhook(PepperWebhookRequest request) {
+        String status = request.resolvedStatus();
+        String transactionId = request.resolvedTransactionId();
+        String buyerEmail = request.resolvedBuyerEmail();
+        String productSlug = request.resolvedProductSlug("metodo-musa-7-dias");
+        if (!"paid".equalsIgnoreCase(status)) {
+            log.info(
+                    "Webhook Pepper ignorado sem pagamento realizado; productSlug={}, transactionId={}, status={}",
+                    productSlug,
+                    transactionId,
+                    status);
+            throw new IllegalArgumentException("Webhook Pepper sem pagamento realizado: " + status);
+        }
+        if (buyerEmail == null || buyerEmail.isBlank()) {
+            throw new IllegalArgumentException("Webhook Pepper sem e-mail da compradora");
+        }
+        log.info(
+                "Webhook Pepper aprovado para liberar acesso PDE; productSlug={}, transactionId={}, buyerEmail={}",
+                productSlug,
+                transactionId,
+                buyerEmail);
+        return createAccess(productSlug, buyerEmail, "PEPPER");
     }
 
     /** Cadastra uma cliente do produto e retorna o acesso da Área MUSA. */

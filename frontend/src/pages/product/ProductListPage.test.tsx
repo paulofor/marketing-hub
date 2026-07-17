@@ -44,4 +44,38 @@ describe("ProductListPage", () => {
     const editLink = await screen.findByRole("link", { name: /Editar dados/i });
     expect(editLink).toHaveAttribute("href", "/products/1/edit");
   });
+
+  it("shows marketing definition links for listed product", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          slug: "metodo-musa-7-dias",
+          name: "Método MUSA - Presença Elegante em 7 Dias",
+        },
+      ],
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    const formattedLink = await screen.findByRole("link", {
+      name: /Definição formatada/i,
+    });
+    expect(formattedLink).toHaveAttribute(
+      "href",
+      "/api/products/public/metodo-musa-7-dias/marketing-definition",
+    );
+
+    const markdownLink = screen.getByRole("link", { name: /Markdown/i });
+    expect(markdownLink).toHaveAttribute(
+      "href",
+      "/api/products/public/metodo-musa-7-dias/marketing-definition.md",
+    );
+  });
 });

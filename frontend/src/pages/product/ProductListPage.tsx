@@ -253,6 +253,26 @@ export default function ProductListPage() {
                   >
                     Editar dados
                   </Link>
+                  {product.slug && (
+                    <>
+                      <a
+                        className="btn btn-sm btn-outline-primary"
+                        href={`/api/products/public/${product.slug}/marketing-definition`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Definição formatada
+                      </a>
+                      <a
+                        className="btn btn-sm btn-outline-secondary"
+                        href={`/api/products/public/${product.slug}/marketing-definition.md`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Markdown
+                      </a>
+                    </>
+                  )}
                   <Link
                     className="btn btn-sm btn-outline-primary"
                     to={`/products/${product.id}/sales-videos`}

@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -85,5 +86,23 @@ class ProductControllerTest {
                 .andExpect(header().string("Content-Disposition",
                         "inline; filename=\"produto-metodo-musa-7-dias-definicao-mercado.md\""))
                 .andExpect(content().string(markdown));
+    }
+
+    /** Deve expor a definição pública de mercado do produto como HTML formatado. */
+    @Test
+    void getPublicMarketingDefinitionHtml() throws Exception {
+        String markdown = "# Definição de Produto para Mercado — Método MUSA\n\n"
+                + "> Documento público de posicionamento comercial do produto.\n\n"
+                + "## 1. Identidade do produto\n\n"
+                + "- **Nome comercial:** Método MUSA\n";
+
+        when(service.buildPublicMarketingDefinitionMarkdown("metodo-musa-7-dias")).thenReturn(markdown);
+
+        mockMvc.perform(get("/api/products/public/{productCode}/marketing-definition", "metodo-musa-7-dias"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/html;charset=UTF-8"))
+                .andExpect(content().string(containsString("<h1>Definição de Produto para Mercado — Método MUSA</h1>")))
+                .andExpect(content().string(containsString("<blockquote>Documento público de posicionamento comercial do produto.</blockquote>")))
+                .andExpect(content().string(containsString("<li><strong>Nome comercial:</strong> Método MUSA</li>")));
     }
 }

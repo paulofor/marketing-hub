@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
     private final ProductService service;
     private final ProductMapper mapper;
+    private final ProductMarketingDefinitionHtmlRenderer htmlRenderer = new ProductMarketingDefinitionHtmlRenderer();
 
     /** Inicializa o controller com serviço de produto e mapper de resposta. */
     public ProductController(ProductService service, ProductMapper mapper) {
@@ -62,5 +63,16 @@ public class ProductController {
                 .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
                 .body(service.buildPublicMarketingDefinitionMarkdown(productCode));
+    }
+
+    /** Retorna a definição pública de mercado do produto como página HTML formatada. */
+    @GetMapping(
+            value = "/public/{productCode}/marketing-definition",
+            produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
+    public ResponseEntity<String> getPublicMarketingDefinitionHtml(@PathVariable String productCode) {
+        String markdown = service.buildPublicMarketingDefinitionMarkdown(productCode);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/html;charset=UTF-8"))
+                .body(htmlRenderer.render(markdown));
     }
 }

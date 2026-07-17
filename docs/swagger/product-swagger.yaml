@@ -1,0 +1,50 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Products
+  version: 1.0.0
+  description: Endpoints públicos e administrativos do cadastro comercial de produtos.
+paths:
+  /api/products/public/{productCode}/marketing-definition.md:
+    get:
+      tags:
+        - Products
+      summary: Baixa a definição pública de mercado em Markdown bruto.
+      operationId: getPublicProductMarketingDefinitionMarkdown
+      parameters:
+        - name: productCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: metodo-musa-7-dias
+      responses:
+        "200":
+          description: Documento Markdown bruto com a definição comercial pública.
+          content:
+            text/markdown:
+              schema:
+                type: string
+        "404":
+          description: Produto não encontrado.
+  /api/products/public/{productCode}/marketing-definition:
+    get:
+      tags:
+        - Products
+      summary: Visualiza a definição pública de mercado com Markdown renderizado.
+      operationId: getPublicProductMarketingDefinitionHtml
+      parameters:
+        - name: productCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: metodo-musa-7-dias
+      responses:
+        "200":
+          description: Página HTML com as mesmas informações do Markdown público renderizadas para leitura.
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: Produto não encontrado.

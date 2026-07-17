@@ -5863,3 +5863,8 @@
 - foi feito: o backend registra `FIRST_USE` como fallback quando a primeira missão é concluída.
 - foi feito: o frontend registra `FIRST_USE` quando a cliente com assinatura ativa abre uma missão ou material.
 - impacto comercial esperado: o funil de assinatura passa a diferenciar venda aprovada de ativação real, permitindo identificar risco de churn antes de escalar tráfego.
+
+## 2026-07-17 — Link da definição comercial na tela de produtos
+
+- foi feito: a listagem de produtos passou a mostrar links para a definição comercial formatada e para o Markdown bruto do produto MUSA.
+- impacto comercial esperado: reduzir atrito para revisar promessa, público, linguagem e identidade visual antes de editar produto, produzir criativos ou liberar campanhas.

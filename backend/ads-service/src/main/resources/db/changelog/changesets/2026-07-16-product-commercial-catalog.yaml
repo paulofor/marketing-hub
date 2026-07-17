@@ -59,6 +59,8 @@ databaseChangeLog:
   - changeSet:
       id: 2026-07-16-product-commercial-catalog-003
       author: codex
+      validCheckSum:
+        - 9:08d0437046962a4f61ee0a0763c81698
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
@@ -88,19 +90,6 @@ databaseChangeLog:
                 primary_hypothesis,
                 associated_experiments,
                 commercial_notes,
-                niche,
-                avatar,
-                explicit_pain,
-                promise,
-                unique_mechanism,
-                tripwire,
-                risk_reversal,
-                social_proof,
-                checkout_monetization,
-                funnel,
-                creative_volume,
-                storytelling,
-                ai_cost,
                 created_at,
                 updated_at
               )
@@ -114,23 +103,10 @@ databaseChangeLog:
                 'pde-platform; lead-portal-payments-service; backend/ads-service; frontend.',
                 'PDE - Produto Digital Experiencial',
                 'VALIDACAO_COMERCIAL',
-                NULL,
+                47.00,
                 'Mulher quer parecer mais elegante e marcante sem gastar com luxo, trocar o guarda-roupa inteiro ou depender de compras impulsivas.',
                 'Experimento 66',
                 'Primeiro produto canônico do Marketing Hub. Produto deve se vincular principalmente à hipótese/oferta, manter nicho como contexto estratégico e acumular experimentos como histórico de validação e escala.',
-                'presença pessoal / estilo acessível / autocuidado feminino prático',
-                'Mulheres que querem elevar imagem pessoal com passos simples, aplicáveis e emocionalmente prazerosos.',
-                'A cliente sente que não transmite a presença elegante que deseja e não sabe o que ajustar sem gastar muito.',
-                'Presença mais elegante, marcante e segura em 7 dias com orientações simples de aplicação diária.',
-                'Método guiado de microdecisões visuais e comportamentais que reduz esforço e evita compras impulsivas.',
-                'Produto digital experiencial com acesso à Área MUSA e materiais práticos.',
-                'Entrega digital imediata e experiência guiada de baixo risco para testar a transformação.',
-                'Prova inicial via página de venda, página de obrigado, Área MUSA e experimento 66.',
-                'Preço não exposto no experimento nem na área pública; o valor deve aparecer somente quando a usuária solicitar a liberação das funcionalidades pagas dentro da área logada.',
-                'Anúncio Meta -> login Clube MUSA/PDE -> diagnóstico inicial gratuito -> paywall interno -> checkout -> liberação de acesso completo por webhook.',
-                'Criativos focados em presença elegante acessível, diagnóstico inicial, curiosidade e entrada no Clube MUSA sem preço no anúncio.',
-                'Da sensação de estar apagada para a presença elegante percebida sem depender de luxo.',
-                0.00,
                 CURRENT_TIMESTAMP,
                 CURRENT_TIMESTAMP
               ON DUPLICATE KEY UPDATE
@@ -147,3 +123,77 @@ databaseChangeLog:
                 associated_experiments = VALUES(associated_experiments),
                 commercial_notes = VALUES(commercial_notes),
                 updated_at = CURRENT_TIMESTAMP;
+  - changeSet:
+      id: 2026-07-16-product-commercial-catalog-004
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: niche
+        - columnExists:
+            tableName: product
+            columnName: avatar
+        - columnExists:
+            tableName: product
+            columnName: explicit_pain
+        - columnExists:
+            tableName: product
+            columnName: promise
+        - columnExists:
+            tableName: product
+            columnName: unique_mechanism
+        - columnExists:
+            tableName: product
+            columnName: tripwire
+        - columnExists:
+            tableName: product
+            columnName: risk_reversal
+        - columnExists:
+            tableName: product
+            columnName: social_proof
+        - columnExists:
+            tableName: product
+            columnName: checkout_monetization
+        - columnExists:
+            tableName: product
+            columnName: funnel
+        - columnExists:
+            tableName: product
+            columnName: creative_volume
+        - columnExists:
+            tableName: product
+            columnName: storytelling
+        - columnExists:
+            tableName: product
+            columnName: ai_cost
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET current_price_brl = NULL,
+                     niche = 'presença pessoal / estilo acessível / autocuidado feminino prático',
+                     avatar = 'Mulheres que querem elevar imagem pessoal com passos simples, aplicáveis e emocionalmente prazerosos.',
+                     explicit_pain = 'A cliente sente que não transmite a presença elegante que deseja e não sabe o que ajustar sem gastar muito.',
+                     promise = 'Presença mais elegante, marcante e segura em 7 dias com orientações simples de aplicação diária.',
+                     unique_mechanism = 'Método guiado de microdecisões visuais e comportamentais que reduz esforço e evita compras impulsivas.',
+                     tripwire = 'Produto digital experiencial com acesso à Área MUSA e materiais práticos.',
+                     risk_reversal = 'Entrega digital imediata e experiência guiada de baixo risco para testar a transformação.',
+                     social_proof = 'Prova inicial via página de venda, página de obrigado, Área MUSA e experimento 66.',
+                     checkout_monetization = 'Preço não exposto no experimento nem na área pública; o valor deve aparecer somente quando a usuária solicitar a liberação das funcionalidades pagas dentro da área logada.',
+                     funnel = 'Anúncio Meta -> login Clube MUSA/PDE -> diagnóstico inicial gratuito -> paywall interno -> checkout -> liberação de acesso completo por webhook.',
+                     creative_volume = 'Criativos focados em presença elegante acessível, diagnóstico inicial, curiosidade e entrada no Clube MUSA sem preço no anúncio.',
+                     storytelling = 'Da sensação de estar apagada para a presença elegante percebida sem depender de luxo.',
+                     ai_cost = 0.00,
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias';

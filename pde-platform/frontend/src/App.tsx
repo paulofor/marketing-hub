@@ -420,16 +420,25 @@ function App() {
       <main className="app-shell login-shell">
         <section className="login-hero">
           <div className="login-panel">
-            <p className="eyebrow">Área exclusiva MUSA</p>
-            <h1>Entre na sua experiência guiada</h1>
+            <p className="eyebrow">Clube MUSA</p>
+            <h1>Descubra o que hoje apaga a sua presença.</h1>
             <p className="promise">
-              Faça login para liberar o diagnóstico e o Dia 1 do Método MUSA. Para continuar
-              pelos Dias 2 a 7 e acessar os materiais principais, compre o acesso completo.
+              Entre para liberar seu diagnóstico inicial e o Dia 1 do Método MUSA: uma experiência
+              guiada para construir presença elegante em 7 dias, sem luxo caro nem compra por impulso.
             </p>
-            <p className="auth-help">
-              Primeiro acesso? Escolha <strong>Criar cadastro</strong>, informe seu e-mail e abra o link de acesso.
-              Esse cadastro libera a primeira parte da experiência; a continuação fica bloqueada até a compra.
-            </p>
+            <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
+              <span><Check size={16} /> Diagnóstico gratuito</span>
+              <span><Sparkles size={16} /> Dia 1 liberado</span>
+              <span><Lock size={16} /> Continuação premium</span>
+            </div>
+            <div className="login-preview-card">
+              <div>
+                <span>Primeira parte liberada</span>
+                <strong>Seu espelho MUSA</strong>
+                <p>Nomeie o detalhe que faz você se sentir arrumada, mas ainda pouco marcante.</p>
+              </div>
+              <ChevronRight size={22} />
+            </div>
             <div className="auth-tabs" aria-label="Tipo de acesso">
               <button
                 className={authMode === 'login' ? 'active' : ''}
@@ -455,11 +464,11 @@ function App() {
             {googleClientId && (
               <div className="social-login-block">
                 <div id="google-login-button" aria-label="Entrar com Google" />
-                <span>Mais rápido para salvar sua jornada antes da assinatura.</span>
+                <span>Mais rápido para entrar e salvar sua primeira orientação.</span>
               </div>
             )}
             <div className="auth-divider">
-              <span>ou receba seu link por e-mail</span>
+              <span>ou entre com um link seguro por e-mail</span>
             </div>
             <label className="email-box login-email-box">
               {authMode === 'login' ? 'E-mail cadastrado' : 'E-mail para criar cadastro'}
@@ -488,7 +497,7 @@ function App() {
               <Mail size={18} />
               {loading
                 ? 'Enviando link...'
-                : (authMode === 'login' ? 'Receber link de acesso' : 'Criar cadastro por e-mail')}
+                : (authMode === 'login' ? 'Receber meu link' : 'Liberar meu Dia 1')}
             </button>
             {devAccessUrl && (
               <button
@@ -506,8 +515,8 @@ function App() {
               </button>
             )}
             <p className="access-note">
-              O Dia 1 fica disponível após o login. Os próximos dias, biblioteca e materiais premium
-              são liberados somente depois da compra.
+              O login libera a primeira parte da experiência. Dias 2 a 7, biblioteca e materiais
+              premium aparecem dentro da área e são desbloqueados com o acesso completo.
             </p>
           </div>
           <div
@@ -521,9 +530,16 @@ function App() {
             <div className="cover-mark">
               <Sparkles size={32} />
             </div>
-            <p>Método MUSA</p>
-            <strong>Dia 1 liberado no login. Dias 2 a 7 com acesso completo.</strong>
-            <span>Conheça a primeira parte e compre para continuar a jornada MUSA.</span>
+            <div className="login-cover-content">
+              <p>Método MUSA</p>
+              <strong>Uma jornada de 7 dias para parecer mais elegante com o que você já tem.</strong>
+              <span>Entre, veja seu primeiro diagnóstico e descubra o próximo ajuste que pode mudar sua presença.</span>
+            </div>
+            <div className="login-unlock-list" aria-label="Prévia da experiência MUSA">
+              <span><CalendarDays size={16} /> 7 missões guiadas</span>
+              <span><BookOpen size={16} /> Biblioteca de apoio</span>
+              <span><Target size={16} /> Checklists práticos</span>
+            </div>
           </div>
         </section>
       </main>

@@ -4,10 +4,12 @@ import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.stream.StreamSupport;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * Responsabilidade: expor endpoints REST do cadastro comercial de produtos.
@@ -48,5 +50,17 @@ public class ProductController {
         return StreamSupport.stream(service.listProducts().spliterator(), false)
                 .map(mapper::toDto)
                 .toList();
+    }
+
+    /** Retorna a definição pública de mercado do produto em Markdown. */
+    @GetMapping(
+            value = "/public/{productCode}/marketing-definition.md",
+            produces = "text/markdown;charset=UTF-8")
+    public ResponseEntity<String> getPublicMarketingDefinitionMarkdown(@PathVariable String productCode) {
+        String filename = "produto-" + productCode + "-definicao-mercado.md";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .body(service.buildPublicMarketingDefinitionMarkdown(productCode));
     }
 }

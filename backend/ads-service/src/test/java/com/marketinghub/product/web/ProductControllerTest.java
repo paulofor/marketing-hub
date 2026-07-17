@@ -20,7 +20,10 @@ import java.math.BigDecimal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,5 +70,20 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value(request.getName()))
                 .andExpect(jsonPath("$.currentPriceBrl").value(47.00));
+    }
+
+    /** Deve expor a definição pública de mercado do produto como Markdown. */
+    @Test
+    void getPublicMarketingDefinitionMarkdown() throws Exception {
+        String markdown = "# Definição de Produto para Mercado — Método MUSA\n\n## 1. Identidade do produto\n";
+
+        when(service.buildPublicMarketingDefinitionMarkdown("metodo-musa-7-dias")).thenReturn(markdown);
+
+        mockMvc.perform(get("/api/products/public/{productCode}/marketing-definition.md", "metodo-musa-7-dias"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition",
+                        "inline; filename=\"produto-metodo-musa-7-dias-definicao-mercado.md\""))
+                .andExpect(content().string(markdown));
     }
 }

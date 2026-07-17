@@ -68,3 +68,15 @@ Regras comerciais:
 ## Regra de evolução
 
 Novos atributos devem ser adicionados ao cadastro de produto quando ajudarem a aumentar vendas, reduzir retrabalho operacional ou preservar aprendizado comercial. Exemplos: checkout, domínio HTTPS, avatar detalhado, objeções, promessa principal, mecanismo único, upsells, canais ativos, criativos vencedores, métricas de conversão, taxa de ativação e aprendizados por experimento.
+
+## Documento público de definição de mercado
+
+Todo produto cadastrado pode expor uma definição pública em Markdown pela URL:
+
+```text
+/api/products/public/{codigoDoProduto}/marketing-definition.md
+```
+
+O parâmetro `{codigoDoProduto}` deve usar preferencialmente o slug estável do produto. O identificador interno numérico pode ser aceito como fallback operacional.
+
+Esse documento deve ser uma ferramenta de Marketing, não um relatório técnico. Deve organizar os pontos comerciais mais importantes do produto: identidade, nicho, público, avatar, hipótese, dor, promessa, mecanismo, estilo de linguagem, oferta, funil, criativos, experimentos associados, aprendizados e próximos ajustes. Detalhes internos como módulos de código, custos técnicos, prompts, banco de dados, workers ou implementação não devem aparecer no documento público.

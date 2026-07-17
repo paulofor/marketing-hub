@@ -1,20 +1,28 @@
 package com.marketinghub.product.service;
 
+import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
-import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
-import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Locale;
+import java.util.Optional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Responsabilidade: gerenciar o cadastro comercial de produtos digitais.
  */
 @Service
 public class ProductService {
+    private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
+
     private final ProductRepository repository;
     private final InstagramAccountRepository accountRepository;
     private final MarketNicheRepository marketNicheRepository;
@@ -102,5 +110,119 @@ public class ProductService {
     /** Lista todos os produtos cadastrados para uso operacional no Marketing Hub. */
     public Iterable<Product> listProducts() {
         return repository.findAll();
+    }
+
+    /** Monta a definição pública de mercado do produto em Markdown. */
+    @Transactional(readOnly = true)
+    public String buildPublicMarketingDefinitionMarkdown(String productCode) {
+        Product product = findProductByCode(productCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
+
+        StringBuilder markdown = new StringBuilder();
+        appendTitle(markdown, product);
+        appendSection(markdown, "1. Identidade do produto",
+                line("Nome comercial", product.getName()),
+                line("Código do produto", product.getSlug()),
+                line("Tipo de produto", product.getProductType()),
+                line("Status comercial", product.getCommercialStatus()),
+                line("Preço atual", formatPrice(product.getCurrentPriceBrl())),
+                line("URL pública", product.getPublicUrl()));
+        appendSection(markdown, "2. Mercado e nicho",
+                line("Nicho", resolveNiche(product)),
+                line("Público alvo", product.getTargetAudience()),
+                line("Avatar", product.getAvatar()));
+        appendSection(markdown, "3. Hipótese comercial",
+                paragraph(product.getPrimaryHypothesis()));
+        appendSection(markdown, "4. Dor, promessa e transformação",
+                line("Dor principal", product.getExplicitPain()),
+                line("Promessa", product.getPromise()),
+                line("Mecanismo único", product.getUniqueMechanism()));
+        appendSection(markdown, "5. Estilo de comunicação",
+                line("Linguagem", product.getLanguageStyle()),
+                line("Storytelling", product.getStorytelling()),
+                line("Paleta visual", product.getColorPalette()));
+        appendSection(markdown, "6. Oferta e monetização",
+                line("Oferta de entrada", product.getTripwire()),
+                line("Reversão de risco", product.getRiskReversal()),
+                line("Prova social", product.getSocialProof()),
+                line("Checkout e monetização", product.getCheckoutMonetization()));
+        appendSection(markdown, "7. Funil de aquisição e venda",
+                paragraph(product.getFunnel()));
+        appendSection(markdown, "8. Criativos e escala",
+                line("Volume criativo esperado", product.getCreativeVolume()),
+                line("Experimentos associados", product.getAssociatedExperiments()));
+        appendSection(markdown, "9. Aprendizados e próximos ajustes de marketing",
+                paragraph(product.getCommercialNotes()));
+        return markdown.toString();
+    }
+
+    /** Busca o produto por slug público ou por identificador interno numérico. */
+    private Optional<Product> findProductByCode(String productCode) {
+        if (productCode == null || productCode.isBlank()) {
+            return Optional.empty();
+        }
+        String normalizedCode = productCode.trim();
+        Optional<Product> bySlug = repository.findBySlug(normalizedCode);
+        if (bySlug.isPresent()) {
+            return bySlug;
+        }
+        if (!normalizedCode.matches("\\d+")) {
+            return Optional.empty();
+        }
+        return repository.findById(Long.valueOf(normalizedCode));
+    }
+
+    /** Adiciona o título principal do documento. */
+    private void appendTitle(StringBuilder markdown, Product product) {
+        markdown.append("# Definição de Produto para Mercado — ")
+                .append(valueOrFallback(product.getName()))
+                .append("\n\n");
+        markdown.append("> Documento público de posicionamento comercial do produto. Não inclui detalhes técnicos de implementação.\n\n");
+    }
+
+    /** Adiciona uma seção com linhas ou parágrafos já formatados. */
+    private void appendSection(StringBuilder markdown, String title, String... entries) {
+        markdown.append("## ").append(title).append("\n\n");
+        for (String entry : entries) {
+            markdown.append(entry);
+            if (!entry.endsWith("\n")) {
+                markdown.append("\n");
+            }
+        }
+        markdown.append("\n");
+    }
+
+    /** Formata uma linha de definição de negócio. */
+    private String line(String label, String value) {
+        return "- **" + label + ":** " + valueOrFallback(value) + "\n";
+    }
+
+    /** Formata um parágrafo livre preservando um fallback quando não houver dado cadastrado. */
+    private String paragraph(String value) {
+        return valueOrFallback(value) + "\n";
+    }
+
+    /** Resolve o nicho priorizando o relacionamento canônico e usando o campo legado como fallback. */
+    private String resolveNiche(Product product) {
+        if (product.getMarketNiche() != null && product.getMarketNiche().getName() != null) {
+            return product.getMarketNiche().getName();
+        }
+        return product.getNiche();
+    }
+
+    /** Formata o preço comercial em reais quando ele estiver cadastrado. */
+    private String formatPrice(BigDecimal price) {
+        if (price == null) {
+            return null;
+        }
+        return NumberFormat.getCurrencyInstance(BRAZIL).format(price);
+    }
+
+    /** Retorna um texto padrão para campos comerciais ainda não definidos. */
+    private String valueOrFallback(String value) {
+        if (value == null || value.isBlank()) {
+            return "Não definido";
+        }
+        return value.trim();
     }
 }

@@ -7,11 +7,13 @@ import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -45,5 +47,76 @@ class ProductServiceTest {
         assertThat(updated.getCurrentPriceBrl()).isEqualByComparingTo("47.00");
         assertThat(updated.getTargetAudience()).isEqualTo(request.getTargetAudience());
         assertThat(updated.getMarketNiche()).isSameAs(niche);
+    }
+
+    /** Deve montar uma definição pública em Markdown com foco comercial e sem detalhes técnicos. */
+    @Test
+    void buildPublicMarketingDefinitionMarkdown() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository);
+        MarketNiche niche = MarketNiche.builder().name("Elegância feminina prática").build();
+        Product product = Product.builder()
+                .id(1L)
+                .slug("metodo-musa-7-dias")
+                .name("Método MUSA - Presença Elegante em 7 Dias")
+                .productType("PDE")
+                .commercialStatus("validação comercial")
+                .currentPriceBrl(new BigDecimal("47.00"))
+                .marketNiche(niche)
+                .targetAudience("Mulheres que querem parecer elegantes sem trocar o guarda-roupa inteiro")
+                .primaryHypothesis("Mulheres desejam presença elegante com baixo esforço e baixo gasto.")
+                .explicitPain("Sente que a aparência não comunica o valor pessoal.")
+                .promise("Parecer mais elegante em 7 dias.")
+                .uniqueMechanism("Curadoria guiada de presença visual.")
+                .languageStyle("Sofisticada, prática e acolhedora.")
+                .funnel("Anúncio → login → experiência gratuita → paywall → compra.")
+                .codeModules("pde-platform, backend")
+                .aiCost(new BigDecimal("1.20"))
+                .build();
+
+        when(productRepository.findBySlug("metodo-musa-7-dias")).thenReturn(Optional.of(product));
+
+        String markdown = service.buildPublicMarketingDefinitionMarkdown("metodo-musa-7-dias");
+
+        assertThat(markdown).contains("# Definição de Produto para Mercado — Método MUSA - Presença Elegante em 7 Dias");
+        assertThat(markdown).contains("## 2. Mercado e nicho");
+        assertThat(markdown).contains("Elegância feminina prática");
+        assertThat(markdown).contains("Parecer mais elegante em 7 dias.");
+        assertThat(markdown).doesNotContain("pde-platform");
+        assertThat(markdown).doesNotContain("1.20");
+    }
+
+    /** Deve aceitar o identificador interno como fallback quando o código for numérico. */
+    @Test
+    void buildPublicMarketingDefinitionMarkdownByNumericCode() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository);
+        Product product = Product.builder().id(7L).name("Produto 7").build();
+
+        when(productRepository.findBySlug("7")).thenReturn(Optional.empty());
+        when(productRepository.findById(7L)).thenReturn(Optional.of(product));
+
+        String markdown = service.buildPublicMarketingDefinitionMarkdown("7");
+
+        assertThat(markdown).contains("Produto 7");
+    }
+
+    /** Deve retornar erro controlado quando o produto não existir. */
+    @Test
+    void buildPublicMarketingDefinitionMarkdownNotFound() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository);
+
+        when(productRepository.findBySlug("inexistente")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.buildPublicMarketingDefinitionMarkdown("inexistente"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Produto não encontrado");
     }
 }

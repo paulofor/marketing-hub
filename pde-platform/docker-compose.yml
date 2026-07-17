@@ -11,9 +11,11 @@ services:
       PDE_ACCESS_JDBC_PASSWORD: ${PDE_ACCESS_JDBC_PASSWORD:-}
       PDE_APP_BASE_URL: ${PDE_APP_BASE_URL:-http://localhost:5176}
       PDE_GOOGLE_CLIENT_ID: ${PDE_GOOGLE_CLIENT_ID:-}
+      PDE_MAIL_TRANSPORT: ${PDE_MAIL_TRANSPORT:-smtp}
+      PDE_MAIL_AWS_REGION: ${PDE_MAIL_AWS_REGION:-us-east-1}
+      PDE_MAIL_FROM: ${PDE_MAIL_FROM:-area-musa@sandbox.local}
       PDE_SMTP_HOST: ${PDE_SMTP_HOST:-sandbox-mail}
       PDE_SMTP_PORT: ${PDE_SMTP_PORT:-1025}
-      PDE_SMTP_FROM: ${PDE_SMTP_FROM:-area-musa@sandbox.local}
     volumes:
       - pde-platform-data:/data/pde
 

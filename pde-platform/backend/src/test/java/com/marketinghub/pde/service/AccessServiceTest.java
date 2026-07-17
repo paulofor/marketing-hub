@@ -5,9 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.Test;
@@ -125,6 +127,58 @@ class AccessServiceTest {
 
         assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
         assertThat(workspace.accessSource()).isEqualTo("PEPPER");
+    }
+
+    /** Confirma que o payload v2 da Pepper libera acesso somente quando a transação está paga. */
+    @Test
+    void releasesAccessFromPaidPepperWebhookV2() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        PepperWebhookRequest request = new PepperWebhookRequest(
+                null,
+                null,
+                null,
+                "paid",
+                new PepperWebhookRequest.PepperCustomer(
+                        "customer-1", "Cliente MUSA", "cliente@sandbox.local", "+5511999999999", "12345678901"),
+                new PepperWebhookRequest.PepperTransaction(
+                        "pepper-tx-67", "paid", "pix", "4700", "https://go.pepper.com.br/customer/pepper-tx-67"),
+                new PepperWebhookRequest.PepperOffer("offer-musa", "Clube MUSA", "4700"),
+                List.of(),
+                new PepperWebhookRequest.PepperTracking(null, null, null, null, null, null, "metodo-musa-7-dias"));
+
+        AccessResponse access = accessService.receivePepperWebhook(request);
+        WorkspaceResponse workspace = accessService.getWorkspace(access.token());
+
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.accessSource()).isEqualTo("PEPPER");
+    }
+
+    /** Confirma que webhook Pepper aguardando pagamento nao libera acesso completo. */
+    @Test
+    void rejectsPepperWebhookWithoutPaidStatus() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        PepperWebhookRequest request = new PepperWebhookRequest(
+                "metodo-musa-7-dias",
+                "cliente@sandbox.local",
+                "pepper-tx-67",
+                "waiting_payment",
+                null,
+                null,
+                null,
+                List.of(),
+                null);
+
+        assertThrows(IllegalArgumentException.class, () -> accessService.receivePepperWebhook(request));
     }
 
     /** Confirma que retry do checkout nao altera o acesso ativo existente. */

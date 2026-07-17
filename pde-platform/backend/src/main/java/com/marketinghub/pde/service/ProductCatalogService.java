@@ -32,7 +32,7 @@ public class ProductCatalogService {
                 "Metodo MUSA - Experiencia Guiada de 7 Dias",
                 "Monte em 7 dias uma presenca mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformacao radical.",
                 "Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessiveis.",
-                "R$47",
+                "",
                 new ThemeDto("#7a2444", "#d6a75c", "#fff8f3", "/assets/musa-cover.png"),
                 new DiagnosticDto(
                         "Diagnostico MUSA",

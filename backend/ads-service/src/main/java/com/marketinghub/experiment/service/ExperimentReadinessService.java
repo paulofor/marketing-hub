@@ -103,7 +103,9 @@ public class ExperimentReadinessService {
         long geraLandingCompletedStageCount = countCompletedGeraLandingStages(experimentId);
         boolean hasGeraLandingPipeline = geraLandingCompletedStageCount == GERA_LANDING_REQUIRED_STAGES.size();
         boolean purchaseIntent = campaignDestinationPolicy.requiresSalesPageBeforePurchase(experiment);
+        boolean pdeMembershipFunnel = campaignDestinationPolicy.isPdeMembershipSubscriptionFunnel(experiment);
         boolean hasCommercialContract = campaignDestinationPolicy.hasCompleteCommercialContract(experiment);
+        boolean hasPdeMembershipDestination = campaignDestinationPolicy.hasPdeMembershipDestination(experiment);
         boolean hasGeraSalesPagePipeline = campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(experimentId);
         boolean hasRequiredVideoBlockingRelease = hasRequiredVideoBlockingRelease(experiment);
         boolean requiresSalesPageAbTest = campaignDestinationPolicy.requiresSalesPageBeforePurchase(experiment);
@@ -122,7 +124,7 @@ public class ExperimentReadinessService {
                     List.of()
             ));
         }
-        if (!purchaseIntent && !hasLeadPortalFlow) {
+        if (!purchaseIntent && !pdeMembershipFunnel && !hasLeadPortalFlow) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.LEAD_PORTAL_FLOW,
                     "Sem fluxo do portal do lead",
@@ -206,8 +208,26 @@ public class ExperimentReadinessService {
                     List.of()
             ));
         }
+        if (pdeMembershipFunnel && !hasCommercialContract) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.GERA_SALES_PAGE,
+                    "Contrato comercial incompleto",
+                    "O funil PDE MUSA precisa da oferta preenchida antes de liberar tráfego para login, experiência gratuita e paywall interno.",
+                    "Complete dor única, prova/preview, promessa, CTA e preço do Clube MUSA.",
+                    List.of()
+            ));
+        }
+        if (pdeMembershipFunnel && hasCommercialContract && !hasPdeMembershipDestination) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.GERA_SALES_PAGE,
+                    "Destino PDE MUSA inválido",
+                    "O anúncio do funil PDE MUSA deve apontar para a entrada do Clube MUSA, onde a lead faz login, experimenta a parte gratuita e encontra o paywall interno.",
+                    "Atualize a URL do anúncio para https://clubemusa.com.br.",
+                    List.of()
+            ));
+        }
 
-        if (!purchaseIntent && !hasGeraLandingPipeline) {
+        if (!purchaseIntent && !pdeMembershipFunnel && !hasGeraLandingPipeline) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.GERA_LANDING,
                     "GeraLanding incompleto",

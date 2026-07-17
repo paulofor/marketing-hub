@@ -281,6 +281,11 @@ public class ExperimentController {
                     HttpStatus.CONFLICT,
                     "Experimento com intenção de compra exige página de venda com coletores page_view, page_load_metric, section_view_time e checkout_click antes da campanha.");
         }
+        if (missing.contains("pdeMembershipDestination")) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br, com login gratuito e paywall interno.");
+        }
     }
 
     /** Registra uma solicitação para o AI Worker gerar três opções de contrato de promessa única. */

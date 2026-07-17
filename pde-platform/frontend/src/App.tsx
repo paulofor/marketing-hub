@@ -102,7 +102,7 @@ const fallbackProduct: ProductExperience = {
   name: 'Método MUSA - Experiência Guiada de 7 Dias',
   promise: 'Monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformação radical.',
   audience: 'Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.',
-  priceLabel: 'R$47',
+  priceLabel: '',
   theme: {
     primary: '#7a2444',
     accent: '#d6a75c',
@@ -366,7 +366,7 @@ function App() {
       accessToken,
       email: workspace.email,
       provider: workspace.accessSource,
-      metadata: { priceLabel: currentProduct.priceLabel, checkoutConfigured: Boolean(checkoutUrl) },
+      metadata: { checkoutConfigured: Boolean(checkoutUrl) },
     });
     if (checkoutUrl) {
       window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
@@ -599,7 +599,7 @@ function App() {
         <article className="status-card">
           <KeyRound size={20} />
           <span>{hasActiveSubscription ? 'Produto ativo' : 'Assinatura'}</span>
-          <strong>{hasActiveSubscription ? currentProduct.priceLabel : 'Pendente'}</strong>
+          <strong>{hasActiveSubscription ? 'Acesso completo' : 'Pendente'}</strong>
           <p>{hasActiveSubscription ? 'Método MUSA liberado para uso.' : 'Assine para liberar todos os recursos.'}</p>
         </article>
       </section>
@@ -615,7 +615,7 @@ function App() {
           </div>
           <button className="primary-button" onClick={handleSubscriptionClick}>
             <CreditCard size={18} />
-            Assinar por {currentProduct.priceLabel}
+            Solicitar acesso pago
           </button>
         </section>
       )}

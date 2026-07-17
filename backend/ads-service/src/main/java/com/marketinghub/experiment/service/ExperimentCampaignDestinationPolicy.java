@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 @Service
 public class ExperimentCampaignDestinationPolicy {
     private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String MUSA_PDE_CANONICAL_HOST = "clubemusa.com.br";
 
     private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
     private final GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
@@ -36,13 +37,16 @@ public class ExperimentCampaignDestinationPolicy {
     /** Informa se o experimento tem intenção de compra e precisa de página intermediária auditada. */
     public boolean requiresSalesPageBeforePurchase(Experiment experiment) {
         return experiment != null
+                && !isPdeMembershipSubscriptionFunnel(experiment)
                 && (experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
-                || experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
                 || experiment.getCampaignObjective() == ExperimentCampaignObjective.SALES);
     }
 
     /** Lista violações da regra de destino para campanhas com intenção de compra. */
     public List<String> missingConfiguration(Experiment experiment) {
+        if (isPdeMembershipSubscriptionFunnel(experiment)) {
+            return missingPdeMembershipConfiguration(experiment);
+        }
         if (!requiresSalesPageBeforePurchase(experiment)) {
             return List.of();
         }
@@ -66,6 +70,38 @@ public class ExperimentCampaignDestinationPolicy {
             missing.add("salesPageAnalyticsCollectors");
         }
         return List.copyOf(missing);
+    }
+
+    /** Lista violações do funil PDE com login gratuito e paywall interno. */
+    public List<String> missingPdeMembershipConfiguration(Experiment experiment) {
+        if (!isPdeMembershipSubscriptionFunnel(experiment)) {
+            return List.of();
+        }
+        List<String> missing = new ArrayList<>();
+        if (!hasCompleteCommercialContract(experiment)) {
+            missing.add("commercialContract");
+        }
+        if (!hasPdeMembershipDestination(experiment)) {
+            missing.add("pdeMembershipDestination");
+        }
+        return List.copyOf(missing);
+    }
+
+    /** Confirma se o experimento usa o funil canônico do Clube MUSA/PDE. */
+    public boolean isPdeMembershipSubscriptionFunnel(Experiment experiment) {
+        return experiment != null
+                && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL;
+    }
+
+    /** Confirma que o anúncio leva para a entrada/login do Clube MUSA, não para checkout direto. */
+    public boolean hasPdeMembershipDestination(Experiment experiment) {
+        if (experiment == null) {
+            return false;
+        }
+        String destinationUrl = normalizeUrl(experiment.getFollowUpActionUrl());
+        return StringUtils.hasText(destinationUrl)
+                && (destinationUrl.equals("https://" + MUSA_PDE_CANONICAL_HOST)
+                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/"));
     }
 
     /** Busca a página de venda publicada mais recente do experimento. */

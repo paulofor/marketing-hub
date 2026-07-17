@@ -80,7 +80,7 @@ public class AccessController {
     @PostMapping("/pepper/webhook")
     @ResponseStatus(HttpStatus.CREATED)
     public AccessResponse receivePepperWebhook(@Valid @RequestBody PepperWebhookRequest request) {
-        return accessService.createAccess(request.productSlug(), request.buyerEmail(), "PEPPER");
+        return accessService.receivePepperWebhook(request);
     }
 
     /** Retorna a área de trabalho da cliente autenticada por token de acesso. */

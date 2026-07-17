@@ -398,6 +398,18 @@ export default function EditExperimentPage() {
     isLoadingImageModels ||
     isLoadingFacebookPages ||
     isLoadingInstagramAccounts;
+  const campaignObjectiveLabel = isSalesObjectiveExperiment
+    ? "Vendas"
+    : "Leads";
+  const selectedExperimentTypeLabel = isPdeMembershipSubscriptionFunnel
+    ? "PDE / assinatura MUSA"
+    : isLowTicketProduct
+      ? "Produto low-ticket"
+      : "Teste de nicho / lead";
+  const selectedStageLabel =
+    selectedStageEntry?.title ??
+    experimentStageLabels[stageValue] ??
+    stageValue;
 
   const onSubmit = async (values: FormData) => {
     try {
@@ -565,8 +577,17 @@ export default function EditExperimentPage() {
   if (isLoading || !data) return <p>Carregando...</p>;
 
   return (
-    <div style={{ maxWidth: 480 }}>
-      <PageTitle icon={experimentIcon}>Editar Experimento</PageTitle>
+    <div className="experiment-edit-page">
+      <div className="experiment-edit-page__header">
+        <div>
+          <PageTitle icon={experimentIcon}>Editar Experimento</PageTitle>
+          <p>
+            Ajuste o contrato comercial que conecta anúncio, promessa, oferta,
+            checkout e ativação.
+          </p>
+        </div>
+        <span>{selectedExperimentTypeLabel}</span>
+      </div>
       <div className="position-relative">
         {isLoadingDependencies && (
           <div
@@ -585,516 +606,687 @@ export default function EditExperimentPage() {
           </div>
         )}
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <fieldset disabled={isLoadingDependencies} style={{ minHeight: 0 }}>
-            <label className="form-label" htmlFor="experimentType">
-              Tipo de experimento <span className="text-danger">*</span>
-            </label>
-            <select
-              id="experimentType"
-              className="form-select mb-2"
-              {...register("experimentType")}
-              onChange={(event) => {
-                register("experimentType").onChange(event);
-                if (event.target.value === "LOW_TICKET_PRODUCT") {
-                  setValue(
-                    "productAiSubtype",
-                    productAiSubtypeValue || "AI_PERSONALIZED_SAMPLE",
-                    { shouldDirty: true },
-                  );
-                } else {
-                  setValue("productAiSubtype", "", { shouldDirty: true });
-                }
-              }}
-            >
-              <option value="LOW_TICKET_PRODUCT">Produto low-ticket</option>
-              <option value="PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL">
-                PDE / assinatura MUSA
-              </option>
-              <option value="NICHE_TEST">Teste de nicho / lead</option>
-            </select>
-            <div className="form-text mb-3">
-              {experimentTypeValue === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
-                ? "Prioriza assinatura: tela inicial do PED, login, checkout, acesso liberado e ativação."
-                : isLowTicketProduct
-                ? "Prioriza venda direta: página curta, checkout e entrega."
-                : "Prioriza captura de lead: isca/amostra antes da venda."}
-            </div>
-            {isLowTicketProduct && (
-              <>
-                <label className="form-label" htmlFor="productAiSubtype">
-                  Mecanismo de Produto IA
-                </label>
-                <select
-                  id="productAiSubtype"
-                  className="form-select mb-3"
-                  {...register("productAiSubtype")}
-                >
-                  {Object.entries(productAiSubtypeLabels).map(
-                    ([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
+          <fieldset
+            className="experiment-edit-layout"
+            disabled={isLoadingDependencies}
+            style={{ minHeight: 0 }}
+          >
+            <div className="experiment-edit-layout__main">
+              <section className="experiment-edit-card experiment-edit-card--strategy">
+                <div className="experiment-edit-card__heading">
+                  <span>01</span>
+                  <div>
+                    <h2>Estratégia do teste</h2>
+                    <p>
+                      Defina onde o experimento está no funil e qual sinal
+                      decide avanço.
+                    </p>
+                  </div>
+                </div>
+                <div className="experiment-edit-grid">
+                  <div>
+                    <label className="form-label" htmlFor="experimentType">
+                      Tipo de experimento <span className="text-danger">*</span>
+                    </label>
+                    <select
+                      id="experimentType"
+                      className="form-select"
+                      {...register("experimentType")}
+                      onChange={(event) => {
+                        register("experimentType").onChange(event);
+                        if (event.target.value === "LOW_TICKET_PRODUCT") {
+                          setValue(
+                            "productAiSubtype",
+                            productAiSubtypeValue || "AI_PERSONALIZED_SAMPLE",
+                            { shouldDirty: true },
+                          );
+                        } else {
+                          setValue("productAiSubtype", "", {
+                            shouldDirty: true,
+                          });
+                        }
+                      }}
+                    >
+                      <option value="LOW_TICKET_PRODUCT">
+                        Produto low-ticket
                       </option>
-                    ),
+                      <option value="PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL">
+                        PDE / assinatura MUSA
+                      </option>
+                      <option value="NICHE_TEST">Teste de nicho / lead</option>
+                    </select>
+                    <div className="form-text">
+                      {experimentTypeValue ===
+                      "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
+                        ? "Prioriza assinatura: tela inicial do PED, login, checkout, acesso liberado e ativação."
+                        : isLowTicketProduct
+                          ? "Prioriza venda direta: página curta, checkout e entrega."
+                          : "Prioriza captura de lead: isca/amostra antes da venda."}
+                    </div>
+                  </div>
+                  {isLowTicketProduct && (
+                    <div>
+                      <label className="form-label" htmlFor="productAiSubtype">
+                        Mecanismo de Produto IA
+                      </label>
+                      <select
+                        id="productAiSubtype"
+                        className="form-select"
+                        {...register("productAiSubtype")}
+                      >
+                        {Object.entries(productAiSubtypeLabels).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
                   )}
-                </select>
-              </>
-            )}
-            <label className="form-label" htmlFor="stageSelect">
-              Etapa do experimento <span className="text-danger">*</span>
-            </label>
-            <select
-              id="stageSelect"
-              className="form-select mb-2"
-              value={stageValue}
-              onChange={handleStageChange}
-            >
-              {stageSelectOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <div className="form-text mb-3">
-              {selectedStageEntry?.description ??
-                "Selecione qual etapa do funil está sendo priorizada neste experimento."}
-            </div>
-            <label className="form-label" htmlFor="primaryVariable">
-              Variável principal <span className="text-danger">*</span>
-            </label>
-            <input
-              id="primaryVariable"
-              className="form-control mb-2"
-              placeholder="Ex.: Dor vs Resultado"
-              {...register("primaryVariable")}
-            />
-            {selectedStageEntry?.variables?.length ? (
-              <div className="d-flex flex-wrap gap-2 mb-3">
-                {selectedStageEntry.variables.map((variable) => (
-                  <button
-                    type="button"
-                    key={variable.id}
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={() =>
-                      handleApplyVariableSuggestion(
-                        variable.label,
-                        variable.suggestedPrimaryMetric,
-                      )
-                    }
-                  >
-                    {variable.label}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="form-text mb-3">
-                Registre qual variável ou ângulo está sendo comparado.
-              </div>
-            )}
-            <label className="form-label" htmlFor="primaryMetric">
-              Métrica principal <span className="text-danger">*</span>
-            </label>
-            <input
-              id="primaryMetric"
-              className="form-control mb-2"
-              placeholder="Ex.: CTR de link (%)"
-              {...register("primaryMetric")}
-            />
-            {selectedStageEntry ? (
-              <div className="form-text">
-                Sugestão do playbook:{" "}
-                <strong>{selectedStageEntry.defaultPrimaryMetric}</strong>
-              </div>
-            ) : (
-              <div className="form-text">
-                Informe qual indicador decide se a hipótese foi validada.
-              </div>
-            )}
-            {selectedStageEntry?.guardrailMetrics?.length ? (
-              <div className="text-muted small mb-2">
-                Guardrails: {selectedStageEntry.guardrailMetrics.join(" · ")}
-              </div>
-            ) : null}
-            {metricSuggestions.length > 0 ? (
-              <div className="d-flex flex-wrap gap-2 mb-3">
-                {metricSuggestions.map((metric) => (
-                  <button
-                    type="button"
-                    key={metric}
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={() => handleApplyMetricSuggestion(metric)}
-                  >
-                    {metric}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <div className="card border-primary mb-3">
-              <div className="card-body">
-                <h2 className="h6">Contrato de promessa única</h2>
-                <p className="text-muted small mb-3">
-                  {isPdeMembershipSubscriptionFunnel
-                    ? "Anúncio, tela inicial, login, assinatura e ativação devem repetir a mesma dor, promessa comprável e CTA."
-                    : isLowTicketProduct
-                      ? "Anúncio, primeira dobra, checkout e entrega devem repetir a mesma dor, promessa comprável e CTA."
-                    : "Anúncio, botão, formulário e entrega devem repetir a mesma dor, isca digital e CTA."}
-                </p>
-                <label className="form-label" htmlFor="singlePain">
-                  Dor única <span className="text-danger">*</span>
-                </label>
-                <input
-                  id="singlePain"
-                  className="form-control mb-2"
-                  placeholder="Ex.: Clientes desmarcam horário em cima da hora"
-                  {...register("singlePain")}
-                />
-                <label className="form-label" htmlFor="freeReward">
-                  {isSalesObjectiveExperiment
-                    ? "Prova/preview da oferta"
-                    : "Isca digital única"}{" "}
-                  {!isSalesObjectiveExperiment && (
-                    <span className="text-danger">*</span>
-                  )}
-                </label>
-                <input
-                  id="freeReward"
-                  className="form-control mb-2"
-                  placeholder={
-                    isPdeMembershipSubscriptionFunnel
-                      ? "Ex.: acesso inicial ao diagnóstico MUSA e preview das missões guiadas"
-                      : isLowTicketProduct
-                        ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
-                      : "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão"
-                  }
-                  {...register("freeReward")}
-                />
-                <label className="form-label" htmlFor="funnelPromise">
-                  Promessa do funil <span className="text-danger">*</span>
-                </label>
-                <input
-                  id="funnelPromise"
-                  className="form-control mb-2"
-                  placeholder={
-                    isPdeMembershipSubscriptionFunnel
-                      ? "Assinar o Método MUSA para seguir uma experiência guiada com progresso"
-                      : isLowTicketProduct
-                        ? "Comprar um kit pronto para reduzir faltas e remarcações nesta semana"
-                      : "Receber as 3 mensagens"
-                  }
-                  {...register("funnelPromise")}
-                />
-                <label className="form-label" htmlFor="primaryCta">
-                  CTA principal <span className="text-danger">*</span>
-                </label>
-                <input
-                  id="primaryCta"
-                  className="form-control mb-2"
-                  placeholder={
-                    isPdeMembershipSubscriptionFunnel
-                      ? "Entrar no MUSA"
-                      : isLowTicketProduct
-                        ? "Comprar o kit agora"
-                      : "Receber as 3 mensagens"
-                  }
-                  {...register("primaryCta")}
-                />
-                <div className="alert alert-info py-2 mb-0">
+                  <div>
+                    <label className="form-label" htmlFor="stageSelect">
+                      Etapa do experimento{" "}
+                      <span className="text-danger">*</span>
+                    </label>
+                    <select
+                      id="stageSelect"
+                      className="form-select"
+                      value={stageValue}
+                      onChange={handleStageChange}
+                    >
+                      {stageSelectOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="form-text">
+                      {selectedStageEntry?.description ??
+                        "Selecione qual etapa do funil está sendo priorizada neste experimento."}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="primaryVariable">
+                      Variável principal <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="primaryVariable"
+                      className="form-control"
+                      placeholder="Ex.: Dor vs Resultado"
+                      {...register("primaryVariable")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="primaryMetric">
+                      Métrica principal <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="primaryMetric"
+                      className="form-control"
+                      placeholder="Ex.: CTR de link (%)"
+                      {...register("primaryMetric")}
+                    />
+                  </div>
+                </div>
+                {selectedStageEntry?.variables?.length ? (
+                  <div className="experiment-edit-suggestions">
+                    {selectedStageEntry.variables.map((variable) => (
+                      <button
+                        type="button"
+                        key={variable.id}
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() =>
+                          handleApplyVariableSuggestion(
+                            variable.label,
+                            variable.suggestedPrimaryMetric,
+                          )
+                        }
+                      >
+                        {variable.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="form-text">
+                    Registre qual variável ou ângulo está sendo comparado.
+                  </div>
+                )}
+                {selectedStageEntry ? (
+                  <div className="experiment-edit-note">
+                    Sugestão do playbook:{" "}
+                    <strong>{selectedStageEntry.defaultPrimaryMetric}</strong>
+                  </div>
+                ) : null}
+                {selectedStageEntry?.guardrailMetrics?.length ? (
+                  <div className="text-muted small">
+                    Guardrails:{" "}
+                    {selectedStageEntry.guardrailMetrics.join(" · ")}
+                  </div>
+                ) : null}
+                {metricSuggestions.length > 0 ? (
+                  <div className="experiment-edit-suggestions">
+                    {metricSuggestions.map((metric) => (
+                      <button
+                        type="button"
+                        key={metric}
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => handleApplyMetricSuggestion(metric)}
+                      >
+                        {metric}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="experiment-edit-card experiment-edit-card--promise">
+                <div className="experiment-edit-card__heading">
+                  <span>02</span>
+                  <div>
+                    <h2>Contrato de promessa única</h2>
+                    <p>
+                      {isPdeMembershipSubscriptionFunnel
+                        ? "Anúncio, tela inicial, login, assinatura e ativação devem repetir a mesma dor, promessa comprável e CTA."
+                        : isLowTicketProduct
+                          ? "Anúncio, primeira dobra, checkout e entrega devem repetir a mesma dor, promessa comprável e CTA."
+                          : "Anúncio, botão, formulário e entrega devem repetir a mesma dor, isca digital e CTA."}
+                    </p>
+                  </div>
+                </div>
+                <div className="experiment-edit-grid">
+                  <div>
+                    <label className="form-label" htmlFor="singlePain">
+                      Dor única <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="singlePain"
+                      className="form-control"
+                      placeholder="Ex.: Clientes desmarcam horário em cima da hora"
+                      {...register("singlePain")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="freeReward">
+                      {isSalesObjectiveExperiment
+                        ? "Prova/preview da oferta"
+                        : "Isca digital única"}{" "}
+                      {!isSalesObjectiveExperiment && (
+                        <span className="text-danger">*</span>
+                      )}
+                    </label>
+                    <input
+                      id="freeReward"
+                      className="form-control"
+                      placeholder={
+                        isPdeMembershipSubscriptionFunnel
+                          ? "Ex.: acesso inicial ao diagnóstico MUSA e preview das missões guiadas"
+                          : isLowTicketProduct
+                            ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
+                            : "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão"
+                      }
+                      {...register("freeReward")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="funnelPromise">
+                      Promessa do funil <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="funnelPromise"
+                      className="form-control"
+                      placeholder={
+                        isPdeMembershipSubscriptionFunnel
+                          ? "Assinar o Método MUSA para seguir uma experiência guiada com progresso"
+                          : isLowTicketProduct
+                            ? "Comprar um kit pronto para reduzir faltas e remarcações nesta semana"
+                            : "Receber as 3 mensagens"
+                      }
+                      {...register("funnelPromise")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="primaryCta">
+                      CTA principal <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="primaryCta"
+                      className="form-control"
+                      placeholder={
+                        isPdeMembershipSubscriptionFunnel
+                          ? "Entrar no MUSA"
+                          : isLowTicketProduct
+                            ? "Comprar o kit agora"
+                            : "Receber as 3 mensagens"
+                      }
+                      {...register("primaryCta")}
+                    />
+                  </div>
+                </div>
+                <div className="experiment-edit-alert">
                   Objetivo da campanha:{" "}
-                  <strong>{isSalesObjectiveExperiment ? "Vendas" : "Leads"}</strong>.{" "}
+                  <strong>{campaignObjectiveLabel}</strong>.{" "}
                   {isPdeMembershipSubscriptionFunnel
                     ? "Otimize para assinatura e acompanhe ativação dentro do PED/MUSA."
                     : isLowTicketProduct
                       ? "Não coloque formulário antes do checkout neste fluxo."
-                    : "Não use Tráfego nem otimização para cliques neste fluxo."}
+                      : "Não use Tráfego nem otimização para cliques neste fluxo."}
                 </div>
-              </div>
-            </div>
-            <label className="form-label" htmlFor="name">
-              Nome
-            </label>
-            <input
-              id="name"
-              className="form-control mb-2"
-              {...register("name")}
-            />
-            <label className="form-label">Hipótese</label>
-            <p className="form-control-plaintext">{data.hypothesis}</p>
-            <label className="form-label" htmlFor="kpiTarget">
-              Meta do KPI
-            </label>
-            <input
-              id="kpiTarget"
-              className="form-control mb-2"
-              type="number"
-              {...register("kpiTarget")}
-            />
-            <label className="form-label" htmlFor="dailyBudget">
-              Orçamento diário <span className="text-danger">*</span>
-            </label>
-            <input
-              id="dailyBudget"
-              className="form-control mb-2"
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("dailyBudget")}
-            />
-            <label className="form-label" htmlFor="unitPrice">
-              Preço unitário (R$) <span className="text-danger">*</span>
-            </label>
-            <input
-              id="unitPrice"
-              className="form-control mb-2"
-              type="number"
-              min="0"
-              step="0.01"
-              {...register("unitPrice")}
-            />
-            <div className="form-text mb-2">Usado no link do Mercado Pago.</div>
-            <label className="form-label" htmlFor="startDate">
-              Data de início
-            </label>
-            <input
-              id="startDate"
-              className="form-control mb-2"
-              type="date"
-              {...register("startDate")}
-            />
-            <label className="form-label" htmlFor="endDate">
-              Data de término
-            </label>
-            <input
-              id="endDate"
-              className="form-control mb-2"
-              type="date"
-              {...register("endDate")}
-            />
-            <label className="form-label" htmlFor="preset">
-              Preset de Métricas
-            </label>
-            <select
-              id="preset"
-              className="form-select mb-2"
-              {...register("metricPresetId")}
-            >
-              <option value="">Selecione Preset de Métricas</option>
-              {Array.isArray(presets) &&
-                presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-            </select>
-            <label className="form-label" htmlFor="journeyTemplate">
-              Template de Jornada <span className="text-danger">*</span>
-            </label>
-            <select
-              id="journeyTemplate"
-              className="form-select mb-2"
-              {...register("journeyTemplateId")}
-            >
-              <option value="" disabled hidden>
-                Selecione um template de jornada
-              </option>
-              {journeyTemplates?.content?.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
-              ))}
-            </select>
-            <label className="form-label" htmlFor="imageModelId">
-              Modelo de geração de imagem
-            </label>
-            <select
-              id="imageModelId"
-              className="form-select mb-2"
-              {...imageModelRegister}
-              value={selectedImageModelId ?? ""}
-              onChange={(event) => {
-                imageModelRegister.onChange(event);
-                setValue("imageModelQualityId", "", { shouldDirty: true });
-              }}
-            >
-              <option value="">Selecione um modelo</option>
-              {imageModels?.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name}
-                </option>
-              ))}
-            </select>
-            <label className="form-label" htmlFor="imageModelQualityId">
-              Qualidade das variações
-            </label>
-            <select
-              id="imageModelQualityId"
-              className="form-select mb-2"
-              {...imageModelQualityRegister}
-              value={selectedImageQualityId ?? ""}
-              disabled={!availableImageQualities.length}
-            >
-              <option value="">Selecione a qualidade</option>
-              {availableImageQualities.map((quality) => (
-                <option key={quality.id} value={quality.id}>
-                  {quality.name}
-                </option>
-              ))}
-            </select>
-            {selectedQualityPriceLabel ? (
-              <p className="form-text">
-                Custo estimado: {selectedQualityPriceLabel}
-              </p>
-            ) : null}
-            <label className="form-label" htmlFor="imagesPerPackage">
-              Quantidade de imagens por pacote{" "}
-              <span className="text-danger">*</span>
-            </label>
-            <input
-              id="imagesPerPackage"
-              className="form-control mb-2"
-              type="number"
-              min="1"
-              step="1"
-              {...register("imagesPerPackage")}
-            />
-            {estimatedPackageCost != null ? (
-              <div className="form-text mb-2">
-                Custo estimado por pacote:{" "}
-                {usdFormatter.format(estimatedPackageCost)}
-              </div>
-            ) : null}
-            <label className="form-label" htmlFor="openImagesPerPackage">
-              Quantidade de imagens abertas
-            </label>
-            <input
-              id="openImagesPerPackage"
-              className="form-control mb-2"
-              type="number"
-              min="0"
-              step="1"
-              max={imagesPerPackageValue || undefined}
-              {...register("openImagesPerPackage")}
-            />
-            <label className="form-label" htmlFor="compressedImagesPerPackage">
-              Quantidade de imagens compactadas
-            </label>
-            <input
-              id="compressedImagesPerPackage"
-              className="form-control mb-2"
-              type="number"
-              min="0"
-              step="1"
-              max={imagesPerPackageValue || undefined}
-              {...register("compressedImagesPerPackage")}
-            />
-            {hasWorkerRequests && (
-              <div className="mb-3" aria-live="polite">
-                <p className="text-muted small mb-2">
-                  Este template solicitará conteúdos ao Worker AI:
-                </p>
-                <div className="d-flex flex-wrap gap-2">
-                  {workerRequests.instantForms > 0 && (
-                    <span className="badge rounded-pill text-bg-info">
-                      Instant forms: {workerRequests.instantForms}
-                    </span>
-                  )}
-                  {workerRequests.emails > 0 && (
-                    <span className="badge rounded-pill text-bg-info">
-                      E-mails: {workerRequests.emails}
-                    </span>
-                  )}
+              </section>
+
+              <section className="experiment-edit-card">
+                <div className="experiment-edit-card__heading">
+                  <span>03</span>
+                  <div>
+                    <h2>Oferta, metas e calendário</h2>
+                    <p>
+                      Organize a economia mínima para decidir se vale escalar.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-            <label className="form-label" htmlFor="instagramAccountId">
-              Conta do Instagram <span className="text-danger">*</span>
-            </label>
-            <select
-              id="instagramAccountId"
-              className="form-select mb-2"
-              {...register("instagramAccountId")}
-              value={selectedInstagramAccountId ?? ""}
-              disabled={isLoadingInstagramAccounts || noInstagramAccounts}
-            >
-              <option value="">
-                {isLoadingInstagramAccounts
-                  ? "Carregando contas cadastradas..."
-                  : noInstagramAccounts
-                    ? "Cadastre uma conta para continuar"
-                    : "Selecione uma conta"}
-              </option>
-              {instagramAccountOptions.map((account) => (
-                <option key={account.id} value={String(account.id)}>
-                  {account.name} ({account.handle})
-                </option>
-              ))}
-            </select>
-            {noInstagramAccounts && (
-              <div className="alert alert-warning" role="alert">
-                Nenhuma conta do Instagram está cadastrada. Cadastre uma conta
-                antes de editar o experimento.
-                <div className="mt-2">
-                  <a
-                    className="btn btn-outline-primary btn-sm"
-                    href="/accounts/instagram"
-                  >
-                    Abrir Contas do Instagram
-                  </a>
-                </div>
-              </div>
-            )}
-            <label className="form-label" htmlFor="facebookPageId">
-              Página do Facebook
-            </label>
-            <select
-              id="facebookPageId"
-              className="form-select mb-2"
-              {...register("facebookPageId")}
-            >
-              <option value="">
-                {isLoadingFacebookPages
-                  ? "Carregando páginas cadastradas..."
-                  : "Nenhuma página selecionada"}
-              </option>
-              {facebookPageOptions.map((page) => (
-                <option key={page.id} value={String(page.id)}>
-                  {page.name} ({page.pageId})
-                </option>
-              ))}
-            </select>
-            <div className="mt-3 d-flex justify-content-end">
-              <button
-                type="button"
-                className="btn btn-outline-secondary me-2"
-                onClick={() => navigate(-1)}
-                disabled={update.isPending}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={
-                  update.isPending ||
-                  noInstagramAccounts ||
-                  !selectedJourneyTemplateId
-                }
-                onClick={handleSubmit(onSubmit, (errors) => {
-                  console.log("Validation errors", errors);
-                })}
-              >
-                {update.isPending ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm"
-                      role="status"
-                      aria-hidden
+                <div className="experiment-edit-grid">
+                  <div>
+                    <label className="form-label" htmlFor="name">
+                      Nome
+                    </label>
+                    <input
+                      id="name"
+                      className="form-control"
+                      {...register("name")}
                     />
-                    <span className="ms-2">Salvando...</span>
-                  </>
-                ) : (
-                  <span>Salvar</span>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="kpiTarget">
+                      Meta do KPI
+                    </label>
+                    <input
+                      id="kpiTarget"
+                      className="form-control"
+                      type="number"
+                      {...register("kpiTarget")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="dailyBudget">
+                      Orçamento diário <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="dailyBudget"
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      {...register("dailyBudget")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="unitPrice">
+                      Preço unitário (R$) <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="unitPrice"
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      {...register("unitPrice")}
+                    />
+                    <div className="form-text">
+                      Usado no link do Mercado Pago.
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="startDate">
+                      Data de início
+                    </label>
+                    <input
+                      id="startDate"
+                      className="form-control"
+                      type="date"
+                      {...register("startDate")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="endDate">
+                      Data de término
+                    </label>
+                    <input
+                      id="endDate"
+                      className="form-control"
+                      type="date"
+                      {...register("endDate")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="preset">
+                      Preset de Métricas
+                    </label>
+                    <select
+                      id="preset"
+                      className="form-select"
+                      {...register("metricPresetId")}
+                    >
+                      <option value="">Selecione Preset de Métricas</option>
+                      {Array.isArray(presets) &&
+                        presets.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="journeyTemplate">
+                      Template de Jornada <span className="text-danger">*</span>
+                    </label>
+                    <select
+                      id="journeyTemplate"
+                      className="form-select"
+                      {...register("journeyTemplateId")}
+                    >
+                      <option value="" disabled hidden>
+                        Selecione um template de jornada
+                      </option>
+                      {journeyTemplates?.content?.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="experiment-edit-hypothesis">
+                  <span>Hipótese registrada</span>
+                  <p>{data.hypothesis}</p>
+                </div>
+              </section>
+
+              <section className="experiment-edit-card">
+                <div className="experiment-edit-card__heading">
+                  <span>04</span>
+                  <div>
+                    <h2>Ativos, IA e canais</h2>
+                    <p>
+                      Configure geração visual e canais usados pela campanha.
+                    </p>
+                  </div>
+                </div>
+                <div className="experiment-edit-grid">
+                  <div>
+                    <label className="form-label" htmlFor="imageModelId">
+                      Modelo de geração de imagem
+                    </label>
+                    <select
+                      id="imageModelId"
+                      className="form-select"
+                      {...imageModelRegister}
+                      value={selectedImageModelId ?? ""}
+                      onChange={(event) => {
+                        imageModelRegister.onChange(event);
+                        setValue("imageModelQualityId", "", {
+                          shouldDirty: true,
+                        });
+                      }}
+                    >
+                      <option value="">Selecione um modelo</option>
+                      {imageModels?.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="imageModelQualityId">
+                      Qualidade das variações
+                    </label>
+                    <select
+                      id="imageModelQualityId"
+                      className="form-select"
+                      {...imageModelQualityRegister}
+                      value={selectedImageQualityId ?? ""}
+                      disabled={!availableImageQualities.length}
+                    >
+                      <option value="">Selecione a qualidade</option>
+                      {availableImageQualities.map((quality) => (
+                        <option key={quality.id} value={quality.id}>
+                          {quality.name}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedQualityPriceLabel ? (
+                      <p className="form-text">
+                        Custo estimado: {selectedQualityPriceLabel}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="imagesPerPackage">
+                      Quantidade de imagens por pacote{" "}
+                      <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="imagesPerPackage"
+                      className="form-control"
+                      type="number"
+                      min="1"
+                      step="1"
+                      {...register("imagesPerPackage")}
+                    />
+                    {estimatedPackageCost != null ? (
+                      <div className="form-text">
+                        Custo estimado por pacote:{" "}
+                        {usdFormatter.format(estimatedPackageCost)}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div>
+                    <label
+                      className="form-label"
+                      htmlFor="openImagesPerPackage"
+                    >
+                      Quantidade de imagens abertas
+                    </label>
+                    <input
+                      id="openImagesPerPackage"
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="1"
+                      max={imagesPerPackageValue || undefined}
+                      {...register("openImagesPerPackage")}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="form-label"
+                      htmlFor="compressedImagesPerPackage"
+                    >
+                      Quantidade de imagens compactadas
+                    </label>
+                    <input
+                      id="compressedImagesPerPackage"
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="1"
+                      max={imagesPerPackageValue || undefined}
+                      {...register("compressedImagesPerPackage")}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="instagramAccountId">
+                      Conta do Instagram <span className="text-danger">*</span>
+                    </label>
+                    <select
+                      id="instagramAccountId"
+                      className="form-select"
+                      {...register("instagramAccountId")}
+                      value={selectedInstagramAccountId ?? ""}
+                      disabled={
+                        isLoadingInstagramAccounts || noInstagramAccounts
+                      }
+                    >
+                      <option value="">
+                        {isLoadingInstagramAccounts
+                          ? "Carregando contas cadastradas..."
+                          : noInstagramAccounts
+                            ? "Cadastre uma conta para continuar"
+                            : "Selecione uma conta"}
+                      </option>
+                      {instagramAccountOptions.map((account) => (
+                        <option key={account.id} value={String(account.id)}>
+                          {account.name} ({account.handle})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="facebookPageId">
+                      Página do Facebook
+                    </label>
+                    <select
+                      id="facebookPageId"
+                      className="form-select"
+                      {...register("facebookPageId")}
+                    >
+                      <option value="">
+                        {isLoadingFacebookPages
+                          ? "Carregando páginas cadastradas..."
+                          : "Nenhuma página selecionada"}
+                      </option>
+                      {facebookPageOptions.map((page) => (
+                        <option key={page.id} value={String(page.id)}>
+                          {page.name} ({page.pageId})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {hasWorkerRequests && (
+                  <div className="experiment-edit-note" aria-live="polite">
+                    <p className="text-muted small mb-2">
+                      Este template solicitará conteúdos ao Worker AI:
+                    </p>
+                    <div className="d-flex flex-wrap gap-2">
+                      {workerRequests.instantForms > 0 && (
+                        <span className="badge rounded-pill text-bg-info">
+                          Instant forms: {workerRequests.instantForms}
+                        </span>
+                      )}
+                      {workerRequests.emails > 0 && (
+                        <span className="badge rounded-pill text-bg-info">
+                          E-mails: {workerRequests.emails}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </button>
+                {noInstagramAccounts && (
+                  <div className="alert alert-warning mt-3" role="alert">
+                    Nenhuma conta do Instagram está cadastrada. Cadastre uma
+                    conta antes de editar o experimento.
+                    <div className="mt-2">
+                      <a
+                        className="btn btn-outline-primary btn-sm"
+                        href="/accounts/instagram"
+                      >
+                        Abrir Contas do Instagram
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </section>
             </div>
+
+            <aside
+              className="experiment-edit-summary"
+              aria-label="Resumo comercial do experimento"
+            >
+              <div className="experiment-edit-summary__brand">
+                <span>MUSA</span>
+                <strong>Checklist de escala</strong>
+              </div>
+              <dl>
+                <div>
+                  <dt>Objetivo</dt>
+                  <dd>{campaignObjectiveLabel}</dd>
+                </div>
+                <div>
+                  <dt>Etapa</dt>
+                  <dd>{selectedStageLabel}</dd>
+                </div>
+                <div>
+                  <dt>Métrica</dt>
+                  <dd>{primaryMetricValue || "Ainda não definida"}</dd>
+                </div>
+                <div>
+                  <dt>Orçamento</dt>
+                  <dd>
+                    {watch("dailyBudget")
+                      ? `R$ ${watch("dailyBudget")}/dia`
+                      : "Pendente"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Preço</dt>
+                  <dd>
+                    {watch("unitPrice")
+                      ? `R$ ${watch("unitPrice")}`
+                      : "Pendente"}
+                  </dd>
+                </div>
+              </dl>
+              <div className="experiment-edit-summary__rule">
+                <strong>Regra visual</strong>
+                <p>
+                  Vinho para ação principal, dourado apenas em destaque, creme
+                  como base e texto crítico em escuro.
+                </p>
+              </div>
+              <div className="experiment-edit-summary__swatches">
+                <i style={{ backgroundColor: "#7A2444" }} />
+                <i style={{ backgroundColor: "#D6A75C" }} />
+                <i style={{ backgroundColor: "#FFF8F3" }} />
+                <i style={{ backgroundColor: "#2F5952" }} />
+                <i style={{ backgroundColor: "#2B2024" }} />
+              </div>
+              <div className="experiment-edit-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary me-2"
+                  onClick={() => navigate(-1)}
+                  disabled={update.isPending}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={
+                    update.isPending ||
+                    noInstagramAccounts ||
+                    !selectedJourneyTemplateId
+                  }
+                  onClick={handleSubmit(onSubmit, (errors) => {
+                    console.log("Validation errors", errors);
+                  })}
+                >
+                  {update.isPending ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        role="status"
+                        aria-hidden
+                      />
+                      <span className="ms-2">Salvando...</span>
+                    </>
+                  ) : (
+                    <span>Salvar</span>
+                  )}
+                </button>
+              </div>
+            </aside>
           </fieldset>
         </form>
       </div>

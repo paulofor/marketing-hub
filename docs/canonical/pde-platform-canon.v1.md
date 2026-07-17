@@ -103,6 +103,7 @@ Regras obrigatórias:
 
 - os anúncios devem direcionar para a tela de login do Clube MUSA/PDE, não diretamente para checkout;
 - o login libera somente a entrada no sistema e a parte inicial gratuita;
+- o preço do acesso pago não deve aparecer em anúncio, experimento ou área pública quando a estratégia comercial for revelar o valor somente no momento em que a usuária solicitar a liberação das funcionalidades pagas dentro da área logada;
 - a parte inicial deve gerar percepção de valor, diagnóstico, orientação ou amostra suficiente para criar desejo de continuidade;
 - as partes mais importantes do produto devem permanecer bloqueadas até a compra do acesso;
 - a compra aprovada libera o acesso completo ao produto PDE comprado;
@@ -119,7 +120,7 @@ Cada produto PDE deve ter, no mínimo:
 - `name`;
 - `promise`;
 - `audience`;
-- `priceLabel`;
+- `priceLabel`, que pode ficar vazio enquanto a estratégia comercial não deve revelar preço antes da solicitação de acesso pago;
 - `theme`;
 - `diagnostic`;
 - `missions`;

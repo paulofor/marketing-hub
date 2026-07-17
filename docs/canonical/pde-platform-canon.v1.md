@@ -172,5 +172,7 @@ Um produto PDE só pode ser considerado pronto para tráfego quando:
 4. experiência guiada estiver carregando;
 5. materiais de apoio estiverem disponíveis;
 6. progresso estiver persistindo ou registrado de forma auditável;
-7. página de venda apontar para o checkout correto;
+7. o anúncio apontar para a entrada/login do PDE em `https://clubemusa.com.br`, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
 8. produto da cliente não expuser termos técnicos internos.
+
+Para experimentos do tipo `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, a prontidão de campanha não deve exigir GeraSalesPage v1 como página de venda tradicional. A validação correta é: contrato comercial completo, URL canônica do Clube MUSA/PDE, criativos prontos, segmentação publicável, checkout/webhook/acesso e experiência inicial/paga validados.

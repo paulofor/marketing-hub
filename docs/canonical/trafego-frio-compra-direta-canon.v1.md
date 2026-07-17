@@ -6,12 +6,15 @@ Todo experimento com intenção de compra, identificado por `experimentType = LO
 
 O anúncio não pode apontar diretamente para checkout, link de pagamento ou outro destino de compra.
 
+Para `experimentType = PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, o destino intermediário aprovado é a entrada/login do Clube MUSA/PDE com experiência inicial gratuita e paywall interno. Nesse caso, o anúncio deve apontar para `https://clubemusa.com.br`, sem exigir GeraSalesPage v1 como página tradicional, porque a própria experiência PDE cumpre o papel de intermediação, prova de valor e bloqueio antes da compra.
+
 Para Produto IA `AI_PERSONALIZED_SAMPLE`, o destino intermediário aprovado é o funil-página do Lead Portal vinculado ao experimento. Nesse caso, o GeraSalesPage v1 pode iniciar sem URL de checkout real quando `follow_up_action_url` apontar exatamente para o funil aprovado de coleta da amostra personalizada. A publicação da campanha continua bloqueada até o GeraSalesPage v1 concluir e auditar a página dentro desse funil.
 
 ## Critérios obrigatórios
 
-- O GeraSalesPage v1 precisa concluir a etapa `publication-package` e registrar auditoria da página publicada antes da liberação para Facebook Ads.
+- Nos tipos que exigem página de venda tradicional, o GeraSalesPage v1 precisa concluir a etapa `publication-package` e registrar auditoria da página publicada antes da liberação para Facebook Ads.
 - `follow_up_action_url` deve ser a URL da página de venda auditada, não a URL de checkout.
+- Em `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, `follow_up_action_url` deve ser `https://clubemusa.com.br` ou rota pública sob esse domínio, levando ao login/entrada do Clube MUSA com paywall interno.
 - Em `AI_PERSONALIZED_SAMPLE`, `follow_up_action_url` deve ser a URL pública do `LeadPortalFlow` aprovado que receberá a página auditada e o formulário gerenciado de personalização.
 - O checkout deve existir apenas como CTA dentro da página, depois de promessa, prova, mecanismo, objeções e percepção de valor.
 - A página precisa conter coletores mínimos `page_view`, `page_load_metric`, `section_view_time` e `checkout_click`.

@@ -45,6 +45,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+/**
+ * Valida as regras de prontidão comercial dos experimentos antes de liberar campanha paga.
+ */
 @ExtendWith(MockitoExtension.class)
 class ExperimentReadinessServiceTest {
 
@@ -351,6 +354,60 @@ class ExperimentReadinessServiceTest {
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
+    /** Garante que o funil PDE MUSA usa login/paywall canônico sem exigir GeraSalesPage. */
+    @Test
+    void shouldAllowPdeMembershipCampaignWithCanonicalMusaLoginDestination() {
+        Experiment experiment = buildExperiment(67L, 77L);
+        experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+        experiment.setFollowUpActionUrl("https://clubemusa.com.br");
+        completeCommercialContract(experiment);
+
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(67L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(67L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
+    /** Garante que o funil PDE MUSA bloqueia destino que nao seja a entrada do Clube MUSA. */
+    @Test
+    void shouldBlockPdeMembershipCampaignWhenDestinationDoesNotPointToMusaLogin() {
+        Experiment experiment = buildExperiment(68L, 78L);
+        experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+        experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=pde");
+        completeCommercialContract(experiment);
+
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(68L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(68L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("pdeMembershipDestination");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    /** Garante que o resumo do PDE MUSA nao exige GeraLanding, Lead Portal nem GeraSalesPage. */
+    @Test
+    void shouldSummarizePdeMembershipWithoutTraditionalLandingPipelines() {
+        Long experimentId = 69L;
+        Experiment experiment = buildExperiment(experimentId, 79L);
+        experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+        experiment.setFollowUpActionUrl("https://clubemusa.com.br");
+        completeCommercialContract(experiment);
+
+        when(experimentService.get(experimentId)).thenReturn(experiment);
+        when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(experimentId, CreativeStatus.READY)).thenReturn(1L);
+        mockPublishableSelection(experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+        assertThat(summary.issues()).isEmpty();
+        assertThat(summary.hasCreatives()).isTrue();
+        assertThat(summary.hasCompleteTargeting()).isTrue();
     }
 
     @Test

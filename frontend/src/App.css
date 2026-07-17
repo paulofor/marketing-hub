@@ -91,6 +91,15 @@
   text-underline-offset: 0.2em;
 }
 
+.product-catalog-card__actions {
+  border-top: 1px solid var(--bs-border-color);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.35rem;
+  padding-top: 1rem;
+}
+
 .product-catalog-card__panel {
   border: 1px solid
     color-mix(

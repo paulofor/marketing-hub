@@ -201,37 +201,49 @@ export default function ProductListPage() {
                         </dd>
                       </div>
                     </dl>
-                    <p className="product-catalog-card__description-links">
-                      Ações do produto:{" "}
-                      <Link to={`/products/${product.id}/edit`}>
-                        editar dados
+                    {product.slug && (
+                      <p className="product-catalog-card__description-links">
+                        Links de definição do produto:{" "}
+                        <a
+                          href={`/api/products/public/${product.slug}/marketing-definition`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          definição formatada
+                        </a>
+                        {" e "}
+                        <a
+                          href={`/api/products/public/${product.slug}/marketing-definition.md`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Markdown
+                        </a>
+                        .
+                      </p>
+                    )}
+                    <div
+                      className="product-catalog-card__actions"
+                      aria-label={`Ações de ${product.name || product.niche || `Produto ${product.id}`}`}
+                    >
+                      <Link
+                        className="btn btn-primary btn-sm"
+                        to={`/products/${product.id}/edit`}
+                      >
+                        Editar dados
                       </Link>
-                      {product.slug && (
-                        <>
-                          , abrir{" "}
-                          <a
-                            href={`/api/products/public/${product.slug}/marketing-definition`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            definição formatada
-                          </a>
-                          , baixar{" "}
-                          <a
-                            href={`/api/products/public/${product.slug}/marketing-definition.md`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Markdown
-                          </a>
-                        </>
-                      )}
-                      {" "}ou preparar{" "}
-                      <Link to={`/products/${product.id}/sales-videos`}>
-                        vídeos de venda
+                      <Link
+                        className="btn btn-outline-primary btn-sm"
+                        to={`/products/${product.id}/sales-videos`}
+                      >
+                        Vídeos de venda
                       </Link>
-                      .
-                    </p>
+                    </div>
+                    {!product.slug && (
+                      <p className="product-catalog-card__description-links">
+                        Links de definição indisponíveis sem slug cadastrado.
+                      </p>
+                    )}
                   </div>
                   <div className="col-12 col-xl-5">
                     <div className="product-catalog-card__panel">

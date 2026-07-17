@@ -19,6 +19,7 @@ Consulte também o [Diagrama de Navegação do Frontend](./frontend-navigation.m
 | `/app-ideas/new` | Nova Ideia de Aplicativo | - | AppIdea |
 | `/products` | Lista de Produtos | Product | - |
 | `/products/new` | Novo Produto | InstagramAccount | Product |
+| `/products/:id/edit` | Editar Produto | InstagramAccount, Product | Product |
 | `/success-products` | Produtos de Sucesso | SuccessProduct | - |
 | `/success-products/new` | Novo Produto de Sucesso | - | SuccessProduct |
 | `/success-products/:id` | Detalhe do Produto de Sucesso | SuccessProduct | - |
@@ -54,4 +55,3 @@ Consulte também o [Diagrama de Navegação do Frontend](./frontend-navigation.m
 | `/prompt-entities/:entityName/attributes` | Atributos da Entidade de Prompt | PromptAttribute | PromptAttribute |
 | `/lead-portal/simple-form-styles` | Estilos do formulário simples | LeadPortalSimpleFormStyle | LeadPortalSimpleFormStyle |
 | `*` | Início | - | - |
-

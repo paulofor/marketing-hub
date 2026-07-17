@@ -1,14 +1,14 @@
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { describe, it, expect, vi } from 'vitest';
-import ProductListPage from './ProductListPage';
-import axios from 'axios';
+import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
+import { describe, it, expect, vi } from "vitest";
+import ProductListPage from "./ProductListPage";
+import axios from "axios";
 
-vi.mock('axios');
+vi.mock("axios");
 
-describe('ProductListPage', () => {
-  it('renders table', async () => {
+describe("ProductListPage", () => {
+  it("renders product actions", async () => {
     (axios.get as any).mockResolvedValue({ data: [] });
     const client = new QueryClient();
     render(
@@ -16,8 +16,32 @@ describe('ProductListPage', () => {
         <BrowserRouter>
           <ProductListPage />
         </BrowserRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     expect(await screen.findByText(/Novo Produto/)).toBeTruthy();
+  });
+
+  it("shows edit option for listed product", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          slug: "metodo-musa-7-dias",
+          name: "Método MUSA - Presença Elegante em 7 Dias",
+          currentPriceBrl: 47,
+        },
+      ],
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    const editLink = await screen.findByRole("link", { name: /Editar dados/i });
+    expect(editLink).toHaveAttribute("href", "/products/1/edit");
   });
 });

@@ -36,6 +36,12 @@ public class ProductController {
         return mapper.toDto(service.getProduct(id));
     }
 
+    /** Atualiza os dados comerciais editáveis de um produto existente. */
+    @PutMapping("/{id}")
+    public ProductDto update(@PathVariable Long id, @RequestBody CreateProductRequest request) {
+        return mapper.toDto(service.updateProduct(id, request));
+    }
+
     /** Lista os produtos comerciais cadastrados no Marketing Hub. */
     @GetMapping
     public List<ProductDto> list() {

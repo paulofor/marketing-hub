@@ -19,7 +19,11 @@ function splitText(value?: string) {
 function isMusaProduct(product: { slug?: string; name?: string }) {
   const slug = product.slug?.toLowerCase() ?? "";
   const name = product.name?.toLowerCase() ?? "";
-  return slug === "metodo-musa-7-dias" || name.includes("método musa") || name.includes("metodo musa");
+  return (
+    slug === "metodo-musa-7-dias" ||
+    name.includes("método musa") ||
+    name.includes("metodo musa")
+  );
 }
 
 function extractHexColor(value: string) {
@@ -61,12 +65,18 @@ const musaIdentitySupportColors: ProductIdentityColor[] = [
 ];
 
 function normalizeColorRole(rawColor: string, index: number) {
-  const text = rawColor.replace(/\s*#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b\s*/, " ").trim();
+  const text = rawColor
+    .replace(/\s*#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b\s*/, " ")
+    .trim();
   if (text) return text.charAt(0).toUpperCase() + text.slice(1);
   return `Cor ${index + 1}`;
 }
 
-function buildIdentityColors(product: { slug?: string; name?: string; colorPalette?: string }) {
+function buildIdentityColors(product: {
+  slug?: string;
+  name?: string;
+  colorPalette?: string;
+}) {
   const colors = splitText(product.colorPalette).reduce<ProductIdentityColor[]>(
     (identityColors, color, index) => {
       const hex = extractHexColor(color);
@@ -84,7 +94,9 @@ function buildIdentityColors(product: { slug?: string; name?: string; colorPalet
 
   if (!isMusaProduct(product)) return colors;
 
-  const registeredHexColors = new Set(colors.map((color) => color.hex.toLowerCase()));
+  const registeredHexColors = new Set(
+    colors.map((color) => color.hex.toLowerCase()),
+  );
   const supportColors = musaIdentitySupportColors.filter(
     (color) => !registeredHexColors.has(color.hex.toLowerCase()),
   );
@@ -102,7 +114,8 @@ export default function ProductListPage() {
         <div>
           <PageTitle>Cadastro de Produtos</PageTitle>
           <p className="text-muted mb-0">
-            Fonte comercial dos produtos que o Marketing Hub vende, entrega e escala.
+            Fonte comercial dos produtos que o Marketing Hub vende, entrega e
+            escala.
           </p>
         </div>
         <Link className="btn btn-primary" to="/products/new">
@@ -113,7 +126,9 @@ export default function ProductListPage() {
       <div className="row g-3">
         {products.map((product) => {
           const colors = buildIdentityColors(product);
-          const registeredColorCount = colors.filter((color) => color.source === "Cadastrada").length;
+          const registeredColorCount = colors.filter(
+            (color) => color.source === "Cadastrada",
+          ).length;
           return (
             <div className="col-12" key={product.id}>
               <section
@@ -150,7 +165,11 @@ export default function ProductListPage() {
                         <dt>URL pública</dt>
                         <dd>
                           {product.publicUrl ? (
-                            <a href={product.publicUrl} target="_blank" rel="noreferrer">
+                            <a
+                              href={product.publicUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
                               {product.publicUrl}
                             </a>
                           ) : (
@@ -160,34 +179,53 @@ export default function ProductListPage() {
                       </div>
                       <div>
                         <dt>Público alvo</dt>
-                        <dd>{product.targetAudience || product.avatar || "Não informado"}</dd>
+                        <dd>
+                          {product.targetAudience ||
+                            product.avatar ||
+                            "Não informado"}
+                        </dd>
                       </div>
                       <div>
                         <dt>Hipótese/oferta principal</dt>
-                        <dd>{product.primaryHypothesis || product.promise || "Não informada"}</dd>
+                        <dd>
+                          {product.primaryHypothesis ||
+                            product.promise ||
+                            "Não informada"}
+                        </dd>
                       </div>
                       <div>
                         <dt>Experimentos associados</dt>
-                        <dd>{product.associatedExperiments || "Nenhum experimento vinculado"}</dd>
+                        <dd>
+                          {product.associatedExperiments ||
+                            "Nenhum experimento vinculado"}
+                        </dd>
                       </div>
                     </dl>
                   </div>
                   <div className="col-12 col-xl-5">
                     <div className="product-catalog-card__panel">
                       <h3 className="h6">Linguagem</h3>
-                      <p>{product.languageStyle || product.storytelling || "Não informada"}</p>
+                      <p>
+                        {product.languageStyle ||
+                          product.storytelling ||
+                          "Não informada"}
+                      </p>
                       {colors.length > 0 && (
                         <>
                           <div className="product-catalog-card__color-heading">
                             <h3 className="h6 mt-3">Identidade visual</h3>
                             <span>
-                              {registeredColorCount} cadastradas / {colors.length} no sistema
+                              {registeredColorCount} cadastradas /{" "}
+                              {colors.length} no sistema
                             </span>
                           </div>
                           <div className="product-catalog-card__color-system">
                             {colors.map((color) => {
                               return (
-                                <div className="product-catalog-card__color-role" key={`${color.role}-${color.hex}`}>
+                                <div
+                                  className="product-catalog-card__color-role"
+                                  key={`${color.role}-${color.hex}`}
+                                >
                                   <i
                                     aria-hidden="true"
                                     style={{ backgroundColor: color.hex }}
@@ -209,6 +247,12 @@ export default function ProductListPage() {
                 </div>
 
                 <div className="product-catalog-card__actions">
+                  <Link
+                    className="btn btn-sm btn-primary"
+                    to={`/products/${product.id}/edit`}
+                  >
+                    Editar dados
+                  </Link>
                   <Link
                     className="btn btn-sm btn-outline-primary"
                     to={`/products/${product.id}/sales-videos`}

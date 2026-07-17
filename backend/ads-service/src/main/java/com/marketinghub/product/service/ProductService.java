@@ -133,18 +133,18 @@ public class ProductService {
                 line("Avatar", product.getAvatar()));
         appendSection(markdown, "3. Hipótese comercial",
                 paragraph(product.getPrimaryHypothesis()));
-        appendSection(markdown, "4. Dor, promessa e transformação",
+        appendSection(markdown, "4. Dor, resultado e mecanismo",
                 line("Dor principal", product.getExplicitPain()),
-                line("Promessa", product.getPromise()),
+                line("Resultado prometido", product.getPromise()),
                 line("Mecanismo único", product.getUniqueMechanism()));
         appendSection(markdown, "5. Estilo de comunicação",
                 line("Linguagem", product.getLanguageStyle()),
                 line("Storytelling", product.getStorytelling()),
-                line("Paleta visual", product.getColorPalette()));
+                line("Paleta visual completa", product.getColorPalette()));
         appendSection(markdown, "6. Oferta e monetização",
-                line("Oferta de entrada", product.getTripwire()),
+                line("Oferta", product.getTripwire()),
                 line("Reversão de risco", product.getRiskReversal()),
-                line("Prova social", product.getSocialProof()),
+                line("Prova", product.getSocialProof()),
                 line("Checkout e monetização", product.getCheckoutMonetization()));
         appendSection(markdown, "7. Funil de aquisição e venda",
                 paragraph(product.getFunnel()));

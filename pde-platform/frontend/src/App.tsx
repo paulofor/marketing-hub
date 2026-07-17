@@ -81,6 +81,10 @@ type MagicLinkResponse = {
   accessUrl?: string;
 };
 
+type ApiErrorResponse = {
+  error?: string;
+};
+
 declare global {
   interface Window {
     google?: {
@@ -253,35 +257,41 @@ function App() {
   async function submitAccess() {
     if (!email.trim()) {
       setErrorMessage(authMode === 'login'
-        ? 'Informe o e-mail cadastrado para entrar na sua Área MUSA.'
-        : 'Informe seu melhor e-mail para criar o cadastro da Área MUSA.');
+        ? 'Informe o e-mail que você usou para criar seu acesso MUSA.'
+        : 'Informe seu melhor e-mail para liberar seu diagnóstico inicial.');
       return;
     }
     setLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
     setDevAccessUrl('');
+    const endpoint = authMode === 'login' ? '/api/pde/access/login-link' : '/api/pde/access/magic-link';
     try {
       await trackEvent('LOGIN_STARTED', {
         email,
         provider: 'EMAIL_MAGIC_LINK',
         metadata: { authMode },
       });
-      const response = await fetch('/api/pde/access/magic-link', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productSlug: product.slug, email }),
       });
       if (!response.ok) {
-        throw new Error('Não foi possível enviar o link de acesso.');
+        const errorBody = await response.json().catch(() => ({} as ApiErrorResponse));
+        throw new Error(errorBody.error ?? 'Não foi possível enviar o link de acesso.');
       }
       const result: MagicLinkResponse = await response.json();
       if (result.accessUrl) {
         setDevAccessUrl(result.accessUrl);
       }
       setSuccessMessage(resolveMagicLinkMessage(result));
-    } catch {
-      setErrorMessage('Não conseguimos enviar seu link agora. Confira o e-mail e tente novamente.');
+    } catch (error) {
+      if (authMode === 'login' && error instanceof Error && error.message.includes('Cadastro')) {
+        setErrorMessage('Não encontramos cadastro com esse e-mail. Use “Primeiro acesso” para entrar gratuitamente e liberar o Dia 1.');
+      } else {
+        setErrorMessage('Não conseguimos enviar seu link agora. Confira o e-mail e tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -382,10 +392,14 @@ function App() {
 
   function resolveMagicLinkMessage(result: MagicLinkResponse) {
     if (result.deliveryStatus === 'SENT') {
-      return 'Enviamos o link de acesso para seu e-mail. Abra o link para continuar.';
+      return authMode === 'login'
+        ? 'Enviamos um novo link para seu e-mail. Abra o link para voltar à sua Área MUSA.'
+        : 'Seu primeiro acesso foi criado. Abra o link enviado por e-mail para ver o diagnóstico e começar o Dia 1.';
     }
     if (result.accessUrl) {
-      return 'Link de teste gerado. Como o envio por e-mail ainda não está configurado neste ambiente, use o botão Entrar para abrir seu acesso.';
+      return authMode === 'login'
+        ? 'Link de teste encontrado para esse cadastro. Use o botão Entrar para voltar à Área MUSA.'
+        : 'Primeiro acesso de teste criado. Use o botão Entrar para abrir o diagnóstico e o Dia 1.';
     }
     return 'O envio por e-mail ainda não está configurado neste ambiente. Configure o envio ou habilite o link de teste para entrar.';
   }
@@ -436,10 +450,10 @@ function App() {
         <section className="login-hero">
           <div className="login-panel">
             <p className="eyebrow">Clube MUSA</p>
-            <h1>Descubra o que hoje apaga a sua presença.</h1>
+            <h1>Entre e descubra o detalhe que hoje apaga sua presença.</h1>
             <p className="promise">
-              Entre para liberar seu diagnóstico inicial e o Dia 1 do Método MUSA: uma experiência
-              guiada para construir presença elegante em 7 dias, sem luxo caro nem compra por impulso.
+              Libere seu diagnóstico inicial e o Dia 1 do Método MUSA: uma experiência guiada para
+              parecer mais elegante com escolhas simples, sem luxo caro nem compra por impulso.
             </p>
             <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
               <span><Check size={16} /> Diagnóstico gratuito</span>
@@ -460,22 +474,37 @@ function App() {
                 onClick={() => {
                   setAuthMode('login');
                   setErrorMessage('');
+                  setSuccessMessage('');
+                  setDevAccessUrl('');
                 }}
                 type="button"
               >
-                Já tenho cadastro
+                Entrar
               </button>
               <button
                 className={authMode === 'register' ? 'active' : ''}
                 onClick={() => {
                   setAuthMode('register');
                   setErrorMessage('');
+                  setSuccessMessage('');
+                  setDevAccessUrl('');
                 }}
                 type="button"
               >
-                Criar cadastro
+                Primeiro acesso
               </button>
             </div>
+            <p className="auth-help">
+              {authMode === 'login' ? (
+                <>
+                  <strong>Já entrou antes?</strong> Informe o mesmo e-mail para receber um novo link seguro.
+                </>
+              ) : (
+                <>
+                  <strong>Nova por aqui?</strong> O primeiro acesso libera o diagnóstico e o Dia 1 gratuitamente.
+                </>
+              )}
+            </p>
             {googleClientId && (
               <div className="social-login-block">
                 <div id="google-login-button" aria-label="Entrar com Google" />
@@ -483,10 +512,10 @@ function App() {
               </div>
             )}
             <div className="auth-divider">
-              <span>ou entre com um link seguro por e-mail</span>
+              <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'receba seu primeiro link por e-mail'}</span>
             </div>
             <label className="email-box login-email-box">
-              {authMode === 'login' ? 'E-mail cadastrado' : 'E-mail para criar cadastro'}
+              {authMode === 'login' ? 'E-mail do seu acesso MUSA' : 'E-mail para liberar o Dia 1'}
               <input
                 ref={emailInputRef}
                 type="email"
@@ -522,7 +551,7 @@ function App() {
                 <Mail size={18} />
                 {loading
                   ? 'Enviando link...'
-                  : (authMode === 'login' ? 'Entrar' : 'Liberar meu Dia 1')}
+                  : (authMode === 'login' ? 'Receber link de entrada' : 'Solicitar primeiro acesso')}
               </button>
             )}
             <p className="access-note">
@@ -533,6 +562,11 @@ function App() {
           <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA">
             <div className="cover-mark">
               <Sparkles size={32} />
+            </div>
+            <div className="style-preview" aria-hidden="true">
+              <span />
+              <span />
+              <span />
             </div>
             <div className="login-editorial-preview" aria-hidden="true">
               <div className="preview-page">
@@ -672,7 +706,7 @@ function App() {
             className="mini-cover"
             style={{
               backgroundImage: currentProduct.theme.imageUrl
-                ? `linear-gradient(180deg, rgba(45, 32, 36, 0.06), rgba(45, 32, 36, 0.72)), url(${currentProduct.theme.imageUrl})`
+                ? `url(${currentProduct.theme.imageUrl})`
                 : undefined,
             }}
           >

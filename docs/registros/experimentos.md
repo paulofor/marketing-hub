@@ -5868,3 +5868,10 @@
 
 - foi feito: a listagem de produtos passou a mostrar links para a definição comercial formatada e para o Markdown bruto do produto MUSA.
 - impacto comercial esperado: reduzir atrito para revisar promessa, público, linguagem e identidade visual antes de editar produto, produzir criativos ou liberar campanhas.
+
+## 2026-07-17 — PED/MUSA: login e primeiro acesso separados
+
+- foi feito: a Área MUSA passou a separar login de cliente existente e solicitação de primeiro acesso, impedindo que a opção de login crie cadastro silenciosamente.
+- foi feito: a tela inicial passou a orientar a usuária com mensagens específicas para e-mail inexistente, primeiro acesso criado, retorno por link e bloqueio premium.
+- foi feito: a prévia visual de entrada deixou de usar capa cortada como fundo e passou a mostrar uma composição controlada de presença, paleta e Dia 1.
+- impacto comercial esperado: reduzir confusão no primeiro contato, manter o funil canônico de entrada gratuita com paywall interno e melhorar a intenção de continuidade para assinatura.

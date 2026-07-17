@@ -59,36 +59,42 @@ Todo produto precisa ser financeiramente viavel para o negocio. Antes de escalar
 
 Produto sem caminho plausivel de lucro nao deve receber escala paga, mesmo quando gerar curiosidade ou cliques.
 
-## Funil canonico de assinatura PDE/MUSA
+## Funil canonico Clube MUSA/PDE com paywall interno
 
 Produtos PDE ou areas de membros com assinatura devem usar o tipo operacional de experimento
 `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL` quando a jornada comercial depender de entrada na area,
-login, assinatura e ativacao pos-compra.
+login, visualizacao inicial, compra do acesso e ativacao pos-compra.
 
-Funil recomendado:
+Funil obrigatório:
 
 ```text
 Visualizacao do anuncio
-→ clique no anuncio para o PED/MUSA
-→ entrada na tela inicial do PED/MUSA
+→ clique no anuncio para a tela de login do PDE/MUSA
 → login ou criacao de conta
-→ visualizacao da oferta de assinatura
+→ entrada no sistema
+→ visualizacao da parte inicial gratuita
+→ bloqueio das partes mais importantes
+→ visualizacao da oferta de compra do acesso
 → clique no plano/checkout
-→ assinatura aprovada
-→ acesso liberado
+→ compra ou assinatura aprovada
+→ acesso completo liberado
 → primeiro uso/ativacao
 ```
 
 Eventos operacionais mínimos para esse funil:
 
-- `PED_ENTRY`: entrada na tela inicial do PED/MUSA;
+- `PDE_LOGIN_ENTRY`: entrada na tela de login do PDE/MUSA vinda do anuncio;
 - `LOGIN_STARTED`: início de login ou criação de conta;
 - `LOGIN_COMPLETED`: login concluído por Google, magic link ou e-mail;
-- `PAYWALL_VIEWED`: visualização da oferta de assinatura;
+- `PDE_INITIAL_ACCESS_VIEWED`: visualização da parte inicial gratuita;
+- `PDE_IMPORTANT_PART_BLOCKED`: tentativa de continuar em parte importante bloqueada;
+- `PAYWALL_VIEWED`: visualização da oferta de compra do acesso;
 - `SUBSCRIPTION_CLICKED`: clique no plano ou checkout;
 - `SUBSCRIPTION_APPROVED`: assinatura ou compra aprovada;
-- `ACCESS_RELEASED`: acesso liberado após assinatura aprovada;
+- `ACCESS_RELEASED`: acesso completo liberado após compra ou assinatura aprovada;
 - `FIRST_USE`: primeiro consumo real da experiência, como abrir missão/material ou concluir a primeira missão.
+
+O login nao libera acesso completo. Ele libera somente entrada no sistema e consumo da parte inicial gratuita. As partes mais importantes do PDE/MUSA devem exigir compra aprovada. E proibido criar fluxo canonico alternativo em que anuncio leve direto para checkout ou em que qualquer e-mail valido libere toda a experiencia sem pagamento.
 
 A compra aprovada nao deve ser tratada como fim do funil. Para produto recorrente, o sistema
 deve medir ativacao pos-compra porque ela antecipa retencao, renovacao, upgrade, cancelamento

@@ -530,16 +530,22 @@ function App() {
               premium aparecem dentro da área e são desbloqueados com o acesso completo.
             </p>
           </div>
-          <div
-            className="experience-card login-cover"
-            style={{
-              backgroundImage: currentProduct.theme.imageUrl
-                ? `linear-gradient(180deg, rgba(45, 32, 36, 0.16), rgba(45, 32, 36, 0.88)), url(${currentProduct.theme.imageUrl})`
-                : undefined,
-            }}
-          >
+          <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA">
             <div className="cover-mark">
               <Sparkles size={32} />
+            </div>
+            <div className="login-editorial-preview" aria-hidden="true">
+              <div className="preview-page">
+                <span>Dia 1</span>
+                <strong>Presença</strong>
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="preview-note">
+                <Check size={18} />
+                <span>1 ajuste visível hoje</span>
+              </div>
             </div>
             <div className="login-cover-content">
               <p>Método MUSA</p>

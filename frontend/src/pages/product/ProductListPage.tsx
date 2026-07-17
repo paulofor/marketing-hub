@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import type { CSSProperties } from "react";
 import { useProducts } from "../../api/product/useProducts";
 import PageTitle from "../../components/PageTitle";
 
@@ -18,11 +19,89 @@ function splitText(value?: string) {
 function isMusaProduct(product: { slug?: string; name?: string }) {
   const slug = product.slug?.toLowerCase() ?? "";
   const name = product.name?.toLowerCase() ?? "";
-  return slug === "metodo-musa-7-dias" || name.includes("método musa") || name.includes("metodo musa");
+  return (
+    slug === "metodo-musa-7-dias" ||
+    name.includes("método musa") ||
+    name.includes("metodo musa")
+  );
 }
 
 function extractHexColor(value: string) {
   return value.match(/#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/)?.[0];
+}
+
+type ProductIdentityColor = {
+  role: string;
+  label: string;
+  hex: string;
+  source: "Cadastrada" | "Recomendada";
+};
+
+const musaIdentitySupportColors: ProductIdentityColor[] = [
+  {
+    role: "Texto principal",
+    label: "Ink premium",
+    hex: "#2b2024",
+    source: "Recomendada",
+  },
+  {
+    role: "Texto secundário",
+    label: "Vinho suave",
+    hex: "#765f66",
+    source: "Recomendada",
+  },
+  {
+    role: "Linha/superfície",
+    label: "Rosé claro",
+    hex: "#ead8cf",
+    source: "Recomendada",
+  },
+  {
+    role: "Apoio funcional",
+    label: "Verde confiança",
+    hex: "#2f5952",
+    source: "Recomendada",
+  },
+];
+
+function normalizeColorRole(rawColor: string, index: number) {
+  const text = rawColor
+    .replace(/\s*#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b\s*/, " ")
+    .trim();
+  if (text) return text.charAt(0).toUpperCase() + text.slice(1);
+  return `Cor ${index + 1}`;
+}
+
+function buildIdentityColors(product: {
+  slug?: string;
+  name?: string;
+  colorPalette?: string;
+}) {
+  const colors = splitText(product.colorPalette).reduce<ProductIdentityColor[]>(
+    (identityColors, color, index) => {
+      const hex = extractHexColor(color);
+      if (!hex) return identityColors;
+      identityColors.push({
+        role: normalizeColorRole(color, index),
+        label: color,
+        hex,
+        source: "Cadastrada",
+      });
+      return identityColors;
+    },
+    [],
+  );
+
+  if (!isMusaProduct(product)) return colors;
+
+  const registeredHexColors = new Set(
+    colors.map((color) => color.hex.toLowerCase()),
+  );
+  const supportColors = musaIdentitySupportColors.filter(
+    (color) => !registeredHexColors.has(color.hex.toLowerCase()),
+  );
+
+  return [...colors, ...supportColors];
 }
 
 export default function ProductListPage() {
@@ -35,7 +114,8 @@ export default function ProductListPage() {
         <div>
           <PageTitle>Cadastro de Produtos</PageTitle>
           <p className="text-muted mb-0">
-            Fonte comercial dos produtos que o Marketing Hub vende, entrega e escala.
+            Fonte comercial dos produtos que o Marketing Hub vende, entrega e
+            escala.
           </p>
         </div>
         <Link className="btn btn-primary" to="/products/new">
@@ -45,10 +125,22 @@ export default function ProductListPage() {
 
       <div className="row g-3">
         {products.map((product) => {
-          const colors = splitText(product.colorPalette);
+          const colors = buildIdentityColors(product);
+          const registeredColorCount = colors.filter(
+            (color) => color.source === "Cadastrada",
+          ).length;
           return (
             <div className="col-12" key={product.id}>
-              <section className="product-catalog-card">
+              <section
+                className="product-catalog-card"
+                style={
+                  {
+                    "--product-primary": colors[0]?.hex ?? "#7a2444",
+                    "--product-accent": colors[1]?.hex ?? "#d6a75c",
+                    "--product-background": colors[2]?.hex ?? "#fff8f3",
+                  } as CSSProperties
+                }
+              >
                 <div className="product-catalog-card__header">
                   <div>
                     <span className="badge text-bg-light border mb-2">
@@ -73,7 +165,11 @@ export default function ProductListPage() {
                         <dt>URL pública</dt>
                         <dd>
                           {product.publicUrl ? (
-                            <a href={product.publicUrl} target="_blank" rel="noreferrer">
+                            <a
+                              href={product.publicUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
                               {product.publicUrl}
                             </a>
                           ) : (
@@ -83,38 +179,64 @@ export default function ProductListPage() {
                       </div>
                       <div>
                         <dt>Público alvo</dt>
-                        <dd>{product.targetAudience || product.avatar || "Não informado"}</dd>
+                        <dd>
+                          {product.targetAudience ||
+                            product.avatar ||
+                            "Não informado"}
+                        </dd>
                       </div>
                       <div>
                         <dt>Hipótese/oferta principal</dt>
-                        <dd>{product.primaryHypothesis || product.promise || "Não informada"}</dd>
+                        <dd>
+                          {product.primaryHypothesis ||
+                            product.promise ||
+                            "Não informada"}
+                        </dd>
                       </div>
                       <div>
                         <dt>Experimentos associados</dt>
-                        <dd>{product.associatedExperiments || "Nenhum experimento vinculado"}</dd>
+                        <dd>
+                          {product.associatedExperiments ||
+                            "Nenhum experimento vinculado"}
+                        </dd>
                       </div>
                     </dl>
                   </div>
                   <div className="col-12 col-xl-5">
                     <div className="product-catalog-card__panel">
                       <h3 className="h6">Linguagem</h3>
-                      <p>{product.languageStyle || product.storytelling || "Não informada"}</p>
+                      <p>
+                        {product.languageStyle ||
+                          product.storytelling ||
+                          "Não informada"}
+                      </p>
                       {colors.length > 0 && (
                         <>
-                          <h3 className="h6 mt-3">Cores</h3>
-                          <div className="product-catalog-card__colors">
+                          <div className="product-catalog-card__color-heading">
+                            <h3 className="h6 mt-3">Identidade visual</h3>
+                            <span>
+                              {registeredColorCount} cadastradas /{" "}
+                              {colors.length} no sistema
+                            </span>
+                          </div>
+                          <div className="product-catalog-card__color-system">
                             {colors.map((color) => {
-                              const hexColor = extractHexColor(color);
                               return (
-                                <span key={color}>
-                                  {hexColor && (
-                                    <i
-                                      aria-hidden="true"
-                                      style={{ backgroundColor: hexColor }}
-                                    />
-                                  )}
-                                  {color}
-                                </span>
+                                <div
+                                  className="product-catalog-card__color-role"
+                                  key={`${color.role}-${color.hex}`}
+                                >
+                                  <i
+                                    aria-hidden="true"
+                                    style={{ backgroundColor: color.hex }}
+                                  />
+                                  <div>
+                                    <strong>{color.role}</strong>
+                                    <small>
+                                      {color.hex} · {color.source}
+                                    </small>
+                                  </div>
+                                </div>
                               );
                             })}
                           </div>
@@ -125,6 +247,12 @@ export default function ProductListPage() {
                 </div>
 
                 <div className="product-catalog-card__actions">
+                  <Link
+                    className="btn btn-sm btn-primary"
+                    to={`/products/${product.id}/edit`}
+                  >
+                    Editar dados
+                  </Link>
                   <Link
                     className="btn btn-sm btn-outline-primary"
                     to={`/products/${product.id}/sales-videos`}

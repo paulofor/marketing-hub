@@ -29,43 +29,53 @@ public class ProductService {
         this.marketNicheRepository = marketNicheRepository;
     }
 
-    /**
-     * Cria e persiste um produto comercial com seus atributos de venda e entrega.
-     */
+    /** Cria e persiste um produto comercial com seus atributos de venda e entrega. */
     @Transactional
     public Product createProduct(CreateProductRequest request) {
-        Product product = Product.builder()
-                .slug(request.getSlug())
-                .name(request.getName())
-                .publicUrl(request.getPublicUrl())
-                .colorPalette(request.getColorPalette())
-                .targetAudience(request.getTargetAudience())
-                .languageStyle(request.getLanguageStyle())
-                .codeModules(request.getCodeModules())
-                .productType(request.getProductType())
-                .commercialStatus(request.getCommercialStatus())
-                .currentPriceBrl(request.getCurrentPriceBrl())
-                .primaryHypothesisId(request.getPrimaryHypothesisId())
-                .primaryHypothesis(request.getPrimaryHypothesis())
-                .associatedExperiments(request.getAssociatedExperiments())
-                .commercialNotes(request.getCommercialNotes())
-                .niche(request.getNiche())
-                .avatar(request.getAvatar())
-                .instagramAccount(resolveAccount(request.getInstagramAccountId()))
-                .marketNiche(resolveNiche(request.getMarketNicheId()))
-                .explicitPain(request.getExplicitPain())
-                .promise(request.getPromise())
-                .uniqueMechanism(request.getUniqueMechanism())
-                .tripwire(request.getTripwire())
-                .riskReversal(request.getRiskReversal())
-                .socialProof(request.getSocialProof())
-                .checkoutMonetization(request.getCheckoutMonetization())
-                .funnel(request.getFunnel())
-                .creativeVolume(request.getCreativeVolume())
-                .storytelling(request.getStorytelling())
-                .aiCost(request.getAiCost())
-                .build();
+        Product product = Product.builder().build();
+        applyRequest(product, request);
         return repository.save(product);
+    }
+
+    /** Atualiza um produto comercial existente com os dados informados pela tela. */
+    @Transactional
+    public Product updateProduct(Long id, CreateProductRequest request) {
+        Product product = getProduct(id);
+        applyRequest(product, request);
+        return repository.save(product);
+    }
+
+    /** Aplica os campos editáveis do cadastro comercial ao produto informado. */
+    private void applyRequest(Product product, CreateProductRequest request) {
+        product.setSlug(request.getSlug());
+        product.setName(request.getName());
+        product.setPublicUrl(request.getPublicUrl());
+        product.setColorPalette(request.getColorPalette());
+        product.setTargetAudience(request.getTargetAudience());
+        product.setLanguageStyle(request.getLanguageStyle());
+        product.setCodeModules(request.getCodeModules());
+        product.setProductType(request.getProductType());
+        product.setCommercialStatus(request.getCommercialStatus());
+        product.setCurrentPriceBrl(request.getCurrentPriceBrl());
+        product.setPrimaryHypothesisId(request.getPrimaryHypothesisId());
+        product.setPrimaryHypothesis(request.getPrimaryHypothesis());
+        product.setAssociatedExperiments(request.getAssociatedExperiments());
+        product.setCommercialNotes(request.getCommercialNotes());
+        product.setNiche(request.getNiche());
+        product.setAvatar(request.getAvatar());
+        product.setInstagramAccount(resolveAccount(request.getInstagramAccountId()));
+        product.setMarketNiche(resolveNiche(request.getMarketNicheId()));
+        product.setExplicitPain(request.getExplicitPain());
+        product.setPromise(request.getPromise());
+        product.setUniqueMechanism(request.getUniqueMechanism());
+        product.setTripwire(request.getTripwire());
+        product.setRiskReversal(request.getRiskReversal());
+        product.setSocialProof(request.getSocialProof());
+        product.setCheckoutMonetization(request.getCheckoutMonetization());
+        product.setFunnel(request.getFunnel());
+        product.setCreativeVolume(request.getCreativeVolume());
+        product.setStorytelling(request.getStorytelling());
+        product.setAiCost(request.getAiCost());
     }
 
     /** Resolve a conta do Instagram quando ela for informada no cadastro. */

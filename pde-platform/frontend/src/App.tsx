@@ -12,6 +12,7 @@ import {
   Lock,
   LogIn,
   Mail,
+  Pencil,
   Sparkles,
   Target,
   User,
@@ -98,9 +99,9 @@ declare global {
 
 const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
-  name: 'Metodo MUSA - Experiencia Guiada de 7 Dias',
-  promise: 'Monte em 7 dias uma presenca mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformacao radical.',
-  audience: 'Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessiveis.',
+  name: 'Método MUSA - Experiência Guiada de 7 Dias',
+  promise: 'Monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformação radical.',
+  audience: 'Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.',
   priceLabel: 'R$47',
   theme: {
     primary: '#7a2444',
@@ -109,12 +110,12 @@ const fallbackProduct: ProductExperience = {
     imageUrl: '/assets/musa-cover.png',
   },
   diagnostic: {
-    title: 'Diagnostico MUSA',
-    intro: 'Comece pelo momento do espelho: quando voce esta pronta, mas sente que ainda falta presenca, acabamento ou intencao.',
+    title: 'Diagnóstico MUSA',
+    intro: 'Comece pelo momento do espelho: quando você está pronta, mas sente que ainda falta presença, acabamento ou intenção.',
     questions: [
-      'Quando voce se ve pronta, o que faz pensar: esta ok, mas ainda nao esta marcante?',
-      'Seu cabelo, pele, roupa, perfume e acessorios parecem conversar entre si?',
-      'Qual compra voce esta quase fazendo para tentar compensar essa sensacao?',
+      'Quando você se vê pronta, o que faz pensar: está ok, mas ainda não está marcante?',
+      'Seu cabelo, pele, roupa, perfume e acessórios parecem conversar entre si?',
+      'Qual compra você está quase fazendo para tentar compensar essa sensação?',
     ],
   },
   missions: [
@@ -122,39 +123,39 @@ const fallbackProduct: ProductExperience = {
       id: 'dia-1-ruido-visual',
       day: 1,
       title: 'Sair do quase bom',
-      principle: 'A presenca cresce quando voce identifica o detalhe que mais apaga o conjunto.',
-      action: 'Hoje voce nao vai tentar mudar tudo. Vista ou separe uma combinacao real, olhe cabelo, pele, roupa, perfume e acessorios, escolha o detalhe que mais apaga sua presenca e ajuste apenas esse ponto.',
+      principle: 'A presença cresce quando você identifica o detalhe que mais apaga o conjunto.',
+      action: 'Hoje você não vai tentar mudar tudo. Vista ou separe uma combinação real, olhe cabelo, pele, roupa, perfume e acessórios, escolha o detalhe que mais apaga sua presença e ajuste apenas esse ponto.',
       evidence: 'Frase preenchida: eu me sinto arrumada, mas pouco marcante quando...',
-      visualCue: 'Compare a sensacao antes/depois de remover ou ajustar um detalhe.',
+      visualCue: 'Compare a sensação antes/depois de remover ou ajustar um detalhe.',
     },
   ],
   supportMaterials: [
     {
-      title: 'E-book Metodo MUSA',
+      title: 'E-book Método MUSA',
       type: 'PDF',
-      description: 'Guia de consulta para entender o metodo, ver exemplos e revisar sua semana.',
+      description: 'Guia de consulta para entender o método, ver exemplos e revisar sua semana.',
       url: '/materials/metodo-musa-ebook.pdf',
     },
     {
-      title: 'Experiencia Guiada MUSA',
+      title: 'Experiência Guiada MUSA',
       type: 'HTML',
-      description: 'Versao navegavel da experiencia para consultar a ordem, o diagnostico e as missoes de 7 dias.',
+      description: 'Versão navegável da experiência para consultar a ordem, o diagnóstico e as missões de 7 dias.',
       url: '/materials/experiencia-guiada-musa.html',
     },
     {
       title: 'Plano, Checklists e Templates',
       type: 'CSV',
-      description: 'Planilha com a ordem de aplicacao, criterios de conclusao e pontos de atencao de cada material.',
+      description: 'Planilha com a ordem de aplicação, critérios de conclusão e pontos de atenção de cada material.',
       url: '/materials/plano-checklists-e-templates.csv',
     },
     {
       title: 'Mapa Visual MUSA',
-      type: 'Infografico',
-      description: 'Resumo visual do metodo: coerencia, reducao de ruido e assinatura pessoal.',
+      type: 'Infográfico',
+      description: 'Resumo visual do método: coerência, redução de ruído e assinatura pessoal.',
       url: '/materials/mapa-visual-musa.png',
     },
   ],
-  completionOffer: 'Ao concluir os 7 dias, voce pode continuar no Clube MUSA com novos desafios mensais.',
+  completionOffer: 'Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais.',
 };
 
 function App() {
@@ -169,6 +170,7 @@ function App() {
   const [successMessage, setSuccessMessage] = useState('');
   const [devAccessUrl, setDevAccessUrl] = useState('');
   const firstUseTrackedRef = useRef(false);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const checkoutUrl = (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '';
 
@@ -182,7 +184,7 @@ function App() {
     const tokenFromPath = window.location.pathname.match(/^\/access\/([^/]+)/)?.[1] ?? '';
     if (tokenFromPath) {
       setAccessToken(tokenFromPath);
-      loadWorkspace(tokenFromPath).catch(() => setErrorMessage('Nao encontramos esse acesso. Confira o link recebido apos a compra.'));
+      loadWorkspace(tokenFromPath).catch(() => setErrorMessage('Não encontramos esse acesso. Confira o link recebido após a compra.'));
       return;
     }
     fetch('/api/pde/products/metodo-musa-7-dias')
@@ -251,8 +253,8 @@ function App() {
   async function submitAccess() {
     if (!email.trim()) {
       setErrorMessage(authMode === 'login'
-        ? 'Informe o e-mail cadastrado para entrar na sua Area MUSA.'
-        : 'Informe seu melhor e-mail para criar o cadastro da Area MUSA.');
+        ? 'Informe o e-mail cadastrado para entrar na sua Área MUSA.'
+        : 'Informe seu melhor e-mail para criar o cadastro da Área MUSA.');
       return;
     }
     setLoading(true);
@@ -271,17 +273,17 @@ function App() {
         body: JSON.stringify({ productSlug: product.slug, email }),
       });
       if (!response.ok) {
-        throw new Error('Nao foi possivel enviar o link de acesso.');
+        throw new Error('Não foi possível enviar o link de acesso.');
       }
       const result: MagicLinkResponse = await response.json();
       setSuccessMessage(result.deliveryStatus === 'SENT'
         ? 'Enviamos o link de acesso para seu e-mail. Abra o link para continuar.'
-        : 'Link gerado. O envio por e-mail ainda nao esta configurado neste ambiente.');
+        : 'Link de teste gerado. Como o envio por e-mail ainda não está configurado neste ambiente, use o botão abaixo para abrir seu acesso.');
       if (result.accessUrl) {
         setDevAccessUrl(result.accessUrl);
       }
     } catch {
-      setErrorMessage('Nao conseguimos enviar seu link agora. Confira o e-mail e tente novamente.');
+      setErrorMessage('Não conseguimos enviar seu link agora. Confira o e-mail e tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -302,14 +304,14 @@ function App() {
         body: JSON.stringify({ productSlug: product.slug, idToken }),
       });
       if (!response.ok) {
-        throw new Error('Google nao autorizado.');
+        throw new Error('Google não autorizado.');
       }
       const access = await response.json();
       setAccessToken(access.token);
       window.history.replaceState(null, '', access.accessUrl);
       await loadWorkspace(access.token);
     } catch {
-      setErrorMessage('Nao conseguimos entrar com Google agora. Use o link por e-mail como alternativa.');
+      setErrorMessage('Não conseguimos entrar com Google agora. Use o link por e-mail como alternativa.');
     } finally {
       setLoading(false);
     }
@@ -318,7 +320,7 @@ function App() {
   async function loadWorkspace(token: string) {
     const response = await fetch(`/api/pde/access/${token}/workspace`);
     if (!response.ok) {
-      throw new Error('Acesso nao encontrado.');
+      throw new Error('Acesso não encontrado.');
     }
     const data = await response.json();
     setWorkspace(data);
@@ -352,7 +354,7 @@ function App() {
         }),
       });
     } catch {
-      // Eventos de funil nao devem bloquear login, compra ou consumo da experiencia.
+      // Eventos de funil não devem bloquear login, compra ou consumo da experiência.
     }
   }
 
@@ -370,7 +372,14 @@ function App() {
       window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
       return;
     }
-    setErrorMessage('Checkout de assinatura ainda nao configurado para este ambiente.');
+    setErrorMessage('Checkout de assinatura ainda não configurado para este ambiente.');
+  }
+
+  function editAccessEmail() {
+    setSuccessMessage('');
+    setDevAccessUrl('');
+    emailInputRef.current?.focus();
+    emailInputRef.current?.select();
   }
 
   function trackFirstUse(activationType: string, metadata: Record<string, unknown> = {}) {
@@ -411,11 +420,15 @@ function App() {
       <main className="app-shell login-shell">
         <section className="login-hero">
           <div className="login-panel">
-            <p className="eyebrow">Area exclusiva MUSA</p>
-            <h1>Entre na sua experiencia guiada</h1>
+            <p className="eyebrow">Área exclusiva MUSA</p>
+            <h1>Entre na sua experiência guiada</h1>
             <p className="promise">
-              Acesse o diagnostico, o Dia 1 e os materiais premium do Metodo MUSA em um ambiente
+              Acesse o diagnóstico, o Dia 1 e os materiais premium do Método MUSA em um ambiente
               simples para seguir a jornada sem procurar arquivos soltos.
+            </p>
+            <p className="auth-help">
+              Primeiro acesso? Escolha <strong>Criar cadastro</strong>, informe seu e-mail e abra o link de acesso.
+              Se você já entrou antes, use <strong>Já tenho cadastro</strong>.
             </p>
             <div className="auth-tabs" aria-label="Tipo de acesso">
               <button
@@ -426,7 +439,7 @@ function App() {
                 }}
                 type="button"
               >
-                Ja tenho cadastro
+                Já tenho cadastro
               </button>
               <button
                 className={authMode === 'register' ? 'active' : ''}
@@ -442,7 +455,7 @@ function App() {
             {googleClientId && (
               <div className="social-login-block">
                 <div id="google-login-button" aria-label="Entrar com Google" />
-                <span>Mais rapido para salvar sua jornada antes da assinatura.</span>
+                <span>Mais rápido para salvar sua jornada antes da assinatura.</span>
               </div>
             )}
             <div className="auth-divider">
@@ -451,6 +464,7 @@ function App() {
             <label className="email-box login-email-box">
               {authMode === 'login' ? 'E-mail cadastrado' : 'E-mail para criar cadastro'}
               <input
+                ref={emailInputRef}
                 type="email"
                 placeholder="seuemail@exemplo.com"
                 value={email}
@@ -464,6 +478,12 @@ function App() {
             </label>
             {errorMessage && <p className="form-message">{errorMessage}</p>}
             {successMessage && <p className="form-message success-message">{successMessage}</p>}
+            {successMessage && (
+              <button className="inline-action edit-email-button" onClick={editAccessEmail} type="button">
+                <Pencil size={16} />
+                Editar e-mail
+              </button>
+            )}
             <button className="primary-button login-button" onClick={submitAccess} disabled={loading}>
               <Mail size={18} />
               {loading
@@ -486,7 +506,7 @@ function App() {
               </button>
             )}
             <p className="access-note">
-              Login libera sua area pessoal. A assinatura libera todos os recursos e materiais.
+              O login libera sua área pessoal. A assinatura libera todos os recursos e materiais.
             </p>
           </div>
           <div
@@ -500,8 +520,8 @@ function App() {
             <div className="cover-mark">
               <Sparkles size={32} />
             </div>
-            <p>Metodo MUSA</p>
-            <strong>Diagnostico + 7 missoes + biblioteca premium</strong>
+            <p>Método MUSA</p>
+            <strong>Diagnóstico + 7 missões + biblioteca premium</strong>
             <span>{currentProduct.audience}</span>
           </div>
         </section>
@@ -514,32 +534,32 @@ function App() {
       <section className="musa-first-fold">
         <div className="musa-hero-copy">
           <p className="eyebrow">Sua Jornada MUSA</p>
-          <h1>Sua presenca elegante comeca hoje.</h1>
+          <h1>Sua presença elegante começa hoje.</h1>
           <p className="promise">{currentProduct.promise}</p>
           <div className="musa-hero-actions">
             <button className="primary-button" onClick={() => openMission(firstMission?.id ?? '', 'primary_start')}>
               <Sparkles size={18} />
-              Comecar Dia 1
+              Começar Dia 1
             </button>
-            <span>Uma missao curta por dia, com evidencias simples de progresso.</span>
+            <span>Uma missão curta por dia, com evidências simples de progresso.</span>
           </div>
         </div>
         <article className="next-mission-hero">
           <div className="next-mission-topline">
-            <span>Proxima missao</span>
+            <span>Próxima missão</span>
             <strong>{nextMission ? `Dia ${nextMission.day}` : 'Jornada finalizada'}</strong>
           </div>
           <h2>{nextMission?.title ?? 'Continue sua assinatura MUSA'}</h2>
           <p>
             {nextMission
-              ? 'Escolha uma combinacao real, identifique o detalhe que apaga sua presenca e registre a frase que vai guiar seu primeiro ajuste.'
+              ? 'Escolha uma combinação real, identifique o detalhe que apaga sua presença e registre a frase que vai guiar seu primeiro ajuste.'
               : currentProduct.completionOffer}
           </p>
           <button
             className="secondary-button next-mission-button"
             onClick={() => openMission(nextMission?.id ?? firstMission?.id ?? '', 'next_mission_open')}
           >
-            Abrir orientacao
+            Abrir orientação
             <ChevronRight size={18} />
           </button>
         </article>
@@ -547,16 +567,16 @@ function App() {
           <Gauge size={24} />
           <span>Progresso</span>
           <strong>{workspace.progressPercent}%</strong>
-          <div className="progress-track" aria-label="Progresso da experiencia">
+          <div className="progress-track" aria-label="Progresso da experiência">
             <span style={{ width: `${workspace.progressPercent}%` }} />
           </div>
           <p>
-            {workspace.completedMissions} de {workspace.totalMissions} missoes concluidas.
+            {workspace.completedMissions} de {workspace.totalMissions} missões concluídas.
           </p>
         </aside>
       </section>
 
-      <section className="dashboard-overview dashboard-overview-secondary" aria-label="Resumo da Area MUSA">
+      <section className="dashboard-overview dashboard-overview-secondary" aria-label="Resumo da Área MUSA">
         <article className="status-card account-status-card">
           <User size={20} />
           <span>Acesso liberado</span>
@@ -565,31 +585,31 @@ function App() {
         </article>
         <article className="status-card">
           <ClipboardCheck size={20} />
-          <span>Diagnostico</span>
+          <span>Diagnóstico</span>
           <strong>Comece pelo espelho</strong>
-          <p>Nomeie o que hoje deixa voce arrumada, mas pouco marcante.</p>
+          <p>Nomeie o que hoje deixa você arrumada, mas pouco marcante.</p>
         </article>
         <article className="status-card">
           <Library size={20} />
           <span>Biblioteca</span>
           <strong>{currentProduct.supportMaterials.length} materiais</strong>
-          <p>E-book, experiencia guiada e arquivos de apoio.</p>
+          <p>E-book, experiência guiada e arquivos de apoio.</p>
         </article>
         <article className="status-card">
           <KeyRound size={20} />
           <span>{hasActiveSubscription ? 'Produto ativo' : 'Assinatura'}</span>
           <strong>{hasActiveSubscription ? currentProduct.priceLabel : 'Pendente'}</strong>
-          <p>{hasActiveSubscription ? 'Metodo MUSA liberado para uso.' : 'Assine para liberar todos os recursos.'}</p>
+          <p>{hasActiveSubscription ? 'Método MUSA liberado para uso.' : 'Assine para liberar todos os recursos.'}</p>
         </article>
       </section>
 
       {!hasActiveSubscription && (
         <section className="subscription-paywall" aria-label="Oferta de assinatura MUSA">
           <div>
-            <p className="section-kicker">Liberar area completa</p>
-            <h2>Assine o Clube MUSA para acessar todas as missoes, biblioteca e proximos desafios.</h2>
+            <p className="section-kicker">Liberar área completa</p>
+            <h2>Assine o Clube MUSA para acessar todas as missões, biblioteca e próximos desafios.</h2>
             <p>
-              Seu login ja salvou a entrada na area. A assinatura remove o bloqueio e permite continuar a experiencia completa.
+              Seu login já salvou a entrada na área. A assinatura remove o bloqueio e permite continuar a experiência completa.
             </p>
           </div>
           <button className="primary-button" onClick={handleSubscriptionClick}>
@@ -606,8 +626,8 @@ function App() {
           </div>
           <div>
             <p className="eyebrow">Roteiro guiado</p>
-            <h2>Diagnostico, missao e materiais de apoio</h2>
-            <p>Depois de iniciar o Dia 1, use o diagnostico e a biblioteca apenas como apoio para executar sem se perder.</p>
+            <h2>Diagnóstico, missão e materiais de apoio</h2>
+            <p>Depois de iniciar o Dia 1, use o diagnóstico e a biblioteca apenas como apoio para executar sem se perder.</p>
           </div>
         </div>
       </section>
@@ -623,7 +643,7 @@ function App() {
             }}
           >
             <Sparkles size={24} />
-            <span>Metodo MUSA</span>
+            <span>Método MUSA</span>
           </div>
           <div className="diagnostic-panel">
             <Target size={22} />
@@ -643,17 +663,17 @@ function App() {
               <p className="section-kicker">Comece aqui</p>
               <h2>Dia 1: {firstMission.title}</h2>
               <p>
-                A primeira missao e escolher uma combinacao real, identificar o detalhe que mais
-                apaga sua presenca e escrever a frase de diagnostico. Voce termina o dia sabendo
+                A primeira missão é escolher uma combinação real, identificar o detalhe que mais
+                apaga sua presença e escrever a frase de diagnóstico. Você termina o dia sabendo
                 exatamente o que ajustar antes de pensar em comprar algo novo.
               </p>
               <button className="inline-action" onClick={() => openMission(firstMission.id, 'start_here_open')}>
-                Abrir orientacao do Dia 1
+                Abrir orientação do Dia 1
                 <ChevronRight size={17} />
               </button>
             </article>
           )}
-          <div className="mission-tabs" aria-label="Dias da experiencia">
+          <div className="mission-tabs" aria-label="Dias da experiência">
             {currentProduct.missions.map((mission) => (
               <button
                 key={mission.id}
@@ -676,18 +696,18 @@ function App() {
 
           {activeMission && (
             <article className="mission-detail">
-              <p className="section-kicker">Missao ativa - Dia {activeMission.day}</p>
+              <p className="section-kicker">Missão ativa - Dia {activeMission.day}</p>
               <h2>{activeMission.title}</h2>
               <div className="mission-block">
-                <strong>Principio aplicado</strong>
+                <strong>Princípio aplicado</strong>
                 <p>{activeMission.principle}</p>
               </div>
               <div className="mission-block">
-                <strong>Acao de hoje</strong>
+                <strong>Ação de hoje</strong>
                 <p>{activeMission.action}</p>
               </div>
               <div className="mission-block">
-                <strong>Evidencia de progresso</strong>
+                <strong>Evidência de progresso</strong>
                 <p>{activeMission.evidence}</p>
               </div>
               <div className="visual-cue">
@@ -701,7 +721,7 @@ function App() {
               >
                 {hasActiveSubscription ? <Check size={18} /> : <Lock size={18} />}
                 {hasActiveSubscription
-                  ? (completedMissionIds.has(activeMission.id) ? 'Missao concluida' : 'Concluir missao')
+                  ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : 'Concluir missão')
                   : 'Assine para salvar progresso'}
               </button>
             </article>
@@ -714,7 +734,7 @@ function App() {
           <Library size={22} />
           <div>
             <p className="section-kicker">Biblioteca da cliente</p>
-            <h2>Materiais de apoio do metodo</h2>
+            <h2>Materiais de apoio do método</h2>
           </div>
         </div>
         <div className="material-grid">

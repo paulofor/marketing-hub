@@ -400,6 +400,10 @@ input {
   padding: 48px;
 }
 
+.login-panel h1 {
+  line-height: 1.12;
+}
+
 .eyebrow,
 .section-kicker,
 .material-card span {
@@ -510,6 +514,20 @@ h3 {
   padding: 4px;
 }
 
+.auth-help {
+  background: #fff8f3;
+  border-left: 4px solid #d6a75c;
+  color: #4d3b35;
+  font-size: 0.96rem;
+  margin: 22px 0 0;
+  max-width: 430px;
+  padding: 12px 14px;
+}
+
+.auth-help strong {
+  color: #7a2444;
+}
+
 .auth-tabs button {
   background: transparent;
   border: 0;
@@ -576,6 +594,11 @@ h3 {
 
 .dev-access-button {
   margin-top: 12px;
+  width: fit-content;
+}
+
+.edit-email-button {
+  margin-top: 10px;
   width: fit-content;
 }
 

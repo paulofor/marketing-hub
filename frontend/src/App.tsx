@@ -10,6 +10,7 @@ import NewCoursePlanPage from "./pages/course/NewCoursePlanPage";
 import CoursePlanDetailPage from "./pages/course/CoursePlanDetailPage";
 import ProductListPage from "./pages/product/ProductListPage";
 import NewProductPage from "./pages/product/NewProductPage";
+import EditProductPage from "./pages/product/EditProductPage";
 import ProductSalesVideoPage from "./pages/salesVideo/ProductSalesVideoPage";
 import SalesVideoProfileDetailPage from "./pages/salesVideo/SalesVideoProfileDetailPage";
 import AppIdeaListPage from "./pages/appIdea/AppIdeaListPage";
@@ -192,6 +193,7 @@ export default function App() {
               <Route path="/app-ideas/new" element={<NewAppIdeaPage />} />
               <Route path="/products" element={<ProductListPage />} />
               <Route path="/products/new" element={<NewProductPage />} />
+              <Route path="/products/:id/edit" element={<EditProductPage />} />
               <Route
                 path="/products/:productId/sales-videos"
                 element={<ProductSalesVideoPage />}

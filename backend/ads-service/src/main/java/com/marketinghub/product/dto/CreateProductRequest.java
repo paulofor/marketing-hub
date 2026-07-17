@@ -3,7 +3,7 @@ package com.marketinghub.product.dto;
 import lombok.Data;
 
 /**
- * Responsabilidade: transportar os dados necessários para cadastrar um produto comercial.
+ * Responsabilidade: transportar os dados necessários para cadastrar ou atualizar um produto comercial.
  */
 @Data
 public class CreateProductRequest {

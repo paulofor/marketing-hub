@@ -213,6 +213,7 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
 
 - **oportunidadebrasil.shop** : apontando para 191.252.120.96
 - **pagamentopalf.site** : apontando para  191.252.102.54
+- **PDE Platform / Área MUSA** : host 191.252.102.54, usuário SSH `root`.
 
 
 ## 7. Segurança e secrets

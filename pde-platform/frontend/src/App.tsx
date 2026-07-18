@@ -401,6 +401,9 @@ function App() {
         ? 'Link de teste encontrado para esse cadastro. Use o botão Entrar para voltar à Área MUSA.'
         : 'Primeiro acesso de teste criado. Use o botão Entrar para abrir o diagnóstico e o Dia 1.';
     }
+    if (result.deliveryStatus === 'EMAIL_SEND_FAILED') {
+      return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. A equipe MUSA precisa concluir a configuração do domínio de envio.';
+    }
     return 'O envio por e-mail ainda não está configurado neste ambiente. Configure o envio ou habilite o link de teste para entrar.';
   }
 

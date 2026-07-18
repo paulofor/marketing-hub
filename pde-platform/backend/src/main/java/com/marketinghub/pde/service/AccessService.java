@@ -309,8 +309,22 @@ public class AccessService {
     private MagicLinkResponse sendAccessLink(String productSlug, String email, String accessUrl) {
         String absoluteUrl = buildAbsoluteAccessUrl(accessUrl);
         if (mailService != null && mailService.isConfigured()) {
-            mailService.sendMagicLink(email, absoluteUrl);
-            return new MagicLinkResponse(productSlug, email, "SENT", null);
+            try {
+                mailService.sendMagicLink(email, absoluteUrl);
+                return new MagicLinkResponse(productSlug, email, "SENT", null);
+            } catch (RuntimeException ex) {
+                log.error(
+                        "Falha ao entregar link magico PDE; productSlug={}, email={}, accessUrl={}",
+                        productSlug,
+                        email,
+                        accessUrl,
+                        ex);
+                return new MagicLinkResponse(
+                        productSlug,
+                        email,
+                        "EMAIL_SEND_FAILED",
+                        exposeMagicLinkInResponse ? accessUrl : null);
+            }
         }
         return new MagicLinkResponse(
                 productSlug,

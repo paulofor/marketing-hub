@@ -112,6 +112,28 @@ class AccessServiceTest {
         assertThat(loginLink.accessUrl()).isEqualTo(firstAccess.accessUrl());
     }
 
+    /** Confirma que falha do provedor de e-mail nao quebra a criacao do acesso. */
+    @Test
+    void reportsEmailSendFailureWithoutBreakingAccessCreation() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                "",
+                "",
+                "",
+                "https://clubemusa.com.br",
+                false,
+                new FailingMailService(),
+                null);
+
+        var response = accessService.requestMagicLink("metodo-musa-7-dias", "cliente@sandbox.local");
+
+        assertThat(response.deliveryStatus()).isEqualTo("EMAIL_SEND_FAILED");
+        assertThat(response.accessUrl()).isNull();
+    }
+
     /** Confirma que a tentativa de login sem cadastro orienta a cliente a pedir primeiro acesso. */
     @Test
     void rejectsExistingCustomerMagicLinkWhenEmailIsUnknown() {
@@ -278,5 +300,26 @@ class AccessServiceTest {
                 "test",
                 null,
                 Map.of())));
+    }
+
+    /** Simula provedor configurado que rejeita o envio do link magico. */
+    private static class FailingMailService extends PdeMailService {
+
+        /** Inicializa o serviço falso com transporte configurado para testes. */
+        FailingMailService() {
+            super("ses", "us-east-1", "", 1025, "acesso@clubemusa.com.br", "", "");
+        }
+
+        /** Informa que o provedor falso esta configurado. */
+        @Override
+        public boolean isConfigured() {
+            return true;
+        }
+
+        /** Rejeita o envio para reproduzir falha do provedor externo. */
+        @Override
+        public void sendMagicLink(String to, String accessUrl) {
+            throw new IllegalStateException("SES rejeitou o remetente");
+        }
     }
 }

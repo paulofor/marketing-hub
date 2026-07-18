@@ -216,7 +216,7 @@ function App() {
   const [email, setEmail] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [activeMissionId, setActiveMissionId] = useState('');
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -619,18 +619,9 @@ function App() {
               Libere seu diagnóstico inicial e o Dia 1 do Método MUSA: uma experiência guiada para
               parecer mais elegante com escolhas simples, sem luxo caro nem compra por impulso.
             </p>
-            <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
-              <span><Check size={16} /> Diagnóstico gratuito</span>
-              <span><Sparkles size={16} /> Dia 1 liberado</span>
-              <span><Lock size={16} /> Continuação premium</span>
-            </div>
-            <div className="login-preview-card" data-analytics-section="free_diagnostic_preview">
-              <div>
-                <span>Primeira parte liberada</span>
-                <strong>Seu espelho MUSA</strong>
-                <p>Nomeie o detalhe que faz você se sentir arrumada, mas ainda pouco marcante.</p>
-              </div>
-              <ChevronRight size={22} />
+            <div className="login-scene-banner" aria-label="Mulher percebendo sua presença elegante no espelho">
+              <img src="/assets/musa-editorial-presenca.png" alt="" />
+              <span>Uma mudança visível começa por um ajuste simples.</span>
             </div>
             <div className="auth-tabs" aria-label="Tipo de acesso">
               <button
@@ -718,6 +709,19 @@ function App() {
                   : (authMode === 'login' ? 'Receber link de entrada' : 'Solicitar primeiro acesso')}
               </button>
             )}
+            <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
+              <span><Check size={16} /> Diagnóstico gratuito</span>
+              <span><Sparkles size={16} /> Dia 1 liberado</span>
+              <span><Lock size={16} /> Continuação premium</span>
+            </div>
+            <div className="login-preview-card" data-analytics-section="free_diagnostic_preview">
+              <div>
+                <span>Primeira parte liberada</span>
+                <strong>Seu espelho MUSA</strong>
+                <p>Nomeie o detalhe que faz você se sentir arrumada, mas ainda pouco marcante.</p>
+              </div>
+              <ChevronRight size={22} />
+            </div>
             <p className="access-note">
               O login libera a primeira parte da experiência. Dias 2 a 7, biblioteca e materiais
               premium aparecem dentro da área e são desbloqueados com o acesso completo.

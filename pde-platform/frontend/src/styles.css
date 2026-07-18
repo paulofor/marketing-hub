@@ -411,6 +411,43 @@ input {
   max-width: 600px;
 }
 
+.login-scene-banner {
+  align-items: end;
+  background: #2f2a2c;
+  display: grid;
+  margin: 18px 0;
+  max-width: 560px;
+  min-height: 210px;
+  overflow: hidden;
+  position: relative;
+}
+
+.login-scene-banner img {
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  object-position: 54% 42%;
+  position: absolute;
+  width: 100%;
+}
+
+.login-scene-banner::after {
+  background: linear-gradient(180deg, rgba(47, 42, 44, 0.06), rgba(47, 42, 44, 0.72));
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.login-scene-banner span {
+  color: #fff8f3;
+  font-size: 0.92rem;
+  font-weight: 850;
+  max-width: 300px;
+  padding: 18px;
+  position: relative;
+  z-index: 1;
+}
+
 .login-value-strip {
   display: flex;
   flex-wrap: wrap;
@@ -705,7 +742,9 @@ h3 {
 .login-cover {
   align-content: start;
   border-left: 0;
-  background: linear-gradient(145deg, #6f213f, #3a242b 54%, #2f5952);
+  background:
+    linear-gradient(145deg, rgba(111, 33, 63, 0.84), rgba(58, 36, 43, 0.8) 54%, rgba(47, 89, 82, 0.82)),
+    url("/assets/musa-editorial-presenca.png");
   background-position: center;
   background-size: cover;
   gap: 16px;
@@ -1207,7 +1246,17 @@ h3 {
   }
 
   .login-panel {
-    padding: 30px;
+    padding: 24px;
+  }
+
+  .login-scene-banner {
+    margin: 12px 0;
+    min-height: 118px;
+  }
+
+  .login-scene-banner span {
+    font-size: 0.82rem;
+    padding: 12px;
   }
 
   .login-cover {
@@ -1227,7 +1276,28 @@ h3 {
   }
 
   .login-panel h1 {
-    font-size: 2.35rem;
+    font-size: 1.84rem;
+    margin-bottom: 10px;
+  }
+
+  .login-panel .promise {
+    font-size: 0.9rem;
+  }
+
+  .auth-help {
+    font-size: 0.88rem;
+    margin-top: 12px;
+    padding: 9px 12px;
+  }
+
+  .auth-divider,
+  .login-email-box,
+  .login-button {
+    margin-top: 10px;
+  }
+
+  .auth-tabs button {
+    min-height: 40px;
   }
 
   .login-value-strip {

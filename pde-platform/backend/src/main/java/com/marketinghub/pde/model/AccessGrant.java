@@ -1,7 +1,9 @@
 package com.marketinghub.pde.model;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 /** Guarda um acesso liberado para uma cliente dentro da experiência PDE. */
@@ -13,6 +15,7 @@ public class AccessGrant {
     private String source;
     private final Instant createdAt;
     private final Set<String> completedMissionIds = new LinkedHashSet<>();
+    private final Map<String, Map<String, String>> missionInteractions = new LinkedHashMap<>();
 
     /** Cria um acesso liberado para produto, e-mail e origem informados. */
     public AccessGrant(String token, String productSlug, String email, String source, Instant createdAt) {
@@ -34,6 +37,21 @@ public class AccessGrant {
         this(token, productSlug, email, source, createdAt);
         if (completedMissionIds != null) {
             this.completedMissionIds.addAll(completedMissionIds);
+        }
+    }
+
+    /** Cria um acesso com progresso e interações persistidas anteriormente. */
+    public AccessGrant(
+            String token,
+            String productSlug,
+            String email,
+            String source,
+            Instant createdAt,
+            Set<String> completedMissionIds,
+            Map<String, Map<String, String>> missionInteractions) {
+        this(token, productSlug, email, source, createdAt, completedMissionIds);
+        if (missionInteractions != null) {
+            missionInteractions.forEach(this::saveMissionInteraction);
         }
     }
 
@@ -72,8 +90,23 @@ public class AccessGrant {
         completedMissionIds.add(missionId);
     }
 
+    /** Salva respostas da cliente para personalizar uma missão. */
+    public void saveMissionInteraction(String missionId, Map<String, String> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return;
+        }
+        missionInteractions.computeIfAbsent(missionId, ignored -> new LinkedHashMap<>()).putAll(answers);
+    }
+
     /** Retorna as missões concluídas pela cliente. */
     public Set<String> getCompletedMissionIds() {
         return Set.copyOf(completedMissionIds);
+    }
+
+    /** Retorna as respostas salvas por missão. */
+    public Map<String, Map<String, String>> getMissionInteractions() {
+        Map<String, Map<String, String>> copy = new LinkedHashMap<>();
+        missionInteractions.forEach((missionId, answers) -> copy.put(missionId, Map.copyOf(answers)));
+        return Map.copyOf(copy);
     }
 }

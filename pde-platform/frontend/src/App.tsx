@@ -72,6 +72,13 @@ type Workspace = {
   totalMissions: number;
   progressPercent: number;
   completedMissionIds: string[];
+  missionInteractions: MissionInteraction[];
+};
+
+type MissionInteraction = {
+  missionId: string;
+  questionKey: string;
+  answerText: string;
 };
 
 type MagicLinkResponse = {
@@ -221,6 +228,8 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [devAccessUrl, setDevAccessUrl] = useState('');
+  const [dayOneAnswers, setDayOneAnswers] = useState<Record<string, string>>({});
+  const [savingInteraction, setSavingInteraction] = useState(false);
   const firstUseTrackedRef = useRef(false);
   const visitorIdRef = useRef(stableBrowserId('musaVisitorId'));
   const sessionIdRef = useRef(window.sessionStorage.getItem('musaSessionId') ?? '');
@@ -453,6 +462,7 @@ function App() {
     setWorkspace(data);
     setProduct(data.product);
     setActiveMissionId(data.product.missions[0]?.id ?? '');
+    setDayOneAnswers(resolveMissionAnswers(data, data.product.missions[0]?.id ?? ''));
     if (resetScroll) {
       window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
     }
@@ -609,6 +619,60 @@ function App() {
     });
   }
 
+  async function saveMissionInteraction(missionId: string) {
+    if (!accessToken || !workspace) {
+      return;
+    }
+    const answers = sanitizeAnswers(dayOneAnswers);
+    if (Object.keys(answers).length < 3) {
+      setErrorMessage('Preencha os 3 pontos do Dia 1 para salvar sua personalização.');
+      return;
+    }
+    setSavingInteraction(true);
+    setErrorMessage('');
+    try {
+      const response = await fetch(`/api/pde/access/${accessToken}/missions/${missionId}/interactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers }),
+      });
+      if (!response.ok) {
+        throw new Error('Não foi possível salvar sua personalização.');
+      }
+      const data = await response.json();
+      setWorkspace(data);
+      setDayOneAnswers(resolveMissionAnswers(data, missionId));
+      trackEvent('MISSION_INTERACTION_SAVED', {
+        accessToken,
+        email: data.email,
+        provider: data.accessSource,
+        metadata: { missionId, answerKeys: Object.keys(answers) },
+      });
+      setSuccessMessage('Personalização do Dia 1 salva. Agora registre a conclusão quando executar o ajuste.');
+    } catch {
+      setErrorMessage('Não conseguimos salvar sua personalização agora. Tente novamente antes de concluir o Dia 1.');
+    } finally {
+      setSavingInteraction(false);
+    }
+  }
+
+  function resolveMissionAnswers(workspaceData: Workspace, missionId: string) {
+    return (workspaceData.missionInteractions ?? [])
+      .filter((interaction) => interaction.missionId === missionId)
+      .reduce<Record<string, string>>((answers, interaction) => {
+        answers[interaction.questionKey] = interaction.answerText;
+        return answers;
+      }, {});
+  }
+
+  function sanitizeAnswers(answers: Record<string, string>) {
+    return Object.fromEntries(
+      Object.entries(answers)
+        .map(([key, value]) => [key, value.trim()])
+        .filter(([, value]) => value),
+    );
+  }
+
   const currentProduct = workspace?.product ?? product;
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
@@ -617,6 +681,10 @@ function App() {
   const hasActiveSubscription = workspace?.subscriptionStatus === 'ACTIVE';
   const canCompleteActiveMission = Boolean(
     activeMission && (hasActiveSubscription || activeMission.id === firstMission?.id),
+  );
+  const dayOneInteractionSaved = Boolean(firstMission && ['presenceFocus', 'mainObstacle', 'evidencePhrase'].every((key) => dayOneAnswers[key]?.trim()));
+  const canRegisterActiveMission = Boolean(
+    canCompleteActiveMission && (activeMission?.id !== firstMission?.id || dayOneInteractionSaved),
   );
 
   if (!workspace) {
@@ -978,15 +1046,73 @@ function App() {
                 <ChevronRight size={18} />
                 {activeMission.visualCue}
               </div>
+              {activeMission.id === firstMission?.id && (
+                <div className="personalization-panel">
+                  <p className="section-kicker">Seu ajuste personalizado</p>
+                  <h3>Antes de concluir, deixe o Dia 1 com a sua situação real.</h3>
+                  <label>
+                    Onde você mais quer sentir presença hoje?
+                    <select
+                      value={dayOneAnswers.presenceFocus ?? ''}
+                      onChange={(event) => setDayOneAnswers((current) => ({ ...current, presenceFocus: event.target.value }))}
+                    >
+                      <option value="">Escolha um foco</option>
+                      <option value="Trabalho ou reunião">Trabalho ou reunião</option>
+                      <option value="Encontro ou saída">Encontro ou saída</option>
+                      <option value="Rotina comum">Rotina comum</option>
+                      <option value="Conteúdo ou foto">Conteúdo ou foto</option>
+                    </select>
+                  </label>
+                  <label>
+                    Qual detalhe mais apaga o conjunto?
+                    <select
+                      value={dayOneAnswers.mainObstacle ?? ''}
+                      onChange={(event) => setDayOneAnswers((current) => ({ ...current, mainObstacle: event.target.value }))}
+                    >
+                      <option value="">Escolha um detalhe</option>
+                      <option value="Cabelo sem acabamento">Cabelo sem acabamento</option>
+                      <option value="Roupa sem intenção">Roupa sem intenção</option>
+                      <option value="Cores brigando entre si">Cores brigando entre si</option>
+                      <option value="Falta de acessório ou perfume">Falta de acessório ou perfume</option>
+                    </select>
+                  </label>
+                  <label>
+                    Complete sua frase de evidência
+                    <textarea
+                      rows={3}
+                      maxLength={280}
+                      value={dayOneAnswers.evidencePhrase ?? ''}
+                      placeholder="Eu me sinto arrumada, mas pouco marcante quando..."
+                      onChange={(event) => setDayOneAnswers((current) => ({ ...current, evidencePhrase: event.target.value }))}
+                    />
+                  </label>
+                  {dayOneInteractionSaved && (
+                    <div className="personalized-summary">
+                      <Sparkles size={17} />
+                      <span>
+                        Hoje seu ajuste é para {dayOneAnswers.presenceFocus}, reduzindo {dayOneAnswers.mainObstacle.toLowerCase()}.
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    className="inline-save-button"
+                    disabled={savingInteraction || completedMissionIds.has(activeMission.id)}
+                    onClick={() => saveMissionInteraction(activeMission.id)}
+                  >
+                    <Pencil size={16} />
+                    {savingInteraction ? 'Salvando...' : dayOneInteractionSaved ? 'Atualizar personalização' : 'Salvar meu ajuste'}
+                  </button>
+                </div>
+              )}
               <button
                 className="secondary-button"
-                disabled={!workspace || completedMissionIds.has(activeMission.id) || !canCompleteActiveMission}
+                disabled={!workspace || completedMissionIds.has(activeMission.id) || !canRegisterActiveMission}
                 onClick={() => completeMission(activeMission.id)}
               >
-                {canCompleteActiveMission ? <Check size={18} /> : <Lock size={18} />}
-                {canCompleteActiveMission
+                {canRegisterActiveMission ? <Check size={18} /> : <Lock size={18} />}
+                {canRegisterActiveMission
                   ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : 'Registrar Dia 1 concluído')
-                  : 'Assine para salvar esta missão'}
+                  : activeMission.id === firstMission?.id ? 'Salve seu ajuste para concluir' : 'Assine para salvar esta missão'}
               </button>
             </article>
           )}

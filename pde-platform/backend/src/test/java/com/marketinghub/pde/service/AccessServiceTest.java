@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,6 +59,27 @@ class AccessServiceTest {
 
         assertThat(workspace.completedMissionIds()).containsExactly("dia-1-ruido-visual");
         assertThat(workspace.progressPercent()).isEqualTo(14);
+    }
+
+    /** Confirma que respostas de personalização do Dia 1 continuam disponíveis após reinício. */
+    @Test
+    void persistsMissionInteractionAcrossServiceRestart() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        String storagePath = tempDir.resolve("access-grants.json").toString();
+        AccessService accessService = new AccessService(productCatalogService, new ObjectMapper(), storagePath);
+
+        AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "DEV");
+        accessService.saveMissionInteraction(access.token(), "dia-1-ruido-visual", new MissionInteractionRequest(Map.of(
+                "presenceFocus", "Trabalho ou reunião",
+                "mainObstacle", "Roupa sem intenção",
+                "evidencePhrase", "Eu me sinto arrumada, mas pouco marcante quando a roupa não conversa comigo.")));
+
+        AccessService restartedService = new AccessService(productCatalogService, new ObjectMapper(), storagePath);
+        WorkspaceResponse workspace = restartedService.getWorkspace(access.token());
+
+        assertThat(workspace.missionInteractions())
+                .extracting("questionKey")
+                .contains("presenceFocus", "mainObstacle", "evidencePhrase");
     }
 
     /** Confirma que cadastro e login reutilizam o mesmo acesso por produto e e-mail. */

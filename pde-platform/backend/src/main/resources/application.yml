@@ -26,7 +26,14 @@ pde:
     password: ${PDE_SMTP_PASSWORD:}
 
 management:
+  endpoint:
+    logfile:
+      enabled: true
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,logfile
+
+logging:
+  file:
+    name: ${LOGGING_FILE_NAME:/data/pde/pde-platform-backend.log}

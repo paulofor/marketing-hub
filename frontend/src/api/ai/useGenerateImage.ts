@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useMutation } from "@tanstack/react-query";
+import { buildApiUrl } from "../../utils/buildApiUrl";
 
 export type GeneratedImageResult = {
   jobId: string;
@@ -23,8 +24,9 @@ export function useGenerateImage() {
   return useMutation({
     mutationFn: async (payload: ImageGenerationPayload) => {
       const { data } = await axios.post<ImageGenerationResponse>(
-        "/api/image-generator/generations",
+        buildApiUrl("/api/image-generator/generations"),
         payload,
+        { timeout: 240000 },
       );
       return data;
     },

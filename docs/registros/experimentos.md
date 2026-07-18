@@ -5891,3 +5891,10 @@
 - foi feito: a tela inicial passou a orientar a usuária com mensagens específicas para e-mail inexistente, primeiro acesso criado, retorno por link e bloqueio premium.
 - foi feito: a prévia visual de entrada deixou de usar capa cortada como fundo e passou a mostrar uma composição controlada de presença, paleta e Dia 1.
 - impacto comercial esperado: reduzir confusão no primeiro contato, manter o funil canônico de entrada gratuita com paywall interno e melhorar a intenção de continuidade para assinatura.
+
+## 2026-07-18 — PED/MUSA: Consultora MUSA nos 7 dias
+
+- foi feito: a integração do PDE com IA deixou de ficar limitada ao Dia 2 e passou a aceitar contratos de orientação para os 7 dias do Método MUSA.
+- foi feito: a tela da Área MUSA passou a coletar 3 respostas práticas por missão e acionar a Consultora MUSA para gerar um cartão curto, personalizado e acionável.
+- foi feito: o worker PDE AI passou a selecionar prompt/schema por tipo de orientação, preservando OpenAI fora do frontend e mantendo auditoria no backend.
+- impacto comercial esperado: aumentar valor percebido do acesso completo, transformar a IA em apoio diário da cliente e criar mais evidências de progresso para reduzir abandono antes e depois da compra.

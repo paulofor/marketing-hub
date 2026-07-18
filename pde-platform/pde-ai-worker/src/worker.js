@@ -7,7 +7,36 @@ const backendUrl = (process.env.PDE_BACKEND_URL ?? 'http://pde-platform-backend:
 const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '4000');
 const openaiModel = process.env.OPENAI_MODEL ?? 'gpt-5.4-mini';
 const openaiApiKey = process.env.OPENAI_API_KEY ?? '';
-const promptDir = path.resolve(__dirname, '../prompts/musa-day-2-signature');
+const promptDefinitions = {
+  MUSA_DAY_1_PRESENCE_DIAGNOSIS: {
+    dir: path.resolve(__dirname, '../prompts/musa-daily-guidance'),
+    schemaName: 'musa_day_1_presence_diagnosis',
+  },
+  MUSA_DAY_2_SIGNATURE: {
+    dir: path.resolve(__dirname, '../prompts/musa-day-2-signature'),
+    schemaName: 'musa_day_2_signature',
+  },
+  MUSA_DAY_3_WARDROBE_REUSE: {
+    dir: path.resolve(__dirname, '../prompts/musa-daily-guidance'),
+    schemaName: 'musa_day_3_wardrobe_reuse',
+  },
+  MUSA_DAY_4_FINISHING_RITUAL: {
+    dir: path.resolve(__dirname, '../prompts/musa-daily-guidance'),
+    schemaName: 'musa_day_4_finishing_ritual',
+  },
+  MUSA_DAY_5_ANTI_IMPULSE_DECISION: {
+    dir: path.resolve(__dirname, '../prompts/musa-daily-guidance'),
+    schemaName: 'musa_day_5_anti_impulse_decision',
+  },
+  MUSA_DAY_6_OCCASION_ENTRY: {
+    dir: path.resolve(__dirname, '../prompts/musa-daily-guidance'),
+    schemaName: 'musa_day_6_occasion_entry',
+  },
+  MUSA_DAY_7_MAINTENANCE_PLAN: {
+    dir: path.resolve(__dirname, '../prompts/musa-daily-guidance'),
+    schemaName: 'musa_day_7_maintenance_plan',
+  },
+};
 
 async function main() {
   console.log(`PDE AI Worker iniciado; backendUrl=${backendUrl}, model=${openaiModel}`);
@@ -49,15 +78,23 @@ async function processNextPending() {
 }
 
 async function generateGuidance(execution) {
-  const systemPrompt = await fs.readFile(path.join(promptDir, 'system.md'), 'utf8');
-  const userTemplate = await fs.readFile(path.join(promptDir, 'user.md'), 'utf8');
-  const schema = JSON.parse(await fs.readFile(path.join(promptDir, 'response-schema.json'), 'utf8'));
+  const promptDefinition = promptDefinitions[execution.guidanceType];
+  if (!promptDefinition) {
+    throw new Error(`Tipo de orientacao PDE nao suportado pelo worker: ${execution.guidanceType}`);
+  }
+  const systemPrompt = await fs.readFile(path.join(promptDefinition.dir, 'system.md'), 'utf8');
+  const userTemplate = await fs.readFile(path.join(promptDefinition.dir, 'user.md'), 'utf8');
+  const schema = JSON.parse(await fs.readFile(path.join(promptDefinition.dir, 'response-schema.json'), 'utf8'));
   const mission = execution.product.missions.find((item) => item.id === execution.missionId) ?? {};
   const userPrompt = renderTemplate(userTemplate, {
     productName: execution.product.name,
     productPromise: execution.product.promise,
+    guidanceType: execution.guidanceType,
+    missionDay: String(mission.day ?? ''),
     missionTitle: mission.title ?? execution.missionId,
     missionPrinciple: mission.principle ?? '',
+    missionAction: mission.action ?? '',
+    missionEvidence: mission.evidence ?? '',
     previousMissionAnswersJson: JSON.stringify(execution.previousMissionAnswers ?? {}, null, 2),
     answersJson: JSON.stringify(execution.answers ?? {}, null, 2),
   });
@@ -77,7 +114,7 @@ async function generateGuidance(execution) {
     text: {
       format: {
         type: 'json_schema',
-        name: 'musa_day_2_signature',
+        name: promptDefinition.schemaName,
         strict: true,
         schema,
       },

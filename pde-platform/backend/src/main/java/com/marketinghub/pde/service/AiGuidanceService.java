@@ -39,7 +39,14 @@ public class AiGuidanceService {
     private static final Logger log = LoggerFactory.getLogger(AiGuidanceService.class);
     private static final TypeReference<Map<String, StoredAiGuidance>> STORE_TYPE = new TypeReference<>() {};
     private static final String STAGE_CODE = "pde-ai-guidance-v1";
-    private static final Set<String> ALLOWED_GUIDANCE_TYPES = Set.of("MUSA_DAY_2_SIGNATURE");
+    private static final Set<String> ALLOWED_GUIDANCE_TYPES = Set.of(
+            "MUSA_DAY_1_PRESENCE_DIAGNOSIS",
+            "MUSA_DAY_2_SIGNATURE",
+            "MUSA_DAY_3_WARDROBE_REUSE",
+            "MUSA_DAY_4_FINISHING_RITUAL",
+            "MUSA_DAY_5_ANTI_IMPULSE_DECISION",
+            "MUSA_DAY_6_OCCASION_ENTRY",
+            "MUSA_DAY_7_MAINTENANCE_PLAN");
 
     private final AccessService accessService;
     private final ObjectMapper objectMapper;

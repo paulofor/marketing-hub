@@ -395,6 +395,48 @@ class AccessServiceTest {
         assertThat(pending.get().answers()).containsEntry("baseColor", "Vinho discreto");
     }
 
+    /** Confirma que todos os 7 dias possuem contrato de orientação por IA no backend. */
+    @Test
+    void acceptsAiGuidanceForAllSevenMusaDays() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        ObjectMapper objectMapper = new ObjectMapper();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                objectMapper,
+                tempDir.resolve("access-grants.json").toString());
+        AiGuidanceService aiGuidanceService = new AiGuidanceService(
+                accessService,
+                objectMapper,
+                tempDir.resolve("ai-guidance.json").toString(),
+                "",
+                "",
+                "");
+        AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
+
+        Map<String, String> guidanceTypesByMission = Map.of(
+                "dia-1-ruido-visual", "MUSA_DAY_1_PRESENCE_DIAGNOSIS",
+                "dia-2-assinatura", "MUSA_DAY_2_SIGNATURE",
+                "dia-3-base-acessivel", "MUSA_DAY_3_WARDROBE_REUSE",
+                "dia-4-checklist-12-minutos", "MUSA_DAY_4_FINISHING_RITUAL",
+                "dia-5-compra-inteligente", "MUSA_DAY_5_ANTI_IMPULSE_DECISION",
+                "dia-6-situacao-chave", "MUSA_DAY_6_OCCASION_ENTRY",
+                "dia-7-plano-pessoal", "MUSA_DAY_7_MAINTENANCE_PLAN");
+
+        guidanceTypesByMission.forEach((missionId, guidanceType) -> {
+            var guidance = aiGuidanceService.createGuidanceRequest(
+                    access.token(),
+                    missionId,
+                    new AiGuidanceCreateRequest(guidanceType, Map.of(
+                            "answerOne", "Resposta um",
+                            "answerTwo", "Resposta dois",
+                            "answerThree", "Resposta tres")));
+
+            assertThat(guidance.status()).isEqualTo("PENDING");
+            assertThat(guidance.missionId()).isEqualTo(missionId);
+            assertThat(guidance.guidanceType()).isEqualTo(guidanceType);
+        });
+    }
+
     /** Confirma que o backend aceita resultado estruturado e auditoria do worker PDE. */
     @Test
     void receivesCompletedAiGuidanceResult() {

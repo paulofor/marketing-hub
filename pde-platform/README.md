@@ -22,6 +22,10 @@ npm run build
 npm run dev
 ```
 
+O frontend carrega `.npmrc` com `include=dev` e o script `npm run dev`
+define `NODE_ENV=development`, para evitar que um ambiente shell em producao
+omita dependencias do Vite/TypeScript ou desative recursos de desenvolvimento.
+
 Docker:
 
 ```bash

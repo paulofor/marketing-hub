@@ -1,6 +1,8 @@
 package com.marketinghub.pde.service;
 
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.FunnelAnalyticsEventMetricDto;
+import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
 import com.marketinghub.pde.dto.MagicLinkResponse;
@@ -213,6 +215,62 @@ public class AccessService {
         return new FunnelEventResponse(eventId, normalizedEventType, "RECORDED");
     }
 
+    /** Consolida métricas de funil e analytics para decisão de próximas campanhas. */
+    public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(String productSlug) {
+        productCatalogService.getProduct(productSlug);
+        if (!usesJdbcStorage()) {
+            return emptyFunnelAnalytics(productSlug);
+        }
+        String summarySql = """
+                SELECT
+                  COUNT(*) AS total_events,
+                  COUNT(DISTINCT visitor_id) AS unique_visitors,
+                  COUNT(DISTINCT session_id) AS sessions,
+                  SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS ped_entries,
+                  SUM(CASE WHEN event_type = 'PAGE_VIEW' THEN 1 ELSE 0 END) AS page_views,
+                  SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
+                  SUM(CASE WHEN event_type = 'LOGIN_COMPLETED' THEN 1 ELSE 0 END) AS login_completed,
+                  SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
+                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_CLICKED' THEN 1 ELSE 0 END) AS subscription_clicked,
+                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' THEN 1 ELSE 0 END) AS subscription_approved,
+                  SUM(CASE WHEN event_type = 'ACCESS_RELEASED' THEN 1 ELSE 0 END) AS access_released,
+                  SUM(CASE WHEN event_type = 'FIRST_USE' THEN 1 ELSE 0 END) AS first_use,
+                  SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
+                  COALESCE(SUM(visible_ms), 0) AS total_visible_ms
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                """;
+        try (Connection connection = openConnection();
+                PreparedStatement summaryStatement = connection.prepareStatement(summarySql)) {
+            summaryStatement.setString(1, productSlug);
+            try (ResultSet resultSet = summaryStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return new FunnelAnalyticsSummaryResponse(
+                            productSlug,
+                            resultSet.getLong("total_events"),
+                            resultSet.getLong("unique_visitors"),
+                            resultSet.getLong("sessions"),
+                            resultSet.getLong("ped_entries"),
+                            resultSet.getLong("page_views"),
+                            resultSet.getLong("login_started"),
+                            resultSet.getLong("login_completed"),
+                            resultSet.getLong("paywall_viewed"),
+                            resultSet.getLong("subscription_clicked"),
+                            resultSet.getLong("subscription_approved"),
+                            resultSet.getLong("access_released"),
+                            resultSet.getLong("first_use"),
+                            resultSet.getLong("checkout_started"),
+                            resultSet.getLong("total_visible_ms"),
+                            loadFunnelEventMetrics(connection, productSlug));
+                }
+            }
+        } catch (SQLException ex) {
+            log.error("Falha ao consolidar analytics PDE; productSlug={}", productSlug, ex);
+            throw new IllegalStateException("Nao foi possivel consolidar analytics PDE", ex);
+        }
+        return emptyFunnelAnalytics(productSlug);
+    }
+
     /** Retorna a área de trabalho da cliente com produto e progresso atuais. */
     public WorkspaceResponse getWorkspace(String token) {
         AccessGrant grant = getGrant(token);
@@ -309,8 +367,22 @@ public class AccessService {
     private MagicLinkResponse sendAccessLink(String productSlug, String email, String accessUrl) {
         String absoluteUrl = buildAbsoluteAccessUrl(accessUrl);
         if (mailService != null && mailService.isConfigured()) {
-            mailService.sendMagicLink(email, absoluteUrl);
-            return new MagicLinkResponse(productSlug, email, "SENT", null);
+            try {
+                mailService.sendMagicLink(email, absoluteUrl);
+                return new MagicLinkResponse(productSlug, email, "SENT", null);
+            } catch (RuntimeException ex) {
+                log.error(
+                        "Falha ao entregar link magico PDE; productSlug={}, email={}, accessUrl={}",
+                        productSlug,
+                        email,
+                        accessUrl,
+                        ex);
+                return new MagicLinkResponse(
+                        productSlug,
+                        email,
+                        "EMAIL_SEND_FAILED",
+                        exposeMagicLinkInResponse ? accessUrl : null);
+            }
         }
         return new MagicLinkResponse(
                 productSlug,
@@ -355,17 +427,55 @@ public class AccessService {
         String normalized = eventType == null ? "" : eventType.trim().toUpperCase();
         Set<String> allowed = Set.of(
                 "PED_ENTRY",
+                "PAGE_VIEW",
+                "PAGE_LOAD",
+                "PAGE_VISIBLE_TIME",
+                "SECTION_VIEW",
+                "CTA_VIEWED",
                 "LOGIN_STARTED",
                 "LOGIN_COMPLETED",
                 "PAYWALL_VIEWED",
                 "SUBSCRIPTION_CLICKED",
+                "CHECKOUT_STARTED",
                 "SUBSCRIPTION_APPROVED",
                 "ACCESS_RELEASED",
-                "FIRST_USE");
+                "FIRST_USE",
+                "MISSION_OPEN",
+                "MISSION_COMPLETED",
+                "MATERIAL_OPEN");
         if (!allowed.contains(normalized)) {
             throw new IllegalArgumentException("Evento PDE nao suportado: " + eventType);
         }
         return normalized;
+    }
+
+    /** Retorna métricas vazias quando o backend está em modo local sem banco analítico. */
+    private FunnelAnalyticsSummaryResponse emptyFunnelAnalytics(String productSlug) {
+        return new FunnelAnalyticsSummaryResponse(productSlug, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of());
+    }
+
+    /** Lê as contagens por tipo de evento para detalhar o relatório comercial. */
+    private List<FunnelAnalyticsEventMetricDto> loadFunnelEventMetrics(Connection connection, String productSlug)
+            throws SQLException {
+        String sql = """
+                SELECT event_type, COUNT(*) AS total
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                GROUP BY event_type
+                ORDER BY total DESC, event_type
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<FunnelAnalyticsEventMetricDto> metrics = new java.util.ArrayList<>();
+                while (resultSet.next()) {
+                    metrics.add(new FunnelAnalyticsEventMetricDto(
+                            resultSet.getString("event_type"),
+                            resultSet.getLong("total")));
+                }
+                return metrics;
+            }
+        }
     }
 
     /** Carrega acessos persistidos para evitar perda de progresso em reinícios. */
@@ -500,12 +610,16 @@ public class AccessService {
         String sql = """
                 INSERT INTO pde_funnel_event (
                   event_id, product_slug, access_token, email, normalized_email, event_type,
-                  provider, source, page_url, metadata_json, occurred_at
+                  provider, source, page_url, referrer_url, session_id, visitor_id,
+                  utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+                  device_type, screen_width, screen_height, viewport_width, viewport_height,
+                  visible_ms, section_id, action_name, metadata_json, occurred_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """;
         try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
+            Map<String, Object> metadata = request.metadata();
             statement.setString(1, eventId);
             statement.setString(2, request.productSlug());
             statement.setString(3, blankToNull(request.accessToken()));
@@ -515,7 +629,23 @@ public class AccessService {
             statement.setString(7, blankToNull(request.provider()));
             statement.setString(8, blankToNull(request.source()));
             statement.setString(9, blankToNull(request.pageUrl()));
-            statement.setString(10, request.metadata() == null ? null : objectMapper.writeValueAsString(request.metadata()));
+            statement.setString(10, blankToNull(metadataString(metadata, "referrerUrl")));
+            statement.setString(11, blankToNull(metadataString(metadata, "sessionId")));
+            statement.setString(12, blankToNull(metadataString(metadata, "visitorId")));
+            statement.setString(13, blankToNull(metadataString(metadata, "utmSource")));
+            statement.setString(14, blankToNull(metadataString(metadata, "utmMedium")));
+            statement.setString(15, blankToNull(metadataString(metadata, "utmCampaign")));
+            statement.setString(16, blankToNull(metadataString(metadata, "utmContent")));
+            statement.setString(17, blankToNull(metadataString(metadata, "utmTerm")));
+            statement.setString(18, blankToNull(metadataString(metadata, "deviceType")));
+            setInteger(statement, 19, metadataLong(metadata, "screenWidth"));
+            setInteger(statement, 20, metadataLong(metadata, "screenHeight"));
+            setInteger(statement, 21, metadataLong(metadata, "viewportWidth"));
+            setInteger(statement, 22, metadataLong(metadata, "viewportHeight"));
+            setLong(statement, 23, metadataLong(metadata, "visibleMs"));
+            statement.setString(24, blankToNull(metadataString(metadata, "sectionId")));
+            statement.setString(25, blankToNull(metadataString(metadata, "actionName")));
+            statement.setString(26, metadata == null ? null : objectMapper.writeValueAsString(metadata));
             statement.executeUpdate();
         } catch (SQLException | IOException ex) {
             log.error(
@@ -531,6 +661,46 @@ public class AccessService {
     /** Converte texto vazio em null para persistência normalizada. */
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    /** Lê um campo textual opcional do metadado do evento. */
+    private String metadataString(Map<String, Object> metadata, String key) {
+        Object value = metadata == null ? null : metadata.get(key);
+        return value == null ? null : String.valueOf(value);
+    }
+
+    /** Lê um campo numérico opcional do metadado do evento. */
+    private Long metadataLong(Map<String, Object> metadata, String key) {
+        Object value = metadata == null ? null : metadata.get(key);
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            try {
+                return Long.parseLong(text);
+            } catch (NumberFormatException ex) {
+                log.warn("Metadado numerico PDE invalido ignorado; key={}, value={}", key, text);
+            }
+        }
+        return null;
+    }
+
+    /** Preenche campo inteiro opcional em statement JDBC. */
+    private void setInteger(PreparedStatement statement, int index, Long value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.INTEGER);
+            return;
+        }
+        statement.setInt(index, value.intValue());
+    }
+
+    /** Preenche campo longo opcional em statement JDBC. */
+    private void setLong(PreparedStatement statement, int index, Long value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.BIGINT);
+            return;
+        }
+        statement.setLong(index, value);
     }
 
     /** Representa o formato persistido do acesso para armazenamento em JSON. */

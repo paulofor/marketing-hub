@@ -85,6 +85,14 @@ type ApiErrorResponse = {
   error?: string;
 };
 
+type TrackingOptions = {
+  accessToken?: string;
+  email?: string;
+  provider?: string;
+  source?: string;
+  metadata?: Record<string, unknown>;
+};
+
 declare global {
   interface Window {
     google?: {
@@ -162,6 +170,46 @@ const fallbackProduct: ProductExperience = {
   completionOffer: 'Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais.',
 };
 
+function stableBrowserId(storageKey: string) {
+  const existingId = window.localStorage.getItem(storageKey);
+  if (existingId) {
+    return existingId;
+  }
+  const generatedId = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  window.localStorage.setItem(storageKey, generatedId);
+  return generatedId;
+}
+
+function resolveDeviceType() {
+  const width = window.innerWidth;
+  if (width < 768) {
+    return 'mobile';
+  }
+  if (width < 1100) {
+    return 'tablet';
+  }
+  return 'desktop';
+}
+
+function readCampaignParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    utmSource: params.get('utm_source') ?? undefined,
+    utmMedium: params.get('utm_medium') ?? undefined,
+    utmCampaign: params.get('utm_campaign') ?? undefined,
+    utmContent: params.get('utm_content') ?? undefined,
+    utmTerm: params.get('utm_term') ?? undefined,
+  };
+}
+
+function resolveUrlHost(url: string) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return 'invalid_checkout_url';
+  }
+}
+
 function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [product, setProduct] = useState<ProductExperience>(fallbackProduct);
@@ -174,6 +222,10 @@ function App() {
   const [successMessage, setSuccessMessage] = useState('');
   const [devAccessUrl, setDevAccessUrl] = useState('');
   const firstUseTrackedRef = useRef(false);
+  const visitorIdRef = useRef(stableBrowserId('musaVisitorId'));
+  const sessionIdRef = useRef(window.sessionStorage.getItem('musaSessionId') ?? '');
+  const visibleStartedAtRef = useRef(Date.now());
+  const sectionSeenRef = useRef(new Set<string>());
   const emailInputRef = useRef<HTMLInputElement>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const checkoutUrl = (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '';
@@ -184,7 +236,23 @@ function App() {
   }, [activeMissionId, product.missions, workspace]);
 
   useEffect(() => {
-    trackEvent('PED_ENTRY', { source: 'frontend_entry' });
+    if (!sessionIdRef.current) {
+      sessionIdRef.current = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      window.sessionStorage.setItem('musaSessionId', sessionIdRef.current);
+    }
+    trackEvent('PED_ENTRY', { source: 'frontend_entry', metadata: { actionName: 'app_entry' } });
+    trackEvent('PAGE_VIEW', { source: 'frontend_entry', metadata: { actionName: 'page_loaded' } });
+    const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    if (navigationEntry) {
+      trackEvent('PAGE_LOAD', {
+        source: 'frontend_performance',
+        metadata: {
+          actionName: 'navigation_timing',
+          loadMs: Math.round(navigationEntry.loadEventEnd || navigationEntry.duration),
+          domContentLoadedMs: Math.round(navigationEntry.domContentLoadedEventEnd),
+        },
+      });
+    }
     const tokenFromPath = window.location.pathname.match(/^\/access\/([^/]+)/)?.[1] ?? '';
     if (tokenFromPath) {
       setAccessToken(tokenFromPath);
@@ -202,6 +270,56 @@ function App() {
         setActiveMissionId(fallbackProduct.missions[0]?.id ?? '');
       });
   }, []);
+
+  useEffect(() => {
+    const observedSections = Array.from(document.querySelectorAll<HTMLElement>('[data-analytics-section]'));
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const sectionId = (entry.target as HTMLElement).dataset.analyticsSection;
+        if (!entry.isIntersecting || !sectionId || sectionSeenRef.current.has(sectionId)) {
+          return;
+        }
+        sectionSeenRef.current.add(sectionId);
+        trackEvent('SECTION_VIEW', {
+          accessToken,
+          email: workspace?.email,
+          provider: workspace?.accessSource,
+          metadata: { sectionId },
+        });
+      });
+    }, { threshold: 0.45 });
+    observedSections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [workspace, accessToken]);
+
+  useEffect(() => {
+    const flushVisibleTime = () => {
+      const visibleMs = Date.now() - visibleStartedAtRef.current;
+      visibleStartedAtRef.current = Date.now();
+      if (visibleMs < 1000) {
+        return;
+      }
+      sendTrackingBeacon('PAGE_VISIBLE_TIME', {
+        accessToken,
+        email: workspace?.email,
+        provider: workspace?.accessSource,
+        metadata: { visibleMs, actionName: 'page_visibility_flush' },
+      });
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushVisibleTime();
+      } else {
+        visibleStartedAtRef.current = Date.now();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', flushVisibleTime);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', flushVisibleTime);
+    };
+  }, [accessToken, workspace?.email, workspace?.accessSource, product.slug]);
 
   useEffect(() => {
     if (!googleClientId || workspace) {
@@ -338,32 +456,57 @@ function App() {
 
   async function trackEvent(
     eventType: string,
-    options: {
-      accessToken?: string;
-      email?: string;
-      provider?: string;
-      source?: string;
-      metadata?: Record<string, unknown>;
-    } = {},
+    options: TrackingOptions = {},
   ) {
     try {
       await fetch('/api/pde/access/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productSlug: product.slug,
-          eventType,
-          accessToken: options.accessToken,
-          email: options.email,
-          provider: options.provider,
-          source: options.source ?? 'pde-platform-frontend',
-          pageUrl: window.location.href,
-          metadata: options.metadata,
-        }),
+        body: JSON.stringify(buildTrackingPayload(eventType, options)),
       });
     } catch {
       // Eventos de funil não devem bloquear login, compra ou consumo da experiência.
     }
+  }
+
+  function sendTrackingBeacon(eventType: string, options: TrackingOptions = {}) {
+    const payload = JSON.stringify(buildTrackingPayload(eventType, options));
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/pde/access/events', new Blob([payload], { type: 'application/json' }));
+      return;
+    }
+    void fetch('/api/pde/access/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    }).catch(() => undefined);
+  }
+
+  function buildTrackingPayload(eventType: string, options: TrackingOptions = {}) {
+    const campaignParams = readCampaignParams();
+    return {
+      productSlug: product.slug,
+      eventType,
+      accessToken: options.accessToken,
+      email: options.email,
+      provider: options.provider,
+      source: options.source ?? 'pde-platform-frontend',
+      pageUrl: window.location.href,
+      metadata: {
+        visitorId: visitorIdRef.current,
+        sessionId: sessionIdRef.current,
+        referrerUrl: document.referrer || undefined,
+        deviceType: resolveDeviceType(),
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        path: window.location.pathname,
+        ...campaignParams,
+        ...options.metadata,
+      },
+    };
   }
 
   async function handleSubscriptionClick() {
@@ -377,6 +520,12 @@ function App() {
       metadata: { checkoutConfigured: Boolean(checkoutUrl) },
     });
     if (checkoutUrl) {
+      await trackEvent('CHECKOUT_STARTED', {
+        accessToken,
+        email: workspace.email,
+        provider: workspace.accessSource,
+        metadata: { actionName: 'checkout_opened', checkoutHost: resolveUrlHost(checkoutUrl) },
+      });
       window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
       return;
     }
@@ -400,6 +549,9 @@ function App() {
       return authMode === 'login'
         ? 'Link de teste encontrado para esse cadastro. Use o botão Entrar para voltar à Área MUSA.'
         : 'Primeiro acesso de teste criado. Use o botão Entrar para abrir o diagnóstico e o Dia 1.';
+    }
+    if (result.deliveryStatus === 'EMAIL_SEND_FAILED') {
+      return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. A equipe MUSA precisa concluir a configuração do domínio de envio.';
     }
     return 'O envio por e-mail ainda não está configurado neste ambiente. Configure o envio ou habilite o link de teste para entrar.';
   }
@@ -426,6 +578,12 @@ function App() {
 
   function openMission(missionId: string, activationType = 'mission_open') {
     setActiveMissionId(missionId);
+    trackEvent('MISSION_OPEN', {
+      accessToken,
+      email: workspace?.email,
+      provider: workspace?.accessSource,
+      metadata: { missionId, actionName: activationType },
+    });
     trackFirstUse(activationType, { missionId });
   }
 
@@ -436,6 +594,12 @@ function App() {
     const response = await fetch(`/api/pde/access/${accessToken}/missions/${missionId}/complete`, { method: 'POST' });
     const data = await response.json();
     setWorkspace(data);
+    trackEvent('MISSION_COMPLETED', {
+      accessToken,
+      email: data.email,
+      provider: data.accessSource,
+      metadata: { missionId },
+    });
   }
 
   const currentProduct = workspace?.product ?? product;
@@ -447,7 +611,7 @@ function App() {
   if (!workspace) {
     return (
       <main className="app-shell login-shell">
-        <section className="login-hero">
+        <section className="login-hero" data-analytics-section="login_hero">
           <div className="login-panel">
             <p className="eyebrow">Clube MUSA</p>
             <h1>Entre e descubra o detalhe que hoje apaga sua presença.</h1>
@@ -460,7 +624,7 @@ function App() {
               <span><Sparkles size={16} /> Dia 1 liberado</span>
               <span><Lock size={16} /> Continuação premium</span>
             </div>
-            <div className="login-preview-card">
+            <div className="login-preview-card" data-analytics-section="free_diagnostic_preview">
               <div>
                 <span>Primeira parte liberada</span>
                 <strong>Seu espelho MUSA</strong>
@@ -559,7 +723,7 @@ function App() {
               premium aparecem dentro da área e são desbloqueados com o acesso completo.
             </p>
           </div>
-          <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA">
+          <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA" data-analytics-section="musa_product_preview">
             <div className="cover-mark">
               <Sparkles size={32} />
             </div>
@@ -599,7 +763,7 @@ function App() {
 
   return (
     <main className="app-shell dashboard-shell">
-      <section className="musa-first-fold">
+      <section className="musa-first-fold" data-analytics-section="member_first_fold">
         <div className="musa-hero-copy">
           <p className="eyebrow">Sua Jornada MUSA</p>
           <h1>Sua presença elegante começa hoje.</h1>
@@ -672,7 +836,7 @@ function App() {
       </section>
 
       {!hasActiveSubscription && (
-        <section className="subscription-paywall" aria-label="Oferta de assinatura MUSA">
+        <section className="subscription-paywall" aria-label="Oferta de assinatura MUSA" data-analytics-section="subscription_paywall">
           <div>
             <p className="section-kicker">Liberar área completa</p>
             <h2>Assine o Clube MUSA para acessar todas as missões, biblioteca e próximos desafios.</h2>
@@ -700,7 +864,7 @@ function App() {
         </div>
       </section>
 
-      <section className="dashboard-main">
+      <section className="dashboard-main" data-analytics-section="guided_experience">
         <aside className="customer-sidebar">
           <div
             className="mini-cover"
@@ -746,7 +910,7 @@ function App() {
               <button
                 key={mission.id}
                 className={`${mission.id === activeMission?.id ? 'active' : ''} ${!hasActiveSubscription && mission.id !== firstMission?.id ? 'locked' : ''}`}
-                onClick={() => {
+              onClick={() => {
                   if (!hasActiveSubscription && mission.id !== firstMission?.id) {
                     handleSubscriptionClick();
                     return;
@@ -817,7 +981,15 @@ function App() {
                   href={material.url}
                   target="_blank"
                   rel="noreferrer"
-                  onClick={() => trackFirstUse('material_open', { materialTitle: material.title, materialType: material.type })}
+                  onClick={() => {
+                    trackEvent('MATERIAL_OPEN', {
+                      accessToken,
+                      email: workspace.email,
+                      provider: workspace.accessSource,
+                      metadata: { materialTitle: material.title, materialType: material.type },
+                    });
+                    trackFirstUse('material_open', { materialTitle: material.title, materialType: material.type });
+                  }}
                 >
                   Abrir material
                 </a>

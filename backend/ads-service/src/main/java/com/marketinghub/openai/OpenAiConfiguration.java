@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
@@ -18,6 +19,7 @@ import reactor.netty.http.client.HttpClient;
 @Configuration
 @EnableConfigurationProperties(OpenAiProperties.class)
 public class OpenAiConfiguration {
+    private static final int OPENAI_MAX_IN_MEMORY_BYTES = 20 * 1024 * 1024;
 
     /** Cria o WebClient autenticado da OpenAI usando token direto ou arquivo seguro configurado. */
     @Bean(name = "openAiWebClient")
@@ -31,10 +33,14 @@ public class OpenAiConfiguration {
                     conn.addHandlerLast(new ReadTimeoutHandler(seconds));
                     conn.addHandlerLast(new WriteTimeoutHandler(seconds));
                 });
+        ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(OPENAI_MAX_IN_MEMORY_BYTES))
+                .build();
 
         WebClient.Builder configured = builder
                 .baseUrl(properties.getBaseUrl())
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .exchangeStrategies(exchangeStrategies)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
 
         String apiKey = apiKeyResolver.resolve(properties);

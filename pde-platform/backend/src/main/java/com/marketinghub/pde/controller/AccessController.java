@@ -2,6 +2,7 @@ package com.marketinghub.pde.controller;
 
 import com.marketinghub.pde.dto.AccessRequest;
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
 import com.marketinghub.pde.dto.GoogleAccessRequest;
@@ -80,6 +81,12 @@ public class AccessController {
     @PostMapping("/events")
     public FunnelEventResponse recordFunnelEvent(@Valid @RequestBody FunnelEventRequest request) {
         return accessService.recordFunnelEvent(request);
+    }
+
+    /** Retorna métricas consolidadas do funil e analytics do produto PDE. */
+    @GetMapping("/analytics/{productSlug}/summary")
+    public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(@PathVariable("productSlug") String productSlug) {
+        return accessService.summarizeFunnelAnalytics(productSlug);
     }
 
     /** Recebe webhook de compra aprovada pela Pepper e libera acesso ao produto. */

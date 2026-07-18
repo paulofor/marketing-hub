@@ -112,6 +112,28 @@ class AccessServiceTest {
         assertThat(loginLink.accessUrl()).isEqualTo(firstAccess.accessUrl());
     }
 
+    /** Confirma que falha do provedor de e-mail nao quebra a criacao do acesso. */
+    @Test
+    void reportsEmailSendFailureWithoutBreakingAccessCreation() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                "",
+                "",
+                "",
+                "https://clubemusa.com.br",
+                false,
+                new FailingMailService(),
+                null);
+
+        var response = accessService.requestMagicLink("metodo-musa-7-dias", "cliente@sandbox.local");
+
+        assertThat(response.deliveryStatus()).isEqualTo("EMAIL_SEND_FAILED");
+        assertThat(response.accessUrl()).isNull();
+    }
+
     /** Confirma que a tentativa de login sem cadastro orienta a cliente a pedir primeiro acesso. */
     @Test
     void rejectsExistingCustomerMagicLinkWhenEmailIsUnknown() {
@@ -260,6 +282,61 @@ class AccessServiceTest {
         assertThat(firstUse.eventType()).isEqualTo("FIRST_USE");
     }
 
+    /** Confirma que o contrato aceita eventos de analytics necessários para campanhas. */
+    @Test
+    void acceptsCampaignAnalyticsFunnelEvents() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        List<String> eventTypes = List.of(
+                "PAGE_VIEW",
+                "PAGE_LOAD",
+                "PAGE_VISIBLE_TIME",
+                "SECTION_VIEW",
+                "CTA_VIEWED",
+                "CHECKOUT_STARTED",
+                "MISSION_OPEN",
+                "MISSION_COMPLETED",
+                "MATERIAL_OPEN");
+
+        eventTypes.forEach(eventType -> {
+            var response = accessService.recordFunnelEvent(new FunnelEventRequest(
+                    "metodo-musa-7-dias",
+                    eventType,
+                    null,
+                    "cliente@sandbox.local",
+                    "FRONTEND",
+                    "test",
+                    "https://clubemusa.com.br/?utm_campaign=musa-teste",
+                    Map.of(
+                            "visitorId", "visitor-1",
+                            "sessionId", "session-1",
+                            "utmCampaign", "musa-teste",
+                            "deviceType", "mobile",
+                            "visibleMs", 1200)));
+
+            assertThat(response.eventType()).isEqualTo(eventType);
+        });
+    }
+
+    /** Confirma que o resumo retorna vazio no modo local sem banco analítico. */
+    @Test
+    void returnsEmptyAnalyticsSummaryWithoutJdbcStorage() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isZero();
+        assertThat(summary.events()).isEmpty();
+    }
+
     /** Confirma que eventos fora do contrato continuam bloqueados. */
     @Test
     void rejectsUnsupportedFunnelEvent() {
@@ -278,5 +355,26 @@ class AccessServiceTest {
                 "test",
                 null,
                 Map.of())));
+    }
+
+    /** Simula provedor configurado que rejeita o envio do link magico. */
+    private static class FailingMailService extends PdeMailService {
+
+        /** Inicializa o serviço falso com transporte configurado para testes. */
+        FailingMailService() {
+            super("ses", "us-east-1", "", 1025, "acesso@clubemusa.com.br", "", "");
+        }
+
+        /** Informa que o provedor falso esta configurado. */
+        @Override
+        public boolean isConfigured() {
+            return true;
+        }
+
+        /** Rejeita o envio para reproduzir falha do provedor externo. */
+        @Override
+        public void sendMagicLink(String to, String accessUrl) {
+            throw new IllegalStateException("SES rejeitou o remetente");
+        }
     }
 }

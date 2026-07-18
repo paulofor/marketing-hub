@@ -112,6 +112,43 @@ Regras obrigatórias:
 
 O objetivo comercial é transformar o anúncio em entrada de relacionamento, permitir que a lead veja valor dentro do sistema e vender o acesso quando ela quiser continuar nas partes de maior valor.
 
+### Analytics obrigatório para campanhas PDE
+
+Toda aplicação PDE usada como destino de campanha deve registrar eventos próprios no backend PDE antes de escalar tráfego pago. A medição mínima deve permitir reconstruir o funil por produto, campanha, origem e dispositivo.
+
+Eventos mínimos:
+
+- `PED_ENTRY`;
+- `PAGE_VIEW`;
+- `PAGE_LOAD`;
+- `PAGE_VISIBLE_TIME`;
+- `SECTION_VIEW`;
+- `LOGIN_STARTED`;
+- `LOGIN_COMPLETED`;
+- `PAYWALL_VIEWED`;
+- `SUBSCRIPTION_CLICKED`;
+- `CHECKOUT_STARTED`;
+- `SUBSCRIPTION_APPROVED`;
+- `ACCESS_RELEASED`;
+- `FIRST_USE`;
+- `MISSION_OPEN`;
+- `MISSION_COMPLETED`;
+- `MATERIAL_OPEN`.
+
+Metadados mínimos por evento quando disponíveis:
+
+- `visitorId`;
+- `sessionId`;
+- `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`;
+- URL da página;
+- URL de referência;
+- tipo de dispositivo;
+- tamanho de tela e viewport;
+- seção, ação ou material acionado;
+- tempo visível quando o evento representar permanência.
+
+O backend PDE deve persistir esses eventos em estrutura consultável e expor resumo agregado para decisão comercial. Logs técnicos não substituem analytics persistido. Antes de liberar nova campanha para o Clube MUSA/PDE, deve ser possível responder no mínimo: quantas pessoas entraram, quantas iniciaram login, quantas concluíram login, quantas viram paywall, quantas clicaram em assinatura, quantas iniciaram checkout, quantas tiveram compra aprovada, quantas receberam acesso e quantas fizeram primeiro uso.
+
 ## Contrato mínimo de produto
 
 Cada produto PDE deve ter, no mínimo:
@@ -175,5 +212,6 @@ Um produto PDE só pode ser considerado pronto para tráfego quando:
 6. progresso estiver persistindo ou registrado de forma auditável;
 7. o anúncio apontar para a entrada/login do PDE em `https://clubemusa.com.br`, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
 8. produto da cliente não expuser termos técnicos internos.
+9. funil e analytics do PED estiverem registrando eventos próprios de entrada, sessão, UTM, paywall, checkout, compra, liberação e ativação.
 
 Para experimentos do tipo `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, a prontidão de campanha não deve exigir GeraSalesPage v1 como página de venda tradicional. A validação correta é: contrato comercial completo, URL canônica do Clube MUSA/PDE, criativos prontos, segmentação publicável, checkout/webhook/acesso e experiência inicial/paga validados.

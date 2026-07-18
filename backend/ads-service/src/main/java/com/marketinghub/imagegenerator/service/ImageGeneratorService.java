@@ -121,13 +121,14 @@ public class ImageGeneratorService {
     }
 
     /** Monta o corpo da Responses API com service_tier flex e ferramenta image_generation. */
-    private Map<String, Object> buildRequestBody(String prompt) {
+    Map<String, Object> buildRequestBody(String prompt) {
         return Map.of(
                 "model", model,
                 "input", prompt,
                 "service_tier", SERVICE_TIER,
                 "tools", List.of(Map.of(
                         "type", "image_generation",
+                        "action", "generate",
                         "output_format", OUTPUT_FORMAT)));
     }
 

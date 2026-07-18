@@ -19,12 +19,16 @@ Frontend:
 cd pde-platform/frontend
 npm install
 npm run build
+npm run test:visual
 npm run dev
 ```
 
 O frontend carrega `.npmrc` com `include=dev` e o script `npm run dev`
 define `NODE_ENV=development`, para evitar que um ambiente shell em producao
 omita dependencias do Vite/TypeScript ou desative recursos de desenvolvimento.
+
+Playwright fica instalado no frontend do PDE para repetir validacoes visuais da
+entrada MUSA sem depender de instalacao temporaria.
 
 Docker:
 

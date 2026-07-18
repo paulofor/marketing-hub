@@ -227,6 +227,7 @@ function App() {
   const visibleStartedAtRef = useRef(Date.now());
   const sectionSeenRef = useRef(new Set<string>());
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const missionPanelRef = useRef<HTMLElement>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const checkoutUrl = (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '';
 
@@ -256,7 +257,7 @@ function App() {
     const tokenFromPath = window.location.pathname.match(/^\/access\/([^/]+)/)?.[1] ?? '';
     if (tokenFromPath) {
       setAccessToken(tokenFromPath);
-      loadWorkspace(tokenFromPath).catch(() => setErrorMessage('Não encontramos esse acesso. Confira o link recebido após a compra.'));
+      loadWorkspace(tokenFromPath, true).catch(() => setErrorMessage('Não encontramos esse acesso. Confira o link recebido após a compra.'));
       return;
     }
     fetch('/api/pde/products/metodo-musa-7-dias')
@@ -435,7 +436,7 @@ function App() {
       const access = await response.json();
       setAccessToken(access.token);
       window.history.replaceState(null, '', access.accessUrl);
-      await loadWorkspace(access.token);
+      await loadWorkspace(access.token, true);
     } catch {
       setErrorMessage('Não conseguimos entrar com Google agora. Use o link por e-mail como alternativa.');
     } finally {
@@ -443,7 +444,7 @@ function App() {
     }
   }
 
-  async function loadWorkspace(token: string) {
+  async function loadWorkspace(token: string, resetScroll = false) {
     const response = await fetch(`/api/pde/access/${token}/workspace`);
     if (!response.ok) {
       throw new Error('Acesso não encontrado.');
@@ -452,6 +453,9 @@ function App() {
     setWorkspace(data);
     setProduct(data.product);
     setActiveMissionId(data.product.missions[0]?.id ?? '');
+    if (resetScroll) {
+      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+    }
   }
 
   async function trackEvent(
@@ -547,8 +551,8 @@ function App() {
     }
     if (result.accessUrl) {
       return authMode === 'login'
-        ? 'Link de teste encontrado para esse cadastro. Use o botão Entrar para voltar à Área MUSA.'
-        : 'Primeiro acesso de teste criado. Use o botão Entrar para abrir o diagnóstico e o Dia 1.';
+        ? 'Link de teste encontrado para esse cadastro. Use o botão Abrir minha Área MUSA para voltar.'
+        : 'Primeiro acesso de teste criado. Use o botão Abrir minha Área MUSA para ver o diagnóstico e começar o Dia 1.';
     }
     if (result.deliveryStatus === 'EMAIL_SEND_FAILED') {
       return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. A equipe MUSA precisa concluir a configuração do domínio de envio.';
@@ -560,7 +564,7 @@ function App() {
     window.history.replaceState(null, '', accessUrl);
     const token = accessUrl.split('/access/')[1] ?? '';
     setAccessToken(token);
-    loadWorkspace(token);
+    loadWorkspace(token, true);
   }
 
   function trackFirstUse(activationType: string, metadata: Record<string, unknown> = {}) {
@@ -578,6 +582,9 @@ function App() {
 
   function openMission(missionId: string, activationType = 'mission_open') {
     setActiveMissionId(missionId);
+    window.setTimeout(() => {
+      missionPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 40);
     trackEvent('MISSION_OPEN', {
       accessToken,
       email: workspace?.email,
@@ -608,6 +615,9 @@ function App() {
   const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id)) ?? currentProduct.missions[0];
   const nextMissionIsFirstMission = Boolean(firstMission && nextMission?.id === firstMission.id);
   const hasActiveSubscription = workspace?.subscriptionStatus === 'ACTIVE';
+  const canCompleteActiveMission = Boolean(
+    activeMission && (hasActiveSubscription || activeMission.id === firstMission?.id),
+  );
 
   if (!workspace) {
     return (
@@ -700,7 +710,7 @@ function App() {
                 type="button"
               >
                 <LogIn size={18} />
-                Entrar
+                Abrir minha Área MUSA
               </button>
             ) : (
               <button className="primary-button login-button" onClick={submitAccess} disabled={loading}>
@@ -780,9 +790,9 @@ function App() {
               disabled={!firstMission}
             >
               <Sparkles size={18} />
-              Começar missão do Dia 1
+              Começar agora
             </button>
-            <span>Uma missão curta por dia, com evidências simples de progresso.</span>
+            <span>Toque e vá direto para a orientação do Dia 1.</span>
           </div>
         </div>
         <article className="next-mission-hero">
@@ -905,7 +915,7 @@ function App() {
           </div>
         </aside>
 
-        <section className="mission-panel">
+        <section className="mission-panel" ref={missionPanelRef}>
           {firstMission && (
             <article className="start-here-panel">
               <p className="section-kicker">Comece aqui</p>
@@ -915,6 +925,12 @@ function App() {
                 apaga sua presença e escrever a frase de diagnóstico. Você termina o dia sabendo
                 exatamente o que ajustar antes de pensar em comprar algo novo.
               </p>
+              {!hasActiveSubscription && (
+                <div className="trial-unlock-note">
+                  <Sparkles size={17} />
+                  <span>O Dia 1 está liberado gratuitamente. Dias 2 a 7 e biblioteca premium aparecem depois do acesso completo.</span>
+                </div>
+              )}
               <button className="inline-action" onClick={() => openMission(firstMission.id, 'start_here_open')}>
                 Abrir orientação do Dia 1
                 <ChevronRight size={17} />
@@ -964,13 +980,13 @@ function App() {
               </div>
               <button
                 className="secondary-button"
-                disabled={!workspace || completedMissionIds.has(activeMission.id) || !hasActiveSubscription}
+                disabled={!workspace || completedMissionIds.has(activeMission.id) || !canCompleteActiveMission}
                 onClick={() => completeMission(activeMission.id)}
               >
-                {hasActiveSubscription ? <Check size={18} /> : <Lock size={18} />}
-                {hasActiveSubscription
-                  ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : 'Concluir missão')
-                  : 'Assine para salvar progresso'}
+                {canCompleteActiveMission ? <Check size={18} /> : <Lock size={18} />}
+                {canCompleteActiveMission
+                  ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : 'Registrar Dia 1 concluído')
+                  : 'Assine para salvar esta missão'}
               </button>
             </article>
           )}

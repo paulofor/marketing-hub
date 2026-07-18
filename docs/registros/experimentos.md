@@ -1,3 +1,19 @@
+## 2026-07-18 — PDE Platform: log correto no MCP para Clube MUSA
+
+- causa-raiz confirmada: o default do MCP para `pde-platform-backend` apontava para `191.252.181.168:8096`, host que não expõe o backend PDE; o Clube MUSA/PDE está publicado em `191.252.102.54:8096`.
+- evidência: `http://191.252.181.168:8096/actuator/logfile` falhou conexão, enquanto `http://191.252.102.54:8096/actuator/logfile` retornou o log Spring Boot do `pde-platform-backend`.
+- foi feito: o `mcp-server` passou a usar `http://191.252.102.54:8096/actuator/logfile` como default de `MCP_LOG_PDE_PLATFORM_BACKEND_PATH`, e a documentação operacional foi alinhada.
+- impacto esperado: próximas falhas comerciais no formulário do Clube MUSA podem ser investigadas pelo MCP com stack trace real, reduzindo tempo para corrigir perda de entrega de magic link.
+- prevenção de recorrência: `mcp-server/README.md` e `mcp-server/AGENTS.md` agora incluem explicitamente o módulo PDE e seu endpoint correto.
+
+## 2026-07-18 — Clube MUSA: SES sem credenciais no runtime
+
+- causa-raiz confirmada pelo log do `pde-platform-backend`: o SDK AWS falhou com `Unable to load credentials`, indicando ausência de `AWS_ACCESS_KEY_ID` e `AWS_SECRET_ACCESS_KEY` no container que tenta enviar pelo Amazon SES.
+- evidência comercial: tentativas para `paulofore@gmail.com` criaram o acesso, mas o envio automático retornou `EMAIL_SEND_FAILED`.
+- foi feito: o compose de deploy do PDE agora bloqueia publicação com `AWS_ACCESS_KEY_ID` ou `AWS_SECRET_ACCESS_KEY` vazios quando usado o deploy produtivo com SES.
+- impacto esperado: evita subir o funil do Clube MUSA em estado que captura lead, mas não entrega o link prometido.
+- prevenção de recorrência: inventário de secrets atualizado para explicitar o bloqueio no compose e a validação obrigatória de primeiro acesso real após deploy.
+
 ## 2026-07-14 — Hipóteses: oferta bloqueada sem base científica MDS
 
 - decisão aplicada: usar o `scientific-research-worker` como etapa obrigatória antes de construir Oferta.

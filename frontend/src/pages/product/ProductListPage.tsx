@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
+import { Pencil, Video } from "lucide-react";
 import { useProducts } from "../../api/product/useProducts";
 import PageTitle from "../../components/PageTitle";
 
@@ -227,15 +228,17 @@ export default function ProductListPage() {
                       aria-label={`Ações de ${product.name || product.niche || `Produto ${product.id}`}`}
                     >
                       <Link
-                        className="btn btn-primary btn-sm"
+                        className="product-catalog-card__action-button product-catalog-card__action-button--primary"
                         to={`/products/${product.id}/edit`}
                       >
+                        <Pencil size={16} aria-hidden="true" />
                         Editar dados
                       </Link>
                       <Link
-                        className="btn btn-outline-primary btn-sm"
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
                         to={`/products/${product.id}/sales-videos`}
                       >
+                        <Video size={16} aria-hidden="true" />
                         Vídeos de venda
                       </Link>
                     </div>

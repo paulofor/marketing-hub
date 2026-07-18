@@ -79,7 +79,7 @@ Regras obrigatórias:
 - o frontend deve exibir a orientação como cartão de produto, não como conversa livre;
 - toda solicitação deve ser mensurável no funil e associada ao token, produto e missão.
 
-Para o Método MUSA, o primeiro contrato de IA é a Consultora MUSA do Dia 2: a cliente escolhe três sinais de presença e recebe uma assinatura pessoal curta para repetir durante a semana.
+Para o Método MUSA, a Consultora MUSA deve atuar nos 7 dias como orientação guiada por missão: a cliente preenche três sinais ou respostas práticas do dia e recebe um cartão curto, aplicável e coerente com o histórico da jornada. O Dia 1 pode ser usado como amostra gratuita de valor; os Dias 2 a 7 permanecem como parte do acesso completo quando o funil estiver em modo de paywall interno.
 
 ### Frontend PDE
 

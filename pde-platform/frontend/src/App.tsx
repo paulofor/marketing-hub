@@ -115,6 +115,25 @@ type TrackingOptions = {
   metadata?: Record<string, unknown>;
 };
 
+type MissionGuidanceField = {
+  key: string;
+  label: string;
+  placeholder: string;
+  options?: string[];
+};
+
+type MissionGuidanceConfig = {
+  guidanceType: string;
+  kicker: string;
+  title: string;
+  buttonLabel: string;
+  loadingLabel: string;
+  pendingLabel: string;
+  failedLabel: string;
+  completedKicker: string;
+  fields: MissionGuidanceField[];
+};
+
 declare global {
   interface Window {
     google?: {
@@ -192,6 +211,143 @@ const fallbackProduct: ProductExperience = {
   completionOffer: 'Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais.',
 };
 
+const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
+  'dia-1-ruido-visual': {
+    guidanceType: 'MUSA_DAY_1_PRESENCE_DIAGNOSIS',
+    kicker: 'Consultora MUSA',
+    title: 'Conte sua situação real para receber o primeiro ajuste de presença.',
+    buttonLabel: 'Receber meu ajuste do Dia 1',
+    loadingLabel: 'Preparando ajuste...',
+    pendingLabel: 'Sua Consultora MUSA está preparando uma orientação curta para o seu primeiro ajuste.',
+    failedLabel: 'Suas respostas ficaram salvas. Use a missão do Dia 1 manualmente enquanto a consultora automática é configurada.',
+    completedKicker: 'Meu ajuste MUSA',
+    fields: [
+      {
+        key: 'presenceFocus',
+        label: 'Onde você mais quer sentir presença hoje?',
+        placeholder: 'Escolha um foco',
+        options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Conteúdo ou foto'],
+      },
+      {
+        key: 'mainObstacle',
+        label: 'Qual detalhe mais apaga o conjunto?',
+        placeholder: 'Escolha um detalhe',
+        options: ['Cabelo sem acabamento', 'Roupa sem intenção', 'Cores brigando entre si', 'Falta de acessório ou perfume'],
+      },
+      {
+        key: 'evidencePhrase',
+        label: 'Complete sua frase de evidência',
+        placeholder: 'Eu me sinto arrumada, mas pouco marcante quando...',
+      },
+    ],
+  },
+  'dia-2-assinatura': {
+    guidanceType: 'MUSA_DAY_2_SIGNATURE',
+    kicker: 'Consultora MUSA',
+    title: 'Escolha 3 sinais para montar sua assinatura desta semana.',
+    buttonLabel: 'Gerar minha assinatura MUSA',
+    loadingLabel: 'Montando assinatura...',
+    pendingLabel: 'Sua Consultora MUSA está preparando uma orientação curta com seus 3 sinais.',
+    failedLabel: 'Seus sinais ficaram salvos. A consultora automática ainda precisa ser configurada neste ambiente.',
+    completedKicker: 'Minha assinatura MUSA',
+    fields: [
+      {
+        key: 'finishSignal',
+        label: 'Acabamento principal',
+        placeholder: 'Escolha um acabamento',
+        options: ['Cabelo polido', 'Pele iluminada', 'Maquiagem leve', 'Roupa com caimento limpo'],
+      },
+      {
+        key: 'baseColor',
+        label: 'Cor-base da semana',
+        placeholder: 'Escolha uma cor-base',
+        options: ['Vinho discreto', 'Preto limpo', 'Off-white', 'Verde oliva', 'Jeans escuro'],
+      },
+      {
+        key: 'memorableSignal',
+        label: 'Sinal memorável',
+        placeholder: 'Escolha um sinal',
+        options: ['Perfume assinatura', 'Brinco luminoso', 'Batom discreto', 'Bolsa estruturada', 'Lenço ou textura suave'],
+      },
+    ],
+  },
+  'dia-3-base-acessivel': {
+    guidanceType: 'MUSA_DAY_3_WARDROBE_REUSE',
+    kicker: 'Consultora MUSA',
+    title: 'Mostre o que você já tem para a IA montar uma base elegante acessível.',
+    buttonLabel: 'Montar minha base acessível',
+    loadingLabel: 'Organizando base...',
+    pendingLabel: 'Sua Consultora MUSA está conectando seus itens aos sinais escolhidos.',
+    failedLabel: 'Seu inventário ficou salvo. Use os itens escolhidos como base da missão de hoje.',
+    completedKicker: 'Minha base acessível',
+    fields: [
+      { key: 'pieces', label: '5 peças que você já tem', placeholder: 'Ex.: calça preta, camisa branca, vestido vinho...' },
+      { key: 'accessories', label: '2 acessórios ou acabamentos disponíveis', placeholder: 'Ex.: brinco dourado e perfume suave' },
+      { key: 'realOccasion', label: 'Para qual situação real essa base precisa funcionar?', placeholder: 'Ex.: reunião, jantar, rotina de trabalho' },
+    ],
+  },
+  'dia-4-checklist-12-minutos': {
+    guidanceType: 'MUSA_DAY_4_FINISHING_RITUAL',
+    kicker: 'Consultora MUSA',
+    title: 'Transforme seu checklist em um acabamento de 12 minutos.',
+    buttonLabel: 'Criar meu ritual de 12 minutos',
+    loadingLabel: 'Ajustando ritual...',
+    pendingLabel: 'Sua Consultora MUSA está priorizando o que dá mais presença em menos tempo.',
+    failedLabel: 'Seu checklist ficou salvo. Execute a ordem mais simples hoje.',
+    completedKicker: 'Meu ritual de acabamento',
+    fields: [
+      { key: 'availableMinutes', label: 'Quanto tempo real você tem antes de sair?', placeholder: 'Ex.: 8, 12 ou 15 minutos' },
+      { key: 'weakestFinish', label: 'Qual acabamento costuma falhar primeiro?', placeholder: 'Ex.: cabelo, pele, roupa, perfume, postura' },
+      { key: 'desiredFeeling', label: 'Como você quer se sentir ao sair?', placeholder: 'Ex.: limpa, marcante, segura, feminina' },
+    ],
+  },
+  'dia-5-compra-inteligente': {
+    guidanceType: 'MUSA_DAY_5_ANTI_IMPULSE_DECISION',
+    kicker: 'Consultora MUSA',
+    title: 'Antes de comprar, deixe a IA testar se o item fortalece sua assinatura.',
+    buttonLabel: 'Avaliar minha compra',
+    loadingLabel: 'Avaliando compra...',
+    pendingLabel: 'Sua Consultora MUSA está separando desejo imediato de utilidade real.',
+    failedLabel: 'Sua decisão ficou salva. Compare a compra com seus 3 sinais antes de avançar.',
+    completedKicker: 'Minha decisão anti-impulso',
+    fields: [
+      { key: 'desiredItem', label: 'O que você está pensando em comprar?', placeholder: 'Ex.: blazer, perfume, bolsa, sapato' },
+      { key: 'buyingReason', label: 'Qual sensação você espera resolver com essa compra?', placeholder: 'Ex.: parecer mais arrumada, menos comum, mais adulta' },
+      { key: 'fitWithSignature', label: 'Como esse item conversa com sua assinatura MUSA?', placeholder: 'Ex.: combina com minha cor-base e acabamento' },
+    ],
+  },
+  'dia-6-situacao-chave': {
+    guidanceType: 'MUSA_DAY_6_OCCASION_ENTRY',
+    kicker: 'Consultora MUSA',
+    title: 'Planeje uma entrada marcante para uma situação real.',
+    buttonLabel: 'Preparar minha entrada',
+    loadingLabel: 'Preparando entrada...',
+    pendingLabel: 'Sua Consultora MUSA está alinhando roupa, acabamento e detalhe final.',
+    failedLabel: 'Seu plano ficou salvo. Use a missão para ajustar a composição antes da ocasião.',
+    completedKicker: 'Minha entrada MUSA',
+    fields: [
+      { key: 'occasion', label: 'Qual é a ocasião?', placeholder: 'Ex.: reunião, evento, encontro, gravação, almoço' },
+      { key: 'plannedLook', label: 'Qual composição você pretende usar?', placeholder: 'Roupa, cabelo, pele, perfume e detalhe final' },
+      { key: 'presenceRisk', label: 'O que pode enfraquecer sua presença nesse contexto?', placeholder: 'Ex.: pressa, insegurança, roupa sem caimento' },
+    ],
+  },
+  'dia-7-plano-pessoal': {
+    guidanceType: 'MUSA_DAY_7_MAINTENANCE_PLAN',
+    kicker: 'Consultora MUSA',
+    title: 'Feche a semana com um plano simples para manter sua presença.',
+    buttonLabel: 'Gerar meu plano pessoal',
+    loadingLabel: 'Fechando plano...',
+    pendingLabel: 'Sua Consultora MUSA está transformando a semana em um ritual fácil de repetir.',
+    failedLabel: 'Seu plano ficou salvo. Releia os sinais e escolha um ritual semanal de 15 minutos.',
+    completedKicker: 'Meu plano MUSA',
+    fields: [
+      { key: 'bestSignal', label: 'Qual sinal mais funcionou nesta semana?', placeholder: 'Ex.: cabelo polido, cor-base vinho, perfume' },
+      { key: 'hardestPoint', label: 'Qual ponto ainda exige esforço?', placeholder: 'Ex.: manter cabelo, combinar cores, evitar compras' },
+      { key: 'weeklyRitual', label: 'Que ritual semanal você consegue repetir?', placeholder: 'Ex.: separar 3 combinações no domingo por 15 minutos' },
+    ],
+  },
+};
+
 function stableBrowserId(storageKey: string) {
   const existingId = window.localStorage.getItem(storageKey);
   if (existingId) {
@@ -243,9 +399,8 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [devAccessUrl, setDevAccessUrl] = useState('');
-  const [dayOneAnswers, setDayOneAnswers] = useState<Record<string, string>>({});
-  const [dayTwoAnswers, setDayTwoAnswers] = useState<Record<string, string>>({});
-  const [aiGuidance, setAiGuidance] = useState<AiGuidance | null>(null);
+  const [missionAnswers, setMissionAnswers] = useState<Record<string, Record<string, string>>>({});
+  const [aiGuidanceByMission, setAiGuidanceByMission] = useState<Record<string, AiGuidance>>({});
   const [generatingGuidance, setGeneratingGuidance] = useState(false);
   const [savingInteraction, setSavingInteraction] = useState(false);
   const [missionCompletionStatus, setMissionCompletionStatus] = useState<'idle' | 'processing' | 'success'>('idle');
@@ -482,8 +637,7 @@ function App() {
     setWorkspace(data);
     setProduct(data.product);
     setActiveMissionId(data.product.missions[0]?.id ?? '');
-    setDayOneAnswers(resolveMissionAnswers(data, data.product.missions[0]?.id ?? ''));
-    setDayTwoAnswers(resolveMissionAnswers(data, data.product.missions.find((mission: Mission) => mission.day === 2)?.id ?? ''));
+    setMissionAnswers(resolveAllMissionAnswers(data));
     if (resetScroll) {
       window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
     }
@@ -661,9 +815,9 @@ function App() {
     if (!accessToken || !workspace) {
       return;
     }
-    const answers = sanitizeAnswers(dayOneAnswers);
+    const answers = sanitizeAnswers(missionAnswers[missionId] ?? {});
     if (Object.keys(answers).length < 3) {
-      setErrorMessage('Preencha os 3 pontos do Dia 1 para salvar sua personalização.');
+      setErrorMessage('Preencha os 3 pontos da missão para salvar sua personalização.');
       return;
     }
     setSavingInteraction(true);
@@ -679,49 +833,58 @@ function App() {
       }
       const data = await response.json();
       setWorkspace(data);
-      setDayOneAnswers(resolveMissionAnswers(data, missionId));
+      setMissionAnswers(resolveAllMissionAnswers(data));
       trackEvent('MISSION_INTERACTION_SAVED', {
         accessToken,
         email: data.email,
         provider: data.accessSource,
         metadata: { missionId, answerKeys: Object.keys(answers) },
       });
-      setSuccessMessage('Personalização do Dia 1 salva. Agora registre a conclusão quando executar o ajuste.');
+      setSuccessMessage('Personalização salva. Agora registre a conclusão quando executar o ajuste.');
     } catch {
-      setErrorMessage('Não conseguimos salvar sua personalização agora. Tente novamente antes de concluir o Dia 1.');
+      setErrorMessage('Não conseguimos salvar sua personalização agora. Tente novamente antes de concluir a missão.');
     } finally {
       setSavingInteraction(false);
     }
   }
 
-  async function requestDayTwoGuidance(missionId: string) {
+  async function requestMissionGuidance(missionId: string) {
     if (!accessToken || !workspace) {
       return;
     }
-    const answers = sanitizeAnswers(dayTwoAnswers);
+    const config = missionGuidanceConfigs[missionId];
+    if (!config) {
+      await saveMissionInteraction(missionId);
+      return;
+    }
+    const answers = sanitizeAnswers(missionAnswers[missionId] ?? {});
     if (Object.keys(answers).length < 3) {
-      setErrorMessage('Escolha os 3 sinais para a Consultora MUSA montar sua assinatura.');
+      setErrorMessage('Preencha os 3 pontos para a Consultora MUSA montar sua orientação.');
       return;
     }
     setGeneratingGuidance(true);
-    setAiGuidance(null);
+    setAiGuidanceByMission((current) => {
+      const updated = { ...current };
+      delete updated[missionId];
+      return updated;
+    });
     setErrorMessage('');
     setSuccessMessage('');
     try {
       const response = await fetch(`/api/pde/access/${accessToken}/missions/${missionId}/ai-guidance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guidanceType: 'MUSA_DAY_2_SIGNATURE', answers }),
+        body: JSON.stringify({ guidanceType: config.guidanceType, answers }),
       });
       if (!response.ok) {
-        throw new Error('Não foi possível solicitar sua assinatura MUSA.');
+        throw new Error('Não foi possível solicitar sua orientação MUSA.');
       }
       const guidance = await response.json() as AiGuidance;
-      setAiGuidance(guidance);
-      setDayTwoAnswers(resolveMissionAnswers(await refreshWorkspace(), missionId));
+      setAiGuidanceByMission((current) => ({ ...current, [missionId]: guidance }));
+      setMissionAnswers(resolveAllMissionAnswers(await refreshWorkspace()));
       await pollGuidanceUntilFinished(guidance.requestId);
     } catch {
-      setErrorMessage('Não conseguimos acionar a Consultora MUSA agora. Seus sinais podem ser salvos e usados manualmente.');
+      setErrorMessage('Não conseguimos acionar a Consultora MUSA agora. Suas respostas podem ser salvas e usadas manualmente.');
     } finally {
       setGeneratingGuidance(false);
     }
@@ -746,20 +909,19 @@ function App() {
         throw new Error('Orientação não encontrada.');
       }
       const guidance = await response.json() as AiGuidance;
-      setAiGuidance(guidance);
+      setAiGuidanceByMission((current) => ({ ...current, [guidance.missionId]: guidance }));
       if (guidance.status === 'COMPLETED' || guidance.status === 'FAILED') {
         return;
       }
     }
   }
 
-  function resolveMissionAnswers(workspaceData: Workspace, missionId: string) {
-    return (workspaceData.missionInteractions ?? [])
-      .filter((interaction) => interaction.missionId === missionId)
-      .reduce<Record<string, string>>((answers, interaction) => {
-        answers[interaction.questionKey] = interaction.answerText;
-        return answers;
-      }, {});
+  function resolveAllMissionAnswers(workspaceData: Workspace) {
+    return (workspaceData.missionInteractions ?? []).reduce<Record<string, Record<string, string>>>((answers, interaction) => {
+      answers[interaction.missionId] = answers[interaction.missionId] ?? {};
+      answers[interaction.missionId][interaction.questionKey] = interaction.answerText;
+      return answers;
+    }, {});
   }
 
   function sanitizeAnswers(answers: Record<string, string>) {
@@ -781,14 +943,32 @@ function App() {
   const canCompleteActiveMission = Boolean(
     activeMission && (hasActiveSubscription || activeMission.id === firstMission?.id),
   );
-  const dayOneInteractionSaved = Boolean(firstMission && ['presenceFocus', 'mainObstacle', 'evidencePhrase'].every((key) => dayOneAnswers[key]?.trim()));
-  const dayTwoMission = currentProduct.missions.find((mission) => mission.day === 2);
-  const dayTwoInteractionSaved = Boolean(dayTwoMission && ['finishSignal', 'baseColor', 'memorableSignal'].every((key) => dayTwoAnswers[key]?.trim()));
+  const activeMissionGuidanceConfig = activeMission ? missionGuidanceConfigs[activeMission.id] : undefined;
+  const activeMissionAnswers = activeMission ? missionAnswers[activeMission.id] ?? {} : {};
+  const activeMissionGuidance = activeMission ? aiGuidanceByMission[activeMission.id] : undefined;
   const canRegisterActiveMission = Boolean(
     canCompleteActiveMission
-      && (activeMission?.id !== firstMission?.id || dayOneInteractionSaved)
-      && (activeMission?.id !== dayTwoMission?.id || dayTwoInteractionSaved),
+      && (!activeMissionGuidanceConfig || isMissionInteractionSaved(activeMission?.id ?? '')),
   );
+
+  function isMissionInteractionSaved(missionId: string) {
+    const config = missionGuidanceConfigs[missionId];
+    if (!config) {
+      return true;
+    }
+    const answers = missionAnswers[missionId] ?? {};
+    return config.fields.every((field) => answers[field.key]?.trim());
+  }
+
+  function updateMissionAnswer(missionId: string, key: string, value: string) {
+    setMissionAnswers((current) => ({
+      ...current,
+      [missionId]: {
+        ...(current[missionId] ?? {}),
+        [key]: value,
+      },
+    }));
+  }
 
   if (!workspace) {
     return (
@@ -1159,148 +1339,71 @@ function App() {
                 <ChevronRight size={18} />
                 {activeMission.visualCue}
               </div>
-              {activeMission.id === firstMission?.id && (
-                <div className="personalization-panel">
-                  <p className="section-kicker">Seu ajuste personalizado</p>
-                  <h3>Antes de concluir, deixe o Dia 1 com a sua situação real.</h3>
-                  <label>
-                    Onde você mais quer sentir presença hoje?
-                    <select
-                      value={dayOneAnswers.presenceFocus ?? ''}
-                      onChange={(event) => setDayOneAnswers((current) => ({ ...current, presenceFocus: event.target.value }))}
-                    >
-                      <option value="">Escolha um foco</option>
-                      <option value="Trabalho ou reunião">Trabalho ou reunião</option>
-                      <option value="Encontro ou saída">Encontro ou saída</option>
-                      <option value="Rotina comum">Rotina comum</option>
-                      <option value="Conteúdo ou foto">Conteúdo ou foto</option>
-                    </select>
-                  </label>
-                  <label>
-                    Qual detalhe mais apaga o conjunto?
-                    <select
-                      value={dayOneAnswers.mainObstacle ?? ''}
-                      onChange={(event) => setDayOneAnswers((current) => ({ ...current, mainObstacle: event.target.value }))}
-                    >
-                      <option value="">Escolha um detalhe</option>
-                      <option value="Cabelo sem acabamento">Cabelo sem acabamento</option>
-                      <option value="Roupa sem intenção">Roupa sem intenção</option>
-                      <option value="Cores brigando entre si">Cores brigando entre si</option>
-                      <option value="Falta de acessório ou perfume">Falta de acessório ou perfume</option>
-                    </select>
-                  </label>
-                  <label>
-                    Complete sua frase de evidência
-                    <textarea
-                      rows={3}
-                      maxLength={280}
-                      value={dayOneAnswers.evidencePhrase ?? ''}
-                      placeholder="Eu me sinto arrumada, mas pouco marcante quando..."
-                      onChange={(event) => setDayOneAnswers((current) => ({ ...current, evidencePhrase: event.target.value }))}
-                    />
-                  </label>
-                  {dayOneInteractionSaved && (
-                    <div className="personalized-summary">
-                      <Sparkles size={17} />
-                      <span>
-                        Hoje seu ajuste é para {dayOneAnswers.presenceFocus}, reduzindo {dayOneAnswers.mainObstacle.toLowerCase()}.
-                      </span>
-                    </div>
-                  )}
-                  <button
-                    className="inline-save-button"
-                    disabled={savingInteraction || completedMissionIds.has(activeMission.id)}
-                    onClick={() => saveMissionInteraction(activeMission.id)}
-                  >
-                    <Pencil size={16} />
-                    {savingInteraction ? 'Salvando...' : dayOneInteractionSaved ? 'Atualizar personalização' : 'Salvar meu ajuste'}
-                  </button>
-                </div>
-              )}
-              {activeMission.id === dayTwoMission?.id && hasActiveSubscription && (
+              {activeMissionGuidanceConfig && (hasActiveSubscription || activeMission.id === firstMission?.id) && (
                 <div className="personalization-panel musa-signature-panel">
-                  <p className="section-kicker">Consultora MUSA</p>
-                  <h3>Escolha 3 sinais para montar sua assinatura desta semana.</h3>
-                  <label>
-                    Acabamento principal
-                    <select
-                      value={dayTwoAnswers.finishSignal ?? ''}
-                      onChange={(event) => setDayTwoAnswers((current) => ({ ...current, finishSignal: event.target.value }))}
-                    >
-                      <option value="">Escolha um acabamento</option>
-                      <option value="Cabelo polido">Cabelo polido</option>
-                      <option value="Pele iluminada">Pele iluminada</option>
-                      <option value="Maquiagem leve">Maquiagem leve</option>
-                      <option value="Roupa com caimento limpo">Roupa com caimento limpo</option>
-                    </select>
-                  </label>
-                  <label>
-                    Cor-base da semana
-                    <select
-                      value={dayTwoAnswers.baseColor ?? ''}
-                      onChange={(event) => setDayTwoAnswers((current) => ({ ...current, baseColor: event.target.value }))}
-                    >
-                      <option value="">Escolha uma cor-base</option>
-                      <option value="Vinho discreto">Vinho discreto</option>
-                      <option value="Preto limpo">Preto limpo</option>
-                      <option value="Off-white">Off-white</option>
-                      <option value="Verde oliva">Verde oliva</option>
-                      <option value="Jeans escuro">Jeans escuro</option>
-                    </select>
-                  </label>
-                  <label>
-                    Sinal memorável
-                    <select
-                      value={dayTwoAnswers.memorableSignal ?? ''}
-                      onChange={(event) => setDayTwoAnswers((current) => ({ ...current, memorableSignal: event.target.value }))}
-                    >
-                      <option value="">Escolha um sinal</option>
-                      <option value="Perfume assinatura">Perfume assinatura</option>
-                      <option value="Brinco luminoso">Brinco luminoso</option>
-                      <option value="Batom discreto">Batom discreto</option>
-                      <option value="Bolsa estruturada">Bolsa estruturada</option>
-                      <option value="Lenço ou textura suave">Lenço ou textura suave</option>
-                    </select>
-                  </label>
-                  {dayTwoInteractionSaved && (
+                  <p className="section-kicker">{activeMissionGuidanceConfig.kicker}</p>
+                  <h3>{activeMissionGuidanceConfig.title}</h3>
+                  {activeMissionGuidanceConfig.fields.map((field) => (
+                    <label key={field.key}>
+                      {field.label}
+                      {field.options ? (
+                        <select
+                          value={activeMissionAnswers[field.key] ?? ''}
+                          onChange={(event) => updateMissionAnswer(activeMission.id, field.key, event.target.value)}
+                        >
+                          <option value="">{field.placeholder}</option>
+                          {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                        </select>
+                      ) : (
+                        <textarea
+                          rows={3}
+                          maxLength={360}
+                          value={activeMissionAnswers[field.key] ?? ''}
+                          placeholder={field.placeholder}
+                          onChange={(event) => updateMissionAnswer(activeMission.id, field.key, event.target.value)}
+                        />
+                      )}
+                    </label>
+                  ))}
+                  {isMissionInteractionSaved(activeMission.id) && (
                     <div className="signature-preview-grid" aria-label="Sinais escolhidos para sua assinatura MUSA">
-                      <span>{dayTwoAnswers.finishSignal}</span>
-                      <span>{dayTwoAnswers.baseColor}</span>
-                      <span>{dayTwoAnswers.memorableSignal}</span>
+                      {activeMissionGuidanceConfig.fields.map((field) => (
+                        <span key={field.key}>{activeMissionAnswers[field.key]}</span>
+                      ))}
                     </div>
                   )}
                   <button
                     className="inline-save-button"
-                    disabled={generatingGuidance || completedMissionIds.has(activeMission.id)}
-                    onClick={() => requestDayTwoGuidance(activeMission.id)}
+                    disabled={generatingGuidance || savingInteraction || completedMissionIds.has(activeMission.id)}
+                    onClick={() => requestMissionGuidance(activeMission.id)}
                   >
                     {generatingGuidance ? <LoaderCircle className="button-spinner" size={16} /> : <Sparkles size={16} />}
-                    {generatingGuidance ? 'Montando assinatura...' : 'Gerar minha assinatura MUSA'}
+                    {generatingGuidance ? activeMissionGuidanceConfig.loadingLabel : activeMissionGuidanceConfig.buttonLabel}
                   </button>
-                  {aiGuidance?.status === 'PENDING' && (
+                  {activeMissionGuidance?.status === 'PENDING' && (
                     <div className="personalized-summary">
                       <LoaderCircle className="button-spinner" size={17} />
-                      <span>Sua Consultora MUSA está preparando uma orientação curta com seus 3 sinais.</span>
+                      <span>{activeMissionGuidanceConfig.pendingLabel}</span>
                     </div>
                   )}
-                  {aiGuidance?.status === 'FAILED' && (
+                  {activeMissionGuidance?.status === 'FAILED' && (
                     <div className="personalized-summary">
                       <Sparkles size={17} />
-                      <span>Seus sinais ficaram salvos. A consultora automática ainda precisa ser configurada neste ambiente.</span>
+                      <span>{activeMissionGuidanceConfig.failedLabel}</span>
                     </div>
                   )}
-                  {aiGuidance?.status === 'COMPLETED' && (
+                  {activeMissionGuidance?.status === 'COMPLETED' && (
                     <div className="ai-guidance-card">
-                      <p className="section-kicker">Minha assinatura MUSA</p>
-                      <h3>{aiGuidance.headline}</h3>
-                      <p>{aiGuidance.summary}</p>
+                      <p className="section-kicker">{activeMissionGuidanceConfig.completedKicker}</p>
+                      <h3>{activeMissionGuidance.headline}</h3>
+                      <p>{activeMissionGuidance.summary}</p>
                       <div className="signature-preview-grid">
-                        {aiGuidance.signals.map((signal) => <span key={signal}>{signal}</span>)}
+                        {activeMissionGuidance.signals.map((signal) => <span key={signal}>{signal}</span>)}
                       </div>
                       <ul>
-                        {aiGuidance.microActions.map((action) => <li key={action}>{action}</li>)}
+                        {activeMissionGuidance.microActions.map((action) => <li key={action}>{action}</li>)}
                       </ul>
-                      {aiGuidance.caution && <small>{aiGuidance.caution}</small>}
+                      {activeMissionGuidance.caution && <small>{activeMissionGuidance.caution}</small>}
                     </div>
                   )}
                 </div>
@@ -1355,8 +1458,8 @@ function App() {
                   ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : `Registrar Dia ${activeMission.day} concluído`)
                   : activeMission.id === firstMission?.id
                   ? 'Salve seu ajuste para concluir'
-                  : activeMission.id === dayTwoMission?.id
-                  ? 'Escolha os 3 sinais para concluir'
+                  : activeMissionGuidanceConfig
+                  ? 'Preencha os 3 pontos para concluir'
                   : 'Assine para salvar esta missão'}
               </button>
             </article>

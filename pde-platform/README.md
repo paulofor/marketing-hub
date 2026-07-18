@@ -46,8 +46,9 @@ OPENAI_API_KEY=... PDE_BACKEND_URL=http://localhost:8096 npm start
 
 O backend PDE cria solicitações de orientação por IA e o `pde-ai-worker`
 executa a OpenAI por endpoint `pending`, usando prompt/schema versionados.
-O primeiro contrato ativo é a Consultora MUSA do Dia 2, que gera uma
-assinatura pessoal curta a partir dos 3 sinais escolhidos pela cliente.
+A Consultora MUSA atua nos 7 dias como orientação guiada por missão: a cliente
+preenche 3 sinais ou respostas práticas e recebe um cartão curto, acionável e
+coerente com o histórico da jornada.
 
 ## Produto inicial
 

@@ -606,6 +606,7 @@ function App() {
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
   const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id)) ?? currentProduct.missions[0];
+  const nextMissionIsFirstMission = Boolean(firstMission && nextMission?.id === firstMission.id);
   const hasActiveSubscription = workspace?.subscriptionStatus === 'ACTIVE';
 
   if (!workspace) {
@@ -773,9 +774,13 @@ function App() {
           <h1>Sua presença elegante começa hoje.</h1>
           <p className="promise">{currentProduct.promise}</p>
           <div className="musa-hero-actions">
-            <button className="primary-button" onClick={() => openMission(firstMission?.id ?? '', 'primary_start')}>
+            <button
+              className="primary-button"
+              onClick={() => openMission(firstMission?.id ?? '', 'primary_start')}
+              disabled={!firstMission}
+            >
               <Sparkles size={18} />
-              Começar Dia 1
+              Começar missão do Dia 1
             </button>
             <span>Uma missão curta por dia, com evidências simples de progresso.</span>
           </div>
@@ -791,13 +796,20 @@ function App() {
               ? 'Escolha uma combinação real, identifique o detalhe que apaga sua presença e registre a frase que vai guiar seu primeiro ajuste.'
               : currentProduct.completionOffer}
           </p>
-          <button
-            className="secondary-button next-mission-button"
-            onClick={() => openMission(nextMission?.id ?? firstMission?.id ?? '', 'next_mission_open')}
-          >
-            Abrir orientação
-            <ChevronRight size={18} />
-          </button>
+          {nextMission && !nextMissionIsFirstMission ? (
+            <button
+              className="secondary-button next-mission-button"
+              onClick={() => openMission(nextMission.id, 'next_mission_open')}
+            >
+              Abrir próxima missão
+              <ChevronRight size={18} />
+            </button>
+          ) : (
+            <div className="next-mission-guidance">
+              <Sparkles size={18} />
+              <span>Toque no botão acima para iniciar sua primeira missão.</span>
+            </div>
+          )}
         </article>
         <aside className="progress-hero-card" aria-label="Progresso da jornada MUSA">
           <Gauge size={24} />

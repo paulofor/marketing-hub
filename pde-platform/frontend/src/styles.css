@@ -181,6 +181,22 @@ input {
   width: fit-content;
 }
 
+.next-mission-guidance {
+  align-items: center;
+  background: rgba(255, 248, 243, 0.12);
+  color: #fff8f3;
+  display: inline-flex;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  width: fit-content;
+}
+
+.next-mission-guidance span {
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
 .progress-hero-card {
   align-content: center;
   background: rgba(255, 248, 243, 0.95);
@@ -1201,7 +1217,8 @@ h3 {
   }
 
   .musa-hero-actions .primary-button,
-  .next-mission-button {
+  .next-mission-button,
+  .next-mission-guidance {
     width: 100%;
   }
 

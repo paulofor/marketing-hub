@@ -180,12 +180,11 @@ export default function ImageGeneratorPage() {
                       role="status"
                       aria-hidden="true"
                     />
-                    <div>Gerando duas imagens em modo flex...</div>
+                    <div>Gerando imagem em modo flex...</div>
                   </div>
                 ) : (
                   <div className="text-center text-body-secondary p-4">
-                    Informe um prompt objetivo para gerar as imagens
-                    comparativas.
+                    Informe um prompt objetivo para gerar a primeira imagem.
                   </div>
                 )}
               </div>

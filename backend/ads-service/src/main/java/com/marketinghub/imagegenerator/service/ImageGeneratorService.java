@@ -20,10 +20,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: gerar imagens por IA em modo flex e auditar request/response da OpenAI. */
 @Service
@@ -38,7 +40,6 @@ public class ImageGeneratorService {
     private final ImageGenerationRequestRepository repository;
     private final ObjectMapper objectMapper;
     private final String model;
-    private final String comparisonImageModel;
 
     /** Inicializa o serviço com cliente OpenAI autenticado e repositório de auditoria. */
     public ImageGeneratorService(
@@ -46,41 +47,34 @@ public class ImageGeneratorService {
             OpenAiProperties openAiProperties,
             ImageGenerationRequestRepository repository,
             ObjectMapper objectMapper,
-            @Value("${image-generator.openai.model:gpt-5.6}") String model,
-            @Value("${image-generator.openai.comparison-image-model:gpt-image-2}") String comparisonImageModel) {
+            @Value("${image-generator.openai.model:gpt-5.6}") String model) {
         this.openAiWebClient = openAiWebClient;
         this.openAiProperties = openAiProperties;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.model = model;
-        this.comparisonImageModel = comparisonImageModel;
     }
 
-    /** Gera duas imagens comparativas a partir do prompt do usuário usando Responses API com ferramenta de imagem. */
-    @Transactional
+    /** Gera uma imagem a partir do prompt do usuário usando Responses API com ferramenta de imagem. */
     public ImageGeneratorResponse generate(ImageGeneratorRequest request) {
         if (!openAiProperties.isEnabled()) {
-            throw new IllegalStateException("OpenAI não está configurada no backend.");
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "OpenAI não está configurada no backend.");
         }
 
         String batchJobId = "img-batch-" + UUID.randomUUID();
-        String finalPrompt = buildPrompt(request.prompt());
-        List<ImageGeneratorResult> images = List.of(
-                generateSingleImage(request.prompt(), finalPrompt, model, null),
-                generateSingleImage(request.prompt(), finalPrompt, comparisonImageModel, comparisonImageModel));
+        ImageGeneratorResult image = generateSingleImage(request.prompt(), buildPrompt(request.prompt()), model);
 
-        return new ImageGeneratorResponse(batchJobId, images);
+        return new ImageGeneratorResponse(batchJobId, List.of(image));
     }
 
     /** Gera uma variação individual da imagem e registra auditoria da chamada OpenAI. */
     private ImageGeneratorResult generateSingleImage(
             String userPrompt,
             String finalPrompt,
-            String outputModel,
-            String imageToolModel) {
+            String outputModel) {
         String jobId = "img-" + UUID.randomUUID();
         Instant startedAt = Instant.now();
-        Map<String, Object> requestBody = buildRequestBody(finalPrompt, imageToolModel);
+        Map<String, Object> requestBody = buildRequestBody(finalPrompt);
         ImageGenerationRequest audit = repository.save(ImageGenerationRequest.builder()
                 .jobId(jobId)
                 .status("RUNNING")
@@ -118,12 +112,13 @@ public class ImageGeneratorService {
                     imageBase64,
                     audit.getFinishedAt());
         } catch (RuntimeException ex) {
+            String errorMessage = buildUserFacingErrorMessage(ex);
             audit.setStatus("FAILED");
-            audit.setErrorMessage(ex.getMessage());
+            audit.setErrorMessage(errorMessage);
             audit.setFinishedAt(Instant.now());
             repository.save(audit);
             log.error("Falha ao gerar imagem por IA. modulo=image-generator operacao=generate jobId={}", jobId, ex);
-            throw ex;
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, errorMessage, ex);
         }
     }
 
@@ -140,26 +135,14 @@ public class ImageGeneratorService {
 
     /** Monta o corpo da Responses API com service_tier flex e ferramenta image_generation. */
     Map<String, Object> buildRequestBody(String prompt) {
-        return buildRequestBody(prompt, null);
-    }
-
-    /** Monta o corpo da Responses API com ferramenta de imagem opcionalmente fixada em um modelo específico. */
-    Map<String, Object> buildRequestBody(String prompt, String imageToolModel) {
-        Map<String, Object> imageTool = StringUtils.hasText(imageToolModel)
-                ? Map.of(
-                        "type", "image_generation",
-                        "action", "generate",
-                        "model", imageToolModel.trim(),
-                        "output_format", OUTPUT_FORMAT)
-                : Map.of(
-                        "type", "image_generation",
-                        "action", "generate",
-                        "output_format", OUTPUT_FORMAT);
         return Map.of(
                 "model", model,
                 "input", prompt,
                 "service_tier", SERVICE_TIER,
-                "tools", List.of(imageTool));
+                "tools", List.of(Map.of(
+                        "type", "image_generation",
+                        "action", "generate",
+                        "output_format", OUTPUT_FORMAT)));
     }
 
     /** Extrai a primeira imagem base64 retornada pela chamada image_generation_call. */
@@ -182,6 +165,34 @@ public class ImageGeneratorService {
             return objectMapper.writeValueAsString(value);
         } catch (IOException ex) {
             throw new UncheckedIOException("Não foi possível serializar payload de auditoria.", ex);
+        }
+    }
+
+    /** Monta uma mensagem curta e acionável para a tela sem expor payload bruto ou credenciais. */
+    private String buildUserFacingErrorMessage(RuntimeException ex) {
+        if (ex instanceof WebClientResponseException responseException) {
+            String providerMessage = extractProviderMessage(responseException.getResponseBodyAsString());
+            if (StringUtils.hasText(providerMessage)) {
+                return "OpenAI recusou a geração da imagem: " + providerMessage;
+            }
+            return "OpenAI recusou a geração da imagem com status " + responseException.getStatusCode().value() + ".";
+        }
+        if (StringUtils.hasText(ex.getMessage())) {
+            return "Não foi possível gerar a imagem: " + ex.getMessage();
+        }
+        return "Não foi possível gerar a imagem. Tente novamente com um prompt mais objetivo.";
+    }
+
+    /** Extrai a mensagem de erro retornada pela OpenAI quando o corpo vier em JSON. */
+    private String extractProviderMessage(String responseBody) {
+        if (!StringUtils.hasText(responseBody)) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            return root.path("error").path("message").asText(null);
+        } catch (IOException ex) {
+            return null;
         }
     }
 }

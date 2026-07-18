@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import axios from "axios";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
+import type { GeneratedImageResult } from "../../api/ai/useGenerateImage";
 import { useGenerateImage } from "../../api/ai/useGenerateImage";
 
 const EXAMPLE_PROMPT =
@@ -16,18 +17,24 @@ function errorMessage(error: unknown) {
     : "Não foi possível gerar a imagem.";
 }
 
+function imageSrc(result: GeneratedImageResult) {
+  return `data:image/${result.outputFormat};base64,${result.imageBase64}`;
+}
+
+function handleDownload(result: GeneratedImageResult) {
+  const link = document.createElement("a");
+  link.href = imageSrc(result);
+  link.download = `${result.jobId}-${result.model}.${result.outputFormat}`;
+  link.click();
+}
+
 export default function ImageGeneratorPage() {
   useBreadcrumbs([{ label: "Gerador de Imagens" }]);
 
   const [prompt, setPrompt] = useState("");
   const generation = useGenerateImage();
   const result = generation.data;
-  const imageSrc = useMemo(() => {
-    if (!result?.imageBase64) {
-      return null;
-    }
-    return `data:image/${result.outputFormat};base64,${result.imageBase64}`;
-  }, [result]);
+  const generatedImages = useMemo(() => result?.images ?? [], [result]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,16 +43,6 @@ export default function ImageGeneratorPage() {
       return;
     }
     generation.mutate({ prompt: normalizedPrompt });
-  }
-
-  function handleDownload() {
-    if (!imageSrc || !result) {
-      return;
-    }
-    const link = document.createElement("a");
-    link.href = imageSrc;
-    link.download = `${result.jobId}.${result.outputFormat}`;
-    link.click();
   }
 
   return (
@@ -128,34 +125,54 @@ export default function ImageGeneratorPage() {
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-between gap-3 mb-3">
                 <div>
-                  <h2 className="h5 mb-1">Imagem gerada</h2>
+                  <h2 className="h5 mb-1">Imagens geradas</h2>
                   <div className="text-body-secondary small">
                     {result
-                      ? `${result.model} · ${result.serviceTier} · job ${result.jobId}`
-                      : "A imagem aparecerá aqui após a geração."}
+                      ? `Lote ${result.jobId}`
+                      : "As imagens aparecerão aqui após a geração."}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-outline-primary"
-                  onClick={handleDownload}
-                  disabled={!imageSrc}
-                >
-                  Baixar
-                </button>
               </div>
 
               <div
-                className="d-flex align-items-center justify-content-center bg-body-tertiary border rounded overflow-hidden"
+                className="bg-body-tertiary border rounded overflow-hidden p-3"
                 style={{ minHeight: "28rem" }}
               >
-                {imageSrc ? (
-                  <img
-                    src={imageSrc}
-                    alt="Resultado gerado por IA"
-                    className="img-fluid"
-                    style={{ maxHeight: "70vh", objectFit: "contain" }}
-                  />
+                {generatedImages.length > 0 ? (
+                  <div className="row g-3">
+                    {generatedImages.map((image) => (
+                      <div className="col-12 col-lg-6" key={image.jobId}>
+                        <div className="h-100 bg-body border rounded p-3 d-flex flex-column gap-3">
+                          <div className="d-flex align-items-start justify-content-between gap-2">
+                            <div>
+                              <h3 className="h6 mb-1">{image.model}</h3>
+                              <div className="text-body-secondary small">
+                                {image.serviceTier} · job {image.jobId}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() => handleDownload(image)}
+                            >
+                              Baixar
+                            </button>
+                          </div>
+                          <div className="d-flex align-items-center justify-content-center bg-body border rounded overflow-hidden">
+                            <img
+                              src={imageSrc(image)}
+                              alt={`Resultado gerado por IA com ${image.model}`}
+                              className="img-fluid"
+                              style={{
+                                maxHeight: "56vh",
+                                objectFit: "contain",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : generation.isPending ? (
                   <div className="text-center text-body-secondary p-4">
                     <span
@@ -163,11 +180,12 @@ export default function ImageGeneratorPage() {
                       role="status"
                       aria-hidden="true"
                     />
-                    <div>Gerando imagem em modo flex...</div>
+                    <div>Gerando duas imagens em modo flex...</div>
                   </div>
                 ) : (
                   <div className="text-center text-body-secondary p-4">
-                    Informe um prompt objetivo para gerar a primeira imagem.
+                    Informe um prompt objetivo para gerar as imagens
+                    comparativas.
                   </div>
                 )}
               </div>

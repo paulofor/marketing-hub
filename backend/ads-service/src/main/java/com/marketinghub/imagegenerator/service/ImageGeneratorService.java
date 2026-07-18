@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.imagegenerator.ImageGenerationRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse;
+import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorResult;
 import com.marketinghub.openai.OpenAiProperties;
 import com.marketinghub.repository.jpa.imagegenerator.ImageGenerationRequestRepository;
 import java.io.IOException;
@@ -37,6 +38,7 @@ public class ImageGeneratorService {
     private final ImageGenerationRequestRepository repository;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final String comparisonImageModel;
 
     /** Inicializa o serviço com cliente OpenAI autenticado e repositório de auditoria. */
     public ImageGeneratorService(
@@ -44,32 +46,48 @@ public class ImageGeneratorService {
             OpenAiProperties openAiProperties,
             ImageGenerationRequestRepository repository,
             ObjectMapper objectMapper,
-            @Value("${image-generator.openai.model:gpt-5.6}") String model) {
+            @Value("${image-generator.openai.model:gpt-5.6}") String model,
+            @Value("${image-generator.openai.comparison-image-model:gpt-image-2}") String comparisonImageModel) {
         this.openAiWebClient = openAiWebClient;
         this.openAiProperties = openAiProperties;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.model = model;
+        this.comparisonImageModel = comparisonImageModel;
     }
 
-    /** Gera uma imagem a partir do prompt do usuário usando Responses API com ferramenta de imagem. */
+    /** Gera duas imagens comparativas a partir do prompt do usuário usando Responses API com ferramenta de imagem. */
     @Transactional
     public ImageGeneratorResponse generate(ImageGeneratorRequest request) {
         if (!openAiProperties.isEnabled()) {
             throw new IllegalStateException("OpenAI não está configurada no backend.");
         }
 
+        String batchJobId = "img-batch-" + UUID.randomUUID();
+        String finalPrompt = buildPrompt(request.prompt());
+        List<ImageGeneratorResult> images = List.of(
+                generateSingleImage(request.prompt(), finalPrompt, model, null),
+                generateSingleImage(request.prompt(), finalPrompt, comparisonImageModel, comparisonImageModel));
+
+        return new ImageGeneratorResponse(batchJobId, images);
+    }
+
+    /** Gera uma variação individual da imagem e registra auditoria da chamada OpenAI. */
+    private ImageGeneratorResult generateSingleImage(
+            String userPrompt,
+            String finalPrompt,
+            String outputModel,
+            String imageToolModel) {
         String jobId = "img-" + UUID.randomUUID();
         Instant startedAt = Instant.now();
-        String finalPrompt = buildPrompt(request.prompt());
-        Map<String, Object> requestBody = buildRequestBody(finalPrompt);
+        Map<String, Object> requestBody = buildRequestBody(finalPrompt, imageToolModel);
         ImageGenerationRequest audit = repository.save(ImageGenerationRequest.builder()
                 .jobId(jobId)
                 .status("RUNNING")
-                .model(model)
+                .model(outputModel)
                 .serviceTier(SERVICE_TIER)
                 .outputFormat(OUTPUT_FORMAT)
-                .prompt(request.prompt())
+                .prompt(userPrompt)
                 .openAiRequestBody(writeJson(requestBody))
                 .startedAt(startedAt)
                 .build());
@@ -92,9 +110,9 @@ public class ImageGeneratorService {
             audit.setFinishedAt(Instant.now());
             repository.save(audit);
 
-            return new ImageGeneratorResponse(
+            return new ImageGeneratorResult(
                     jobId,
-                    model,
+                    outputModel,
                     SERVICE_TIER,
                     OUTPUT_FORMAT,
                     imageBase64,
@@ -122,14 +140,26 @@ public class ImageGeneratorService {
 
     /** Monta o corpo da Responses API com service_tier flex e ferramenta image_generation. */
     Map<String, Object> buildRequestBody(String prompt) {
+        return buildRequestBody(prompt, null);
+    }
+
+    /** Monta o corpo da Responses API com ferramenta de imagem opcionalmente fixada em um modelo específico. */
+    Map<String, Object> buildRequestBody(String prompt, String imageToolModel) {
+        Map<String, Object> imageTool = StringUtils.hasText(imageToolModel)
+                ? Map.of(
+                        "type", "image_generation",
+                        "action", "generate",
+                        "model", imageToolModel.trim(),
+                        "output_format", OUTPUT_FORMAT)
+                : Map.of(
+                        "type", "image_generation",
+                        "action", "generate",
+                        "output_format", OUTPUT_FORMAT);
         return Map.of(
                 "model", model,
                 "input", prompt,
                 "service_tier", SERVICE_TIER,
-                "tools", List.of(Map.of(
-                        "type", "image_generation",
-                        "action", "generate",
-                        "output_format", OUTPUT_FORMAT)));
+                "tools", List.of(imageTool));
     }
 
     /** Extrai a primeira imagem base64 retornada pela chamada image_generation_call. */

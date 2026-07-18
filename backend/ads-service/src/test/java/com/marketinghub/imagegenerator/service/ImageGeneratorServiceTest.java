@@ -14,7 +14,7 @@ class ImageGeneratorServiceTest {
     /** Garante que o extrator reconhece a imagem retornada pela ferramenta image_generation. */
     @Test
     void extractsImageGenerationResult() throws Exception {
-        ImageGeneratorService service = new ImageGeneratorService(null, null, null, objectMapper, "gpt-5.6");
+        ImageGeneratorService service = new ImageGeneratorService(null, null, null, objectMapper, "gpt-5.6", "gpt-image-2");
         String payload = """
                 {
                   "id": "resp_1",
@@ -31,7 +31,7 @@ class ImageGeneratorServiceTest {
     /** Garante que resposta sem imagem não seja tratada como sucesso funcional. */
     @Test
     void rejectsResponseWithoutImage() throws Exception {
-        ImageGeneratorService service = new ImageGeneratorService(null, null, null, objectMapper, "gpt-5.6");
+        ImageGeneratorService service = new ImageGeneratorService(null, null, null, objectMapper, "gpt-5.6", "gpt-image-2");
         String payload = """
                 {"id": "resp_1", "output": [{"type": "message", "content": []}]}
                 """;
@@ -44,7 +44,7 @@ class ImageGeneratorServiceTest {
     /** Garante que a chamada da ferramenta solicite geração explícita de nova imagem. */
     @Test
     void buildsImageGenerationToolWithGenerateAction() {
-        ImageGeneratorService service = new ImageGeneratorService(null, null, null, objectMapper, "gpt-5.6");
+        ImageGeneratorService service = new ImageGeneratorService(null, null, null, objectMapper, "gpt-5.6", "gpt-image-2");
 
         Map<String, Object> requestBody = service.buildRequestBody("Gerar imagem de teste");
 
@@ -58,6 +58,23 @@ class ImageGeneratorServiceTest {
                 .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.map(String.class, Object.class))
                 .containsEntry("type", "image_generation")
                 .containsEntry("action", "generate")
+                .containsEntry("output_format", "png");
+    }
+
+    /** Garante que a variação comparativa fixe o modelo de imagem 2 na ferramenta. */
+    @Test
+    void buildsImageGenerationToolWithComparisonImageModel() {
+        ImageGeneratorService service = new ImageGeneratorService(null, null, null, objectMapper, "gpt-5.6", "gpt-image-2");
+
+        Map<String, Object> requestBody = service.buildRequestBody("Gerar imagem de teste", "gpt-image-2");
+
+        Object firstTool = ((List<?>) requestBody.get("tools")).get(0);
+        assertThat(firstTool)
+                .isInstanceOf(Map.class)
+                .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.map(String.class, Object.class))
+                .containsEntry("type", "image_generation")
+                .containsEntry("action", "generate")
+                .containsEntry("model", "gpt-image-2")
                 .containsEntry("output_format", "png");
     }
 }

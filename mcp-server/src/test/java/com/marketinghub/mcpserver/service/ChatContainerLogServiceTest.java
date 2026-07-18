@@ -81,6 +81,7 @@ class ChatContainerLogServiceTest {
                 "/tmp/clickbank-coletor-mois.log",
                 "/tmp/oprm-coletor-receita.log",
                 "/tmp/ops-monitor-worker.log",
+                "/tmp/pde-platform-backend.log",
                 2,
                 3,
                 1,

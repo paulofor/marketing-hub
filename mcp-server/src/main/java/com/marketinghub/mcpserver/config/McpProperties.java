@@ -40,6 +40,7 @@ public record McpProperties(
             @NotBlank String clickbankColetorMoisPath,
             @NotBlank String oprmColetorReceitaPath,
             @NotBlank String opsMonitorWorkerPath,
+            @NotBlank String pdePlatformBackendPath,
             @Positive int fetchTimeoutSeconds,
             @Positive int fetchAttempts,
             @Positive int fetchRetryDelayMillis,

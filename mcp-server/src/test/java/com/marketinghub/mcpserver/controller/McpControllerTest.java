@@ -59,6 +59,8 @@ class McpControllerTest {
         registry.add("mcp.logs.clickbank-coletor-mois-path", () -> TEST_LOG_DIR.resolve("clickbank-coletor-mois.log").toString());
         registry.add("mcp.logs.oprm-coletor-receita-path", () -> TEST_LOG_DIR.resolve("oprm-coletor-receita.log").toString());
         registry.add("mcp.logs.ops-monitor-worker-path", () -> TEST_LOG_DIR.resolve("ops-monitor-worker.log").toString());
+        registry.add("mcp.logs.pde-platform-backend-path",
+                () -> TEST_LOG_DIR.resolve("pde-platform-backend.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.enabled", () -> "true");
         registry.add("mcp.chat-logs.allowed-containers", () -> "marketinghub-fashion-chat");
@@ -94,6 +96,9 @@ class McpControllerTest {
                 StandardCharsets.UTF_8);
         Files.writeString(TEST_LOG_DIR.resolve("ops-monitor-worker.log"),
                 "ops-monitor-worker-line-1\nops-monitor-worker-line-2\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(TEST_LOG_DIR.resolve("pde-platform-backend.log"),
+                "pde-platform-backend-line-1\npde-platform-backend-line-2\n",
                 StandardCharsets.UTF_8);
         Path fakeDocker = TEST_LOG_DIR.resolve("docker-fake.sh");
         Files.writeString(fakeDocker,
@@ -274,6 +279,24 @@ class McpControllerTest {
     }
 
     /**
+     * Garante que o MCP expõe os logs do backend PDE do Clube MUSA.
+     */
+    @Test
+    void shouldReadPdePlatformBackendLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":20,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"pde-platform-backend","lines":1}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.module").value("pde-platform-backend"))
+                .andExpect(jsonPath("$.result.structuredContent.path")
+                        .value(TEST_LOG_DIR.resolve("pde-platform-backend.log").toString()))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value("pde-platform-backend-line-2"));
+    }
+
+    /**
      * Garante que a tool java_module_logs rejeita módulos fora da lista permitida.
      */
     @Test
@@ -286,7 +309,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend"));
     }
 
     /**

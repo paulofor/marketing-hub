@@ -2,10 +2,14 @@ package com.marketinghub.modelos.openai.catalogo.v1.web;
 
 import com.marketinghub.modelos.openai.catalogo.v1.dto.OpenAiModelCatalogResponse;
 import com.marketinghub.modelos.openai.catalogo.v1.service.OpenAiModelCatalogV1Service;
+import com.marketinghub.openai.OpenAiPricingPageClient;
 import com.marketinghub.openai.dto.CreateOpenAiModelRequest;
 import com.marketinghub.openai.dto.OpenAiModelDto;
+import com.marketinghub.openai.dto.OpenAiModelPricingSyncResponse;
 import com.marketinghub.openai.mapper.OpenAiModelMapper;
+import com.marketinghub.openai.service.OpenAiModelPricingSyncService;
 import com.marketinghub.openai.service.OpenAiModelService;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,13 +26,18 @@ public class OpenAiModelCatalogV1Controller {
     private final OpenAiModelService service;
     private final OpenAiModelMapper mapper;
     private final OpenAiModelCatalogV1Service catalogService;
+    private final OpenAiModelPricingSyncService pricingSyncService;
 
     /** Inicializa o controller com serviços de cadastro local, mapeamento e sincronização do catálogo oficial. */
     public OpenAiModelCatalogV1Controller(
-            OpenAiModelService service, OpenAiModelMapper mapper, OpenAiModelCatalogV1Service catalogService) {
+            OpenAiModelService service,
+            OpenAiModelMapper mapper,
+            OpenAiModelCatalogV1Service catalogService,
+            OpenAiModelPricingSyncService pricingSyncService) {
         this.service = service;
         this.mapper = mapper;
         this.catalogService = catalogService;
+        this.pricingSyncService = pricingSyncService;
     }
 
     /** Cria um modelo OpenAI no catálogo administrativo. */
@@ -59,5 +68,12 @@ public class OpenAiModelCatalogV1Controller {
     @GetMapping
     public OpenAiModelCatalogResponse catalog() {
         return catalogService.fetchAndPersistCatalog();
+    }
+
+    /** Executa manualmente a sincronização financeira de preços oficiais OpenAI. */
+    @PostMapping("/modelos/precos/sincronizar")
+    public OpenAiModelPricingSyncResponse syncPricing() {
+        int updated = pricingSyncService.syncOfficialPricing();
+        return new OpenAiModelPricingSyncResponse(updated, OpenAiPricingPageClient.PRICING_PAGE_URL, Instant.now());
     }
 }

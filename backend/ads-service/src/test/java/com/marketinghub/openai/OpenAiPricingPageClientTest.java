@@ -4,12 +4,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: validar parsing e resolução de preços retornados pela fonte oficial de pricing OpenAI. */
 class OpenAiPricingPageClientTest {
+
+    /** Garante que o Spring injete o construtor operacional com WebClient em vez do construtor auxiliar de parser. */
+    @Test
+    void shouldMarkOperationalConstructorForSpringInjection() throws Exception {
+        Constructor<OpenAiPricingPageClient> constructor =
+                OpenAiPricingPageClient.class.getConstructor(WebClient.Builder.class);
+
+        assertThat(constructor.isAnnotationPresent(Autowired.class)).isTrue();
+    }
 
     /** Garante que a rotina extraia preços de texto publicados na página oficial de pricing. */
     @Test

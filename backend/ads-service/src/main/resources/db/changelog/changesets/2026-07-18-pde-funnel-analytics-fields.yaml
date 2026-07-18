@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-18-pde-funnel-analytics-fields-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_funnel_event
+        - not:
+            columnExists:
+              tableName: pde_funnel_event
+              columnName: session_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pde_funnel_event
+                ADD COLUMN referrer_url VARCHAR(1024) NULL AFTER page_url,
+                ADD COLUMN session_id VARCHAR(64) NULL AFTER referrer_url,
+                ADD COLUMN visitor_id VARCHAR(64) NULL AFTER session_id,
+                ADD COLUMN utm_source VARCHAR(120) NULL AFTER visitor_id,
+                ADD COLUMN utm_medium VARCHAR(120) NULL AFTER utm_source,
+                ADD COLUMN utm_campaign VARCHAR(191) NULL AFTER utm_medium,
+                ADD COLUMN utm_content VARCHAR(191) NULL AFTER utm_campaign,
+                ADD COLUMN utm_term VARCHAR(191) NULL AFTER utm_content,
+                ADD COLUMN device_type VARCHAR(40) NULL AFTER utm_term,
+                ADD COLUMN screen_width INT NULL AFTER device_type,
+                ADD COLUMN screen_height INT NULL AFTER screen_width,
+                ADD COLUMN viewport_width INT NULL AFTER screen_height,
+                ADD COLUMN viewport_height INT NULL AFTER viewport_width,
+                ADD COLUMN visible_ms BIGINT NULL AFTER viewport_height,
+                ADD COLUMN section_id VARCHAR(120) NULL AFTER visible_ms,
+                ADD COLUMN action_name VARCHAR(120) NULL AFTER section_id,
+                ADD KEY idx_pde_funnel_session (session_id),
+                ADD KEY idx_pde_funnel_visitor (visitor_id),
+                ADD KEY idx_pde_funnel_utm_campaign (utm_source, utm_medium, utm_campaign),
+                ADD KEY idx_pde_funnel_device_time (device_type, occurred_at);

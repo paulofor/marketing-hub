@@ -282,6 +282,61 @@ class AccessServiceTest {
         assertThat(firstUse.eventType()).isEqualTo("FIRST_USE");
     }
 
+    /** Confirma que o contrato aceita eventos de analytics necessários para campanhas. */
+    @Test
+    void acceptsCampaignAnalyticsFunnelEvents() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        List<String> eventTypes = List.of(
+                "PAGE_VIEW",
+                "PAGE_LOAD",
+                "PAGE_VISIBLE_TIME",
+                "SECTION_VIEW",
+                "CTA_VIEWED",
+                "CHECKOUT_STARTED",
+                "MISSION_OPEN",
+                "MISSION_COMPLETED",
+                "MATERIAL_OPEN");
+
+        eventTypes.forEach(eventType -> {
+            var response = accessService.recordFunnelEvent(new FunnelEventRequest(
+                    "metodo-musa-7-dias",
+                    eventType,
+                    null,
+                    "cliente@sandbox.local",
+                    "FRONTEND",
+                    "test",
+                    "https://clubemusa.com.br/?utm_campaign=musa-teste",
+                    Map.of(
+                            "visitorId", "visitor-1",
+                            "sessionId", "session-1",
+                            "utmCampaign", "musa-teste",
+                            "deviceType", "mobile",
+                            "visibleMs", 1200)));
+
+            assertThat(response.eventType()).isEqualTo(eventType);
+        });
+    }
+
+    /** Confirma que o resumo retorna vazio no modo local sem banco analítico. */
+    @Test
+    void returnsEmptyAnalyticsSummaryWithoutJdbcStorage() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isZero();
+        assertThat(summary.events()).isEmpty();
+    }
+
     /** Confirma que eventos fora do contrato continuam bloqueados. */
     @Test
     void rejectsUnsupportedFunnelEvent() {

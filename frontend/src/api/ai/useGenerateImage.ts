@@ -1,13 +1,18 @@
 import axios from "axios";
 import { useMutation } from "@tanstack/react-query";
 
-export type ImageGenerationResponse = {
+export type GeneratedImageResult = {
   jobId: string;
   model: string;
   serviceTier: string;
   outputFormat: string;
   imageBase64: string;
   generatedAt: string;
+};
+
+export type ImageGenerationResponse = {
+  jobId: string;
+  images: GeneratedImageResult[];
 };
 
 type ImageGenerationPayload = {

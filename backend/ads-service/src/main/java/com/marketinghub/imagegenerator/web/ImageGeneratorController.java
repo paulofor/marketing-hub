@@ -20,7 +20,7 @@ public class ImageGeneratorController {
         this.service = service;
     }
 
-    /** Gera uma imagem a partir do prompt informado pelo usuário. */
+    /** Gera as imagens comparativas a partir do prompt informado pelo usuário. */
     @PostMapping("/generations")
     public ImageGeneratorResponse generate(@Valid @RequestBody ImageGeneratorRequest request) {
         return service.generate(request);

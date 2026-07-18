@@ -18,6 +18,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -36,6 +37,7 @@ public class OpenAiPricingPageClient {
     private final WebClient pricingPageWebClient;
 
     /** Inicializa o cliente com um WebClient público para a página oficial de preços. */
+    @Autowired
     public OpenAiPricingPageClient(WebClient.Builder builder) {
         ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(PRICING_PAGE_MAX_IN_MEMORY_BYTES))

@@ -16,6 +16,8 @@ pde:
   auth:
     google:
       client-id: ${PDE_GOOGLE_CLIENT_ID:}
+  ai:
+    storage-path: ${PDE_AI_STORAGE_PATH:/data/pde/ai-guidance-requests.json}
   mail:
     transport: ${PDE_MAIL_TRANSPORT:smtp}
     aws-region: ${PDE_MAIL_AWS_REGION:us-east-1}

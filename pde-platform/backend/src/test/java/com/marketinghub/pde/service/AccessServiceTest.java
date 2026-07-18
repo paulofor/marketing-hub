@@ -5,10 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.AiGuidanceCreateRequest;
+import com.marketinghub.pde.dto.AiGuidanceResultRequest;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -357,6 +360,87 @@ class AccessServiceTest {
 
         assertThat(summary.totalEvents()).isZero();
         assertThat(summary.events()).isEmpty();
+    }
+
+    /** Confirma que uma orientação por IA nasce pendente e é entregue ao worker PDE. */
+    @Test
+    void createsPendingAiGuidanceForDayTwoSignature() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        ObjectMapper objectMapper = new ObjectMapper();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                objectMapper,
+                tempDir.resolve("access-grants.json").toString());
+        AiGuidanceService aiGuidanceService = new AiGuidanceService(
+                accessService,
+                objectMapper,
+                tempDir.resolve("ai-guidance.json").toString(),
+                "",
+                "",
+                "");
+        AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
+
+        var guidance = aiGuidanceService.createGuidanceRequest(
+                access.token(),
+                "dia-2-assinatura",
+                new AiGuidanceCreateRequest("MUSA_DAY_2_SIGNATURE", Map.of(
+                        "finishSignal", "Cabelo polido",
+                        "baseColor", "Vinho discreto",
+                        "memorableSignal", "Brinco luminoso")));
+        var pending = aiGuidanceService.getPendingGuidance();
+
+        assertThat(guidance.status()).isEqualTo("PENDING");
+        assertThat(pending).isPresent();
+        assertThat(pending.get().requestId()).isEqualTo(guidance.requestId());
+        assertThat(pending.get().answers()).containsEntry("baseColor", "Vinho discreto");
+    }
+
+    /** Confirma que o backend aceita resultado estruturado e auditoria do worker PDE. */
+    @Test
+    void receivesCompletedAiGuidanceResult() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        ObjectMapper objectMapper = new ObjectMapper();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                objectMapper,
+                tempDir.resolve("access-grants.json").toString());
+        AiGuidanceService aiGuidanceService = new AiGuidanceService(
+                accessService,
+                objectMapper,
+                tempDir.resolve("ai-guidance.json").toString(),
+                "",
+                "",
+                "");
+        AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
+        var guidance = aiGuidanceService.createGuidanceRequest(
+                access.token(),
+                "dia-2-assinatura",
+                new AiGuidanceCreateRequest("MUSA_DAY_2_SIGNATURE", Map.of(
+                        "finishSignal", "Pele iluminada",
+                        "baseColor", "Off-white",
+                        "memorableSignal", "Perfume assinatura")));
+
+        var completed = aiGuidanceService.receiveGuidanceResult(guidance.requestId(), new AiGuidanceResultRequest(
+                "COMPLETED",
+                "Sua assinatura MUSA ficou luminosa e limpa",
+                "Repita pele iluminada, off-white e perfume assinatura para criar reconhecimento sem esforço.",
+                List.of("Pele iluminada", "Off-white", "Perfume assinatura"),
+                List.of("Separe a base off-white antes de sair.", "Finalize com perfume no ultimo passo."),
+                "Nao compre nada novo antes de testar a repeticao por uma semana.",
+                "gpt-5.4-mini",
+                "flex",
+                "{\"model\":\"gpt-5.4-mini\"}",
+                "{\"output_text\":\"{}\"}",
+                120,
+                90,
+                BigDecimal.valueOf(0.0012),
+                null));
+        var fetched = aiGuidanceService.getGuidance(access.token(), guidance.requestId());
+
+        assertThat(completed.status()).isEqualTo("COMPLETED");
+        assertThat(fetched.headline()).contains("assinatura MUSA");
+        assertThat(fetched.signals()).containsExactly("Pele iluminada", "Off-white", "Perfume assinatura");
+        assertThat(fetched.serviceTier()).isEqualTo("flex");
     }
 
     /** Confirma que eventos fora do contrato continuam bloqueados. */

@@ -82,6 +82,20 @@ type MissionInteraction = {
   answerText: string;
 };
 
+type AiGuidance = {
+  requestId: string;
+  productSlug: string;
+  missionId: string;
+  guidanceType: string;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  headline?: string;
+  summary?: string;
+  signals: string[];
+  microActions: string[];
+  caution?: string;
+  errorMessage?: string;
+};
+
 type MagicLinkResponse = {
   productSlug: string;
   email: string;
@@ -230,6 +244,9 @@ function App() {
   const [successMessage, setSuccessMessage] = useState('');
   const [devAccessUrl, setDevAccessUrl] = useState('');
   const [dayOneAnswers, setDayOneAnswers] = useState<Record<string, string>>({});
+  const [dayTwoAnswers, setDayTwoAnswers] = useState<Record<string, string>>({});
+  const [aiGuidance, setAiGuidance] = useState<AiGuidance | null>(null);
+  const [generatingGuidance, setGeneratingGuidance] = useState(false);
   const [savingInteraction, setSavingInteraction] = useState(false);
   const [missionCompletionStatus, setMissionCompletionStatus] = useState<'idle' | 'processing' | 'success'>('idle');
   const [completedMissionFeedbackId, setCompletedMissionFeedbackId] = useState('');
@@ -466,6 +483,7 @@ function App() {
     setProduct(data.product);
     setActiveMissionId(data.product.missions[0]?.id ?? '');
     setDayOneAnswers(resolveMissionAnswers(data, data.product.missions[0]?.id ?? ''));
+    setDayTwoAnswers(resolveMissionAnswers(data, data.product.missions.find((mission: Mission) => mission.day === 2)?.id ?? ''));
     if (resetScroll) {
       window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
     }
@@ -676,6 +694,65 @@ function App() {
     }
   }
 
+  async function requestDayTwoGuidance(missionId: string) {
+    if (!accessToken || !workspace) {
+      return;
+    }
+    const answers = sanitizeAnswers(dayTwoAnswers);
+    if (Object.keys(answers).length < 3) {
+      setErrorMessage('Escolha os 3 sinais para a Consultora MUSA montar sua assinatura.');
+      return;
+    }
+    setGeneratingGuidance(true);
+    setAiGuidance(null);
+    setErrorMessage('');
+    setSuccessMessage('');
+    try {
+      const response = await fetch(`/api/pde/access/${accessToken}/missions/${missionId}/ai-guidance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guidanceType: 'MUSA_DAY_2_SIGNATURE', answers }),
+      });
+      if (!response.ok) {
+        throw new Error('Não foi possível solicitar sua assinatura MUSA.');
+      }
+      const guidance = await response.json() as AiGuidance;
+      setAiGuidance(guidance);
+      setDayTwoAnswers(resolveMissionAnswers(await refreshWorkspace(), missionId));
+      await pollGuidanceUntilFinished(guidance.requestId);
+    } catch {
+      setErrorMessage('Não conseguimos acionar a Consultora MUSA agora. Seus sinais podem ser salvos e usados manualmente.');
+    } finally {
+      setGeneratingGuidance(false);
+    }
+  }
+
+  async function refreshWorkspace() {
+    const response = await fetch(`/api/pde/access/${accessToken}/workspace`);
+    if (!response.ok) {
+      throw new Error('Acesso não encontrado.');
+    }
+    const data = await response.json() as Workspace;
+    setWorkspace(data);
+    setProduct(data.product);
+    return data;
+  }
+
+  async function pollGuidanceUntilFinished(requestId: string) {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 900 : 1800));
+      const response = await fetch(`/api/pde/access/${accessToken}/ai-guidance/${requestId}`);
+      if (!response.ok) {
+        throw new Error('Orientação não encontrada.');
+      }
+      const guidance = await response.json() as AiGuidance;
+      setAiGuidance(guidance);
+      if (guidance.status === 'COMPLETED' || guidance.status === 'FAILED') {
+        return;
+      }
+    }
+  }
+
   function resolveMissionAnswers(workspaceData: Workspace, missionId: string) {
     return (workspaceData.missionInteractions ?? [])
       .filter((interaction) => interaction.missionId === missionId)
@@ -705,8 +782,12 @@ function App() {
     activeMission && (hasActiveSubscription || activeMission.id === firstMission?.id),
   );
   const dayOneInteractionSaved = Boolean(firstMission && ['presenceFocus', 'mainObstacle', 'evidencePhrase'].every((key) => dayOneAnswers[key]?.trim()));
+  const dayTwoMission = currentProduct.missions.find((mission) => mission.day === 2);
+  const dayTwoInteractionSaved = Boolean(dayTwoMission && ['finishSignal', 'baseColor', 'memorableSignal'].every((key) => dayTwoAnswers[key]?.trim()));
   const canRegisterActiveMission = Boolean(
-    canCompleteActiveMission && (activeMission?.id !== firstMission?.id || dayOneInteractionSaved),
+    canCompleteActiveMission
+      && (activeMission?.id !== firstMission?.id || dayOneInteractionSaved)
+      && (activeMission?.id !== dayTwoMission?.id || dayTwoInteractionSaved),
   );
 
   if (!workspace) {
@@ -1136,6 +1217,94 @@ function App() {
                   </button>
                 </div>
               )}
+              {activeMission.id === dayTwoMission?.id && hasActiveSubscription && (
+                <div className="personalization-panel musa-signature-panel">
+                  <p className="section-kicker">Consultora MUSA</p>
+                  <h3>Escolha 3 sinais para montar sua assinatura desta semana.</h3>
+                  <label>
+                    Acabamento principal
+                    <select
+                      value={dayTwoAnswers.finishSignal ?? ''}
+                      onChange={(event) => setDayTwoAnswers((current) => ({ ...current, finishSignal: event.target.value }))}
+                    >
+                      <option value="">Escolha um acabamento</option>
+                      <option value="Cabelo polido">Cabelo polido</option>
+                      <option value="Pele iluminada">Pele iluminada</option>
+                      <option value="Maquiagem leve">Maquiagem leve</option>
+                      <option value="Roupa com caimento limpo">Roupa com caimento limpo</option>
+                    </select>
+                  </label>
+                  <label>
+                    Cor-base da semana
+                    <select
+                      value={dayTwoAnswers.baseColor ?? ''}
+                      onChange={(event) => setDayTwoAnswers((current) => ({ ...current, baseColor: event.target.value }))}
+                    >
+                      <option value="">Escolha uma cor-base</option>
+                      <option value="Vinho discreto">Vinho discreto</option>
+                      <option value="Preto limpo">Preto limpo</option>
+                      <option value="Off-white">Off-white</option>
+                      <option value="Verde oliva">Verde oliva</option>
+                      <option value="Jeans escuro">Jeans escuro</option>
+                    </select>
+                  </label>
+                  <label>
+                    Sinal memorável
+                    <select
+                      value={dayTwoAnswers.memorableSignal ?? ''}
+                      onChange={(event) => setDayTwoAnswers((current) => ({ ...current, memorableSignal: event.target.value }))}
+                    >
+                      <option value="">Escolha um sinal</option>
+                      <option value="Perfume assinatura">Perfume assinatura</option>
+                      <option value="Brinco luminoso">Brinco luminoso</option>
+                      <option value="Batom discreto">Batom discreto</option>
+                      <option value="Bolsa estruturada">Bolsa estruturada</option>
+                      <option value="Lenço ou textura suave">Lenço ou textura suave</option>
+                    </select>
+                  </label>
+                  {dayTwoInteractionSaved && (
+                    <div className="signature-preview-grid" aria-label="Sinais escolhidos para sua assinatura MUSA">
+                      <span>{dayTwoAnswers.finishSignal}</span>
+                      <span>{dayTwoAnswers.baseColor}</span>
+                      <span>{dayTwoAnswers.memorableSignal}</span>
+                    </div>
+                  )}
+                  <button
+                    className="inline-save-button"
+                    disabled={generatingGuidance || completedMissionIds.has(activeMission.id)}
+                    onClick={() => requestDayTwoGuidance(activeMission.id)}
+                  >
+                    {generatingGuidance ? <LoaderCircle className="button-spinner" size={16} /> : <Sparkles size={16} />}
+                    {generatingGuidance ? 'Montando assinatura...' : 'Gerar minha assinatura MUSA'}
+                  </button>
+                  {aiGuidance?.status === 'PENDING' && (
+                    <div className="personalized-summary">
+                      <LoaderCircle className="button-spinner" size={17} />
+                      <span>Sua Consultora MUSA está preparando uma orientação curta com seus 3 sinais.</span>
+                    </div>
+                  )}
+                  {aiGuidance?.status === 'FAILED' && (
+                    <div className="personalized-summary">
+                      <Sparkles size={17} />
+                      <span>Seus sinais ficaram salvos. A consultora automática ainda precisa ser configurada neste ambiente.</span>
+                    </div>
+                  )}
+                  {aiGuidance?.status === 'COMPLETED' && (
+                    <div className="ai-guidance-card">
+                      <p className="section-kicker">Minha assinatura MUSA</p>
+                      <h3>{aiGuidance.headline}</h3>
+                      <p>{aiGuidance.summary}</p>
+                      <div className="signature-preview-grid">
+                        {aiGuidance.signals.map((signal) => <span key={signal}>{signal}</span>)}
+                      </div>
+                      <ul>
+                        {aiGuidance.microActions.map((action) => <li key={action}>{action}</li>)}
+                      </ul>
+                      {aiGuidance.caution && <small>{aiGuidance.caution}</small>}
+                    </div>
+                  )}
+                </div>
+              )}
               {missionCompletionStatus === 'processing' && activeMission.id === firstMission?.id && (
                 <div className="mission-processing-panel" role="status" aria-live="polite">
                   <div className="processing-image">
@@ -1181,10 +1350,14 @@ function App() {
                   ? <LoaderCircle className="button-spinner" size={18} />
                   : canRegisterActiveMission ? <Check size={18} /> : <Lock size={18} />}
                 {missionCompletionStatus === 'processing'
-                  ? 'Registrando seu Dia 1...'
+                  ? `Registrando seu Dia ${activeMission.day}...`
                   : canRegisterActiveMission
-                  ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : 'Registrar Dia 1 concluído')
-                  : activeMission.id === firstMission?.id ? 'Salve seu ajuste para concluir' : 'Assine para salvar esta missão'}
+                  ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : `Registrar Dia ${activeMission.day} concluído`)
+                  : activeMission.id === firstMission?.id
+                  ? 'Salve seu ajuste para concluir'
+                  : activeMission.id === dayTwoMission?.id
+                  ? 'Escolha os 3 sinais para concluir'
+                  : 'Assine para salvar esta missão'}
               </button>
             </article>
           )}

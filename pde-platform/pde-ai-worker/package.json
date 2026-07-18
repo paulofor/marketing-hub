@@ -1,0 +1,12 @@
+{
+  "name": "pde-ai-worker",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "start": "node src/worker.js",
+    "check": "node --check src/worker.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

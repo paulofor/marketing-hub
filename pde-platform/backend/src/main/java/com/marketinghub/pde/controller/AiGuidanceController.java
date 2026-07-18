@@ -1,0 +1,61 @@
+package com.marketinghub.pde.controller;
+
+import com.marketinghub.pde.dto.AiGuidanceCreateRequest;
+import com.marketinghub.pde.dto.AiGuidancePendingResponse;
+import com.marketinghub.pde.dto.AiGuidanceResponse;
+import com.marketinghub.pde.dto.AiGuidanceResultRequest;
+import com.marketinghub.pde.service.AiGuidanceService;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+/** Expõe contratos fechados de orientação por IA para frontend e worker PDE. */
+@RestController
+public class AiGuidanceController {
+
+    private final AiGuidanceService aiGuidanceService;
+
+    /** Recebe o serviço que controla solicitações e resultados de IA. */
+    public AiGuidanceController(AiGuidanceService aiGuidanceService) {
+        this.aiGuidanceService = aiGuidanceService;
+    }
+
+    /** Cria uma orientação guiada por IA para a missão informada. */
+    @PostMapping("/api/pde/access/{token}/missions/{missionId}/ai-guidance")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AiGuidanceResponse createGuidance(
+            @PathVariable("token") String token,
+            @PathVariable("missionId") String missionId,
+            @Valid @RequestBody AiGuidanceCreateRequest request) {
+        return aiGuidanceService.createGuidanceRequest(token, missionId, request);
+    }
+
+    /** Retorna o estado atual de uma orientação guiada por IA. */
+    @GetMapping("/api/pde/access/{token}/ai-guidance/{requestId}")
+    public AiGuidanceResponse getGuidance(
+            @PathVariable("token") String token,
+            @PathVariable("requestId") String requestId) {
+        return aiGuidanceService.getGuidance(token, requestId);
+    }
+
+    /** Entrega uma lista unitária de pendência ao worker executor do PDE. */
+    @GetMapping("/api/internal/pde/ai-guidance/stage-executions/pending")
+    public List<AiGuidancePendingResponse> getPendingGuidance() {
+        return aiGuidanceService.getPendingGuidance().map(List::of).orElseGet(List::of);
+    }
+
+    /** Recebe o resultado do worker executor para uma orientação por IA. */
+    @PostMapping("/api/internal/pde/ai-guidance/stage-executions/{requestId}/result")
+    public AiGuidanceResponse receiveGuidanceResult(
+            @PathVariable("requestId") String requestId,
+            @Valid @RequestBody AiGuidanceResultRequest request) {
+        return aiGuidanceService.receiveGuidanceResult(requestId, request);
+    }
+}

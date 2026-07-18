@@ -2,6 +2,8 @@
 
 Motor multi-produto para Produtos Digitais Experienciais do Marketing Hub.
 
+Antes de deploy em produção, conferir o PDE no inventário central de secrets: `docs/operations/secrets-inventory.md`.
+
 ## Execucao local
 
 Backend:

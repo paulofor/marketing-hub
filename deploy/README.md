@@ -2,6 +2,8 @@
 
 O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys estão separados: backend/frontend em `191.252.181.168` e video-management em `177.153.62.107`.
 
+Antes de publicar ou recriar containers, consulte o inventário central de secrets em `docs/operations/secrets-inventory.md`. Variável sensível obrigatória vazia deve bloquear o deploy, mesmo quando o health HTTP responder.
+
 ## Passos recomendados
 
 1. Gere as imagens (backend, frontend e video-management) e exporte-as para `*.tar`.

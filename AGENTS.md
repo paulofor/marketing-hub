@@ -220,6 +220,7 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
 ## 7. Segurança e secrets
 
 - Nunca commite `.env` ou credenciais. Use GitHub Actions secrets.
+- **Inventário central de secrets por serviço/deploy (obrigatório)**: siga o cânone `docs/canonical/secrets-deploy-canon.v1.md` e use `docs/operations/secrets-inventory.md` como referência operacional antes de alterar ou publicar qualquer serviço que dependa de e-mail, IA, pagamento, anúncio, checkout, storage ou credencial externa. O inventário deve registrar nomes de variáveis, host, serviço, obrigatoriedade, validação e impacto comercial, nunca valores reais de secrets. Se um novo serviço/deploy depender de secret, atualize esse inventário no mesmo trabalho.
 - Revise variáveis sensíveis nos pipelines antes de publicar artefatos.
 - Pull Requests só devem ser criados quando o usuário pedir explicitamente. Para abrir PR, use sempre o conector GitHub; o GitHub CLI fica permitido apenas para leitura, diagnóstico e validações quando necessário, nunca como caminho principal de publicação de branch ou criação de PR. Não use token restrito de pacote para publicar branch ou PR.
 - Token GitHub fornecido para testes deve ser usado exclusivamente para baixar o pacote `ads-service` necessário a testes do `ai-worker` e de outros módulos dependentes. Não reutilize esse token para push, criação de PR, configuração de remoto, acesso genérico ao GitHub ou qualquer operação fora desse escopo.

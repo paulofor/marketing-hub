@@ -15,7 +15,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -1137,6 +1139,85 @@ h3 {
   padding: 14px;
 }
 
+.personalization-panel {
+  background: #fff8f3;
+  border: 1px solid rgba(122, 36, 68, 0.14);
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.personalization-panel h3 {
+  color: #24171c;
+  font-size: 1.05rem;
+  line-height: 1.22;
+  margin: 0;
+}
+
+.personalization-panel label {
+  color: #4d3b35;
+  display: grid;
+  font-size: 0.92rem;
+  font-weight: 800;
+  gap: 6px;
+}
+
+.personalization-panel select,
+.personalization-panel textarea {
+  background: #fff;
+  border: 1px solid rgba(122, 36, 68, 0.2);
+  color: #2d2024;
+  min-height: 42px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.personalization-panel textarea {
+  line-height: 1.42;
+  resize: vertical;
+}
+
+.personalized-summary {
+  align-items: flex-start;
+  background: #eef5f2;
+  color: #284943;
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+}
+
+.personalized-summary svg {
+  color: #2f5952;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.personalized-summary span {
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.inline-save-button {
+  align-items: center;
+  background: #7a2444;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 850;
+  gap: 8px;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+  width: fit-content;
+}
+
+.inline-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .library-section {
   margin: 24px auto;
   max-width: 1220px;
@@ -1404,6 +1485,10 @@ h3 {
   }
 
   .mission-detail .secondary-button {
+    width: 100%;
+  }
+
+  .inline-save-button {
     width: 100%;
   }
 }

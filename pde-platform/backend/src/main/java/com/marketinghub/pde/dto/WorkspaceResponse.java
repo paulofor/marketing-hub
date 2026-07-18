@@ -11,5 +11,6 @@ public record WorkspaceResponse(
         int completedMissions,
         int totalMissions,
         int progressPercent,
-        List<String> completedMissionIds
+        List<String> completedMissionIds,
+        List<MissionInteractionResponse> missionInteractions
 ) {}

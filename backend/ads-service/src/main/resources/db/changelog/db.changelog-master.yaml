@@ -1341,3 +1341,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-07-18-pde-funnel-analytics-fields.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-18-pde-mission-interactions.yaml
+      relativeToChangelogFile: true

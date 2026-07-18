@@ -6,6 +6,8 @@ import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
 import com.marketinghub.pde.dto.MagicLinkResponse;
+import com.marketinghub.pde.dto.MissionInteractionRequest;
+import com.marketinghub.pde.dto.MissionInteractionResponse;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
@@ -287,17 +289,14 @@ public class AccessService {
                 completedMissions,
                 totalMissions,
                 progressPercent,
-                completedMissionIds.stream().toList());
+                completedMissionIds.stream().toList(),
+                toMissionInteractionResponses(grant));
     }
 
     /** Marca uma missão do produto como concluída após validar se ela existe. */
     public void completeMission(String token, String missionId) {
         AccessGrant grant = getGrant(token);
-        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
-        boolean missionExists = product.missions().stream().anyMatch(mission -> mission.id().equals(missionId));
-        if (!missionExists) {
-            throw new IllegalArgumentException("Missao PDE nao encontrada: " + missionId);
-        }
+        validateMissionExists(grant, missionId);
         boolean firstCompletedMission = grant.getCompletedMissionIds().isEmpty();
         grant.completeMission(missionId);
         persistAccess(grant);
@@ -312,6 +311,68 @@ public class AccessService {
                     null,
                     Map.of("activationType", "mission_completion", "missionId", missionId)));
         }
+    }
+
+    /** Salva respostas da cliente para personalizar a missão e medir engajamento real. */
+    public void saveMissionInteraction(String token, String missionId, MissionInteractionRequest request) {
+        AccessGrant grant = getGrant(token);
+        validateMissionExists(grant, missionId);
+        Map<String, String> sanitizedAnswers = sanitizeInteractionAnswers(request.answers());
+        grant.saveMissionInteraction(missionId, sanitizedAnswers);
+        persistAccess(grant);
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "MISSION_INTERACTION_SAVED",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                Map.of("missionId", missionId, "answerKeys", sanitizedAnswers.keySet())));
+    }
+
+    /** Confirma que a missão pertence ao produto acessado pela cliente. */
+    private void validateMissionExists(AccessGrant grant, String missionId) {
+        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
+        boolean missionExists = product.missions().stream().anyMatch(mission -> mission.id().equals(missionId));
+        if (!missionExists) {
+            throw new IllegalArgumentException("Missao PDE nao encontrada: " + missionId);
+        }
+    }
+
+    /** Normaliza respostas livres antes de salvar no perfil de personalização da missão. */
+    private Map<String, String> sanitizeInteractionAnswers(Map<String, String> answers) {
+        if (answers == null || answers.isEmpty()) {
+            throw new IllegalArgumentException("Informe ao menos uma resposta da missão");
+        }
+        Map<String, String> sanitized = new LinkedHashMap<>();
+        answers.forEach((key, value) -> {
+            String normalizedKey = key == null ? "" : key.trim();
+            String normalizedValue = value == null ? "" : value.trim();
+            if (normalizedKey.isBlank() || normalizedKey.length() > 100) {
+                throw new IllegalArgumentException("Chave de interação PDE inválida");
+            }
+            if (normalizedValue.isBlank()) {
+                return;
+            }
+            if (normalizedValue.length() > 2000) {
+                throw new IllegalArgumentException("Resposta da interação PDE acima do limite");
+            }
+            sanitized.put(normalizedKey, normalizedValue);
+        });
+        if (sanitized.isEmpty()) {
+            throw new IllegalArgumentException("Informe ao menos uma resposta preenchida da missão");
+        }
+        return sanitized;
+    }
+
+    /** Converte as respostas salvas para o contrato público da workspace. */
+    private List<MissionInteractionResponse> toMissionInteractionResponses(AccessGrant grant) {
+        List<MissionInteractionResponse> responses = new java.util.ArrayList<>();
+        grant.getMissionInteractions().forEach((missionId, answers) ->
+                answers.forEach((questionKey, answerText) ->
+                        responses.add(new MissionInteractionResponse(missionId, questionKey, answerText))));
+        return responses;
     }
 
     /** Busca o acesso pelo token ou falha quando ele não existir. */
@@ -442,6 +503,7 @@ public class AccessService {
                 "FIRST_USE",
                 "MISSION_OPEN",
                 "MISSION_COMPLETED",
+                "MISSION_INTERACTION_SAVED",
                 "MATERIAL_OPEN");
         if (!allowed.contains(normalized)) {
             throw new IllegalArgumentException("Evento PDE nao suportado: " + eventType);
@@ -530,13 +592,23 @@ public class AccessService {
         return DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword);
     }
 
-    /** Carrega acessos e missões concluídas a partir do MySQL do Marketing Hub. */
+    /** Carrega acessos, missões concluídas e interações a partir do MySQL do Marketing Hub. */
     private void loadPersistedAccessFromDatabase() {
         String sql = """
-                SELECT g.token, g.product_slug, g.email, g.source, g.created_at, c.mission_id
+                SELECT
+                  g.token,
+                  g.product_slug,
+                  g.email,
+                  g.source,
+                  g.created_at,
+                  c.mission_id AS completed_mission_id,
+                  a.mission_id AS interaction_mission_id,
+                  a.question_key,
+                  a.answer_text
                 FROM pde_access_grant g
                 LEFT JOIN pde_access_mission_completion c ON c.access_token = g.token
-                ORDER BY g.created_at, c.completed_at
+                LEFT JOIN pde_access_mission_interaction_answer a ON a.access_token = g.token
+                ORDER BY g.created_at, c.completed_at, a.updated_at
                 """;
         try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(sql);
@@ -553,9 +625,17 @@ public class AccessService {
                             resultSet.getTimestamp("created_at").toInstant());
                     builders.put(token, builder);
                 }
-                String missionId = resultSet.getString("mission_id");
+                String missionId = resultSet.getString("completed_mission_id");
                 if (missionId != null && !missionId.isBlank()) {
                     builder.completedMissionIds().add(missionId);
+                }
+                String interactionMissionId = resultSet.getString("interaction_mission_id");
+                String questionKey = resultSet.getString("question_key");
+                String answerText = resultSet.getString("answer_text");
+                if (interactionMissionId != null && questionKey != null && answerText != null) {
+                    builder.missionInteractions()
+                            .computeIfAbsent(interactionMissionId, ignored -> new LinkedHashMap<>())
+                            .put(questionKey, answerText);
                 }
             }
             builders.forEach((token, builder) -> accessByToken.put(token, builder.toAccessGrant(token)));
@@ -565,7 +645,7 @@ public class AccessService {
         }
     }
 
-    /** Persiste o acesso alterado e suas missões concluídas no MySQL do Marketing Hub. */
+    /** Persiste o acesso alterado, suas missões concluídas e interações no MySQL do Marketing Hub. */
     private void persistAccessInDatabase(AccessGrant grant) {
         String upsertGrant = """
                 INSERT INTO pde_access_grant (token, product_slug, email, normalized_email, source, created_at, updated_at)
@@ -578,6 +658,15 @@ public class AccessService {
         String insertMission = """
                 INSERT IGNORE INTO pde_access_mission_completion (access_token, mission_id, completed_at)
                 VALUES (?, ?, CURRENT_TIMESTAMP)
+                """;
+        String upsertInteraction = """
+                INSERT INTO pde_access_mission_interaction_answer (
+                  access_token, product_slug, mission_id, question_key, answer_text, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE
+                  answer_text = VALUES(answer_text),
+                  updated_at = CURRENT_TIMESTAMP
                 """;
         try (Connection connection = openConnection()) {
             connection.setAutoCommit(false);
@@ -595,6 +684,19 @@ public class AccessService {
                     statement.setString(1, grant.getToken());
                     statement.setString(2, missionId);
                     statement.addBatch();
+                }
+                statement.executeBatch();
+            }
+            try (PreparedStatement statement = connection.prepareStatement(upsertInteraction)) {
+                for (Map.Entry<String, Map<String, String>> missionEntry : grant.getMissionInteractions().entrySet()) {
+                    for (Map.Entry<String, String> answerEntry : missionEntry.getValue().entrySet()) {
+                        statement.setString(1, grant.getToken());
+                        statement.setString(2, grant.getProductSlug());
+                        statement.setString(3, missionEntry.getKey());
+                        statement.setString(4, answerEntry.getKey());
+                        statement.setString(5, answerEntry.getValue());
+                        statement.addBatch();
+                    }
                 }
                 statement.executeBatch();
             }
@@ -709,7 +811,8 @@ public class AccessService {
             String email,
             String source,
             String createdAt,
-            List<String> completedMissionIds) {
+            List<String> completedMissionIds,
+            Map<String, Map<String, String>> missionInteractions) {
 
         /** Converte o acesso em memoria para o formato persistido. */
         private static StoredAccessGrant from(AccessGrant grant) {
@@ -718,7 +821,8 @@ public class AccessService {
                     grant.getEmail(),
                     grant.getSource(),
                     grant.getCreatedAt().toString(),
-                    grant.getCompletedMissionIds().stream().toList());
+                    grant.getCompletedMissionIds().stream().toList(),
+                    grant.getMissionInteractions());
         }
 
         /** Reconstrói o acesso de memoria a partir do JSON salvo. */
@@ -729,7 +833,8 @@ public class AccessService {
                     email,
                     source,
                     Instant.parse(createdAt),
-                    completedMissionIds != null ? Set.copyOf(completedMissionIds) : Set.of());
+                    completedMissionIds != null ? Set.copyOf(completedMissionIds) : Set.of(),
+                    missionInteractions);
         }
     }
 
@@ -739,16 +844,17 @@ public class AccessService {
             String email,
             String source,
             Instant createdAt,
-            Set<String> completedMissionIds) {
+            Set<String> completedMissionIds,
+            Map<String, Map<String, String>> missionInteractions) {
 
         /** Cria o acumulador com conjunto mutável de missões concluídas. */
         private StoredAccessGrantBuilder(String productSlug, String email, String source, Instant createdAt) {
-            this(productSlug, email, source, createdAt, ConcurrentHashMap.newKeySet());
+            this(productSlug, email, source, createdAt, ConcurrentHashMap.newKeySet(), new LinkedHashMap<>());
         }
 
         /** Reconstrói o acesso em memória a partir das linhas do banco. */
         private AccessGrant toAccessGrant(String token) {
-            return new AccessGrant(token, productSlug, email, source, createdAt, completedMissionIds);
+            return new AccessGrant(token, productSlug, email, source, createdAt, completedMissionIds, missionInteractions);
         }
     }
 }

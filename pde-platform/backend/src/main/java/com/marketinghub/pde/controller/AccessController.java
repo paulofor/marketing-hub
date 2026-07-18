@@ -7,6 +7,7 @@ import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
 import com.marketinghub.pde.dto.GoogleAccessRequest;
 import com.marketinghub.pde.dto.MagicLinkResponse;
+import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.service.AccessService;
@@ -108,6 +109,16 @@ public class AccessController {
             @PathVariable("token") String token,
             @PathVariable("missionId") String missionId) {
         accessService.completeMission(token, missionId);
+        return accessService.getWorkspace(token);
+    }
+
+    /** Salva respostas de personalização da cliente em uma missão da experiência. */
+    @PostMapping("/{token}/missions/{missionId}/interactions")
+    public WorkspaceResponse saveMissionInteraction(
+            @PathVariable("token") String token,
+            @PathVariable("missionId") String missionId,
+            @Valid @RequestBody MissionInteractionRequest request) {
+        accessService.saveMissionInteraction(token, missionId, request);
         return accessService.getWorkspace(token);
     }
 }

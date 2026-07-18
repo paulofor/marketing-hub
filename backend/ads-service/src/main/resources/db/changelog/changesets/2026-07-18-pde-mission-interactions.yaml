@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-18-pde-mission-interactions-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_access_grant
+        - not:
+            tableExists:
+              tableName: pde_access_mission_interaction_answer
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE pde_access_mission_interaction_answer (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                access_token VARCHAR(36) NOT NULL,
+                product_slug VARCHAR(191) NOT NULL,
+                mission_id VARCHAR(191) NOT NULL,
+                question_key VARCHAR(100) NOT NULL,
+                answer_text LONGTEXT NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_pde_mission_interaction_answer (access_token, mission_id, question_key),
+                KEY idx_pde_mission_interaction_product (product_slug, mission_id),
+                KEY idx_pde_mission_interaction_token (access_token),
+                CONSTRAINT fk_pde_mission_interaction_grant
+                  FOREIGN KEY (access_token) REFERENCES pde_access_grant (token)
+                  ON DELETE CASCADE
+              );

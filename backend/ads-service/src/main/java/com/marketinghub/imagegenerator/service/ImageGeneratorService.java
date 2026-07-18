@@ -40,6 +40,7 @@ public class ImageGeneratorService {
     private final WebClient openAiWebClient;
     private final OpenAiProperties openAiProperties;
     private final ImageGenerationRequestRepository repository;
+    private final ImageDerivativeService derivativeService;
     private final ObjectMapper objectMapper;
     private final String model;
     private final String comparisonImageModel;
@@ -49,12 +50,14 @@ public class ImageGeneratorService {
             @Qualifier("openAiWebClient") WebClient openAiWebClient,
             OpenAiProperties openAiProperties,
             ImageGenerationRequestRepository repository,
+            ImageDerivativeService derivativeService,
             ObjectMapper objectMapper,
             @Value("${image-generator.openai.model:gpt-5.6}") String model,
             @Value("${image-generator.openai.comparison-image-model:gpt-image-2}") String comparisonImageModel) {
         this.openAiWebClient = openAiWebClient;
         this.openAiProperties = openAiProperties;
         this.repository = repository;
+        this.derivativeService = derivativeService;
         this.objectMapper = objectMapper;
         this.model = model;
         this.comparisonImageModel = comparisonImageModel;
@@ -141,6 +144,7 @@ public class ImageGeneratorService {
                     SERVICE_TIER,
                     OUTPUT_FORMAT,
                     imageBase64,
+                    derivativeService.createVariants(OUTPUT_FORMAT, imageBase64),
                     audit.getFinishedAt());
         } catch (RuntimeException ex) {
             String errorMessage = buildUserFacingErrorMessage(ex);

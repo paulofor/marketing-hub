@@ -214,7 +214,7 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
 - **oportunidadebrasil.shop** : apontando para 191.252.120.96
 - **pagamentopalf.site** : apontando para  191.252.102.54
 - **PDE Platform / Área MUSA** : host 191.252.102.54, usuário SSH `root`.
-- **Gerador de imagens para PDEs** : quando um PDE precisar de imagem visual de produto, cena editorial, criativo ou apoio aspiracional, usar `http://191.252.181.168:5173/ai/image-generator` como recurso operacional para criar imagens antes de publicar/validar a experiência.
+- **Gerador de imagens para PDEs** : quando um PDE precisar de imagem visual de produto, cena editorial, criativo ou apoio aspiracional, usar `http://191.252.181.168:5173/ai/image-generator` como recurso operacional para criar imagens antes de publicar/validar a experiência. Para uso final na internet, priorizar as versões otimizadas `web` e `mobile` geradas pela própria ferramenta, preservando a `original` apenas como matriz/editável.
 
 
 ## 7. Segurança e secrets

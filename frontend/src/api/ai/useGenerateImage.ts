@@ -8,7 +8,17 @@ export type GeneratedImageResult = {
   serviceTier: string;
   outputFormat: string;
   imageBase64: string;
+  variants?: GeneratedImageVariant[];
   generatedAt: string;
+};
+
+export type GeneratedImageVariant = {
+  role: "original" | "web" | "mobile" | string;
+  format: string;
+  imageBase64: string;
+  width: number;
+  height: number;
+  byteSize: number;
 };
 
 export type ImageGenerationResponse = {

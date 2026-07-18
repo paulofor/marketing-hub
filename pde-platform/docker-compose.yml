@@ -28,5 +28,17 @@ services:
     ports:
       - "5176:80"
 
+  pde-ai-worker:
+    build:
+      context: ./pde-ai-worker
+    container_name: pde-ai-worker
+    depends_on:
+      - pde-platform-backend
+    environment:
+      PDE_BACKEND_URL: ${PDE_BACKEND_URL:-http://pde-platform-backend:8096}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+      POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-4000}
+
 volumes:
   pde-platform-data:

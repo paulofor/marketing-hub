@@ -504,6 +504,7 @@ public class AccessService {
                 "MISSION_OPEN",
                 "MISSION_COMPLETED",
                 "MISSION_INTERACTION_SAVED",
+                "AI_GUIDANCE_REQUESTED",
                 "MATERIAL_OPEN");
         if (!allowed.contains(normalized)) {
             throw new IllegalArgumentException("Evento PDE nao suportado: " + eventType);

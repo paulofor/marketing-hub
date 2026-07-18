@@ -1198,6 +1198,72 @@ h3 {
   font-weight: 800;
 }
 
+.musa-signature-panel {
+  border-color: rgba(47, 89, 82, 0.18);
+}
+
+.signature-preview-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 12px 0 0;
+}
+
+.signature-preview-grid span {
+  align-items: center;
+  background: #fff8f3;
+  border: 1px solid rgba(122, 36, 68, 0.14);
+  color: #4d3b35;
+  display: flex;
+  font-size: 0.84rem;
+  font-weight: 850;
+  justify-content: center;
+  min-height: 58px;
+  padding: 8px;
+  text-align: center;
+}
+
+.ai-guidance-card {
+  background: #2f5952;
+  color: #fff8f3;
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 18px;
+}
+
+.ai-guidance-card .section-kicker {
+  color: #f1d49f;
+}
+
+.ai-guidance-card h3,
+.ai-guidance-card p {
+  color: #fff8f3;
+  margin: 0;
+}
+
+.ai-guidance-card .signature-preview-grid {
+  margin-top: 4px;
+}
+
+.ai-guidance-card .signature-preview-grid span {
+  background: rgba(255, 248, 243, 0.12);
+  border-color: rgba(255, 248, 243, 0.16);
+  color: #fff8f3;
+}
+
+.ai-guidance-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.ai-guidance-card li,
+.ai-guidance-card small {
+  color: rgba(255, 248, 243, 0.86);
+}
+
 .mission-processing-panel,
 .mission-success-panel {
   align-items: center;
@@ -1541,6 +1607,10 @@ h3 {
 
   .login-value-strip {
     display: grid;
+  }
+
+  .signature-preview-grid {
+    grid-template-columns: 1fr;
   }
 
   .login-preview-card {

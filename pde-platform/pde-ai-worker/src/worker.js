@@ -1,0 +1,198 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const backendUrl = (process.env.PDE_BACKEND_URL ?? 'http://pde-platform-backend:8096').replace(/\/+$/, '');
+const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '4000');
+const openaiModel = process.env.OPENAI_MODEL ?? 'gpt-5.4-mini';
+const openaiApiKey = process.env.OPENAI_API_KEY ?? '';
+const promptDir = path.resolve(__dirname, '../prompts/musa-day-2-signature');
+
+async function main() {
+  console.log(`PDE AI Worker iniciado; backendUrl=${backendUrl}, model=${openaiModel}`);
+  while (true) {
+    try {
+      await processNextPending();
+    } catch (error) {
+      console.error('Falha no ciclo do worker PDE AI', error);
+    }
+    await sleep(pollIntervalMs);
+  }
+}
+
+async function processNextPending() {
+  const pending = await fetchJson(`${backendUrl}/api/internal/pde/ai-guidance/stage-executions/pending`);
+  const [execution] = Array.isArray(pending) ? pending : [];
+  if (!execution) {
+    return;
+  }
+  console.log(`Orientacao PDE pendente recebida; requestId=${execution.requestId}, guidanceType=${execution.guidanceType}`);
+  if (!openaiApiKey) {
+    await postResult(execution.requestId, {
+      status: 'FAILED',
+      errorMessage: 'OPENAI_API_KEY nao configurada no pde-ai-worker',
+    });
+    return;
+  }
+  try {
+    const result = await generateGuidance(execution);
+    await postResult(execution.requestId, result);
+  } catch (error) {
+    console.error(`Falha ao gerar orientacao PDE; requestId=${execution.requestId}`, error);
+    await postResult(execution.requestId, {
+      status: 'FAILED',
+      model: openaiModel,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+async function generateGuidance(execution) {
+  const systemPrompt = await fs.readFile(path.join(promptDir, 'system.md'), 'utf8');
+  const userTemplate = await fs.readFile(path.join(promptDir, 'user.md'), 'utf8');
+  const schema = JSON.parse(await fs.readFile(path.join(promptDir, 'response-schema.json'), 'utf8'));
+  const mission = execution.product.missions.find((item) => item.id === execution.missionId) ?? {};
+  const userPrompt = renderTemplate(userTemplate, {
+    productName: execution.product.name,
+    productPromise: execution.product.promise,
+    missionTitle: mission.title ?? execution.missionId,
+    missionPrinciple: mission.principle ?? '',
+    previousMissionAnswersJson: JSON.stringify(execution.previousMissionAnswers ?? {}, null, 2),
+    answersJson: JSON.stringify(execution.answers ?? {}, null, 2),
+  });
+  const requestBody = {
+    model: openaiModel,
+    service_tier: 'flex',
+    input: [
+      {
+        role: 'system',
+        content: systemPrompt,
+      },
+      {
+        role: 'user',
+        content: userPrompt,
+      },
+    ],
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'musa_day_2_signature',
+        strict: true,
+        schema,
+      },
+    },
+  };
+  const response = await callOpenAiWithRetry(requestBody);
+  const outputText = extractOutputText(response.body);
+  const parsed = JSON.parse(outputText);
+  return {
+    status: 'COMPLETED',
+    headline: parsed.headline,
+    summary: parsed.summary,
+    signals: parsed.signals,
+    microActions: parsed.microActions,
+    caution: parsed.caution,
+    model: openaiModel,
+    serviceTier: response.serviceTier,
+    rawRequestJson: JSON.stringify(response.requestBody),
+    rawResponseJson: JSON.stringify(response.body),
+    inputTokens: response.body.usage?.input_tokens,
+    outputTokens: response.body.usage?.output_tokens,
+  };
+}
+
+async function callOpenAiWithRetry(baseRequestBody) {
+  const attempts = ['flex', 'flex', 'default'];
+  let lastError;
+  for (const tier of attempts) {
+    const requestBody = tier === 'default'
+      ? withoutServiceTier(baseRequestBody)
+      : { ...baseRequestBody, service_tier: 'flex' };
+    try {
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = body.error?.message ?? `OpenAI retornou HTTP ${response.status}`;
+        if (isTransient(response.status, body) && tier !== attempts.at(-1)) {
+          lastError = new Error(message);
+          continue;
+        }
+        throw new Error(message);
+      }
+      return { body, requestBody, serviceTier: tier };
+    } catch (error) {
+      lastError = error;
+      if (tier === attempts.at(-1)) {
+        break;
+      }
+    }
+  }
+  throw lastError;
+}
+
+function extractOutputText(body) {
+  if (typeof body.output_text === 'string' && body.output_text.trim()) {
+    return body.output_text;
+  }
+  const textParts = [];
+  for (const item of body.output ?? []) {
+    for (const content of item.content ?? []) {
+      if (content.type === 'output_text' && content.text) {
+        textParts.push(content.text);
+      }
+    }
+  }
+  const outputText = textParts.join('\n').trim();
+  if (!outputText) {
+    throw new Error('Resposta OpenAI sem texto estruturado');
+  }
+  return outputText;
+}
+
+function withoutServiceTier(requestBody) {
+  const cloned = { ...requestBody };
+  delete cloned.service_tier;
+  return cloned;
+}
+
+function isTransient(status, body) {
+  const code = body.error?.code ?? '';
+  return status === 408 || status === 429 || status >= 500 || code === 'rate_limit_exceeded';
+}
+
+async function postResult(requestId, payload) {
+  await fetchJson(`${backendUrl}/api/internal/pde/ai-guidance/stage-executions/${requestId}/result`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} em ${url}`);
+  }
+  return response.json();
+}
+
+function renderTemplate(template, values) {
+  return Object.entries(values).reduce(
+    (rendered, [key, value]) => rendered.replaceAll(`{{${key}}}`, value ?? ''),
+    template,
+  );
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+main();

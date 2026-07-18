@@ -60,8 +60,26 @@ O backend PDE deve:
 - preparar base para assinatura/continuidade;
 - ser a única API consumida pelo frontend PDE;
 - acessar banco de dados ou serviços internos quando isso for necessário para entregar a experiência PDE.
+- criar, persistir e expor solicitações de orientação por IA quando a experiência precisar de personalização guiada.
+- receber resultados de workers de IA com saída funcional estruturada, payload bruto, modelo, tier, tokens, custo quando houver e erro.
 
 O backend PDE pode acessar dados persistidos diretamente ou por contratos internos definidos para o módulo, desde que preserve a fronteira de produto: o frontend PDE não deve conhecer nem consumir endpoints do backend principal `backend/ads-service`.
+
+### IA direcionada no PDE
+
+A IA no PDE deve funcionar como personalização guiada por etapa, nunca como chat aberto genérico na experiência inicial.
+
+Regras obrigatórias:
+
+- o backend PDE é fonte de verdade de acesso, contexto, pendência, status, resultado e auditoria;
+- a chamada OpenAI deve ser executada por worker próprio ou módulo executor, não pelo frontend;
+- o worker deve consumir pendências pelo endpoint canônico `pending` do backend PDE;
+- prompt operacional e schema JSON de saída devem ficar versionados no worker;
+- a resposta deve ser curta, estruturada e diretamente aplicável à missão;
+- o frontend deve exibir a orientação como cartão de produto, não como conversa livre;
+- toda solicitação deve ser mensurável no funil e associada ao token, produto e missão.
+
+Para o Método MUSA, o primeiro contrato de IA é a Consultora MUSA do Dia 2: a cliente escolhe três sinais de presença e recebe uma assinatura pessoal curta para repetir durante a semana.
 
 ### Frontend PDE
 

@@ -40,6 +40,7 @@ public class ImageGeneratorService {
     private final ImageGenerationRequestRepository repository;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final String comparisonImageModel;
 
     /** Inicializa o serviço com cliente OpenAI autenticado e repositório de auditoria. */
     public ImageGeneratorService(
@@ -47,12 +48,14 @@ public class ImageGeneratorService {
             OpenAiProperties openAiProperties,
             ImageGenerationRequestRepository repository,
             ObjectMapper objectMapper,
-            @Value("${image-generator.openai.model:gpt-5.6}") String model) {
+            @Value("${image-generator.openai.model:gpt-5.6}") String model,
+            @Value("${image-generator.openai.comparison-image-model:gpt-image-2}") String comparisonImageModel) {
         this.openAiWebClient = openAiWebClient;
         this.openAiProperties = openAiProperties;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.model = model;
+        this.comparisonImageModel = comparisonImageModel;
     }
 
     /** Gera uma imagem a partir do prompt do usuário usando Responses API com ferramenta de imagem. */
@@ -62,19 +65,23 @@ public class ImageGeneratorService {
         }
 
         String batchJobId = "img-batch-" + UUID.randomUUID();
-        ImageGeneratorResult image = generateSingleImage(request.prompt(), buildPrompt(request.prompt()), model);
+        String finalPrompt = buildPrompt(request.prompt());
+        List<ImageGeneratorResult> images = List.of(
+                generateSingleImage(request.prompt(), finalPrompt, model, null),
+                generateSingleImage(request.prompt(), finalPrompt, comparisonImageModel, comparisonImageModel));
 
-        return new ImageGeneratorResponse(batchJobId, List.of(image));
+        return new ImageGeneratorResponse(batchJobId, images);
     }
 
     /** Gera uma variação individual da imagem e registra auditoria da chamada OpenAI. */
     private ImageGeneratorResult generateSingleImage(
             String userPrompt,
             String finalPrompt,
-            String outputModel) {
+            String outputModel,
+            String imageToolModel) {
         String jobId = "img-" + UUID.randomUUID();
         Instant startedAt = Instant.now();
-        Map<String, Object> requestBody = buildRequestBody(finalPrompt);
+        Map<String, Object> requestBody = buildRequestBody(finalPrompt, imageToolModel);
         ImageGenerationRequest audit = repository.save(ImageGenerationRequest.builder()
                 .jobId(jobId)
                 .status("RUNNING")
@@ -135,14 +142,26 @@ public class ImageGeneratorService {
 
     /** Monta o corpo da Responses API com service_tier flex e ferramenta image_generation. */
     Map<String, Object> buildRequestBody(String prompt) {
+        return buildRequestBody(prompt, null);
+    }
+
+    /** Monta o corpo da Responses API podendo definir modelo específico na ferramenta de imagem. */
+    Map<String, Object> buildRequestBody(String prompt, String imageToolModel) {
+        Map<String, Object> imageTool = StringUtils.hasText(imageToolModel)
+                ? Map.of(
+                        "type", "image_generation",
+                        "action", "generate",
+                        "model", imageToolModel,
+                        "output_format", OUTPUT_FORMAT)
+                : Map.of(
+                        "type", "image_generation",
+                        "action", "generate",
+                        "output_format", OUTPUT_FORMAT);
         return Map.of(
                 "model", model,
                 "input", prompt,
                 "service_tier", SERVICE_TIER,
-                "tools", List.of(Map.of(
-                        "type", "image_generation",
-                        "action", "generate",
-                        "output_format", OUTPUT_FORMAT)));
+                "tools", List.of(imageTool));
     }
 
     /** Extrai a primeira imagem base64 retornada pela chamada image_generation_call. */

@@ -15,6 +15,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -58,7 +60,7 @@ public class ImageGeneratorService {
         this.comparisonImageModel = comparisonImageModel;
     }
 
-    /** Gera uma imagem a partir do prompt do usuário usando Responses API com ferramenta de imagem. */
+    /** Gera duas imagens comparativas a partir do prompt do usuário usando Responses API com ferramenta de imagem. */
     public ImageGeneratorResponse generate(ImageGeneratorRequest request) {
         if (!openAiProperties.isEnabled()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "OpenAI não está configurada no backend.");
@@ -66,11 +68,33 @@ public class ImageGeneratorService {
 
         String batchJobId = "img-batch-" + UUID.randomUUID();
         String finalPrompt = buildPrompt(request.prompt());
-        List<ImageGeneratorResult> images = List.of(
-                generateSingleImage(request.prompt(), finalPrompt, model, null),
-                generateSingleImage(request.prompt(), finalPrompt, comparisonImageModel, comparisonImageModel));
+        CompletableFuture<ImageGeneratorResult> defaultModelGeneration = CompletableFuture.supplyAsync(
+                () -> generateSingleImage(request.prompt(), finalPrompt, model, null));
+        CompletableFuture<ImageGeneratorResult> comparisonModelGeneration = CompletableFuture.supplyAsync(
+                () -> generateSingleImage(request.prompt(), finalPrompt, comparisonImageModel, comparisonImageModel));
+
+        waitForBothGenerations(defaultModelGeneration, comparisonModelGeneration);
+        List<ImageGeneratorResult> images = List.of(defaultModelGeneration.join(), comparisonModelGeneration.join());
 
         return new ImageGeneratorResponse(batchJobId, images);
+    }
+
+    /** Aguarda as duas gerações paralelas e preserva a mensagem de erro funcional quando uma delas falhar. */
+    private void waitForBothGenerations(
+            CompletableFuture<ImageGeneratorResult> defaultModelGeneration,
+            CompletableFuture<ImageGeneratorResult> comparisonModelGeneration) {
+        try {
+            CompletableFuture.allOf(defaultModelGeneration, comparisonModelGeneration).join();
+        } catch (CompletionException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof ResponseStatusException responseStatusException) {
+                throw responseStatusException;
+            }
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Não foi possível gerar as imagens.", ex);
+        }
     }
 
     /** Gera uma variação individual da imagem e registra auditoria da chamada OpenAI. */
@@ -140,7 +164,7 @@ public class ImageGeneratorService {
         }
     }
 
-    /** Monta o corpo da Responses API com service_tier flex e ferramenta image_generation. */
+    /** Monta o corpo da Responses API com service_tier flex e chamada obrigatória da ferramenta image_generation. */
     Map<String, Object> buildRequestBody(String prompt) {
         return buildRequestBody(prompt, null);
     }
@@ -161,6 +185,7 @@ public class ImageGeneratorService {
                 "model", model,
                 "input", prompt,
                 "service_tier", SERVICE_TIER,
+                "tool_choice", Map.of("type", "image_generation"),
                 "tools", List.of(imageTool));
     }
 

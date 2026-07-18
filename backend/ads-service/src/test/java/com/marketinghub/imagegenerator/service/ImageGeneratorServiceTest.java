@@ -41,7 +41,7 @@ class ImageGeneratorServiceTest {
                 .hasMessageContaining("imagem base64");
     }
 
-    /** Garante que a chamada da ferramenta solicite geração explícita de nova imagem. */
+    /** Garante que a chamada da ferramenta solicite geração explícita e obrigatória de nova imagem. */
     @Test
     void buildsImageGenerationToolWithGenerateAction() {
         ImageGeneratorService service = new ImageGeneratorService(null, null, null, objectMapper, "gpt-5.6", "gpt-image-2");
@@ -50,7 +50,8 @@ class ImageGeneratorServiceTest {
 
         assertThat(requestBody)
                 .containsEntry("model", "gpt-5.6")
-                .containsEntry("service_tier", "flex");
+                .containsEntry("service_tier", "flex")
+                .containsEntry("tool_choice", Map.of("type", "image_generation"));
         assertThat(requestBody.get("tools")).isInstanceOf(List.class);
         Object firstTool = ((List<?>) requestBody.get("tools")).get(0);
         assertThat(firstTool)

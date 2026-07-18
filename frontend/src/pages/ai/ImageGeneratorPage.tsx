@@ -129,7 +129,7 @@ export default function ImageGeneratorPage() {
                   <div className="text-body-secondary small">
                     {result
                       ? `Lote ${result.jobId}`
-                      : "As imagens aparecerão aqui após a geração."}
+                      : "As duas imagens comparativas aparecerão aqui após a geração."}
                   </div>
                 </div>
               </div>
@@ -180,11 +180,11 @@ export default function ImageGeneratorPage() {
                       role="status"
                       aria-hidden="true"
                     />
-                    <div>Gerando imagem em modo flex...</div>
+                    <div>Gerando duas imagens comparativas em modo flex...</div>
                   </div>
                 ) : (
                   <div className="text-center text-body-secondary p-4">
-                    Informe um prompt objetivo para gerar a primeira imagem.
+                    Informe um prompt objetivo para gerar as duas imagens.
                   </div>
                 )}
               </div>

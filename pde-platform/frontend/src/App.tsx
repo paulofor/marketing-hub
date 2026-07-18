@@ -9,6 +9,7 @@ import {
   Gauge,
   KeyRound,
   Library,
+  LoaderCircle,
   Lock,
   LogIn,
   Mail,
@@ -230,6 +231,8 @@ function App() {
   const [devAccessUrl, setDevAccessUrl] = useState('');
   const [dayOneAnswers, setDayOneAnswers] = useState<Record<string, string>>({});
   const [savingInteraction, setSavingInteraction] = useState(false);
+  const [missionCompletionStatus, setMissionCompletionStatus] = useState<'idle' | 'processing' | 'success'>('idle');
+  const [completedMissionFeedbackId, setCompletedMissionFeedbackId] = useState('');
   const firstUseTrackedRef = useRef(false);
   const visitorIdRef = useRef(stableBrowserId('musaVisitorId'));
   const sessionIdRef = useRef(window.sessionStorage.getItem('musaSessionId') ?? '');
@@ -608,15 +611,32 @@ function App() {
     if (!accessToken) {
       return;
     }
-    const response = await fetch(`/api/pde/access/${accessToken}/missions/${missionId}/complete`, { method: 'POST' });
-    const data = await response.json();
-    setWorkspace(data);
-    trackEvent('MISSION_COMPLETED', {
-      accessToken,
-      email: data.email,
-      provider: data.accessSource,
-      metadata: { missionId },
-    });
+    setMissionCompletionStatus('processing');
+    setCompletedMissionFeedbackId('');
+    setErrorMessage('');
+    setSuccessMessage('');
+    try {
+      const [response] = await Promise.all([
+        fetch(`/api/pde/access/${accessToken}/missions/${missionId}/complete`, { method: 'POST' }),
+        new Promise((resolve) => window.setTimeout(resolve, 900)),
+      ]);
+      if (!response.ok) {
+        throw new Error('Nao foi possivel registrar a missao.');
+      }
+      const data = await response.json();
+      setWorkspace(data);
+      setMissionCompletionStatus('success');
+      setCompletedMissionFeedbackId(missionId);
+      trackEvent('MISSION_COMPLETED', {
+        accessToken,
+        email: data.email,
+        provider: data.accessSource,
+        metadata: { missionId },
+      });
+    } catch {
+      setMissionCompletionStatus('idle');
+      setErrorMessage('Não conseguimos registrar sua conclusão agora. Tente novamente em alguns instantes.');
+    }
   }
 
   async function saveMissionInteraction(missionId: string) {
@@ -679,6 +699,8 @@ function App() {
   const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id)) ?? currentProduct.missions[0];
   const nextMissionIsFirstMission = Boolean(firstMission && nextMission?.id === firstMission.id);
   const hasActiveSubscription = workspace?.subscriptionStatus === 'ACTIVE';
+  const dayOneCompleted = Boolean(firstMission && completedMissionIds.has(firstMission.id));
+  const trialNeedsPaymentForNextDay = Boolean(!hasActiveSubscription && dayOneCompleted && nextMission && !nextMissionIsFirstMission);
   const canCompleteActiveMission = Boolean(
     activeMission && (hasActiveSubscription || activeMission.id === firstMission?.id),
   );
@@ -870,11 +892,21 @@ function App() {
           </div>
           <h2>{nextMission?.title ?? 'Continue sua assinatura MUSA'}</h2>
           <p>
-            {nextMission
+            {trialNeedsPaymentForNextDay
+              ? 'Seu primeiro ajuste foi registrado. O Dia 2 continua a transformação com sua assinatura simples, mas precisa do acesso completo para abrir.'
+              : nextMission
               ? 'Escolha uma combinação real, identifique o detalhe que apaga sua presença e registre a frase que vai guiar seu primeiro ajuste.'
               : currentProduct.completionOffer}
           </p>
-          {nextMission && !nextMissionIsFirstMission ? (
+          {trialNeedsPaymentForNextDay ? (
+            <button
+              className="secondary-button next-mission-button"
+              onClick={handleSubscriptionClick}
+            >
+              <CreditCard size={18} />
+              Liberar Dia 2 e continuar
+            </button>
+          ) : nextMission && !nextMissionIsFirstMission ? (
             <button
               className="secondary-button next-mission-button"
               onClick={() => openMission(nextMission.id, 'next_mission_open')}
@@ -1104,13 +1136,53 @@ function App() {
                   </button>
                 </div>
               )}
+              {missionCompletionStatus === 'processing' && activeMission.id === firstMission?.id && (
+                <div className="mission-processing-panel" role="status" aria-live="polite">
+                  <div className="processing-image">
+                    <img src="/assets/musa-editorial-presenca.png" alt="" />
+                    <LoaderCircle size={28} />
+                  </div>
+                  <div>
+                    <p className="section-kicker">Registrando seu progresso</p>
+                    <h3>Estamos guardando seu ajuste do Dia 1.</h3>
+                    <p>
+                      Em alguns segundos você verá o próximo passo da jornada MUSA, sem perder sua personalização.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {missionCompletionStatus === 'success' && completedMissionFeedbackId === firstMission?.id && dayOneCompleted && (
+                <div className="mission-success-panel" role="status" aria-live="polite">
+                  <div className="success-mark">
+                    <Check size={24} />
+                  </div>
+                  <div>
+                    <p className="section-kicker">Dia 1 concluído</p>
+                    <h3>Seu primeiro sinal de presença ficou salvo.</h3>
+                    <p>
+                      Agora você já sabe qual detalhe mais apaga o conjunto. O Dia 2 abre a próxima camada:
+                      criar uma assinatura simples para repetir elegância sem esforço.
+                    </p>
+                    {!hasActiveSubscription && (
+                      <button className="primary-button" onClick={handleSubscriptionClick}>
+                        <CreditCard size={18} />
+                        Liberar Dia 2 e acesso completo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               <button
                 className="secondary-button"
-                disabled={!workspace || completedMissionIds.has(activeMission.id) || !canRegisterActiveMission}
+                disabled={!workspace || completedMissionIds.has(activeMission.id) || !canRegisterActiveMission || missionCompletionStatus === 'processing'}
                 onClick={() => completeMission(activeMission.id)}
               >
-                {canRegisterActiveMission ? <Check size={18} /> : <Lock size={18} />}
-                {canRegisterActiveMission
+                {missionCompletionStatus === 'processing'
+                  ? <LoaderCircle className="button-spinner" size={18} />
+                  : canRegisterActiveMission ? <Check size={18} /> : <Lock size={18} />}
+                {missionCompletionStatus === 'processing'
+                  ? 'Registrando seu Dia 1...'
+                  : canRegisterActiveMission
                   ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : 'Registrar Dia 1 concluído')
                   : activeMission.id === firstMission?.id ? 'Salve seu ajuste para concluir' : 'Assine para salvar esta missão'}
               </button>

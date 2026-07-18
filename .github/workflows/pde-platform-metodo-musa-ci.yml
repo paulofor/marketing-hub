@@ -17,6 +17,7 @@ env:
   IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
   BACKEND_IMAGE_NAME: pde-platform-backend
   FRONTEND_IMAGE_NAME: pde-platform-frontend
+  AI_WORKER_IMAGE_NAME: pde-ai-worker
 
 jobs:
   backend:
@@ -91,6 +92,10 @@ jobs:
             echo "${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:latest"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${GITHUB_SHA}"
             echo "EOF"
+            echo "ai_worker_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "EOF"
             echo "labels<<EOF"
             echo "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
             echo "org.opencontainers.image.revision=${GITHUB_SHA}"
@@ -116,6 +121,16 @@ jobs:
           labels: ${{ steps.image_metadata.outputs.labels }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache,mode=max
+      - name: Build and push PDE AI worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: pde-platform/pde-ai-worker
+          file: pde-platform/pde-ai-worker/Dockerfile
+          push: true
+          tags: ${{ steps.image_metadata.outputs.ai_worker_tags }}
+          labels: ${{ steps.image_metadata.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.AI_WORKER_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.AI_WORKER_IMAGE_NAME }}:buildcache,mode=max
       - name: Expose image tag
         id: image_tag
         run: echo "value=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
@@ -145,6 +160,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.PDE_MAIL_AWS_ACCESS_KEY_ID != '' && secrets.PDE_MAIL_AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY != '' && secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.PDE_MAIL_AWS_SESSION_TOKEN != '' && secrets.PDE_MAIL_AWS_SESSION_TOKEN || secrets.AWS_SESSION_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure SSH
@@ -176,6 +192,7 @@ jobs:
             && (docker network inspect ${PDE_PLATFORM_NETWORK} >/dev/null 2>&1 || docker network create ${PDE_PLATFORM_NETWORK}) \
             && export PDE_PLATFORM_BACKEND_IMAGE='${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_AI_WORKER_IMAGE='${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_NETWORK='${PDE_PLATFORM_NETWORK}' \
             && export PDE_PLATFORM_FRONTEND_PORT='${PDE_PLATFORM_FRONTEND_PORT}' \
             && export PDE_PLATFORM_BACKEND_PORT='${PDE_PLATFORM_BACKEND_PORT}' \
@@ -183,6 +200,7 @@ jobs:
             && export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}' \
             && export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}' \
             && export AWS_SESSION_TOKEN='${AWS_SESSION_TOKEN}' \
+            && export OPENAI_API_KEY='${OPENAI_API_KEY}' \
             && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
             && docker compose -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \

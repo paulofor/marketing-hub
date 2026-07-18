@@ -14,8 +14,8 @@ services:
       PDE_MAIL_AWS_REGION: ${PDE_MAIL_AWS_REGION:-us-east-1}
       PDE_MAIL_FROM: ${PDE_MAIL_FROM:-acesso@clubemusa.com.br}
       AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required for PDE SES delivery}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required for PDE SES delivery}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     volumes:
       - pde-platform-data:/data/pde

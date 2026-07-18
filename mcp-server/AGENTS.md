@@ -16,6 +16,7 @@ Manter os seguintes endpoints como defaults de origem de logs no módulo `mcp-se
 - Clickbank Coletor Mois: `http://177.153.62.107:9096/internal/ops-monitor/logfile`
 - OPRM Coletor Receita/MEI: `http://191.252.120.96:8094/actuator/logfile`
 - Ops Monitor Worker: `http://191.252.120.96:8098/actuator/logfile`
+- PDE Platform Backend: `http://191.252.102.54:8096/actuator/logfile`
 
 Sempre que houver alteração desses endpoints, atualizar em conjunto:
 

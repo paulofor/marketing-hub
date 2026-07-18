@@ -2,7 +2,10 @@ import { FormEvent, useMemo, useState } from "react";
 import axios from "axios";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
-import type { GeneratedImageResult } from "../../api/ai/useGenerateImage";
+import type {
+  GeneratedImageResult,
+  GeneratedImageVariant,
+} from "../../api/ai/useGenerateImage";
 import { useGenerateImage } from "../../api/ai/useGenerateImage";
 
 const EXAMPLE_PROMPT =
@@ -21,10 +24,35 @@ function imageSrc(result: GeneratedImageResult) {
   return `data:image/${result.outputFormat};base64,${result.imageBase64}`;
 }
 
-function handleDownload(result: GeneratedImageResult) {
+function variantSrc(variant: GeneratedImageVariant) {
+  return `data:image/${variant.format};base64,${variant.imageBase64}`;
+}
+
+function formatBytes(byteSize: number) {
+  if (byteSize >= 1024 * 1024) {
+    return `${(byteSize / 1024 / 1024).toFixed(1)} MB`;
+  }
+  return `${Math.max(1, Math.round(byteSize / 1024))} KB`;
+}
+
+function variantLabel(variant: GeneratedImageVariant) {
+  const roleLabels: Record<string, string> = {
+    original: "Original",
+    web: "Web",
+    mobile: "Mobile",
+  };
+  return `${roleLabels[variant.role] ?? variant.role} · ${variant.width}x${variant.height} · ${formatBytes(variant.byteSize)}`;
+}
+
+function handleDownload(
+  result: GeneratedImageResult,
+  variant?: GeneratedImageVariant,
+) {
   const link = document.createElement("a");
-  link.href = imageSrc(result);
-  link.download = `${result.jobId}-${result.model}.${result.outputFormat}`;
+  link.href = variant ? variantSrc(variant) : imageSrc(result);
+  const role = variant?.role ?? "original";
+  const format = variant?.format ?? result.outputFormat;
+  link.download = `${result.jobId}-${result.model}-${role}.${format}`;
   link.click();
 }
 
@@ -150,13 +178,37 @@ export default function ImageGeneratorPage() {
                                 {image.serviceTier} · job {image.jobId}
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary btn-sm"
-                              onClick={() => handleDownload(image)}
-                            >
-                              Baixar
-                            </button>
+                            <div className="d-flex flex-wrap gap-2 justify-content-end">
+                              {(image.variants?.length
+                                ? image.variants
+                                : [
+                                    {
+                                      role: "original",
+                                      format: image.outputFormat,
+                                      imageBase64: image.imageBase64,
+                                      width: 0,
+                                      height: 0,
+                                      byteSize: 0,
+                                    },
+                                  ]
+                              ).map((variant) => (
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-primary btn-sm"
+                                  key={variant.role}
+                                  onClick={() => handleDownload(image, variant)}
+                                  title={variantLabel(variant)}
+                                >
+                                  {variant.role === "original"
+                                    ? "Original"
+                                    : variant.role === "web"
+                                      ? "Web"
+                                      : variant.role === "mobile"
+                                        ? "Mobile"
+                                        : variant.role}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                           <div className="d-flex align-items-center justify-content-center bg-body border rounded overflow-hidden">
                             <img

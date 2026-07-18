@@ -15,6 +15,17 @@ public record ImageGeneratorResponse(
             String serviceTier,
             String outputFormat,
             String imageBase64,
+            List<ImageGeneratorVariant> variants,
             Instant generatedAt
+    ) {}
+
+    /** Responsabilidade: representar uma versão exportável da imagem para uso operacional ou web. */
+    public record ImageGeneratorVariant(
+            String role,
+            String format,
+            String imageBase64,
+            int width,
+            int height,
+            long byteSize
     ) {}
 }

@@ -4,10 +4,10 @@ Produto:
 Promessa:
 {{productPromise}}
 
-Missao:
+Missão:
 {{missionTitle}}
 
-Principio:
+Princípio:
 {{missionPrinciple}}
 
 Respostas do Dia 1:
@@ -16,4 +16,4 @@ Respostas do Dia 1:
 Sinais escolhidos no Dia 2:
 {{answersJson}}
 
-Gere a Assinatura MUSA desta semana como uma orientacao personalizada, curta e acionavel.
+Gere a Assinatura MUSA desta semana como uma orientação personalizada, curta e acionável. Escreva em português brasileiro com acentuação correta.

@@ -19,7 +19,7 @@ paths:
           example: metodo-musa-7-dias
       responses:
         "200":
-          description: Documento Markdown bruto com a definição comercial pública.
+          description: Documento Markdown bruto com a definição comercial pública, incluindo identidade visual, logo, base científica e posicionamento de uso de IA quando cadastrados.
           content:
             text/markdown:
               schema:
@@ -41,7 +41,7 @@ paths:
           example: metodo-musa-7-dias
       responses:
         "200":
-          description: Página HTML com as mesmas informações do Markdown público renderizadas para leitura.
+          description: Página HTML com as mesmas informações do Markdown público renderizadas para leitura, incluindo identidade visual, logo, base científica e posicionamento de uso de IA quando cadastrados.
           content:
             text/html:
               schema:

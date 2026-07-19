@@ -12,6 +12,7 @@ public class ProductDto {
     private String slug;
     private String name;
     private String publicUrl;
+    private String logoUrl;
     private String colorPalette;
     private String targetAudience;
     private String languageStyle;

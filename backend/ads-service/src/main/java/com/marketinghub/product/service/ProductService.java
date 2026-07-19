@@ -58,6 +58,7 @@ public class ProductService {
         product.setSlug(request.getSlug());
         product.setName(request.getName());
         product.setPublicUrl(request.getPublicUrl());
+        product.setLogoUrl(request.getLogoUrl());
         product.setColorPalette(request.getColorPalette());
         product.setTargetAudience(request.getTargetAudience());
         product.setLanguageStyle(request.getLanguageStyle());
@@ -130,7 +131,8 @@ public class ProductService {
                 line("Tipo de produto", product.getProductType()),
                 line("Status comercial", product.getCommercialStatus()),
                 line("Preço atual", formatPrice(product.getCurrentPriceBrl())),
-                line("URL pública", product.getPublicUrl()));
+                line("URL pública", product.getPublicUrl()),
+                optionalLine("Logo", product.getLogoUrl()));
         appendSection(markdown, "2. Mercado e nicho",
                 line("Nicho", resolveNiche(product)),
                 line("Público alvo", product.getTargetAudience()),

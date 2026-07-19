@@ -32,6 +32,7 @@ class ProductServiceTest {
         CreateProductRequest request = new CreateProductRequest();
         request.setName("Método MUSA - Presença Elegante em 7 Dias");
         request.setSlug("metodo-musa-7-dias");
+        request.setLogoUrl("https://clubemusa.com.br/assets/logo-musa.svg");
         request.setMarketNicheId(10L);
         request.setCurrentPriceBrl(new BigDecimal("47.00"));
         request.setTargetAudience("Mulheres urbanas");
@@ -48,6 +49,7 @@ class ProductServiceTest {
 
         assertThat(updated.getName()).isEqualTo(request.getName());
         assertThat(updated.getSlug()).isEqualTo(request.getSlug());
+        assertThat(updated.getLogoUrl()).isEqualTo("https://clubemusa.com.br/assets/logo-musa.svg");
         assertThat(updated.getCurrentPriceBrl()).isEqualByComparingTo("47.00");
         assertThat(updated.getTargetAudience()).isEqualTo(request.getTargetAudience());
         assertThat(updated.getScientificEvidencePack()).isEqualTo("Evidence Pack MUSA v1");
@@ -69,6 +71,7 @@ class ProductServiceTest {
                 .id(1L)
                 .slug("metodo-musa-7-dias")
                 .name("Método MUSA - Presença Elegante em 7 Dias")
+                .logoUrl("https://clubemusa.com.br/assets/logo-musa.svg")
                 .productType("PDE")
                 .commercialStatus("validação comercial")
                 .currentPriceBrl(new BigDecimal("47.00"))
@@ -86,7 +89,7 @@ class ProductServiceTest {
                 .supportMaterialPositioning("Material de apoio aparece como reforço secundário da jornada.")
                 .primaryCta("Ver meu plano MUSA de 7 dias")
                 .socialProof("Prova científica, prova visual e experimento 66.")
-                .scientificEvidencePack("Evidence Pack MUSA v1: princípios permitidos, linguagem permitida, afirmações proibidas e referências científicas.")
+                .scientificEvidencePack("Evidence Pack MUSA v1: uso de IA associado aos artigos científicos citados, princípios permitidos, linguagem permitida, afirmações proibidas e referências científicas.")
                 .funnel("Anúncio → login → experiência gratuita → paywall → compra.")
                 .codeModules("pde-platform, backend")
                 .aiCost(new BigDecimal("1.20"))
@@ -101,6 +104,8 @@ class ProductServiceTest {
         assertThat(markdown).contains("Elegância feminina prática");
         assertThat(markdown).contains("## 4. Dor, resultado e mecanismo");
         assertThat(markdown).contains("Resultado prometido");
+        assertThat(markdown).contains("Logo");
+        assertThat(markdown).contains("https://clubemusa.com.br/assets/logo-musa.svg");
         assertThat(markdown).contains("Parecer mais elegante em 7 dias.");
         assertThat(markdown).contains("Adam e Galinsky (2012)");
         assertThat(markdown).contains("Paleta visual completa");
@@ -115,6 +120,7 @@ class ProductServiceTest {
         assertThat(markdown).contains("## 8. Funil de aquisição e venda");
         assertThat(markdown).contains("Prova científica");
         assertThat(markdown).contains("Base científica operacional");
+        assertThat(markdown).contains("uso de IA associado aos artigos científicos citados");
         assertThat(markdown).contains("afirmações proibidas");
         assertThat(markdown).doesNotContain("pde-platform");
         assertThat(markdown).doesNotContain("1.20");

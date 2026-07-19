@@ -77,6 +77,7 @@ Regras obrigatórias:
 - o worker deve consumir pendências pelo endpoint canônico `pending` do backend PDE;
 - prompt operacional e schema JSON de saída devem ficar versionados no worker;
 - quando o produto possuir pacote científico operacional, o backend PDE deve entregá-lo no contrato `pending` e o worker deve injetá-lo no prompt como base de plausibilidade, limites e linguagem permitida;
+- para chamadas MUSA, o worker deve falhar antes da OpenAI se o pacote científico operacional estiver ausente ou incompleto, evitando orientação genérica sem apoio dos artigos definidos para o produto;
 - a resposta deve ser curta, estruturada e diretamente aplicável à missão;
 - o frontend deve exibir a orientação como cartão de produto, não como conversa livre;
 - toda solicitação deve ser mensurável no funil e associada ao token, produto e missão.

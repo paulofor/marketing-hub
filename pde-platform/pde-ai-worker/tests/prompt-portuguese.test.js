@@ -70,4 +70,12 @@ describe('prompts da Consultora MUSA', () => {
       assert.match(content, /microações simples/);
     }
   });
+
+  it('worker exige pacote científico antes de montar a chamada OpenAI', async () => {
+    const worker = await readFile(new URL('../src/worker.js', import.meta.url), 'utf8');
+
+    assert.match(worker, /requireScientificEvidencePack\(execution\)/);
+    assert.match(worker, /scientificEvidencePackJson: JSON\.stringify\(scientificEvidencePack, null, 2\)/);
+    assert.match(worker, /Pacote cientifico operacional ausente ou incompleto/);
+  });
 });

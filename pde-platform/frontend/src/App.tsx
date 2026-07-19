@@ -1015,7 +1015,7 @@ function App() {
       <main className="app-shell login-shell">
         <section className="login-hero" data-analytics-section="login_hero">
           <div className="login-panel">
-            <p className="eyebrow">Clube MUSA</p>
+            <img className="brand-logo login-brand-logo" src="/assets/logo-musa.svg" alt="Clube MUSA" />
             <h1>Entre e descubra o detalhe que hoje apaga sua presença.</h1>
             <p className="promise">
               Libere seu diagnóstico inicial e o Dia 1 do Método MUSA: uma experiência guiada para
@@ -1171,6 +1171,7 @@ function App() {
     <main className="app-shell dashboard-shell">
       <section className="musa-first-fold" data-analytics-section="member_first_fold">
         <div className="musa-hero-copy">
+          <img className="brand-logo dashboard-brand-logo" src="/assets/logo-musa.svg" alt="Clube MUSA" />
           <p className="eyebrow">Sua Jornada MUSA</p>
           <h1>Sua presença elegante começa hoje.</h1>
           <p className="promise">{currentProduct.promise}</p>

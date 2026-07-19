@@ -9,7 +9,7 @@
     "build:debug": "cross-env REACT_APP_DEBUG_PROD=true vite build",
     "preview": "vite preview",
     "check-react": "npm ls react react-dom",
-    "test": "vitest"
+    "test": "NODE_ENV=test vitest"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

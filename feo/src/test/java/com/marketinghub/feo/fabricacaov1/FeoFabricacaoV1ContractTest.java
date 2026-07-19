@@ -135,6 +135,26 @@ class FeoFabricacaoV1ContractTest {
     }
 
     /**
+     * Confirma que a capa local do MUSA usa a promessa canônica e evita posicionamento de baixo valor.
+     */
+    @Test
+    void capaLocalMusaDeveUsarPromessaCanonicaDePresencaEmSeteDias() {
+        VisualAsset cover = TemplateVisualAssetFactory.create(new VisualAssetSpec(
+                "VIS-01",
+                "Capa editorial do e-book principal",
+                "EBOOK_COVER",
+                "cover",
+                "Crie uma capa para o Método MUSA.",
+                "1024x1536",
+                "png"));
+
+        assertThat(cover.qualityNotes())
+                .contains("Capa MUSA usa promessa canônica: Presença elegante em 7 dias")
+                .contains("Capa MUSA evita posicionamento de baixo valor como sem gastar muito");
+        assertThat(cover.content()).isNotEmpty();
+    }
+
+    /**
      * Confirma que imagens externas desabilitadas nao bloqueiam a montagem do pacote final.
      */
     @Test

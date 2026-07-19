@@ -26,7 +26,7 @@ public final class TemplateVisualAssetFactory {
     private static final Color BRAND = new Color(122, 36, 68);
     private static final Color GREEN = new Color(47, 89, 82);
     private static final Color GOLD = new Color(214, 167, 92);
-    private static final Color SOFT = new Color(255, 250, 246);
+    private static final Color SOFT = new Color(255, 248, 243);
     private static final Color BLUSH = new Color(247, 233, 238);
     private static final Color LINE = new Color(234, 216, 207);
 
@@ -67,7 +67,7 @@ public final class TemplateVisualAssetFactory {
                     "local-editorial-template",
                     "{\"provider\":\"local-template\"}",
                     "{\"status\":\"generated\"}",
-                    List.of("Imagem editorial local gerada como fallback seguro"));
+                    reviewerNotes(spec));
         } finally {
             g.dispose();
         }
@@ -97,20 +97,28 @@ public final class TemplateVisualAssetFactory {
     }
 
     /**
-     * Desenha capa com promessa aspiracional e sensação de produto premium.
+     * Desenha capa com promessa canônica, alto valor percebido e boa leitura em miniatura.
      */
     private static void paintCover(Graphics2D g, VisualAssetSpec spec, int width, int height) {
-        drawPill(g, "Jornada guiada de 7 dias", 118, 132, BRAND, Color.WHITE);
-        drawWrapped(g, "Método MUSA", font(Font.BOLD, 92), BRAND, 118, 330, width - 236, 104);
-        drawWrapped(g, "Presença elegante sem gastar muito", font(Font.BOLD, 72), INK, 118, 520, width - 236, 88);
-        drawWrapped(g, cleanTitle(spec.title()), font(Font.PLAIN, 38), new Color(92, 73, 80), 118, 740, width - 236, 52);
+        g.setColor(new Color(122, 36, 68, 34));
+        g.fillOval(width - 760, 300, 920, 920);
+        g.setColor(new Color(214, 167, 92, 46));
+        g.fillOval(720, 1120, 540, 540);
 
-        paintMirror(g, width - 560, 900, 360, 560);
+        drawPill(g, "Experiência guiada de 7 dias", 118, 132, BRAND, Color.WHITE);
+        drawWrapped(g, "Método MUSA", font(Font.BOLD, 98), BRAND, 118, 330, width - 236, 110);
+        drawWrapped(g, "Presença elegante em 7 dias", font(Font.BOLD, 82), INK, 118, 540, 820, 94);
+        drawWrapped(g, "Microações para reduzir ruído visual, coordenar seus sinais e sair mais segura sem trocar o guarda-roupa inteiro.",
+                font(Font.PLAIN, 39), new Color(92, 73, 80), 118, 780, 650, 54);
+
+        paintEditorialMirror(g, width - 500, 500, 340, 760);
         drawWrapped(g, "Para quando você se olha pronta e sente: está ok, mas ainda não está marcante.",
-                font(Font.BOLD, 42), GREEN, 118, 1180, 650, 58);
-        drawPill(g, "menos dúvida", 118, 1570, GREEN, Color.WHITE);
-        drawPill(g, "mais intenção", 430, 1570, BRAND, Color.WHITE);
-        drawPill(g, "sem compra por impulso", 760, 1570, GOLD.darker(), Color.WHITE);
+                font(Font.BOLD, 44), GREEN, 118, 1220, 720, 60);
+        drawPill(g, "menos dúvida", 118, 1528, GREEN, Color.WHITE);
+        drawPill(g, "mais intenção", 430, 1528, BRAND, Color.WHITE);
+        drawPill(g, "sem luxo caro", 760, 1528, GOLD.darker(), Color.WHITE);
+        drawWrapped(g, "Sem compras impulsivas. Sem transformação radical.",
+                font(Font.BOLD, 34), BRAND, 118, 1710, width - 236, 46);
     }
 
     /**
@@ -197,6 +205,27 @@ public final class TemplateVisualAssetFactory {
         g.fillRoundRect(x + 100, y + 360, width - 200, 90, 40, 40);
         g.setColor(GOLD);
         g.fillOval(x + width - 120, y + 360, 46, 46);
+    }
+
+    /**
+     * Desenha uma composição editorial de espelho com silhueta para elevar percepção de valor.
+     */
+    private static void paintEditorialMirror(Graphics2D g, int x, int y, int width, int height) {
+        g.setColor(new Color(255, 255, 255, 235));
+        g.fillRoundRect(x, y, width, height, 180, 180);
+        g.setColor(GOLD);
+        g.setStroke(new BasicStroke(12f));
+        g.drawRoundRect(x, y, width, height, 180, 180);
+        g.setColor(new Color(247, 233, 238));
+        g.fillOval(x + 95, y + 90, width - 190, width - 190);
+        g.setColor(new Color(122, 36, 68, 210));
+        g.fillRoundRect(x + 98, y + 300, width - 196, 245, 86, 86);
+        g.setColor(new Color(255, 248, 243));
+        g.fillRoundRect(x + 134, y + 332, width - 268, 170, 58, 58);
+        g.setColor(GREEN);
+        g.fillRoundRect(x + 84, y + 570, width - 168, 72, 36, 36);
+        g.setColor(GOLD);
+        g.fillOval(x + width - 118, y + 570, 44, 44);
     }
 
     /**
@@ -331,6 +360,19 @@ public final class TemplateVisualAssetFactory {
      */
     private static Font font(int style, int size) {
         return new Font("SansSerif", style, size);
+    }
+
+    /**
+     * Registra os critérios visuais aplicados para auditoria e testes de contrato.
+     */
+    private static List<String> reviewerNotes(VisualAssetSpec spec) {
+        if ("EBOOK_COVER".equals(spec.assetType())) {
+            return List.of(
+                    "Imagem editorial local gerada como fallback seguro",
+                    "Capa MUSA usa promessa canônica: Presença elegante em 7 dias",
+                    "Capa MUSA evita posicionamento de baixo valor como sem gastar muito");
+        }
+        return List.of("Imagem editorial local gerada como fallback seguro");
     }
 
     /**

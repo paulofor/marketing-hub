@@ -27,7 +27,7 @@ public class GoogleIdentityService {
     /** Valida o ID token do Google e retorna o e-mail verificado da cliente. */
     public String verifyEmail(String idToken) {
         if (clientId == null || clientId.isBlank()) {
-            throw new IllegalArgumentException("Login com Google ainda nao configurado para a Area MUSA");
+            throw new IllegalArgumentException("Login com Google ainda não configurado para a Área MUSA");
         }
         Map<String, Object> tokenInfo;
         try {
@@ -36,17 +36,17 @@ public class GoogleIdentityService {
                     .retrieve()
                     .body(new org.springframework.core.ParameterizedTypeReference<>() {});
         } catch (RuntimeException ex) {
-            log.error("Falha ao validar credencial Google da Area MUSA", ex);
+            log.error("Falha ao validar credencial Google da Área MUSA", ex);
             throw ex;
         }
         if (tokenInfo == null) {
-            throw new IllegalArgumentException("Credencial Google invalida");
+            throw new IllegalArgumentException("Credencial Google inválida");
         }
         String audience = String.valueOf(tokenInfo.getOrDefault("aud", ""));
         String email = String.valueOf(tokenInfo.getOrDefault("email", ""));
         String verified = String.valueOf(tokenInfo.getOrDefault("email_verified", ""));
         if (!clientId.equals(audience) || email.isBlank() || !"true".equalsIgnoreCase(verified)) {
-            throw new IllegalArgumentException("Credencial Google nao autorizada para a Area MUSA");
+            throw new IllegalArgumentException("Credencial Google não autorizada para a Área MUSA");
         }
         return email;
     }

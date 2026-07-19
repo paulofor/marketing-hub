@@ -126,11 +126,14 @@ type MissionGuidanceConfig = {
   guidanceType: string;
   kicker: string;
   title: string;
+  helperText: string;
   buttonLabel: string;
   loadingLabel: string;
   pendingLabel: string;
   failedLabel: string;
   completedKicker: string;
+  nextStepTitle: string;
+  nextStepText: string;
   fields: MissionGuidanceField[];
 };
 
@@ -215,12 +218,15 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
   'dia-1-ruido-visual': {
     guidanceType: 'MUSA_DAY_1_PRESENCE_DIAGNOSIS',
     kicker: 'Consultora MUSA',
-    title: 'Conte sua situação real para receber o primeiro ajuste de presença.',
-    buttonLabel: 'Receber meu ajuste do Dia 1',
-    loadingLabel: 'Preparando ajuste...',
-    pendingLabel: 'Sua Consultora MUSA está preparando uma orientação curta para o seu primeiro ajuste.',
+    title: 'Conte sua situação real para a Consultora MUSA apontar seu primeiro ajuste de presença.',
+    helperText: 'Depois de enviar, você vê seu diagnóstico personalizado, recebe o primeiro ajuste de presença e sabe exatamente qual microação aplicar hoje.',
+    buttonLabel: 'Ver meu plano MUSA de 7 dias',
+    loadingLabel: 'Preparando seu plano MUSA...',
+    pendingLabel: 'Sua Consultora MUSA está preparando seu diagnóstico e o primeiro ajuste prático para hoje.',
     failedLabel: 'Suas respostas ficaram salvas. Use a missão do Dia 1 manualmente enquanto a consultora automática é configurada.',
     completedKicker: 'Meu ajuste MUSA',
+    nextStepTitle: 'O que fazer agora',
+    nextStepText: 'Aplique hoje uma das microações indicadas. Depois volte aqui e toque em “Registrar Dia 1 concluído” para liberar o próximo passo da sua jornada.',
     fields: [
       {
         key: 'presenceFocus',
@@ -245,11 +251,14 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     guidanceType: 'MUSA_DAY_2_SIGNATURE',
     kicker: 'Consultora MUSA',
     title: 'Escolha 3 sinais para montar sua assinatura desta semana.',
+    helperText: 'Depois de enviar, você recebe uma combinação simples de sinais para repetir elegância sem precisar trocar todo o guarda-roupa.',
     buttonLabel: 'Gerar minha assinatura MUSA',
     loadingLabel: 'Montando assinatura...',
     pendingLabel: 'Sua Consultora MUSA está preparando uma orientação curta com seus 3 sinais.',
     failedLabel: 'Seus sinais ficaram salvos. A consultora automática ainda precisa ser configurada neste ambiente.',
     completedKicker: 'Minha assinatura MUSA',
+    nextStepTitle: 'O que fazer agora',
+    nextStepText: 'Escolha uma situação real da semana, use os sinais recomendados e registre a missão quando tiver uma combinação pronta para repetir.',
     fields: [
       {
         key: 'finishSignal',
@@ -275,11 +284,14 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     guidanceType: 'MUSA_DAY_3_WARDROBE_REUSE',
     kicker: 'Consultora MUSA',
     title: 'Mostre o que você já tem para a IA montar uma base elegante acessível.',
+    helperText: 'Depois de enviar, você recebe uma base prática usando peças reais, sem transformar o método em lista de compras.',
     buttonLabel: 'Montar minha base acessível',
     loadingLabel: 'Organizando base...',
     pendingLabel: 'Sua Consultora MUSA está conectando seus itens aos sinais escolhidos.',
     failedLabel: 'Seu inventário ficou salvo. Use os itens escolhidos como base da missão de hoje.',
     completedKicker: 'Minha base acessível',
+    nextStepTitle: 'O que fazer agora',
+    nextStepText: 'Separe as peças indicadas, monte uma combinação possível e registre a missão quando tiver uma base pronta para usar ou repetir.',
     fields: [
       { key: 'pieces', label: '5 peças que você já tem', placeholder: 'Ex.: calça preta, camisa branca, vestido vinho...' },
       { key: 'accessories', label: '2 acessórios ou acabamentos disponíveis', placeholder: 'Ex.: brinco dourado e perfume suave' },
@@ -290,11 +302,14 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     guidanceType: 'MUSA_DAY_4_FINISHING_RITUAL',
     kicker: 'Consultora MUSA',
     title: 'Transforme seu checklist em um acabamento de 12 minutos.',
+    helperText: 'Depois de enviar, você recebe uma ordem simples de acabamento para ganhar presença mesmo com pouco tempo.',
     buttonLabel: 'Criar meu ritual de 12 minutos',
     loadingLabel: 'Ajustando ritual...',
     pendingLabel: 'Sua Consultora MUSA está priorizando o que dá mais presença em menos tempo.',
     failedLabel: 'Seu checklist ficou salvo. Execute a ordem mais simples hoje.',
     completedKicker: 'Meu ritual de acabamento',
+    nextStepTitle: 'O que fazer agora',
+    nextStepText: 'Execute a ordem recomendada antes de sair ou gravar conteúdo e registre a missão quando perceber o acabamento mais forte.',
     fields: [
       { key: 'availableMinutes', label: 'Quanto tempo real você tem antes de sair?', placeholder: 'Ex.: 8, 12 ou 15 minutos' },
       { key: 'weakestFinish', label: 'Qual acabamento costuma falhar primeiro?', placeholder: 'Ex.: cabelo, pele, roupa, perfume, postura' },
@@ -305,11 +320,14 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     guidanceType: 'MUSA_DAY_5_ANTI_IMPULSE_DECISION',
     kicker: 'Consultora MUSA',
     title: 'Antes de comprar, deixe a IA testar se o item fortalece sua assinatura.',
+    helperText: 'Depois de enviar, você recebe uma decisão mais clara: comprar com intenção, adiar ou reaproveitar algo que já tem.',
     buttonLabel: 'Avaliar minha compra',
     loadingLabel: 'Avaliando compra...',
     pendingLabel: 'Sua Consultora MUSA está separando desejo imediato de utilidade real.',
     failedLabel: 'Sua decisão ficou salva. Compare a compra com seus 3 sinais antes de avançar.',
     completedKicker: 'Minha decisão anti-impulso',
+    nextStepTitle: 'O que fazer agora',
+    nextStepText: 'Siga a recomendação sobre compra ou reaproveitamento e registre a missão quando a decisão deixar de ser impulso e virar intenção.',
     fields: [
       { key: 'desiredItem', label: 'O que você está pensando em comprar?', placeholder: 'Ex.: blazer, perfume, bolsa, sapato' },
       { key: 'buyingReason', label: 'Qual sensação você espera resolver com essa compra?', placeholder: 'Ex.: parecer mais arrumada, menos comum, mais adulta' },
@@ -320,11 +338,14 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     guidanceType: 'MUSA_DAY_6_OCCASION_ENTRY',
     kicker: 'Consultora MUSA',
     title: 'Planeje uma entrada marcante para uma situação real.',
+    helperText: 'Depois de enviar, você recebe um plano objetivo para alinhar roupa, acabamento e detalhe final na ocasião escolhida.',
     buttonLabel: 'Preparar minha entrada',
     loadingLabel: 'Preparando entrada...',
     pendingLabel: 'Sua Consultora MUSA está alinhando roupa, acabamento e detalhe final.',
     failedLabel: 'Seu plano ficou salvo. Use a missão para ajustar a composição antes da ocasião.',
     completedKicker: 'Minha entrada MUSA',
+    nextStepTitle: 'O que fazer agora',
+    nextStepText: 'Aplique o plano na ocasião escolhida, observe o sinal mais forte de presença e registre a missão depois de preparar sua entrada.',
     fields: [
       { key: 'occasion', label: 'Qual é a ocasião?', placeholder: 'Ex.: reunião, evento, encontro, gravação, almoço' },
       { key: 'plannedLook', label: 'Qual composição você pretende usar?', placeholder: 'Roupa, cabelo, pele, perfume e detalhe final' },
@@ -335,11 +356,14 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     guidanceType: 'MUSA_DAY_7_MAINTENANCE_PLAN',
     kicker: 'Consultora MUSA',
     title: 'Feche a semana com um plano simples para manter sua presença.',
+    helperText: 'Depois de enviar, você recebe um ritual leve para manter sua assinatura sem depender de esforço diário alto.',
     buttonLabel: 'Gerar meu plano pessoal',
     loadingLabel: 'Fechando plano...',
     pendingLabel: 'Sua Consultora MUSA está transformando a semana em um ritual fácil de repetir.',
     failedLabel: 'Seu plano ficou salvo. Releia os sinais e escolha um ritual semanal de 15 minutos.',
     completedKicker: 'Meu plano MUSA',
+    nextStepTitle: 'O que fazer agora',
+    nextStepText: 'Escolha o ritual recomendado, marque um horário real da semana e registre a missão quando o plano estiver pronto para repetir.',
     fields: [
       { key: 'bestSignal', label: 'Qual sinal mais funcionou nesta semana?', placeholder: 'Ex.: cabelo polido, cor-base vinho, perfume' },
       { key: 'hardestPoint', label: 'Qual ponto ainda exige esforço?', placeholder: 'Ex.: manter cabelo, combinar cores, evitar compras' },
@@ -793,7 +817,7 @@ function App() {
         new Promise((resolve) => window.setTimeout(resolve, 900)),
       ]);
       if (!response.ok) {
-        throw new Error('Nao foi possivel registrar a missao.');
+        throw new Error('Não foi possível registrar a missão.');
       }
       const data = await response.json();
       setWorkspace(data);
@@ -1068,7 +1092,7 @@ function App() {
                 <Mail size={18} />
                 {loading
                   ? 'Enviando link...'
-                  : (authMode === 'login' ? 'Receber link de entrada' : 'Solicitar primeiro acesso')}
+                  : (authMode === 'login' ? 'Receber link de entrada' : 'Começar meu diagnóstico gratuito')}
               </button>
             )}
             <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
@@ -1085,8 +1109,8 @@ function App() {
               <ChevronRight size={22} />
             </div>
             <p className="access-note">
-              O login libera a primeira parte da experiência. Dias 2 a 7, biblioteca e materiais
-              premium aparecem dentro da área e são desbloqueados com o acesso completo.
+              O login libera a primeira parte da experiência. O acesso completo desbloqueia o plano guiado
+              dos Dias 2 a 7, com apoio de consulta apenas quando você precisar revisar algum detalhe.
             </p>
           </div>
           <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA" data-analytics-section="musa_product_preview">
@@ -1117,9 +1141,9 @@ function App() {
               <span>Entre, veja seu primeiro diagnóstico e descubra o próximo ajuste que pode mudar sua presença.</span>
             </div>
             <div className="login-unlock-list" aria-label="Prévia da experiência MUSA">
+              <span><Target size={16} /> Diagnóstico personalizado</span>
               <span><CalendarDays size={16} /> 7 missões guiadas</span>
-              <span><BookOpen size={16} /> Biblioteca de apoio</span>
-              <span><Target size={16} /> Checklists práticos</span>
+              <span><Sparkles size={16} /> Ajustes práticos para hoje</span>
             </div>
           </div>
         </section>
@@ -1209,10 +1233,10 @@ function App() {
           <p>Nomeie o que hoje deixa você arrumada, mas pouco marcante.</p>
         </article>
         <article className="status-card">
-          <Library size={20} />
-          <span>Biblioteca</span>
-          <strong>{currentProduct.supportMaterials.length} materiais</strong>
-          <p>E-book, experiência guiada e arquivos de apoio.</p>
+          <CalendarDays size={20} />
+          <span>Plano guiado</span>
+          <strong>7 dias</strong>
+          <p>Diagnóstico, microações e próximos passos em sequência.</p>
         </article>
         <article className="status-card">
           <KeyRound size={20} />
@@ -1226,14 +1250,15 @@ function App() {
         <section className="subscription-paywall" aria-label="Oferta de assinatura MUSA" data-analytics-section="subscription_paywall">
           <div>
             <p className="section-kicker">Liberar área completa</p>
-            <h2>Assine o Clube MUSA para acessar todas as missões, biblioteca e próximos desafios.</h2>
+            <h2>Assine o Clube MUSA para continuar seu plano personalizado dos 7 dias.</h2>
             <p>
-              Seu login já salvou a entrada na área. A assinatura remove o bloqueio e permite continuar a experiência completa.
+              Seu diagnóstico inicial já mostrou o primeiro ajuste. O acesso completo libera os próximos dias,
+              a sequência de microações e o acompanhamento para transformar isso em presença repetível.
             </p>
           </div>
           <button className="primary-button" onClick={handleSubscriptionClick}>
             <CreditCard size={18} />
-            Solicitar acesso pago
+            Liberar meu plano de 7 dias
           </button>
         </section>
       )}
@@ -1245,8 +1270,8 @@ function App() {
           </div>
           <div>
             <p className="eyebrow">Roteiro guiado</p>
-            <h2>Diagnóstico, missão e materiais de apoio</h2>
-            <p>Depois de iniciar o Dia 1, use o diagnóstico e a biblioteca apenas como apoio para executar sem se perder.</p>
+            <h2>Diagnóstico e plano de 7 dias</h2>
+            <p>Responda, receba seu ajuste e siga a próxima microação indicada pela jornada.</p>
           </div>
         </div>
       </section>
@@ -1289,7 +1314,7 @@ function App() {
               {!hasActiveSubscription && (
                 <div className="trial-unlock-note">
                   <Sparkles size={17} />
-                  <span>O Dia 1 está liberado gratuitamente. Dias 2 a 7 e biblioteca premium aparecem depois do acesso completo.</span>
+                  <span>O Dia 1 está liberado gratuitamente. Dias 2 a 7 aparecem depois do acesso completo.</span>
                 </div>
               )}
               <button className="inline-action" onClick={() => openMission(firstMission.id, 'start_here_open')}>
@@ -1343,6 +1368,7 @@ function App() {
                 <div className="personalization-panel musa-signature-panel">
                   <p className="section-kicker">{activeMissionGuidanceConfig.kicker}</p>
                   <h3>{activeMissionGuidanceConfig.title}</h3>
+                  <p className="guidance-helper-text">{activeMissionGuidanceConfig.helperText}</p>
                   {activeMissionGuidanceConfig.fields.map((field) => (
                     <label key={field.key}>
                       {field.label}
@@ -1404,6 +1430,13 @@ function App() {
                         {activeMissionGuidance.microActions.map((action) => <li key={action}>{action}</li>)}
                       </ul>
                       {activeMissionGuidance.caution && <small>{activeMissionGuidance.caution}</small>}
+                      <div className="guidance-next-step">
+                        <Check size={18} />
+                        <div>
+                          <strong>{activeMissionGuidanceConfig.nextStepTitle}</strong>
+                          <p>{activeMissionGuidanceConfig.nextStepText}</p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1457,7 +1490,7 @@ function App() {
                   : canRegisterActiveMission
                   ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : `Registrar Dia ${activeMission.day} concluído`)
                   : activeMission.id === firstMission?.id
-                  ? 'Salve seu ajuste para concluir'
+                  ? 'Receba seu diagnóstico para concluir'
                   : activeMissionGuidanceConfig
                   ? 'Preencha os 3 pontos para concluir'
                   : 'Assine para salvar esta missão'}
@@ -1467,22 +1500,25 @@ function App() {
         </section>
       </section>
 
-      <section className="library-section">
-        <div className="section-heading">
-          <Library size={22} />
-          <div>
-            <p className="section-kicker">Biblioteca da cliente</p>
-            <h2>Materiais de apoio do método</h2>
+      {hasActiveSubscription && (
+        <section className="library-section">
+          <div className="section-heading">
+            <Library size={22} />
+            <div>
+              <p className="section-kicker">Apoio de consulta</p>
+              <h2>Use só quando precisar revisar</h2>
+              <p className="library-support-copy">
+                O coração do MUSA é a jornada guiada. Estes arquivos ficam como apoio secundário para consultar depois da missão.
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="material-grid">
-          {currentProduct.supportMaterials.map((material) => (
-            <article className="material-card" key={material.title}>
-              <BookOpen size={20} />
-              <span>{material.type}</span>
-              <h3>{material.title}</h3>
-              <p>{material.description}</p>
-              {hasActiveSubscription ? (
+          <div className="material-grid">
+            {currentProduct.supportMaterials.map((material) => (
+              <article className="material-card" key={material.title}>
+                <BookOpen size={20} />
+                <span>{material.type}</span>
+                <h3>{material.title}</h3>
+                <p>{material.description}</p>
                 <a
                   href={material.url}
                   target="_blank"
@@ -1499,16 +1535,11 @@ function App() {
                 >
                   Abrir material
                 </a>
-              ) : (
-                <button className="inline-action" onClick={handleSubscriptionClick}>
-                  <Lock size={16} />
-                  Liberar com assinatura
-                </button>
-              )}
-            </article>
-          ))}
-        </div>
-      </section>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="completion-band">
         <Sparkles size={22} />

@@ -1236,6 +1236,13 @@ h3 {
   color: #f1d49f;
 }
 
+.guidance-helper-text {
+  color: #6b5a51;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  margin: -2px 0 4px;
+}
+
 .ai-guidance-card h3,
 .ai-guidance-card p {
   color: #fff8f3;
@@ -1262,6 +1269,35 @@ h3 {
 .ai-guidance-card li,
 .ai-guidance-card small {
   color: rgba(255, 248, 243, 0.86);
+}
+
+.guidance-next-step {
+  align-items: flex-start;
+  background: rgba(255, 248, 243, 0.12);
+  border: 1px solid rgba(247, 228, 198, 0.22);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  margin-top: 4px;
+  padding: 12px;
+}
+
+.guidance-next-step svg {
+  color: #f1d49f;
+  margin-top: 2px;
+}
+
+.guidance-next-step strong {
+  color: #fff8f3;
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+}
+
+.guidance-next-step p {
+  color: rgba(255, 248, 243, 0.86);
+  font-size: 0.92rem;
+  line-height: 1.42;
 }
 
 .mission-processing-panel,
@@ -1377,10 +1413,16 @@ h3 {
 }
 
 .section-heading {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: 12px;
   margin-bottom: 18px;
+}
+
+.library-support-copy {
+  color: #6b5a51;
+  margin: 4px 0 0;
+  max-width: 680px;
 }
 
 .material-grid {

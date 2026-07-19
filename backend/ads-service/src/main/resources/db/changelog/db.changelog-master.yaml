@@ -12,6 +12,9 @@ databaseChangeLog:
       file: changesets/2026-07-17-product-musa-checkout-monetization-no-public-price.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-19-product-musa-portuguese-accents.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-16-image-generation-request.yaml
       relativeToChangelogFile: true
   - include:

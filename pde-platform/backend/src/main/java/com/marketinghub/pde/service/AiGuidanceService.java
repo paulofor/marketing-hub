@@ -108,7 +108,7 @@ public class AiGuidanceService {
     public AiGuidanceResponse getGuidance(String token, String requestId) {
         StoredAiGuidance stored = getRequest(requestId);
         if (!stored.accessToken().equals(token)) {
-            throw new IllegalArgumentException("Orientacao PDE nao encontrada para este acesso");
+            throw new IllegalArgumentException("Orientação PDE não encontrada para este acesso");
         }
         return toResponse(stored);
     }
@@ -152,7 +152,7 @@ public class AiGuidanceService {
     /** Confirma que o tipo de orientação está no contrato fechado do produto. */
     private void validateGuidanceType(String guidanceType) {
         if (!ALLOWED_GUIDANCE_TYPES.contains(guidanceType)) {
-            throw new IllegalArgumentException("Tipo de orientacao PDE nao suportado: " + guidanceType);
+            throw new IllegalArgumentException("Tipo de orientação PDE não suportado: " + guidanceType);
         }
     }
 
@@ -160,7 +160,7 @@ public class AiGuidanceService {
     private void validateMissionBelongsToWorkspace(WorkspaceResponse workspace, String missionId) {
         boolean exists = workspace.product().missions().stream().anyMatch(mission -> mission.id().equals(missionId));
         if (!exists) {
-            throw new IllegalArgumentException("Missao PDE nao encontrada: " + missionId);
+            throw new IllegalArgumentException("Missão PDE não encontrada: " + missionId);
         }
     }
 
@@ -241,7 +241,7 @@ public class AiGuidanceService {
                 return loaded;
             }
         }
-        throw new IllegalArgumentException("Orientacao PDE nao encontrada");
+        throw new IllegalArgumentException("Orientação PDE não encontrada");
     }
 
     /** Normaliza status aceitos para resultado do worker. */
@@ -250,7 +250,7 @@ public class AiGuidanceService {
         if ("COMPLETED".equals(normalized) || "FAILED".equals(normalized)) {
             return normalized;
         }
-        throw new IllegalArgumentException("Status de orientacao PDE invalido: " + status);
+        throw new IllegalArgumentException("Status de orientação PDE inválido: " + status);
     }
 
     /** Informa se o backend PDE deve persistir orientações no MySQL. */
@@ -276,8 +276,8 @@ public class AiGuidanceService {
             Map<String, StoredAiGuidance> stored = objectMapper.readValue(storagePath.toFile(), STORE_TYPE);
             requestsById.putAll(stored);
         } catch (Exception ex) {
-            log.error("Falha ao carregar orientacoes PDE por IA em {}", storagePath, ex);
-            throw new IllegalStateException("Nao foi possivel carregar orientacoes PDE por IA", ex);
+            log.error("Falha ao carregar orientações PDE por IA em {}", storagePath, ex);
+            throw new IllegalStateException("Não foi possível carregar orientações PDE por IA", ex);
         }
     }
 
@@ -298,8 +298,8 @@ public class AiGuidanceService {
             }
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(storagePath.toFile(), requestsById);
         } catch (IOException ex) {
-            log.error("Falha ao persistir orientacoes PDE por IA em {}", storagePath, ex);
-            throw new IllegalStateException("Nao foi possivel persistir orientacao PDE por IA", ex);
+            log.error("Falha ao persistir orientações PDE por IA em {}", storagePath, ex);
+            throw new IllegalStateException("Não foi possível persistir orientação PDE por IA", ex);
         }
     }
 
@@ -319,8 +319,8 @@ public class AiGuidanceService {
                 requestsById.put(stored.requestId(), stored);
             }
         } catch (SQLException | IOException ex) {
-            log.error("Falha ao carregar orientacoes PDE por IA no banco", ex);
-            throw new IllegalStateException("Nao foi possivel carregar orientacoes PDE por IA no banco", ex);
+            log.error("Falha ao carregar orientações PDE por IA no banco", ex);
+            throw new IllegalStateException("Não foi possível carregar orientações PDE por IA no banco", ex);
         }
     }
 
@@ -334,8 +334,8 @@ public class AiGuidanceService {
                 return resultSet.next() ? fromResultSet(resultSet) : null;
             }
         } catch (SQLException | IOException ex) {
-            log.error("Falha ao buscar orientacao PDE por IA no banco; requestId={}", requestId, ex);
-            throw new IllegalStateException("Nao foi possivel buscar orientacao PDE por IA", ex);
+            log.error("Falha ao buscar orientação PDE por IA no banco; requestId={}", requestId, ex);
+            throw new IllegalStateException("Não foi possível buscar orientação PDE por IA", ex);
         }
     }
 
@@ -358,8 +358,8 @@ public class AiGuidanceService {
             requestsById.put(stored.requestId(), stored);
             return Optional.of(stored);
         } catch (SQLException | IOException ex) {
-            log.error("Falha ao buscar orientacao PDE pendente para worker", ex);
-            throw new IllegalStateException("Nao foi possivel buscar orientacao PDE pendente", ex);
+            log.error("Falha ao buscar orientação PDE pendente para worker", ex);
+            throw new IllegalStateException("Não foi possível buscar orientação PDE pendente", ex);
         }
     }
 
@@ -426,8 +426,8 @@ public class AiGuidanceService {
             }
             statement.executeUpdate();
         } catch (SQLException | IOException ex) {
-            log.error("Falha ao persistir orientacao PDE por IA no banco; requestId={}", request.requestId(), ex);
-            throw new IllegalStateException("Nao foi possivel persistir orientacao PDE por IA", ex);
+            log.error("Falha ao persistir orientação PDE por IA no banco; requestId={}", request.requestId(), ex);
+            throw new IllegalStateException("Não foi possível persistir orientação PDE por IA", ex);
         }
     }
 

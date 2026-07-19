@@ -60,13 +60,13 @@ public class AccessController {
         return accessService.loginCustomer(request.productSlug(), request.email());
     }
 
-    /** Envia um link magico para a cliente entrar sem senha na Área MUSA. */
+    /** Envia um link mágico para a cliente entrar sem senha na Área MUSA. */
     @PostMapping("/magic-link")
     public MagicLinkResponse requestMagicLink(@Valid @RequestBody AccessRequest request) {
         return accessService.requestMagicLink(request.productSlug(), request.email());
     }
 
-    /** Envia um link magico somente para cliente que já possui cadastro na Área MUSA. */
+    /** Envia um link mágico somente para cliente que já possui cadastro na Área MUSA. */
     @PostMapping("/login-link")
     public MagicLinkResponse requestLoginLink(@Valid @RequestBody AccessRequest request) {
         return accessService.requestExistingMagicLink(request.productSlug(), request.email());

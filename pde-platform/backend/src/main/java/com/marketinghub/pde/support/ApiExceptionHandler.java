@@ -27,7 +27,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleValidation(MethodArgumentNotValidException ex) {
-        log.warn("Falha de validacao na API PDE", ex);
-        return Map.of("error", "Entrada invalida para a API PDE");
+        log.warn("Falha de validação na API PDE", ex);
+        return Map.of("error", "Entrada inválida para a API PDE");
     }
 }

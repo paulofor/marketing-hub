@@ -137,7 +137,7 @@ class AccessServiceTest {
         assertThat(loginLink.accessUrl()).isEqualTo(firstAccess.accessUrl());
     }
 
-    /** Confirma que falha do provedor de e-mail nao quebra a criacao do acesso. */
+    /** Confirma que falha do provedor de e-mail não quebra a criação do acesso. */
     @Test
     void reportsEmailSendFailureWithoutBreakingAccessCreation() {
         ProductCatalogService productCatalogService = new ProductCatalogService();
@@ -234,7 +234,7 @@ class AccessServiceTest {
         assertThat(workspace.accessSource()).isEqualTo("PEPPER");
     }
 
-    /** Confirma que webhook Pepper aguardando pagamento nao libera acesso completo. */
+    /** Confirma que webhook Pepper aguardando pagamento não libera acesso completo. */
     @Test
     void rejectsPepperWebhookWithoutPaidStatus() {
         ProductCatalogService productCatalogService = new ProductCatalogService();
@@ -257,7 +257,7 @@ class AccessServiceTest {
         assertThrows(IllegalArgumentException.class, () -> accessService.receivePepperWebhook(request));
     }
 
-    /** Confirma que retry do checkout nao altera o acesso ativo existente. */
+    /** Confirma que retry do checkout não altera o acesso ativo existente. */
     @Test
     void keepsActiveSubscriptionStableOnCheckoutRetry() {
         ProductCatalogService productCatalogService = new ProductCatalogService();
@@ -468,7 +468,7 @@ class AccessServiceTest {
                 "Repita pele iluminada, off-white e perfume assinatura para criar reconhecimento sem esforço.",
                 List.of("Pele iluminada", "Off-white", "Perfume assinatura"),
                 List.of("Separe a base off-white antes de sair.", "Finalize com perfume no ultimo passo."),
-                "Nao compre nada novo antes de testar a repeticao por uma semana.",
+                "Não compre nada novo antes de testar a repetição por uma semana.",
                 "gpt-5.4-mini",
                 "flex",
                 "{\"model\":\"gpt-5.4-mini\"}",
@@ -505,7 +505,7 @@ class AccessServiceTest {
                 Map.of())));
     }
 
-    /** Simula provedor configurado que rejeita o envio do link magico. */
+    /** Simula provedor configurado que rejeita o envio do link mágico. */
     private static class FailingMailService extends PdeMailService {
 
         /** Inicializa o serviço falso com transporte configurado para testes. */

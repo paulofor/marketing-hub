@@ -1,6 +1,6 @@
 package com.marketinghub.pde.dto;
 
-/** Retorna o estado do envio do link magico da Área MUSA. */
+/** Retorna o estado do envio do link mágico da Área MUSA. */
 public record MagicLinkResponse(
         String productSlug,
         String email,

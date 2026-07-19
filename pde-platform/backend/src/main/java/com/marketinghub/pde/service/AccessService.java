@@ -141,7 +141,7 @@ public class AccessService {
         productCatalogService.getProduct(productSlug);
         AccessGrant grant = findGrantByEmail(productSlug, email);
         if (grant == null) {
-            throw new IllegalArgumentException("Cadastro da Area MUSA nao encontrado para este e-mail");
+            throw new IllegalArgumentException("Cadastro da Área MUSA não encontrado para este e-mail");
         }
         recordFunnelEvent(new FunnelEventRequest(
                 productSlug,
@@ -155,18 +155,18 @@ public class AccessService {
         return toAccessResponse(grant);
     }
 
-    /** Gera ou reutiliza o acesso e envia um link magico para o e-mail da cliente. */
+    /** Gera ou reutiliza o acesso e envia um link mágico para o e-mail da cliente. */
     public MagicLinkResponse requestMagicLink(String productSlug, String email) {
         AccessResponse access = createAccess(productSlug, email, "MAGIC_LINK");
         return sendAccessLink(productSlug, access.email(), access.accessUrl());
     }
 
-    /** Envia link magico apenas quando já existe cadastro para o e-mail informado. */
+    /** Envia link mágico apenas quando já existe cadastro para o e-mail informado. */
     public MagicLinkResponse requestExistingMagicLink(String productSlug, String email) {
         productCatalogService.getProduct(productSlug);
         AccessGrant grant = findGrantByEmail(productSlug, email);
         if (grant == null) {
-            throw new IllegalArgumentException("Cadastro da Area MUSA nao encontrado para este e-mail");
+            throw new IllegalArgumentException("Cadastro da Área MUSA não encontrado para este e-mail");
         }
         recordFunnelEvent(new FunnelEventRequest(
                 productSlug,
@@ -183,7 +183,7 @@ public class AccessService {
     /** Autentica ou cria acesso da cliente validada pelo Google. */
     public AccessResponse loginWithGoogle(String productSlug, String idToken) {
         if (googleIdentityService == null) {
-            throw new IllegalArgumentException("Login com Google ainda nao configurado para a Area MUSA");
+            throw new IllegalArgumentException("Login com Google ainda não configurado para a Área MUSA");
         }
         String verifiedEmail = googleIdentityService.verifyEmail(idToken);
         AccessResponse access = createAccess(productSlug, verifiedEmail, "GOOGLE");
@@ -208,7 +208,7 @@ public class AccessService {
             persistFunnelEventInDatabase(eventId, request, normalizedEventType);
         } else {
             log.info(
-                    "Evento PDE registrado sem persistencia JDBC; eventId={}, productSlug={}, eventType={}, accessToken={}",
+                    "Evento PDE registrado sem persistência JDBC; eventId={}, productSlug={}, eventType={}, accessToken={}",
                     eventId,
                     request.productSlug(),
                     normalizedEventType,
@@ -268,7 +268,7 @@ public class AccessService {
             }
         } catch (SQLException ex) {
             log.error("Falha ao consolidar analytics PDE; productSlug={}", productSlug, ex);
-            throw new IllegalStateException("Nao foi possivel consolidar analytics PDE", ex);
+            throw new IllegalStateException("Não foi possível consolidar analytics PDE", ex);
         }
         return emptyFunnelAnalytics(productSlug);
     }
@@ -336,7 +336,7 @@ public class AccessService {
         ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
         boolean missionExists = product.missions().stream().anyMatch(mission -> mission.id().equals(missionId));
         if (!missionExists) {
-            throw new IllegalArgumentException("Missao PDE nao encontrada: " + missionId);
+            throw new IllegalArgumentException("Missão PDE não encontrada: " + missionId);
         }
     }
 
@@ -379,7 +379,7 @@ public class AccessService {
     private AccessGrant getGrant(String token) {
         AccessGrant grant = accessByToken.get(token);
         if (grant == null) {
-            throw new IllegalArgumentException("Acesso PDE nao encontrado");
+            throw new IllegalArgumentException("Acesso PDE não encontrado");
         }
         return grant;
     }
@@ -433,7 +433,7 @@ public class AccessService {
                 return new MagicLinkResponse(productSlug, email, "SENT", null);
             } catch (RuntimeException ex) {
                 log.error(
-                        "Falha ao entregar link magico PDE; productSlug={}, email={}, accessUrl={}",
+                        "Falha ao entregar link mágico PDE; productSlug={}, email={}, accessUrl={}",
                         productSlug,
                         email,
                         accessUrl,
@@ -507,7 +507,7 @@ public class AccessService {
                 "AI_GUIDANCE_REQUESTED",
                 "MATERIAL_OPEN");
         if (!allowed.contains(normalized)) {
-            throw new IllegalArgumentException("Evento PDE nao suportado: " + eventType);
+            throw new IllegalArgumentException("Evento PDE não suportado: " + eventType);
         }
         return normalized;
     }
@@ -555,7 +555,7 @@ public class AccessService {
             stored.forEach((token, value) -> accessByToken.put(token, value.toAccessGrant(token)));
         } catch (Exception ex) {
             log.error("Falha ao carregar acessos PDE persistidos em {}", storagePath, ex);
-            throw new IllegalStateException("Nao foi possivel carregar acessos PDE persistidos", ex);
+            throw new IllegalStateException("Não foi possível carregar acessos PDE persistidos", ex);
         }
     }
 
@@ -579,7 +579,7 @@ public class AccessService {
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(storagePath.toFile(), stored);
         } catch (IOException ex) {
             log.error("Falha ao persistir acessos PDE em {}", storagePath, ex);
-            throw new IllegalStateException("Nao foi possivel persistir acesso PDE", ex);
+            throw new IllegalStateException("Não foi possível persistir acesso PDE", ex);
         }
     }
 
@@ -642,7 +642,7 @@ public class AccessService {
             builders.forEach((token, builder) -> accessByToken.put(token, builder.toAccessGrant(token)));
         } catch (SQLException ex) {
             log.error("Falha ao carregar acessos PDE no banco Marketing Hub", ex);
-            throw new IllegalStateException("Nao foi possivel carregar acessos PDE no banco Marketing Hub", ex);
+            throw new IllegalStateException("Não foi possível carregar acessos PDE no banco Marketing Hub", ex);
         }
     }
 
@@ -704,7 +704,7 @@ public class AccessService {
             connection.commit();
         } catch (SQLException ex) {
             log.error("Falha ao persistir acesso PDE no banco Marketing Hub; token={}", grant.getToken(), ex);
-            throw new IllegalStateException("Nao foi possivel persistir acesso PDE no banco Marketing Hub", ex);
+            throw new IllegalStateException("Não foi possível persistir acesso PDE no banco Marketing Hub", ex);
         }
     }
 
@@ -757,7 +757,7 @@ public class AccessService {
                     request.productSlug(),
                     eventType,
                     ex);
-            throw new IllegalStateException("Nao foi possivel persistir evento PDE no banco Marketing Hub", ex);
+            throw new IllegalStateException("Não foi possível persistir evento PDE no banco Marketing Hub", ex);
         }
     }
 

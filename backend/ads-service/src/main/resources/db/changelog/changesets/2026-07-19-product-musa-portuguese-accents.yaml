@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-19-product-musa-portuguese-accents.yaml
+  - changeSet:
+      id: 2026-07-19-product-musa-portuguese-accents-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: niche
+        - columnExists:
+            tableName: product
+            columnName: target_audience
+        - columnExists:
+            tableName: product
+            columnName: avatar
+        - columnExists:
+            tableName: product
+            columnName: language_style
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET niche = 'Mulheres urbanas - sofisticação acessível',
+                     target_audience = 'Mulheres urbanas que querem presença mais elegante, marcante e segura com escolhas acessíveis e sem esforço excessivo.',
+                     avatar = 'Mulheres que querem elevar imagem pessoal com passos simples, aplicáveis e emocionalmente prazerosos.',
+                     language_style = 'Elegante, íntimo, prático, feminino, direto, sem jargão técnico e com promessa de reduzir esforço.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias';

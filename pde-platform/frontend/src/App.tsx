@@ -793,7 +793,7 @@ function App() {
         new Promise((resolve) => window.setTimeout(resolve, 900)),
       ]);
       if (!response.ok) {
-        throw new Error('Nao foi possivel registrar a missao.');
+        throw new Error('Não foi possível registrar a missão.');
       }
       const data = await response.json();
       setWorkspace(data);

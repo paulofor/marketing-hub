@@ -47,7 +47,7 @@ public class PdeMailService {
         this.password = password;
     }
 
-    /** Informa se existe transporte configurado para envio de link magico. */
+    /** Informa se existe transporte configurado para envio de link mágico. */
     public boolean isConfigured() {
         if ("ses".equalsIgnoreCase(transport)) {
             return from != null && !from.isBlank();
@@ -58,7 +58,7 @@ public class PdeMailService {
     /** Envia o link de acesso da cliente para o e-mail informado. */
     public void sendMagicLink(String to, String accessUrl) {
         if (!isConfigured()) {
-            log.info("Envio de e-mail PDE nao configurado; link magico nao enviado para {}", to);
+            log.info("Envio de e-mail PDE não configurado; link mágico não enviado para {}", to);
             return;
         }
         if ("ses".equalsIgnoreCase(transport)) {
@@ -82,7 +82,7 @@ public class PdeMailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(from);
             message.setTo(to);
-            message.setSubject("Seu acesso ao Metodo MUSA");
+            message.setSubject("Seu acesso ao Método MUSA");
             message.setText(buildMagicLinkText(accessUrl));
             sender.send(message);
         } catch (RuntimeException ex) {
@@ -103,7 +103,7 @@ public class PdeMailService {
                             .simple(Message.builder()
                                     .subject(Content.builder()
                                             .charset("UTF-8")
-                                            .data("Seu acesso ao Metodo MUSA")
+                                            .data("Seu acesso ao Método MUSA")
                                             .build())
                                     .body(Body.builder()
                                             .text(Content.builder()
@@ -127,17 +127,17 @@ public class PdeMailService {
     }
 
     /** Monta o texto comercial do link de acesso da Área MUSA. */
-    private String buildMagicLinkText(String accessUrl) {
+    String buildMagicLinkText(String accessUrl) {
         return """
                 Oi,
 
-                Seu acesso ao Clube MUSA esta pronto.
+                Seu acesso ao Clube MUSA está pronto.
 
-                Entre por este link seguro para liberar seu diagnostico inicial e continuar o Dia 1 do Metodo MUSA:
+                Entre por este link seguro para liberar seu diagnóstico inicial e continuar o Dia 1 do Método MUSA:
 
                 %s
 
-                Se voce nao pediu este acesso, ignore este e-mail.
+                Se você não pediu este acesso, ignore este e-mail.
                 """.formatted(accessUrl);
     }
 }

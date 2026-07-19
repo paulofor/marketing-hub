@@ -20,7 +20,7 @@ public class ProductCatalogService {
     public ProductExperienceResponse getProduct(String slug) {
         ProductExperienceResponse product = products.get(slug);
         if (product == null) {
-            throw new IllegalArgumentException("Produto PDE nao encontrado: " + slug);
+            throw new IllegalArgumentException("Produto PDE não encontrado: " + slug);
         }
         return product;
     }

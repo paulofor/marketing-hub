@@ -23,6 +23,35 @@ Todo marco semanal do plano pode persistir metas numericas planejadas proprias:
 - `experiments_to_create`: quantidade de experimentos que devem ser criados ate o marco.
 - `experiments_to_publish`: quantidade de experimentos que devem ser publicados/validados ate o marco.
 
+## Regra canonica de metricas de funil no planejamento
+
+Planos mensais, marcos semanais e objetivos comerciais devem passar a usar metricas de funil como parte obrigatoria da decisao. O planejamento nao deve acompanhar apenas custo, receita e quantidade de experimentos; deve explicitar o volume esperado, executado e a conversao de cada etapa critica do caminho ate venda, liberacao de acesso e primeiro uso.
+
+O funil minimo para produtos digitais com acesso/autenticacao deve considerar:
+
+- Visualizacao do anuncio.
+- Clique no anuncio para o produto ou experiencia.
+- Entrada na tela inicial do produto ou experiencia.
+- Login ou criacao de conta.
+- Visualizacao da oferta de assinatura ou compra.
+- Clique no plano, checkout ou etapa equivalente de pagamento.
+- Assinatura, compra ou pagamento aprovado.
+- Acesso liberado.
+- Primeiro uso ou ativacao.
+
+Para cada etapa do funil usada em planejamento mensal, marco semanal ou objetivo, os relatorios e telas devem favorecer campos estruturados:
+
+- `planned_total`: volume planejado para a etapa.
+- `actual_total`: volume executado na etapa.
+- `conversion_from_previous_step`: percentual vs. etapa anterior.
+- `cost_per_conversion`: custo por conversao da etapa quando houver custo atribuivel.
+- `unique_count`: quantidade de usuarios/leads unicos quando a fonte permitir deduplicacao.
+- `last_event_at`: data/hora do ultimo evento usado no calculo.
+
+Objetivos comerciais devem ser formulados em termos de gargalo de funil, nao apenas em termos de entrega operacional. Exemplo: "aumentar clique no checkout", "reduzir queda entre login e oferta", "elevar primeiro uso apos acesso liberado" ou "validar custo aceitavel por assinatura aprovada".
+
+Quando o produto ou experimento nao possuir alguma etapa do funil minimo, o planejamento deve declarar a etapa equivalente ou marcar a etapa como nao aplicavel. Nao se deve remover silenciosamente a etapa, para manter comparacao mensal, semanal e entre produtos.
+
 ## Regra canonica de executado
 
 O planejamento deve separar claramente planejado de executado. O usuario edita as metas planejadas; o backend atualiza os valores executados a partir das fontes operacionais persistidas.

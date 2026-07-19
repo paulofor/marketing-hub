@@ -23,6 +23,9 @@ public class ProductDto {
     private String primaryHypothesis;
     private String associatedExperiments;
     private String commercialNotes;
+    private String sevenDayJourney;
+    private String supportMaterialPositioning;
+    private String primaryCta;
     private String niche;
     private String avatar;
     private Long instagramAccountId;

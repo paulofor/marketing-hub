@@ -90,6 +90,20 @@ public class Product {
     @Column(name = "commercial_notes", columnDefinition = "LONGTEXT")
     private String commercialNotes;
 
+    /** Jornada comercial resumida que tangibiliza a transformação do produto dia a dia. */
+    @Lob
+    @Column(name = "seven_day_journey", columnDefinition = "LONGTEXT")
+    private String sevenDayJourney;
+
+    /** Orientação comercial sobre como apresentar materiais de apoio sem reduzir valor percebido. */
+    @Lob
+    @Column(name = "support_material_positioning", columnDefinition = "LONGTEXT")
+    private String supportMaterialPositioning;
+
+    /** Chamada principal recomendada para a ação de compra ou avanço no funil. */
+    @Column(name = "primary_cta", length = 191)
+    private String primaryCta;
+
     private String niche;
     private String avatar;
 

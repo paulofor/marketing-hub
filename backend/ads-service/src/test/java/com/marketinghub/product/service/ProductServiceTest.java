@@ -36,6 +36,9 @@ class ProductServiceTest {
         request.setCurrentPriceBrl(new BigDecimal("47.00"));
         request.setTargetAudience("Mulheres urbanas");
         request.setScientificEvidencePack("Evidence Pack MUSA v1");
+        request.setSevenDayJourney("Dia 1: diagnóstico; Dia 2: limpeza visual.");
+        request.setSupportMaterialPositioning("Material de apoio como reforço secundário.");
+        request.setPrimaryCta("Ver meu plano MUSA de 7 dias");
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
         when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
@@ -48,6 +51,9 @@ class ProductServiceTest {
         assertThat(updated.getCurrentPriceBrl()).isEqualByComparingTo("47.00");
         assertThat(updated.getTargetAudience()).isEqualTo(request.getTargetAudience());
         assertThat(updated.getScientificEvidencePack()).isEqualTo("Evidence Pack MUSA v1");
+        assertThat(updated.getSevenDayJourney()).isEqualTo("Dia 1: diagnóstico; Dia 2: limpeza visual.");
+        assertThat(updated.getSupportMaterialPositioning()).isEqualTo("Material de apoio como reforço secundário.");
+        assertThat(updated.getPrimaryCta()).isEqualTo("Ver meu plano MUSA de 7 dias");
         assertThat(updated.getMarketNiche()).isSameAs(niche);
     }
 
@@ -75,6 +81,10 @@ class ProductServiceTest {
                 .languageStyle("Sofisticada, prática e acolhedora.")
                 .colorPalette("1. Vinho MUSA #7A2444; 2. Dourado #D6A75C; 3. Creme #FFF8F3; 4. Grafite #2F2A2C; 5. Blush #F3C9C1; 6. Oliva #6F7A52; 7. Champanhe #F7E4C6.")
                 .tripwire("Experiência guiada de 7 dias com diagnóstico, missões, checklists e templates.")
+                .sevenDayJourney("- **Dia 1 — Diagnóstico de presença:** identificar ruído visual.\n"
+                        + "- **Dia 2 — Limpeza de ruído visual:** remover excessos sem comprar nada novo.")
+                .supportMaterialPositioning("Material de apoio aparece como reforço secundário da jornada.")
+                .primaryCta("Ver meu plano MUSA de 7 dias")
                 .socialProof("Prova científica, prova visual e experimento 66.")
                 .scientificEvidencePack("Evidence Pack MUSA v1: princípios permitidos, linguagem permitida, afirmações proibidas e referências científicas.")
                 .funnel("Anúncio → login → experiência gratuita → paywall → compra.")
@@ -96,6 +106,13 @@ class ProductServiceTest {
         assertThat(markdown).contains("Paleta visual completa");
         assertThat(markdown).contains("7. Champanhe #F7E4C6");
         assertThat(markdown).contains("Experiência guiada de 7 dias");
+        assertThat(markdown).contains("Material de apoio aparece como reforço secundário da jornada.");
+        assertThat(markdown).contains("CTA principal recomendado");
+        assertThat(markdown).contains("Ver meu plano MUSA de 7 dias");
+        assertThat(markdown).contains("## 7. Jornada de 7 dias");
+        assertThat(markdown).contains("Dia 1 — Diagnóstico de presença");
+        assertThat(markdown).contains("Dia 2 — Limpeza de ruído visual");
+        assertThat(markdown).contains("## 8. Funil de aquisição e venda");
         assertThat(markdown).contains("Prova científica");
         assertThat(markdown).contains("Base científica operacional");
         assertThat(markdown).contains("afirmações proibidas");

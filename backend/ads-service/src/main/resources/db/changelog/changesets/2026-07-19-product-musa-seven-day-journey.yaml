@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-19-product-musa-seven-day-journey.yaml
+  - changeSet:
+      id: 2026-07-19-product-musa-seven-day-journey-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - not:
+            columnExists:
+              tableName: product
+              columnName: seven_day_journey
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN seven_day_journey LONGTEXT NULL AFTER commercial_notes,
+                ADD COLUMN support_material_positioning LONGTEXT NULL AFTER seven_day_journey,
+                ADD COLUMN primary_cta VARCHAR(191) NULL AFTER support_material_positioning;
+  - changeSet:
+      id: 2026-07-19-product-musa-seven-day-journey-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: seven_day_journey
+        - columnExists:
+            tableName: product
+            columnName: support_material_positioning
+        - columnExists:
+            tableName: product
+            columnName: primary_cta
+        - columnExists:
+            tableName: product
+            columnName: tripwire
+        - columnExists:
+            tableName: product
+            columnName: updated_at
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET seven_day_journey = '- **Dia 1 — Diagnóstico de presença:** identificar o que hoje deixa sua imagem comum, apagada ou desalinhada.
+              - **Dia 2 — Limpeza de ruído visual:** remover excessos que atrapalham elegância sem comprar nada novo.
+              - **Dia 3 — Peça-sinal:** escolher um elemento simples que comunique intenção e sofisticação.
+              - **Dia 4 — Combinação inteligente:** montar looks mais coerentes com o que já existe no guarda-roupa.
+              - **Dia 5 — Cor e acabamento:** ajustar detalhes que aumentam percepção de cuidado.
+              - **Dia 6 — Presença e postura:** alinhar visual, segurança e comportamento.
+              - **Dia 7 — Fórmula MUSA pessoal:** consolidar um jeito repetível de se arrumar com menos dúvida.',
+                     support_material_positioning = 'Material de apoio deve aparecer como reforço secundário, não como promessa central. A venda principal deve enfatizar diagnóstico, ajuste personalizado e jornada guiada de 7 dias; checklists, templates, exemplos visuais, biblioteca e baixáveis entram como apoio para consultar depois das missões.',
+                     primary_cta = 'Ver meu plano MUSA de 7 dias',
+                     tripwire = 'Acesso ao Método MUSA como Produto Digital Experiencial: diagnóstico inicial, ajuste personalizado e jornada guiada de 7 dias com missões diárias. Checklists, templates de decisão, exemplos visuais, biblioteca e materiais baixáveis entram como apoio secundário para aplicar a presença elegante com baixo esforço.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias';

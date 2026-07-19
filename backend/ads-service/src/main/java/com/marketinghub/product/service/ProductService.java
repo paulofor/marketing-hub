@@ -69,6 +69,9 @@ public class ProductService {
         product.setPrimaryHypothesis(request.getPrimaryHypothesis());
         product.setAssociatedExperiments(request.getAssociatedExperiments());
         product.setCommercialNotes(request.getCommercialNotes());
+        product.setSevenDayJourney(request.getSevenDayJourney());
+        product.setSupportMaterialPositioning(request.getSupportMaterialPositioning());
+        product.setPrimaryCta(request.getPrimaryCta());
         product.setNiche(request.getNiche());
         product.setAvatar(request.getAvatar());
         product.setInstagramAccount(resolveAccount(request.getInstagramAccountId()));
@@ -147,13 +150,17 @@ public class ProductService {
                 line("Reversão de risco", product.getRiskReversal()),
                 line("Prova", product.getSocialProof()),
                 optionalLine("Base científica operacional", product.getScientificEvidencePack()),
+                optionalLine("Material de apoio", product.getSupportMaterialPositioning()),
+                optionalLine("CTA principal recomendado", product.getPrimaryCta()),
                 line("Checkout e monetização", product.getCheckoutMonetization()));
-        appendSection(markdown, "7. Funil de aquisição e venda",
+        appendSection(markdown, "7. Jornada de 7 dias",
+                paragraph(product.getSevenDayJourney()));
+        appendSection(markdown, "8. Funil de aquisição e venda",
                 paragraph(product.getFunnel()));
-        appendSection(markdown, "8. Criativos e escala",
+        appendSection(markdown, "9. Criativos e escala",
                 line("Volume criativo esperado", product.getCreativeVolume()),
                 line("Experimentos associados", product.getAssociatedExperiments()));
-        appendSection(markdown, "9. Aprendizados e próximos ajustes de marketing",
+        appendSection(markdown, "10. Aprendizados e próximos ajustes de marketing",
                 paragraph(product.getCommercialNotes()));
         return markdown.toString();
     }

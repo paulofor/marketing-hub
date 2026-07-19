@@ -24,11 +24,20 @@ class ProductRepositoryTest {
                 .promise("More vitality in 30 days")
                 .uniqueMechanism("Special diet")
                 .scientificEvidencePack("Evidence Pack v1")
+                .sevenDayJourney("Dia 1: diagnóstico")
+                .supportMaterialPositioning("Apoio secundário")
+                .primaryCta("Começar agora")
                 .aiCost(java.math.BigDecimal.TEN)
                 .build();
         repository.save(product);
         assertThat(repository.findById(product.getId())).isPresent();
         assertThat(repository.findById(product.getId()).orElseThrow().getScientificEvidencePack())
                 .isEqualTo("Evidence Pack v1");
+        assertThat(repository.findById(product.getId()).orElseThrow().getSevenDayJourney())
+                .isEqualTo("Dia 1: diagnóstico");
+        assertThat(repository.findById(product.getId()).orElseThrow().getSupportMaterialPositioning())
+                .isEqualTo("Apoio secundário");
+        assertThat(repository.findById(product.getId()).orElseThrow().getPrimaryCta())
+                .isEqualTo("Começar agora");
     }
 }

@@ -34,6 +34,9 @@ const defaultForm: ProductFormValues = {
   primaryHypothesis: "",
   associatedExperiments: "",
   commercialNotes: "",
+  sevenDayJourney: "",
+  supportMaterialPositioning: "",
+  primaryCta: "",
   niche: "",
   marketNicheId: "",
   avatar: "",
@@ -44,6 +47,7 @@ const defaultForm: ProductFormValues = {
   tripwire: "",
   riskReversal: "",
   socialProof: "",
+  scientificEvidencePack: "",
   checkoutMonetization: "",
   funnel: "",
   creativeVolume: "",
@@ -69,6 +73,9 @@ function toFormValues(product?: Product): ProductFormValues {
     primaryHypothesis: product.primaryHypothesis ?? "",
     associatedExperiments: product.associatedExperiments ?? "",
     commercialNotes: product.commercialNotes ?? "",
+    sevenDayJourney: product.sevenDayJourney ?? "",
+    supportMaterialPositioning: product.supportMaterialPositioning ?? "",
+    primaryCta: product.primaryCta ?? "",
     niche: product.niche ?? "",
     marketNicheId:
       product.marketNicheId != null ? String(product.marketNicheId) : "",
@@ -83,6 +90,7 @@ function toFormValues(product?: Product): ProductFormValues {
     tripwire: product.tripwire ?? "",
     riskReversal: product.riskReversal ?? "",
     socialProof: product.socialProof ?? "",
+    scientificEvidencePack: product.scientificEvidencePack ?? "",
     checkoutMonetization: product.checkoutMonetization ?? "",
     funnel: product.funnel ?? "",
     creativeVolume: product.creativeVolume ?? "",
@@ -235,10 +243,17 @@ export default function ProductForm({
             <dd>{form.promise || form.primaryHypothesis || "Não definida"}</dd>
           </div>
         </dl>
-        <button className="btn btn-primary w-100" onClick={submit} disabled={isSaving}>
+        <button
+          className="btn btn-primary w-100"
+          onClick={submit}
+          disabled={isSaving}
+        >
           {isSaving ? (
             <>
-              <Loader2 className="product-editor__button-icon spinning" size={16} />
+              <Loader2
+                className="product-editor__button-icon spinning"
+                size={16}
+              />
               Salvando...
             </>
           ) : (
@@ -322,8 +337,9 @@ export default function ProductForm({
                     ...form,
                     marketNicheId: e.target.value,
                     niche:
-                      niches.find((niche) => String(niche.id) === e.target.value)
-                        ?.name ?? "",
+                      niches.find(
+                        (niche) => String(niche.id) === e.target.value,
+                      )?.name ?? "",
                   })
                 }
               >
@@ -336,7 +352,10 @@ export default function ProductForm({
               </select>
             </div>
             <div className="product-editor-field">
-              <label className="form-label" htmlFor="product-instagramAccountId">
+              <label
+                className="form-label"
+                htmlFor="product-instagramAccountId"
+              >
                 Conta do Instagram
               </label>
               <select
@@ -380,7 +399,10 @@ export default function ProductForm({
           />
         </ProductEditorSection>
 
-        <ProductEditorSection icon={BadgeDollarSign} title="Oferta e monetização">
+        <ProductEditorSection
+          icon={BadgeDollarSign}
+          title="Oferta e monetização"
+        >
           <ProductField
             field="primaryHypothesis"
             label="Hipótese/oferta principal"
@@ -408,7 +430,7 @@ export default function ProductForm({
             />
             <ProductField
               field="tripwire"
-              label="Oferta tripwire"
+              label="Oferta principal"
               multiline
               rows={4}
               value={form.tripwire}
@@ -431,6 +453,30 @@ export default function ProductForm({
             value={form.riskReversal}
             onChange={setField}
           />
+          <ProductField
+            field="sevenDayJourney"
+            label="Jornada de 7 dias"
+            multiline
+            rows={8}
+            value={form.sevenDayJourney}
+            onChange={setField}
+          />
+          <div className="product-editor-grid product-editor-grid--2">
+            <ProductField
+              field="primaryCta"
+              label="CTA principal"
+              value={form.primaryCta}
+              onChange={setField}
+            />
+            <ProductField
+              field="supportMaterialPositioning"
+              label="Posicionamento do material de apoio"
+              multiline
+              rows={4}
+              value={form.supportMaterialPositioning}
+              onChange={setField}
+            />
+          </div>
         </ProductEditorSection>
 
         <ProductEditorSection icon={Megaphone} title="Comunicação e criativos">
@@ -468,6 +514,14 @@ export default function ProductForm({
               onChange={setField}
             />
           </div>
+          <ProductField
+            field="scientificEvidencePack"
+            label="Base científica operacional"
+            multiline
+            rows={5}
+            value={form.scientificEvidencePack}
+            onChange={setField}
+          />
         </ProductEditorSection>
 
         <ProductEditorSection icon={Brush} title="Identidade visual e canais">

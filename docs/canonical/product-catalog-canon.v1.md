@@ -38,7 +38,7 @@ O primeiro produto cadastrado é o Método MUSA - Presença Elegante em 7 Dias.
 - URL pública: `http://191.252.102.54:5176/`.
 - Tipo: PDE - Produto Digital Experiencial.
 - Status: validação comercial.
-- Preço atual: R$47.
+- Preço atual: R$67.
 - Experimento associado inicial: Experimento 66.
 - Hipótese/oferta principal: mulher quer parecer mais elegante e marcante sem gastar com luxo, trocar o guarda-roupa inteiro ou depender de compras impulsivas.
 - Pacote científico operacional inicial: `musa-evidence-pack-v1`, baseado em cognição vestida, percepção social, primeiras impressões e roupa como componente da percepção de pessoa. O pacote deve orientar a Consultora MUSA a transformar as referências em microações de presença elegante, limitar promessas e evitar garantias universais de resultado.

@@ -27,6 +27,10 @@ function isMusaProduct(product: { slug?: string; name?: string }) {
   );
 }
 
+function cleanJourneyItem(value: string) {
+  return value.replace(/^- /, "").replace(/\*\*/g, "");
+}
+
 function extractHexColor(value: string) {
   return value.match(/#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/)?.[0];
 }
@@ -201,6 +205,10 @@ export default function ProductListPage() {
                             "Nenhum experimento vinculado"}
                         </dd>
                       </div>
+                      <div>
+                        <dt>CTA principal</dt>
+                        <dd>{product.primaryCta || "Não definido"}</dd>
+                      </div>
                     </dl>
                     {product.slug && (
                       <p className="product-catalog-card__description-links">
@@ -256,6 +264,16 @@ export default function ProductListPage() {
                           product.storytelling ||
                           "Não informada"}
                       </p>
+                      {product.sevenDayJourney && (
+                        <>
+                          <h3 className="h6 mt-3">Jornada de 7 dias</h3>
+                          <ul className="product-catalog-card__journey">
+                            {splitText(product.sevenDayJourney).map((item) => (
+                              <li key={item}>{cleanJourneyItem(item)}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
                       {colors.length > 0 && (
                         <>
                           <div className="product-catalog-card__color-heading">

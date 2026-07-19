@@ -195,6 +195,17 @@
   margin-top: 0.55rem;
 }
 
+.product-catalog-card__journey {
+  color: #4f4549;
+  font-size: 0.92rem;
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.product-catalog-card__journey li {
+  margin-bottom: 0.45rem;
+}
+
 .product-catalog-card__color-role {
   align-items: center;
   background: #ffffff;

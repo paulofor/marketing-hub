@@ -17,6 +17,9 @@ export interface CreateProduct {
   primaryHypothesis?: string;
   associatedExperiments?: string;
   commercialNotes?: string;
+  sevenDayJourney?: string;
+  supportMaterialPositioning?: string;
+  primaryCta?: string;
   niche: string;
   marketNicheId?: number;
   avatar: string;
@@ -27,6 +30,7 @@ export interface CreateProduct {
   tripwire: string;
   riskReversal: string;
   socialProof: string;
+  scientificEvidencePack?: string;
   checkoutMonetization: string;
   funnel: string;
   creativeVolume: string;

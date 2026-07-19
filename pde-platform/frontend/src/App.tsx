@@ -219,14 +219,14 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     guidanceType: 'MUSA_DAY_1_PRESENCE_DIAGNOSIS',
     kicker: 'Consultora MUSA',
     title: 'Conte sua situação real para a Consultora MUSA apontar seu primeiro ajuste de presença.',
-    helperText: 'Depois de enviar, você recebe uma orientação personalizada com sinais e microações. Em seguida, execute o ajuste indicado e registre o Dia 1 como concluído.',
-    buttonLabel: 'Ver meu diagnóstico personalizado',
-    loadingLabel: 'Preparando seu diagnóstico...',
-    pendingLabel: 'Sua Consultora MUSA está preparando uma orientação curta com o ajuste mais importante para hoje.',
+    helperText: 'Depois de enviar, você vê seu diagnóstico personalizado, recebe o primeiro ajuste de presença e sabe exatamente qual microação aplicar hoje.',
+    buttonLabel: 'Ver meu plano MUSA de 7 dias',
+    loadingLabel: 'Preparando seu plano MUSA...',
+    pendingLabel: 'Sua Consultora MUSA está preparando seu diagnóstico e o primeiro ajuste prático para hoje.',
     failedLabel: 'Suas respostas ficaram salvas. Use a missão do Dia 1 manualmente enquanto a consultora automática é configurada.',
     completedKicker: 'Meu ajuste MUSA',
     nextStepTitle: 'O que fazer agora',
-    nextStepText: 'Escolha uma das microações acima, aplique hoje no espelho ou antes de sair e depois toque em “Registrar Dia 1 concluído” para abrir o próximo passo da jornada.',
+    nextStepText: 'Aplique hoje uma das microações indicadas. Depois volte aqui e toque em “Registrar Dia 1 concluído” para liberar o próximo passo da sua jornada.',
     fields: [
       {
         key: 'presenceFocus',
@@ -1092,7 +1092,7 @@ function App() {
                 <Mail size={18} />
                 {loading
                   ? 'Enviando link...'
-                  : (authMode === 'login' ? 'Receber link de entrada' : 'Solicitar primeiro acesso')}
+                  : (authMode === 'login' ? 'Receber link de entrada' : 'Começar meu diagnóstico gratuito')}
               </button>
             )}
             <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
@@ -1109,8 +1109,8 @@ function App() {
               <ChevronRight size={22} />
             </div>
             <p className="access-note">
-              O login libera a primeira parte da experiência. Dias 2 a 7, biblioteca e materiais
-              premium aparecem dentro da área e são desbloqueados com o acesso completo.
+              O login libera a primeira parte da experiência. O acesso completo desbloqueia o plano guiado
+              dos Dias 2 a 7, com apoio de consulta apenas quando você precisar revisar algum detalhe.
             </p>
           </div>
           <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA" data-analytics-section="musa_product_preview">
@@ -1141,9 +1141,9 @@ function App() {
               <span>Entre, veja seu primeiro diagnóstico e descubra o próximo ajuste que pode mudar sua presença.</span>
             </div>
             <div className="login-unlock-list" aria-label="Prévia da experiência MUSA">
+              <span><Target size={16} /> Diagnóstico personalizado</span>
               <span><CalendarDays size={16} /> 7 missões guiadas</span>
-              <span><BookOpen size={16} /> Biblioteca de apoio</span>
-              <span><Target size={16} /> Checklists práticos</span>
+              <span><Sparkles size={16} /> Ajustes práticos para hoje</span>
             </div>
           </div>
         </section>
@@ -1233,10 +1233,10 @@ function App() {
           <p>Nomeie o que hoje deixa você arrumada, mas pouco marcante.</p>
         </article>
         <article className="status-card">
-          <Library size={20} />
-          <span>Biblioteca</span>
-          <strong>{currentProduct.supportMaterials.length} materiais</strong>
-          <p>E-book, experiência guiada e arquivos de apoio.</p>
+          <CalendarDays size={20} />
+          <span>Plano guiado</span>
+          <strong>7 dias</strong>
+          <p>Diagnóstico, microações e próximos passos em sequência.</p>
         </article>
         <article className="status-card">
           <KeyRound size={20} />
@@ -1250,14 +1250,15 @@ function App() {
         <section className="subscription-paywall" aria-label="Oferta de assinatura MUSA" data-analytics-section="subscription_paywall">
           <div>
             <p className="section-kicker">Liberar área completa</p>
-            <h2>Assine o Clube MUSA para acessar todas as missões, biblioteca e próximos desafios.</h2>
+            <h2>Assine o Clube MUSA para continuar seu plano personalizado dos 7 dias.</h2>
             <p>
-              Seu login já salvou a entrada na área. A assinatura remove o bloqueio e permite continuar a experiência completa.
+              Seu diagnóstico inicial já mostrou o primeiro ajuste. O acesso completo libera os próximos dias,
+              a sequência de microações e o acompanhamento para transformar isso em presença repetível.
             </p>
           </div>
           <button className="primary-button" onClick={handleSubscriptionClick}>
             <CreditCard size={18} />
-            Solicitar acesso pago
+            Liberar meu plano de 7 dias
           </button>
         </section>
       )}
@@ -1269,8 +1270,8 @@ function App() {
           </div>
           <div>
             <p className="eyebrow">Roteiro guiado</p>
-            <h2>Diagnóstico, missão e materiais de apoio</h2>
-            <p>Depois de iniciar o Dia 1, use o diagnóstico e a biblioteca apenas como apoio para executar sem se perder.</p>
+            <h2>Diagnóstico e plano de 7 dias</h2>
+            <p>Responda, receba seu ajuste e siga a próxima microação indicada pela jornada.</p>
           </div>
         </div>
       </section>
@@ -1313,7 +1314,7 @@ function App() {
               {!hasActiveSubscription && (
                 <div className="trial-unlock-note">
                   <Sparkles size={17} />
-                  <span>O Dia 1 está liberado gratuitamente. Dias 2 a 7 e biblioteca premium aparecem depois do acesso completo.</span>
+                  <span>O Dia 1 está liberado gratuitamente. Dias 2 a 7 aparecem depois do acesso completo.</span>
                 </div>
               )}
               <button className="inline-action" onClick={() => openMission(firstMission.id, 'start_here_open')}>
@@ -1499,22 +1500,25 @@ function App() {
         </section>
       </section>
 
-      <section className="library-section">
-        <div className="section-heading">
-          <Library size={22} />
-          <div>
-            <p className="section-kicker">Biblioteca da cliente</p>
-            <h2>Materiais de apoio do método</h2>
+      {hasActiveSubscription && (
+        <section className="library-section">
+          <div className="section-heading">
+            <Library size={22} />
+            <div>
+              <p className="section-kicker">Apoio de consulta</p>
+              <h2>Use só quando precisar revisar</h2>
+              <p className="library-support-copy">
+                O coração do MUSA é a jornada guiada. Estes arquivos ficam como apoio secundário para consultar depois da missão.
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="material-grid">
-          {currentProduct.supportMaterials.map((material) => (
-            <article className="material-card" key={material.title}>
-              <BookOpen size={20} />
-              <span>{material.type}</span>
-              <h3>{material.title}</h3>
-              <p>{material.description}</p>
-              {hasActiveSubscription ? (
+          <div className="material-grid">
+            {currentProduct.supportMaterials.map((material) => (
+              <article className="material-card" key={material.title}>
+                <BookOpen size={20} />
+                <span>{material.type}</span>
+                <h3>{material.title}</h3>
+                <p>{material.description}</p>
                 <a
                   href={material.url}
                   target="_blank"
@@ -1531,16 +1535,11 @@ function App() {
                 >
                   Abrir material
                 </a>
-              ) : (
-                <button className="inline-action" onClick={handleSubscriptionClick}>
-                  <Lock size={16} />
-                  Liberar com assinatura
-                </button>
-              )}
-            </article>
-          ))}
-        </div>
-      </section>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="completion-band">
         <Sparkles size={22} />

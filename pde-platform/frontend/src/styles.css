@@ -1413,10 +1413,16 @@ h3 {
 }
 
 .section-heading {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: 12px;
   margin-bottom: 18px;
+}
+
+.library-support-copy {
+  color: #6b5a51;
+  margin: 4px 0 0;
+  max-width: 680px;
 }
 
 .material-grid {

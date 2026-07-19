@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendUrl = (process.env.PDE_BACKEND_URL ?? 'http://pde-platform-backend:8096').replace(/\/+$/, '');
 const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '4000');
 const openaiModel = process.env.OPENAI_MODEL ?? 'gpt-5.4-mini';
-const openaiApiKey = process.env.OPENAI_API_KEY ?? '';
+const openaiApiKey = await resolveOpenAiApiKey();
 const promptDefinitions = {
   MUSA_DAY_1_PRESENCE_DIAGNOSIS: {
     dir: path.resolve(__dirname, '../prompts/musa-daily-guidance'),
@@ -75,6 +75,21 @@ async function processNextPending() {
       errorMessage: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+async function resolveOpenAiApiKey() {
+  const keyFile = process.env.OPENAI_API_KEY_FILE ?? '/run/secrets/openai_api_key';
+  try {
+    const fileKey = (await fs.readFile(keyFile, 'utf8')).trim();
+    if (fileKey) {
+      return fileKey;
+    }
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      console.warn(`Nao foi possivel ler OPENAI_API_KEY_FILE em ${keyFile}; usando fallback por variavel de ambiente`, error);
+    }
+  }
+  return (process.env.OPENAI_API_KEY ?? '').trim();
 }
 
 async function generateGuidance(execution) {

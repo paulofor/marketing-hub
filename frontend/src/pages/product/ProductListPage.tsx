@@ -183,6 +183,22 @@ export default function ProductListPage() {
                         </dd>
                       </div>
                       <div>
+                        <dt>Logo</dt>
+                        <dd>
+                          {product.logoUrl ? (
+                            <a
+                              href={product.logoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {product.logoUrl}
+                            </a>
+                          ) : (
+                            "Não informado"
+                          )}
+                        </dd>
+                      </div>
+                      <div>
                         <dt>Público alvo</dt>
                         <dd>
                           {product.targetAudience ||

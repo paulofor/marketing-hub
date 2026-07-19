@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-19-product-musa-logo-and-ai-positioning.yaml
+  - changeSet:
+      id: 2026-07-19-product-musa-logo-and-ai-positioning-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - not:
+            columnExists:
+              tableName: product
+              columnName: logo_url
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN logo_url VARCHAR(512) NULL AFTER public_url;
+  - changeSet:
+      id: 2026-07-19-product-musa-logo-and-ai-positioning-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: logo_url
+        - columnExists:
+            tableName: product
+            columnName: scientific_evidence_pack
+        - columnExists:
+            tableName: product
+            columnName: updated_at
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET logo_url = 'https://clubemusa.com.br/assets/logo-musa.svg',
+                     scientific_evidence_pack = 'Evidence Pack MUSA v1: princípios permitidos: roupa pode influenciar autopercepção e comportamento situacional; escolhas de vestimenta, formalidade e acabamento participam da percepção social e dos primeiros julgamentos; coerência visual, intenção e repetição de sinais podem reduzir ruído percebido e facilitar reconhecimento pessoal. Uso de IA no produto: a IA deve atuar como assistente de personalização e síntese prática, associando as respostas da usuária aos princípios extraídos dos artigos científicos citados para sugerir microações de roupa, cor, acabamento, postura e detalhe final; a IA não deve apresentar diagnóstico clínico, garantia de resultado universal ou afirmação científica além das evidências cadastradas. Aplicações práticas: transformar os princípios em microdecisões de roupa, cor, acabamento, postura e detalhe final; orientar uso do que a cliente já possui antes de compra nova; tratar presença elegante como percepção e coerência, não como garantia universal de aprovação externa. Linguagem permitida: isso ajuda você a comunicar mais intenção; pode reduzir ruído visual; favorece uma presença mais coerente; ajuda você a se sentir mais alinhada com a imagem que quer transmitir; a IA usa suas respostas para adaptar a orientação aos princípios científicos permitidos. Afirmações proibidas: garante elegância; muda como todos vão te ver; transforma sua personalidade; efeito comprovado em qualquer pessoa; substitui autoestima, terapia ou consultoria individual; a IA prova cientificamente qual roupa você deve usar. Referências: Adam e Galinsky (2012), Enclothed cognition, Journal of Experimental Social Psychology, DOI 10.1016/j.jesp.2012.02.008; Slepian, Ferber, Gold e Rutchick (2015), The Cognitive Consequences of Formal Clothing, Social Psychological and Personality Science, DOI 10.1177/1948550615579462; Howlett, Pine, Orakcioglu e Fletcher (2013), The influence of clothing on first impressions, Journal of Fashion Marketing and Management, DOI 10.1108/13612021311305128; Hester e Hehman (2023), Dress is a Fundamental Component of Person Perception, Personality and Social Psychology Review, DOI 10.1177/10888683231157961.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias';

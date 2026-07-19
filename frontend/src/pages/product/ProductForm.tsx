@@ -23,6 +23,7 @@ const defaultForm: ProductFormValues = {
   slug: "",
   name: "",
   publicUrl: "",
+  logoUrl: "",
   colorPalette: "",
   targetAudience: "",
   languageStyle: "",
@@ -61,6 +62,7 @@ function toFormValues(product?: Product): ProductFormValues {
     slug: product.slug ?? "",
     name: product.name ?? "",
     publicUrl: product.publicUrl ?? "",
+    logoUrl: product.logoUrl ?? "",
     colorPalette: product.colorPalette ?? "",
     targetAudience: product.targetAudience ?? "",
     languageStyle: product.languageStyle ?? "",
@@ -298,6 +300,13 @@ export default function ProductForm({
               label="URL pública"
               inputMode="url"
               value={form.publicUrl}
+              onChange={setField}
+            />
+            <ProductField
+              field="logoUrl"
+              label="URL do logo"
+              inputMode="url"
+              value={form.logoUrl}
               onChange={setField}
             />
             <ProductField

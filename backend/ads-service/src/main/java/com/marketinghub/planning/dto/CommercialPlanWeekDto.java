@@ -14,5 +14,6 @@ public record CommercialPlanWeekDto(
         BigDecimal totalRevenue,
         Boolean objectivesEditable,
         String objectiveEditWindowMessage,
+        List<CommercialPlanFunnelStageDto> funnelStages,
         List<CommercialPlanWeekObjectiveDto> objectives,
         List<CommercialPlanWeekExperimentDto> experiments) {}

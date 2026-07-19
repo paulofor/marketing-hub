@@ -114,7 +114,9 @@ export interface CommercialPlanWeekExperiment {
   videoCost?: number | null;
   totalCost?: number | null;
   revenue?: number | null;
+  impressions?: number | null;
   clicks?: number | null;
+  visitors?: number | null;
   leads?: number | null;
   checkoutClicks?: number | null;
   purchases?: number | null;
@@ -129,6 +131,19 @@ export interface CommercialPlanWeekObjective {
   score?: number | null;
 }
 
+export interface CommercialPlanFunnelStage {
+  code: string;
+  name: string;
+  plannedTotal?: number | null;
+  actualTotal?: number | null;
+  conversionFromPreviousStep?: number | null;
+  costPerConversion?: number | null;
+  uniqueCount?: number | null;
+  lastEventAt?: string | null;
+  applicable?: boolean | null;
+  evidenceSource?: string | null;
+}
+
 export interface CommercialPlanWeek {
   weekNumber: number;
   startDate: string;
@@ -138,6 +153,7 @@ export interface CommercialPlanWeek {
   totalRevenue?: number | null;
   objectivesEditable?: boolean | null;
   objectiveEditWindowMessage?: string | null;
+  funnelStages?: CommercialPlanFunnelStage[] | null;
   objectives: CommercialPlanWeekObjective[];
   experiments: CommercialPlanWeekExperiment[];
 }

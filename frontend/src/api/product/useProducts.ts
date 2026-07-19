@@ -6,6 +6,7 @@ export interface Product {
   slug?: string;
   name?: string;
   publicUrl?: string;
+  logoUrl?: string;
   colorPalette?: string;
   targetAudience?: string;
   languageStyle?: string;

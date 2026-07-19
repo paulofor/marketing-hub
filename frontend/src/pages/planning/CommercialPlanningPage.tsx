@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
   CommercialPlan,
+  CommercialPlanFunnelStage,
   CommercialPlanWeek,
   CommercialPlanWeekObjective,
   CommercialPlanStatus,
@@ -108,6 +109,14 @@ function formatExecutedNumber(value?: number | null) {
   return value == null ? "0" : String(value);
 }
 
+function formatFunnelNumber(value?: number | null) {
+  return value == null ? "-" : value.toLocaleString("pt-BR");
+}
+
+function formatPercentage(value?: number | null) {
+  return value == null ? "-" : `${value.toLocaleString("pt-BR")}%`;
+}
+
 function formatAverageViewTime(valueMs?: number | null) {
   if (valueMs == null || valueMs <= 0) return "Sem dados";
   const totalSeconds = Math.round(valueMs / 1000);
@@ -125,6 +134,75 @@ function formatDate(value?: string | null) {
 function progressPercentage(target?: number | null, actual?: number | null) {
   if (!target || target <= 0) return 0;
   return Math.min(100, Math.round(((actual ?? 0) / target) * 100));
+}
+
+function aggregateFunnelStages(weeks: CommercialPlanWeek[]) {
+  const byCode = new Map<string, CommercialPlanFunnelStage>();
+  const costByCode = new Map<string, number>();
+  weeks.forEach((week) => {
+    asArray(week.funnelStages).forEach((stage) => {
+      if (stage.costPerConversion != null && stage.actualTotal != null) {
+        costByCode.set(
+          stage.code,
+          (costByCode.get(stage.code) ?? 0) +
+            stage.costPerConversion * stage.actualTotal,
+        );
+      }
+      const current = byCode.get(stage.code);
+      if (!current) {
+        byCode.set(stage.code, { ...stage });
+        return;
+      }
+      byCode.set(stage.code, {
+        ...current,
+        actualTotal: (current.actualTotal ?? 0) + (stage.actualTotal ?? 0),
+        uniqueCount: (current.uniqueCount ?? 0) + (stage.uniqueCount ?? 0),
+        applicable: current.applicable === true || stage.applicable === true,
+        lastEventAt:
+          (stage.lastEventAt ?? "") > (current.lastEventAt ?? "")
+            ? stage.lastEventAt
+            : current.lastEventAt,
+      });
+    });
+  });
+  let previousActual: number | null = null;
+  return Array.from(byCode.values()).map((stage) => {
+    const actual = stage.actualTotal ?? null;
+    const totalCost = costByCode.get(stage.code);
+    const conversion =
+      stage.applicable === true &&
+      actual != null &&
+      previousActual &&
+      previousActual > 0
+        ? Number(((actual / previousActual) * 100).toFixed(2))
+        : null;
+    if (stage.applicable === true) {
+      previousActual = actual;
+    }
+    return {
+      ...stage,
+      conversionFromPreviousStep: conversion,
+      costPerConversion:
+        totalCost != null && actual && actual > 0
+          ? Number((totalCost / actual).toFixed(2))
+          : stage.costPerConversion,
+    };
+  });
+}
+
+function findMainFunnelBottleneck(stages: CommercialPlanFunnelStage[]) {
+  return stages
+    .filter(
+      (stage) =>
+        stage.applicable === true &&
+        stage.conversionFromPreviousStep != null &&
+        stage.actualTotal != null,
+    )
+    .sort(
+      (first, second) =>
+        (first.conversionFromPreviousStep ?? 101) -
+        (second.conversionFromPreviousStep ?? 101),
+    )[0];
 }
 
 function fallbackMonthPlan(): CommercialPlan {
@@ -212,6 +290,7 @@ function WeeklyObjectiveEditor({
   const [newObjectiveText, setNewObjectiveText] = useState("");
   const objectivesEditable = week.objectivesEditable === true;
   const objectiveWeekNumber = week.weekNumber + 1;
+  const bottleneck = findMainFunnelBottleneck(asArray(week.funnelStages));
 
   useEffect(() => {
     setObjectives(normalizeObjectives(week.objectives));
@@ -243,7 +322,13 @@ function WeeklyObjectiveEditor({
   return (
     <div className="commercial-planning-week-objectives">
       <div className="commercial-planning-week-objectives-header">
-        <h4>Objetivos para a próxima semana</h4>
+        <div>
+          <h4>Objetivos para a próxima semana</h4>
+          <span>
+            Gargalo de referência:{" "}
+            {bottleneck?.name ?? "sem conversão suficiente"}
+          </span>
+        </div>
         {objectivesEditable ? (
           <button
             className="btn btn-sm btn-outline-primary"
@@ -284,7 +369,7 @@ function WeeklyObjectiveEditor({
             rows={2}
             value={newObjectiveText}
             onChange={(event) => setNewObjectiveText(event.target.value)}
-            placeholder="Descreva o novo objetivo para a próxima semana"
+            placeholder="Descreva o novo objetivo ligado ao gargalo de funil"
           />
           <button
             className="btn btn-sm btn-primary"
@@ -472,6 +557,78 @@ function TopExperimentsRanking({ weeks }: { weeks: CommercialPlanWeek[] }) {
   );
 }
 
+function FunnelStagesPanel({
+  stages,
+  title,
+  compact = false,
+}: {
+  stages: CommercialPlanFunnelStage[];
+  title: string;
+  compact?: boolean;
+}) {
+  const normalizedStages = asArray(stages);
+  const bottleneck = findMainFunnelBottleneck(normalizedStages);
+
+  return (
+    <section
+      className={`commercial-planning-funnel-panel${compact ? " compact" : ""}`}
+    >
+      <div className="commercial-planning-funnel-header">
+        <div>
+          <p className="commercial-planning-month-eyebrow mb-1">
+            Métricas de funil
+          </p>
+          <h3>{title}</h3>
+        </div>
+        <span>
+          Gargalo principal: {bottleneck?.name ?? "sem conversão suficiente"}
+        </span>
+      </div>
+      <div className="commercial-planning-funnel-grid">
+        {normalizedStages.map((stage) => (
+          <article
+            className={`commercial-planning-funnel-stage${
+              stage.applicable === false ? " muted" : ""
+            }`}
+            key={stage.code}
+            title={stage.evidenceSource ?? undefined}
+          >
+            <strong>{stage.name}</strong>
+            <div>
+              <span>Planejado</span>
+              <b>{formatFunnelNumber(stage.plannedTotal)}</b>
+            </div>
+            <div>
+              <span>Executado</span>
+              <b>{formatFunnelNumber(stage.actualTotal)}</b>
+            </div>
+            <div>
+              <span>Conversão</span>
+              <b>{formatPercentage(stage.conversionFromPreviousStep)}</b>
+            </div>
+            <div>
+              <span>Custo por conversão</span>
+              <b>
+                {stage.costPerConversion == null
+                  ? "-"
+                  : formatExecutedCurrency(stage.costPerConversion)}
+              </b>
+            </div>
+            {stage.applicable === false ? (
+              <small>Etapa sem fonte canônica nesta versão.</small>
+            ) : (
+              <small>
+                Último evento:{" "}
+                {stage.lastEventAt ? formatDate(stage.lastEventAt) : "-"}
+              </small>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function WeeklyExperimentList({
   planId,
   weeks,
@@ -511,6 +668,12 @@ function WeeklyExperimentList({
             </div>
           )}
 
+          <FunnelStagesPanel
+            compact
+            stages={asArray(week.funnelStages)}
+            title={`Funil da semana ${week.weekNumber}`}
+          />
+
           <WeeklyObjectiveEditor planId={planId} week={week} />
         </details>
       ))}
@@ -549,6 +712,7 @@ export default function CommercialPlanningPage() {
     currentMonthPlan.experimentsToPublish,
     currentMonthPlan.actualExperimentsPublished,
   );
+  const monthFunnelStages = useMemo(() => aggregateFunnelStages(weeks), [weeks]);
 
   return (
     <div className="commercial-planning-page d-flex flex-column gap-4">
@@ -632,6 +796,10 @@ export default function CommercialPlanningPage() {
 
       {weeks.length > 0 ? (
         <>
+          <FunnelStagesPanel
+            stages={monthFunnelStages}
+            title="Funil acumulado do mês"
+          />
           <WeeklyExperimentList planId={currentMonthPlan.id} weeks={weeks} />
           <TopExperimentsRanking weeks={weeks} />
         </>

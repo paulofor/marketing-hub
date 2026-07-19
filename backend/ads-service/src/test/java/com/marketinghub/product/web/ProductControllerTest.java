@@ -59,6 +59,7 @@ class ProductControllerTest {
         ProductDto response = new ProductDto();
         response.setId(1L);
         response.setName(request.getName());
+        response.setLogoUrl("https://clubemusa.com.br/assets/logo-musa.svg");
         response.setCurrentPriceBrl(request.getCurrentPriceBrl());
 
         when(service.updateProduct(eq(1L), any(CreateProductRequest.class))).thenReturn(product);
@@ -70,6 +71,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value(request.getName()))
+                .andExpect(jsonPath("$.logoUrl").value("https://clubemusa.com.br/assets/logo-musa.svg"))
                 .andExpect(jsonPath("$.currentPriceBrl").value(47.00));
     }
 

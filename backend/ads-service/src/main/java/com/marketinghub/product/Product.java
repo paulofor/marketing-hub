@@ -39,6 +39,10 @@ public class Product {
     @Column(name = "public_url", length = 512)
     private String publicUrl;
 
+    /** URL pública do logo canônico usado em cadastro, relatórios e materiais comerciais. */
+    @Column(name = "logo_url", length = 512)
+    private String logoUrl;
+
     /** Paleta de cores canônica usada em páginas, criativos e área de uso. */
     @Lob
     @Column(name = "color_palette", columnDefinition = "LONGTEXT")

@@ -424,6 +424,22 @@ textarea {
   max-width: 620px;
 }
 
+.brand-logo {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.login-brand-logo {
+  margin-bottom: 22px;
+  width: min(270px, 82vw);
+}
+
+.dashboard-brand-logo {
+  margin-bottom: 18px;
+  width: min(240px, 72vw);
+}
+
 .login-panel .promise {
   font-size: 1.04rem;
   max-width: 600px;

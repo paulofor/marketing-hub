@@ -31,6 +31,7 @@ public class CreateProductRequest {
     private String tripwire;
     private String riskReversal;
     private String socialProof;
+    private String scientificEvidencePack;
     private String checkoutMonetization;
     private String funnel;
     private String creativeVolume;

@@ -57,4 +57,17 @@ describe('prompts da Consultora MUSA', () => {
       assert.match(content, /acentuação correta|português brasileiro/i);
     });
   }
+
+  it('prompts recebem a base científica operacional do produto', async () => {
+    for (const promptFile of [
+      'prompts/musa-daily-guidance/user.md',
+      'prompts/musa-day-2-signature/user.md',
+    ]) {
+      const content = await readFile(new URL(`../${promptFile}`, import.meta.url), 'utf8');
+
+      assert.match(content, /{{scientificEvidencePackJson}}/);
+      assert.match(content, /afirmações proibidas/);
+      assert.match(content, /microações simples/);
+    }
+  });
 });

@@ -13,6 +13,7 @@ public record ProductExperienceResponse(
         DiagnosticDto diagnostic,
         List<MissionDto> missions,
         List<SupportMaterialDto> supportMaterials,
+        ScientificEvidencePackDto scientificEvidencePack,
         String completionOffer
 ) {
 
@@ -35,4 +36,17 @@ public record ProductExperienceResponse(
 
     /** Define um material de apoio disponível na biblioteca do produto. */
     public record SupportMaterialDto(String title, String type, String description, String url) {}
+
+    /** Define a base científica operacional usada pela IA sem expor artigo bruto à cliente. */
+    public record ScientificEvidencePackDto(
+            String version,
+            List<String> principles,
+            List<String> practicalApplications,
+            List<String> allowedLanguage,
+            List<String> forbiddenClaims,
+            List<ScientificReferenceDto> references
+    ) {}
+
+    /** Define uma referência científica rastreável usada na criação do produto. */
+    public record ScientificReferenceDto(String authors, String year, String title, String source, String doi) {}
 }

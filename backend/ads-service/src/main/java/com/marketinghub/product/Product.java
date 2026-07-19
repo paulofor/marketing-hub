@@ -121,6 +121,13 @@ public class Product {
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String socialProof;
+
+    /** Pacote científico operacional versionado usado por workers na criação e entrega do produto. */
+    @Lob
+    @Column(name = "scientific_evidence_pack", columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String scientificEvidencePack;
+
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String checkoutMonetization;

@@ -393,6 +393,10 @@ class AccessServiceTest {
         assertThat(pending).isPresent();
         assertThat(pending.get().requestId()).isEqualTo(guidance.requestId());
         assertThat(pending.get().answers()).containsEntry("baseColor", "Vinho discreto");
+        assertThat(pending.get().product().scientificEvidencePack().version()).isEqualTo("musa-evidence-pack-v1");
+        assertThat(pending.get().product().scientificEvidencePack().references())
+                .extracting("doi")
+                .contains("10.1016/j.jesp.2012.02.008");
     }
 
     /** Confirma que todos os 7 dias possuem contrato de orientação por IA no backend. */

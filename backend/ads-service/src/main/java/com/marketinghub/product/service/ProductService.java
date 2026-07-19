@@ -79,6 +79,7 @@ public class ProductService {
         product.setTripwire(request.getTripwire());
         product.setRiskReversal(request.getRiskReversal());
         product.setSocialProof(request.getSocialProof());
+        product.setScientificEvidencePack(request.getScientificEvidencePack());
         product.setCheckoutMonetization(request.getCheckoutMonetization());
         product.setFunnel(request.getFunnel());
         product.setCreativeVolume(request.getCreativeVolume());
@@ -145,6 +146,7 @@ public class ProductService {
                 line("Oferta", product.getTripwire()),
                 line("Reversão de risco", product.getRiskReversal()),
                 line("Prova", product.getSocialProof()),
+                optionalLine("Base científica operacional", product.getScientificEvidencePack()),
                 line("Checkout e monetização", product.getCheckoutMonetization()));
         appendSection(markdown, "7. Funil de aquisição e venda",
                 paragraph(product.getFunnel()));
@@ -184,6 +186,9 @@ public class ProductService {
     private void appendSection(StringBuilder markdown, String title, String... entries) {
         markdown.append("## ").append(title).append("\n\n");
         for (String entry : entries) {
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
             markdown.append(entry);
             if (!entry.endsWith("\n")) {
                 markdown.append("\n");
@@ -195,6 +200,14 @@ public class ProductService {
     /** Formata uma linha de definição de negócio. */
     private String line(String label, String value) {
         return "- **" + label + ":** " + valueOrFallback(value) + "\n";
+    }
+
+    /** Formata uma linha somente quando o campo comercial foi cadastrado. */
+    private String optionalLine(String label, String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return "- **" + label + ":** " + value.trim() + "\n";
     }
 
     /** Formata um parágrafo livre preservando um fallback quando não houver dado cadastrado. */

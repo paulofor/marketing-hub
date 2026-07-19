@@ -35,6 +35,7 @@ class ProductServiceTest {
         request.setMarketNicheId(10L);
         request.setCurrentPriceBrl(new BigDecimal("47.00"));
         request.setTargetAudience("Mulheres urbanas");
+        request.setScientificEvidencePack("Evidence Pack MUSA v1");
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
         when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
@@ -46,6 +47,7 @@ class ProductServiceTest {
         assertThat(updated.getSlug()).isEqualTo(request.getSlug());
         assertThat(updated.getCurrentPriceBrl()).isEqualByComparingTo("47.00");
         assertThat(updated.getTargetAudience()).isEqualTo(request.getTargetAudience());
+        assertThat(updated.getScientificEvidencePack()).isEqualTo("Evidence Pack MUSA v1");
         assertThat(updated.getMarketNiche()).isSameAs(niche);
     }
 
@@ -74,6 +76,7 @@ class ProductServiceTest {
                 .colorPalette("1. Vinho MUSA #7A2444; 2. Dourado #D6A75C; 3. Creme #FFF8F3; 4. Grafite #2F2A2C; 5. Blush #F3C9C1; 6. Oliva #6F7A52; 7. Champanhe #F7E4C6.")
                 .tripwire("Experiência guiada de 7 dias com diagnóstico, missões, checklists e templates.")
                 .socialProof("Prova científica, prova visual e experimento 66.")
+                .scientificEvidencePack("Evidence Pack MUSA v1: princípios permitidos, linguagem permitida, afirmações proibidas e referências científicas.")
                 .funnel("Anúncio → login → experiência gratuita → paywall → compra.")
                 .codeModules("pde-platform, backend")
                 .aiCost(new BigDecimal("1.20"))
@@ -94,6 +97,8 @@ class ProductServiceTest {
         assertThat(markdown).contains("7. Champanhe #F7E4C6");
         assertThat(markdown).contains("Experiência guiada de 7 dias");
         assertThat(markdown).contains("Prova científica");
+        assertThat(markdown).contains("Base científica operacional");
+        assertThat(markdown).contains("afirmações proibidas");
         assertThat(markdown).doesNotContain("pde-platform");
         assertThat(markdown).doesNotContain("1.20");
     }

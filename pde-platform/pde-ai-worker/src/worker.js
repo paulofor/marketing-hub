@@ -110,6 +110,7 @@ async function generateGuidance(execution) {
     missionPrinciple: mission.principle ?? '',
     missionAction: mission.action ?? '',
     missionEvidence: mission.evidence ?? '',
+    scientificEvidencePackJson: JSON.stringify(execution.product.scientificEvidencePack ?? {}, null, 2),
     previousMissionAnswersJson: JSON.stringify(execution.previousMissionAnswers ?? {}, null, 2),
     answersJson: JSON.stringify(execution.answers ?? {}, null, 2),
   });

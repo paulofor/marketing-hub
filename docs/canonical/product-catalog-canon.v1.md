@@ -28,6 +28,7 @@ O produto não deve ficar preso a um único experimento. Experimento é evidênc
 - Preço atual quando houver venda direta.
 - Hipótese/oferta principal.
 - Experimentos associados quando houver histórico.
+- Pacote científico operacional versionado quando a criação do produto usar artigos, estudos, diretrizes ou evidências externas para sustentar mecanismo, prova ou orientação por IA.
 
 ## Primeiro produto canônico
 
@@ -40,6 +41,7 @@ O primeiro produto cadastrado é o Método MUSA - Presença Elegante em 7 Dias.
 - Preço atual: R$47.
 - Experimento associado inicial: Experimento 66.
 - Hipótese/oferta principal: mulher quer parecer mais elegante e marcante sem gastar com luxo, trocar o guarda-roupa inteiro ou depender de compras impulsivas.
+- Pacote científico operacional inicial: `musa-evidence-pack-v1`, baseado em cognição vestida, percepção social, primeiras impressões e roupa como componente da percepção de pessoa. O pacote deve orientar a Consultora MUSA a transformar as referências em microações de presença elegante, limitar promessas e evitar garantias universais de resultado.
 
 ## Funil comercial canônico do Clube MUSA
 
@@ -69,6 +71,23 @@ Regras comerciais:
 
 Novos atributos devem ser adicionados ao cadastro de produto quando ajudarem a aumentar vendas, reduzir retrabalho operacional ou preservar aprendizado comercial. Exemplos: checkout, domínio HTTPS, avatar detalhado, objeções, promessa principal, mecanismo único, upsells, canais ativos, criativos vencedores, métricas de conversão, taxa de ativação e aprendizados por experimento.
 
+## Pacote científico operacional
+
+Quando a criação de um produto usar artigos científicos ou evidências externas como apoio ao mecanismo, o Marketing Hub deve transformar esse material em um pacote operacional versionado antes de entregar contexto a workers de IA, PDE, anúncios, páginas ou materiais de produto.
+
+O pacote deve conter, no mínimo:
+
+- versão do pacote;
+- princípios defensáveis;
+- aplicações práticas permitidas;
+- linguagem comercial/orientativa permitida;
+- afirmações proibidas ou limites de promessa;
+- referências rastreáveis com autores, ano, título, fonte e DOI/link quando existir.
+
+O sistema não deve enviar artigo bruto, PDF inteiro ou texto acadêmico longo diretamente para prompts de orientação recorrente ao usuário final. A ciência deve funcionar como bastidor de plausibilidade, responsabilidade e diferenciação, enquanto a comunicação visível ao comprador deve continuar simples, desejável, prática e orientada à redução de esforço.
+
+Para Produtos Digitais Experienciais com orientação por IA, o backend/produto deve expor esse pacote no contrato entregue ao worker executor, e o worker deve usá-lo para gerar microações responsáveis, sem promessa absoluta e sem transformar a experiência em aula acadêmica.
+
 ## Documento público de definição de mercado
 
 Todo produto cadastrado pode expor uma definição pública em Markdown pela URL:
@@ -88,4 +107,5 @@ Quando houver definição comercial suficiente, o documento público deve explic
 - mecanismo único com justificativa plausível e, quando houver base científica usada na criação, citar os artigos pelo nome, autores, periódico e DOI/link;
 - oferta com entregáveis compreensíveis pelo comprador, sem termos técnicos internos;
 - prova, separando prova científica, prova de produto, prova visual, prova social ou prova operacional quando existirem;
+- base científica operacional quando ela for usada como apoio de criação, deixando claro quais princípios e limites sustentam a orientação sem expor implementação técnica;
 - paleta visual completa com 7 itens nomeados e seus códigos de cor.

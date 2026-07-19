@@ -35,6 +35,7 @@ O FEO fabrica o pacote PDE com:
 - checklists, templates e materiais baixáveis;
 - imagens, capa e infográficos;
 - metadados comerciais para página de venda.
+- pacote científico operacional versionado quando o produto usar artigos ou evidências externas para sustentar mecanismo, prova ou orientação por IA.
 
 ### Checkout externo
 
@@ -75,11 +76,14 @@ Regras obrigatórias:
 - a chamada OpenAI deve ser executada por worker próprio ou módulo executor, não pelo frontend;
 - o worker deve consumir pendências pelo endpoint canônico `pending` do backend PDE;
 - prompt operacional e schema JSON de saída devem ficar versionados no worker;
+- quando o produto possuir pacote científico operacional, o backend PDE deve entregá-lo no contrato `pending` e o worker deve injetá-lo no prompt como base de plausibilidade, limites e linguagem permitida;
 - a resposta deve ser curta, estruturada e diretamente aplicável à missão;
 - o frontend deve exibir a orientação como cartão de produto, não como conversa livre;
 - toda solicitação deve ser mensurável no funil e associada ao token, produto e missão.
 
 Para o Método MUSA, a Consultora MUSA deve atuar nos 7 dias como orientação guiada por missão: a cliente preenche três sinais ou respostas práticas do dia e recebe um cartão curto, aplicável e coerente com o histórico da jornada. O Dia 1 pode ser usado como amostra gratuita de valor; os Dias 2 a 7 permanecem como parte do acesso completo quando o funil estiver em modo de paywall interno.
+
+Para o Método MUSA, a Consultora MUSA deve usar o `musa-evidence-pack-v1` como bastidor científico. O pacote apoia microações sobre roupa, cor, acabamento, postura, coerência visual e peça-sinal, mas a resposta visível não deve virar citação acadêmica recorrente nem promessa absoluta. A linguagem deve preservar o desejo de presença elegante acessível e evitar afirmações como garantia de elegância, mudança universal de percepção externa ou transformação de personalidade.
 
 ### Frontend PDE
 
@@ -180,6 +184,7 @@ Cada produto PDE deve ter, no mínimo:
 - `diagnostic`;
 - `missions`;
 - `supportMaterials`;
+- `scientificEvidencePack`, quando existir base científica operacional para IA, prova, materiais ou orientação;
 - `completionOffer`.
 
 ## Regra de qualidade comercial

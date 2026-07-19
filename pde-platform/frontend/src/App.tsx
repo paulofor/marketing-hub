@@ -51,6 +51,21 @@ type SupportMaterial = {
   url: string;
 };
 
+type ScientificEvidencePack = {
+  version: string;
+  principles: string[];
+  practicalApplications: string[];
+  allowedLanguage: string[];
+  forbiddenClaims: string[];
+  references: {
+    authors: string;
+    year: string;
+    title: string;
+    source: string;
+    doi: string;
+  }[];
+};
+
 type ProductExperience = {
   slug: string;
   name: string;
@@ -61,6 +76,7 @@ type ProductExperience = {
   diagnostic: Diagnostic;
   missions: Mission[];
   supportMaterials: SupportMaterial[];
+  scientificEvidencePack?: ScientificEvidencePack;
   completionOffer: string;
 };
 

@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-19-product-scientific-evidence-pack.yaml
+  - changeSet:
+      id: 2026-07-19-product-scientific-evidence-pack-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - not:
+            columnExists:
+              tableName: product
+              columnName: scientific_evidence_pack
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN scientific_evidence_pack LONGTEXT NULL AFTER social_proof;
+  - changeSet:
+      id: 2026-07-19-product-scientific-evidence-pack-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: scientific_evidence_pack
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET scientific_evidence_pack = 'Evidence Pack MUSA v1: princípios permitidos: roupa pode influenciar autopercepção e comportamento situacional; escolhas de vestimenta, formalidade e acabamento participam da percepção social e dos primeiros julgamentos; coerência visual, intenção e repetição de sinais podem reduzir ruído percebido e facilitar reconhecimento pessoal. Aplicações práticas: transformar os princípios em microdecisões de roupa, cor, acabamento, postura e detalhe final; orientar uso do que a cliente já possui antes de compra nova; tratar presença elegante como percepção e coerência, não como garantia universal de aprovação externa. Linguagem permitida: isso ajuda você a comunicar mais intenção; pode reduzir ruído visual; favorece uma presença mais coerente; ajuda você a se sentir mais alinhada com a imagem que quer transmitir. Afirmações proibidas: garante elegância; muda como todos vão te ver; transforma sua personalidade; efeito comprovado em qualquer pessoa; substitui autoestima, terapia ou consultoria individual. Referências: Adam e Galinsky (2012), Enclothed cognition, Journal of Experimental Social Psychology, DOI 10.1016/j.jesp.2012.02.008; Slepian, Ferber, Gold e Rutchick (2015), The Cognitive Consequences of Formal Clothing, Social Psychological and Personality Science, DOI 10.1177/1948550615579462; Howlett, Pine, Orakcioglu e Fletcher (2013), The influence of clothing on first impressions, Journal of Fashion Marketing and Management, DOI 10.1108/13612021311305128; Hester e Hehman (2023), Dress is a Fundamental Component of Person Perception, Personality and Social Psychology Review, DOI 10.1177/10888683231157961.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias';

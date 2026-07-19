@@ -20,6 +20,8 @@ class ProductCatalogServiceTest {
         assertThat(product.promise()).contains("7 dias");
         assertThat(product.missions()).hasSize(7);
         assertThat(product.supportMaterials()).hasSize(4);
+        assertThat(product.scientificEvidencePack().version()).isEqualTo("musa-evidence-pack-v1");
+        assertThat(product.scientificEvidencePack().forbiddenClaims()).contains("garante elegância");
     }
 
     /** Garante que o catálogo visível da MUSA usa português brasileiro com acentuação. */

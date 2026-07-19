@@ -3,6 +3,8 @@ package com.marketinghub.pde.service;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.dto.ProductExperienceResponse.DiagnosticDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.MissionDto;
+import com.marketinghub.pde.dto.ProductExperienceResponse.ScientificEvidencePackDto;
+import com.marketinghub.pde.dto.ProductExperienceResponse.ScientificReferenceDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.SupportMaterialDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.ThemeDto;
 import java.util.List;
@@ -120,6 +122,57 @@ public class ProductCatalogService {
                                 "Infográfico",
                                 "Resumo visual do método: coerência, redução de ruído e assinatura pessoal.",
                                 "/materials/mapa-visual-musa.png")),
+                createMusaScientificEvidencePack(),
                 "Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais de presença, estilo e autocuidado acessível.");
+    }
+
+    /** Cria o pacote científico operacional do MUSA usado pela Consultora MUSA. */
+    private static ScientificEvidencePackDto createMusaScientificEvidencePack() {
+        return new ScientificEvidencePackDto(
+                "musa-evidence-pack-v1",
+                List.of(
+                        "A roupa pode influenciar a forma como a pessoa se percebe e se comporta em uma situação.",
+                        "Escolhas de vestimenta, formalidade e acabamento participam da percepção social e dos primeiros julgamentos.",
+                        "Coerência visual, intenção e repetição de sinais podem reduzir ruído percebido e facilitar reconhecimento pessoal."),
+                List.of(
+                        "Transformar princípios de cognição vestida e percepção social em microdecisões simples de roupa, cor, acabamento, postura e detalhe final.",
+                        "Orientar a cliente a usar o que já possui antes de comprar novas peças.",
+                        "Reforçar presença elegante como percepção e coerência, não como garantia universal de aprovação externa."),
+                List.of(
+                        "isso ajuda você a comunicar mais intenção",
+                        "pode reduzir ruído visual",
+                        "favorece uma presença mais coerente",
+                        "ajuda você a se sentir mais alinhada com a imagem que quer transmitir"),
+                List.of(
+                        "garante elegância",
+                        "muda como todos vão te ver",
+                        "transforma sua personalidade",
+                        "efeito comprovado em qualquer pessoa",
+                        "substitui autoestima, terapia ou consultoria individual"),
+                List.of(
+                        new ScientificReferenceDto(
+                                "Adam e Galinsky",
+                                "2012",
+                                "Enclothed cognition",
+                                "Journal of Experimental Social Psychology",
+                                "10.1016/j.jesp.2012.02.008"),
+                        new ScientificReferenceDto(
+                                "Slepian, Ferber, Gold e Rutchick",
+                                "2015",
+                                "The Cognitive Consequences of Formal Clothing",
+                                "Social Psychological and Personality Science",
+                                "10.1177/1948550615579462"),
+                        new ScientificReferenceDto(
+                                "Howlett, Pine, Orakcioglu e Fletcher",
+                                "2013",
+                                "The influence of clothing on first impressions",
+                                "Journal of Fashion Marketing and Management",
+                                "10.1108/13612021311305128"),
+                        new ScientificReferenceDto(
+                                "Hester e Hehman",
+                                "2023",
+                                "Dress is a Fundamental Component of Person Perception",
+                                "Personality and Social Psychology Review",
+                                "10.1177/10888683231157961")));
     }
 }

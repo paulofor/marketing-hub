@@ -23,9 +23,12 @@ class ProductRepositoryTest {
                 .explicitPain("Lack of energy")
                 .promise("More vitality in 30 days")
                 .uniqueMechanism("Special diet")
+                .scientificEvidencePack("Evidence Pack v1")
                 .aiCost(java.math.BigDecimal.TEN)
                 .build();
         repository.save(product);
         assertThat(repository.findById(product.getId())).isPresent();
+        assertThat(repository.findById(product.getId()).orElseThrow().getScientificEvidencePack())
+                .isEqualTo("Evidence Pack v1");
     }
 }

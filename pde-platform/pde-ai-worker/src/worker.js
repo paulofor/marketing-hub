@@ -101,6 +101,7 @@ async function generateGuidance(execution) {
   const userTemplate = await fs.readFile(path.join(promptDefinition.dir, 'user.md'), 'utf8');
   const schema = JSON.parse(await fs.readFile(path.join(promptDefinition.dir, 'response-schema.json'), 'utf8'));
   const mission = execution.product.missions.find((item) => item.id === execution.missionId) ?? {};
+  const scientificEvidencePack = requireScientificEvidencePack(execution);
   const userPrompt = renderTemplate(userTemplate, {
     productName: execution.product.name,
     productPromise: execution.product.promise,
@@ -110,6 +111,7 @@ async function generateGuidance(execution) {
     missionPrinciple: mission.principle ?? '',
     missionAction: mission.action ?? '',
     missionEvidence: mission.evidence ?? '',
+    scientificEvidencePackJson: JSON.stringify(scientificEvidencePack, null, 2),
     previousMissionAnswersJson: JSON.stringify(execution.previousMissionAnswers ?? {}, null, 2),
     answersJson: JSON.stringify(execution.answers ?? {}, null, 2),
   });
@@ -152,6 +154,16 @@ async function generateGuidance(execution) {
     inputTokens: response.body.usage?.input_tokens,
     outputTokens: response.body.usage?.output_tokens,
   };
+}
+
+function requireScientificEvidencePack(execution) {
+  const pack = execution.product?.scientificEvidencePack;
+  const requiredLists = ['principles', 'practicalApplications', 'allowedLanguage', 'forbiddenClaims', 'references'];
+  const hasRequiredLists = requiredLists.every((field) => Array.isArray(pack?.[field]) && pack[field].length > 0);
+  if (!pack?.version || !hasRequiredLists) {
+    throw new Error(`Pacote cientifico operacional ausente ou incompleto para orientacao MUSA; requestId=${execution.requestId}`);
+  }
+  return pack;
 }
 
 async function callOpenAiWithRetry(baseRequestBody) {

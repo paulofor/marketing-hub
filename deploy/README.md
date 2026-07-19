@@ -35,6 +35,61 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 
 Esse fluxo (`apply.sh`) permanece para atualizar somente backend/frontend no host principal.
 
+## Deploy seguro do backend com Liquibase
+
+Para publicar uma alteração de backend que dependa de changelog Liquibase, use o comando versionado:
+
+```bash
+DEPLOY_SSH_TARGET=<usuario>@191.252.181.168 \
+CONFIRM_DEPLOY=deploy-backend \
+ops/deploy-backend-safe.sh
+```
+
+O comando executa as travas antes de tocar no host remoto:
+
+- bloqueia worktree suja, salvo quando `ALLOW_DIRTY_WORKTREE=true` for informado de forma explícita;
+- valida padrões Liquibase/MySQL 5.7 nos changelogs alterados com `scripts/validate-liquibase-mysql57.sh`;
+- roda `mvn liquibase:validate` em modo offline MySQL 5.7;
+- builda a imagem `marketinghub-backend:<IMAGE_TAG>`;
+- exporta e envia `/tmp/backend-image.tar`;
+- executa `deploy/bin/apply.sh` no host remoto;
+- valida o health do backend;
+- valida o endpoint comercial configurado.
+
+Pré-requisitos na máquina que executa o comando: `git`, `mvn`, `docker`, `ssh`, `scp`, `curl` e `python3`.
+
+Por padrão, a validação comercial chama:
+
+```text
+http://191.252.181.168/api/products/public/metodo-musa-7-dias/marketing-definition
+```
+
+e exige que a resposta contenha `Jornada de 7 dias`.
+
+Variáveis úteis:
+
+| Variável | Descrição | Padrão |
+|----------|-----------|--------|
+| `DEPLOY_SSH_TARGET` | alvo SSH completo usado pelo script | vazio |
+| `DEPLOY_HOST` / `DEPLOY_USER` | alternativa para montar o alvo SSH | vazio |
+| `IMAGE_TAG` | tag da imagem gerada | timestamp UTC |
+| `BACKEND_PUBLIC_BASE_URL` | base pública do backend para validação | `http://191.252.181.168` |
+| `VALIDATION_PATH` | endpoint de negócio validado após deploy | `/api/products/public/metodo-musa-7-dias/marketing-definition` |
+| `VALIDATION_EXPECTED` | texto obrigatório na resposta final | `Jornada de 7 dias` |
+| `LIQUIBASE_VALIDATE_SCOPE` | escopo da validação estática: `changed` ou `all` | `changed` |
+| `ALLOW_DIRTY_WORKTREE` | permite publicar estado local não commitado | `false` |
+| `CONFIRM_DEPLOY` | trava explícita de publicação | vazio; use `deploy-backend` |
+
+Use `ALLOW_DIRTY_WORKTREE=true` apenas quando a intenção for publicar exatamente o estado local ainda não commitado. O script não imprime secrets e depende do `.env` remoto preservado no servidor.
+
+Para auditoria completa do histórico de changelogs, rode:
+
+```bash
+LIQUIBASE_VALIDATE_SCOPE=all scripts/validate-liquibase-mysql57.sh
+```
+
+Essa auditoria pode apontar passivos antigos já versionados. O deploy seguro usa `changed` por padrão para bloquear recorrência no que está entrando agora.
+
 ## Deploy apenas do módulo de vídeo
 
 Quando for necessário atualizar **somente** o serviço `video-management` no host `177.153.62.107`, use o script abaixo.

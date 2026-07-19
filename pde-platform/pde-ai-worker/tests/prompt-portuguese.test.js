@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { describe, it } from 'node:test';
+
+const promptFiles = [
+  'prompts/musa-daily-guidance/system.md',
+  'prompts/musa-daily-guidance/user.md',
+  'prompts/musa-day-2-signature/system.md',
+  'prompts/musa-day-2-signature/user.md',
+];
+
+const forbiddenTerms = [
+  'Voce',
+  'voce',
+  'orientacao',
+  'missao',
+  'Metodo',
+  'Nao',
+  'faca',
+  'jargao',
+  'tecnico',
+  'obrigatoria',
+  'transformacao',
+  'ruido',
+  'microdecisoes',
+  'coerencia',
+  'memoravel',
+  'microacao',
+  'aplicavel',
+  'valido',
+  'intima',
+  'acessivel',
+  'cartao',
+  'area',
+  'historico',
+  'ja',
+  'Principio',
+  'Acao',
+  'Evidencia',
+  'acionavel',
+  'presenca',
+];
+
+describe('prompts da Consultora MUSA', () => {
+  for (const promptFile of promptFiles) {
+    it(`${promptFile} usa português brasileiro com acentuação`, async () => {
+      const content = await readFile(new URL(`../${promptFile}`, import.meta.url), 'utf8');
+
+      for (const term of forbiddenTerms) {
+        const unaccentedTerm = new RegExp(`\\b${term}\\b`);
+        assert.equal(
+          unaccentedTerm.test(content),
+          false,
+          `Termo sem acentuação encontrado em ${promptFile}: ${term}`,
+        );
+      }
+      assert.match(content, /acentuação correta|português brasileiro/i);
+    });
+  }
+});

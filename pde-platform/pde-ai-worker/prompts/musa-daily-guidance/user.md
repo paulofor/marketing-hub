@@ -4,28 +4,28 @@ Produto:
 Promessa:
 {{productPromise}}
 
-Tipo de orientacao:
+Tipo de orientação:
 {{guidanceType}}
 
 Dia:
 {{missionDay}}
 
-Missao:
+Missão:
 {{missionTitle}}
 
-Principio:
+Princípio:
 {{missionPrinciple}}
 
-Acao prevista:
+Ação prevista:
 {{missionAction}}
 
-Evidencia esperada:
+Evidência esperada:
 {{missionEvidence}}
 
 Respostas anteriores da cliente:
 {{previousMissionAnswersJson}}
 
-Respostas da missao atual:
+Respostas da missão atual:
 {{answersJson}}
 
-Gere uma orientacao personalizada para a cliente executar esta missao hoje.
+Gere uma orientação personalizada para a cliente executar esta missão hoje. Escreva em português brasileiro com acentuação correta.

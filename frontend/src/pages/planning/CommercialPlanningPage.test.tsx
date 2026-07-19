@@ -55,6 +55,56 @@ let mockWeeks: unknown[] = [
     totalRevenue: 27,
     objectivesEditable: true,
     objectiveEditWindowMessage: "Objetivos liberados ate 2026-07-09.",
+    funnelStages: [
+      {
+        code: "AD_VIEW",
+        name: "Visualizacao do anuncio",
+        plannedTotal: null,
+        actualTotal: 2000,
+        conversionFromPreviousStep: null,
+        costPerConversion: 0.02,
+        uniqueCount: 2000,
+        lastEventAt: "2026-07-03T10:00:00Z",
+        applicable: true,
+        evidenceSource: "experiment_campaign_metric.impressions",
+      },
+      {
+        code: "AD_CLICK",
+        name: "Clique no anuncio",
+        plannedTotal: null,
+        actualTotal: 56,
+        conversionFromPreviousStep: 2.8,
+        costPerConversion: 0.88,
+        uniqueCount: 56,
+        lastEventAt: "2026-07-03T10:00:00Z",
+        applicable: true,
+        evidenceSource: "experiment_campaign_metric.clicks",
+      },
+      {
+        code: "CHECKOUT_CLICK",
+        name: "Clique no plano ou checkout",
+        plannedTotal: null,
+        actualTotal: 2,
+        conversionFromPreviousStep: 3.57,
+        costPerConversion: 24.5,
+        uniqueCount: 2,
+        lastEventAt: "2026-07-03T10:00:00Z",
+        applicable: true,
+        evidenceSource: "experiment_financial_metric.checkout_clicks",
+      },
+      {
+        code: "FIRST_USE",
+        name: "Primeiro uso ou ativacao",
+        plannedTotal: null,
+        actualTotal: null,
+        conversionFromPreviousStep: null,
+        costPerConversion: null,
+        uniqueCount: null,
+        lastEventAt: null,
+        applicable: false,
+        evidenceSource: "Sem fonte canonica persistida para a semana",
+      },
+    ],
     objectives: [
       {
         id: null,
@@ -157,9 +207,59 @@ afterEach(() => {
       experimentsCreated: 1,
       totalCost: 37,
       totalRevenue: 27,
-      objectivesEditable: true,
-      objectiveEditWindowMessage: "Objetivos liberados ate 2026-07-09.",
-      objectives: [
+    objectivesEditable: true,
+    objectiveEditWindowMessage: "Objetivos liberados ate 2026-07-09.",
+    funnelStages: [
+      {
+        code: "AD_VIEW",
+        name: "Visualizacao do anuncio",
+        plannedTotal: null,
+        actualTotal: 2000,
+        conversionFromPreviousStep: null,
+        costPerConversion: 0.02,
+        uniqueCount: 2000,
+        lastEventAt: "2026-07-03T10:00:00Z",
+        applicable: true,
+        evidenceSource: "experiment_campaign_metric.impressions",
+      },
+      {
+        code: "AD_CLICK",
+        name: "Clique no anuncio",
+        plannedTotal: null,
+        actualTotal: 56,
+        conversionFromPreviousStep: 2.8,
+        costPerConversion: 0.88,
+        uniqueCount: 56,
+        lastEventAt: "2026-07-03T10:00:00Z",
+        applicable: true,
+        evidenceSource: "experiment_campaign_metric.clicks",
+      },
+      {
+        code: "CHECKOUT_CLICK",
+        name: "Clique no plano ou checkout",
+        plannedTotal: null,
+        actualTotal: 2,
+        conversionFromPreviousStep: 3.57,
+        costPerConversion: 24.5,
+        uniqueCount: 2,
+        lastEventAt: "2026-07-03T10:00:00Z",
+        applicable: true,
+        evidenceSource: "experiment_financial_metric.checkout_clicks",
+      },
+      {
+        code: "FIRST_USE",
+        name: "Primeiro uso ou ativacao",
+        plannedTotal: null,
+        actualTotal: null,
+        conversionFromPreviousStep: null,
+        costPerConversion: null,
+        uniqueCount: null,
+        lastEventAt: null,
+        applicable: false,
+        evidenceSource: "Sem fonte canonica persistida para a semana",
+      },
+    ],
+    objectives: [
         {
           id: null,
           sequenceOrder: 1,
@@ -227,6 +327,9 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
     expect(screen.getAllByText("Custo total").length).toBeGreaterThan(0);
     expect(screen.getByText("Receita mínima")).toBeTruthy();
+    expect(screen.getByText("Funil acumulado do mês")).toBeTruthy();
+    expect(screen.getAllByText("Clique no plano ou checkout").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Gargalo principal: Clique no anuncio").length).toBeGreaterThan(0);
     expect(screen.queryByText("Tipos de produto")).toBeNull();
     expect(screen.queryByText("Critério de decisão")).toBeNull();
     expect(screen.queryByText("Execução imediata")).toBeNull();
@@ -253,6 +356,8 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Média de tempo")).toBeTruthy();
     expect(screen.getByText("Tipo de produto")).toBeTruthy();
     expect(screen.getByText("Teste A/B")).toBeTruthy();
+    expect(screen.getByText("Funil da semana 1")).toBeTruthy();
+    expect(screen.getAllByText("Etapa sem fonte canônica nesta versão.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Lucro").length).toBeGreaterThan(0);
     expect(
       screen.getAllByRole("link", { name: "Kit manutenção" })[0],

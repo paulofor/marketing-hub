@@ -3,6 +3,7 @@ package com.marketinghub.planning.service;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanWeekObjective;
+import com.marketinghub.planning.dto.CommercialPlanFunnelStageDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekExperimentDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
@@ -91,6 +92,7 @@ public class CommercialPlanWeeklyExperimentService {
                     sumRevenue(experiments),
                     objectivesEditable,
                     objectiveEditWindowMessage(end, objectivesEditable),
+                    buildFunnelStages(experiments),
                     hasNextWeek ? listObjectives(plan, objectiveWeekNumber) : List.of(),
                     experiments));
             start = end.plusDays(1);
@@ -255,7 +257,9 @@ public class CommercialPlanWeeklyExperimentService {
                     coalesce(financial.ai_cost, 0) as ai_cost,
                     coalesce(video.cost, 0) as video_cost_usd,
                     coalesce(financial.revenue, 0) as revenue,
+                    coalesce(nullif(financial.impressions, 0), campaign.impressions, 0) as impressions,
                     coalesce(nullif(financial.clicks, 0), campaign.clicks, 0) as clicks,
+                    coalesce(nullif(financial.visitors, 0), analytics.visitors, 0) as visitors,
                     coalesce(nullif(financial.leads, 0), campaign.leads, 0) as leads,
                     coalesce(financial.checkout_clicks, 0) as checkout_clicks,
                     coalesce(financial.purchases, 0) as purchases,
@@ -267,6 +271,7 @@ public class CommercialPlanWeeklyExperimentService {
                     select
                         m.experiment_id,
                         sum(coalesce(m.spend, 0)) as cost,
+                        sum(coalesce(m.impressions, 0)) as impressions,
                         sum(coalesce(m.clicks, 0)) as clicks,
                         sum(coalesce(m.leads, 0)) as leads
                     from experiment_campaign_metric m
@@ -286,7 +291,9 @@ public class CommercialPlanWeeklyExperimentService {
                     select b.external_experiment_id as experiment_id,
                            sum(coalesce(f.ai_cost_cents, 0)) / 100.0 as ai_cost,
                            sum(coalesce(f.revenue_cents, 0)) / 100.0 as revenue,
+                           sum(coalesce(f.impressions, 0)) as impressions,
                            sum(coalesce(f.clicks, 0)) as clicks,
+                           sum(coalesce(f.visitors, 0)) as visitors,
                            sum(coalesce(f.leads, 0)) as leads,
                            sum(coalesce(f.checkout_clicks, 0)) as checkout_clicks,
                            sum(coalesce(f.purchases, 0)) as purchases
@@ -308,6 +315,7 @@ public class CommercialPlanWeeklyExperimentService {
                 left join (
                     select
                         event_times.experiment_id,
+                        count(distinct event_times.session_id) as visitors,
                         round(coalesce(sum(event_times.elapsed_ms), 0) / count(distinct event_times.session_id)) as average_product_view_time_ms
                     from (
                         select
@@ -354,12 +362,143 @@ public class CommercialPlanWeeklyExperimentService {
                 videoCost,
                 totalCost,
                 revenue,
+                rs.getLong("impressions"),
                 rs.getLong("clicks"),
+                rs.getLong("visitors"),
                 rs.getLong("leads"),
                 rs.getInt("checkout_clicks"),
                 rs.getInt("purchases"),
                 nullableLong(rs, "average_product_view_time_ms"),
                 resultLabel(revenue, totalCost));
+    }
+
+    /** Monta o funil semanal completo a partir das metricas persistidas usadas no planejamento. */
+    private List<CommercialPlanFunnelStageDto> buildFunnelStages(List<CommercialPlanWeekExperimentDto> experiments) {
+        BigDecimal totalCost = sumCost(experiments);
+        Instant lastEventAt = experiments.stream()
+                .map(CommercialPlanWeekExperimentDto::createdAt)
+                .filter(java.util.Objects::nonNull)
+                .max(Instant::compareTo)
+                .orElse(null);
+        List<FunnelStageMetric> metrics = List.of(
+                new FunnelStageMetric(
+                        "AD_VIEW",
+                        "Visualizacao do anuncio",
+                        sumLong(experiments, CommercialPlanWeekExperimentDto::impressions),
+                        true,
+                        "experiment_campaign_metric.impressions / experiment_financial_metric.impressions"),
+                new FunnelStageMetric(
+                        "AD_CLICK",
+                        "Clique no anuncio",
+                        sumLong(experiments, CommercialPlanWeekExperimentDto::clicks),
+                        true,
+                        "experiment_campaign_metric.clicks / experiment_financial_metric.clicks"),
+                new FunnelStageMetric(
+                        "PRODUCT_ENTRY",
+                        "Entrada no produto",
+                        sumLong(experiments, CommercialPlanWeekExperimentDto::visitors),
+                        true,
+                        "experiment_financial_metric.visitors"),
+                new FunnelStageMetric(
+                        "LOGIN_OR_SIGNUP",
+                        "Login ou criacao de conta",
+                        null,
+                        false,
+                        "Sem fonte canonica persistida para a semana"),
+                new FunnelStageMetric(
+                        "OFFER_VIEW",
+                        "Visualizacao da oferta",
+                        null,
+                        false,
+                        "Sem fonte canonica persistida para a semana"),
+                new FunnelStageMetric(
+                        "CHECKOUT_CLICK",
+                        "Clique no plano ou checkout",
+                        sumInteger(experiments, CommercialPlanWeekExperimentDto::checkoutClicks),
+                        true,
+                        "experiment_financial_metric.checkout_clicks"),
+                new FunnelStageMetric(
+                        "APPROVED_PURCHASE",
+                        "Assinatura ou compra aprovada",
+                        sumInteger(experiments, CommercialPlanWeekExperimentDto::purchases),
+                        true,
+                        "experiment_financial_metric.purchases"),
+                new FunnelStageMetric(
+                        "ACCESS_GRANTED",
+                        "Acesso liberado",
+                        null,
+                        false,
+                        "Sem fonte canonica persistida para a semana"),
+                new FunnelStageMetric(
+                        "FIRST_USE",
+                        "Primeiro uso ou ativacao",
+                        null,
+                        false,
+                        "Sem fonte canonica persistida para a semana"));
+        List<CommercialPlanFunnelStageDto> result = new ArrayList<>();
+        Long previousActual = null;
+        for (FunnelStageMetric metric : metrics) {
+            BigDecimal conversion = metric.applicable()
+                    ? conversionFromPrevious(metric.actualTotal(), previousActual)
+                    : null;
+            BigDecimal costPerConversion = metric.applicable()
+                    ? costPerConversion(totalCost, metric.actualTotal())
+                    : null;
+            result.add(new CommercialPlanFunnelStageDto(
+                    metric.code(),
+                    metric.name(),
+                    null,
+                    metric.actualTotal(),
+                    conversion,
+                    costPerConversion,
+                    metric.actualTotal(),
+                    metric.actualTotal() != null && metric.actualTotal() > 0 ? lastEventAt : null,
+                    metric.applicable(),
+                    metric.evidenceSource()));
+            if (metric.applicable()) {
+                previousActual = metric.actualTotal();
+            }
+        }
+        return result;
+    }
+
+    /** Soma valores long opcionais dos experimentos da semana. */
+    private Long sumLong(
+            List<CommercialPlanWeekExperimentDto> experiments,
+            java.util.function.Function<CommercialPlanWeekExperimentDto, Long> extractor) {
+        return experiments.stream()
+                .map(extractor)
+                .filter(java.util.Objects::nonNull)
+                .reduce(0L, Long::sum);
+    }
+
+    /** Soma valores inteiros opcionais dos experimentos da semana. */
+    private Long sumInteger(
+            List<CommercialPlanWeekExperimentDto> experiments,
+            java.util.function.Function<CommercialPlanWeekExperimentDto, Integer> extractor) {
+        return experiments.stream()
+                .map(extractor)
+                .filter(java.util.Objects::nonNull)
+                .map(Integer::longValue)
+                .reduce(0L, Long::sum);
+    }
+
+    /** Calcula a conversao percentual contra a etapa anterior aplicavel. */
+    private BigDecimal conversionFromPrevious(Long actual, Long previousActual) {
+        if (actual == null || previousActual == null || previousActual <= 0) {
+            return null;
+        }
+        return BigDecimal.valueOf(actual)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(previousActual), 2, RoundingMode.HALF_UP);
+    }
+
+    /** Calcula custo por conversao quando existe volume executado na etapa. */
+    private BigDecimal costPerConversion(BigDecimal totalCost, Long actual) {
+        if (actual == null || actual <= 0) {
+            return null;
+        }
+        return money(totalCost.divide(BigDecimal.valueOf(actual), 2, RoundingMode.HALF_UP));
     }
 
     /** Soma custo total dos experimentos da semana. */
@@ -408,4 +547,12 @@ public class CommercialPlanWeeklyExperimentService {
 
     /** Representa o periodo de uma semana dentro do planejamento comercial. */
     private record WeekPeriod(LocalDate startDate, LocalDate endDate) {}
+
+    /** Representa a metrica interna usada para montar uma etapa do funil semanal. */
+    private record FunnelStageMetric(
+            String code,
+            String name,
+            Long actualTotal,
+            boolean applicable,
+            String evidenceSource) {}
 }

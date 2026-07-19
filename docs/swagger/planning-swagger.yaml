@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub Planning API
+  version: v1
+paths:
+  /api/planning/commercial-plans/{id}/weeks:
+    get:
+      tags:
+        - planning
+      summary: Lista semanas do planejamento comercial com métricas de funil.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Semanas do plano comercial.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommercialPlanWeek"
+components:
+  schemas:
+    CommercialPlanWeek:
+      type: object
+      properties:
+        weekNumber:
+          type: integer
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        experimentsCreated:
+          type: integer
+        totalCost:
+          type: number
+        totalRevenue:
+          type: number
+        objectivesEditable:
+          type: boolean
+        objectiveEditWindowMessage:
+          type: string
+        funnelStages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommercialPlanFunnelStage"
+        objectives:
+          type: array
+          items:
+            type: object
+        experiments:
+          type: array
+          items:
+            type: object
+    CommercialPlanFunnelStage:
+      type: object
+      properties:
+        code:
+          type: string
+          example: CHECKOUT_CLICK
+        name:
+          type: string
+          example: Clique no plano ou checkout
+        plannedTotal:
+          type: integer
+          format: int64
+          nullable: true
+        actualTotal:
+          type: integer
+          format: int64
+          nullable: true
+        conversionFromPreviousStep:
+          type: number
+          nullable: true
+          description: Percentual de conversão contra a etapa aplicável anterior.
+        costPerConversion:
+          type: number
+          nullable: true
+        uniqueCount:
+          type: integer
+          format: int64
+          nullable: true
+        lastEventAt:
+          type: string
+          format: date-time
+          nullable: true
+        applicable:
+          type: boolean
+        evidenceSource:
+          type: string

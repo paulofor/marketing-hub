@@ -13,6 +13,7 @@ import com.marketinghub.finance.CurrencyConversionProperties;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanWeekObjective;
+import com.marketinghub.planning.dto.CommercialPlanFunnelStageDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekExperimentDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
@@ -100,6 +101,22 @@ class CommercialPlanWeeklyExperimentServiceTest {
         assertThat(weeks.get(0).objectives())
                 .extracting(CommercialPlanWeekObjectiveDto::objectiveText)
                 .containsExactly("Objetivo cadastrado para a semana seguinte.");
+        assertThat(weeks.get(0).funnelStages())
+                .extracting(CommercialPlanFunnelStageDto::code)
+                .containsExactly(
+                        "AD_VIEW",
+                        "AD_CLICK",
+                        "PRODUCT_ENTRY",
+                        "LOGIN_OR_SIGNUP",
+                        "OFFER_VIEW",
+                        "CHECKOUT_CLICK",
+                        "APPROVED_PURCHASE",
+                        "ACCESS_GRANTED",
+                        "FIRST_USE");
+        assertThat(weeks.get(0).funnelStages())
+                .filteredOn(stage -> Boolean.FALSE.equals(stage.applicable()))
+                .extracting(CommercialPlanFunnelStageDto::code)
+                .contains("LOGIN_OR_SIGNUP", "OFFER_VIEW", "ACCESS_GRANTED", "FIRST_USE");
     }
 
     /** Deve calcular tempo medio com todas as sessoes de analytics, alinhado ao detalhe do experimento. */
@@ -145,6 +162,9 @@ class CommercialPlanWeeklyExperimentServiceTest {
                 any());
         String sql = sqlCaptor.getAllValues().getFirst();
         assertThat(sql).contains("count(distinct event_times.session_id)");
+        assertThat(sql).contains("sum(coalesce(m.impressions, 0)) as impressions");
+        assertThat(sql).contains("sum(coalesce(f.visitors, 0)) as visitors");
+        assertThat(sql).contains("coalesce(nullif(financial.visitors, 0), analytics.visitors, 0) as visitors");
         assertThat(sql).contains("when lower(lae.event_type) = 'section_view_time'");
         assertThat(sql).doesNotContain("where lower(lae.event_type) = 'section_view_time'");
         assertThat(sql).doesNotContain("where event_times.elapsed_ms is not null");

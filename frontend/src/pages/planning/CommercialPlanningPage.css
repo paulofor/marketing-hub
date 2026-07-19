@@ -749,6 +749,95 @@
   color: #667085;
 }
 
+.commercial-planning-funnel-panel {
+  display: grid;
+  min-width: 0;
+  gap: 0.875rem;
+  padding: 1rem;
+  border: 1px solid #d9dee7;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.commercial-planning-funnel-panel.compact {
+  margin-top: 0.75rem;
+  background: #fcfcfd;
+}
+
+.commercial-planning-funnel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.commercial-planning-funnel-header h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.commercial-planning-funnel-header > span {
+  max-width: 320px;
+  color: #344054;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.commercial-planning-funnel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.625rem;
+}
+
+.commercial-planning-funnel-stage {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.commercial-planning-funnel-stage.muted {
+  background: #f8fafc;
+  color: #667085;
+}
+
+.commercial-planning-funnel-stage strong {
+  color: #101828;
+  font-size: 0.92rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.commercial-planning-funnel-stage div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  border-top: 1px solid #eef2f6;
+  padding-top: 0.35rem;
+}
+
+.commercial-planning-funnel-stage span,
+.commercial-planning-funnel-stage small {
+  color: #667085;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.commercial-planning-funnel-stage b {
+  color: #101828;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
 .commercial-planning-week-objectives {
   display: grid;
   gap: 0.75rem;
@@ -771,6 +860,14 @@
   color: #101828;
   font-size: 0.95rem;
   font-weight: 800;
+}
+
+.commercial-planning-week-objectives-header span {
+  display: block;
+  margin-top: 0.2rem;
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .commercial-planning-week-objective-list {
@@ -852,11 +949,13 @@
     flex-direction: column;
   }
 
-  .commercial-planning-top-ranking-header {
+  .commercial-planning-top-ranking-header,
+  .commercial-planning-funnel-header {
     display: grid;
   }
 
-  .commercial-planning-top-ranking-header > span {
+  .commercial-planning-top-ranking-header > span,
+  .commercial-planning-funnel-header > span {
     max-width: none;
     text-align: left;
   }

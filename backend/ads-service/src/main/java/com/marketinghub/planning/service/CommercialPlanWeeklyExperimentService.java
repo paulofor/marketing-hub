@@ -15,9 +15,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,35 +71,41 @@ public class CommercialPlanWeeklyExperimentService {
         this.clock = clock;
     }
 
-    /** Lista as semanas do mês do plano com experimentos do período e objetivos da próxima semana. */
+    /** Lista as semanas comerciais do mes do plano com experimentos do periodo e objetivos da proxima semana. */
     @Transactional(readOnly = true)
     public List<CommercialPlanWeekDto> listWeeks(Long planId) {
+        return listWeeks(planId, null);
+    }
+
+    /** Lista as semanas comerciais do mes informado ou do mes de referencia do plano. */
+    @Transactional(readOnly = true)
+    public List<CommercialPlanWeekDto> listWeeks(Long planId, String referenceMonth) {
         CommercialPlan plan = planService.getPlan(planId);
-        LocalDate monthEnd = resolvePlanEnd(plan);
-        LocalDate monthStart = monthEnd.withDayOfMonth(1);
+        YearMonth planMonth = resolvePlanMonth(plan);
+        YearMonth selectedMonth = resolveReferenceMonth(referenceMonth, planMonth);
+        boolean planReferenceMonth = selectedMonth.equals(planMonth);
+        List<WeekPeriod> periods = buildCommercialWeeks(selectedMonth);
         List<CommercialPlanWeekDto> weeks = new ArrayList<>();
-        LocalDate start = monthStart;
-        int weekNumber = 1;
-        while (!start.isAfter(monthEnd)) {
-            LocalDate end = start.plusDays(6).isAfter(monthEnd) ? monthEnd : start.plusDays(6);
-            List<CommercialPlanWeekExperimentDto> experiments = listExperiments(start, end.plusDays(1));
-            boolean hasNextWeek = end.isBefore(monthEnd);
-            boolean objectivesEditable = hasNextWeek && isObjectiveEditWindowOpen(end);
+        for (int index = 0; index < periods.size(); index++) {
+            WeekPeriod period = periods.get(index);
+            int weekNumber = index + 1;
+            List<CommercialPlanWeekExperimentDto> experiments =
+                    listExperiments(period.startDate(), period.endDate().plusDays(1));
+            boolean hasNextWeek = index + 1 < periods.size();
+            boolean objectivesEditable = planReferenceMonth && hasNextWeek && isObjectiveEditWindowOpen(period.endDate());
             Integer objectiveWeekNumber = weekNumber + 1;
             weeks.add(new CommercialPlanWeekDto(
                     weekNumber,
-                    start,
-                    end,
+                    period.startDate(),
+                    period.endDate(),
                     experiments.size(),
                     sumCost(experiments),
                     sumRevenue(experiments),
                     objectivesEditable,
-                    objectiveEditWindowMessage(end, objectivesEditable),
+                    objectiveEditWindowMessage(period.endDate(), objectivesEditable, planReferenceMonth),
                     buildFunnelStages(experiments),
-                    hasNextWeek ? listObjectives(plan, objectiveWeekNumber) : List.of(),
+                    planReferenceMonth && hasNextWeek ? listObjectives(plan, objectiveWeekNumber) : List.of(),
                     experiments));
-            start = end.plusDays(1);
-            weekNumber++;
         }
         return weeks;
     }
@@ -110,7 +119,9 @@ public class CommercialPlanWeeklyExperimentService {
         CommercialPlan plan = planService.getPlan(planId);
         WeekPeriod period = resolveWeekPeriod(plan, weekNumber);
         if (!isObjectiveEditWindowOpen(period.endDate())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, objectiveEditWindowMessage(period.endDate(), false));
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    objectiveEditWindowMessage(period.endDate(), false, true));
         }
         Integer objectiveWeekNumber = weekNumber + 1;
         resolveWeekPeriod(plan, objectiveWeekNumber);
@@ -142,16 +153,11 @@ public class CommercialPlanWeeklyExperimentService {
         if (weekNumber == null || weekNumber < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Semana do planejamento invalida.");
         }
-        LocalDate monthEnd = resolvePlanEnd(plan);
-        LocalDate start = monthEnd.withDayOfMonth(1);
-        int currentWeek = 1;
-        while (!start.isAfter(monthEnd)) {
-            LocalDate end = start.plusDays(6).isAfter(monthEnd) ? monthEnd : start.plusDays(6);
-            if (currentWeek == weekNumber) {
-                return new WeekPeriod(start, end);
+        List<WeekPeriod> periods = buildCommercialWeeks(resolvePlanMonth(plan));
+        for (int index = 0; index < periods.size(); index++) {
+            if (index + 1 == weekNumber) {
+                return periods.get(index);
             }
-            start = end.plusDays(1);
-            currentWeek++;
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Semana do planejamento fora do mes do plano.");
     }
@@ -165,7 +171,10 @@ public class CommercialPlanWeeklyExperimentService {
     }
 
     /** Monta a mensagem de disponibilidade da janela de objetivos semanais. */
-    private String objectiveEditWindowMessage(LocalDate weekEndDate, boolean editable) {
+    private String objectiveEditWindowMessage(LocalDate weekEndDate, boolean editable, boolean planReferenceMonth) {
+        if (!planReferenceMonth) {
+            return "Objetivos editaveis apenas no mes de referencia do plano.";
+        }
         LocalDate windowStart = weekEndDate.minusDays(2);
         LocalDate windowEnd = weekEndDate.plusDays(2);
         if (editable) {
@@ -174,14 +183,49 @@ public class CommercialPlanWeeklyExperimentService {
         return "Objetivos disponiveis de " + windowStart + " ate " + windowEnd + ".";
     }
 
-    /** Resolve o mês de referência do plano a partir do prazo ou da criação. */
-    private LocalDate resolvePlanEnd(CommercialPlan plan) {
+    /** Resolve o mes de referencia do plano a partir do prazo ou da criacao. */
+    private YearMonth resolvePlanMonth(CommercialPlan plan) {
         if (plan.getDeadline() != null) {
-            return plan.getDeadline();
+            return YearMonth.from(plan.getDeadline());
         }
         Instant createdAt = plan.getCreatedAt() == null ? Instant.now() : plan.getCreatedAt();
         LocalDate createdDate = createdAt.atZone(ZoneOffset.UTC).toLocalDate();
-        return createdDate.withDayOfMonth(createdDate.lengthOfMonth());
+        return YearMonth.from(createdDate);
+    }
+
+    /** Resolve o mes solicitado pela tela mantendo o mes do plano como padrao. */
+    private YearMonth resolveReferenceMonth(String referenceMonth, YearMonth planMonth) {
+        if (referenceMonth == null || referenceMonth.isBlank()) {
+            return planMonth;
+        }
+        try {
+            return YearMonth.parse(referenceMonth.trim());
+        } catch (DateTimeParseException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Mes de referencia invalido. Use o formato yyyy-MM.",
+                    ex);
+        }
+    }
+
+    /** Monta semanas comerciais pela primeira, segunda, terceira, quarta e quinta segunda-feira do mes. */
+    private List<WeekPeriod> buildCommercialWeeks(YearMonth month) {
+        List<WeekPeriod> periods = new ArrayList<>();
+        LocalDate monday = firstMondayOfMonth(month);
+        while (YearMonth.from(monday).equals(month)) {
+            periods.add(new WeekPeriod(monday, monday.plusDays(6)));
+            monday = monday.plusWeeks(1);
+        }
+        return periods;
+    }
+
+    /** Localiza a primeira segunda-feira do mes comercial. */
+    private LocalDate firstMondayOfMonth(YearMonth month) {
+        LocalDate date = month.atDay(1);
+        while (date.getDayOfWeek() != DayOfWeek.MONDAY) {
+            date = date.plusDays(1);
+        }
+        return date;
     }
 
     /** Lista objetivos persistidos ou a sugestao inicial da primeira semana de julho. */

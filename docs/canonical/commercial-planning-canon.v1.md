@@ -23,6 +23,32 @@ Todo marco semanal do plano pode persistir metas numericas planejadas proprias:
 - `experiments_to_create`: quantidade de experimentos que devem ser criados ate o marco.
 - `experiments_to_publish`: quantidade de experimentos que devem ser publicados/validados ate o marco.
 
+## Regra canonica de semanas comerciais do mes
+
+O planejamento mensal do Marketing Hub deve organizar semanas comerciais sempre a partir das segundas-feiras existentes dentro do proprio mes. A semana comercial nao deve ser calculada por dia 1 a dia 7, nem por semana ISO do calendario, porque o objetivo e manter ciclos operacionais completos de segunda a domingo.
+
+Definicao obrigatoria:
+
+- Semana 1 do mes: comeca na primeira segunda-feira do mes e termina no domingo seguinte.
+- Semana 2 do mes: comeca na segunda segunda-feira do mes e termina no domingo seguinte.
+- Semana 3 do mes: comeca na terceira segunda-feira do mes e termina no domingo seguinte.
+- Semana 4 do mes: comeca na quarta segunda-feira do mes e termina no domingo seguinte.
+- Semana 5 do mes: existe somente quando houver uma quinta segunda-feira no mes; comeca nessa quinta segunda-feira e termina no domingo seguinte, mesmo que o domingo caia no mes seguinte.
+
+Dias anteriores a primeira segunda-feira do mes nao pertencem a nenhuma semana comercial daquele mes. Esses dias devem ser tratados como periodo de preparacao, fechamento, transicao ou execucao remanescente do mes anterior, conforme a decisao operacional registrada no plano.
+
+Quando a semana 5 atravessar para o mes seguinte, ela continua pertencendo ao mes em que sua segunda-feira comecou. O planejamento do mes seguinte so inicia sua semana 1 na primeira segunda-feira dentro desse mes seguinte.
+
+Exemplo canonico para agosto de 2026:
+
+| Semana comercial | Inicio | Fim |
+|---|---:|---:|
+| Semana 1 | 2026-08-03 | 2026-08-09 |
+| Semana 2 | 2026-08-10 | 2026-08-16 |
+| Semana 3 | 2026-08-17 | 2026-08-23 |
+| Semana 4 | 2026-08-24 | 2026-08-30 |
+| Semana 5 | 2026-08-31 | 2026-09-06 |
+
 ## Regra canonica de metricas de funil no planejamento
 
 Planos mensais, marcos semanais e objetivos comerciais devem passar a usar metricas de funil como parte obrigatoria da decisao. O planejamento nao deve acompanhar apenas custo, receita e quantidade de experimentos; deve explicitar o volume esperado, executado e a conversao de cada etapa critica do caminho ate venda, liberacao de acesso e primeiro uso.

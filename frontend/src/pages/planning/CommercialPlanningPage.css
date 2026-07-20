@@ -33,6 +33,13 @@
   line-height: 1.05;
 }
 
+.commercial-planning-month-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .commercial-planning-month-objective {
   max-width: 900px;
   color: #344054;
@@ -918,6 +925,10 @@
   .commercial-planning-month-heading,
   .commercial-planning-month-grid {
     grid-template-columns: 1fr;
+  }
+
+  .commercial-planning-month-actions {
+    justify-content: flex-start;
   }
 
   .commercial-planning-month-metrics {

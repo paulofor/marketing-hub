@@ -14,6 +14,8 @@ import {
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 
+const CURRENT_OPERATIONAL_MONTH = "2026-07";
+
 const julyPlanningForm: SaveCommercialPlanPayload = {
   name: "Planejamento Julho 2026 - Primeira venda",
   status: "IN_PROGRESS",
@@ -129,6 +131,32 @@ function formatAverageViewTime(valueMs?: number | null) {
 function formatDate(value?: string | null) {
   if (!value) return "Não definido";
   return new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+
+function resolvePlanReferenceMonth(plan: CommercialPlan) {
+  return plan.deadline?.slice(0, 7) ?? CURRENT_OPERATIONAL_MONTH;
+}
+
+function addMonths(referenceMonth: string, months: number) {
+  const [year, month] = referenceMonth.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1 + months, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(
+    2,
+    "0",
+  )}`;
+}
+
+function monthLabel(referenceMonth: string) {
+  const [year, month] = referenceMonth.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, 1));
+  const label = date
+    .toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    })
+    .replace(" de ", " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function progressPercentage(target?: number | null, actual?: number | null) {
@@ -419,7 +447,9 @@ function formatBoolean(value?: boolean | null) {
   return value ? "Sim" : "Não";
 }
 
-function experimentProfit(experiment: CommercialPlanWeek["experiments"][number]) {
+function experimentProfit(
+  experiment: CommercialPlanWeek["experiments"][number],
+) {
   return (experiment.revenue ?? 0) - (experiment.totalCost ?? 0);
 }
 
@@ -539,9 +569,7 @@ function TopExperimentsRanking({ weeks }: { weeks: CommercialPlanWeek[] }) {
                 <div>
                   <span>Tempo médio</span>
                   <strong>
-                    {formatAverageViewTime(
-                      experiment.averageProductViewTimeMs,
-                    )}
+                    {formatAverageViewTime(experiment.averageProductViewTimeMs)}
                   </strong>
                 </div>
               </div>
@@ -688,10 +716,21 @@ export default function CommercialPlanningPage() {
     () => plans[0] ?? fallbackMonthPlan(),
     [plans],
   );
+  const planReferenceMonth = resolvePlanReferenceMonth(currentMonthPlan);
+  const [selectedReferenceMonth, setSelectedReferenceMonth] =
+    useState(planReferenceMonth);
+
+  useEffect(() => {
+    setSelectedReferenceMonth(planReferenceMonth);
+  }, [planReferenceMonth]);
+
   const planWeeksQuery = useCommercialPlanWeeks(
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+    selectedReferenceMonth,
   );
   const weeks = asArray(planWeeksQuery.data);
+  const showingPlanReferenceMonth =
+    selectedReferenceMonth === planReferenceMonth;
   const costProgress = progressPercentage(
     currentMonthPlan.maxBudget,
     currentMonthPlan.actualTotalCost,
@@ -712,7 +751,10 @@ export default function CommercialPlanningPage() {
     currentMonthPlan.experimentsToPublish,
     currentMonthPlan.actualExperimentsPublished,
   );
-  const monthFunnelStages = useMemo(() => aggregateFunnelStages(weeks), [weeks]);
+  const monthFunnelStages = useMemo(
+    () => aggregateFunnelStages(weeks),
+    [weeks],
+  );
 
   return (
     <div className="commercial-planning-page d-flex flex-column gap-4">
@@ -738,11 +780,33 @@ export default function CommercialPlanningPage() {
                 {planStatusLabel(currentMonthPlan.status)}
               </span>
               <p className="commercial-planning-month-eyebrow mb-1">
-                Plano do mês corrente
+                {showingPlanReferenceMonth
+                  ? "Plano do mês corrente"
+                  : "Plano do próximo mês"}
               </p>
               <h2 className="commercial-planning-month-title mb-2">
-                Julho 2026
+                {monthLabel(selectedReferenceMonth)}
               </h2>
+            </div>
+            <div className="commercial-planning-month-actions">
+              {!showingPlanReferenceMonth ? (
+                <button
+                  className="btn btn-outline-secondary"
+                  type="button"
+                  onClick={() => setSelectedReferenceMonth(planReferenceMonth)}
+                >
+                  Mês atual
+                </button>
+              ) : null}
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() =>
+                  setSelectedReferenceMonth((current) => addMonths(current, 1))
+                }
+              >
+                Próximo mês
+              </button>
             </div>
           </div>
 

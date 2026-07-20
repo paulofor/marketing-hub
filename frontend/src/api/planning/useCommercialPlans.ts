@@ -196,13 +196,18 @@ export function useCommercialPlans() {
   });
 }
 
-export function useCommercialPlanWeeks(planId?: number | null) {
+export function useCommercialPlanWeeks(
+  planId?: number | null,
+  referenceMonth?: string | null,
+) {
   return useQuery({
-    queryKey: ["commercial-plan-weeks", planId],
+    queryKey: ["commercial-plan-weeks", planId, referenceMonth],
     enabled: !!planId,
     queryFn: async () => {
+      const params = referenceMonth != null ? { referenceMonth } : undefined;
       const { data } = await axios.get<CommercialPlanWeek[]>(
         `/api/planning/commercial-plans/${planId}/weeks`,
+        { params },
       );
       return data;
     },

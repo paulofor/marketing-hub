@@ -2,6 +2,7 @@ package com.marketinghub.pde.controller;
 
 import com.marketinghub.pde.dto.AccessRequest;
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.FunnelAnalyticsJourneyResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsResetResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -117,6 +119,14 @@ public class AccessController {
     @GetMapping("/analytics/{productSlug}/summary")
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(@PathVariable("productSlug") String productSlug) {
         return accessService.summarizeFunnelAnalytics(productSlug);
+    }
+
+    /** Retorna jornadas individuais por sessão para localizar abandono antes do primeiro acesso. */
+    @GetMapping("/analytics/{productSlug}/journeys")
+    public FunnelAnalyticsJourneyResponse summarizeSessionJourneys(
+            @PathVariable("productSlug") String productSlug,
+            @RequestParam(name = "limit", defaultValue = "50") int limit) {
+        return accessService.summarizeSessionJourneys(productSlug, limit);
     }
 
     /** Limpa métricas acumuladas antes da primeira impressão de campanha paga real. */

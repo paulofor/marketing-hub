@@ -383,6 +383,22 @@ class AccessServiceTest {
         assertThat(summary.events()).isEmpty();
     }
 
+    /** Confirma que jornadas por sessão retornam vazio no modo local sem banco analítico. */
+    @Test
+    void returnsEmptySessionJourneysWithoutJdbcStorage() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        var journeys = accessService.summarizeSessionJourneys("metodo-musa-7-dias", 50);
+
+        assertThat(journeys.productSlug()).isEqualTo("metodo-musa-7-dias");
+        assertThat(journeys.totalSessions()).isZero();
+        assertThat(journeys.sessions()).isEmpty();
+    }
+
     /** Confirma que ambiente comercial não inicia sem persistência JDBC obrigatória. */
     @Test
     void rejectsStartupWhenJdbcStorageIsRequiredWithoutJdbcUrl() {

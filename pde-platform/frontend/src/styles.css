@@ -445,6 +445,27 @@ textarea {
   max-width: 600px;
 }
 
+.diagnostic-promise-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 0;
+  max-width: 620px;
+}
+
+.diagnostic-promise-strip span {
+  align-items: center;
+  background: #eef5f2;
+  border: 1px solid rgba(47, 89, 82, 0.18);
+  color: #2f5952;
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 850;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
 .login-scene-banner {
   align-items: end;
   background: #2f2a2c;
@@ -653,7 +674,7 @@ h3 {
   background: #f6ece4;
   border: 1px solid rgba(122, 36, 68, 0.12);
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
   margin-top: 0;
   max-width: 460px;
   padding: 4px;

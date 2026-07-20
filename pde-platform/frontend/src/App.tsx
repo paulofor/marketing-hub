@@ -1266,28 +1266,21 @@ function App() {
         <section className="login-hero" data-analytics-section="login_hero">
           <div className="login-panel">
             <img className="brand-logo login-brand-logo" src="/assets/logo-musa.svg" alt="Clube MUSA" />
-            <h1>Entre e descubra o detalhe que hoje apaga sua presença.</h1>
+            <h1>Descubra o detalhe que hoje apaga sua elegância.</h1>
             <p className="promise">
-              Libere seu diagnóstico inicial e o Dia 1 do Método MUSA: uma experiência guiada para
-              parecer mais elegante com escolhas simples, sem luxo caro nem compra por impulso.
+              Receba o Dia 1 gratuito do Método MUSA e identifique o primeiro ajuste de presença
+              antes de comprar roupa, maquiagem ou acessório novo.
             </p>
+            <div className="diagnostic-promise-strip" aria-label="O que o diagnóstico gratuito entrega">
+              <span><Sparkles size={16} /> Diagnóstico em poucos minutos</span>
+              <span><Check size={16} /> Primeiro ajuste prático hoje</span>
+              <span><Lock size={16} /> Plano completo só depois</span>
+            </div>
             <div className="login-scene-banner" aria-label="Mulher percebendo sua presença elegante no espelho">
               <img src="/assets/musa-editorial-presenca.png" alt="" />
-              <span>Uma mudança visível começa por um ajuste simples.</span>
+              <span>Veja o que está apagando sua presença antes de gastar com novas peças.</span>
             </div>
             <div className="auth-tabs" aria-label="Tipo de acesso">
-              <button
-                className={authMode === 'login' ? 'active' : ''}
-                onClick={() => {
-                  setAuthMode('login');
-                  setErrorMessage('');
-                  setSuccessMessage('');
-                  setDevAccessUrl('');
-                }}
-                type="button"
-              >
-                Entrar
-              </button>
               <button
                 className={authMode === 'register' ? 'active' : ''}
                 onClick={() => {
@@ -1298,17 +1291,29 @@ function App() {
                 }}
                 type="button"
               >
-                Primeiro acesso
+                Diagnóstico gratuito
+              </button>
+              <button
+                className={authMode === 'login' ? 'active' : ''}
+                onClick={() => {
+                  setAuthMode('login');
+                  setErrorMessage('');
+                  setSuccessMessage('');
+                  setDevAccessUrl('');
+                }}
+                type="button"
+              >
+                Já tenho acesso
               </button>
             </div>
             <p className="auth-help">
               {authMode === 'login' ? (
                 <>
-                  <strong>Já entrou antes?</strong> Informe o mesmo e-mail para receber um novo link seguro.
+                  <strong>Voltando ao Clube MUSA?</strong> Informe o e-mail da compra ou do primeiro acesso para receber um novo link seguro.
                 </>
               ) : (
                 <>
-                  <strong>Nova por aqui?</strong> O primeiro acesso libera o diagnóstico e o Dia 1 gratuitamente.
+                  <strong>Comece sem comprar agora.</strong> Informe seu e-mail para receber o diagnóstico inicial e ver o primeiro ajuste do Dia 1.
                 </>
               )}
             </p>
@@ -1319,10 +1324,10 @@ function App() {
               </div>
             )}
             <div className="auth-divider">
-              <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'receba seu primeiro link por e-mail'}</span>
+              <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'receba o diagnóstico gratuito por e-mail'}</span>
             </div>
             <label className="email-box login-email-box">
-              {authMode === 'login' ? 'E-mail do seu acesso MUSA' : 'E-mail para liberar o Dia 1'}
+              {authMode === 'login' ? 'E-mail do seu acesso MUSA' : 'Seu melhor e-mail para receber o diagnóstico'}
               <input
                 ref={emailInputRef}
                 type="email"
@@ -1358,25 +1363,25 @@ function App() {
                 <Mail size={18} />
                 {loading
                   ? 'Enviando link...'
-                  : (authMode === 'login' ? 'Receber link de entrada' : 'Começar meu diagnóstico gratuito')}
+                  : (authMode === 'login' ? 'Receber link de entrada' : 'Liberar meu diagnóstico gratuito')}
               </button>
             )}
             <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
-              <span><Check size={16} /> Diagnóstico gratuito</span>
-              <span><Sparkles size={16} /> Dia 1 liberado</span>
-              <span><Lock size={16} /> Continuação premium</span>
+              <span><Check size={16} /> Sem compromisso inicial</span>
+              <span><Sparkles size={16} /> Microação personalizada</span>
+              <span><Lock size={16} /> Dias 2 a 7 no premium</span>
             </div>
             <div className="login-preview-card" data-analytics-section="free_diagnostic_preview">
               <div>
-                <span>Primeira parte liberada</span>
-                <strong>Seu espelho MUSA</strong>
-                <p>Nomeie o detalhe que faz você se sentir arrumada, mas ainda pouco marcante.</p>
+                <span>O que você libera agora</span>
+                <strong>Diagnóstico do espelho</strong>
+                <p>Descubra se o que apaga sua elegância é excesso visual, falta de acabamento ou ausência de intenção.</p>
               </div>
               <ChevronRight size={22} />
             </div>
             <p className="access-note">
-              O login libera a primeira parte da experiência. O acesso completo desbloqueia o plano guiado
-              dos Dias 2 a 7, com apoio de consulta apenas quando você precisar revisar algum detalhe.
+              A primeira orientação é gratuita. O acesso completo só aparece depois que você entender o
+              diagnóstico inicial e decidir continuar o plano guiado dos Dias 2 a 7.
             </p>
           </div>
           <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA" data-analytics-section="musa_product_preview">

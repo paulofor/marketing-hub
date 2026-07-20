@@ -106,6 +106,30 @@ Cada marco deve ter:
 - bloqueio, se existir;
 - proxima acao recomendada.
 
+## Semanas comerciais do mes
+
+O modulo de Planejamento Comercial deve seguir a regra canonica registrada em `docs/canonical/commercial-planning-canon.v1.md`: as semanas comerciais do mes sempre comecam nas segundas-feiras existentes dentro do proprio mes e terminam no domingo seguinte.
+
+Regras praticas:
+
+- Semana 1: primeira segunda-feira do mes ate o domingo seguinte.
+- Semana 2: segunda segunda-feira do mes ate o domingo seguinte.
+- Semana 3: terceira segunda-feira do mes ate o domingo seguinte.
+- Semana 4: quarta segunda-feira do mes ate o domingo seguinte.
+- Semana 5: quinta segunda-feira do mes, quando existir, ate o domingo seguinte, mesmo atravessando para o mes seguinte.
+
+Dias antes da primeira segunda-feira do mes devem ser tratados como preparacao, fechamento, transicao ou remanescente do mes anterior, nao como semana comercial parcial.
+
+Planejamento de agosto de 2026:
+
+| Semana comercial | Periodo |
+|---|---|
+| Semana 1 | 2026-08-03 a 2026-08-09 |
+| Semana 2 | 2026-08-10 a 2026-08-16 |
+| Semana 3 | 2026-08-17 a 2026-08-23 |
+| Semana 4 | 2026-08-24 a 2026-08-30 |
+| Semana 5 | 2026-08-31 a 2026-09-06 |
+
 ## Gates de foco em venda
 
 Antes de avancar em qualquer marco relevante, o modulo deve verificar:

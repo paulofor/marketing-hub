@@ -98,7 +98,7 @@ public class AccessService {
             if (promotedToPaid) {
                 existingGrant.updateSource(source);
                 persistAccess(existingGrant);
-                recordSubscriptionApprovedIfNeeded(existingGrant, source);
+                recordSubscriptionApprovedIfNeeded(existingGrant, source, Map.of());
             }
             return toAccessResponse(existingGrant);
         }
@@ -106,7 +106,7 @@ public class AccessService {
         AccessGrant grant = new AccessGrant(token, productSlug, normalizeEmail(email), source, Instant.now());
         accessByToken.put(token, grant);
         persistAccess(grant);
-        recordSubscriptionApprovedIfNeeded(grant, source);
+        recordSubscriptionApprovedIfNeeded(grant, source, Map.of());
         return toAccessResponse(grant);
     }
 
@@ -132,7 +132,43 @@ public class AccessService {
                 productSlug,
                 transactionId,
                 buyerEmail);
-        return createAccess(productSlug, buyerEmail, "PEPPER");
+        return releasePepperPaidTransaction(
+                productSlug,
+                buyerEmail,
+                transactionId,
+                request.offer() == null ? null : request.offer().hash());
+    }
+
+    /** Libera compra paga consultada na Pepper quando o postback nao foi entregue. */
+    public AccessResponse releasePepperPaidTransaction(
+            String productSlug, String buyerEmail, String transactionId, String offerHash) {
+        productCatalogService.getProduct(productSlug);
+        if (buyerEmail == null || buyerEmail.isBlank()) {
+            throw new IllegalArgumentException("Transacao Pepper sem e-mail da compradora");
+        }
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        if (transactionId != null && !transactionId.isBlank()) {
+            metadata.put("pepperTransactionId", transactionId);
+        }
+        if (offerHash != null && !offerHash.isBlank()) {
+            metadata.put("pepperOfferHash", offerHash);
+        }
+        AccessGrant existingGrant = findGrantByEmail(productSlug, buyerEmail);
+        if (existingGrant != null) {
+            boolean promotedToPaid = shouldPromoteToPaidSource(existingGrant, "PEPPER");
+            if (promotedToPaid) {
+                existingGrant.updateSource("PEPPER");
+                persistAccess(existingGrant);
+                recordSubscriptionApprovedIfNeeded(existingGrant, "PEPPER", metadata);
+            }
+            return toAccessResponse(existingGrant);
+        }
+        String token = UUID.randomUUID().toString();
+        AccessGrant grant = new AccessGrant(token, productSlug, normalizeEmail(buyerEmail), "PEPPER", Instant.now());
+        accessByToken.put(token, grant);
+        persistAccess(grant);
+        recordSubscriptionApprovedIfNeeded(grant, "PEPPER", metadata);
+        return toAccessResponse(grant);
     }
 
     /** Cadastra uma cliente do produto e retorna o acesso da Área MUSA. */
@@ -457,8 +493,13 @@ public class AccessService {
     }
 
     /** Registra compra ou assinatura aprovada quando a origem representa checkout real. */
-    private void recordSubscriptionApprovedIfNeeded(AccessGrant grant, String source) {
+    private void recordSubscriptionApprovedIfNeeded(AccessGrant grant, String source, Map<String, Object> metadata) {
         if ("CHECKOUT".equalsIgnoreCase(source) || "PEPPER".equalsIgnoreCase(source)) {
+            Map<String, Object> eventMetadata = new LinkedHashMap<>();
+            eventMetadata.put("accessSource", source);
+            if (metadata != null) {
+                eventMetadata.putAll(metadata);
+            }
             recordFunnelEvent(new FunnelEventRequest(
                     grant.getProductSlug(),
                     "SUBSCRIPTION_APPROVED",
@@ -467,7 +508,7 @@ public class AccessService {
                     source,
                     "pde-platform",
                     null,
-                    Map.of("accessSource", source)));
+                    eventMetadata));
             recordFunnelEvent(new FunnelEventRequest(
                     grant.getProductSlug(),
                     "ACCESS_RELEASED",
@@ -476,7 +517,7 @@ public class AccessService {
                     source,
                     "pde-platform",
                     null,
-                    Map.of("accessSource", source)));
+                    eventMetadata));
         }
     }
 

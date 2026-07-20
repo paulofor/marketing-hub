@@ -39,6 +39,10 @@ docker compose -f pde-platform/docker-compose.yml up --build
 Deploy de produção:
 
 - Defina `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` apontando para o MySQL do Marketing Hub antes de subir o backend PDE.
+- Defina `PDE_PEPPER_API_TOKEN` em produção para reconciliar compras pagas quando o postback da Pepper não for entregue.
+- Mantenha `PDE_PEPPER_OFFER_HASHES=owm6x,c8mnn` durante a transição: `owm6x` é a oferta atual e `c8mnn` cobre compras reais antigas.
+- `PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS=6700` bloqueia liberação de acesso se a oferta antiga aparecer com valor zerado.
+- `PDE_PEPPER_SYNC_LOOKBACK_DAYS` define a janela de busca de transações recentes; o padrão é 14 dias.
 - Em produção, `PDE_ACCESS_REQUIRE_JDBC=true` é obrigatório para bloquear o backend quando a persistência analítica não estiver configurada.
 - Quando `PDE_APP_BASE_URL` apontar para `clubemusa.com.br`, o backend também bloqueia início sem JDBC mesmo se a flag operacional estiver ausente.
 - Sem JDBC, o modo local continua disponível para desenvolvimento, mas não deve ser usado como destino de campanha paga.
@@ -73,6 +77,7 @@ coerente com o histórico da jornada.
 - Em testes, use SMTP descartavel em `sandbox-mail:1025` e destinatarios `teste+<jobId>@sandbox.local`.
 - Acesso criado por Google/magic link entra como `TRIAL`; acesso por checkout/Pepper entra como `ACTIVE`.
 - O checkout Pepper do paywall MUSA deve ser configurado em runtime por `VITE_MUSA_CHECKOUT_URL`; a oferta atual de validação comercial aponta para `https://go.pepper.com.br/owm6x`.
+- Se o webhook/postback Pepper falhar, o backend pode reconciliar compras pagas pela API Pepper em `POST /api/pde/access/pepper/sync`, por `search` ou `transactionHash`; o login por e-mail também tenta essa reconciliação sob demanda antes de negar acesso.
 - Eventos medidos: funil comercial (`PED_ENTRY`, `LOGIN_STARTED`, `LOGIN_COMPLETED`, `PAYWALL_VIEWED`, `SUBSCRIPTION_CLICKED`, `SUBSCRIPTION_APPROVED`), uso da área logada (`MISSION_OPEN`, `MISSION_INTERACTION_SAVED`, `MISSION_COMPLETED`, `AI_GUIDANCE_REQUESTED`, `MATERIAL_OPEN`) e comportamento rico de tela (`SCREEN_VIEW`, `SCREEN_TIME`, `SECTION_VIEW`, `SCROLL_DEPTH`, `UI_CLICK`, `LINK_CLICK`, `FIELD_FOCUS`, `FIELD_INPUT`, `FIELD_FILLED`, `FIELD_ABANDONED`).
 
 ## DNS para envio por clubemusa.com.br

@@ -14,6 +14,13 @@ pde:
     require-jdbc: ${PDE_ACCESS_REQUIRE_JDBC:false}
     app-base-url: ${PDE_APP_BASE_URL:http://localhost:5176}
     expose-magic-link-in-response: ${PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE:false}
+    pepper:
+      api-base-url: ${PDE_PEPPER_API_BASE_URL:https://api.cloud.pepperpay.com.br/public/v1}
+      api-token: ${PDE_PEPPER_API_TOKEN:}
+      offer-hashes: ${PDE_PEPPER_OFFER_HASHES:owm6x,c8mnn}
+      product-slug: ${PDE_PEPPER_PRODUCT_SLUG:metodo-musa-7-dias}
+      sync-lookback-days: ${PDE_PEPPER_SYNC_LOOKBACK_DAYS:14}
+      minimum-paid-amount-cents: ${PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS:6700}
   auth:
     google:
       client-id: ${PDE_GOOGLE_CLIENT_ID:}

@@ -449,7 +449,13 @@ function App() {
   const visitorIdRef = useRef(stableBrowserId('musaVisitorId'));
   const sessionIdRef = useRef(window.sessionStorage.getItem('musaSessionId') ?? '');
   const visibleStartedAtRef = useRef(Date.now());
+  const screenStartedAtRef = useRef(Date.now());
+  const currentScreenRef = useRef('');
   const sectionSeenRef = useRef(new Set<string>());
+  const fieldFocusSeenRef = useRef(new Set<string>());
+  const fieldInputSeenRef = useRef(new Set<string>());
+  const scrollMilestoneSeenRef = useRef(new Set<number>());
+  const maxScrollDepthRef = useRef(0);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const missionPanelRef = useRef<HTMLElement>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
@@ -497,6 +503,29 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const screenName = resolveScreenName();
+    if (currentScreenRef.current && currentScreenRef.current !== screenName) {
+      flushScreenTime('screen_change');
+      scrollMilestoneSeenRef.current.clear();
+      maxScrollDepthRef.current = 0;
+    }
+    currentScreenRef.current = screenName;
+    screenStartedAtRef.current = Date.now();
+    trackEvent('SCREEN_VIEW', {
+      accessToken,
+      email: workspace?.email,
+      provider: workspace?.accessSource,
+      metadata: {
+        screenName,
+        missionId: activeMission?.id,
+        subscriptionStatus: workspace?.subscriptionStatus,
+        progressPercent: workspace?.progressPercent,
+        actionName: 'screen_view',
+      },
+    });
+  }, [workspace?.email, workspace?.subscriptionStatus, workspace?.progressPercent, accessToken, activeMission?.id, authMode]);
+
+  useEffect(() => {
     const observedSections = Array.from(document.querySelectorAll<HTMLElement>('[data-analytics-section]'));
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -528,8 +557,9 @@ function App() {
         accessToken,
         email: workspace?.email,
         provider: workspace?.accessSource,
-        metadata: { visibleMs, actionName: 'page_visibility_flush' },
+        metadata: { visibleMs, screenName: currentScreenRef.current, actionName: 'page_visibility_flush' },
       });
+      flushScreenTime('page_visibility_flush');
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
@@ -545,6 +575,131 @@ function App() {
       window.removeEventListener('pagehide', flushVisibleTime);
     };
   }, [accessToken, workspace?.email, workspace?.accessSource, product.slug]);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      const element = event.target instanceof Element
+        ? event.target.closest('button, a, [role="button"], input[type="button"], input[type="submit"]')
+        : null;
+      if (!element) {
+        return;
+      }
+      const isLink = element.tagName.toLowerCase() === 'a';
+      sendTrackingBeacon(isLink ? 'LINK_CLICK' : 'UI_CLICK', {
+        accessToken,
+        email: workspace?.email,
+        provider: workspace?.accessSource,
+        metadata: {
+          ...describeInteractiveElement(element),
+          screenName: currentScreenRef.current,
+          sectionId: resolveAnalyticsSection(element),
+          actionName: isLink ? 'link_click' : 'ui_click',
+        },
+      });
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const element = resolveFieldElement(event.target);
+      if (!element) {
+        return;
+      }
+      const field = describeFieldElement(element);
+      const key = `${window.location.pathname}:${field.fieldName}:focus`;
+      if (fieldFocusSeenRef.current.has(key)) {
+        return;
+      }
+      fieldFocusSeenRef.current.add(key);
+      sendTrackingBeacon('FIELD_FOCUS', {
+        accessToken,
+        email: workspace?.email,
+        provider: workspace?.accessSource,
+        metadata: {
+          ...field,
+          screenName: currentScreenRef.current,
+          sectionId: resolveAnalyticsSection(element),
+          actionName: 'field_focus',
+        },
+      });
+    };
+
+    const handleInput = (event: Event) => {
+      const element = resolveFieldElement(event.target);
+      if (!element) {
+        return;
+      }
+      const field = describeFieldElement(element);
+      const key = `${window.location.pathname}:${field.fieldName}:input`;
+      if (fieldInputSeenRef.current.has(key)) {
+        return;
+      }
+      fieldInputSeenRef.current.add(key);
+      sendTrackingBeacon('FIELD_INPUT', {
+        accessToken,
+        email: workspace?.email,
+        provider: workspace?.accessSource,
+        metadata: {
+          ...field,
+          screenName: currentScreenRef.current,
+          sectionId: resolveAnalyticsSection(element),
+          actionName: 'field_input_started',
+        },
+      });
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+      const element = resolveFieldElement(event.target);
+      if (!element) {
+        return;
+      }
+      const field = describeFieldElement(element);
+      sendTrackingBeacon(field.valueLength > 0 ? 'FIELD_FILLED' : 'FIELD_ABANDONED', {
+        accessToken,
+        email: workspace?.email,
+        provider: workspace?.accessSource,
+        metadata: {
+          ...field,
+          screenName: currentScreenRef.current,
+          sectionId: resolveAnalyticsSection(element),
+          actionName: field.valueLength > 0 ? 'field_filled' : 'field_abandoned',
+        },
+      });
+    };
+
+    const handleScroll = () => {
+      const scrollDepth = calculateScrollDepth();
+      maxScrollDepthRef.current = Math.max(maxScrollDepthRef.current, scrollDepth);
+      [25, 50, 75, 90, 100].forEach((milestone) => {
+        if (scrollDepth < milestone || scrollMilestoneSeenRef.current.has(milestone)) {
+          return;
+        }
+        scrollMilestoneSeenRef.current.add(milestone);
+        sendTrackingBeacon('SCROLL_DEPTH', {
+          accessToken,
+          email: workspace?.email,
+          provider: workspace?.accessSource,
+          metadata: {
+            screenName: currentScreenRef.current,
+            scrollDepthPercent: milestone,
+            maxScrollDepthPercent: maxScrollDepthRef.current,
+            actionName: 'scroll_depth',
+          },
+        });
+      });
+    };
+
+    document.addEventListener('click', handleClick, true);
+    document.addEventListener('focusin', handleFocusIn, true);
+    document.addEventListener('input', handleInput, true);
+    document.addEventListener('focusout', handleFocusOut, true);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      document.removeEventListener('focusin', handleFocusIn, true);
+      document.removeEventListener('input', handleInput, true);
+      document.removeEventListener('focusout', handleFocusOut, true);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [accessToken, workspace?.email, workspace?.accessSource]);
 
   useEffect(() => {
     if (!googleClientId || workspace) {
@@ -712,6 +867,25 @@ function App() {
     }).catch(() => undefined);
   }
 
+  function flushScreenTime(actionName: string) {
+    const screenVisibleMs = Date.now() - screenStartedAtRef.current;
+    screenStartedAtRef.current = Date.now();
+    if (!currentScreenRef.current || screenVisibleMs < 1000) {
+      return;
+    }
+    sendTrackingBeacon('SCREEN_TIME', {
+      accessToken,
+      email: workspace?.email,
+      provider: workspace?.accessSource,
+      metadata: {
+        screenName: currentScreenRef.current,
+        visibleMs: screenVisibleMs,
+        maxScrollDepthPercent: maxScrollDepthRef.current,
+        actionName,
+      },
+    });
+  }
+
   function buildTrackingPayload(eventType: string, options: TrackingOptions = {}) {
     const campaignParams = readCampaignParams();
     return {
@@ -736,6 +910,72 @@ function App() {
         ...options.metadata,
       },
     };
+  }
+
+  function resolveScreenName() {
+    if (!workspace) {
+      return authMode === 'login' ? 'login_returning_customer' : 'login_first_access';
+    }
+    if (!hasActiveSubscription && dayOneCompleted) {
+      return 'member_paywall_after_day_1';
+    }
+    return activeMission ? `member_mission_day_${activeMission.day}` : 'member_dashboard';
+  }
+
+  function resolveAnalyticsSection(element: Element) {
+    const section = element.closest<HTMLElement>('[data-analytics-section]');
+    return section?.dataset.analyticsSection;
+  }
+
+  function normalizeElementText(text: string | null | undefined) {
+    const normalized = (text ?? '').replace(/\s+/g, ' ').trim();
+    return normalized.length > 80 ? `${normalized.slice(0, 77)}...` : normalized || undefined;
+  }
+
+  function describeInteractiveElement(element: Element) {
+    const htmlElement = element as HTMLElement;
+    const input = element instanceof HTMLInputElement ? element : null;
+    const link = element instanceof HTMLAnchorElement ? element : null;
+    return {
+      elementTag: element.tagName.toLowerCase(),
+      elementRole: htmlElement.getAttribute('role') ?? undefined,
+      elementType: input?.type,
+      elementText: normalizeElementText(htmlElement.innerText || htmlElement.getAttribute('aria-label') || input?.value),
+      elementLabel: normalizeElementText(htmlElement.getAttribute('aria-label') || htmlElement.getAttribute('title')),
+      elementClass: htmlElement.className ? String(htmlElement.className).slice(0, 120) : undefined,
+      disabled: element.hasAttribute('disabled') || htmlElement.getAttribute('aria-disabled') === 'true',
+      hrefHost: link?.href ? resolveUrlHost(link.href) : undefined,
+      hrefPath: link?.href ? new URL(link.href).pathname : undefined,
+    };
+  }
+
+  function resolveFieldElement(target: EventTarget | null) {
+    if (
+      target instanceof HTMLInputElement
+      || target instanceof HTMLTextAreaElement
+      || target instanceof HTMLSelectElement
+    ) {
+      return target;
+    }
+    return null;
+  }
+
+  function describeFieldElement(element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) {
+    const label = element.closest('label');
+    const fieldName = element.name || element.id || element.getAttribute('aria-label') || normalizeElementText(label?.textContent) || element.type;
+    return {
+      fieldName: normalizeElementText(fieldName),
+      fieldTag: element.tagName.toLowerCase(),
+      fieldType: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
+      valueLength: element.value.length,
+      filled: element.value.trim().length > 0,
+    };
+  }
+
+  function calculateScrollDepth() {
+    const documentElement = document.documentElement;
+    const scrollableHeight = Math.max(1, documentElement.scrollHeight - window.innerHeight);
+    return Math.min(100, Math.round((window.scrollY / scrollableHeight) * 100));
   }
 
   async function handleSubscriptionClick() {

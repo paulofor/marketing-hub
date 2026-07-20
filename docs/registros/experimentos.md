@@ -5913,3 +5913,12 @@
 - foi feito: a coleta cobre entrada, login, paywall e telas internas da área logada, sem capturar o texto digitado pela cliente; são enviados metadados de campo, tamanho, tela, seção, dispositivo, UTM, sessão e visitante.
 - validação local: build frontend, teste visual desktop/mobile e testes unitários do backend passaram; uma simulação Playwright gerou 29 respostas `200` do endpoint `/api/pde/access/events`.
 - impacto comercial esperado: permitir análise de fricção e intenção antes da compra e dentro da experiência, identificando onde a usuária hesita, abandona campo, não rola até oferta, clica em recurso bloqueado ou abre missão sem concluir.
+
+## 2026-07-20 — PED/MUSA: canário Meta Ads publicado
+
+- foi feito: criada e ativada a campanha real `MUSA Canario Real 2026-07-20 - Trafego Clube MUSA` na conta Meta `anuncio digicom 01`, com destino `https://clubemusa.com.br`.
+- configuração inicial: orçamento diário de R$ 25,00, objetivo de tráfego/link clicks, público mulheres 25-45 no Brasil e interesses de moda feminina, saúde/beleza, maquiagem, skincare e fragrâncias.
+- criativo inicial: ângulo "Dor do espelho", usando asset visual já publicado pelo Clube MUSA e CTA `LEARN_MORE`.
+- IDs publicados: campanha `120250451632930326`, conjunto `120250451633320326`, criativo `1587146422774004`, anúncio `120250451636540326`.
+- validação imediata: campanha e conjunto ficaram `ACTIVE`; anúncio ficou `IN_PROCESS` aguardando processamento/revisão inicial da Meta; insights ainda sem dados no momento da publicação.
+- atenção comercial: a página operacional disponível na conta Meta é `Produtividade 360`, não uma página MUSA, o que pode reduzir coerência de marca até existir página própria do produto.

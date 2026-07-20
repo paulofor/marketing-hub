@@ -5922,3 +5922,11 @@
 - IDs publicados: campanha `120250451632930326`, conjunto `120250451633320326`, criativo `1587146422774004`, anúncio `120250451636540326`.
 - validação imediata: campanha e conjunto ficaram `ACTIVE`; anúncio ficou `IN_PROCESS` aguardando processamento/revisão inicial da Meta; insights ainda sem dados no momento da publicação.
 - atenção comercial: a página operacional disponível na conta Meta é `Produtividade 360`, não uma página MUSA, o que pode reduzir coerência de marca até existir página própria do produto.
+
+## 2026-07-20 — PED/MUSA: tentativa de página Meta própria
+
+- foi validado: o Business `Digicom Comunicação Digital` possui as páginas `Produtividade 360` e `50 Termos Tecnologia`, mas não possui página `Clube MUSA` associada.
+- foi validado: o token de página atual tem permissões de anúncios para a página existente; o token de sistema tem `business_management`, `ads_management` e `ads_read`, mas não lista negócios em `/me/businesses`.
+- bloqueio real: a Graph API não criou uma nova página no Business; `POST /{businessId}/pages` retornou operação não suportada e `POST /{businessId}/owned_pages` exigiu `page_id`, indicando associação de página existente, não criação de página nova.
+- asset preparado: pacote operacional em `tmp/musa-meta-page/` com `logo-musa.svg` e `clube-musa-cover-source.png`, baseado na identidade canônica do PDE.
+- decisão comercial: manter o canário rodando com a página atual enquanto a página real `Clube MUSA` é criada no Business Manager; assim que houver `page_id`, cadastrar no Marketing Hub e migrar a identidade dos próximos anúncios.

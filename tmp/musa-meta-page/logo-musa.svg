@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 128" role="img" aria-labelledby="title desc">
+  <title id="title">Clube MUSA</title>
+  <desc id="desc">Logo do Clube MUSA com monograma vinho, estrela dourada e assinatura editorial.</desc>
+  <rect x="6" y="10" width="108" height="108" rx="28" fill="#7A2444" />
+  <circle cx="60" cy="64" r="42" fill="#FFF8F3" />
+  <path
+    d="M33 84V43.6c0-3.3 4.2-4.8 6.2-2.2L60 68.4l20.8-27c2-2.6 6.2-1.1 6.2 2.2V84H75.2V61.7L64.3 75.9c-2 2.6-6.6 2.6-8.6 0L44.8 61.7V84H33Z"
+    fill="#7A2444"
+  />
+  <path
+    d="M60 25.8l4.3 8.6 9.5 1.4-6.9 6.7 1.6 9.4-8.5-4.5-8.5 4.5 1.6-9.4-6.9-6.7 9.5-1.4 4.3-8.6Z"
+    fill="#D6A75C"
+  />
+  <path d="M41 93h38" stroke="#D6A75C" stroke-width="7" stroke-linecap="round" />
+  <path d="M139 33h252" stroke="#D6A75C" stroke-width="4" stroke-linecap="round" opacity="0.9" />
+  <text x="137" y="78" fill="#7A2444" font-family="Georgia, 'Times New Roman', serif" font-size="52" font-weight="700" letter-spacing="2">MUSA</text>
+  <text x="141" y="103" fill="#2F2A2C" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1">MULHERES URBANAS SOFISTICACAO ACESSIVEL</text>
+</svg>

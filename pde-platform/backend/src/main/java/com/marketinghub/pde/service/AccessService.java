@@ -3,6 +3,9 @@ package com.marketinghub.pde.service;
 import com.marketinghub.pde.dto.AccessResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsResetResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsEventMetricDto;
+import com.marketinghub.pde.dto.FunnelAnalyticsJourneyResponse;
+import com.marketinghub.pde.dto.FunnelAnalyticsSessionJourneyDto;
+import com.marketinghub.pde.dto.FunnelAnalyticsSessionStepDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
@@ -25,7 +28,9 @@ import java.sql.Timestamp;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -314,6 +319,61 @@ public class AccessService {
         return emptyFunnelAnalytics(productSlug);
     }
 
+    /** Consolida jornadas recentes por sessão para diagnosticar onde a visitante abandonou. */
+    public FunnelAnalyticsJourneyResponse summarizeSessionJourneys(String productSlug, int limit) {
+        productCatalogService.getProduct(productSlug);
+        if (!usesJdbcStorage()) {
+            return new FunnelAnalyticsJourneyResponse(productSlug, 0, List.of());
+        }
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+        String sql = """
+                SELECT
+                  COALESCE(e.session_id, e.event_id) AS resolved_session_id,
+                  e.visitor_id,
+                  e.event_type,
+                  e.page_url,
+                  e.visible_ms,
+                  e.section_id,
+                  e.action_name,
+                  e.metadata_json,
+                  e.occurred_at
+                FROM pde_funnel_event e
+                JOIN (
+                  SELECT
+                    COALESCE(session_id, event_id) AS resolved_session_id,
+                    MAX(occurred_at) AS last_event_at
+                  FROM pde_funnel_event
+                  WHERE product_slug = ?
+                  GROUP BY COALESCE(session_id, event_id)
+                  ORDER BY last_event_at DESC
+                  LIMIT ?
+                ) recent ON recent.resolved_session_id = COALESCE(e.session_id, e.event_id)
+                WHERE e.product_slug = ?
+                ORDER BY recent.last_event_at DESC, e.occurred_at ASC, e.id ASC
+                """;
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            statement.setInt(2, safeLimit);
+            statement.setString(3, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<String, SessionJourneyBuilder> builders = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    String sessionId = resultSet.getString("resolved_session_id");
+                    SessionJourneyBuilder builder = builders.computeIfAbsent(sessionId, SessionJourneyBuilder::new);
+                    builder.add(toSessionJourneyEvent(resultSet));
+                }
+                List<FunnelAnalyticsSessionJourneyDto> sessions = builders.values().stream()
+                        .map(SessionJourneyBuilder::toDto)
+                        .toList();
+                return new FunnelAnalyticsJourneyResponse(productSlug, sessions.size(), sessions);
+            }
+        } catch (SQLException | IOException ex) {
+            log.error("Falha ao consolidar jornadas PDE; productSlug={}, limit={}", productSlug, safeLimit, ex);
+            throw new IllegalStateException("Não foi possível consolidar jornadas PDE", ex);
+        }
+    }
+
     /** Apaga eventos analíticos/testes do produto antes de iniciar leitura de campanha paga real. */
     public FunnelAnalyticsResetResponse resetFunnelAnalyticsForCampaignStart(String productSlug) {
         productCatalogService.getProduct(productSlug);
@@ -593,6 +653,38 @@ public class AccessService {
     /** Retorna métricas vazias quando o backend está em modo local sem banco analítico. */
     private FunnelAnalyticsSummaryResponse emptyFunnelAnalytics(String productSlug) {
         return new FunnelAnalyticsSummaryResponse(productSlug, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of());
+    }
+
+    /** Converte uma linha JDBC em evento normalizado de jornada. */
+    private SessionJourneyEvent toSessionJourneyEvent(ResultSet resultSet) throws SQLException, IOException {
+        Map<String, Object> metadata = readMetadata(resultSet.getString("metadata_json"));
+        return new SessionJourneyEvent(
+                resultSet.getString("visitor_id"),
+                resultSet.getString("event_type"),
+                resultSet.getString("page_url"),
+                nullableLong(resultSet, "visible_ms"),
+                resultSet.getString("section_id"),
+                resultSet.getString("action_name"),
+                resultSet.getTimestamp("occurred_at").toInstant(),
+                metadataString(metadata, "screenName"),
+                metadataLong(metadata, "scrollDepthPercent"),
+                metadataLong(metadata, "maxScrollDepthPercent"),
+                metadataString(metadata, "fieldName"),
+                metadataString(metadata, "elementText"));
+    }
+
+    /** Lê o JSON de metadados salvo no evento para detalhar tela, campo e clique. */
+    private Map<String, Object> readMetadata(String metadataJson) throws IOException {
+        if (metadataJson == null || metadataJson.isBlank()) {
+            return Map.of();
+        }
+        return objectMapper.readValue(metadataJson, new TypeReference<>() {});
+    }
+
+    /** Lê valor longo nullable preservando diferença entre zero e null. */
+    private Long nullableLong(ResultSet resultSet, String columnName) throws SQLException {
+        long value = resultSet.getLong(columnName);
+        return resultSet.wasNull() ? null : value;
     }
 
     /** Lê as contagens por tipo de evento para detalhar o relatório comercial. */
@@ -900,6 +992,173 @@ public class AccessService {
             return;
         }
         statement.setLong(index, value);
+    }
+
+    /** Evento interno já enriquecido para compor uma jornada individual. */
+    private record SessionJourneyEvent(
+            String visitorId,
+            String eventType,
+            String pageUrl,
+            Long visibleMs,
+            String sectionId,
+            String actionName,
+            Instant occurredAt,
+            String screenName,
+            Long scrollDepthPercent,
+            Long maxScrollDepthPercent,
+            String fieldName,
+            String elementText) {}
+
+    /** Acumula eventos de uma sessão e calcula sinais comerciais de abandono. */
+    private static class SessionJourneyBuilder {
+        private final String sessionId;
+        private final List<FunnelAnalyticsSessionStepDto> steps = new ArrayList<>();
+        private final Set<String> screenNames = new LinkedHashSet<>();
+        private final Set<String> sectionIds = new LinkedHashSet<>();
+        private String visitorId;
+        private Instant firstEventAt;
+        private Instant lastEventAt;
+        private long totalVisibleMs;
+        private long maxScrollDepthPercent;
+        private boolean fieldFocused;
+        private boolean fieldInputStarted;
+        private boolean fieldFilled;
+        private boolean ctaClicked;
+        private boolean loginStarted;
+        private boolean loginCompleted;
+        private boolean paywallViewed;
+        private boolean checkoutStarted;
+        private boolean subscriptionApproved;
+        private String lastEventType;
+        private String lastActionName;
+
+        /** Cria acumulador para uma sessão. */
+        private SessionJourneyBuilder(String sessionId) {
+            this.sessionId = sessionId;
+        }
+
+        /** Adiciona evento e atualiza os indicadores da sessão. */
+        private void add(SessionJourneyEvent event) {
+            if (visitorId == null || visitorId.isBlank()) {
+                visitorId = event.visitorId();
+            }
+            firstEventAt = firstEventAt == null || event.occurredAt().isBefore(firstEventAt)
+                    ? event.occurredAt()
+                    : firstEventAt;
+            lastEventAt = lastEventAt == null || event.occurredAt().isAfter(lastEventAt)
+                    ? event.occurredAt()
+                    : lastEventAt;
+            totalVisibleMs += event.visibleMs() == null ? 0 : event.visibleMs();
+            Long eventScrollDepth = event.maxScrollDepthPercent() != null
+                    ? event.maxScrollDepthPercent()
+                    : event.scrollDepthPercent();
+            maxScrollDepthPercent = Math.max(maxScrollDepthPercent, eventScrollDepth == null ? 0 : eventScrollDepth);
+            addIfPresent(screenNames, event.screenName());
+            addIfPresent(sectionIds, event.sectionId());
+            fieldFocused = fieldFocused || "FIELD_FOCUS".equals(event.eventType());
+            fieldInputStarted = fieldInputStarted || "FIELD_INPUT".equals(event.eventType());
+            fieldFilled = fieldFilled || "FIELD_FILLED".equals(event.eventType());
+            ctaClicked = ctaClicked || isCtaClick(event);
+            loginStarted = loginStarted || "LOGIN_STARTED".equals(event.eventType());
+            loginCompleted = loginCompleted || "LOGIN_COMPLETED".equals(event.eventType());
+            paywallViewed = paywallViewed || "PAYWALL_VIEWED".equals(event.eventType());
+            checkoutStarted = checkoutStarted || "CHECKOUT_STARTED".equals(event.eventType());
+            subscriptionApproved = subscriptionApproved || "SUBSCRIPTION_APPROVED".equals(event.eventType());
+            lastEventType = event.eventType();
+            lastActionName = event.actionName();
+            steps.add(new FunnelAnalyticsSessionStepDto(
+                    event.occurredAt().toString(),
+                    event.eventType(),
+                    event.screenName(),
+                    event.sectionId(),
+                    event.actionName(),
+                    event.visibleMs(),
+                    eventScrollDepth,
+                    event.fieldName(),
+                    event.elementText(),
+                    event.pageUrl()));
+        }
+
+        /** Monta o DTO público da jornada. */
+        private FunnelAnalyticsSessionJourneyDto toDto() {
+            return new FunnelAnalyticsSessionJourneyDto(
+                    sessionId,
+                    visitorId,
+                    firstEventAt == null ? null : firstEventAt.toString(),
+                    lastEventAt == null ? null : lastEventAt.toString(),
+                    totalVisibleMs,
+                    maxScrollDepthPercent,
+                    List.copyOf(screenNames),
+                    List.copyOf(sectionIds),
+                    fieldFocused,
+                    fieldInputStarted,
+                    fieldFilled,
+                    ctaClicked,
+                    loginStarted,
+                    loginCompleted,
+                    paywallViewed,
+                    checkoutStarted,
+                    subscriptionApproved,
+                    resolveAbandonmentPoint(),
+                    lastEventType,
+                    lastActionName,
+                    List.copyOf(steps));
+        }
+
+        /** Classifica o ponto de abandono mais útil para decisão de marketing. */
+        private String resolveAbandonmentPoint() {
+            if (subscriptionApproved) {
+                return "ASSINATURA_APROVADA";
+            }
+            if (checkoutStarted) {
+                return "ABANDONOU_CHECKOUT";
+            }
+            if (paywallViewed) {
+                return "ABANDONOU_PAYWALL";
+            }
+            if (loginCompleted) {
+                return "ENTROU_SEM_CHEGAR_AO_PAYWALL";
+            }
+            if (loginStarted) {
+                return "ABANDONOU_APOS_SOLICITAR_ACESSO";
+            }
+            if (fieldInputStarted || fieldFilled) {
+                return "ABANDONOU_NO_CAMPO_EMAIL";
+            }
+            if (fieldFocused) {
+                return "FOCOU_EMAIL_SEM_ENVIAR";
+            }
+            if (ctaClicked) {
+                return "CLICOU_CTA_SEM_LOGIN";
+            }
+            if (maxScrollDepthPercent >= 50 || sectionIds.size() > 1) {
+                return "CONSUMIU_PAGINA_SEM_ACAO";
+            }
+            return "SAIU_NA_PRIMEIRA_DOBRA";
+        }
+
+        /** Identifica cliques em CTA sem depender de texto exato do botão. */
+        private boolean isCtaClick(SessionJourneyEvent event) {
+            if (!"UI_CLICK".equals(event.eventType()) && !"LINK_CLICK".equals(event.eventType())) {
+                return false;
+            }
+            String actionName = event.actionName() == null ? "" : event.actionName().toLowerCase();
+            String elementText = event.elementText() == null ? "" : event.elementText().toLowerCase();
+            return actionName.contains("cta")
+                    || elementText.contains("acesso")
+                    || elementText.contains("diagnóstico")
+                    || elementText.contains("diagnostico")
+                    || elementText.contains("liberar")
+                    || elementText.contains("começar")
+                    || elementText.contains("comecar");
+        }
+
+        /** Adiciona texto não vazio preservando ordem de descoberta. */
+        private void addIfPresent(Set<String> values, String value) {
+            if (value != null && !value.isBlank()) {
+                values.add(value);
+            }
+        }
     }
 
     /** Representa o formato persistido do acesso para armazenamento em JSON. */

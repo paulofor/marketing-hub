@@ -149,7 +149,7 @@ class AccessServiceTest {
                 "",
                 "",
                 false,
-                "https://clubemusa.com.br",
+                "http://localhost:5176",
                 false,
                 new FailingMailService(),
                 null);
@@ -376,6 +376,27 @@ class AccessServiceTest {
                 "",
                 "",
                 true,
+                "https://clubemusa.com.br",
+                false,
+                null,
+                null));
+
+        assertThat(exception.getMessage()).contains("URL, usuário e senha JDBC");
+    }
+
+    /** Confirma que o Clube MUSA público não aceita modo local sem persistência analítica. */
+    @Test
+    void rejectsCommercialMusaUrlWithoutJdbcEvenWhenRequireFlagIsMissing() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                "",
+                "",
+                "",
+                false,
                 "https://clubemusa.com.br",
                 false,
                 null,

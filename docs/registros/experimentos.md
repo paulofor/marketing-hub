@@ -1,3 +1,11 @@
+## 2026-07-20 — Clube MUSA: bloqueio anti-deploy sem analytics JDBC
+
+- causa-raiz confirmada: o backend PDE podia iniciar em modo comercial se `PDE_ACCESS_REQUIRE_JDBC` viesse ausente ou se o deploy usasse configuração local, fazendo eventos retornarem `RECORDED` sem persistir em `pde_funnel_event`.
+- evidência comercial: o funil MUSA respondia eventos, mas o log indicava `Evento PDE registrado sem persistência JDBC`, deixando analytics e liberação auditável frágeis para tráfego pago.
+- foi feito: o backend PDE agora bloqueia início sem URL, usuário e senha JDBC sempre que `PDE_APP_BASE_URL` apontar para `clubemusa.com.br`, mesmo se a flag operacional estiver ausente.
+- prevenção de recorrência: teste unitário cobre o bloqueio do Clube MUSA público sem JDBC e o README do PDE documenta a regra.
+- impacto esperado: evita iniciar campanha paga com checkout ativo, mas sem medição persistida do funil de entrada, paywall, compra, liberação e ativação.
+
 ## 2026-07-18 — PDE Platform: log correto no MCP para Clube MUSA
 
 - causa-raiz confirmada: o default do MCP para `pde-platform-backend` apontava para `191.252.181.168:8096`, host que não expõe o backend PDE; o Clube MUSA/PDE está publicado em `191.252.102.54:8096`.

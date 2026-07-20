@@ -603,7 +603,7 @@ public class AccessService {
 
     /** Bloqueia execução comercial quando a produção exigir persistência JDBC configurada. */
     private void validateJdbcStorageRequirement() {
-        if (requireJdbcStorage
+        if ((requireJdbcStorage || isCommercialProductionUrl())
                 && (!usesJdbcStorage()
                         || jdbcUsername == null
                         || jdbcUsername.isBlank()
@@ -612,6 +612,11 @@ public class AccessService {
             throw new IllegalStateException(
                     "Persistência JDBC do PDE é obrigatória neste ambiente; configure URL, usuário e senha JDBC");
         }
+    }
+
+    /** Identifica URLs comerciais públicas que não podem operar em modo local sem banco. */
+    private boolean isCommercialProductionUrl() {
+        return appBaseUrl != null && appBaseUrl.toLowerCase().contains("clubemusa.com.br");
     }
 
     /** Abre conexão direta com o banco configurado para o PDE. */

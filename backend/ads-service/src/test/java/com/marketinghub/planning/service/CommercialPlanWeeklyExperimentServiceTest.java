@@ -58,10 +58,10 @@ class CommercialPlanWeeklyExperimentServiceTest {
         when(planService.getPlan(1L)).thenReturn(plan);
     }
 
-    /** Deve liberar edicao dos objetivos da proxima semana dois dias antes ate dois dias depois do fim da semana atual. */
+    /** Deve liberar edicao dos objetivos da proxima semana dois dias antes ate dois dias depois do fim da semana comercial. */
     @Test
     void listWeeksMarksObjectivesEditableOnlyInsideWindow() {
-        CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 8));
+        CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 11));
         when(objectiveRepository.findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(any(), any()))
                 .thenAnswer(invocation -> {
                     Integer weekNumber = invocation.getArgument(1);
@@ -94,10 +94,14 @@ class CommercialPlanWeeklyExperimentServiceTest {
 
         List<CommercialPlanWeekDto> weeks = service.listWeeks(1L);
 
-        assertThat(weeks).hasSize(5);
+        assertThat(weeks).hasSize(4);
+        assertThat(weeks.get(0).startDate()).isEqualTo(LocalDate.of(2026, 7, 6));
+        assertThat(weeks.get(0).endDate()).isEqualTo(LocalDate.of(2026, 7, 12));
+        assertThat(weeks.get(3).startDate()).isEqualTo(LocalDate.of(2026, 7, 27));
+        assertThat(weeks.get(3).endDate()).isEqualTo(LocalDate.of(2026, 8, 2));
         assertThat(weeks.get(0).objectivesEditable()).isTrue();
         assertThat(weeks.get(1).objectivesEditable()).isFalse();
-        assertThat(weeks.get(0).objectiveEditWindowMessage()).contains("2026-07-09");
+        assertThat(weeks.get(0).objectiveEditWindowMessage()).contains("2026-07-14");
         assertThat(weeks.get(0).objectives())
                 .extracting(CommercialPlanWeekObjectiveDto::objectiveText)
                 .containsExactly("Objetivo cadastrado para a semana seguinte.");
@@ -117,6 +121,43 @@ class CommercialPlanWeeklyExperimentServiceTest {
                 .filteredOn(stage -> Boolean.FALSE.equals(stage.applicable()))
                 .extracting(CommercialPlanFunnelStageDto::code)
                 .contains("LOGIN_OR_SIGNUP", "OFFER_VIEW", "ACCESS_GRANTED", "FIRST_USE");
+    }
+
+    /** Deve listar agosto de 2026 pela primeira segunda-feira ate o domingo seguinte a quinta segunda-feira. */
+    @Test
+    void listWeeksUsesRequestedReferenceMonthWithCommercialMondays() {
+        CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 20));
+        when(jdbcTemplate.query(
+                        anyString(),
+                        any(RowMapper.class),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any()))
+                .thenReturn(List.<CommercialPlanWeekExperimentDto>of());
+
+        List<CommercialPlanWeekDto> weeks = service.listWeeks(1L, "2026-08");
+
+        assertThat(weeks).hasSize(5);
+        assertThat(weeks.get(0).startDate()).isEqualTo(LocalDate.of(2026, 8, 3));
+        assertThat(weeks.get(0).endDate()).isEqualTo(LocalDate.of(2026, 8, 9));
+        assertThat(weeks.get(4).startDate()).isEqualTo(LocalDate.of(2026, 8, 31));
+        assertThat(weeks.get(4).endDate()).isEqualTo(LocalDate.of(2026, 9, 6));
+        assertThat(weeks)
+                .extracting(CommercialPlanWeekDto::objectivesEditable)
+                .containsOnly(false);
+        assertThat(weeks)
+                .flatExtracting(CommercialPlanWeekDto::objectives)
+                .isEmpty();
+        verify(objectiveRepository, never()).findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(any(), any());
     }
 
     /** Deve calcular tempo medio com todas as sessoes de analytics, alinhado ao detalhe do experimento. */
@@ -145,7 +186,7 @@ class CommercialPlanWeeklyExperimentServiceTest {
         service.listWeeks(1L);
 
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
-        verify(jdbcTemplate, times(5)).query(
+        verify(jdbcTemplate, times(4)).query(
                 sqlCaptor.capture(),
                 any(RowMapper.class),
                 any(),
@@ -187,7 +228,7 @@ class CommercialPlanWeeklyExperimentServiceTest {
     /** Deve gravar os objetivos na semana seguinte ao card editado. */
     @Test
     void updateObjectivesStoresNextWeekObjectivesFromCurrentWeekCard() {
-        CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 15));
+        CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 18));
         when(objectiveRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         List<?> objectives = service.updateObjectives(

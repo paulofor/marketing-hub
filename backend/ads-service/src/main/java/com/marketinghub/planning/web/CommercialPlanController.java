@@ -63,10 +63,12 @@ public class CommercialPlanController {
         return mapper.toDto(service.getPlan(id), service.listMilestones(id), service.listSimulations(id));
     }
 
-    /** Lista os experimentos de cada semana e os objetivos planejados para a semana seguinte. */
+    /** Lista os experimentos de cada semana do mes de referencia e os objetivos planejados para a semana seguinte. */
     @GetMapping("/{id}/weeks")
-    public List<CommercialPlanWeekDto> listWeeks(@PathVariable Long id) {
-        return weeklyExperimentService.listWeeks(id);
+    public List<CommercialPlanWeekDto> listWeeks(
+            @PathVariable Long id,
+            @RequestParam(required = false) String referenceMonth) {
+        return weeklyExperimentService.listWeeks(id, referenceMonth);
     }
 
     /** Atualiza os objetivos planejados para a semana seguinte ao card informado. */

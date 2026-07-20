@@ -48,6 +48,7 @@ public class AccessService {
     private final String jdbcUrl;
     private final String jdbcUsername;
     private final String jdbcPassword;
+    private final boolean requireJdbcStorage;
     private final String appBaseUrl;
     private final boolean exposeMagicLinkInResponse;
     private final PdeMailService mailService;
@@ -63,6 +64,7 @@ public class AccessService {
             @Value("${pde.access.jdbc-url:}") String jdbcUrl,
             @Value("${pde.access.jdbc-username:}") String jdbcUsername,
             @Value("${pde.access.jdbc-password:}") String jdbcPassword,
+            @Value("${pde.access.require-jdbc:false}") boolean requireJdbcStorage,
             @Value("${pde.access.app-base-url:http://localhost:5176}") String appBaseUrl,
             @Value("${pde.access.expose-magic-link-in-response:false}") boolean exposeMagicLinkInResponse,
             PdeMailService mailService,
@@ -73,16 +75,18 @@ public class AccessService {
         this.jdbcUrl = jdbcUrl;
         this.jdbcUsername = jdbcUsername;
         this.jdbcPassword = jdbcPassword;
+        this.requireJdbcStorage = requireJdbcStorage;
         this.appBaseUrl = appBaseUrl;
         this.exposeMagicLinkInResponse = exposeMagicLinkInResponse;
         this.mailService = mailService;
         this.googleIdentityService = googleIdentityService;
+        validateJdbcStorageRequirement();
         loadPersistedAccess();
     }
 
     /** Recebe dependências para testes locais com persistência em arquivo. */
     public AccessService(ProductCatalogService productCatalogService, ObjectMapper objectMapper, String storagePath) {
-        this(productCatalogService, objectMapper, storagePath, "", "", "", "http://localhost:5176", true, null, null);
+        this(productCatalogService, objectMapper, storagePath, "", "", "", false, "http://localhost:5176", true, null, null);
     }
 
     /** Cria um acesso para um produto existente e retorna a URL da área da cliente. */
@@ -595,6 +599,24 @@ public class AccessService {
     /** Informa se o backend PDE deve usar o banco MySQL do Marketing Hub. */
     private boolean usesJdbcStorage() {
         return jdbcUrl != null && !jdbcUrl.isBlank();
+    }
+
+    /** Bloqueia execução comercial quando a produção exigir persistência JDBC configurada. */
+    private void validateJdbcStorageRequirement() {
+        if ((requireJdbcStorage || isCommercialProductionUrl())
+                && (!usesJdbcStorage()
+                        || jdbcUsername == null
+                        || jdbcUsername.isBlank()
+                        || jdbcPassword == null
+                        || jdbcPassword.isBlank())) {
+            throw new IllegalStateException(
+                    "Persistência JDBC do PDE é obrigatória neste ambiente; configure URL, usuário e senha JDBC");
+        }
+    }
+
+    /** Identifica URLs comerciais públicas que não podem operar em modo local sem banco. */
+    private boolean isCommercialProductionUrl() {
+        return appBaseUrl != null && appBaseUrl.toLowerCase().contains("clubemusa.com.br");
     }
 
     /** Abre conexão direta com o banco configurado para o PDE. */

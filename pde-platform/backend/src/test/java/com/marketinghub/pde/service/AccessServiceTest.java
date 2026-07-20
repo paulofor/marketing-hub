@@ -148,7 +148,8 @@ class AccessServiceTest {
                 "",
                 "",
                 "",
-                "https://clubemusa.com.br",
+                false,
+                "http://localhost:5176",
                 false,
                 new FailingMailService(),
                 null);
@@ -360,6 +361,48 @@ class AccessServiceTest {
 
         assertThat(summary.totalEvents()).isZero();
         assertThat(summary.events()).isEmpty();
+    }
+
+    /** Confirma que ambiente comercial não inicia sem persistência JDBC obrigatória. */
+    @Test
+    void rejectsStartupWhenJdbcStorageIsRequiredWithoutJdbcUrl() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                "",
+                "",
+                "",
+                true,
+                "https://clubemusa.com.br",
+                false,
+                null,
+                null));
+
+        assertThat(exception.getMessage()).contains("URL, usuário e senha JDBC");
+    }
+
+    /** Confirma que o Clube MUSA público não aceita modo local sem persistência analítica. */
+    @Test
+    void rejectsCommercialMusaUrlWithoutJdbcEvenWhenRequireFlagIsMissing() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                "",
+                "",
+                "",
+                false,
+                "https://clubemusa.com.br",
+                false,
+                null,
+                null));
+
+        assertThat(exception.getMessage()).contains("URL, usuário e senha JDBC");
     }
 
     /** Confirma que uma orientação por IA nasce pendente e é entregue ao worker PDE. */

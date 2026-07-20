@@ -11,6 +11,7 @@ pde:
     jdbc-url: ${PDE_ACCESS_JDBC_URL:}
     jdbc-username: ${PDE_ACCESS_JDBC_USERNAME:}
     jdbc-password: ${PDE_ACCESS_JDBC_PASSWORD:}
+    require-jdbc: ${PDE_ACCESS_REQUIRE_JDBC:false}
     app-base-url: ${PDE_APP_BASE_URL:http://localhost:5176}
     expose-magic-link-in-response: ${PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE:false}
   auth:

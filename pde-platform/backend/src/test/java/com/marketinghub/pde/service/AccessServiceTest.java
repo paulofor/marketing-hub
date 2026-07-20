@@ -148,6 +148,7 @@ class AccessServiceTest {
                 "",
                 "",
                 "",
+                false,
                 "https://clubemusa.com.br",
                 false,
                 new FailingMailService(),
@@ -360,6 +361,27 @@ class AccessServiceTest {
 
         assertThat(summary.totalEvents()).isZero();
         assertThat(summary.events()).isEmpty();
+    }
+
+    /** Confirma que ambiente comercial não inicia sem persistência JDBC obrigatória. */
+    @Test
+    void rejectsStartupWhenJdbcStorageIsRequiredWithoutJdbcUrl() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                "",
+                "",
+                "",
+                true,
+                "https://clubemusa.com.br",
+                false,
+                null,
+                null));
+
+        assertThat(exception.getMessage()).contains("URL, usuário e senha JDBC");
     }
 
     /** Confirma que uma orientação por IA nasce pendente e é entregue ao worker PDE. */

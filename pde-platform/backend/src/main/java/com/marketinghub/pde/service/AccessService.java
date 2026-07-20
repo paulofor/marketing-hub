@@ -1,6 +1,7 @@
 package com.marketinghub.pde.service;
 
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.FunnelAnalyticsResetResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsEventMetricDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
@@ -311,6 +312,29 @@ public class AccessService {
             throw new IllegalStateException("Não foi possível consolidar analytics PDE", ex);
         }
         return emptyFunnelAnalytics(productSlug);
+    }
+
+    /** Apaga eventos analíticos/testes do produto antes de iniciar leitura de campanha paga real. */
+    public FunnelAnalyticsResetResponse resetFunnelAnalyticsForCampaignStart(String productSlug) {
+        productCatalogService.getProduct(productSlug);
+        if (!usesJdbcStorage()) {
+            log.info("Reset de analytics PDE ignorado sem JDBC; productSlug={}", productSlug);
+            return new FunnelAnalyticsResetResponse(productSlug, 0, "SKIPPED_NO_JDBC");
+        }
+        String sql = "DELETE FROM pde_funnel_event WHERE product_slug = ?";
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            int deletedEvents = statement.executeUpdate();
+            log.info(
+                    "Reset de analytics PDE para inicio de campanha; productSlug={}, deletedEvents={}",
+                    productSlug,
+                    deletedEvents);
+            return new FunnelAnalyticsResetResponse(productSlug, deletedEvents, "RESET");
+        } catch (SQLException ex) {
+            log.error("Falha ao limpar analytics PDE para inicio de campanha; productSlug={}", productSlug, ex);
+            throw new IllegalStateException("Não foi possível limpar analytics PDE", ex);
+        }
     }
 
     /** Retorna a área de trabalho da cliente com produto e progresso atuais. */

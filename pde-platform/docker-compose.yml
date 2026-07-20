@@ -27,6 +27,9 @@ services:
       - pde-platform-backend
     ports:
       - "5176:80"
+    environment:
+      VITE_MUSA_CHECKOUT_URL: ${VITE_MUSA_CHECKOUT_URL:-https://go.pepper.com.br/c8mnn}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
 
   pde-ai-worker:
     build:

@@ -235,6 +235,26 @@ class AccessServiceTest {
         assertThat(workspace.accessSource()).isEqualTo("PEPPER");
     }
 
+    /** Confirma que a reconciliacao Pepper sem webhook usa a mesma liberacao paga. */
+    @Test
+    void releasesAccessFromPepperPaidTransactionFallback() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        AccessResponse access = accessService.releasePepperPaidTransaction(
+                "metodo-musa-7-dias",
+                "cliente@sandbox.local",
+                "jft4eub7br",
+                "owm6x");
+        WorkspaceResponse workspace = accessService.getWorkspace(access.token());
+
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.accessSource()).isEqualTo("PEPPER");
+    }
+
     /** Confirma que webhook Pepper aguardando pagamento não libera acesso completo. */
     @Test
     void rejectsPepperWebhookWithoutPaidStatus() {

@@ -9,9 +9,14 @@ import com.marketinghub.pde.dto.GoogleAccessRequest;
 import com.marketinghub.pde.dto.MagicLinkResponse;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
+import com.marketinghub.pde.dto.PepperSyncRequest;
+import com.marketinghub.pde.dto.PepperSyncResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.service.AccessService;
+import com.marketinghub.pde.service.PepperTransactionSyncService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,12 +30,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/pde/access")
 public class AccessController {
+    private static final Logger log = LoggerFactory.getLogger(AccessController.class);
 
     private final AccessService accessService;
+    private final PepperTransactionSyncService pepperTransactionSyncService;
 
-    /** Recebe o serviço que controla acessos liberados. */
-    public AccessController(AccessService accessService) {
+    /** Recebe os serviços que controlam acessos liberados e reconciliação Pepper. */
+    public AccessController(AccessService accessService, PepperTransactionSyncService pepperTransactionSyncService) {
         this.accessService = accessService;
+        this.pepperTransactionSyncService = pepperTransactionSyncService;
     }
 
     /** Cria um acesso de desenvolvimento para validar a experiência antes do checkout real. */
@@ -57,7 +65,17 @@ public class AccessController {
     /** Autentica uma cliente já cadastrada pelo e-mail do produto. */
     @PostMapping("/login")
     public AccessResponse loginCustomer(@Valid @RequestBody AccessRequest request) {
-        return accessService.loginCustomer(request.productSlug(), request.email());
+        try {
+            return accessService.loginCustomer(request.productSlug(), request.email());
+        } catch (IllegalArgumentException ex) {
+            log.info(
+                    "Login PDE sem acesso local, tentando reconciliacao Pepper; productSlug={}, email={}",
+                    request.productSlug(),
+                    request.email(),
+                    ex);
+            pepperTransactionSyncService.syncPaidTransactions(request.productSlug(), request.email());
+            return accessService.loginCustomer(request.productSlug(), request.email());
+        }
     }
 
     /** Envia um link mágico para a cliente entrar sem senha na Área MUSA. */
@@ -69,7 +87,17 @@ public class AccessController {
     /** Envia um link mágico somente para cliente que já possui cadastro na Área MUSA. */
     @PostMapping("/login-link")
     public MagicLinkResponse requestLoginLink(@Valid @RequestBody AccessRequest request) {
-        return accessService.requestExistingMagicLink(request.productSlug(), request.email());
+        try {
+            return accessService.requestExistingMagicLink(request.productSlug(), request.email());
+        } catch (IllegalArgumentException ex) {
+            log.info(
+                    "Magic link PDE sem acesso local, tentando reconciliacao Pepper; productSlug={}, email={}",
+                    request.productSlug(),
+                    request.email(),
+                    ex);
+            pepperTransactionSyncService.syncPaidTransactions(request.productSlug(), request.email());
+            return accessService.requestExistingMagicLink(request.productSlug(), request.email());
+        }
     }
 
     /** Autentica a cliente pelo Google e cria ou reutiliza o acesso da Área MUSA. */
@@ -95,6 +123,15 @@ public class AccessController {
     @ResponseStatus(HttpStatus.CREATED)
     public AccessResponse receivePepperWebhook(@Valid @RequestBody PepperWebhookRequest request) {
         return accessService.receivePepperWebhook(request);
+    }
+
+    /** Reconcila compras pagas na Pepper para liberar acessos quando o webhook nao chegou. */
+    @PostMapping("/pepper/sync")
+    public PepperSyncResponse syncPepperTransactions(@RequestBody(required = false) PepperSyncRequest request) {
+        String productSlug = request == null ? null : request.productSlug();
+        String search = request == null ? null : request.search();
+        String transactionHash = request == null ? null : request.transactionHash();
+        return pepperTransactionSyncService.syncPaidTransactions(productSlug, search, transactionHash);
     }
 
     /** Retorna a área de trabalho da cliente autenticada por token de acesso. */

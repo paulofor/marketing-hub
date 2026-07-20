@@ -428,6 +428,10 @@ function resolveUrlHost(url: string) {
   }
 }
 
+function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID', fallback = '') {
+  return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
+}
+
 function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [product, setProduct] = useState<ProductExperience>(fallbackProduct);
@@ -458,8 +462,14 @@ function App() {
   const maxScrollDepthRef = useRef(0);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const missionPanelRef = useRef<HTMLElement>(null);
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-  const checkoutUrl = (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '';
+  const googleClientId = readRuntimeConfigValue(
+    'VITE_GOOGLE_CLIENT_ID',
+    (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '',
+  );
+  const checkoutUrl = readRuntimeConfigValue(
+    'VITE_MUSA_CHECKOUT_URL',
+    (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '',
+  );
 
   const activeMission = useMemo(() => {
     const missionList = workspace?.product.missions ?? product.missions;

@@ -489,6 +489,42 @@ class AccessServiceTest {
         assertThat(fetched.serviceTier()).isEqualTo("flex");
     }
 
+    /** Confirma que eventos comportamentais ricos da tela fazem parte do contrato analítico. */
+    @Test
+    void acceptsRichBehaviorAnalyticsEvents() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString());
+
+        List<String> eventTypes = List.of(
+                "SCREEN_VIEW",
+                "SCREEN_TIME",
+                "SCROLL_DEPTH",
+                "UI_CLICK",
+                "LINK_CLICK",
+                "FIELD_FOCUS",
+                "FIELD_INPUT",
+                "FIELD_FILLED",
+                "FIELD_ABANDONED");
+
+        eventTypes.forEach(eventType -> {
+            var response = accessService.recordFunnelEvent(new FunnelEventRequest(
+                    "metodo-musa-7-dias",
+                    eventType,
+                    null,
+                    "cliente@sandbox.local",
+                    "TEST",
+                    "test",
+                    "http://localhost:5176",
+                    Map.of("screenName", "login_first_access", "actionName", eventType.toLowerCase())));
+
+            assertThat(response.eventType()).isEqualTo(eventType);
+            assertThat(response.status()).isEqualTo("RECORDED");
+        });
+    }
+
     /** Confirma que eventos fora do contrato continuam bloqueados. */
     @Test
     void rejectsUnsupportedFunnelEvent() {

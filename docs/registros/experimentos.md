@@ -5898,3 +5898,10 @@
 - foi feito: a tela da Área MUSA passou a coletar 3 respostas práticas por missão e acionar a Consultora MUSA para gerar um cartão curto, personalizado e acionável.
 - foi feito: o worker PDE AI passou a selecionar prompt/schema por tipo de orientação, preservando OpenAI fora do frontend e mantendo auditoria no backend.
 - impacto comercial esperado: aumentar valor percebido do acesso completo, transformar a IA em apoio diário da cliente e criar mais evidências de progresso para reduzir abandono antes e depois da compra.
+
+## 2026-07-20 — PED/MUSA: analytics comportamental rico
+
+- foi feito: a Área MUSA passou a registrar comportamento de tela além do funil comercial, cobrindo `SCREEN_VIEW`, `SCREEN_TIME`, `SCROLL_DEPTH`, `UI_CLICK`, `LINK_CLICK`, `FIELD_FOCUS`, `FIELD_INPUT`, `FIELD_FILLED` e `FIELD_ABANDONED`.
+- foi feito: a coleta cobre entrada, login, paywall e telas internas da área logada, sem capturar o texto digitado pela cliente; são enviados metadados de campo, tamanho, tela, seção, dispositivo, UTM, sessão e visitante.
+- validação local: build frontend, teste visual desktop/mobile e testes unitários do backend passaram; uma simulação Playwright gerou 29 respostas `200` do endpoint `/api/pde/access/events`.
+- impacto comercial esperado: permitir análise de fricção e intenção antes da compra e dentro da experiência, identificando onde a usuária hesita, abandona campo, não rola até oferta, clica em recurso bloqueado ou abre missão sem concluir.

@@ -197,3 +197,149 @@ databaseChangeLog:
                      ai_cost = 0.00,
                      updated_at = CURRENT_TIMESTAMP
                WHERE slug = 'metodo-musa-7-dias';
+  - changeSet:
+      id: 2026-07-20-product-commercial-catalog-005-nexo
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: name
+        - columnExists:
+            tableName: product
+            columnName: niche
+        - columnExists:
+            tableName: product
+            columnName: avatar
+        - columnExists:
+            tableName: product
+            columnName: explicit_pain
+        - columnExists:
+            tableName: product
+            columnName: promise
+        - columnExists:
+            tableName: product
+            columnName: unique_mechanism
+        - columnExists:
+            tableName: product
+            columnName: tripwire
+        - columnExists:
+            tableName: product
+            columnName: risk_reversal
+        - columnExists:
+            tableName: product
+            columnName: social_proof
+        - columnExists:
+            tableName: product
+            columnName: checkout_monetization
+        - columnExists:
+            tableName: product
+            columnName: funnel
+        - columnExists:
+            tableName: product
+            columnName: creative_volume
+        - columnExists:
+            tableName: product
+            columnName: storytelling
+        - columnExists:
+            tableName: product
+            columnName: ai_cost
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO product (
+                slug,
+                name,
+                public_url,
+                color_palette,
+                target_audience,
+                language_style,
+                code_modules,
+                product_type,
+                commercial_status,
+                current_price_brl,
+                primary_hypothesis,
+                associated_experiments,
+                commercial_notes,
+                niche,
+                avatar,
+                explicit_pain,
+                promise,
+                unique_mechanism,
+                tripwire,
+                risk_reversal,
+                social_proof,
+                checkout_monetization,
+                funnel,
+                creative_volume,
+                storytelling,
+                ai_cost,
+                created_at,
+                updated_at
+              )
+              SELECT
+                'nexo-clareza-sentido-acao',
+                'Nexo — Clareza, Sentido e Ação',
+                NULL,
+                'Azul profundo #1F2A44; violeta contemplativo #6C5CE7; turquesa de ativação #4FA3A5; areia clara #F5F1EA; grafite #23262F.',
+                'Pessoas que atravessam desânimo, transições, ruminação, sensação de mente lenta ou falta de direção e querem organizar o que estão vivendo sem precisar adotar uma crença específica.',
+                'Acolhedor, investigativo, claro, respeitoso e prático. Pode combinar perspectivas psicológica, filosófica, científica e espiritual quando escolhidas pela pessoa, sem impor conclusões.',
+                'pde-platform; backend/ads-service; frontend; módulo futuro de trajetória pensênica e sessões guiadas.',
+                'PDE - Produto Digital Experiencial',
+                'VALIDACAO_COMERCIAL',
+                NULL,
+                'Uma conversa estruturada que transforma estado interno em linguagem, perspectiva e ação pode ajudar a pessoa a sair de ruminação passiva para maior clareza, curiosidade e direção percebida.',
+                'Concepção inicial Nexo em 20/07/2026; MVP ainda sem campanha comercial e sem alegação clínica.',
+                'Experiências incomuns ou espiritualidade são módulos opcionais. O núcleo universal é acompanhar a mudança entre o estado inicial e o final da sessão e converter reflexão em ação significativa.',
+                'clareza mental / sentido de vida / desenvolvimento pessoal orientado à ação',
+                'Pessoas em momentos de mudança, perda de direção, desânimo ou excesso de pensamentos que desejam compreender o próprio estado e encontrar um próximo passo possível.',
+                'A pessoa sente peso mental, baixa energia, pensamentos circulares ou dificuldade de transformar questões profundas em uma direção concreta.',
+                'Ajudar a pessoa a organizar o estado interno, perceber o que mudou durante a conversa e terminar com mais clareza e uma ação significativa definida.',
+                'Trajetória Nexo: check-in multidimensional, conversa guiada adaptativa, separação entre fato, interpretação e hipótese, comparação antes/depois, identificação dos mobilizadores pessoais e escolha de uma microação concreta.',
+                'Sessão digital guiada com check-in, conversa adaptativa, mapa de mudança do estado interno e plano de ação. Histórico, padrões pessoais e acompanhamentos podem compor a oferta paga futura.',
+                'Primeira experiência sem exigir relato espiritual, controle explícito da perspectiva usada, linguagem não diagnóstica e possibilidade de encerrar ou pular qualquer tema. Não substitui atendimento médico ou psicológico.',
+                'Prova inicial de conceito baseada em demonstração do produto e medidas autorrelatadas antes/depois. O MVP não deve apresentar validação clínica nem atribuir mudanças a causas espirituais como fato.',
+                'Entrada gratuita com uma sessão inicial e visualização básica da mudança. Monetização futura por histórico longitudinal, relatórios pessoais, sessões adicionais, mapas de mobilização e programas guiados, com preço definido somente após validação.',
+                'Conteúdo ou anúncio sobre mente pesada, falta de direção ou transição -> check-in anônimo -> sessão guiada -> comparação antes/depois -> descoberta principal e microação -> convite opcional para salvar histórico e continuar.',
+                'Testar mensagens sobre mente lenta, pensamentos circulares, transições, busca de sentido, curiosidade, mudança de estado e passagem da reflexão para ação, evitando promessas de cura ou certeza espiritual.',
+                'Da sensação de fragilidade, confusão ou paralisia para a descoberta de que o próprio estado pode ser observado, reorganizado e convertido em uma direção possível.',
+                0.00,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+              ON DUPLICATE KEY UPDATE
+                name = VALUES(name),
+                public_url = VALUES(public_url),
+                color_palette = VALUES(color_palette),
+                target_audience = VALUES(target_audience),
+                language_style = VALUES(language_style),
+                code_modules = VALUES(code_modules),
+                product_type = VALUES(product_type),
+                commercial_status = VALUES(commercial_status),
+                current_price_brl = VALUES(current_price_brl),
+                primary_hypothesis = VALUES(primary_hypothesis),
+                associated_experiments = VALUES(associated_experiments),
+                commercial_notes = VALUES(commercial_notes),
+                niche = VALUES(niche),
+                avatar = VALUES(avatar),
+                explicit_pain = VALUES(explicit_pain),
+                promise = VALUES(promise),
+                unique_mechanism = VALUES(unique_mechanism),
+                tripwire = VALUES(tripwire),
+                risk_reversal = VALUES(risk_reversal),
+                social_proof = VALUES(social_proof),
+                checkout_monetization = VALUES(checkout_monetization),
+                funnel = VALUES(funnel),
+                creative_volume = VALUES(creative_volume),
+                storytelling = VALUES(storytelling),
+                ai_cost = VALUES(ai_cost),
+                updated_at = CURRENT_TIMESTAMP;

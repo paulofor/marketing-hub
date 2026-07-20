@@ -208,6 +208,7 @@ jobs:
             && test -s \"${OPENAI_API_KEY_HOST_FILE}\" \
             && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
             && docker compose -f docker-compose.deploy.yml pull \
+            && (docker rm -f pde-platform-backend pde-platform-frontend pde-ai-worker >/dev/null 2>&1 || true) \
             && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
             && docker image prune -af"
       - name: Validate public container ports

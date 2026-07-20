@@ -119,6 +119,12 @@ type MagicLinkResponse = {
   accessUrl?: string;
 };
 
+type DiagnosticOption = {
+  key: string;
+  label: string;
+  description: string;
+};
+
 type ApiErrorResponse = {
   error?: string;
 };
@@ -432,6 +438,47 @@ function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLI
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
 }
 
+const presenceBlockers: DiagnosticOption[] = [
+  {
+    key: 'look_sem_intencao',
+    label: 'Roupa sem intenção',
+    description: 'Você se arruma, mas o conjunto parece comum ou pouco marcante.',
+  },
+  {
+    key: 'acabamento_fraco',
+    label: 'Acabamento fraco',
+    description: 'Cabelo, pele, caimento ou detalhe final não sustentam a presença.',
+  },
+  {
+    key: 'excesso_visual',
+    label: 'Excesso visual',
+    description: 'Tem informação demais e nada vira um sinal elegante claro.',
+  },
+  {
+    key: 'nao_sei_nomear',
+    label: 'Não sei nomear',
+    description: 'Você sente que falta algo, mas ainda não sabe onde mexer.',
+  },
+];
+
+const desiredPresenceSignals: DiagnosticOption[] = [
+  {
+    key: 'mais_elegante',
+    label: 'Parecer mais elegante',
+    description: 'Sem depender de peça cara ou transformação radical.',
+  },
+  {
+    key: 'mais_marcante',
+    label: 'Ficar mais marcante',
+    description: 'Ser lembrada pelo detalhe certo, não pelo excesso.',
+  },
+  {
+    key: 'mais_coerente',
+    label: 'Sentir tudo coerente',
+    description: 'Roupa, beleza e intenção conversando melhor entre si.',
+  },
+];
+
 function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [product, setProduct] = useState<ProductExperience>(fallbackProduct);
@@ -443,6 +490,8 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [devAccessUrl, setDevAccessUrl] = useState('');
+  const [presenceBlocker, setPresenceBlocker] = useState('');
+  const [desiredPresence, setDesiredPresence] = useState('');
   const [missionAnswers, setMissionAnswers] = useState<Record<string, Record<string, string>>>({});
   const [aiGuidanceByMission, setAiGuidanceByMission] = useState<Record<string, AiGuidance>>({});
   const [generatingGuidance, setGeneratingGuidance] = useState(false);
@@ -763,10 +812,14 @@ function App() {
   }, [workspace?.subscriptionStatus, accessToken]);
 
   async function submitAccess() {
+    if (authMode === 'register' && (!presenceBlocker || !desiredPresence)) {
+      setErrorMessage('Escolha primeiro o que mais apaga sua presença e o resultado que você quer sentir.');
+      return;
+    }
     if (!email.trim()) {
       setErrorMessage(authMode === 'login'
         ? 'Informe o e-mail que você usou para criar seu acesso MUSA.'
-        : 'Informe seu melhor e-mail para liberar seu diagnóstico inicial.');
+        : 'Informe seu melhor e-mail para receber o resultado do diagnóstico.');
       return;
     }
     setLoading(true);
@@ -778,7 +831,11 @@ function App() {
       await trackEvent('LOGIN_STARTED', {
         email,
         provider: 'EMAIL_MAGIC_LINK',
-        metadata: { authMode },
+        metadata: {
+          authMode,
+          presenceBlocker: authMode === 'register' ? presenceBlocker : undefined,
+          desiredPresence: authMode === 'register' ? desiredPresence : undefined,
+        },
       });
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -1018,6 +1075,23 @@ function App() {
     emailInputRef.current?.select();
   }
 
+  function selectDiagnosticOption(kind: 'presenceBlocker' | 'desiredPresence', value: string) {
+    if (kind === 'presenceBlocker') {
+      setPresenceBlocker(value);
+    } else {
+      setDesiredPresence(value);
+    }
+    setErrorMessage('');
+    trackEvent('DIAGNOSTIC_CHOICE_SELECTED', {
+      metadata: {
+        authMode,
+        diagnosticStep: kind,
+        selectedOption: value,
+        actionName: 'diagnostic_choice_selected',
+      },
+    });
+  }
+
   function resolveMagicLinkMessage(result: MagicLinkResponse) {
     if (result.deliveryStatus === 'SENT') {
       return authMode === 'login'
@@ -1236,6 +1310,9 @@ function App() {
   const activeMissionGuidanceConfig = activeMission ? missionGuidanceConfigs[activeMission.id] : undefined;
   const activeMissionAnswers = activeMission ? missionAnswers[activeMission.id] ?? {} : {};
   const activeMissionGuidance = activeMission ? aiGuidanceByMission[activeMission.id] : undefined;
+  const selectedBlocker = presenceBlockers.find((option) => option.key === presenceBlocker);
+  const selectedDesiredPresence = desiredPresenceSignals.find((option) => option.key === desiredPresence);
+  const diagnosticReadyForEmail = authMode === 'login' || Boolean(presenceBlocker && desiredPresence);
   const canRegisterActiveMission = Boolean(
     canCompleteActiveMission
       && (!activeMissionGuidanceConfig || isMissionInteractionSaved(activeMission?.id ?? '')),
@@ -1313,34 +1390,87 @@ function App() {
                 </>
               ) : (
                 <>
-                  <strong>Comece sem comprar agora.</strong> Informe seu e-mail para receber o diagnóstico inicial e ver o primeiro ajuste do Dia 1.
+                  <strong>Comece sem cadastro frio.</strong> Responda 2 escolhas rápidas e receba o Dia 1 gratuito com o primeiro ajuste de presença.
                 </>
               )}
             </p>
+            {authMode === 'register' && (
+              <div className="interactive-diagnostic" data-analytics-section="interactive_diagnostic">
+                <div className="diagnostic-step">
+                  <span>1 de 2</span>
+                  <h2>O que mais apaga sua presença hoje?</h2>
+                  <div className="diagnostic-option-grid" role="group" aria-label="O que mais apaga sua presença hoje">
+                    {presenceBlockers.map((option) => (
+                      <button
+                        className={presenceBlocker === option.key ? 'selected' : ''}
+                        key={option.key}
+                        onClick={() => selectDiagnosticOption('presenceBlocker', option.key)}
+                        type="button"
+                      >
+                        <strong>{option.label}</strong>
+                        <small>{option.description}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {presenceBlocker && (
+                  <div className="diagnostic-step">
+                    <span>2 de 2</span>
+                    <h2>O que você quer sentir ao terminar o Dia 1?</h2>
+                    <div className="diagnostic-option-grid compact" role="group" aria-label="Resultado desejado no Dia 1">
+                      {desiredPresenceSignals.map((option) => (
+                        <button
+                          className={desiredPresence === option.key ? 'selected' : ''}
+                          key={option.key}
+                          onClick={() => selectDiagnosticOption('desiredPresence', option.key)}
+                          type="button"
+                        >
+                          <strong>{option.label}</strong>
+                          <small>{option.description}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedBlocker && selectedDesiredPresence && (
+                  <div className="diagnostic-result-teaser">
+                    <Check size={18} />
+                    <p>
+                      Seu diagnóstico vai partir de <strong>{selectedBlocker.label.toLowerCase()}</strong> para ajudar você a
+                      <strong> {selectedDesiredPresence.label.toLowerCase()}</strong> com uma microação hoje.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             {googleClientId && (
               <div className="social-login-block">
                 <div id="google-login-button" aria-label="Entrar com Google" />
                 <span>Mais rápido para entrar e salvar sua primeira orientação.</span>
               </div>
             )}
-            <div className="auth-divider">
-              <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'receba o diagnóstico gratuito por e-mail'}</span>
-            </div>
-            <label className="email-box login-email-box">
-              {authMode === 'login' ? 'E-mail do seu acesso MUSA' : 'Seu melhor e-mail para receber o diagnóstico'}
-              <input
-                ref={emailInputRef}
-                type="email"
-                placeholder="seuemail@exemplo.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    submitAccess();
-                  }
-                }}
-              />
-            </label>
+            {diagnosticReadyForEmail && (
+              <>
+                <div className="auth-divider">
+                  <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'receba o resultado e o Dia 1 por e-mail'}</span>
+                </div>
+                <label className="email-box login-email-box">
+                  {authMode === 'login' ? 'E-mail do seu acesso MUSA' : 'Seu melhor e-mail para receber o resultado'}
+                  <input
+                    ref={emailInputRef}
+                    type="email"
+                    placeholder="seuemail@exemplo.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        submitAccess();
+                      }
+                    }}
+                  />
+                </label>
+              </>
+            )}
             {errorMessage && <p className="form-message">{errorMessage}</p>}
             {successMessage && <p className="form-message success-message">{successMessage}</p>}
             {successMessage && (
@@ -1359,11 +1489,15 @@ function App() {
                 Abrir minha Área MUSA
               </button>
             ) : (
-              <button className="primary-button login-button" onClick={submitAccess} disabled={loading}>
+              <button
+                className="primary-button login-button"
+                onClick={submitAccess}
+                disabled={loading || !diagnosticReadyForEmail}
+              >
                 <Mail size={18} />
                 {loading
                   ? 'Enviando link...'
-                  : (authMode === 'login' ? 'Receber link de entrada' : 'Liberar meu diagnóstico gratuito')}
+                  : (authMode === 'login' ? 'Receber link de entrada' : 'Receber meu resultado gratuito')}
               </button>
             )}
             <div className="login-value-strip" aria-label="O que fica disponível ao entrar">

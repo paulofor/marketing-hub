@@ -60,6 +60,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class ExperimentService {
+    private static final String MUSA_PDE_CANONICAL_HOST = "clubemusa.com.br";
+
     private final ExperimentRepository repository;
     private final ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository;
     private final MarketNicheRepository nicheRepository;
@@ -905,6 +907,7 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Experiment platform must be Facebook");
         }
         ensureLowTicketSalesPageWasBuiltByPipeline(experiment);
+        ensurePdeMembershipDestinationIsCanonical(experiment);
         experiment.setStatus(ExperimentStatus.PLANNED);
         experiment.setFacebookReleaseRequestedAt(Instant.now());
         experiment.setFunnelResetAt(experiment.getFacebookReleaseRequestedAt());
@@ -952,11 +955,27 @@ public class ExperimentService {
         }
     }
 
+    /** Bloqueia funil PDE MUSA quando o destino não aponta para a entrada canônica do Clube MUSA. */
+    private void ensurePdeMembershipDestinationIsCanonical(Experiment experiment) {
+        if (experiment == null || experiment.getExperimentType() != ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+            return;
+        }
+        String destinationUrl = normalizeUrl(experiment.getFollowUpActionUrl());
+        boolean canonicalDestination = StringUtils.hasText(destinationUrl)
+                && (destinationUrl.equals("https://" + MUSA_PDE_CANONICAL_HOST)
+                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/"));
+        if (!canonicalDestination) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br, com login gratuito e paywall interno.");
+        }
+    }
+
     /** Informa se o experimento precisa de página de venda antes do checkout. */
     private boolean requiresSalesPageBeforePurchase(Experiment experiment) {
         return experiment != null
+                && experiment.getExperimentType() != ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
                 && (experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
-                || experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
                 || experiment.getCampaignObjective() == ExperimentCampaignObjective.SALES);
     }
 

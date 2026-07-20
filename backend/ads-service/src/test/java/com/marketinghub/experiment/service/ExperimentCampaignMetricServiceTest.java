@@ -16,10 +16,14 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import com.sun.net.httpserver.HttpServer;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,7 +66,8 @@ class ExperimentCampaignMetricServiceTest {
                 costAttributionService,
                 experimentRepository,
                 funnelEventRepository,
-                landingAnalyticsEventRepository);
+                landingAnalyticsEventRepository,
+                "");
     }
 
     /**
@@ -140,5 +145,56 @@ class ExperimentCampaignMetricServiceTest {
         verify(landingAnalyticsEventRepository, never()).deleteByExperimentId(41L);
         verify(funnelEventRepository, never()).deleteByExperimentId(any());
         verify(experimentRepository, never()).save(experiment);
+    }
+
+    /**
+     * Garante que campanha do Clube MUSA tambem limpa analytics PDE antes de salvar a primeira metrica real.
+     */
+    @Test
+    void upsertResetsPdeAnalyticsForClubMusaWhenImpressionsStart() throws IOException {
+        AtomicInteger resetCalls = new AtomicInteger();
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/reset", exchange -> {
+            resetCalls.incrementAndGet();
+            exchange.sendResponseHeaders(200, -1);
+            exchange.close();
+        });
+        server.start();
+        try {
+            service = new ExperimentCampaignMetricService(
+                    repository,
+                    campaignRepository,
+                    costAttributionService,
+                    experimentRepository,
+                    funnelEventRepository,
+                    landingAnalyticsEventRepository,
+                    "http://localhost:" + server.getAddress().getPort() + "/reset");
+            Experiment experiment = Experiment.builder()
+                    .id(67L)
+                    .followUpActionUrl("https://clubemusa.com.br")
+                    .build();
+            FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+            campaign.setId("campaign-musa");
+            campaign.setExperiment(experiment);
+            ExperimentCampaignMetric savedMetric = ExperimentCampaignMetric.builder().experiment(experiment).build();
+
+            when(campaignRepository.findById("campaign-musa")).thenReturn(Optional.of(campaign));
+            when(repository.findByExperiment(experiment)).thenReturn(Optional.empty());
+            when(repository.save(any(ExperimentCampaignMetric.class))).thenReturn(savedMetric);
+
+            service.upsert(
+                    "campaign-musa",
+                    LocalDate.parse("2026-07-20"),
+                    LocalDate.parse("2026-07-20"),
+                    10L,
+                    1L,
+                    0L,
+                    0L,
+                    BigDecimal.ZERO);
+
+            assertThat(resetCalls).hasValue(1);
+        } finally {
+            server.stop(0);
+        }
     }
 }

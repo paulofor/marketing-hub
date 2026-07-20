@@ -2,6 +2,7 @@ package com.marketinghub.pde.controller;
 
 import com.marketinghub.pde.dto.AccessRequest;
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.FunnelAnalyticsResetResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
@@ -116,6 +117,13 @@ public class AccessController {
     @GetMapping("/analytics/{productSlug}/summary")
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(@PathVariable("productSlug") String productSlug) {
         return accessService.summarizeFunnelAnalytics(productSlug);
+    }
+
+    /** Limpa métricas acumuladas antes da primeira impressão de campanha paga real. */
+    @PostMapping("/analytics/{productSlug}/reset-campaign-start")
+    public FunnelAnalyticsResetResponse resetFunnelAnalyticsForCampaignStart(
+            @PathVariable("productSlug") String productSlug) {
+        return accessService.resetFunnelAnalyticsForCampaignStart(productSlug);
     }
 
     /** Recebe webhook de compra aprovada pela Pepper e libera acesso ao produto. */

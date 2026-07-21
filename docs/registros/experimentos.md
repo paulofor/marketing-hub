@@ -1,3 +1,10 @@
+## 2026-07-21 — Painel pós-deploy MUSA: analytics PDE pelo domínio público
+
+- causa-raiz confirmada: o painel pós-deploy foi publicado, mas o backend do Marketing Hub tentava consultar o analytics PDE em `191.252.181.168:8096`, host que não expõe o `pde-platform`.
+- evidência: `/api/experiments/67/post-deploy-monitor` retornou `TECHNICAL_ATTENTION` por falha de conexão no analytics PDE, enquanto `https://clubemusa.com.br/api/pde/access/analytics/metodo-musa-7-dias/summary` respondeu com sucesso.
+- foi feito: o default de `integrations.pde-platform.base-url` passou a ser `https://clubemusa.com.br`, mantendo `PDE_PLATFORM_BASE_URL` como override operacional.
+- impacto esperado: o painel pós-deploy passa a cruzar Meta Ads e eventos PDE reais sem depender de IP/porta interna.
+
 ## 2026-07-21 — PDE MUSA atualizável pelo Marketing Hub
 
 - causa-raiz confirmada: a experiência MUSA do PDE estava definida no código do `pde-platform`, então mudanças de primeira dobra, diagnóstico, missões e materiais exigiam alteração técnica e deploy do módulo PDE.

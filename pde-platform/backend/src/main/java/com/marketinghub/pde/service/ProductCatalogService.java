@@ -7,6 +7,7 @@ import com.marketinghub.pde.dto.ProductExperienceResponse.ScientificEvidencePack
 import com.marketinghub.pde.dto.ProductExperienceResponse.ScientificReferenceDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.SupportMaterialDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.ThemeDto;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,18 +26,16 @@ public class ProductCatalogService {
 
     private final Map<String, ProductExperienceResponse> products = Map.of(
             "metodo-musa-7-dias", createMusaProduct());
-    private final RestClient marketingHubClient;
-    private final String marketingHubBaseUrl;
+    private final RestClient.Builder restClientBuilder;
+    private final List<String> marketingHubBaseUrls;
 
     /** Cria o catálogo com integração opcional ao Marketing Hub como fonte de verdade comercial. */
     @Autowired
     public ProductCatalogService(
             RestClient.Builder restClientBuilder,
             @Value("${pde.catalog.marketing-hub-base-url:}") String marketingHubBaseUrl) {
-        this.marketingHubBaseUrl = marketingHubBaseUrl;
-        this.marketingHubClient = StringUtils.hasText(marketingHubBaseUrl)
-                ? restClientBuilder.baseUrl(marketingHubBaseUrl.trim()).build()
-                : restClientBuilder.build();
+        this.restClientBuilder = restClientBuilder;
+        this.marketingHubBaseUrls = parseMarketingHubBaseUrls(marketingHubBaseUrl);
     }
 
     /** Cria o catálogo em testes unitários sem dependência do Marketing Hub. */
@@ -59,20 +58,39 @@ public class ProductCatalogService {
 
     /** Carrega o contrato PDE publicado pelo Marketing Hub quando a integração estiver configurada. */
     private Optional<ProductExperienceResponse> loadMarketingHubProduct(String slug) {
+        if (marketingHubBaseUrls.isEmpty()) {
+            return Optional.empty();
+        }
+        for (String baseUrl : marketingHubBaseUrls) {
+            try {
+                ProductExperienceResponse product = restClientBuilder.clone()
+                        .baseUrl(baseUrl)
+                        .build()
+                        .get()
+                        .uri("/api/products/public/{slug}/pde-experience", slug)
+                        .retrieve()
+                        .body(ProductExperienceResponse.class);
+                return Optional.ofNullable(product);
+            } catch (RuntimeException ex) {
+                log.warn("Falha ao carregar experiência PDE do Marketing Hub; tentando fallback: slug={}, baseUrl={}",
+                        slug, baseUrl, ex);
+            }
+        }
+        log.warn("Experiência PDE do Marketing Hub indisponível em todas as bases configuradas; usando catálogo local: slug={}",
+                slug);
+        return Optional.empty();
+    }
+
+    /** Converte a configuração de URLs do Marketing Hub em uma lista ordenada de fallback. */
+    private static List<String> parseMarketingHubBaseUrls(String marketingHubBaseUrl) {
         if (!StringUtils.hasText(marketingHubBaseUrl)) {
-            return Optional.empty();
+            return List.of();
         }
-        try {
-            ProductExperienceResponse product = marketingHubClient.get()
-                    .uri("/api/products/public/{slug}/pde-experience", slug)
-                    .retrieve()
-                    .body(ProductExperienceResponse.class);
-            return Optional.ofNullable(product);
-        } catch (RuntimeException ex) {
-            log.warn("Falha ao carregar experiência PDE do Marketing Hub; usando catálogo local: slug={}, baseUrl={}",
-                    slug, marketingHubBaseUrl, ex);
-            return Optional.empty();
-        }
+        return Arrays.stream(marketingHubBaseUrl.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
     }
 
     /** Cria a primeira configuração do produto MUSA para o experimento 66. */

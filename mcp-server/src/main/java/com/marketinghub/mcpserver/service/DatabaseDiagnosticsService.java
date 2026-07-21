@@ -8,15 +8,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Responsabilidade: executar diagnósticos e consultas somente leitura em um datasource MySQL.
+ */
 @Service
 public class DatabaseDiagnosticsService {
 
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Inicializa o serviço com o datasource que será consultado pelas ferramentas MCP.
+     */
     public DatabaseDiagnosticsService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Verifica se o datasource responde e informa o schema ativo.
+     */
     public Map<String, Object> checkConnection() {
         Map<String, Object> response = new LinkedHashMap<>();
         Integer one = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
@@ -26,6 +35,9 @@ public class DatabaseDiagnosticsService {
         return response;
     }
 
+    /**
+     * Lista as tabelas base disponíveis no schema ativo.
+     */
     public Map<String, Object> listTables() {
         String databaseName = jdbcTemplate.queryForObject("SELECT DATABASE()", String.class);
         List<String> tables = jdbcTemplate.queryForList(
@@ -46,6 +58,9 @@ public class DatabaseDiagnosticsService {
         return response;
     }
 
+    /**
+     * Lê linhas paginadas de uma tabela validada do schema ativo.
+     */
     public Map<String, Object> readTable(String tableName, int limit, int offset) {
         validateTableName(tableName);
 
@@ -66,6 +81,9 @@ public class DatabaseDiagnosticsService {
         return response;
     }
 
+    /**
+     * Executa uma query de leitura com limite máximo aplicado quando necessário.
+     */
     public Map<String, Object> query(String sql, int limit) {
         String normalizedSql = normalizeAndValidateReadOnlySql(sql);
         String sqlWithLimit = ensureLimit(normalizedSql, limit);
@@ -79,6 +97,9 @@ public class DatabaseDiagnosticsService {
         return response;
     }
 
+    /**
+     * Valida o nome de tabela para impedir injeção em leitura dinâmica.
+     */
     private void validateTableName(String tableName) {
         if (tableName == null || tableName.isBlank()) {
             throw new IllegalArgumentException("table is required");
@@ -89,6 +110,9 @@ public class DatabaseDiagnosticsService {
         }
     }
 
+    /**
+     * Normaliza e bloqueia qualquer SQL que não seja uma única consulta SELECT/WITH.
+     */
     private String normalizeAndValidateReadOnlySql(String sql) {
         if (sql == null || sql.isBlank()) {
             throw new IllegalArgumentException("query is required");
@@ -111,6 +135,9 @@ public class DatabaseDiagnosticsService {
         return normalized;
     }
 
+    /**
+     * Adiciona LIMIT quando a consulta não define limite próprio.
+     */
     private String ensureLimit(String sql, int limit) {
         String lower = sql.toLowerCase(Locale.ROOT);
         if (lower.contains(" limit ")) {

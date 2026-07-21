@@ -69,6 +69,20 @@
   font-size: 0.9rem;
 }
 
+.video-hub-page__setup {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.video-hub-page__setup .btn,
+.video-hub-page__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
 .video-hub-page__panel {
   padding: 1rem;
 }
@@ -95,6 +109,18 @@
 
 .video-hub-page__metric-value {
   font-weight: 700;
+}
+
+.video-hub-page__notice {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .video-hub-page__stages {
@@ -148,13 +174,45 @@
 .video-hub-page__actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 1rem;
 }
 
+.video-hub-page__job {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.video-hub-page__job strong,
+.video-hub-page__job span {
+  display: block;
+}
+
+.video-hub-page__job span {
+  color: #475569;
+}
+
+.video-hub-page__job-ready {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534 !important;
+  padding: 0.3rem 0.6rem;
+  white-space: nowrap;
+}
+
 @media (max-width: 960px) {
   .video-hub-page__header,
-  .video-hub-page__stage-header {
+  .video-hub-page__stage-header,
+  .video-hub-page__job {
     display: block;
   }
 

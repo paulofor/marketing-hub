@@ -2,12 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 export type ExperimentVideoSlot =
-  | "AD"
-  | "LANDING_HERO"
-  | "FORM_EXPLAINER"
-  | "PRE_CHECKOUT";
+  "AD" | "LANDING_HERO" | "FORM_EXPLAINER" | "PRE_CHECKOUT";
 
-export type ExperimentVideoStatus = "PLANNED" | "GENERATING" | "READY" | "FAILED";
+export type ExperimentVideoStatus =
+  "PLANNED" | "GENERATING" | "READY" | "FAILED";
 export type ExperimentVideoReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type SalesVideoExecutionMode = "TEST" | "PRODUCTION";
 
@@ -53,6 +51,11 @@ export interface RequestExperimentVeoVideoPayload {
   hookText?: string;
   ctaText?: string;
   captionText?: string;
+  characterImagePrompt?: string;
+  characterImageModel?: string;
+  characterImageJobId?: string;
+  characterImageAssetId?: number;
+  characterImageReferenceUrl?: string;
   providerName?: string;
   executionMode?: SalesVideoExecutionMode;
   requestedBy: string;

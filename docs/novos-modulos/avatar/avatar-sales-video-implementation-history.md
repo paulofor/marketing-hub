@@ -603,3 +603,10 @@ Cada entrada descreve:
 - Foi criada a fachada `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/SalesVideoService.java` para ser o único `@Service` e ponto de orquestração do módulo no backend.
 - Os controllers antigos em `com.marketinghub.salesvideo.web` foram removidos para evitar múltiplas entradas HTTP no mesmo módulo.
 - Os contratos HTTP existentes foram preservados para não quebrar frontend, `ai-worker` e integrações internas de renderização.
+
+## 2026-07-21 — Briefing de personagem OpenAI no fluxo VEO do experimento
+
+- A aba de vídeo do experimento passou a registrar, no mesmo pedido de vídeo VEO, o prompt da imagem da personagem, modelo OpenAI, job/asset/referência da imagem e o roteiro aprovado.
+- O endpoint `/api/experiments/{experimentId}/video-assets/veo-render-requests` preserva esses dados no `prompt` do `experiment_video_asset` e no `metadataJson` do `sales_video_job`.
+- Objetivo comercial: preparar PDEs como o MUSA com rastreabilidade completa de personagem, roteiro e render para reaproveitar o processo em futuros produtos digitais.
+- Validações executadas: `mvn -s ../settings.xml -q -Dtest=ExperimentVideoAssetServiceTest,SalesVideoProfileServiceTest test` e `npm run build`.

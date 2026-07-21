@@ -45,6 +45,21 @@ function buildInitialScript(experiment: Experiment) {
   return sections.join("\n\n").slice(0, 6000);
 }
 
+function buildInitialCharacterImagePrompt(experiment: Experiment) {
+  const promise = experiment.funnelPromise ?? "presenca elegante e intencional";
+  const pain =
+    experiment.singlePain ??
+    "sentir que a imagem comunica menos valor do que deveria";
+  return [
+    "Retrato vertical realista para personagem de video hero do Metodo MUSA 7 Dias.",
+    "Mulher brasileira adulta, elegante, acessivel e confiavel, com presenca sofisticada sem ostentacao.",
+    "Expressao acolhedora e segura, roupa neutra bem ajustada, beleza natural, fundo claro editorial.",
+    `Contexto comercial: promessa de ${promise}.`,
+    `Dor central que o video deve refletir sem dramatizar: ${pain}.`,
+    "Estilo: premium acessivel, luz suave, enquadramento 9:16, pronta para referencia no VEO.",
+  ].join("\n");
+}
+
 function parseOptionalNumber(value: string) {
   if (!value.trim()) return undefined;
   const parsed = Number(value);
@@ -117,6 +132,11 @@ export default function ExperimentVideoTab({
     hookText: experiment.funnelPromise ?? "",
     ctaText: experiment.primaryCta ?? "Quero acessar agora",
     captionText: "",
+    characterImagePrompt: buildInitialCharacterImagePrompt(experiment),
+    characterImageModel: "gpt-image-2",
+    characterImageJobId: "",
+    characterImageAssetId: "",
+    characterImageReferenceUrl: "",
     providerName: "VEO",
     executionMode: "TEST" as SalesVideoExecutionMode,
     requiredForRelease: true,
@@ -192,6 +212,14 @@ export default function ExperimentVideoTab({
         hookText: formState.hookText.trim() || undefined,
         ctaText: formState.ctaText.trim() || undefined,
         captionText: formState.captionText.trim() || undefined,
+        characterImagePrompt:
+          formState.characterImagePrompt.trim() || undefined,
+        characterImageModel: formState.characterImageModel.trim() || undefined,
+        characterImageJobId: formState.characterImageJobId.trim() || undefined,
+        characterImageAssetId:
+          parseOptionalNumber(formState.characterImageAssetId) ?? undefined,
+        characterImageReferenceUrl:
+          formState.characterImageReferenceUrl.trim() || undefined,
         providerName: formState.providerName.trim() || "VEO",
         executionMode: formState.executionMode,
         requestedBy: tenantContext.userEmail,
@@ -584,6 +612,74 @@ export default function ExperimentVideoTab({
                   setFormState((prev) => ({
                     ...prev,
                     ctaText: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="col-12">
+              <label className="form-label">Imagem da personagem OpenAI</label>
+              <textarea
+                className="form-control"
+                rows={6}
+                value={formState.characterImagePrompt}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    characterImagePrompt: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">Modelo da imagem</label>
+              <input
+                className="form-control"
+                value={formState.characterImageModel}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    characterImageModel: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">Job OpenAI</label>
+              <input
+                className="form-control"
+                value={formState.characterImageJobId}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    characterImageJobId: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">Asset da imagem</label>
+              <input
+                className="form-control"
+                type="number"
+                min="1"
+                value={formState.characterImageAssetId}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    characterImageAssetId: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">URL de referência</label>
+              <input
+                className="form-control"
+                value={formState.characterImageReferenceUrl}
+                onChange={(event) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    characterImageReferenceUrl: event.target.value,
                   }))
                 }
               />

@@ -16,4 +16,5 @@ public class RequestVideoRenderRequest {
     private SalesVideoProviderFamily providerFamily;
     private String providerName;
     private SalesVideoExecutionMode executionMode;
+    private String metadataJson;
 }

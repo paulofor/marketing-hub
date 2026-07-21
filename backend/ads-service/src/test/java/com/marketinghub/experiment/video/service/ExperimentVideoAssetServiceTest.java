@@ -157,6 +157,11 @@ class ExperimentVideoAssetServiceTest {
                 "Voce parece comum mesmo se arrumando?",
                 "Quero o guia",
                 null,
+                "Retrato vertical de consultora brasileira elegante, natural, premium acessivel.",
+                "gpt-image-2",
+                "img-123",
+                7001L,
+                "https://cdn.test/musa-personagem.png",
                 "VEO",
                 SalesVideoExecutionMode.TEST,
                 "time@marketinghub.io",
@@ -184,6 +189,7 @@ class ExperimentVideoAssetServiceTest {
         assertThat(dto.salesVideoJobId()).isEqualTo(10108L);
         assertThat(dto.requiredForRelease()).isTrue();
         assertThat(dto.cost()).isEqualByComparingTo("12.0000");
+        assertThat(dto.prompt()).contains("gpt-image-2", "Retrato vertical de consultora brasileira elegante");
     }
 
     /** Garante que a landing de outro experimento não pode contaminar o aprendizado do funil atual. */

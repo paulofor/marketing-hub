@@ -1,6 +1,13 @@
 :root {
   color: #2d2024;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   background: #fff8f3;
   line-height: 1.5;
 }
@@ -23,9 +30,7 @@ textarea {
 
 .app-shell {
   min-height: 100vh;
-  background:
-    linear-gradient(180deg, rgba(255, 248, 243, 0.96), rgba(250, 243, 232, 0.98)),
-    url("data:image/svg+xml,%3Csvg width='160' height='160' viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 120C54 30 104 28 140 116' stroke='%23e9d8c7' stroke-width='2' fill='none'/%3E%3Ccircle cx='82' cy='72' r='4' fill='%23d6a75c'/%3E%3C/svg%3E");
+  background: linear-gradient(180deg, rgba(255, 248, 243, 0.96), rgba(250, 243, 232, 0.98)), url("data:image/svg+xml,%3Csvg width='160' height='160' viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 120C54 30 104 28 140 116' stroke='%23e9d8c7' stroke-width='2' fill='none'/%3E%3Ccircle cx='82' cy='72' r='4' fill='%23d6a75c'/%3E%3C/svg%3E");
   padding: 28px;
 }
 
@@ -68,12 +73,12 @@ textarea {
 .library-section,
 .completion-band,
 .progress-band,
-  .musa-first-fold,
-  .next-mission-hero,
-  .progress-hero-card,
-  .dashboard-header,
-  .status-card,
-  .subscription-paywall {
+.musa-first-fold,
+.next-mission-hero,
+.progress-hero-card,
+.dashboard-header,
+.status-card,
+.subscription-paywall {
   border: 1px solid rgba(122, 36, 68, 0.14);
   background: rgba(255, 255, 255, 0.86);
   box-shadow: 0 18px 54px rgba(61, 37, 27, 0.08);
@@ -94,7 +99,7 @@ textarea {
 
 .musa-first-fold::before {
   background: linear-gradient(90deg, rgba(255, 248, 243, 0.72) 0%, rgba(255, 248, 243, 0.24) 100%);
-  content: "";
+  content: '';
   inset: 0;
   position: absolute;
 }
@@ -488,7 +493,7 @@ textarea {
 
 .login-scene-banner::after {
   background: linear-gradient(180deg, rgba(47, 42, 44, 0.06), rgba(47, 42, 44, 0.72));
-  content: "";
+  content: '';
   inset: 0;
   position: absolute;
 }
@@ -530,9 +535,7 @@ textarea {
 
 .login-preview-card {
   align-items: center;
-  background:
-    linear-gradient(90deg, rgba(255, 248, 243, 0.96), rgba(247, 228, 198, 0.48)),
-    #fff8f3;
+  background: linear-gradient(90deg, rgba(255, 248, 243, 0.96), rgba(247, 228, 198, 0.48)), #fff8f3;
   border: 1px solid rgba(214, 167, 92, 0.46);
   display: flex;
   gap: 18px;
@@ -857,7 +860,7 @@ h3 {
 .auth-divider::before,
 .auth-divider::after {
   background: rgba(122, 36, 68, 0.14);
-  content: "";
+  content: '';
   flex: 1;
   height: 1px;
 }
@@ -921,9 +924,7 @@ h3 {
 .login-cover {
   align-content: start;
   border-left: 0;
-  background:
-    linear-gradient(145deg, rgba(111, 33, 63, 0.84), rgba(58, 36, 43, 0.8) 54%, rgba(47, 89, 82, 0.82)),
-    url("/assets/musa-editorial-presenca.png");
+  background: linear-gradient(145deg, rgba(111, 33, 63, 0.84), rgba(58, 36, 43, 0.8) 54%, rgba(47, 89, 82, 0.82)), url('/assets/musa-editorial-presenca.png');
   background-position: center;
   background-size: cover;
   gap: 16px;
@@ -931,19 +932,95 @@ h3 {
   min-height: 560px;
 }
 
+.video-login-cover {
+  align-content: end;
+  background: #2d2024;
+  padding: 0;
+}
+
+.video-login-cover::before,
+.video-login-cover::after {
+  display: none;
+}
+
+.musa-hero-video,
+.musa-video-fallback {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.musa-hero-video,
+.musa-video-fallback img {
+  object-fit: cover;
+}
+
+.musa-video-fallback img {
+  animation: musa-video-preview-motion 10s ease-in-out infinite alternate;
+  filter: saturate(1.04);
+  height: 100%;
+  width: 100%;
+}
+
+.musa-video-fallback::after {
+  background: linear-gradient(145deg, rgba(43, 24, 32, 0.18), rgba(47, 89, 82, 0.2)), radial-gradient(circle at 50% 45%, transparent 0 22%, rgba(255, 248, 243, 0.08) 23%, transparent 24% 100%);
+  content: '';
+  inset: 0;
+  position: absolute;
+}
+
+.video-hero-caption {
+  background: linear-gradient(180deg, transparent, rgba(45, 32, 36, 0.92) 28%, rgba(45, 32, 36, 0.98));
+  display: grid;
+  gap: 8px;
+  padding: 120px 34px 34px;
+  position: relative;
+  z-index: 1;
+}
+
+.video-hero-caption span {
+  color: #f2c16f;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.video-hero-caption strong {
+  color: #fff8f3;
+  font-size: 1.8rem;
+  line-height: 1.08;
+  max-width: 420px;
+}
+
+.video-hero-caption p {
+  color: rgba(255, 248, 243, 0.84);
+  margin: 0;
+  max-width: 440px;
+}
+
+@keyframes musa-video-preview-motion {
+  from {
+    transform: scale(1.02) translateX(-1.5%);
+  }
+
+  to {
+    transform: scale(1.1) translateX(1.5%);
+  }
+}
+
 .experience-card::before {
   background: linear-gradient(145deg, rgba(122, 36, 68, 0.78) 0%, rgba(58, 36, 43, 0.88) 58%, rgba(47, 89, 82, 0.78) 100%);
-  content: "";
+  content: '';
   inset: 0;
   position: absolute;
 }
 
 .login-cover::after {
-  background:
-    linear-gradient(90deg, rgba(255, 248, 243, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255, 248, 243, 0.08) 1px, transparent 1px);
+  background: linear-gradient(90deg, rgba(255, 248, 243, 0.08) 1px, transparent 1px), linear-gradient(180deg, rgba(255, 248, 243, 0.08) 1px, transparent 1px);
   background-size: 42px 42px;
-  content: "";
+  content: '';
   inset: 0;
   opacity: 0.28;
   position: absolute;
@@ -982,22 +1059,16 @@ h3 {
 }
 
 .style-preview span:nth-child(1) {
-  background:
-    linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.86)),
-    #7a2444;
+  background: linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.86)), #7a2444;
 }
 
 .style-preview span:nth-child(2) {
-  background:
-    linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.82)),
-    #2f5952;
+  background: linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.82)), #2f5952;
   transform: translateY(18px);
 }
 
 .style-preview span:nth-child(3) {
-  background:
-    linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.82)),
-    #d6a75c;
+  background: linear-gradient(180deg, rgba(255, 248, 243, 0.18), rgba(255, 248, 243, 0.82)), #d6a75c;
 }
 
 .login-editorial-preview {
@@ -1511,7 +1582,7 @@ h3 {
 
 .processing-image::after {
   background: rgba(122, 36, 68, 0.34);
-  content: "";
+  content: '';
   inset: 0;
   position: absolute;
 }

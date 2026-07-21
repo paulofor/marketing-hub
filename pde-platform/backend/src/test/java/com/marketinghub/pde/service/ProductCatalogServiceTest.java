@@ -36,7 +36,7 @@ class ProductCatalogServiceTest {
     void returnsMarketingHubProductWhenConfigured() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        ProductCatalogService service = new ProductCatalogService(builder, "http://marketing-hub");
+        ProductCatalogService service = new ProductCatalogService(builder, "http://marketing-hub", "");
         server.expect(requestTo("http://marketing-hub/api/products/public/metodo-musa-7-dias/pde-experience"))
                 .andRespond(withSuccess("""
                         {
@@ -77,6 +77,20 @@ class ProductCatalogServiceTest {
         server.verify();
     }
 
+    /** Confirma que homologação pode publicar uma versão de experiência sem trocar o contrato base. */
+    @Test
+    void appliesExperienceVersionOverrideWhenConfigured() {
+        ProductCatalogService service = new ProductCatalogService(
+                RestClient.builder(),
+                "",
+                "musa-pde-entry-v4-video-hero");
+
+        var product = service.getProduct("metodo-musa-7-dias");
+
+        assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v4-video-hero");
+        assertThat(product.funnelVersion()).isEqualTo("musa-membership-funnel-v1");
+    }
+
     /** Confirma que o catálogo tenta a próxima base quando a primeira URL do Hub falha. */
     @Test
     void returnsMarketingHubProductFromFallbackBaseUrl() {
@@ -84,7 +98,8 @@ class ProductCatalogServiceTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         ProductCatalogService service = new ProductCatalogService(
                 builder,
-                "http://marketing-hub-unavailable, http://marketing-hub");
+                "http://marketing-hub-unavailable, http://marketing-hub",
+                "");
         server.expect(requestTo("http://marketing-hub-unavailable/api/products/public/metodo-musa-7-dias/pde-experience"))
                 .andRespond(withServerError());
         server.expect(requestTo("http://marketing-hub/api/products/public/metodo-musa-7-dias/pde-experience"))

@@ -1,5 +1,8 @@
 package com.marketinghub.experiment.video.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.LandingPage;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
@@ -32,7 +35,9 @@ import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -45,6 +50,10 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class ExperimentVideoAssetService {
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+            .findAndAddModules()
+            .build();
+
     private final ExperimentVideoAssetRepository repository;
     private final ExperimentRepository experimentRepository;
     private final SalesVideoProfileRepository profileRepository;
@@ -150,6 +159,7 @@ public class ExperimentVideoAssetService {
         renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
         renderRequest.setProviderName(Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"));
         renderRequest.setExecutionMode(request.executionMode());
+        renderRequest.setMetadataJson(buildVeoRenderMetadata(experimentId, request));
         SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
         String providerName = Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO");
         BigDecimal estimatedCost = costCalculator.estimateUsd(
@@ -339,9 +349,48 @@ public class ExperimentVideoAssetService {
                 Provider: VEO
                 Objetivo: %s
                 Métrica primária: %s
+                Imagem da personagem OpenAI:
+                Modelo: %s
+                Job: %s
+                Asset: %s
+                Referência: %s
+                Prompt:
+                %s
+
                 Script:
                 %s
-                """.formatted(request.objective().trim(), request.primaryMetric().trim(), request.scriptText().trim());
+                """.formatted(
+                request.objective().trim(),
+                request.primaryMetric().trim(),
+                Optional.ofNullable(trimToNull(request.characterImageModel())).orElse("OPENAI_IMAGE"),
+                Optional.ofNullable(trimToNull(request.characterImageJobId())).orElse("pendente"),
+                request.characterImageAssetId() != null ? request.characterImageAssetId() : "pendente",
+                Optional.ofNullable(trimToNull(request.characterImageReferenceUrl())).orElse("pendente"),
+                Optional.ofNullable(trimToNull(request.characterImagePrompt())).orElse("nao informado"),
+                request.scriptText().trim());
+    }
+
+    /** Monta metadados estruturados para o worker de vídeo reaproveitar a personagem gerada por OpenAI. */
+    private String buildVeoRenderMetadata(Long experimentId, RequestExperimentVeoVideoRequest request) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("artifactType", "experiment.veoRenderRequest.v1");
+        metadata.put("experimentId", experimentId);
+        metadata.put("videoProvider", Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"));
+        metadata.put("characterImageProvider", "OPENAI");
+        metadata.put("characterImageModel", trimToNull(request.characterImageModel()));
+        metadata.put("characterImageJobId", trimToNull(request.characterImageJobId()));
+        metadata.put("characterImageAssetId", request.characterImageAssetId());
+        metadata.put("characterImageReferenceUrl", trimToNull(request.characterImageReferenceUrl()));
+        metadata.put("characterImagePrompt", trimToNull(request.characterImagePrompt()));
+        metadata.put("scriptText", request.scriptText().trim());
+        metadata.put("hookText", trimToNull(request.hookText()));
+        metadata.put("ctaText", trimToNull(request.ctaText()));
+        metadata.put("captionText", trimToNull(request.captionText()));
+        try {
+            return OBJECT_MAPPER.writeValueAsString(metadata);
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "video metadata serialization failed", ex);
+        }
     }
 
     /** Resolve o custo em USD informado ou calculado pela tabela oficial do provider. */

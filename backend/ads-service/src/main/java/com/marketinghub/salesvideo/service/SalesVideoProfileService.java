@@ -148,6 +148,7 @@ public class SalesVideoProfileService {
         return SalesVideoMapper.toDto(saved);
     }
 
+    /** Solicita o render do roteiro aprovado e preserva os metadados operacionais enviados ao worker. */
     @Transactional
     public SalesVideoJobDto requestRender(Long profileId, RequestVideoRenderRequest request) {
         SalesVideoProfile profile = loadProfile(profileId);
@@ -173,6 +174,7 @@ public class SalesVideoProfileService {
                 request.getProviderName(),
                 requestedBy,
                 executionMode);
+        job.setMetadataJson(request.getMetadataJson());
         job.setAuditSnapshotJson(buildAuditSnapshot(profile, script, job, requestedBy));
         jobRepository.save(job);
         profile.setStatus(SalesVideoStatus.VIDEO_REQUESTED);
@@ -282,6 +284,7 @@ public class SalesVideoProfileService {
         snapshot.put("providerFamily", job.getProviderFamily());
         snapshot.put("providerName", job.getProviderName());
         snapshot.put("executionMode", job.getExecutionMode());
+        snapshot.put("renderMetadataJson", job.getMetadataJson());
         snapshot.put("requiresConsent", profile.isRequiresConsent());
         snapshot.put("consentRecordedBy", profile.getConsentRecordedBy());
         snapshot.put("consentRecordedAt", profile.getConsentRecordedAt());

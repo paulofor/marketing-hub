@@ -28,32 +28,56 @@ public class ProductCatalogService {
             "metodo-musa-7-dias", createMusaProduct());
     private final RestClient.Builder restClientBuilder;
     private final List<String> marketingHubBaseUrls;
+    private final String experienceVersionOverride;
 
     /** Cria o catálogo com integração opcional ao Marketing Hub como fonte de verdade comercial. */
     @Autowired
     public ProductCatalogService(
             RestClient.Builder restClientBuilder,
-            @Value("${pde.catalog.marketing-hub-base-url:}") String marketingHubBaseUrl) {
+            @Value("${pde.catalog.marketing-hub-base-url:}") String marketingHubBaseUrl,
+            @Value("${pde.catalog.experience-version-override:}") String experienceVersionOverride) {
         this.restClientBuilder = restClientBuilder;
         this.marketingHubBaseUrls = parseMarketingHubBaseUrls(marketingHubBaseUrl);
+        this.experienceVersionOverride = experienceVersionOverride;
     }
 
     /** Cria o catálogo em testes unitários sem dependência do Marketing Hub. */
     ProductCatalogService() {
-        this(RestClient.builder(), "");
+        this(RestClient.builder(), "", "");
     }
 
     /** Retorna a experiência configurada para o produto informado. */
     public ProductExperienceResponse getProduct(String slug) {
         Optional<ProductExperienceResponse> marketingHubProduct = loadMarketingHubProduct(slug);
         if (marketingHubProduct.isPresent()) {
-            return marketingHubProduct.get();
+            return applyExperienceVersionOverride(marketingHubProduct.get());
         }
         ProductExperienceResponse product = products.get(slug);
         if (product == null) {
             throw new IllegalArgumentException("Produto PDE não encontrado: " + slug);
         }
-        return product;
+        return applyExperienceVersionOverride(product);
+    }
+
+    /** Aplica override operacional de versão para publicar homologações sem alterar o contrato base. */
+    private ProductExperienceResponse applyExperienceVersionOverride(ProductExperienceResponse product) {
+        if (!StringUtils.hasText(experienceVersionOverride)) {
+            return product;
+        }
+        return new ProductExperienceResponse(
+                product.slug(),
+                experienceVersionOverride.trim(),
+                product.funnelVersion(),
+                product.name(),
+                product.promise(),
+                product.audience(),
+                product.priceLabel(),
+                product.theme(),
+                product.diagnostic(),
+                product.missions(),
+                product.supportMaterials(),
+                product.scientificEvidencePack(),
+                product.completionOffer());
     }
 
     /** Carrega o contrato PDE publicado pelo Marketing Hub quando a integração estiver configurada. */

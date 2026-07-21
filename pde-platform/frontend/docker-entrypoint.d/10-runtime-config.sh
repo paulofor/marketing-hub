@@ -4,6 +4,8 @@ set -eu
 CONFIG_FILE="${MUSA_RUNTIME_CONFIG_FILE:-/usr/share/nginx/html/runtime-config.js}"
 CHECKOUT_URL="${VITE_MUSA_CHECKOUT_URL:-}"
 GOOGLE_CLIENT_ID="${VITE_GOOGLE_CLIENT_ID:-}"
+EXPERIENCE_VERSION_OVERRIDE="${VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE:-}"
+HERO_VIDEO_URL="${VITE_MUSA_HERO_VIDEO_URL:-}"
 
 json_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
@@ -12,6 +14,8 @@ json_escape() {
 cat > "$CONFIG_FILE" <<EOF
 window.__MUSA_RUNTIME_CONFIG__ = {
   VITE_MUSA_CHECKOUT_URL: "$(json_escape "$CHECKOUT_URL")",
-  VITE_GOOGLE_CLIENT_ID: "$(json_escape "$GOOGLE_CLIENT_ID")"
+  VITE_GOOGLE_CLIENT_ID: "$(json_escape "$GOOGLE_CLIENT_ID")",
+  VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: "$(json_escape "$EXPERIENCE_VERSION_OVERRIDE")",
+  VITE_MUSA_HERO_VIDEO_URL: "$(json_escape "$HERO_VIDEO_URL")"
 };
 EOF

@@ -60,6 +60,25 @@ paths:
       responses:
         "200":
           description: Vídeo atualizado
+  /api/experiments/{experimentId}/video-assets/veo-render-requests:
+    post:
+      summary: Solicita vídeo VEO com roteiro e personagem registrados no Marketing Hub
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestExperimentVeoVideoRequest"
+      responses:
+        "200":
+          description: Job VEO criado e vinculado ao experimento
 components:
   schemas:
     CreateExperimentVideoAssetRequest:
@@ -126,3 +145,64 @@ components:
     UpdateExperimentVideoAssetRequest:
       allOf:
         - $ref: "#/components/schemas/CreateExperimentVideoAssetRequest"
+    RequestExperimentVeoVideoRequest:
+      type: object
+      required:
+        - slot
+        - title
+        - objective
+        - primaryMetric
+        - scriptText
+        - requestedBy
+      properties:
+        slot:
+          type: string
+          enum: [AD, LANDING_HERO, FORM_EXPLAINER, PRE_CHECKOUT]
+        title:
+          type: string
+        objective:
+          type: string
+        primaryMetric:
+          type: string
+        personaName:
+          type: string
+        personaStyle:
+          type: string
+        voiceStyle:
+          type: string
+        language:
+          type: string
+          example: pt-BR
+        targetDurationSeconds:
+          type: integer
+        scriptText:
+          type: string
+        hookText:
+          type: string
+        ctaText:
+          type: string
+        captionText:
+          type: string
+        characterImagePrompt:
+          type: string
+          description: Prompt da imagem da personagem gerada pela OpenAI.
+        characterImageModel:
+          type: string
+          example: gpt-image-2
+        characterImageJobId:
+          type: string
+        characterImageAssetId:
+          type: integer
+          format: int64
+        characterImageReferenceUrl:
+          type: string
+        providerName:
+          type: string
+          example: VEO
+        executionMode:
+          type: string
+          enum: [TEST, PRODUCTION]
+        requestedBy:
+          type: string
+        requiredForRelease:
+          type: boolean

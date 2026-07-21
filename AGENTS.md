@@ -126,6 +126,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
   5. Indique documentos canonicos sobre o assunto
   6. Seguindo os objetivo maiores do sistema que é vendas. Sugira o que pode ser feito a seguir.
   7. Se existir um problema detectado pesquise e sugira a solução sempre buscando causa-raiz.
+- **Análise de PDEs pelo painel unificado (obrigatório)**: quando o usuário perguntar sobre performance, gargalo, campanha, criativo, conversão ou próximos testes de um PDE, consultar o painel único do monitor pós-deploy antes de concluir a análise. Esse painel cruza Meta Ads, UTMs/criativos e jornadas recentes por sessão, permitindo verificar qual criativo trouxe a sessão, quanto tempo a pessoa ficou, quais eventos ocorreram e onde abandonou. A resposta deve usar esses dados para separar problema de aquisição, problema de primeira dobra/CTA, fricção de login, paywall, checkout ou ausência de tráfego suficiente, sempre orientando a próxima ação para gerar vendas.
 - **Registros após tarefas** : sempre que for feito alguma tarefa faça o registro dela no local adequado:
      1. Tema: Experimentos, registre em /docs/registros/experimentos.md
      2. Tema: Módulos Mois, registre em /docs/registros/mois1.md

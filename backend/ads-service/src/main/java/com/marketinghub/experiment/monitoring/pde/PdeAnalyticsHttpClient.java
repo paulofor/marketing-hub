@@ -10,11 +10,13 @@ import org.springframework.web.client.RestClient;
 @Component
 public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
 
+    private static final String DEFAULT_PDE_BASE_URL = "https://clubemusa.com.br";
+
     private final RestClient restClient;
 
     /** Inicializa o cliente HTTP com timeouts curtos para não travar o painel do Hub. */
     public PdeAnalyticsHttpClient(
-            @Value("${integrations.pde-platform.base-url:http://191.252.181.168:8096}") String baseUrl) {
+            @Value("${integrations.pde-platform.base-url:" + DEFAULT_PDE_BASE_URL + "}") String baseUrl) {
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
         requestFactory.setReadTimeout(Duration.ofSeconds(4));
         this.restClient = RestClient.builder()
@@ -35,7 +37,7 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
     /** Remove barra final para montar rotas internas de forma previsível. */
     private String trimTrailingSlash(String value) {
         if (value == null || value.isBlank()) {
-            return "http://191.252.181.168:8096";
+            return DEFAULT_PDE_BASE_URL;
         }
         return value.replaceAll("/+$", "");
     }

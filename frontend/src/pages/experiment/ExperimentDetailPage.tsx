@@ -25,6 +25,7 @@ import {
 } from "../../api/experiment/useExperimentCampaignReset";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentLandingAnalyticsTab from "./ExperimentLandingAnalyticsTab";
+import ExperimentPostDeployMonitorTab from "./ExperimentPostDeployMonitorTab";
 import ExperimentSalesPageAbTab from "./ExperimentSalesPageAbTab";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
@@ -69,6 +70,7 @@ const experimentDetailTabs = [
   { value: "overview", label: "Overview" },
   { value: "construction", label: "Construção", manualOnly: true },
   { value: "funnel", label: "Funil de vendas" },
+  { value: "post-deploy", label: "Pós-deploy" },
   { value: "ab-test", label: "Teste A/B" },
   { value: "analytics", label: "Analytics" },
   { value: "creatives", label: "Criativos" },
@@ -1943,12 +1945,11 @@ export default function ExperimentDetailPage() {
     data.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
   const isSalesObjectiveExperiment =
     isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
-  const experimentTypeLabel =
-    isPdeMembershipSubscriptionFunnel
-      ? "PDE / assinatura MUSA"
-      : isLowTicketProduct
-        ? "Produto low-ticket"
-        : "Teste de nicho / lead";
+  const experimentTypeLabel = isPdeMembershipSubscriptionFunnel
+    ? "PDE / assinatura MUSA"
+    : isLowTicketProduct
+      ? "Produto low-ticket"
+      : "Teste de nicho / lead";
   const productAiSubtypeLabel: Record<string, string> = {
     AI_VISUAL_PREVIEW: "Prévia visual IA",
     AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
@@ -2072,7 +2073,9 @@ export default function ExperimentDetailPage() {
       value: data.singlePain || "—",
     },
     {
-      label: isSalesObjectiveExperiment ? "Prova/preview da oferta" : "Isca digital",
+      label: isSalesObjectiveExperiment
+        ? "Prova/preview da oferta"
+        : "Isca digital",
       value:
         data.freeReward ||
         (isSalesObjectiveExperiment ? "Sem prova/preview informada" : "—"),
@@ -2556,7 +2559,7 @@ export default function ExperimentDetailPage() {
                 ? "Campanha de Facebook Ads para assinatura PDE"
                 : isLowTicketProduct
                   ? "Campanha de Facebook Ads para venda"
-                : "Campanha de Facebook Ads"}
+                  : "Campanha de Facebook Ads"}
             </h5>
             <span
               className={`badge ${
@@ -2571,7 +2574,7 @@ export default function ExperimentDetailPage() {
               ? "Checklist consolidado para publicar anúncio, entrada no PED/MUSA, checkout, assinatura e ativação pós-compra."
               : isLowTicketProduct
                 ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
-              : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
+                : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
           </p>
           {isLoadingReadiness ? (
             <div
@@ -2904,6 +2907,9 @@ export default function ExperimentDetailPage() {
               spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
               alterationLocked={alterationLocked}
             />
+          </Tabs.Content>
+          <Tabs.Content value="post-deploy" asChild>
+            <ExperimentPostDeployMonitorTab experimentId={expId} />
           </Tabs.Content>
           <Tabs.Content value="ab-test" asChild>
             <ExperimentSalesPageAbTab experimentId={expId} />

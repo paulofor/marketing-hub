@@ -189,11 +189,9 @@ const fallbackProduct: ProductExperience = {
   },
   diagnostic: {
     title: 'Mapa de Presença MUSA',
-    intro: 'Comece pelo momento do espelho: quando você está pronta, mas sente que sua imagem ainda não comunica a mulher que você quer ser vista como.',
+    intro: 'Comece pelo espelho: descubra o primeiro ajuste para sua imagem comunicar mais intenção hoje, usando o que você já tem.',
     questions: [
-      'Quando você se arruma, o que mais incomoda no resultado final?',
-      'Qual sinal você gostaria que sua imagem comunicasse com mais clareza?',
-      'Em qual situação dos próximos 7 dias você quer parecer mais alinhada com quem você é?',
+      'O que minha imagem comunica hoje?',
     ],
   },
   missions: [
@@ -440,24 +438,9 @@ function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLI
 
 const presenceBlockers: DiagnosticOption[] = [
   {
-    key: 'comum_mesmo_caprichando',
-    label: 'Pareço comum mesmo tentando caprichar',
-    description: 'Você se arruma, mas sente que a imagem não acompanha a mulher que quer transmitir.',
-  },
-  {
-    key: 'visual_nao_comunica_quem_sou',
-    label: 'Meu visual não comunica a mulher que eu sou',
-    description: 'Roupa, beleza e detalhe final parecem corretos, mas sem uma mensagem clara.',
-  },
-  {
-    key: 'falta_acabamento_presenca_intencao',
-    label: 'Sinto que falta acabamento, presença ou intenção',
-    description: 'O conjunto fica quase bom, mas ainda transmite pouco cuidado ou pouca sofisticação.',
-  },
-  {
-    key: 'quero_sem_comprar_tudo_novo',
-    label: 'Quero parecer elegante sem comprar tudo novo',
-    description: 'Você quer usar melhor o que já tem antes de entrar em mais uma compra impulsiva.',
+    key: 'descobrir_imagem_comunica_hoje',
+    label: 'Descobrir o que minha imagem comunica hoje',
+    description: 'Receber uma leitura simples do primeiro sinal que pode deixar sua presença mais intencional.',
   },
 ];
 
@@ -471,11 +454,6 @@ const desiredPresenceSignals: DiagnosticOption[] = [
     key: 'imagem_com_intencao',
     label: 'Imagem com intenção',
     description: 'Sentir que roupa, beleza e detalhe final contam a mesma história.',
-  },
-  {
-    key: 'menos_duvida_ao_sair',
-    label: 'Menos dúvida ao sair',
-    description: 'Saber o que reforçar antes de sair, sem refazer tudo.',
   },
 ];
 
@@ -813,7 +791,7 @@ function App() {
 
   async function submitAccess() {
     if (authMode === 'register' && (!presenceBlocker || !desiredPresence)) {
-      setErrorMessage('Escolha primeiro o incômodo principal da sua imagem e o sinal que você quer comunicar.');
+      setErrorMessage('Toque primeiro para descobrir o que sua imagem comunica hoje.');
       return;
     }
     if (!email.trim()) {
@@ -1075,29 +1053,31 @@ function App() {
     emailInputRef.current?.select();
   }
 
-  function selectDiagnosticOption(kind: 'presenceBlocker' | 'desiredPresence', value: string) {
-    if (kind === 'presenceBlocker') {
-      setPresenceBlocker(value);
-    } else {
-      setDesiredPresence(value);
-    }
+  function startPresenceMap() {
+    const blocker = presenceBlockers[0];
+    const desiredSignal = desiredPresenceSignals[0];
+    setPresenceBlocker(blocker.key);
+    setDesiredPresence(desiredSignal.key);
     setErrorMessage('');
     trackEvent('PRESENCE_MAP_CHOICE_SELECTED', {
       metadata: {
         authMode,
-        diagnosticStep: kind,
-        selectedOption: value,
-        actionName: 'presence_map_choice_selected',
+        diagnosticStep: 'single_cta',
+        selectedOption: blocker.key,
+        desiredSignal: desiredSignal.key,
+        actionName: 'presence_map_single_cta_clicked',
       },
     });
     trackEvent('DIAGNOSTIC_CHOICE_SELECTED', {
       metadata: {
         authMode,
-        diagnosticStep: kind,
-        selectedOption: value,
-        actionName: 'diagnostic_choice_selected',
+        diagnosticStep: 'single_cta',
+        selectedOption: blocker.key,
+        desiredSignal: desiredSignal.key,
+        actionName: 'diagnostic_single_cta_clicked',
       },
     });
+    window.requestAnimationFrame(() => emailInputRef.current?.focus());
   }
 
   function resolveMagicLinkMessage(result: MagicLinkResponse) {
@@ -1353,8 +1333,8 @@ function App() {
             <img className="brand-logo login-brand-logo" src="/assets/logo-musa.svg" alt="Clube MUSA" />
             <h1>Sua imagem comunica a mulher que você quer ser vista como?</h1>
             <p className="promise">
-              Responda 2 escolhas rápidas e receba seu Mapa de Presença do Dia 1: o que hoje deixa seu visual comum,
-              qual sinal transmite mais intenção e como começar com o que você já tem.
+              Toque uma vez e receba seu Mapa de Presença do Dia 1: o primeiro sinal que pode deixar sua imagem mais
+              intencional hoje, usando o que você já tem.
             </p>
             <div className="diagnostic-promise-strip" aria-label="O que o diagnóstico gratuito entrega">
               <span><Sparkles size={16} /> Mapa de Presença do Dia 1</span>
@@ -1394,54 +1374,31 @@ function App() {
                 </>
               ) : (
                 <>
-                  <strong>Comece pelo espelho.</strong> Escolha o incômodo principal e veja qual presença você quer comunicar antes de informar seu e-mail.
+                  <strong>Comece pelo espelho.</strong> Primeiro veja o que sua imagem pode estar comunicando; depois informe seu e-mail para salvar o mapa.
                 </>
               )}
             </p>
             {authMode === 'register' && (
               <div className="interactive-diagnostic" data-analytics-section="interactive_diagnostic">
                 <div className="diagnostic-step">
-                  <span>1 de 2</span>
-                  <h2>Quando você se arruma, o que mais incomoda no resultado final?</h2>
-                  <div className="diagnostic-option-grid" role="group" aria-label="Quando você se arruma, o que mais incomoda no resultado final">
-                    {presenceBlockers.map((option) => (
-                      <button
-                        className={presenceBlocker === option.key ? 'selected' : ''}
-                        key={option.key}
-                        onClick={() => selectDiagnosticOption('presenceBlocker', option.key)}
-                        type="button"
-                      >
-                        <strong>{option.label}</strong>
-                        <small>{option.description}</small>
-                      </button>
-                    ))}
-                  </div>
+                  <span>Diagnóstico gratuito</span>
+                  <h2>Veja o primeiro ajuste para aumentar sua presença hoje.</h2>
+                  <button
+                    className={presenceBlocker ? 'diagnostic-start-button selected' : 'diagnostic-start-button'}
+                    onClick={startPresenceMap}
+                    type="button"
+                  >
+                    <Sparkles size={18} />
+                    <strong>Descobrir o que minha imagem comunica hoje</strong>
+                    <small>Sem escolher perfil, sem responder questionário longo e sem mostrar preço agora.</small>
+                  </button>
                 </div>
-                {presenceBlocker && (
-                  <div className="diagnostic-step">
-                    <span>2 de 2</span>
-                    <h2>Qual sinal você quer comunicar com mais clareza no Dia 1?</h2>
-                    <div className="diagnostic-option-grid compact" role="group" aria-label="Sinal desejado no Dia 1">
-                      {desiredPresenceSignals.map((option) => (
-                        <button
-                          className={desiredPresence === option.key ? 'selected' : ''}
-                          key={option.key}
-                          onClick={() => selectDiagnosticOption('desiredPresence', option.key)}
-                          type="button"
-                        >
-                          <strong>{option.label}</strong>
-                          <small>{option.description}</small>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 {selectedBlocker && selectedDesiredPresence && (
                   <div className="diagnostic-result-teaser">
                     <Check size={18} />
                     <p>
-                      Seu Mapa de Presença vai partir de <strong>{selectedBlocker.label.toLowerCase()}</strong> para ajudar você a comunicar
-                      <strong> {selectedDesiredPresence.label.toLowerCase()}</strong> com uma microação prática hoje.
+                      Seu Mapa de Presença vai mostrar o primeiro sinal que sua imagem comunica hoje e uma microação
+                      prática para reforçar <strong>{selectedDesiredPresence.label.toLowerCase()}</strong>.
                     </p>
                   </div>
                 )}
@@ -1460,7 +1417,7 @@ function App() {
             {diagnosticReadyForEmail && (
               <>
                 <div className="auth-divider">
-                  <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'salve seu Mapa de Presença por e-mail'}</span>
+                  <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'receba seu Mapa de Presença por e-mail'}</span>
                 </div>
                 <label className="email-box login-email-box">
                   {authMode === 'login' ? 'E-mail do seu acesso MUSA' : 'Seu melhor e-mail para receber o Mapa de Presença'}
@@ -1505,7 +1462,7 @@ function App() {
                 <Mail size={18} />
                 {loading
                   ? 'Enviando link...'
-                  : (authMode === 'login' ? 'Receber link de entrada' : 'Ver meu Mapa de Presença')}
+                  : (authMode === 'login' ? 'Receber link de entrada' : 'Receber meu Mapa de Presença')}
               </button>
             )}
             <div className="login-value-strip" aria-label="O que fica disponível ao entrar">

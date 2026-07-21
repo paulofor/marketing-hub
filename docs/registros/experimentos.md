@@ -1,3 +1,11 @@
+## 2026-07-21 — Clube MUSA: entrada PDE com uma ação principal
+
+- causa-raiz confirmada: a mudança anterior melhorou a promessa do `Mapa de Presença`, mas manteve duas escolhas e várias opções antes do e-mail; os dados seguiram com zero clique no mapa, indicando atrito antes do primeiro microcompromisso.
+- decisão comercial: reduzir a primeira tela para uma única ação principal, `Descobrir o que minha imagem comunica hoje`, antes de pedir e-mail.
+- foi feito: o frontend do PDE removeu a grade de opções da entrada pública e passou a registrar o clique único como `PRESENCE_MAP_CHOICE_SELECTED` e `DIAGNOSTIC_CHOICE_SELECTED`.
+- foi feito: o contrato PDE do produto MUSA no Marketing Hub recebeu novo changeset para simplificar a definição do diagnóstico para uma pergunta central: `O que minha imagem comunica hoje?`.
+- impacto esperado: diminuir confusão, aumentar o clique inicial no Mapa de Presença e separar melhor os próximos gargalos: clique no mapa, e-mail, login, paywall e checkout.
+
 ## 2026-07-21 — Painel pós-deploy MUSA: analytics PDE pelo domínio público
 
 - causa-raiz confirmada: o painel pós-deploy foi publicado, mas o backend do Marketing Hub tentava consultar o analytics PDE em `191.252.181.168:8096`, host que não expõe o `pde-platform`.

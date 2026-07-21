@@ -759,6 +759,41 @@ h3 {
   text-align: left;
 }
 
+.diagnostic-start-button {
+  align-items: center;
+  background: #7a2444;
+  border: 0;
+  color: #fff8f3;
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  min-height: 118px;
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.diagnostic-start-button.selected {
+  background: #2f5952;
+}
+
+.diagnostic-start-button svg {
+  color: #f7e4c6;
+}
+
+.diagnostic-start-button strong {
+  color: #fff;
+  font-size: 1.02rem;
+  line-height: 1.18;
+}
+
+.diagnostic-start-button small {
+  color: rgba(255, 248, 243, 0.82);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  max-width: 420px;
+}
+
 .diagnostic-option-grid button.selected {
   background: #eef5f2;
   border-color: rgba(47, 89, 82, 0.52);
@@ -1783,6 +1818,11 @@ h3 {
 
   .diagnostic-option-grid button {
     min-height: 76px;
+  }
+
+  .diagnostic-start-button {
+    min-height: 104px;
+    padding: 16px 12px;
   }
 
   .auth-divider,

@@ -104,11 +104,8 @@ public class ProductCatalogService {
                 new ThemeDto("#7a2444", "#d6a75c", "#fff8f3", "/assets/musa-cover.png"),
                 new DiagnosticDto(
                         "Mapa de Presença MUSA",
-                        "Comece pelo momento do espelho: quando você está pronta, mas sente que sua imagem ainda não comunica a mulher que você quer ser vista como.",
-                        List.of(
-                                "Quando você se arruma, o que mais incomoda no resultado final?",
-                                "Qual sinal você gostaria que sua imagem comunicasse com mais clareza?",
-                                "Em qual situação dos próximos 7 dias você quer parecer mais alinhada com quem você é?")),
+                        "Comece pelo espelho: descubra o primeiro ajuste para sua imagem comunicar mais intenção hoje, usando o que você já tem.",
+                        List.of("O que minha imagem comunica hoje?")),
                 List.of(
                         new MissionDto(
                                 "dia-1-ruido-visual",

@@ -5990,3 +5990,4 @@
 - foi feito: o resumo de analytics do PDE passou a devolver desempenho por origem/campanha/criativo via UTM, além das jornadas recentes por sessão.
 - foi feito: o monitor pós-deploy do experimento passou a exibir blocos de `Criativos e UTMs` e `Jornadas recentes por sessão`, cruzando Meta Ads, eventos PDE, tempo visível, scroll, última ação e ponto de abandono.
 - impacto comercial esperado: acelerar a decisão sobre qual criativo atrai visita útil, onde cada sessão abandona e se o gargalo está no anúncio, primeira dobra, e-mail, paywall ou checkout.
+- 2026-07-21: criado ambiente versionado de homologação para PDEs no mesmo host da Área MUSA, com `pde-platform/docker-compose.homolog.yml`, portas padrão `5177` para frontend e `8097` para backend, containers/volume isolados e override `musa-pde-entry-v4-video-hero` para publicar primeiro a versão do PDE MUSA com hero de vídeo antes da promoção para produção.

@@ -1,23 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  BookOpen,
-  CalendarDays,
-  Check,
-  ChevronRight,
-  ClipboardCheck,
-  CreditCard,
-  Gauge,
-  KeyRound,
-  Library,
-  LoaderCircle,
-  Lock,
-  LogIn,
-  Mail,
-  Pencil,
-  Sparkles,
-  Target,
-  User,
-} from 'lucide-react';
+import { BookOpen, CalendarDays, Check, ChevronRight, ClipboardCheck, CreditCard, Gauge, KeyRound, Library, LoaderCircle, Lock, LogIn, Mail, Pencil, Sparkles, Target, User } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
@@ -166,10 +148,7 @@ declare global {
     google?: {
       accounts: {
         id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential?: string }) => void;
-          }) => void;
+          initialize: (config: { client_id: string; callback: (response: { credential?: string }) => void }) => void;
           renderButton: (element: HTMLElement, options: Record<string, string | number | boolean>) => void;
         };
       };
@@ -194,9 +173,7 @@ const fallbackProduct: ProductExperience = {
   diagnostic: {
     title: 'Mapa de Presença MUSA',
     intro: 'Comece pelo espelho: descubra o primeiro ajuste para sua imagem comunicar mais intenção hoje, usando o que você já tem.',
-    questions: [
-      'O que minha imagem comunica hoje?',
-    ],
+    questions: ['O que minha imagem comunica hoje?'],
   },
   missions: [
     {
@@ -317,9 +294,21 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     nextStepTitle: 'O que fazer agora',
     nextStepText: 'Separe as peças indicadas, monte uma combinação possível e registre a missão quando tiver uma base pronta para usar ou repetir.',
     fields: [
-      { key: 'pieces', label: '5 peças que você já tem', placeholder: 'Ex.: calça preta, camisa branca, vestido vinho...' },
-      { key: 'accessories', label: '2 acessórios ou acabamentos disponíveis', placeholder: 'Ex.: brinco dourado e perfume suave' },
-      { key: 'realOccasion', label: 'Para qual situação real essa base precisa funcionar?', placeholder: 'Ex.: reunião, jantar, rotina de trabalho' },
+      {
+        key: 'pieces',
+        label: '5 peças que você já tem',
+        placeholder: 'Ex.: calça preta, camisa branca, vestido vinho...',
+      },
+      {
+        key: 'accessories',
+        label: '2 acessórios ou acabamentos disponíveis',
+        placeholder: 'Ex.: brinco dourado e perfume suave',
+      },
+      {
+        key: 'realOccasion',
+        label: 'Para qual situação real essa base precisa funcionar?',
+        placeholder: 'Ex.: reunião, jantar, rotina de trabalho',
+      },
     ],
   },
   'dia-4-checklist-12-minutos': {
@@ -335,9 +324,21 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     nextStepTitle: 'O que fazer agora',
     nextStepText: 'Execute a ordem recomendada antes de sair ou gravar conteúdo e registre a missão quando perceber o acabamento mais forte.',
     fields: [
-      { key: 'availableMinutes', label: 'Quanto tempo real você tem antes de sair?', placeholder: 'Ex.: 8, 12 ou 15 minutos' },
-      { key: 'weakestFinish', label: 'Qual acabamento costuma falhar primeiro?', placeholder: 'Ex.: cabelo, pele, roupa, perfume, postura' },
-      { key: 'desiredFeeling', label: 'Como você quer se sentir ao sair?', placeholder: 'Ex.: limpa, marcante, segura, feminina' },
+      {
+        key: 'availableMinutes',
+        label: 'Quanto tempo real você tem antes de sair?',
+        placeholder: 'Ex.: 8, 12 ou 15 minutos',
+      },
+      {
+        key: 'weakestFinish',
+        label: 'Qual acabamento costuma falhar primeiro?',
+        placeholder: 'Ex.: cabelo, pele, roupa, perfume, postura',
+      },
+      {
+        key: 'desiredFeeling',
+        label: 'Como você quer se sentir ao sair?',
+        placeholder: 'Ex.: limpa, marcante, segura, feminina',
+      },
     ],
   },
   'dia-5-compra-inteligente': {
@@ -353,9 +354,21 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     nextStepTitle: 'O que fazer agora',
     nextStepText: 'Siga a recomendação sobre compra ou reaproveitamento e registre a missão quando a decisão deixar de ser impulso e virar intenção.',
     fields: [
-      { key: 'desiredItem', label: 'O que você está pensando em comprar?', placeholder: 'Ex.: blazer, perfume, bolsa, sapato' },
-      { key: 'buyingReason', label: 'Qual sensação você espera resolver com essa compra?', placeholder: 'Ex.: parecer mais arrumada, menos comum, mais adulta' },
-      { key: 'fitWithSignature', label: 'Como esse item conversa com sua assinatura MUSA?', placeholder: 'Ex.: combina com minha cor-base e acabamento' },
+      {
+        key: 'desiredItem',
+        label: 'O que você está pensando em comprar?',
+        placeholder: 'Ex.: blazer, perfume, bolsa, sapato',
+      },
+      {
+        key: 'buyingReason',
+        label: 'Qual sensação você espera resolver com essa compra?',
+        placeholder: 'Ex.: parecer mais arrumada, menos comum, mais adulta',
+      },
+      {
+        key: 'fitWithSignature',
+        label: 'Como esse item conversa com sua assinatura MUSA?',
+        placeholder: 'Ex.: combina com minha cor-base e acabamento',
+      },
     ],
   },
   'dia-6-situacao-chave': {
@@ -371,9 +384,21 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     nextStepTitle: 'O que fazer agora',
     nextStepText: 'Aplique o plano na ocasião escolhida, observe o sinal mais forte de presença e registre a missão depois de preparar sua entrada.',
     fields: [
-      { key: 'occasion', label: 'Qual é a ocasião?', placeholder: 'Ex.: reunião, evento, encontro, gravação, almoço' },
-      { key: 'plannedLook', label: 'Qual composição você pretende usar?', placeholder: 'Roupa, cabelo, pele, perfume e detalhe final' },
-      { key: 'presenceRisk', label: 'O que pode enfraquecer sua presença nesse contexto?', placeholder: 'Ex.: pressa, insegurança, roupa sem caimento' },
+      {
+        key: 'occasion',
+        label: 'Qual é a ocasião?',
+        placeholder: 'Ex.: reunião, evento, encontro, gravação, almoço',
+      },
+      {
+        key: 'plannedLook',
+        label: 'Qual composição você pretende usar?',
+        placeholder: 'Roupa, cabelo, pele, perfume e detalhe final',
+      },
+      {
+        key: 'presenceRisk',
+        label: 'O que pode enfraquecer sua presença nesse contexto?',
+        placeholder: 'Ex.: pressa, insegurança, roupa sem caimento',
+      },
     ],
   },
   'dia-7-plano-pessoal': {
@@ -389,9 +414,21 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     nextStepTitle: 'O que fazer agora',
     nextStepText: 'Escolha o ritual recomendado, marque um horário real da semana e registre a missão quando o plano estiver pronto para repetir.',
     fields: [
-      { key: 'bestSignal', label: 'Qual sinal mais funcionou nesta semana?', placeholder: 'Ex.: cabelo polido, cor-base vinho, perfume' },
-      { key: 'hardestPoint', label: 'Qual ponto ainda exige esforço?', placeholder: 'Ex.: manter cabelo, combinar cores, evitar compras' },
-      { key: 'weeklyRitual', label: 'Que ritual semanal você consegue repetir?', placeholder: 'Ex.: separar 3 combinações no domingo por 15 minutos' },
+      {
+        key: 'bestSignal',
+        label: 'Qual sinal mais funcionou nesta semana?',
+        placeholder: 'Ex.: cabelo polido, cor-base vinho, perfume',
+      },
+      {
+        key: 'hardestPoint',
+        label: 'Qual ponto ainda exige esforço?',
+        placeholder: 'Ex.: manter cabelo, combinar cores, evitar compras',
+      },
+      {
+        key: 'weeklyRitual',
+        label: 'Que ritual semanal você consegue repetir?',
+        placeholder: 'Ex.: separar 3 combinações no domingo por 15 minutos',
+      },
     ],
   },
 };
@@ -436,8 +473,19 @@ function resolveUrlHost(url: string) {
   }
 }
 
-function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID', fallback = '') {
+function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID' | 'VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE' | 'VITE_MUSA_HERO_VIDEO_URL', fallback = '') {
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
+}
+
+function applyExperienceOverrides(productExperience: ProductExperience) {
+  const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
+  if (!experienceVersionOverride) {
+    return productExperience;
+  }
+  return {
+    ...productExperience,
+    experienceVersion: experienceVersionOverride,
+  };
 }
 
 const presenceBlockers: DiagnosticOption[] = [
@@ -493,14 +541,9 @@ function App() {
   const maxScrollDepthRef = useRef(0);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const missionPanelRef = useRef<HTMLElement>(null);
-  const googleClientId = readRuntimeConfigValue(
-    'VITE_GOOGLE_CLIENT_ID',
-    (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '',
-  );
-  const checkoutUrl = readRuntimeConfigValue(
-    'VITE_MUSA_CHECKOUT_URL',
-    (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '',
-  );
+  const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
+  const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
+  const heroVideoUrl = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? '');
 
   const activeMission = useMemo(() => {
     const missionList = workspace?.product.missions ?? product.missions;
@@ -512,8 +555,14 @@ function App() {
       sessionIdRef.current = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       window.sessionStorage.setItem('musaSessionId', sessionIdRef.current);
     }
-    trackEvent('PED_ENTRY', { source: 'frontend_entry', metadata: { actionName: 'app_entry' } });
-    trackEvent('PAGE_VIEW', { source: 'frontend_entry', metadata: { actionName: 'page_loaded' } });
+    trackEvent('PED_ENTRY', {
+      source: 'frontend_entry',
+      metadata: { actionName: 'app_entry' },
+    });
+    trackEvent('PAGE_VIEW', {
+      source: 'frontend_entry',
+      metadata: { actionName: 'page_loaded' },
+    });
     const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
     if (navigationEntry) {
       trackEvent('PAGE_LOAD', {
@@ -532,14 +581,16 @@ function App() {
       return;
     }
     fetch('/api/pde/products/metodo-musa-7-dias')
-      .then((response) => response.ok ? response.json() : fallbackProduct)
+      .then((response) => (response.ok ? response.json() : fallbackProduct))
       .then((data: ProductExperience) => {
-        setProduct(data);
-        setActiveMissionId(data.missions[0]?.id ?? '');
+        const resolvedProduct = applyExperienceOverrides(data);
+        setProduct(resolvedProduct);
+        setActiveMissionId(resolvedProduct.missions[0]?.id ?? '');
       })
       .catch(() => {
-        setProduct(fallbackProduct);
-        setActiveMissionId(fallbackProduct.missions[0]?.id ?? '');
+        const resolvedProduct = applyExperienceOverrides(fallbackProduct);
+        setProduct(resolvedProduct);
+        setActiveMissionId(resolvedProduct.missions[0]?.id ?? '');
       });
   }, []);
 
@@ -568,21 +619,24 @@ function App() {
 
   useEffect(() => {
     const observedSections = Array.from(document.querySelectorAll<HTMLElement>('[data-analytics-section]'));
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        const sectionId = (entry.target as HTMLElement).dataset.analyticsSection;
-        if (!entry.isIntersecting || !sectionId || sectionSeenRef.current.has(sectionId)) {
-          return;
-        }
-        sectionSeenRef.current.add(sectionId);
-        trackEvent('SECTION_VIEW', {
-          accessToken,
-          email: workspace?.email,
-          provider: workspace?.accessSource,
-          metadata: { sectionId },
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const sectionId = (entry.target as HTMLElement).dataset.analyticsSection;
+          if (!entry.isIntersecting || !sectionId || sectionSeenRef.current.has(sectionId)) {
+            return;
+          }
+          sectionSeenRef.current.add(sectionId);
+          trackEvent('SECTION_VIEW', {
+            accessToken,
+            email: workspace?.email,
+            provider: workspace?.accessSource,
+            metadata: { sectionId },
+          });
         });
-      });
-    }, { threshold: 0.45 });
+      },
+      { threshold: 0.45 },
+    );
     observedSections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, [workspace, accessToken]);
@@ -598,7 +652,11 @@ function App() {
         accessToken,
         email: workspace?.email,
         provider: workspace?.accessSource,
-        metadata: { visibleMs, screenName: currentScreenRef.current, actionName: 'page_visibility_flush' },
+        metadata: {
+          visibleMs,
+          screenName: currentScreenRef.current,
+          actionName: 'page_visibility_flush',
+        },
       });
       flushScreenTime('page_visibility_flush');
     };
@@ -619,9 +677,7 @@ function App() {
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
-      const element = event.target instanceof Element
-        ? event.target.closest('button, a, [role="button"], input[type="button"], input[type="submit"]')
-        : null;
+      const element = event.target instanceof Element ? event.target.closest('button, a, [role="button"], input[type="button"], input[type="submit"]') : null;
       if (!element) {
         return;
       }
@@ -799,9 +855,7 @@ function App() {
       return;
     }
     if (!email.trim()) {
-      setErrorMessage(authMode === 'login'
-        ? 'Informe o e-mail que você usou para criar seu acesso MUSA.'
-        : 'Informe seu melhor e-mail para receber o Mapa de Presença.');
+      setErrorMessage(authMode === 'login' ? 'Informe o e-mail que você usou para criar seu acesso MUSA.' : 'Informe seu melhor e-mail para receber o Mapa de Presença.');
       return;
     }
     setLoading(true);
@@ -825,7 +879,7 @@ function App() {
         body: JSON.stringify({ productSlug: product.slug, email }),
       });
       if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({} as ApiErrorResponse));
+        const errorBody = await response.json().catch(() => ({}) as ApiErrorResponse);
         throw new Error(errorBody.error ?? 'Não foi possível enviar o link de acesso.');
       }
       const result: MagicLinkResponse = await response.json();
@@ -877,20 +931,21 @@ function App() {
     if (!response.ok) {
       throw new Error('Acesso não encontrado.');
     }
-    const data = await response.json();
-    setWorkspace(data);
-    setProduct(data.product);
-    setActiveMissionId(data.product.missions[0]?.id ?? '');
-    setMissionAnswers(resolveAllMissionAnswers(data));
+    const data = (await response.json()) as Workspace;
+    const resolvedWorkspace = {
+      ...data,
+      product: applyExperienceOverrides(data.product),
+    };
+    setWorkspace(resolvedWorkspace);
+    setProduct(resolvedWorkspace.product);
+    setActiveMissionId(resolvedWorkspace.product.missions[0]?.id ?? '');
+    setMissionAnswers(resolveAllMissionAnswers(resolvedWorkspace));
     if (resetScroll) {
       window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
     }
   }
 
-  async function trackEvent(
-    eventType: string,
-    options: TrackingOptions = {},
-  ) {
+  async function trackEvent(eventType: string, options: TrackingOptions = {}) {
     try {
       await fetch('/api/pde/access/events', {
         method: 'POST',
@@ -1005,11 +1060,7 @@ function App() {
   }
 
   function resolveFieldElement(target: EventTarget | null) {
-    if (
-      target instanceof HTMLInputElement
-      || target instanceof HTMLTextAreaElement
-      || target instanceof HTMLSelectElement
-    ) {
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
       return target;
     }
     return null;
@@ -1048,7 +1099,10 @@ function App() {
         accessToken,
         email: workspace.email,
         provider: workspace.accessSource,
-        metadata: { actionName: 'checkout_opened', checkoutHost: resolveUrlHost(checkoutUrl) },
+        metadata: {
+          actionName: 'checkout_opened',
+          checkoutHost: resolveUrlHost(checkoutUrl),
+        },
       });
       window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
       return;
@@ -1092,14 +1146,10 @@ function App() {
 
   function resolveMagicLinkMessage(result: MagicLinkResponse) {
     if (result.deliveryStatus === 'SENT') {
-      return authMode === 'login'
-        ? 'Enviamos um novo link para seu e-mail. Abra o link para voltar à sua Área MUSA.'
-        : 'Seu primeiro acesso foi criado. Abra o link enviado por e-mail para ver o diagnóstico e começar o Dia 1.';
+      return authMode === 'login' ? 'Enviamos um novo link para seu e-mail. Abra o link para voltar à sua Área MUSA.' : 'Seu primeiro acesso foi criado. Abra o link enviado por e-mail para ver o diagnóstico e começar o Dia 1.';
     }
     if (result.accessUrl) {
-      return authMode === 'login'
-        ? 'Link de teste encontrado para esse cadastro. Use o botão Abrir minha Área MUSA para voltar.'
-        : 'Primeiro acesso de teste criado. Use o botão Abrir minha Área MUSA para ver o diagnóstico e começar o Dia 1.';
+      return authMode === 'login' ? 'Link de teste encontrado para esse cadastro. Use o botão Abrir minha Área MUSA para voltar.' : 'Primeiro acesso de teste criado. Use o botão Abrir minha Área MUSA para ver o diagnóstico e começar o Dia 1.';
     }
     if (result.deliveryStatus === 'EMAIL_SEND_FAILED') {
       return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. A equipe MUSA precisa concluir a configuração do domínio de envio.';
@@ -1130,7 +1180,10 @@ function App() {
   function openMission(missionId: string, activationType = 'mission_open') {
     setActiveMissionId(missionId);
     window.setTimeout(() => {
-      missionPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      missionPanelRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     }, 40);
     trackEvent('MISSION_OPEN', {
       accessToken,
@@ -1151,7 +1204,9 @@ function App() {
     setSuccessMessage('');
     try {
       const [response] = await Promise.all([
-        fetch(`/api/pde/access/${accessToken}/missions/${missionId}/complete`, { method: 'POST' }),
+        fetch(`/api/pde/access/${accessToken}/missions/${missionId}/complete`, {
+          method: 'POST',
+        }),
         new Promise((resolve) => window.setTimeout(resolve, 900)),
       ]);
       if (!response.ok) {
@@ -1241,8 +1296,11 @@ function App() {
       if (!response.ok) {
         throw new Error('Não foi possível solicitar sua orientação MUSA.');
       }
-      const guidance = await response.json() as AiGuidance;
-      setAiGuidanceByMission((current) => ({ ...current, [missionId]: guidance }));
+      const guidance = (await response.json()) as AiGuidance;
+      setAiGuidanceByMission((current) => ({
+        ...current,
+        [missionId]: guidance,
+      }));
       setMissionAnswers(resolveAllMissionAnswers(await refreshWorkspace()));
       await pollGuidanceUntilFinished(guidance.requestId);
     } catch {
@@ -1257,10 +1315,14 @@ function App() {
     if (!response.ok) {
       throw new Error('Acesso não encontrado.');
     }
-    const data = await response.json() as Workspace;
-    setWorkspace(data);
-    setProduct(data.product);
-    return data;
+    const data = (await response.json()) as Workspace;
+    const resolvedWorkspace = {
+      ...data,
+      product: applyExperienceOverrides(data.product),
+    };
+    setWorkspace(resolvedWorkspace);
+    setProduct(resolvedWorkspace.product);
+    return resolvedWorkspace;
   }
 
   async function pollGuidanceUntilFinished(requestId: string) {
@@ -1270,8 +1332,11 @@ function App() {
       if (!response.ok) {
         throw new Error('Orientação não encontrada.');
       }
-      const guidance = await response.json() as AiGuidance;
-      setAiGuidanceByMission((current) => ({ ...current, [guidance.missionId]: guidance }));
+      const guidance = (await response.json()) as AiGuidance;
+      setAiGuidanceByMission((current) => ({
+        ...current,
+        [guidance.missionId]: guidance,
+      }));
       if (guidance.status === 'COMPLETED' || guidance.status === 'FAILED') {
         return;
       }
@@ -1302,19 +1367,15 @@ function App() {
   const hasActiveSubscription = workspace?.subscriptionStatus === 'ACTIVE';
   const dayOneCompleted = Boolean(firstMission && completedMissionIds.has(firstMission.id));
   const trialNeedsPaymentForNextDay = Boolean(!hasActiveSubscription && dayOneCompleted && nextMission && !nextMissionIsFirstMission);
-  const canCompleteActiveMission = Boolean(
-    activeMission && (hasActiveSubscription || activeMission.id === firstMission?.id),
-  );
+  const canCompleteActiveMission = Boolean(activeMission && (hasActiveSubscription || activeMission.id === firstMission?.id));
   const activeMissionGuidanceConfig = activeMission ? missionGuidanceConfigs[activeMission.id] : undefined;
-  const activeMissionAnswers = activeMission ? missionAnswers[activeMission.id] ?? {} : {};
+  const activeMissionAnswers = activeMission ? (missionAnswers[activeMission.id] ?? {}) : {};
   const activeMissionGuidance = activeMission ? aiGuidanceByMission[activeMission.id] : undefined;
   const selectedBlocker = presenceBlockers.find((option) => option.key === presenceBlocker);
   const selectedDesiredPresence = desiredPresenceSignals.find((option) => option.key === desiredPresence);
   const diagnosticReadyForEmail = authMode === 'login' || Boolean(presenceBlocker && desiredPresence);
-  const canRegisterActiveMission = Boolean(
-    canCompleteActiveMission
-      && (!activeMissionGuidanceConfig || isMissionInteractionSaved(activeMission?.id ?? '')),
-  );
+  const showVideoHero = resolveExperienceVersion(currentProduct) === 'musa-pde-entry-v4-video-hero';
+  const canRegisterActiveMission = Boolean(canCompleteActiveMission && (!activeMissionGuidanceConfig || isMissionInteractionSaved(activeMission?.id ?? '')));
 
   function isMissionInteractionSaved(missionId: string) {
     const config = missionGuidanceConfigs[missionId];
@@ -1342,14 +1403,17 @@ function App() {
           <div className="login-panel">
             <img className="brand-logo login-brand-logo" src="/assets/logo-musa.svg" alt="Clube MUSA" />
             <h1>Sua imagem comunica a mulher que você quer ser vista como?</h1>
-            <p className="promise">
-              Toque uma vez e receba seu Mapa de Presença do Dia 1: o primeiro sinal que pode deixar sua imagem mais
-              intencional hoje, usando o que você já tem.
-            </p>
+            <p className="promise">Toque uma vez e receba seu Mapa de Presença do Dia 1: o primeiro sinal que pode deixar sua imagem mais intencional hoje, usando o que você já tem.</p>
             <div className="diagnostic-promise-strip" aria-label="O que o diagnóstico gratuito entrega">
-              <span><Sparkles size={16} /> Mapa de Presença do Dia 1</span>
-              <span><Check size={16} /> Microação com o que você já tem</span>
-              <span><Lock size={16} /> Plano completo só depois</span>
+              <span>
+                <Sparkles size={16} /> Mapa de Presença do Dia 1
+              </span>
+              <span>
+                <Check size={16} /> Microação com o que você já tem
+              </span>
+              <span>
+                <Lock size={16} /> Plano completo só depois
+              </span>
             </div>
             <div className="auth-tabs" aria-label="Tipo de acesso">
               <button
@@ -1393,11 +1457,7 @@ function App() {
                 <div className="diagnostic-step">
                   <span>Diagnóstico gratuito</span>
                   <h2>Veja o primeiro ajuste para aumentar sua presença hoje.</h2>
-                  <button
-                    className={presenceBlocker ? 'diagnostic-start-button selected' : 'diagnostic-start-button'}
-                    onClick={startPresenceMap}
-                    type="button"
-                  >
+                  <button className={presenceBlocker ? 'diagnostic-start-button selected' : 'diagnostic-start-button'} onClick={startPresenceMap} type="button">
                     <Sparkles size={18} />
                     <strong>Descobrir o que minha imagem comunica hoje</strong>
                     <small>Sem escolher perfil, sem responder questionário longo e sem mostrar preço agora.</small>
@@ -1407,8 +1467,7 @@ function App() {
                   <div className="diagnostic-result-teaser">
                     <Check size={18} />
                     <p>
-                      Seu Mapa de Presença vai mostrar o primeiro sinal que sua imagem comunica hoje e uma microação
-                      prática para reforçar <strong>{selectedDesiredPresence.label.toLowerCase()}</strong>.
+                      Seu Mapa de Presença vai mostrar o primeiro sinal que sua imagem comunica hoje e uma microação prática para reforçar <strong>{selectedDesiredPresence.label.toLowerCase()}</strong>.
                     </p>
                   </div>
                 )}
@@ -1455,30 +1514,26 @@ function App() {
               </button>
             )}
             {devAccessUrl ? (
-              <button
-                className="primary-button login-button"
-                onClick={() => openDevAccess(devAccessUrl)}
-                type="button"
-              >
+              <button className="primary-button login-button" onClick={() => openDevAccess(devAccessUrl)} type="button">
                 <LogIn size={18} />
                 Abrir minha Área MUSA
               </button>
             ) : (
-              <button
-                className="primary-button login-button"
-                onClick={submitAccess}
-                disabled={loading || !diagnosticReadyForEmail}
-              >
+              <button className="primary-button login-button" onClick={submitAccess} disabled={loading || !diagnosticReadyForEmail}>
                 <Mail size={18} />
-                {loading
-                  ? 'Enviando link...'
-                  : (authMode === 'login' ? 'Receber link de entrada' : 'Receber meu Mapa de Presença')}
+                {loading ? 'Enviando link...' : authMode === 'login' ? 'Receber link de entrada' : 'Receber meu Mapa de Presença'}
               </button>
             )}
             <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
-              <span><Check size={16} /> Sem compromisso inicial</span>
-              <span><Sparkles size={16} /> Microação personalizada</span>
-              <span><Lock size={16} /> Dias 2 a 7 no premium</span>
+              <span>
+                <Check size={16} /> Sem compromisso inicial
+              </span>
+              <span>
+                <Sparkles size={16} /> Microação personalizada
+              </span>
+              <span>
+                <Lock size={16} /> Dias 2 a 7 no premium
+              </span>
             </div>
             <div className="login-preview-card" data-analytics-section="free_diagnostic_preview">
               <div>
@@ -1488,44 +1543,64 @@ function App() {
               </div>
               <ChevronRight size={22} />
             </div>
-            <p className="access-note">
-              A primeira orientação é gratuita. O acesso completo só aparece depois que você entender seu mapa inicial
-              e decidir continuar o plano guiado dos Dias 2 a 7.
-            </p>
+            <p className="access-note">A primeira orientação é gratuita. O acesso completo só aparece depois que você entender seu mapa inicial e decidir continuar o plano guiado dos Dias 2 a 7.</p>
           </div>
-          <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA" data-analytics-section="musa_product_preview">
-            <div className="cover-mark">
-              <Sparkles size={32} />
-            </div>
-            <div className="style-preview" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="login-editorial-preview" aria-hidden="true">
-              <div className="preview-page">
-                <span>Dia 1</span>
-                <strong>Presença</strong>
-                <i />
-                <i />
-                <i />
-              </div>
-              <div className="preview-note">
-                <Check size={18} />
-                <span>1 microação visível hoje</span>
+          {showVideoHero ? (
+            <div className="experience-card login-cover video-login-cover" aria-label="Vídeo da experiência Método MUSA" data-analytics-section="musa_video_hero">
+              {heroVideoUrl ? (
+                <video className="musa-hero-video" src={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
+              ) : (
+                <div className="musa-video-fallback" aria-hidden="true">
+                  <img src="/assets/musa-editorial-presenca.png" alt="" />
+                </div>
+              )}
+              <div className="video-hero-caption">
+                <span>Prévia em vídeo</span>
+                <strong>Veja o gesto simples que muda a percepção da sua presença.</strong>
+                <p>O Mapa de Presença começa antes do e-mail e mostra o primeiro ajuste prático do Dia 1.</p>
               </div>
             </div>
-            <div className="login-cover-content">
-              <p>Método MUSA</p>
-              <strong>Uma jornada de 7 dias para parecer mais elegante com o que você já tem.</strong>
-              <span>Entre, veja seu Mapa de Presença e descubra a microação que pode deixar sua imagem mais intencional hoje.</span>
+          ) : (
+            <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA" data-analytics-section="musa_product_preview">
+              <div className="cover-mark">
+                <Sparkles size={32} />
+              </div>
+              <div className="style-preview" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="login-editorial-preview" aria-hidden="true">
+                <div className="preview-page">
+                  <span>Dia 1</span>
+                  <strong>Presença</strong>
+                  <i />
+                  <i />
+                  <i />
+                </div>
+                <div className="preview-note">
+                  <Check size={18} />
+                  <span>1 microação visível hoje</span>
+                </div>
+              </div>
+              <div className="login-cover-content">
+                <p>Método MUSA</p>
+                <strong>Uma jornada de 7 dias para parecer mais elegante com o que você já tem.</strong>
+                <span>Entre, veja seu Mapa de Presença e descubra a microação que pode deixar sua imagem mais intencional hoje.</span>
+              </div>
+              <div className="login-unlock-list" aria-label="Prévia da experiência MUSA">
+                <span>
+                  <Target size={16} /> Diagnóstico personalizado
+                </span>
+                <span>
+                  <CalendarDays size={16} /> 7 missões guiadas
+                </span>
+                <span>
+                  <Sparkles size={16} /> Microações práticas para hoje
+                </span>
+              </div>
             </div>
-            <div className="login-unlock-list" aria-label="Prévia da experiência MUSA">
-              <span><Target size={16} /> Diagnóstico personalizado</span>
-              <span><CalendarDays size={16} /> 7 missões guiadas</span>
-              <span><Sparkles size={16} /> Microações práticas para hoje</span>
-            </div>
-          </div>
+          )}
         </section>
       </main>
     );
@@ -1540,11 +1615,7 @@ function App() {
           <h1>Sua presença elegante começa hoje.</h1>
           <p className="promise">{currentProduct.promise}</p>
           <div className="musa-hero-actions">
-            <button
-              className="primary-button"
-              onClick={() => openMission(firstMission?.id ?? '', 'primary_start')}
-              disabled={!firstMission}
-            >
+            <button className="primary-button" onClick={() => openMission(firstMission?.id ?? '', 'primary_start')} disabled={!firstMission}>
               <Sparkles size={18} />
               Começar agora
             </button>
@@ -1557,26 +1628,14 @@ function App() {
             <strong>{nextMission ? `Dia ${nextMission.day}` : 'Jornada finalizada'}</strong>
           </div>
           <h2>{nextMission?.title ?? 'Continue sua assinatura MUSA'}</h2>
-          <p>
-            {trialNeedsPaymentForNextDay
-              ? 'Sua primeira microação foi registrada. O Dia 2 continua a transformação com sua assinatura simples, mas precisa do acesso completo para abrir.'
-              : nextMission
-              ? 'Escolha uma combinação real, identifique o sinal que sua imagem comunica sem intenção e registre a frase que vai guiar sua primeira microação.'
-              : currentProduct.completionOffer}
-          </p>
+          <p>{trialNeedsPaymentForNextDay ? 'Sua primeira microação foi registrada. O Dia 2 continua a transformação com sua assinatura simples, mas precisa do acesso completo para abrir.' : nextMission ? 'Escolha uma combinação real, identifique o sinal que sua imagem comunica sem intenção e registre a frase que vai guiar sua primeira microação.' : currentProduct.completionOffer}</p>
           {trialNeedsPaymentForNextDay ? (
-            <button
-              className="secondary-button next-mission-button"
-              onClick={handleSubscriptionClick}
-            >
+            <button className="secondary-button next-mission-button" onClick={handleSubscriptionClick}>
               <CreditCard size={18} />
               Liberar Dia 2 e continuar
             </button>
           ) : nextMission && !nextMissionIsFirstMission ? (
-            <button
-              className="secondary-button next-mission-button"
-              onClick={() => openMission(nextMission.id, 'next_mission_open')}
-            >
+            <button className="secondary-button next-mission-button" onClick={() => openMission(nextMission.id, 'next_mission_open')}>
               Abrir próxima missão
               <ChevronRight size={18} />
             </button>
@@ -1632,10 +1691,7 @@ function App() {
           <div>
             <p className="section-kicker">Liberar área completa</p>
             <h2>Assine o Clube MUSA para continuar seu plano personalizado dos 7 dias.</h2>
-            <p>
-              Seu Mapa de Presença inicial já mostrou o primeiro sinal. O acesso completo libera os próximos dias,
-              a sequência de microações e o acompanhamento para transformar isso em presença repetível.
-            </p>
+            <p>Seu Mapa de Presença inicial já mostrou o primeiro sinal. O acesso completo libera os próximos dias, a sequência de microações e o acompanhamento para transformar isso em presença repetível.</p>
           </div>
           <button className="primary-button" onClick={handleSubscriptionClick}>
             <CreditCard size={18} />
@@ -1662,9 +1718,7 @@ function App() {
           <div
             className="mini-cover"
             style={{
-              backgroundImage: currentProduct.theme.imageUrl
-                ? `url(${currentProduct.theme.imageUrl})`
-                : undefined,
+              backgroundImage: currentProduct.theme.imageUrl ? `url(${currentProduct.theme.imageUrl})` : undefined,
             }}
           >
             <Sparkles size={24} />
@@ -1687,11 +1741,7 @@ function App() {
             <article className="start-here-panel">
               <p className="section-kicker">Comece aqui</p>
               <h2>Dia 1: {firstMission.title}</h2>
-              <p>
-                A primeira missão é escolher uma combinação real, identificar o sinal que sua imagem
-                comunica sem intenção e escrever a frase do seu mapa. Você termina o dia sabendo
-                exatamente o que reforçar antes de pensar em comprar algo novo.
-              </p>
+              <p>A primeira missão é escolher uma combinação real, identificar o sinal que sua imagem comunica sem intenção e escrever a frase do seu mapa. Você termina o dia sabendo exatamente o que reforçar antes de pensar em comprar algo novo.</p>
               {!hasActiveSubscription && (
                 <div className="trial-unlock-note">
                   <Sparkles size={17} />
@@ -1709,7 +1759,7 @@ function App() {
               <button
                 key={mission.id}
                 className={`${mission.id === activeMission?.id ? 'active' : ''} ${!hasActiveSubscription && mission.id !== firstMission?.id ? 'locked' : ''}`}
-              onClick={() => {
+                onClick={() => {
                   if (!hasActiveSubscription && mission.id !== firstMission?.id) {
                     handleSubscriptionClick();
                     return;
@@ -1718,9 +1768,7 @@ function App() {
                 }}
                 title={`Dia ${mission.day}: ${mission.title}`}
               >
-                {!hasActiveSubscription && mission.id !== firstMission?.id
-                  ? <Lock size={15} />
-                  : completedMissionIds.has(mission.id) ? <Check size={16} /> : mission.day}
+                {!hasActiveSubscription && mission.id !== firstMission?.id ? <Lock size={15} /> : completedMissionIds.has(mission.id) ? <Check size={16} /> : mission.day}
               </button>
             ))}
           </div>
@@ -1754,21 +1802,16 @@ function App() {
                     <label key={field.key}>
                       {field.label}
                       {field.options ? (
-                        <select
-                          value={activeMissionAnswers[field.key] ?? ''}
-                          onChange={(event) => updateMissionAnswer(activeMission.id, field.key, event.target.value)}
-                        >
+                        <select value={activeMissionAnswers[field.key] ?? ''} onChange={(event) => updateMissionAnswer(activeMission.id, field.key, event.target.value)}>
                           <option value="">{field.placeholder}</option>
-                          {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                          {field.options.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
                         </select>
                       ) : (
-                        <textarea
-                          rows={3}
-                          maxLength={360}
-                          value={activeMissionAnswers[field.key] ?? ''}
-                          placeholder={field.placeholder}
-                          onChange={(event) => updateMissionAnswer(activeMission.id, field.key, event.target.value)}
-                        />
+                        <textarea rows={3} maxLength={360} value={activeMissionAnswers[field.key] ?? ''} placeholder={field.placeholder} onChange={(event) => updateMissionAnswer(activeMission.id, field.key, event.target.value)} />
                       )}
                     </label>
                   ))}
@@ -1779,11 +1822,7 @@ function App() {
                       ))}
                     </div>
                   )}
-                  <button
-                    className="inline-save-button"
-                    disabled={generatingGuidance || savingInteraction || completedMissionIds.has(activeMission.id)}
-                    onClick={() => requestMissionGuidance(activeMission.id)}
-                  >
+                  <button className="inline-save-button" disabled={generatingGuidance || savingInteraction || completedMissionIds.has(activeMission.id)} onClick={() => requestMissionGuidance(activeMission.id)}>
                     {generatingGuidance ? <LoaderCircle className="button-spinner" size={16} /> : <Sparkles size={16} />}
                     {generatingGuidance ? activeMissionGuidanceConfig.loadingLabel : activeMissionGuidanceConfig.buttonLabel}
                   </button>
@@ -1805,10 +1844,14 @@ function App() {
                       <h3>{activeMissionGuidance.headline}</h3>
                       <p>{activeMissionGuidance.summary}</p>
                       <div className="signature-preview-grid">
-                        {activeMissionGuidance.signals.map((signal) => <span key={signal}>{signal}</span>)}
+                        {activeMissionGuidance.signals.map((signal) => (
+                          <span key={signal}>{signal}</span>
+                        ))}
                       </div>
                       <ul>
-                        {activeMissionGuidance.microActions.map((action) => <li key={action}>{action}</li>)}
+                        {activeMissionGuidance.microActions.map((action) => (
+                          <li key={action}>{action}</li>
+                        ))}
                       </ul>
                       {activeMissionGuidance.caution && <small>{activeMissionGuidance.caution}</small>}
                       <div className="guidance-next-step">
@@ -1831,9 +1874,7 @@ function App() {
                   <div>
                     <p className="section-kicker">Registrando seu progresso</p>
                     <h3>Estamos guardando sua microação do Dia 1.</h3>
-                    <p>
-                      Em alguns segundos você verá o próximo passo da jornada MUSA, sem perder sua personalização.
-                    </p>
+                    <p>Em alguns segundos você verá o próximo passo da jornada MUSA, sem perder sua personalização.</p>
                   </div>
                 </div>
               )}
@@ -1845,10 +1886,7 @@ function App() {
                   <div>
                     <p className="section-kicker">Dia 1 concluído</p>
                     <h3>Seu primeiro sinal de presença ficou salvo.</h3>
-                    <p>
-                      Agora você já sabe qual sinal reduz intenção no conjunto. O Dia 2 abre a próxima camada:
-                      criar uma assinatura simples para repetir elegância sem esforço.
-                    </p>
+                    <p>Agora você já sabe qual sinal reduz intenção no conjunto. O Dia 2 abre a próxima camada: criar uma assinatura simples para repetir elegância sem esforço.</p>
                     {!hasActiveSubscription && (
                       <button className="primary-button" onClick={handleSubscriptionClick}>
                         <CreditCard size={18} />
@@ -1858,23 +1896,9 @@ function App() {
                   </div>
                 </div>
               )}
-              <button
-                className="secondary-button"
-                disabled={!workspace || completedMissionIds.has(activeMission.id) || !canRegisterActiveMission || missionCompletionStatus === 'processing'}
-                onClick={() => completeMission(activeMission.id)}
-              >
-                {missionCompletionStatus === 'processing'
-                  ? <LoaderCircle className="button-spinner" size={18} />
-                  : canRegisterActiveMission ? <Check size={18} /> : <Lock size={18} />}
-                {missionCompletionStatus === 'processing'
-                  ? `Registrando seu Dia ${activeMission.day}...`
-                  : canRegisterActiveMission
-                  ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : `Registrar Dia ${activeMission.day} concluído`)
-                  : activeMission.id === firstMission?.id
-                  ? 'Receba seu diagnóstico para concluir'
-                  : activeMissionGuidanceConfig
-                  ? 'Preencha os 3 pontos para concluir'
-                  : 'Assine para salvar esta missão'}
+              <button className="secondary-button" disabled={!workspace || completedMissionIds.has(activeMission.id) || !canRegisterActiveMission || missionCompletionStatus === 'processing'} onClick={() => completeMission(activeMission.id)}>
+                {missionCompletionStatus === 'processing' ? <LoaderCircle className="button-spinner" size={18} /> : canRegisterActiveMission ? <Check size={18} /> : <Lock size={18} />}
+                {missionCompletionStatus === 'processing' ? `Registrando seu Dia ${activeMission.day}...` : canRegisterActiveMission ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : `Registrar Dia ${activeMission.day} concluído`) : activeMission.id === firstMission?.id ? 'Receba seu diagnóstico para concluir' : activeMissionGuidanceConfig ? 'Preencha os 3 pontos para concluir' : 'Assine para salvar esta missão'}
               </button>
             </article>
           )}
@@ -1888,9 +1912,7 @@ function App() {
             <div>
               <p className="section-kicker">Apoio de consulta</p>
               <h2>Use só quando precisar revisar</h2>
-              <p className="library-support-copy">
-                O coração do MUSA é a jornada guiada. Estes arquivos ficam como apoio secundário para consultar depois da missão.
-              </p>
+              <p className="library-support-copy">O coração do MUSA é a jornada guiada. Estes arquivos ficam como apoio secundário para consultar depois da missão.</p>
             </div>
           </div>
           <div className="material-grid">
@@ -1909,9 +1931,15 @@ function App() {
                       accessToken,
                       email: workspace.email,
                       provider: workspace.accessSource,
-                      metadata: { materialTitle: material.title, materialType: material.type },
+                      metadata: {
+                        materialTitle: material.title,
+                        materialType: material.type,
+                      },
                     });
-                    trackFirstUse('material_open', { materialTitle: material.title, materialType: material.type });
+                    trackFirstUse('material_open', {
+                      materialTitle: material.title,
+                      materialType: material.type,
+                    });
                   }}
                 >
                   Abrir material

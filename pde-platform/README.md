@@ -36,6 +36,26 @@ Docker:
 docker compose -f pde-platform/docker-compose.yml up --build
 ```
 
+Homologação no mesmo host da produção:
+
+- Frontend: `http://191.252.102.54:5177`
+- Backend: `http://191.252.102.54:8097`
+- Compose: `pde-platform/docker-compose.homolog.yml`
+- Versão padrão publicada em homologação: `musa-pde-entry-v4-video-hero`
+- A stack usa containers e volume próprios: `pde-platform-frontend-homolog`, `pde-platform-backend-homolog`, `pde-ai-worker-homolog` e `pde-platform-homolog-data`.
+- O vídeo VEO deve ser informado por `PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL`. Enquanto essa URL não estiver disponível, o frontend exibe fallback visual e mantém os eventos rastreados na versão `musa-pde-entry-v4-video-hero`.
+- Por padrão, a homologação não exige JDBC e expõe magic link na resposta para teste funcional. Para homologar analytics persistido em banco, configure `PDE_PLATFORM_HOMOLOG_ACCESS_REQUIRE_JDBC=true` e as variáveis `PDE_PLATFORM_HOMOLOG_ACCESS_JDBC_*`, preferencialmente apontando para base/tabelas de homologação.
+
+Exemplo operacional:
+
+```bash
+export PDE_PLATFORM_BACKEND_IMAGE=ghcr.io/<owner>/pde-platform-backend:<tag>
+export PDE_PLATFORM_FRONTEND_IMAGE=ghcr.io/<owner>/pde-platform-frontend:<tag>
+export PDE_AI_WORKER_IMAGE=ghcr.io/<owner>/pde-ai-worker:<tag>
+export PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL=https://<url-do-video-veo>.mp4
+docker compose -f pde-platform/docker-compose.homolog.yml up -d
+```
+
 Deploy de produção:
 
 - Defina `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` apontando para o MySQL do Marketing Hub antes de subir o backend PDE.

@@ -17,6 +17,10 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `db_list_tables`: lista todas as tabelas disponíveis no schema atual.
 - `db_read_table`: lê dados de uma tabela com paginação (`table`, `limit`, `offset`).
 - `db_query`: executa SQL de leitura (`SELECT`/`WITH`) com limite de linhas.
+- `pde_db_health`: valida conectividade com o schema efetivo do PDE em produção.
+- `pde_db_list_tables`: lista as tabelas do schema efetivo do PDE em produção.
+- `pde_db_read_table`: lê dados de uma tabela do schema efetivo do PDE com paginação (`table`, `limit`, `offset`).
+- `pde_db_query`: executa SQL de leitura (`SELECT`/`WITH`) no schema efetivo do PDE.
 - `java_module_logs`: retorna logs do Spring Boot com filtros opcionais por texto/intervalo e paginação (`lines`, `contains`, `from`, `to`, `offset`, `cursor`) para os módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-sales-library-worker`, `mois-hotmart`, `clickbank-coletor-mois`, `oprm-coletor-receita`, `ops-monitor-worker`, `pde-platform-backend`).
 - `meta_docs_get`: busca páginas de documentação da Meta em hosts aprovados.
 - `meta_graph_get`: executa leitura (`GET`) da Graph API com token configurado no MCP.
@@ -124,7 +128,27 @@ Se aparecer erro como `Access denied for user 'marketing_hub_user'@'interface.vp
 
 Garanta que `SPRING_DATASOURCE_URL` use o host correto. O `mcp-server` agora também falha no startup quando detecta o host inválido para evitar deploy com configuração incorreta.
 
+## Schema efetivo do PDE
+
+O PDE Platform Backend usa banco próprio para analytics e comportamento de leads. Para manter o banco geral do Marketing Hub e também consultar o schema efetivo do PDE, configure no MCP:
+
+- `MCP_PDE_DATASOURCE_URL` (ex.: `jdbc:mysql://d555d.vps-kinghost.net:3306/aihubdb?useSSL=false&serverTimezone=UTC`);
+- `MCP_PDE_DATASOURCE_USERNAME`;
+- `MCP_PDE_DATASOURCE_PASSWORD`.
+
+Com essas variáveis ativas, use as tools `pde_db_*` para análises de comportamento do PDE. As tools `db_*` continuam apontando para o banco principal.
+
 ## Docker
+
+### Imagem versionada em registry
+
+O deploy produtivo do MCP deve usar a imagem publicada pelo GitHub Actions no GHCR:
+
+```text
+ghcr.io/<owner>/marketinghub-mcp-server:<git-sha>
+```
+
+O workflow `.github/workflows/mcp-server.yml` executa testes, publica a imagem com tag do commit e aciona o VPS para puxar exatamente essa versão. Isso substitui build manual no servidor e mantém rastreabilidade entre commit, imagem e container em produção.
 
 ### Apenas o container do MCP (desenvolvimento/local)
 

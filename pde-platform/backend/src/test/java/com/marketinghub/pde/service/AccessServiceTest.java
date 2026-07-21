@@ -343,6 +343,8 @@ class AccessServiceTest {
                 "PAGE_VISIBLE_TIME",
                 "SECTION_VIEW",
                 "CTA_VIEWED",
+                "PRESENCE_MAP_CHOICE_SELECTED",
+                "DIAGNOSTIC_CHOICE_SELECTED",
                 "CHECKOUT_STARTED",
                 "MISSION_OPEN",
                 "MISSION_COMPLETED",

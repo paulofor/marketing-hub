@@ -3,6 +3,7 @@ package com.marketinghub.mcpserver.controller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -35,6 +36,10 @@ class McpControllerTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    @Qualifier("pdeJdbcTemplate")
+    private JdbcTemplate pdeJdbcTemplate;
+
     /**
      * Configura datasource e paths de logs isolados para os testes do controller MCP.
      */
@@ -44,6 +49,10 @@ class McpControllerTest {
         registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
         registry.add("spring.datasource.username", () -> "sa");
         registry.add("spring.datasource.password", () -> "");
+        registry.add("mcp.pde.datasource.url", () -> "jdbc:h2:mem:pde_mcpdb;MODE=MySQL;DB_CLOSE_DELAY=-1");
+        registry.add("mcp.pde.datasource.driver-class-name", () -> "org.h2.Driver");
+        registry.add("mcp.pde.datasource.username", () -> "sa");
+        registry.add("mcp.pde.datasource.password", () -> "");
         registry.add("mcp.logs.backend-path", () -> TEST_LOG_DIR.resolve("backend.log").toString());
         registry.add("mcp.logs.ai-worker-path", () -> TEST_LOG_DIR.resolve("ai-worker.log").toString());
         registry.add("mcp.logs.lead-portal-path", () -> TEST_LOG_DIR.resolve("lead-portal.log").toString());
@@ -86,6 +95,18 @@ class McpControllerTest {
         jdbcTemplate.execute("CREATE TABLE leads (id BIGINT PRIMARY KEY, name VARCHAR(100), email VARCHAR(150))");
         jdbcTemplate.update("INSERT INTO leads (id, name, email) VALUES (?,?,?)", 1L, "Ana", "ana@example.com");
         jdbcTemplate.update("INSERT INTO leads (id, name, email) VALUES (?,?,?)", 2L, "Bruno", "bruno@example.com");
+
+        pdeJdbcTemplate.execute("DROP TABLE IF EXISTS pde_funnel_events");
+        pdeJdbcTemplate.execute("""
+                CREATE TABLE pde_funnel_events (
+                    id BIGINT PRIMARY KEY,
+                    session_id VARCHAR(100),
+                    event_type VARCHAR(100)
+                )
+                """);
+        pdeJdbcTemplate.update(
+                "INSERT INTO pde_funnel_events (id, session_id, event_type) VALUES (?,?,?)",
+                1L, "sessao-pde-1", "PAGE_VIEW");
 
         Files.createDirectories(TEST_LOG_DIR);
         Files.writeString(TEST_LOG_DIR.resolve("backend.log"),
@@ -161,6 +182,28 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.structuredContent.tableCount").value(1))
                 .andExpect(jsonPath("$.result.structuredContent.tables[0]").value("LEADS"));
+    }
+
+    /**
+     * Garante que as tools de PDE consultam o datasource dedicado do schema efetivo.
+     */
+    @Test
+    void shouldCallPdeDatabaseTools() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":51,"method":"tools/call","params":{"name":"pde_db_health","arguments":{}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.status").value("ok"));
+
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":52,"method":"tools/call","params":{"name":"pde_db_query","arguments":{"query":"SELECT event_type FROM pde_funnel_events","limit":10}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.rows[0].EVENT_TYPE").value("PAGE_VIEW"));
     }
 
     /**

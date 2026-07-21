@@ -178,7 +178,7 @@ declare global {
 const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
   name: 'Método MUSA - Experiência Guiada de 7 Dias',
-  promise: 'Monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformação radical.',
+  promise: 'Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.',
   audience: 'Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.',
   priceLabel: '',
   theme: {
@@ -188,23 +188,23 @@ const fallbackProduct: ProductExperience = {
     imageUrl: '/assets/musa-cover.png',
   },
   diagnostic: {
-    title: 'Diagnóstico MUSA',
-    intro: 'Comece pelo momento do espelho: quando você está pronta, mas sente que ainda falta presença, acabamento ou intenção.',
+    title: 'Mapa de Presença MUSA',
+    intro: 'Comece pelo momento do espelho: quando você está pronta, mas sente que sua imagem ainda não comunica a mulher que você quer ser vista como.',
     questions: [
-      'Quando você se vê pronta, o que faz pensar: está ok, mas ainda não está marcante?',
-      'Seu cabelo, pele, roupa, perfume e acessórios parecem conversar entre si?',
-      'Qual compra você está quase fazendo para tentar compensar essa sensação?',
+      'Quando você se arruma, o que mais incomoda no resultado final?',
+      'Qual sinal você gostaria que sua imagem comunicasse com mais clareza?',
+      'Em qual situação dos próximos 7 dias você quer parecer mais alinhada com quem você é?',
     ],
   },
   missions: [
     {
       id: 'dia-1-ruido-visual',
       day: 1,
-      title: 'Sair do quase bom',
-      principle: 'A presença cresce quando você identifica o detalhe que mais apaga o conjunto.',
-      action: 'Hoje você não vai tentar mudar tudo. Vista ou separe uma combinação real, olhe cabelo, pele, roupa, perfume e acessórios, escolha o detalhe que mais apaga sua presença e ajuste apenas esse ponto.',
-      evidence: 'Frase preenchida: eu me sinto arrumada, mas pouco marcante quando...',
-      visualCue: 'Compare a sensação antes/depois de remover ou ajustar um detalhe.',
+      title: 'Ler o sinal que sua imagem comunica',
+      principle: 'A presença cresce quando você identifica o sinal visual que mais distancia sua imagem da mulher que você quer transmitir.',
+      action: 'Hoje você não vai tentar mudar tudo. Vista ou separe uma combinação real, olhe roupa, cabelo, pele, perfume e detalhe final, identifique o sinal que deixa sua imagem comum ou desalinhada e escolha uma microação para comunicar mais intenção.',
+      evidence: 'Frase preenchida: hoje minha imagem comunica menos intenção quando...',
+      visualCue: 'Compare a sensação antes/depois de remover ruído visual ou reforçar um sinal de presença.',
     },
   ],
   supportMaterials: [
@@ -240,13 +240,13 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
   'dia-1-ruido-visual': {
     guidanceType: 'MUSA_DAY_1_PRESENCE_DIAGNOSIS',
     kicker: 'Consultora MUSA',
-    title: 'Conte sua situação real para a Consultora MUSA apontar seu primeiro ajuste de presença.',
-    helperText: 'Depois de enviar, você vê seu diagnóstico personalizado, recebe o primeiro ajuste de presença e sabe exatamente qual microação aplicar hoje.',
+    title: 'Conte sua situação real para a Consultora MUSA montar seu Mapa de Presença.',
+    helperText: 'Depois de enviar, você vê o que sua imagem pode estar comunicando sem intenção e recebe uma microação para começar hoje.',
     buttonLabel: 'Ver meu plano MUSA de 7 dias',
     loadingLabel: 'Preparando seu plano MUSA...',
-    pendingLabel: 'Sua Consultora MUSA está preparando seu diagnóstico e o primeiro ajuste prático para hoje.',
+    pendingLabel: 'Sua Consultora MUSA está preparando seu mapa e a primeira microação prática para hoje.',
     failedLabel: 'Suas respostas ficaram salvas. Use a missão do Dia 1 manualmente enquanto a consultora automática é configurada.',
-    completedKicker: 'Meu ajuste MUSA',
+    completedKicker: 'Meu Mapa de Presença',
     nextStepTitle: 'O que fazer agora',
     nextStepText: 'Aplique hoje uma das microações indicadas. Depois volte aqui e toque em “Registrar Dia 1 concluído” para liberar o próximo passo da sua jornada.',
     fields: [
@@ -258,14 +258,14 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
       },
       {
         key: 'mainObstacle',
-        label: 'Qual detalhe mais apaga o conjunto?',
-        placeholder: 'Escolha um detalhe',
-        options: ['Cabelo sem acabamento', 'Roupa sem intenção', 'Cores brigando entre si', 'Falta de acessório ou perfume'],
+        label: 'O que mais distancia sua imagem da mulher que você quer comunicar?',
+        placeholder: 'Escolha um sinal',
+        options: ['Parecer comum mesmo caprichando', 'Roupa sem intenção clara', 'Acabamento pouco cuidado', 'Excesso visual sem sinal elegante'],
       },
       {
         key: 'evidencePhrase',
         label: 'Complete sua frase de evidência',
-        placeholder: 'Eu me sinto arrumada, mas pouco marcante quando...',
+        placeholder: 'Hoje minha imagem comunica menos intenção quando...',
       },
     ],
   },
@@ -440,42 +440,42 @@ function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLI
 
 const presenceBlockers: DiagnosticOption[] = [
   {
-    key: 'look_sem_intencao',
-    label: 'Roupa sem intenção',
-    description: 'Você se arruma, mas o conjunto parece comum ou pouco marcante.',
+    key: 'comum_mesmo_caprichando',
+    label: 'Pareço comum mesmo tentando caprichar',
+    description: 'Você se arruma, mas sente que a imagem não acompanha a mulher que quer transmitir.',
   },
   {
-    key: 'acabamento_fraco',
-    label: 'Acabamento fraco',
-    description: 'Cabelo, pele, caimento ou detalhe final não sustentam a presença.',
+    key: 'visual_nao_comunica_quem_sou',
+    label: 'Meu visual não comunica a mulher que eu sou',
+    description: 'Roupa, beleza e detalhe final parecem corretos, mas sem uma mensagem clara.',
   },
   {
-    key: 'excesso_visual',
-    label: 'Excesso visual',
-    description: 'Tem informação demais e nada vira um sinal elegante claro.',
+    key: 'falta_acabamento_presenca_intencao',
+    label: 'Sinto que falta acabamento, presença ou intenção',
+    description: 'O conjunto fica quase bom, mas ainda transmite pouco cuidado ou pouca sofisticação.',
   },
   {
-    key: 'nao_sei_nomear',
-    label: 'Não sei nomear',
-    description: 'Você sente que falta algo, mas ainda não sabe onde mexer.',
+    key: 'quero_sem_comprar_tudo_novo',
+    label: 'Quero parecer elegante sem comprar tudo novo',
+    description: 'Você quer usar melhor o que já tem antes de entrar em mais uma compra impulsiva.',
   },
 ];
 
 const desiredPresenceSignals: DiagnosticOption[] = [
   {
-    key: 'mais_elegante',
-    label: 'Parecer mais elegante',
-    description: 'Sem depender de peça cara ou transformação radical.',
+    key: 'presenca_elegante',
+    label: 'Presença elegante',
+    description: 'Transmitir mais cuidado, coerência e sofisticação acessível.',
   },
   {
-    key: 'mais_marcante',
-    label: 'Ficar mais marcante',
-    description: 'Ser lembrada pelo detalhe certo, não pelo excesso.',
+    key: 'imagem_com_intencao',
+    label: 'Imagem com intenção',
+    description: 'Sentir que roupa, beleza e detalhe final contam a mesma história.',
   },
   {
-    key: 'mais_coerente',
-    label: 'Sentir tudo coerente',
-    description: 'Roupa, beleza e intenção conversando melhor entre si.',
+    key: 'menos_duvida_ao_sair',
+    label: 'Menos dúvida ao sair',
+    description: 'Saber o que reforçar antes de sair, sem refazer tudo.',
   },
 ];
 
@@ -813,13 +813,13 @@ function App() {
 
   async function submitAccess() {
     if (authMode === 'register' && (!presenceBlocker || !desiredPresence)) {
-      setErrorMessage('Escolha primeiro o que mais apaga sua presença e o resultado que você quer sentir.');
+      setErrorMessage('Escolha primeiro o incômodo principal da sua imagem e o sinal que você quer comunicar.');
       return;
     }
     if (!email.trim()) {
       setErrorMessage(authMode === 'login'
         ? 'Informe o e-mail que você usou para criar seu acesso MUSA.'
-        : 'Informe seu melhor e-mail para receber o resultado do diagnóstico.');
+        : 'Informe seu melhor e-mail para receber o Mapa de Presença.');
       return;
     }
     setLoading(true);
@@ -1082,6 +1082,14 @@ function App() {
       setDesiredPresence(value);
     }
     setErrorMessage('');
+    trackEvent('PRESENCE_MAP_CHOICE_SELECTED', {
+      metadata: {
+        authMode,
+        diagnosticStep: kind,
+        selectedOption: value,
+        actionName: 'presence_map_choice_selected',
+      },
+    });
     trackEvent('DIAGNOSTIC_CHOICE_SELECTED', {
       metadata: {
         authMode,
@@ -1204,7 +1212,7 @@ function App() {
         provider: data.accessSource,
         metadata: { missionId, answerKeys: Object.keys(answers) },
       });
-      setSuccessMessage('Personalização salva. Agora registre a conclusão quando executar o ajuste.');
+      setSuccessMessage('Personalização salva. Agora registre a conclusão quando executar sua microação.');
     } catch {
       setErrorMessage('Não conseguimos salvar sua personalização agora. Tente novamente antes de concluir a missão.');
     } finally {
@@ -1343,19 +1351,15 @@ function App() {
         <section className="login-hero" data-analytics-section="login_hero">
           <div className="login-panel">
             <img className="brand-logo login-brand-logo" src="/assets/logo-musa.svg" alt="Clube MUSA" />
-            <h1>Descubra o detalhe que hoje apaga sua elegância.</h1>
+            <h1>Sua imagem comunica a mulher que você quer ser vista como?</h1>
             <p className="promise">
-              Receba o Dia 1 gratuito do Método MUSA e identifique o primeiro ajuste de presença
-              antes de comprar roupa, maquiagem ou acessório novo.
+              Responda 2 escolhas rápidas e receba seu Mapa de Presença do Dia 1: o que hoje deixa seu visual comum,
+              qual sinal transmite mais intenção e como começar com o que você já tem.
             </p>
             <div className="diagnostic-promise-strip" aria-label="O que o diagnóstico gratuito entrega">
-              <span><Sparkles size={16} /> Diagnóstico em poucos minutos</span>
-              <span><Check size={16} /> Primeiro ajuste prático hoje</span>
+              <span><Sparkles size={16} /> Mapa de Presença do Dia 1</span>
+              <span><Check size={16} /> Microação com o que você já tem</span>
               <span><Lock size={16} /> Plano completo só depois</span>
-            </div>
-            <div className="login-scene-banner" aria-label="Mulher percebendo sua presença elegante no espelho">
-              <img src="/assets/musa-editorial-presenca.png" alt="" />
-              <span>Veja o que está apagando sua presença antes de gastar com novas peças.</span>
             </div>
             <div className="auth-tabs" aria-label="Tipo de acesso">
               <button
@@ -1390,7 +1394,7 @@ function App() {
                 </>
               ) : (
                 <>
-                  <strong>Comece sem cadastro frio.</strong> Responda 2 escolhas rápidas e receba o Dia 1 gratuito com o primeiro ajuste de presença.
+                  <strong>Comece pelo espelho.</strong> Escolha o incômodo principal e veja qual presença você quer comunicar antes de informar seu e-mail.
                 </>
               )}
             </p>
@@ -1398,8 +1402,8 @@ function App() {
               <div className="interactive-diagnostic" data-analytics-section="interactive_diagnostic">
                 <div className="diagnostic-step">
                   <span>1 de 2</span>
-                  <h2>O que mais apaga sua presença hoje?</h2>
-                  <div className="diagnostic-option-grid" role="group" aria-label="O que mais apaga sua presença hoje">
+                  <h2>Quando você se arruma, o que mais incomoda no resultado final?</h2>
+                  <div className="diagnostic-option-grid" role="group" aria-label="Quando você se arruma, o que mais incomoda no resultado final">
                     {presenceBlockers.map((option) => (
                       <button
                         className={presenceBlocker === option.key ? 'selected' : ''}
@@ -1416,8 +1420,8 @@ function App() {
                 {presenceBlocker && (
                   <div className="diagnostic-step">
                     <span>2 de 2</span>
-                    <h2>O que você quer sentir ao terminar o Dia 1?</h2>
-                    <div className="diagnostic-option-grid compact" role="group" aria-label="Resultado desejado no Dia 1">
+                    <h2>Qual sinal você quer comunicar com mais clareza no Dia 1?</h2>
+                    <div className="diagnostic-option-grid compact" role="group" aria-label="Sinal desejado no Dia 1">
                       {desiredPresenceSignals.map((option) => (
                         <button
                           className={desiredPresence === option.key ? 'selected' : ''}
@@ -1436,13 +1440,17 @@ function App() {
                   <div className="diagnostic-result-teaser">
                     <Check size={18} />
                     <p>
-                      Seu diagnóstico vai partir de <strong>{selectedBlocker.label.toLowerCase()}</strong> para ajudar você a
-                      <strong> {selectedDesiredPresence.label.toLowerCase()}</strong> com uma microação hoje.
+                      Seu Mapa de Presença vai partir de <strong>{selectedBlocker.label.toLowerCase()}</strong> para ajudar você a comunicar
+                      <strong> {selectedDesiredPresence.label.toLowerCase()}</strong> com uma microação prática hoje.
                     </p>
                   </div>
                 )}
               </div>
             )}
+            <div className="login-scene-banner" aria-label="Mulher percebendo sua presença elegante no espelho">
+              <img src="/assets/musa-editorial-presenca.png" alt="" />
+              <span>Descubra o que sua imagem pode estar comunicando sem intenção antes de gastar com novas peças.</span>
+            </div>
             {googleClientId && (
               <div className="social-login-block">
                 <div id="google-login-button" aria-label="Entrar com Google" />
@@ -1452,10 +1460,10 @@ function App() {
             {diagnosticReadyForEmail && (
               <>
                 <div className="auth-divider">
-                  <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'receba o resultado e o Dia 1 por e-mail'}</span>
+                  <span>{authMode === 'login' ? 'receba um link de retorno por e-mail' : 'salve seu Mapa de Presença por e-mail'}</span>
                 </div>
                 <label className="email-box login-email-box">
-                  {authMode === 'login' ? 'E-mail do seu acesso MUSA' : 'Seu melhor e-mail para receber o resultado'}
+                  {authMode === 'login' ? 'E-mail do seu acesso MUSA' : 'Seu melhor e-mail para receber o Mapa de Presença'}
                   <input
                     ref={emailInputRef}
                     type="email"
@@ -1497,7 +1505,7 @@ function App() {
                 <Mail size={18} />
                 {loading
                   ? 'Enviando link...'
-                  : (authMode === 'login' ? 'Receber link de entrada' : 'Receber meu resultado gratuito')}
+                  : (authMode === 'login' ? 'Receber link de entrada' : 'Ver meu Mapa de Presença')}
               </button>
             )}
             <div className="login-value-strip" aria-label="O que fica disponível ao entrar">
@@ -1508,14 +1516,14 @@ function App() {
             <div className="login-preview-card" data-analytics-section="free_diagnostic_preview">
               <div>
                 <span>O que você libera agora</span>
-                <strong>Diagnóstico do espelho</strong>
-                <p>Descubra se o que apaga sua elegância é excesso visual, falta de acabamento ou ausência de intenção.</p>
+                <strong>Mapa de Presença do Dia 1</strong>
+                <p>Descubra o sinal que sua imagem comunica sem intenção e uma microação para parecer mais coerente hoje.</p>
               </div>
               <ChevronRight size={22} />
             </div>
             <p className="access-note">
-              A primeira orientação é gratuita. O acesso completo só aparece depois que você entender o
-              diagnóstico inicial e decidir continuar o plano guiado dos Dias 2 a 7.
+              A primeira orientação é gratuita. O acesso completo só aparece depois que você entender seu mapa inicial
+              e decidir continuar o plano guiado dos Dias 2 a 7.
             </p>
           </div>
           <div className="experience-card login-cover" aria-label="Prévia da experiência Método MUSA" data-analytics-section="musa_product_preview">
@@ -1537,18 +1545,18 @@ function App() {
               </div>
               <div className="preview-note">
                 <Check size={18} />
-                <span>1 ajuste visível hoje</span>
+                <span>1 microação visível hoje</span>
               </div>
             </div>
             <div className="login-cover-content">
               <p>Método MUSA</p>
               <strong>Uma jornada de 7 dias para parecer mais elegante com o que você já tem.</strong>
-              <span>Entre, veja seu primeiro diagnóstico e descubra o próximo ajuste que pode mudar sua presença.</span>
+              <span>Entre, veja seu Mapa de Presença e descubra a microação que pode deixar sua imagem mais intencional hoje.</span>
             </div>
             <div className="login-unlock-list" aria-label="Prévia da experiência MUSA">
               <span><Target size={16} /> Diagnóstico personalizado</span>
               <span><CalendarDays size={16} /> 7 missões guiadas</span>
-              <span><Sparkles size={16} /> Ajustes práticos para hoje</span>
+              <span><Sparkles size={16} /> Microações práticas para hoje</span>
             </div>
           </div>
         </section>
@@ -1584,9 +1592,9 @@ function App() {
           <h2>{nextMission?.title ?? 'Continue sua assinatura MUSA'}</h2>
           <p>
             {trialNeedsPaymentForNextDay
-              ? 'Seu primeiro ajuste foi registrado. O Dia 2 continua a transformação com sua assinatura simples, mas precisa do acesso completo para abrir.'
+              ? 'Sua primeira microação foi registrada. O Dia 2 continua a transformação com sua assinatura simples, mas precisa do acesso completo para abrir.'
               : nextMission
-              ? 'Escolha uma combinação real, identifique o detalhe que apaga sua presença e registre a frase que vai guiar seu primeiro ajuste.'
+              ? 'Escolha uma combinação real, identifique o sinal que sua imagem comunica sem intenção e registre a frase que vai guiar sua primeira microação.'
               : currentProduct.completionOffer}
           </p>
           {trialNeedsPaymentForNextDay ? (
@@ -1658,7 +1666,7 @@ function App() {
             <p className="section-kicker">Liberar área completa</p>
             <h2>Assine o Clube MUSA para continuar seu plano personalizado dos 7 dias.</h2>
             <p>
-              Seu diagnóstico inicial já mostrou o primeiro ajuste. O acesso completo libera os próximos dias,
+              Seu Mapa de Presença inicial já mostrou o primeiro sinal. O acesso completo libera os próximos dias,
               a sequência de microações e o acompanhamento para transformar isso em presença repetível.
             </p>
           </div>
@@ -1676,8 +1684,8 @@ function App() {
           </div>
           <div>
             <p className="eyebrow">Roteiro guiado</p>
-            <h2>Diagnóstico e plano de 7 dias</h2>
-            <p>Responda, receba seu ajuste e siga a próxima microação indicada pela jornada.</p>
+            <h2>Mapa de Presença e plano de 7 dias</h2>
+            <p>Responda, receba seu mapa e siga a próxima microação indicada pela jornada.</p>
           </div>
         </div>
       </section>
@@ -1713,9 +1721,9 @@ function App() {
               <p className="section-kicker">Comece aqui</p>
               <h2>Dia 1: {firstMission.title}</h2>
               <p>
-                A primeira missão é escolher uma combinação real, identificar o detalhe que mais
-                apaga sua presença e escrever a frase de diagnóstico. Você termina o dia sabendo
-                exatamente o que ajustar antes de pensar em comprar algo novo.
+                A primeira missão é escolher uma combinação real, identificar o sinal que sua imagem
+                comunica sem intenção e escrever a frase do seu mapa. Você termina o dia sabendo
+                exatamente o que reforçar antes de pensar em comprar algo novo.
               </p>
               {!hasActiveSubscription && (
                 <div className="trial-unlock-note">
@@ -1855,7 +1863,7 @@ function App() {
                   </div>
                   <div>
                     <p className="section-kicker">Registrando seu progresso</p>
-                    <h3>Estamos guardando seu ajuste do Dia 1.</h3>
+                    <h3>Estamos guardando sua microação do Dia 1.</h3>
                     <p>
                       Em alguns segundos você verá o próximo passo da jornada MUSA, sem perder sua personalização.
                     </p>
@@ -1871,7 +1879,7 @@ function App() {
                     <p className="section-kicker">Dia 1 concluído</p>
                     <h3>Seu primeiro sinal de presença ficou salvo.</h3>
                     <p>
-                      Agora você já sabe qual detalhe mais apaga o conjunto. O Dia 2 abre a próxima camada:
+                      Agora você já sabe qual sinal reduz intenção no conjunto. O Dia 2 abre a próxima camada:
                       criar uma assinatura simples para repetir elegância sem esforço.
                     </p>
                     {!hasActiveSubscription && (

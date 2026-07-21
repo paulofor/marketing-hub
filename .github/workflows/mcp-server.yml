@@ -17,16 +17,22 @@ env:
   MCP_VPS_IP: 191.252.210.83
   VPS_USER: root
   DEPLOY_DIR: /opt/marketinghub/containers
-  MCP_IMAGE: marketinghub-mcp-server
+  IMAGE_REGISTRY: ghcr.io
+  MCP_IMAGE_NAME: marketinghub-mcp-server
+  MCP_IMAGE: ghcr.io/${{ github.repository_owner }}/marketinghub-mcp-server
   MCP_CERTBOT_EMAIL: paulofore@gmail.com
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   mcp-image:
-    name: MCP - build image
+    name: MCP - build and push image
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.image_metadata.outputs.image }}
+      image-tag: ${{ steps.image_metadata.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -41,30 +47,56 @@ jobs:
         working-directory: mcp-server
         run: mvn -B -s settings.xml test
 
-      - name: Build Docker image
-        run: docker build -f mcp-server/Dockerfile -t ${MCP_IMAGE}:${{ github.sha }} mcp-server
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Save image as artifact
-        run: docker save ${MCP_IMAGE}:${{ github.sha }} -o mcp-server-image.tar
-
-      - uses: actions/upload-artifact@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          name: mcp-server-image
-          path: mcp-server-image.tar
-          retention-days: 1
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Define Docker image metadata
+        id: image_metadata
+        run: |
+          {
+            echo "image=${MCP_IMAGE}"
+            echo "image_tag=${GITHUB_SHA}"
+            echo "tags<<EOF"
+            echo "${MCP_IMAGE}:latest"
+            echo "${MCP_IMAGE}:${GITHUB_SHA}"
+            echo "EOF"
+            echo "labels<<EOF"
+            echo "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+            echo "org.opencontainers.image.revision=${GITHUB_SHA}"
+            echo "org.opencontainers.image.title=${MCP_IMAGE_NAME}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: mcp-server
+          file: mcp-server/Dockerfile
+          push: true
+          tags: ${{ steps.image_metadata.outputs.tags }}
+          labels: ${{ steps.image_metadata.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.MCP_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.MCP_IMAGE }}:buildcache,mode=max
 
   deploy-mcp:
     name: Deploy MCP server
     runs-on: ubuntu-latest
     needs: [mcp-image]
+    permissions:
+      contents: read
+      packages: read
+    env:
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download MCP image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: mcp-server-image
-          path: artifacts
 
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.7.0
@@ -81,13 +113,11 @@ jobs:
           ssh ${VPS_USER}@${MCP_VPS_IP} "mkdir -p ${DEPLOY_DIR}/nginx/mcp"
           rsync -az --delete mcp-server/nginx/ ${VPS_USER}@${MCP_VPS_IP}:${DEPLOY_DIR}/nginx/mcp/
 
-      - name: Upload MCP image to VPS
-        run: scp artifacts/mcp-server-image.tar ${VPS_USER}@${MCP_VPS_IP}:/tmp/mcp-server-image.tar
-
       - name: Apply MCP stack
         env:
-          GIT_SHA: ${{ github.sha }}
+          MCP_REGISTRY_IMAGE: ${{ needs.mcp-image.outputs.image }}
+          MCP_IMAGE_TAG: ${{ needs.mcp-image.outputs.image-tag }}
         run: |
           ssh ${VPS_USER}@${MCP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
           ssh ${VPS_USER}@${MCP_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} MCP_TAR=/tmp/mcp-server-image.tar MCP_IMAGE=${MCP_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} EMAIL=${MCP_CERTBOT_EMAIL} /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
+            "GHCR_USERNAME='${GHCR_USERNAME}' GHCR_TOKEN='${GHCR_TOKEN}' MCP_IMAGE='${MCP_REGISTRY_IMAGE}' IMAGE_TAG='${MCP_IMAGE_TAG}' DEPLOY_DIR='${DEPLOY_DIR}' EMAIL='${MCP_CERTBOT_EMAIL}' /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"

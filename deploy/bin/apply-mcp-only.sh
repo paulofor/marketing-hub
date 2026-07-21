@@ -5,6 +5,9 @@ DEPLOY_DIR=${DEPLOY_DIR:-/opt/marketinghub/containers}
 MCP_TAR=${MCP_TAR:-/tmp/mcp-server-image.tar}
 MCP_IMAGE=${MCP_IMAGE:-marketinghub-mcp-server}
 IMAGE_TAG=${IMAGE_TAG:-latest}
+MCP_PULL_IMAGE=${MCP_PULL_IMAGE:-true}
+GHCR_USERNAME=${GHCR_USERNAME:-}
+GHCR_TOKEN=${GHCR_TOKEN:-}
 DOMAIN=${DOMAIN:-mcpserverdigi.shop}
 ALT_DOMAIN=${ALT_DOMAIN:-www.mcpserverdigi.shop}
 EMAIL=${EMAIL:-}
@@ -38,9 +41,43 @@ run_mcp_compose() {
   local nginx_conf="$1"
 
   MCP_SERVER_IMAGE="${MCP_IMAGE}" \
-  MCP_SERVER_IMAGE_TAG=latest \
+  MCP_SERVER_IMAGE_TAG="${IMAGE_TAG}" \
   MCP_NGINX_CONF="${nginx_conf}" \
   docker compose up -d --no-deps mcp-server mcp-nginx
+}
+
+pull_mcp_compose_image() {
+  MCP_SERVER_IMAGE="${MCP_IMAGE}" \
+  MCP_SERVER_IMAGE_TAG="${IMAGE_TAG}" \
+  docker compose pull mcp-server || true
+}
+
+login_registry_if_configured() {
+  if [[ "${MCP_IMAGE}" != ghcr.io/* ]]; then
+    return
+  fi
+
+  if [[ -z "${GHCR_TOKEN}" ]]; then
+    echo "[apply-mcp-only.sh] Aviso: GHCR_TOKEN ausente. Tentando pull sem login." >&2
+    return
+  fi
+
+  local username="${GHCR_USERNAME:-oauth2}"
+  echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${username}" --password-stdin >/dev/null
+}
+
+pull_image_if_needed() {
+  if [[ -f "${MCP_TAR}" ]]; then
+    docker load -i "${MCP_TAR}"
+    return
+  fi
+
+  if [[ "${MCP_PULL_IMAGE}" != "true" ]]; then
+    return
+  fi
+
+  login_registry_if_configured
+  docker pull "${MCP_IMAGE}:${IMAGE_TAG}"
 }
 
 issue_certificate_if_needed() {
@@ -78,7 +115,7 @@ issue_certificate_if_needed() {
   if certificate_exists; then
     echo "[apply-mcp-only.sh] Certificado encontrado após emissão. Reiniciando MCP Nginx em HTTPS."
     MCP_SERVER_IMAGE="${MCP_IMAGE}" \
-    MCP_SERVER_IMAGE_TAG=latest \
+    MCP_SERVER_IMAGE_TAG="${IMAGE_TAG}" \
     MCP_NGINX_CONF=default.conf \
     docker compose up -d --force-recreate --no-deps mcp-nginx
   else
@@ -86,11 +123,9 @@ issue_certificate_if_needed() {
   fi
 }
 
-if [[ -f "${MCP_TAR}" ]]; then
-  docker load -i "${MCP_TAR}"
-fi
+pull_image_if_needed
 
-if [[ "${IMAGE_TAG}" != "latest" ]]; then
+if [[ -f "${MCP_TAR}" && "${IMAGE_TAG}" != "latest" ]]; then
   if docker image inspect "${MCP_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
     docker tag "${MCP_IMAGE}:${IMAGE_TAG}" "${MCP_IMAGE}:latest"
   else
@@ -110,13 +145,14 @@ cleanup_previous_tags() {
 # Atualiza somente o MCP Server e o Nginx dedicado do MCP sem reiniciar outros serviços.
 MCP_NGINX_CONF_RESOLVED="$(resolve_mcp_nginx_conf)"
 echo "[apply-mcp-only.sh] Usando MCP_NGINX_CONF=${MCP_NGINX_CONF_RESOLVED}"
+pull_mcp_compose_image
 run_mcp_compose "${MCP_NGINX_CONF_RESOLVED}"
 
 if [[ -z "${MCP_NGINX_CONF:-}" ]]; then
   issue_certificate_if_needed
 fi
 
-cleanup_previous_tags "${MCP_IMAGE}" "latest"
+cleanup_previous_tags "${MCP_IMAGE}" "${IMAGE_TAG}"
 
 docker image prune -f >/dev/null 2>&1 || true
 rm -f "${MCP_TAR}" >/dev/null 2>&1 || true

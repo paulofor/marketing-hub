@@ -79,3 +79,9 @@ mcp:
     owner: ${MCP_GITHUB_OWNER:}
     repo: ${MCP_GITHUB_REPO:}
     token: ${MCP_GITHUB_TOKEN:}
+  pde:
+    datasource:
+      url: ${MCP_PDE_DATASOURCE_URL:}
+      username: ${MCP_PDE_DATASOURCE_USERNAME:}
+      password: ${MCP_PDE_DATASOURCE_PASSWORD:}
+      driver-class-name: ${MCP_PDE_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}

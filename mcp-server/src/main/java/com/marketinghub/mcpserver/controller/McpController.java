@@ -6,9 +6,11 @@ import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.GithubActionsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
+import com.marketinghub.mcpserver.service.PdeDatabaseDiagnosticsService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +43,7 @@ public class McpController {
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
+    private final PdeDatabaseDiagnosticsService pdeDatabaseDiagnosticsService;
     private final ModuleLogService moduleLogService;
     private final ChatContainerLogService chatContainerLogService;
     private final MetaDiagnosticsService metaDiagnosticsService;
@@ -50,13 +53,15 @@ public class McpController {
      * Inicializa o controller com os serviços responsáveis pelas ferramentas MCP.
      */
     public McpController(McpProperties properties,
-                         DatabaseDiagnosticsService databaseDiagnosticsService,
+                         @Qualifier("databaseDiagnosticsService") DatabaseDiagnosticsService databaseDiagnosticsService,
+                         PdeDatabaseDiagnosticsService pdeDatabaseDiagnosticsService,
                          ModuleLogService moduleLogService,
                          ChatContainerLogService chatContainerLogService,
                          MetaDiagnosticsService metaDiagnosticsService,
                          GithubActionsService githubActionsService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
+        this.pdeDatabaseDiagnosticsService = pdeDatabaseDiagnosticsService;
         this.moduleLogService = moduleLogService;
         this.chatContainerLogService = chatContainerLogService;
         this.metaDiagnosticsService = metaDiagnosticsService;
@@ -130,6 +135,48 @@ public class McpController {
                     Map.of(
                             "name", "db_query",
                             "description", "Executa consulta SQL somente leitura (apenas SELECT/WITH).",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "query", Map.of("type", "string", "description", "SQL SELECT/WITH."),
+                                            "limit", Map.of("type", "integer", "minimum", 1, "maximum", MAX_QUERY_LIMIT,
+                                                    "description", "Limite de linhas quando a query não tiver LIMIT. Padrão: 100.")),
+                                    "required", List.of("query"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "pde_db_health",
+                            "description", "Valida conectividade com o schema efetivo do PDE em produção.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "pde_db_list_tables",
+                            "description", "Lista tabelas do schema efetivo do PDE em produção.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "pde_db_read_table",
+                            "description", "Lê dados de uma tabela do schema efetivo do PDE com paginação.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "table", Map.of("type", "string", "description", "Nome da tabela."),
+                                            "limit", Map.of("type", "integer", "minimum", 1, "maximum", MAX_LIMIT,
+                                                    "description", "Número de linhas retornadas. Padrão: 50."),
+                                            "offset", Map.of("type", "integer", "minimum", 0,
+                                                    "description", "Deslocamento para paginação. Padrão: 0.")),
+                                    "required", List.of("table"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "pde_db_query",
+                            "description", "Executa consulta SQL somente leitura no schema efetivo do PDE.",
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(
@@ -282,6 +329,12 @@ public class McpController {
                         "Database tables");
                 case "db_read_table" -> callReadTable(id, arguments);
                 case "db_query" -> callQueryTool(id, arguments);
+                case "pde_db_health" -> successToolResult(id, pdeDatabaseDiagnosticsService.checkConnection(),
+                        "PDE database connectivity status");
+                case "pde_db_list_tables" -> successToolResult(id, pdeDatabaseDiagnosticsService.listTables(),
+                        "PDE database tables");
+                case "pde_db_read_table" -> callPdeReadTable(id, arguments);
+                case "pde_db_query" -> callPdeQueryTool(id, arguments);
                 case "java_module_logs" -> callJavaModuleLogsTool(id, arguments);
                 case "chat_container_logs" -> callChatContainerLogsTool(id, arguments);
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
@@ -355,6 +408,62 @@ public class McpController {
         } catch (Exception ex) {
             logger.error("Falha ao executar db_query: requestId={} limit={}", id, limit, ex);
             return error(id, -32603, "Failed to execute query: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Executa a leitura paginada de uma tabela do schema efetivo do PDE.
+     */
+    private Map<String, Object> callPdeReadTable(Object id, Map<String, Object> arguments) {
+        String table = stringArgument(arguments, "table");
+
+        Integer limitArg = intArgument(arguments, "limit");
+        int limit = limitArg == null ? DEFAULT_LIMIT : limitArg;
+        if (limit < 1 || limit > MAX_LIMIT) {
+            return error(id, -32602, "limit must be between 1 and " + MAX_LIMIT);
+        }
+
+        Integer offsetArg = intArgument(arguments, "offset");
+        int offset = offsetArg == null ? 0 : offsetArg;
+        if (offset < 0) {
+            return error(id, -32602, "offset must be greater than or equal to 0");
+        }
+
+        try {
+            Map<String, Object> result = pdeDatabaseDiagnosticsService.readTable(table, limit, offset);
+            return successToolResult(id, result,
+                    "Read " + result.get("returnedRows") + " PDE rows from table " + table);
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP pde_db_read_table inválido: requestId={} table={} motivo={}", id, table, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar pde_db_read_table: requestId={} table={} limit={} offset={}", id, table, limit, offset, ex);
+            return error(id, -32603, "Failed to read PDE table: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Executa uma consulta SQL somente leitura no schema efetivo do PDE.
+     */
+    private Map<String, Object> callPdeQueryTool(Object id, Map<String, Object> arguments) {
+        String query = stringArgument(arguments, "query");
+
+        Integer limitArg = intArgument(arguments, "limit");
+        int limit = limitArg == null ? 100 : limitArg;
+        if (limit < 1 || limit > MAX_QUERY_LIMIT) {
+            return error(id, -32602, "limit must be between 1 and " + MAX_QUERY_LIMIT);
+        }
+
+        try {
+            Map<String, Object> result = pdeDatabaseDiagnosticsService.query(query, limit);
+            return successToolResult(id, result,
+                    "PDE query executed with " + result.get("returnedRows") + " rows returned");
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP pde_db_query inválido: requestId={} limit={} motivo={}", id, limit, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar pde_db_query: requestId={} limit={}", id, limit, ex);
+            return error(id, -32603, "Failed to execute PDE query: " + ex.getMessage());
         }
     }
 

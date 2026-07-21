@@ -631,6 +631,8 @@ public class AccessService {
                 "FIELD_INPUT",
                 "FIELD_FILLED",
                 "FIELD_ABANDONED",
+                "PRESENCE_MAP_CHOICE_SELECTED",
+                "DIAGNOSTIC_CHOICE_SELECTED",
                 "LOGIN_STARTED",
                 "LOGIN_COMPLETED",
                 "PAYWALL_VIEWED",

@@ -75,6 +75,7 @@ public class AccessService {
             @Value("${pde.access.require-jdbc:false}") boolean requireJdbcStorage,
             @Value("${pde.access.app-base-url:http://localhost:5176}") String appBaseUrl,
             @Value("${pde.access.expose-magic-link-in-response:false}") boolean exposeMagicLinkInResponse,
+            PdeDatabaseMigrationService databaseMigrationService,
             PdeMailService mailService,
             GoogleIdentityService googleIdentityService) {
         this.productCatalogService = productCatalogService;
@@ -89,7 +90,38 @@ public class AccessService {
         this.mailService = mailService;
         this.googleIdentityService = googleIdentityService;
         validateJdbcStorageRequirement();
+        if (usesJdbcStorage() && databaseMigrationService != null) {
+            databaseMigrationService.migrateIfNeeded();
+        }
         loadPersistedAccess();
+    }
+
+    /** Recebe dependências explícitas para testes e inicialização controlada. */
+    public AccessService(
+            ProductCatalogService productCatalogService,
+            ObjectMapper objectMapper,
+            String storagePath,
+            String jdbcUrl,
+            String jdbcUsername,
+            String jdbcPassword,
+            boolean requireJdbcStorage,
+            String appBaseUrl,
+            boolean exposeMagicLinkInResponse,
+            PdeMailService mailService,
+            GoogleIdentityService googleIdentityService) {
+        this(
+                productCatalogService,
+                objectMapper,
+                storagePath,
+                jdbcUrl,
+                jdbcUsername,
+                jdbcPassword,
+                requireJdbcStorage,
+                appBaseUrl,
+                exposeMagicLinkInResponse,
+                null,
+                mailService,
+                googleIdentityService);
     }
 
     /** Recebe dependências para testes locais com persistência em arquivo. */

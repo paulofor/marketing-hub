@@ -1,3 +1,9 @@
+## 2026-07-21 — PDE/MUSA: migração operacional de versão da experiência
+
+- causa-raiz confirmada: a coluna `experience_version` foi adicionada ao changelog do backend principal, mas a tabela `pde_funnel_event` pertence ao schema operacional do `pde-platform`; por isso o deploy do PDE passou a consultar/gravar a coluna antes de ela existir no banco efetivo.
+- foi feito: o backend PDE ganhou uma migração idempotente de startup para criar `pde_funnel_event.experience_version` e o índice prefixado `(product_slug, experience_version, occurred_at)` no banco PDE quando faltarem, preservando compatibilidade com MySQL 5.7.
+- prevenção de recorrência: mudanças de analytics próprios do PDE precisam acompanhar o ciclo de deploy/schema do próprio `pde-platform`, para que o painel pós-deploy compare versões comerciais sem depender de changelog aplicado no backend principal.
+
 ## 2026-07-21 — PDE: mudanças comerciais devem ser feitas pelo Marketing Hub
 
 - decisão operacional: mudanças comerciais em PDEs usados em campanha ou experimento devem ser feitas pelo Marketing Hub, no contrato `pde_experience_json`, para manter versão, métrica e decisão comercial associadas.

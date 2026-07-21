@@ -32,6 +32,7 @@ export interface Product {
   riskReversal: string;
   socialProof: string;
   scientificEvidencePack?: string;
+  pdeExperienceJson?: string;
   checkoutMonetization: string;
   funnel: string;
   creativeVolume: string;

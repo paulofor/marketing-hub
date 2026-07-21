@@ -107,4 +107,17 @@ class ProductControllerTest {
                 .andExpect(content().string(containsString("<blockquote>Documento público de posicionamento comercial do produto.</blockquote>")))
                 .andExpect(content().string(containsString("<li><strong>Nome comercial:</strong> Método MUSA</li>")));
     }
+
+    /** Deve expor o contrato JSON da experiência PDE publicado pelo Marketing Hub. */
+    @Test
+    void getPublicPdeExperience() throws Exception {
+        String json = "{\"slug\":\"metodo-musa-7-dias\",\"missions\":[]}";
+
+        when(service.getPublicPdeExperienceJson("metodo-musa-7-dias")).thenReturn(json);
+
+        mockMvc.perform(get("/api/products/public/{productCode}/pde-experience", "metodo-musa-7-dias"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.slug").value("metodo-musa-7-dias"));
+    }
 }

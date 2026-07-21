@@ -6,6 +6,8 @@ spring:
     name: pde-platform-backend
 
 pde:
+  catalog:
+    marketing-hub-base-url: ${PDE_MARKETING_HUB_BASE_URL:}
   access:
     storage-path: ${PDE_ACCESS_STORAGE_PATH:/data/pde/access-grants.json}
     jdbc-url: ${PDE_ACCESS_JDBC_URL:}

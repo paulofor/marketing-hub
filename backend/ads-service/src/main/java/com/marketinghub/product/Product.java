@@ -146,6 +146,12 @@ public class Product {
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String scientificEvidencePack;
 
+    /** Contrato JSON versionado que a PDE Platform consome para renderizar a experiência do produto. */
+    @Lob
+    @Column(name = "pde_experience_json", columnDefinition = "LONGTEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String pdeExperienceJson;
+
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String checkoutMonetization;

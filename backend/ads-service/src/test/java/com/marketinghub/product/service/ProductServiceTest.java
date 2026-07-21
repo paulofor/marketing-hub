@@ -1,5 +1,6 @@
 package com.marketinghub.product.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 /** Responsabilidade: validar as regras de cadastro comercial de produtos. */
 class ProductServiceTest {
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** Deve persistir alterações comerciais em um produto já existente. */
     @Test
@@ -26,7 +28,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
         Product product = Product.builder().id(1L).name("Nome antigo").build();
         MarketNiche niche = new MarketNiche();
         CreateProductRequest request = new CreateProductRequest();
@@ -37,6 +39,7 @@ class ProductServiceTest {
         request.setCurrentPriceBrl(new BigDecimal("47.00"));
         request.setTargetAudience("Mulheres urbanas");
         request.setScientificEvidencePack("Evidence Pack MUSA v1");
+        request.setPdeExperienceJson("{\"slug\":\"metodo-musa-7-dias\",\"missions\":[]}");
         request.setSevenDayJourney("Dia 1: diagnóstico; Dia 2: limpeza visual.");
         request.setSupportMaterialPositioning("Material de apoio como reforço secundário.");
         request.setPrimaryCta("Ver meu plano MUSA de 7 dias");
@@ -53,6 +56,7 @@ class ProductServiceTest {
         assertThat(updated.getCurrentPriceBrl()).isEqualByComparingTo("47.00");
         assertThat(updated.getTargetAudience()).isEqualTo(request.getTargetAudience());
         assertThat(updated.getScientificEvidencePack()).isEqualTo("Evidence Pack MUSA v1");
+        assertThat(updated.getPdeExperienceJson()).contains("\"metodo-musa-7-dias\"");
         assertThat(updated.getSevenDayJourney()).isEqualTo("Dia 1: diagnóstico; Dia 2: limpeza visual.");
         assertThat(updated.getSupportMaterialPositioning()).isEqualTo("Material de apoio como reforço secundário.");
         assertThat(updated.getPrimaryCta()).isEqualTo("Ver meu plano MUSA de 7 dias");
@@ -65,7 +69,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
         MarketNiche niche = MarketNiche.builder().name("Elegância feminina prática").build();
         Product product = Product.builder()
                 .id(1L)
@@ -132,7 +136,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
         Product product = Product.builder().id(7L).name("Produto 7").build();
 
         when(productRepository.findBySlug("7")).thenReturn(Optional.empty());
@@ -149,12 +153,52 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
 
         when(productRepository.findBySlug("inexistente")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.buildPublicMarketingDefinitionMarkdown("inexistente"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Produto não encontrado");
+    }
+
+    /** Deve expor o contrato JSON de experiência PDE salvo no cadastro do produto. */
+    @Test
+    void getPublicPdeExperienceJson() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        Product product = Product.builder()
+                .slug("metodo-musa-7-dias")
+                .pdeExperienceJson("{\"slug\":\"metodo-musa-7-dias\"}")
+                .build();
+
+        when(productRepository.findBySlug("metodo-musa-7-dias")).thenReturn(Optional.of(product));
+
+        String json = service.getPublicPdeExperienceJson("metodo-musa-7-dias");
+
+        assertThat(json).isEqualTo("{\"slug\":\"metodo-musa-7-dias\"}");
+    }
+
+    /** Deve rejeitar contrato PDE que não seja JSON válido antes de salvar o produto. */
+    @Test
+    void updateProductRejectsInvalidPdeExperienceJson() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        Product product = Product.builder().id(1L).build();
+        MarketNiche niche = new MarketNiche();
+        CreateProductRequest request = new CreateProductRequest();
+        request.setMarketNicheId(10L);
+        request.setPdeExperienceJson("{json inválido");
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
+
+        assertThatThrownBy(() -> service.updateProduct(1L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Contrato JSON da experiência PDE inválido");
     }
 }

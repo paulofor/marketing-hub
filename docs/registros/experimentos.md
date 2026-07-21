@@ -1,3 +1,10 @@
+## 2026-07-21 — PDE MUSA atualizável pelo Marketing Hub
+
+- causa-raiz confirmada: a experiência MUSA do PDE estava definida no código do `pde-platform`, então mudanças de primeira dobra, diagnóstico, missões e materiais exigiam alteração técnica e deploy do módulo PDE.
+- foi feito: o cadastro de produto do Marketing Hub passou a armazenar o contrato JSON versionado da experiência PDE em `pde_experience_json` e a expor esse contrato por `/api/products/public/{productCode}/pde-experience`.
+- foi feito: o backend PDE passou a buscar primeiro a experiência publicada pelo Marketing Hub e usar o catálogo local apenas como fallback de disponibilidade.
+- impacto esperado: próximas atualizações comerciais do MUSA podem ser feitas pelo cadastro de produtos do Hub, mantendo a campanha dependente de dados de produto editáveis e não de mudança manual no código do PDE.
+
 ## 2026-07-21 — Clube MUSA: primeira dobra orientada a Mapa de Presença
 
 - causa-raiz confirmada: a campanha trazia cliques e sessões, mas a entrada do PDE não gerava microcompromisso; a copy anterior dependia de termos genéricos como ajuste/detalhe e o evento de escolha de diagnóstico não estava aceito no backend.

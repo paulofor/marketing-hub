@@ -18,6 +18,9 @@ databaseChangeLog:
       file: changesets/2026-07-19-product-scientific-evidence-pack.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-21-product-pde-experience-json.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-19-product-musa-seven-day-journey.yaml
       relativeToChangelogFile: true
   - include:

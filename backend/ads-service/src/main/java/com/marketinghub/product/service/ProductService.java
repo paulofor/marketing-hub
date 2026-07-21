@@ -1,5 +1,7 @@
 package com.marketinghub.product.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
@@ -26,15 +28,18 @@ public class ProductService {
     private final ProductRepository repository;
     private final InstagramAccountRepository accountRepository;
     private final MarketNicheRepository marketNicheRepository;
+    private final ObjectMapper objectMapper;
 
     /** Inicializa o serviço com os repositórios necessários para cadastro de produtos. */
     public ProductService(
             ProductRepository repository,
             InstagramAccountRepository accountRepository,
-            MarketNicheRepository marketNicheRepository) {
+            MarketNicheRepository marketNicheRepository,
+            ObjectMapper objectMapper) {
         this.repository = repository;
         this.accountRepository = accountRepository;
         this.marketNicheRepository = marketNicheRepository;
+        this.objectMapper = objectMapper;
     }
 
     /** Cria e persiste um produto comercial com seus atributos de venda e entrega. */
@@ -84,6 +89,7 @@ public class ProductService {
         product.setRiskReversal(request.getRiskReversal());
         product.setSocialProof(request.getSocialProof());
         product.setScientificEvidencePack(request.getScientificEvidencePack());
+        product.setPdeExperienceJson(validatePdeExperienceJson(request.getPdeExperienceJson()));
         product.setCheckoutMonetization(request.getCheckoutMonetization());
         product.setFunnel(request.getFunnel());
         product.setCreativeVolume(request.getCreativeVolume());
@@ -165,6 +171,30 @@ public class ProductService {
         appendSection(markdown, "10. Aprendizados e próximos ajustes de marketing",
                 paragraph(product.getCommercialNotes()));
         return markdown.toString();
+    }
+
+    /** Retorna o contrato JSON da experiência PDE publicada pelo Marketing Hub. */
+    @Transactional(readOnly = true)
+    public String getPublicPdeExperienceJson(String productCode) {
+        Product product = findProductByCode(productCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
+        if (product.getPdeExperienceJson() == null || product.getPdeExperienceJson().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Experiência PDE não publicada para o produto");
+        }
+        return product.getPdeExperienceJson().trim();
+    }
+
+    /** Valida que o contrato PDE informado é JSON antes de persistir no cadastro comercial. */
+    private String validatePdeExperienceJson(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return rawJson;
+        }
+        try {
+            objectMapper.readTree(rawJson);
+            return rawJson.trim();
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Contrato JSON da experiência PDE inválido", ex);
+        }
     }
 
     /** Busca o produto por slug público ou por identificador interno numérico. */

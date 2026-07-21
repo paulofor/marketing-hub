@@ -6,6 +6,12 @@ import com.marketinghub.pde.dto.ProductExperienceResponse;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
+
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /** Valida o catálogo inicial de produtos PDE. */
 class ProductCatalogServiceTest {
@@ -22,6 +28,52 @@ class ProductCatalogServiceTest {
         assertThat(product.supportMaterials()).hasSize(4);
         assertThat(product.scientificEvidencePack().version()).isEqualTo("musa-evidence-pack-v1");
         assertThat(product.scientificEvidencePack().forbiddenClaims()).contains("garante elegância");
+    }
+
+    /** Confirma que o catálogo prioriza o contrato PDE publicado pelo Marketing Hub. */
+    @Test
+    void returnsMarketingHubProductWhenConfigured() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        ProductCatalogService service = new ProductCatalogService(builder, "http://marketing-hub");
+        server.expect(requestTo("http://marketing-hub/api/products/public/metodo-musa-7-dias/pde-experience"))
+                .andRespond(withSuccess("""
+                        {
+                          "slug": "metodo-musa-7-dias",
+                          "name": "Método MUSA pelo Hub",
+                          "promise": "Promessa publicada pelo Marketing Hub",
+                          "audience": "Mulheres urbanas",
+                          "priceLabel": "",
+                          "theme": {
+                            "primary": "#7a2444",
+                            "accent": "#d6a75c",
+                            "background": "#fff8f3",
+                            "imageUrl": "/assets/musa-cover.png"
+                          },
+                          "diagnostic": {
+                            "title": "Mapa de Presença",
+                            "intro": "Entrada publicada no Hub",
+                            "questions": ["Pergunta 1"]
+                          },
+                          "missions": [],
+                          "supportMaterials": [],
+                          "scientificEvidencePack": {
+                            "version": "musa-evidence-pack-v1",
+                            "principles": [],
+                            "practicalApplications": [],
+                            "allowedLanguage": [],
+                            "forbiddenClaims": [],
+                            "references": []
+                          },
+                          "completionOffer": "Continuidade"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        var product = service.getProduct("metodo-musa-7-dias");
+
+        assertThat(product.name()).isEqualTo("Método MUSA pelo Hub");
+        assertThat(product.promise()).isEqualTo("Promessa publicada pelo Marketing Hub");
+        server.verify();
     }
 
     /** Garante que o catálogo visível da MUSA usa português brasileiro com acentuação. */

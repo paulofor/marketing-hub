@@ -38,6 +38,7 @@ public class ProductDto {
     private String riskReversal;
     private String socialProof;
     private String scientificEvidencePack;
+    private String pdeExperienceJson;
     private String checkoutMonetization;
     private String funnel;
     private String creativeVolume;

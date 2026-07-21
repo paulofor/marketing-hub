@@ -11,6 +11,15 @@ on:
       - "pde-platform/**"
       - ".github/workflows/pde-platform-metodo-musa-ci.yml"
   workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Ambiente a publicar"
+        required: true
+        default: "homolog"
+        type: choice
+        options:
+          - homolog
+          - production
 
 env:
   IMAGE_REGISTRY: ghcr.io
@@ -135,14 +144,99 @@ jobs:
         id: image_tag
         run: echo "value=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-  deploy:
-    name: Deploy to Metodo MUSA host
+  deploy_homolog:
+    name: Deploy homolog to Metodo MUSA host
     runs-on: ubuntu-latest
     needs:
       - backend
       - frontend
       - docker
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.target_environment == 'homolog')
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DEPLOY_HOST: 191.252.102.54
+      DEPLOY_USER: root
+      REMOTE_PATH: ${{ secrets.PDE_PLATFORM_REMOTE_PATH != '' && secrets.PDE_PLATFORM_REMOTE_PATH || '/root/pde-platform' }}
+      IMAGE_TAG: ${{ needs.docker.outputs['image-tag'] }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+      PDE_PLATFORM_NETWORK: ${{ secrets.PDE_PLATFORM_NETWORK != '' && secrets.PDE_PLATFORM_NETWORK || 'public-net' }}
+      PDE_PLATFORM_HOMOLOG_FRONTEND_PORT: ${{ secrets.PDE_PLATFORM_HOMOLOG_FRONTEND_PORT != '' && secrets.PDE_PLATFORM_HOMOLOG_FRONTEND_PORT || '5177' }}
+      PDE_PLATFORM_HOMOLOG_BACKEND_PORT: ${{ secrets.PDE_PLATFORM_HOMOLOG_BACKEND_PORT != '' && secrets.PDE_PLATFORM_HOMOLOG_BACKEND_PORT || '8097' }}
+      PDE_PLATFORM_HOMOLOG_EXPERIENCE_VERSION: ${{ secrets.PDE_PLATFORM_HOMOLOG_EXPERIENCE_VERSION != '' && secrets.PDE_PLATFORM_HOMOLOG_EXPERIENCE_VERSION || 'musa-pde-entry-v4-video-hero' }}
+      PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL: ${{ secrets.PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL }}
+      AWS_REGION: ${{ secrets.PDE_MAIL_AWS_REGION != '' && secrets.PDE_MAIL_AWS_REGION || 'us-east-1' }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.PDE_MAIL_AWS_ACCESS_KEY_ID != '' && secrets.PDE_MAIL_AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY != '' && secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.PDE_MAIL_AWS_SESSION_TOKEN != '' && secrets.PDE_MAIL_AWS_SESSION_TOKEN || secrets.AWS_SESSION_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+      OPENAI_API_KEY_FILE: ${{ secrets.PDE_OPENAI_API_KEY_FILE != '' && secrets.PDE_OPENAI_API_KEY_FILE || secrets.OPENAI_API_KEY_FILE != '' && secrets.OPENAI_API_KEY_FILE || '/run/secrets/openai_api_key' }}
+      OPENAI_API_KEY_HOST_FILE: ${{ secrets.PDE_OPENAI_API_KEY_HOST_FILE != '' && secrets.PDE_OPENAI_API_KEY_HOST_FILE || secrets.OPENAI_API_KEY_HOST_FILE != '' && secrets.OPENAI_API_KEY_HOST_FILE || '/root/infra/openai-token/openai_api_key' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "${VPS_SSH_KEY}" ]; then
+            echo "Erro: nenhuma chave SSH foi encontrada nos secrets esperados." >&2
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+          printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -o ConnectTimeout=60" >> "$GITHUB_ENV"
+      - name: Sync compose file
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
+          rsync -az --delete \
+            -e "ssh ${SSH_COMMON_ARGS}" \
+            --include 'docker-compose.homolog.yml' \
+            --exclude '*' \
+            pde-platform/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
+      - name: Publish PDE Platform homolog
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && cd ${REMOTE_PATH} \
+            && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
+            && (docker network inspect ${PDE_PLATFORM_NETWORK} >/dev/null 2>&1 || docker network create ${PDE_PLATFORM_NETWORK}) \
+            && export PDE_PLATFORM_BACKEND_IMAGE='${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_FRONTEND_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_AI_WORKER_IMAGE='${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_HOMOLOG_NETWORK='${PDE_PLATFORM_NETWORK}' \
+            && export PDE_PLATFORM_HOMOLOG_FRONTEND_PORT='${PDE_PLATFORM_HOMOLOG_FRONTEND_PORT}' \
+            && export PDE_PLATFORM_HOMOLOG_BACKEND_PORT='${PDE_PLATFORM_HOMOLOG_BACKEND_PORT}' \
+            && export PDE_PLATFORM_HOMOLOG_EXPERIENCE_VERSION='${PDE_PLATFORM_HOMOLOG_EXPERIENCE_VERSION}' \
+            && export PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL='${PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL}' \
+            && export AWS_REGION='${AWS_REGION}' \
+            && export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}' \
+            && export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}' \
+            && export AWS_SESSION_TOKEN='${AWS_SESSION_TOKEN}' \
+            && export OPENAI_API_KEY='${OPENAI_API_KEY}' \
+            && export OPENAI_API_KEY_FILE='${OPENAI_API_KEY_FILE}' \
+            && export OPENAI_API_KEY_HOST_FILE='${OPENAI_API_KEY_HOST_FILE}' \
+            && test -s \"${OPENAI_API_KEY_HOST_FILE}\" \
+            && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform-homolog \
+            && docker compose -f docker-compose.homolog.yml pull \
+            && (docker rm -f pde-platform-backend-homolog pde-platform-frontend-homolog pde-ai-worker-homolog >/dev/null 2>&1 || true) \
+            && docker compose -f docker-compose.homolog.yml up -d --remove-orphans \
+            && docker image prune -af"
+      - name: Validate homolog public container ports
+        run: |
+          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_HOMOLOG_FRONTEND_PORT}/" > /dev/null
+          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_HOMOLOG_BACKEND_PORT}/actuator/health"
+
+  deploy_production:
+    name: Deploy production to Metodo MUSA host
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - frontend
+      - docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.target_environment == 'production'
     permissions:
       contents: read
       packages: read
@@ -186,7 +280,7 @@ jobs:
             --include 'docker-compose.deploy.yml' \
             --exclude '*' \
             pde-platform/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
-      - name: Publish PDE Platform
+      - name: Publish PDE Platform production
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
@@ -211,7 +305,7 @@ jobs:
             && (docker rm -f pde-platform-backend pde-platform-frontend pde-ai-worker >/dev/null 2>&1 || true) \
             && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
             && docker image prune -af"
-      - name: Validate public container ports
+      - name: Validate production public container ports
         run: |
           curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_PORT}/" > /dev/null
           curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}/actuator/health"

@@ -7,6 +7,7 @@ services:
       - "${PDE_PLATFORM_BACKEND_PORT:-8096}:8096"
     environment:
       PDE_ACCESS_REQUIRE_JDBC: "true"
+      PDE_MARKETING_HUB_BASE_URL: ${PDE_MARKETING_HUB_BASE_URL:-http://191.252.181.168}
       PDE_ACCESS_JDBC_URL: ${PDE_ACCESS_JDBC_URL:?PDE_ACCESS_JDBC_URL is required for PDE production analytics}
       PDE_ACCESS_JDBC_USERNAME: ${PDE_ACCESS_JDBC_USERNAME:?PDE_ACCESS_JDBC_USERNAME is required for PDE production analytics}
       PDE_ACCESS_JDBC_PASSWORD: ${PDE_ACCESS_JDBC_PASSWORD:?PDE_ACCESS_JDBC_PASSWORD is required for PDE production analytics}

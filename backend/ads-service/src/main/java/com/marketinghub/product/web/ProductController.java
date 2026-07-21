@@ -75,4 +75,14 @@ public class ProductController {
                 .contentType(MediaType.parseMediaType("text/html;charset=UTF-8"))
                 .body(htmlRenderer.render(markdown));
     }
+
+    /** Retorna o contrato JSON público da experiência PDE publicada pelo Marketing Hub. */
+    @GetMapping(
+            value = "/public/{productCode}/pde-experience",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getPublicPdeExperience(@PathVariable String productCode) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(service.getPublicPdeExperienceJson(productCode));
+    }
 }

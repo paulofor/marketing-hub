@@ -49,6 +49,7 @@ const defaultForm: ProductFormValues = {
   riskReversal: "",
   socialProof: "",
   scientificEvidencePack: "",
+  pdeExperienceJson: "",
   checkoutMonetization: "",
   funnel: "",
   creativeVolume: "",
@@ -93,6 +94,7 @@ function toFormValues(product?: Product): ProductFormValues {
     riskReversal: product.riskReversal ?? "",
     socialProof: product.socialProof ?? "",
     scientificEvidencePack: product.scientificEvidencePack ?? "",
+    pdeExperienceJson: product.pdeExperienceJson ?? "",
     checkoutMonetization: product.checkoutMonetization ?? "",
     funnel: product.funnel ?? "",
     creativeVolume: product.creativeVolume ?? "",
@@ -529,6 +531,14 @@ export default function ProductForm({
             multiline
             rows={5}
             value={form.scientificEvidencePack}
+            onChange={setField}
+          />
+          <ProductField
+            field="pdeExperienceJson"
+            label="Contrato JSON da experiência PDE"
+            multiline
+            rows={12}
+            value={form.pdeExperienceJson}
             onChange={setField}
           />
         </ProductEditorSection>

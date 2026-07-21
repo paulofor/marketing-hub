@@ -5984,3 +5984,9 @@
 - comparação de causa-raiz: o mesmo payload cria criativo normalmente com `Produtividade 360`, então o bloqueio é permissão/tarefa de página no ativo reaproveitado, não erro de copy, imagem, campanha ou destino.
 - métrica real sincronizada: a campanha `120250451632930326` já registrou `92` impressões, `3` cliques e `R$ 0,61` de gasto em 2026-07-20; o Marketing Hub gravou `funnel_reset_at` para o experimento 67 quando as impressões saíram de zero.
 - validação PDE: log do `pde-platform-backend` confirmou reset de analytics do produto `metodo-musa-7-dias` no início da campanha, removendo `263` eventos anteriores de teste.
+
+## 2026-07-21 — PED/MUSA: painel único de mídia, criativo e jornada
+
+- foi feito: o resumo de analytics do PDE passou a devolver desempenho por origem/campanha/criativo via UTM, além das jornadas recentes por sessão.
+- foi feito: o monitor pós-deploy do experimento passou a exibir blocos de `Criativos e UTMs` e `Jornadas recentes por sessão`, cruzando Meta Ads, eventos PDE, tempo visível, scroll, última ação e ponto de abandono.
+- impacto comercial esperado: acelerar a decisão sobre qual criativo atrai visita útil, onde cada sessão abandona e se o gargalo está no anúncio, primeira dobra, e-mail, paywall ou checkout.

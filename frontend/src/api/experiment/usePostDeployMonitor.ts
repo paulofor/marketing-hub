@@ -46,6 +46,8 @@ export interface PostDeployPdeSummary {
   lastEventAt?: string | null;
   events: Record<string, number>;
   experienceVersions: PostDeployPdeExperienceVersion[];
+  trafficSources: PostDeployPdeTrafficSource[];
+  recentJourneys: PostDeployPdeSessionJourney[];
 }
 
 export interface PostDeployPdeExperienceVersion {
@@ -58,6 +60,44 @@ export interface PostDeployPdeExperienceVersion {
   paywallViewed: number;
   checkoutIntent: number;
   subscriptionApproved: number;
+}
+
+export interface PostDeployPdeTrafficSource {
+  utmSource: string;
+  utmCampaign: string;
+  utmContent: string;
+  sessions: number;
+  pdeEntries: number;
+  firstInteractionClicks: number;
+  loginStarted: number;
+  paywallViewed: number;
+  checkoutStarted: number;
+  subscriptionApproved: number;
+  totalVisibleMs: number;
+  lastEventAt?: string | null;
+}
+
+export interface PostDeployPdeSessionJourney {
+  sessionId: string;
+  visitorId?: string | null;
+  firstEventAt?: string | null;
+  lastEventAt?: string | null;
+  totalVisibleMs: number;
+  maxScrollDepthPercent: number;
+  screenNames: string[];
+  sectionIds: string[];
+  fieldFocused: boolean;
+  fieldInputStarted: boolean;
+  fieldFilled: boolean;
+  ctaClicked: boolean;
+  loginStarted: boolean;
+  loginCompleted: boolean;
+  paywallViewed: boolean;
+  checkoutStarted: boolean;
+  subscriptionApproved: boolean;
+  abandonmentPoint: string;
+  lastEventType?: string | null;
+  lastActionName?: string | null;
 }
 
 export interface PostDeployFacebookLogSummary {

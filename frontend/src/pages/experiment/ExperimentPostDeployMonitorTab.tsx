@@ -44,6 +44,30 @@ function formatPercent(value?: number | null) {
   return value == null ? "—" : `${value.toFixed(2)}%`;
 }
 
+function formatDuration(ms?: number | null) {
+  if (!ms) return "0s";
+  const totalSeconds = Math.round(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0 ? `${minutes}min ${seconds}s` : `${seconds}s`;
+}
+
+function abandonmentLabel(value?: string | null) {
+  const labels: Record<string, string> = {
+    ASSINATURA_APROVADA: "Compra aprovada",
+    ABANDONOU_CHECKOUT: "Abandonou no checkout",
+    ABANDONOU_PAYWALL: "Abandonou no paywall",
+    ENTROU_SEM_CHEGAR_AO_PAYWALL: "Entrou sem ver paywall",
+    ABANDONOU_APOS_SOLICITAR_ACESSO: "Parou após pedir acesso",
+    ABANDONOU_NO_CAMPO_EMAIL: "Parou no e-mail",
+    FOCOU_EMAIL_SEM_ENVIAR: "Focou e-mail sem enviar",
+    CLICOU_CTA_SEM_LOGIN: "Clicou CTA sem login",
+    CONSUMIU_PAGINA_SEM_ACAO: "Consumiu página sem ação",
+    SAIU_NA_PRIMEIRA_DOBRA: "Saiu na primeira dobra",
+  };
+  return value ? labels[value] ?? value : "—";
+}
+
 function decisionBadgeClass(decision: PostDeployMonitorDecision) {
   switch (decision) {
     case "SCALE_GRADUALLY":
@@ -64,6 +88,8 @@ export default function ExperimentPostDeployMonitorTab({
 }: ExperimentPostDeployMonitorTabProps) {
   const monitorQuery = usePostDeployMonitor(experimentId);
   const monitor = monitorQuery.data;
+  const trafficSources = monitor?.pde.trafficSources ?? [];
+  const recentJourneys = monitor?.pde.recentJourneys ?? [];
 
   const pdeRows = useMemo(
     () =>
@@ -283,6 +309,95 @@ export default function ExperimentPostDeployMonitorTab({
                       <td className="text-end">{formatNumber(version.paywallViewed)}</td>
                       <td className="text-end">{formatNumber(version.checkoutIntent)}</td>
                       <td className="text-end">{formatNumber(version.subscriptionApproved)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {trafficSources.length > 0 ? (
+        <div className="card">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2">
+              <div>
+                <h6 className="card-title mb-1">Criativos e UTMs</h6>
+                <p className="text-muted small mb-0">
+                  Liga a origem do clique com a ação real dentro do PDE.
+                </p>
+              </div>
+            </div>
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Origem</th>
+                    <th>Campanha</th>
+                    <th>Criativo</th>
+                    <th className="text-end">Sessões</th>
+                    <th className="text-end">Entrada</th>
+                    <th className="text-end">1ª ação</th>
+                    <th className="text-end">Login</th>
+                    <th className="text-end">Paywall</th>
+                    <th className="text-end">Compra</th>
+                    <th className="text-end">Tempo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trafficSources.map((source) => (
+                    <tr key={`${source.utmSource}-${source.utmCampaign}-${source.utmContent}`}>
+                      <td>{source.utmSource}</td>
+                      <td>{source.utmCampaign}</td>
+                      <td className="fw-semibold">{source.utmContent}</td>
+                      <td className="text-end">{formatNumber(source.sessions)}</td>
+                      <td className="text-end">{formatNumber(source.pdeEntries)}</td>
+                      <td className="text-end">{formatNumber(source.firstInteractionClicks)}</td>
+                      <td className="text-end">{formatNumber(source.loginStarted)}</td>
+                      <td className="text-end">{formatNumber(source.paywallViewed)}</td>
+                      <td className="text-end">{formatNumber(source.subscriptionApproved)}</td>
+                      <td className="text-end">{formatDuration(source.totalVisibleMs)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {recentJourneys.length > 0 ? (
+        <div className="card">
+          <div className="card-body">
+            <h6 className="card-title">Jornadas recentes por sessão</h6>
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Sessão</th>
+                    <th>Abandono</th>
+                    <th>Última ação</th>
+                    <th>Telas/seções</th>
+                    <th className="text-end">Scroll</th>
+                    <th className="text-end">Tempo</th>
+                    <th className="text-end">Último evento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentJourneys.map((journey) => (
+                    <tr key={journey.sessionId}>
+                      <td className="font-monospace small">
+                        {(journey.sessionId ?? "sem-sessao").slice(0, 12)}
+                      </td>
+                      <td className="fw-semibold">{abandonmentLabel(journey.abandonmentPoint)}</td>
+                      <td>{journey.lastActionName ?? journey.lastEventType ?? "—"}</td>
+                      <td className="small text-muted">
+                        {[...(journey.screenNames ?? []), ...(journey.sectionIds ?? [])].slice(0, 3).join(" / ") || "—"}
+                      </td>
+                      <td className="text-end">{formatNumber(journey.maxScrollDepthPercent)}%</td>
+                      <td className="text-end">{formatDuration(journey.totalVisibleMs)}</td>
+                      <td className="text-end">{formatDate(journey.lastEventAt)}</td>
                     </tr>
                   ))}
                 </tbody>

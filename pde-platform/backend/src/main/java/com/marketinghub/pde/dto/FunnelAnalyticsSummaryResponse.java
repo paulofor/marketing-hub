@@ -21,5 +21,7 @@ public record FunnelAnalyticsSummaryResponse(
         long checkoutStarted,
         long totalVisibleMs,
         List<FunnelAnalyticsEventMetricDto> events,
-        List<FunnelAnalyticsExperienceVersionMetricDto> experienceVersions
+        List<FunnelAnalyticsExperienceVersionMetricDto> experienceVersions,
+        List<FunnelAnalyticsTrafficSourceMetricDto> trafficSources,
+        List<FunnelAnalyticsSessionJourneyDto> recentJourneys
 ) {}

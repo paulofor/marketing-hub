@@ -1555,9 +1555,9 @@ function App() {
                 </div>
               )}
               <div className="video-hero-caption">
-                <span>Prévia em vídeo</span>
+                <span>{heroVideoUrl ? 'Prévia em vídeo' : 'Prévia visual'}</span>
                 <strong>Veja o gesto simples que muda a percepção da sua presença.</strong>
-                <p>O Mapa de Presença começa antes do e-mail e mostra o primeiro ajuste prático do Dia 1.</p>
+                <p>{heroVideoUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro ajuste prático do Dia 1.' : 'Vídeo VEO ainda não configurado neste ambiente. A tela preserva a promessa e bloqueia liberação como vídeo real.'}</p>
               </div>
             </div>
           ) : (

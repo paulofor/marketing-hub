@@ -21,7 +21,9 @@ public record PdeAnalyticsSummary(
         long checkoutStarted,
         long totalVisibleMs,
         List<PdeEventMetric> events,
-        List<PdeExperienceVersionMetric> experienceVersions
+        List<PdeExperienceVersionMetric> experienceVersions,
+        List<PdeTrafficSourceMetric> trafficSources,
+        List<PdeSessionJourney> recentJourneys
 ) {
     /** Representa a contagem agregada por tipo de evento do PDE. */
     public record PdeEventMetric(String eventType, long total) {}
@@ -39,5 +41,45 @@ public record PdeAnalyticsSummary(
             long subscriptionClicked,
             long checkoutStarted,
             long subscriptionApproved
+    ) {}
+
+    /** Representa desempenho por origem, campanha e criativo identificado por UTM. */
+    public record PdeTrafficSourceMetric(
+            String utmSource,
+            String utmCampaign,
+            String utmContent,
+            long sessions,
+            long pdeEntries,
+            long firstInteractionClicks,
+            long loginStarted,
+            long paywallViewed,
+            long checkoutStarted,
+            long subscriptionApproved,
+            long totalVisibleMs,
+            String lastEventAt
+    ) {}
+
+    /** Representa uma jornada recente por sessão retornada pelo PDE. */
+    public record PdeSessionJourney(
+            String sessionId,
+            String visitorId,
+            String firstEventAt,
+            String lastEventAt,
+            long totalVisibleMs,
+            long maxScrollDepthPercent,
+            List<String> screenNames,
+            List<String> sectionIds,
+            boolean fieldFocused,
+            boolean fieldInputStarted,
+            boolean fieldFilled,
+            boolean ctaClicked,
+            boolean loginStarted,
+            boolean loginCompleted,
+            boolean paywallViewed,
+            boolean checkoutStarted,
+            boolean subscriptionApproved,
+            String abandonmentPoint,
+            String lastEventType,
+            String lastActionName
     ) {}
 }

@@ -78,7 +78,41 @@ class PostDeployMonitorServiceTest {
                 2000,
                 List.of(),
                 List.of(new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v3", 80, 15, 15, 0, 0, 0, 0, 0, 0, 0))));
+                        "musa-pde-entry-v3", 80, 15, 15, 0, 0, 0, 0, 0, 0, 0)),
+                List.of(new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                        "facebook",
+                        "musa-campanha",
+                        "criativo-a",
+                        15,
+                        15,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        2000,
+                        "2026-07-21T02:00:00Z")),
+                List.of(new PdeAnalyticsSummary.PdeSessionJourney(
+                        "session-1",
+                        "visitor-1",
+                        "2026-07-21T01:59:00Z",
+                        "2026-07-21T02:00:00Z",
+                        2000,
+                        42,
+                        List.of("login_first_access"),
+                        List.of("login_hero"),
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        "SAIU_NA_PRIMEIRA_DOBRA",
+                        "PAGE_VIEW",
+                        "page_loaded"))));
 
         var response = service.summarize(67L, null);
 
@@ -89,6 +123,12 @@ class PostDeployMonitorServiceTest {
         assertThat(response.pde().experienceVersions())
                 .extracting("experienceVersion")
                 .contains("musa-pde-entry-v3");
+        assertThat(response.pde().trafficSources())
+                .extracting("utmContent")
+                .contains("criativo-a");
+        assertThat(response.pde().recentJourneys())
+                .extracting("abandonmentPoint")
+                .contains("SAIU_NA_PRIMEIRA_DOBRA");
     }
 
     /** Recomenda corrigir medição quando o PDE não responde ao Hub. */
@@ -133,7 +173,9 @@ class PostDeployMonitorServiceTest {
                 9000,
                 List.of(new PdeAnalyticsSummary.PdeEventMetric("PRESENCE_MAP_CHOICE_SELECTED", 6)),
                 List.of(new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v3", 120, 20, 20, 6, 0, 5, 2, 2, 1, 1))));
+                        "musa-pde-entry-v3", 120, 20, 20, 6, 0, 5, 2, 2, 1, 1)),
+                List.of(),
+                List.of()));
 
         var response = service.summarize(67L, null);
 

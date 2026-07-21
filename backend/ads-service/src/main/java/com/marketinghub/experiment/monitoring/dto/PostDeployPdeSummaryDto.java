@@ -27,5 +27,7 @@ public record PostDeployPdeSummaryDto(
         long totalVisibleMs,
         Instant lastEventAt,
         Map<String, Long> events,
-        List<PostDeployPdeExperienceVersionDto> experienceVersions
+        List<PostDeployPdeExperienceVersionDto> experienceVersions,
+        List<PostDeployPdeTrafficSourceDto> trafficSources,
+        List<PostDeployPdeSessionJourneyDto> recentJourneys
 ) {}

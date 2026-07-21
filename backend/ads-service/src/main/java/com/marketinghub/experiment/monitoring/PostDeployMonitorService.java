@@ -7,7 +7,9 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployMetaAdsSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorResponseDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeExperienceVersionDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSessionJourneyDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSummaryDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
@@ -140,6 +142,8 @@ public class PostDeployMonitorService {
                     0,
                     null,
                     Map.<String, Long>of(),
+                    List.of(),
+                    List.of(),
                     List.of());
         }
     }
@@ -172,7 +176,9 @@ public class PostDeployMonitorService {
                 summary.totalVisibleMs(),
                 null,
                 events,
-                toExperienceVersionDtos(summary));
+                toExperienceVersionDtos(summary),
+                toTrafficSourceDtos(summary),
+                toSessionJourneyDtos(summary));
     }
 
     /** Converte as métricas por versão do PDE para exibição no painel administrativo. */
@@ -191,6 +197,58 @@ public class PostDeployMonitorService {
                         version.paywallViewed(),
                         version.subscriptionClicked() + version.checkoutStarted(),
                         version.subscriptionApproved()))
+                .toList();
+    }
+
+    /** Converte métricas por UTM/criativo para exibição no painel administrativo. */
+    private List<PostDeployPdeTrafficSourceDto> toTrafficSourceDtos(PdeAnalyticsSummary summary) {
+        if (summary.trafficSources() == null) {
+            return List.of();
+        }
+        return summary.trafficSources().stream()
+                .map(source -> new PostDeployPdeTrafficSourceDto(
+                        source.utmSource(),
+                        source.utmCampaign(),
+                        source.utmContent(),
+                        source.sessions(),
+                        source.pdeEntries(),
+                        source.firstInteractionClicks(),
+                        source.loginStarted(),
+                        source.paywallViewed(),
+                        source.checkoutStarted(),
+                        source.subscriptionApproved(),
+                        source.totalVisibleMs(),
+                        source.lastEventAt()))
+                .toList();
+    }
+
+    /** Converte jornadas recentes do PDE sem expor a lista completa de passos técnicos. */
+    private List<PostDeployPdeSessionJourneyDto> toSessionJourneyDtos(PdeAnalyticsSummary summary) {
+        if (summary.recentJourneys() == null) {
+            return List.of();
+        }
+        return summary.recentJourneys().stream()
+                .map(journey -> new PostDeployPdeSessionJourneyDto(
+                        journey.sessionId(),
+                        journey.visitorId(),
+                        journey.firstEventAt(),
+                        journey.lastEventAt(),
+                        journey.totalVisibleMs(),
+                        journey.maxScrollDepthPercent(),
+                        journey.screenNames(),
+                        journey.sectionIds(),
+                        journey.fieldFocused(),
+                        journey.fieldInputStarted(),
+                        journey.fieldFilled(),
+                        journey.ctaClicked(),
+                        journey.loginStarted(),
+                        journey.loginCompleted(),
+                        journey.paywallViewed(),
+                        journey.checkoutStarted(),
+                        journey.subscriptionApproved(),
+                        journey.abandonmentPoint(),
+                        journey.lastEventType(),
+                        journey.lastActionName()))
                 .toList();
     }
 

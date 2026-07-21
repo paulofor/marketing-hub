@@ -8,6 +8,7 @@ import com.marketinghub.pde.dto.FunnelAnalyticsJourneyResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsSessionJourneyDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSessionStepDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
+import com.marketinghub.pde.dto.FunnelAnalyticsTrafficSourceMetricDto;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
 import com.marketinghub.pde.dto.MagicLinkResponse;
@@ -342,7 +343,7 @@ public class AccessService {
                 SELECT
                   COUNT(*) AS total_events,
                   COUNT(DISTINCT visitor_id) AS unique_visitors,
-                  COUNT(DISTINCT session_id) AS sessions,
+                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions,
                   SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS ped_entries,
                   SUM(CASE WHEN event_type = 'PAGE_VIEW' THEN 1 ELSE 0 END) AS page_views,
                   SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
@@ -380,10 +381,12 @@ public class AccessService {
                             resultSet.getLong("checkout_started"),
                             resultSet.getLong("total_visible_ms"),
                             loadFunnelEventMetrics(connection, productSlug),
-                            loadExperienceVersionMetrics(connection, productSlug));
+                            loadExperienceVersionMetrics(connection, productSlug),
+                            loadTrafficSourceMetrics(connection, productSlug),
+                            loadSessionJourneyDtos(connection, productSlug, 20));
                 }
             }
-        } catch (SQLException ex) {
+        } catch (SQLException | IOException ex) {
             log.error("Falha ao consolidar analytics PDE; productSlug={}", productSlug, ex);
             throw new IllegalStateException("Não foi possível consolidar analytics PDE", ex);
         }
@@ -397,6 +400,18 @@ public class AccessService {
             return new FunnelAnalyticsJourneyResponse(productSlug, 0, List.of());
         }
         int safeLimit = Math.max(1, Math.min(limit, 100));
+        try (Connection connection = openConnection()) {
+            List<FunnelAnalyticsSessionJourneyDto> sessions = loadSessionJourneyDtos(connection, productSlug, safeLimit);
+            return new FunnelAnalyticsJourneyResponse(productSlug, sessions.size(), sessions);
+        } catch (SQLException | IOException ex) {
+            log.error("Falha ao consolidar jornadas PDE; productSlug={}, limit={}", productSlug, safeLimit, ex);
+            throw new IllegalStateException("Não foi possível consolidar jornadas PDE", ex);
+        }
+    }
+
+    /** Carrega as jornadas mais recentes usando a conexão informada. */
+    private List<FunnelAnalyticsSessionJourneyDto> loadSessionJourneyDtos(Connection connection, String productSlug, int limit)
+            throws SQLException, IOException {
         String sql = """
                 SELECT
                   COALESCE(e.session_id, e.event_id) AS resolved_session_id,
@@ -422,10 +437,9 @@ public class AccessService {
                 WHERE e.product_slug = ?
                 ORDER BY recent.last_event_at DESC, e.occurred_at ASC, e.id ASC
                 """;
-        try (Connection connection = openConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
-            statement.setInt(2, safeLimit);
+            statement.setInt(2, limit);
             statement.setString(3, productSlug);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<String, SessionJourneyBuilder> builders = new LinkedHashMap<>();
@@ -434,14 +448,10 @@ public class AccessService {
                     SessionJourneyBuilder builder = builders.computeIfAbsent(sessionId, SessionJourneyBuilder::new);
                     builder.add(toSessionJourneyEvent(resultSet));
                 }
-                List<FunnelAnalyticsSessionJourneyDto> sessions = builders.values().stream()
+                return builders.values().stream()
                         .map(SessionJourneyBuilder::toDto)
                         .toList();
-                return new FunnelAnalyticsJourneyResponse(productSlug, sessions.size(), sessions);
             }
-        } catch (SQLException | IOException ex) {
-            log.error("Falha ao consolidar jornadas PDE; productSlug={}, limit={}", productSlug, safeLimit, ex);
-            throw new IllegalStateException("Não foi possível consolidar jornadas PDE", ex);
         }
     }
 
@@ -726,7 +736,7 @@ public class AccessService {
     /** Retorna métricas vazias quando o backend está em modo local sem banco analítico. */
     private FunnelAnalyticsSummaryResponse emptyFunnelAnalytics(String productSlug) {
         return new FunnelAnalyticsSummaryResponse(
-                productSlug, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of(), List.of());
+                productSlug, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of());
     }
 
     /** Converte uma linha JDBC em evento normalizado de jornada. */
@@ -823,6 +833,58 @@ public class AccessService {
                             resultSet.getLong("subscription_clicked"),
                             resultSet.getLong("checkout_started"),
                             resultSet.getLong("subscription_approved")));
+                }
+                return metrics;
+            }
+        }
+    }
+
+    /** Lê desempenho por origem, campanha e criativo para cruzar mídia com comportamento real no PDE. */
+    private List<FunnelAnalyticsTrafficSourceMetricDto> loadTrafficSourceMetrics(Connection connection, String productSlug)
+            throws SQLException {
+        String sql = """
+                SELECT
+                  COALESCE(NULLIF(utm_source, ''), 'sem-origem') AS resolved_utm_source,
+                  COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha') AS resolved_utm_campaign,
+                  COALESCE(NULLIF(utm_content, ''), 'sem-criativo') AS resolved_utm_content,
+                  COUNT(DISTINCT session_id) AS sessions,
+                  SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS pde_entries,
+                  SUM(CASE WHEN event_type IN ('PRESENCE_MAP_CHOICE_SELECTED', 'DIAGNOSTIC_CHOICE_SELECTED') THEN 1 ELSE 0 END)
+                    AS first_interaction_clicks,
+                  SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
+                  SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
+                  SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
+                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' THEN 1 ELSE 0 END) AS subscription_approved,
+                  COALESCE(SUM(visible_ms), 0) AS total_visible_ms,
+                  MAX(occurred_at) AS last_event_at
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                GROUP BY
+                  COALESCE(NULLIF(utm_source, ''), 'sem-origem'),
+                  COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha'),
+                  COALESCE(NULLIF(utm_content, ''), 'sem-criativo')
+                ORDER BY sessions DESC, last_event_at DESC
+                LIMIT 20
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<FunnelAnalyticsTrafficSourceMetricDto> metrics = new java.util.ArrayList<>();
+                while (resultSet.next()) {
+                    Timestamp lastEventAt = resultSet.getTimestamp("last_event_at");
+                    metrics.add(new FunnelAnalyticsTrafficSourceMetricDto(
+                            resultSet.getString("resolved_utm_source"),
+                            resultSet.getString("resolved_utm_campaign"),
+                            resultSet.getString("resolved_utm_content"),
+                            resultSet.getLong("sessions"),
+                            resultSet.getLong("pde_entries"),
+                            resultSet.getLong("first_interaction_clicks"),
+                            resultSet.getLong("login_started"),
+                            resultSet.getLong("paywall_viewed"),
+                            resultSet.getLong("checkout_started"),
+                            resultSet.getLong("subscription_approved"),
+                            resultSet.getLong("total_visible_ms"),
+                            lastEventAt == null ? null : lastEventAt.toInstant().toString()));
                 }
                 return metrics;
             }

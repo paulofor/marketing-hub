@@ -1,3 +1,11 @@
+## 2026-07-21 — PDE: mudanças comerciais devem ser feitas pelo Marketing Hub
+
+- decisão operacional: mudanças comerciais em PDEs usados em campanha ou experimento devem ser feitas pelo Marketing Hub, no contrato `pde_experience_json`, para manter versão, métrica e decisão comercial associadas.
+- causa-raiz: alterações diretas no `pde-platform` podem mudar primeira dobra, CTA, opções ou diagnóstico sem deixar claro qual versão gerou cada evento de funil, contaminando a comparação entre formatos.
+- verificação do sistema: o Marketing Hub já armazena e expõe o contrato PDE por `/api/products/public/{productCode}/pde-experience`, e o backend PDE já tenta consumir esse contrato antes de usar o catálogo local.
+- lacuna identificada: o contrato e os eventos ainda precisam carregar uma versão comercial explícita da experiência nos metadados de analytics para comparação automática por versão, não apenas por janela de tempo.
+- orientação registrada: o cânone `docs/canonical/pde-platform-canon.v1.md` passa a exigir que alterações comerciais do PDE sejam publicadas pelo Hub e que a versão da experiência seja persistida nos eventos quando a mudança puder afetar conversão.
+
 ## 2026-07-21 — Clube MUSA: entrada PDE com uma ação principal
 
 - causa-raiz confirmada: a mudança anterior melhorou a promessa do `Mapa de Presença`, mas manteve duas escolhas e várias opções antes do e-mail; os dados seguiram com zero clique no mapa, indicando atrito antes do primeiro microcompromisso.

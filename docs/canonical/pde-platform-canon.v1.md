@@ -18,6 +18,7 @@ O padrão obrigatório é:
 - **checkout externo automatizável**, começando por Pepper como caminho preferencial;
 - **Marketing Hub/FEO fabrica o pacote PDE**;
 - **PDE Platform entrega experiência, acesso, progresso e materiais**.
+- **Marketing Hub é a fonte de verdade para mudanças comerciais do PDE** quando a experiência estiver em campanha ou experimento ativo.
 
 Não criar um front/back novo para cada produto, salvo exceção explícita e registrada.
 
@@ -36,6 +37,38 @@ O FEO fabrica o pacote PDE com:
 - imagens, capa e infográficos;
 - metadados comerciais para página de venda.
 - pacote científico operacional versionado quando o produto usar artigos ou evidências externas para sustentar mecanismo, prova ou orientação por IA.
+
+### Atualização comercial de experiências PDE
+
+Toda mudança comercial em um PDE usado para campanha, experimento ou monitoramento pós-deploy deve ser feita pelo Marketing Hub, no contrato versionado da experiência do produto, e não diretamente no frontend/backend do `pde-platform`.
+
+Entram nessa regra:
+
+- primeira dobra;
+- promessa;
+- CTA;
+- diagnóstico;
+- quantidade de opções;
+- ordem das etapas;
+- copy de paywall;
+- materiais de apoio;
+- missões;
+- qualquer microinteração usada para medir interesse.
+
+O objetivo é preservar a associação entre versão da experiência, campanha, eventos de funil, painel pós-deploy e decisão comercial. Alterações diretas no código do PDE só são permitidas para capacidade técnica genérica do motor, correção de bug, tracking, integração, performance, segurança ou componentes reutilizáveis que não representem uma variação comercial específica do produto.
+
+Cada contrato PDE publicado pelo Marketing Hub deve declarar uma versão comercial explícita da experiência, como `experienceVersion`, `funnelVersion` ou campo equivalente canônico. Essa versão deve mudar sempre que a alteração puder afetar conversão, interesse ou comportamento do usuário. Eventos de analytics enviados pelo frontend PDE devem carregar essa versão nos metadados persistidos para permitir comparar resultados por versão sem misturar tráfego antigo e novo.
+
+Quando uma alteração de PDE for publicada, o relatório/painel deve separar pelo menos:
+
+- produto;
+- experimento/campanha quando disponível;
+- versão da experiência;
+- data/hora de publicação;
+- eventos de entrada, clique, login, paywall, checkout e compra;
+- decisão comercial tomada para aquela versão.
+
+Se a versão da experiência não estiver disponível nos eventos, a comparação deve ser considerada incompleta: pode indicar tendência por janela de tempo, mas não deve ser usada como prova limpa de melhora ou piora entre formatos.
 
 ### Checkout externo
 

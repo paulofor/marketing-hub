@@ -13,6 +13,7 @@ public record PostDeployMonitorResponseDto(
         String recommendation,
         PostDeployMetaAdsSummaryDto metaAds,
         PostDeployPdeSummaryDto pde,
+        List<PostDeployPdeDeployEnvironmentDto> pdeDeployments,
         PostDeployFacebookLogSummaryDto logs,
         List<String> alerts
 ) {}

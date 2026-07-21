@@ -6,12 +6,16 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployFacebookLogSummaryDt
 import com.marketinghub.experiment.monitoring.dto.PostDeployMetaAdsSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorResponseDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployEnvironmentDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployServiceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeExperienceVersionDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSessionJourneyDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
+import com.marketinghub.experiment.monitoring.pde.PdeDeployStatus;
+import com.marketinghub.experiment.monitoring.pde.PdeDeployStatusClient;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
@@ -41,17 +45,20 @@ public class PostDeployMonitorService {
     private final ExperimentCampaignMetricRepository campaignMetricRepository;
     private final ExperimentFacebookApiLogService apiLogService;
     private final PdeAnalyticsClient pdeAnalyticsClient;
+    private final PdeDeployStatusClient pdeDeployStatusClient;
 
     /** Inicializa o agregador com as fontes persistidas do Hub e o cliente do PDE. */
     public PostDeployMonitorService(
             ExperimentRepository experimentRepository,
             ExperimentCampaignMetricRepository campaignMetricRepository,
             ExperimentFacebookApiLogService apiLogService,
-            PdeAnalyticsClient pdeAnalyticsClient) {
+            PdeAnalyticsClient pdeAnalyticsClient,
+            PdeDeployStatusClient pdeDeployStatusClient) {
         this.experimentRepository = experimentRepository;
         this.campaignMetricRepository = campaignMetricRepository;
         this.apiLogService = apiLogService;
         this.pdeAnalyticsClient = pdeAnalyticsClient;
+        this.pdeDeployStatusClient = pdeDeployStatusClient;
     }
 
     /** Monta o painel pós-deploy para o experimento e produto PDE informados. */
@@ -62,8 +69,9 @@ public class PostDeployMonitorService {
         ExperimentCampaignMetric metric = campaignMetricRepository.findByExperiment(experiment).orElse(null);
         PostDeployMetaAdsSummaryDto metaAds = toMetaAdsSummary(metric);
         PostDeployPdeSummaryDto pde = fetchPdeSummary(resolvedProductSlug);
+        List<PostDeployPdeDeployEnvironmentDto> pdeDeployments = fetchPdeDeployments();
         PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
-        List<String> alerts = buildAlerts(metaAds, pde, logs);
+        List<String> alerts = buildAlerts(metaAds, pde, pdeDeployments, logs);
         PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
         return new PostDeployMonitorResponseDto(
                 experimentId,
@@ -74,6 +82,7 @@ public class PostDeployMonitorService {
                 recommendation(decision, pde),
                 metaAds,
                 pde,
+                pdeDeployments,
                 logs,
                 alerts);
     }
@@ -146,6 +155,68 @@ public class PostDeployMonitorService {
                     List.of(),
                     List.of());
         }
+    }
+
+    /** Consulta os ambientes PDE publicados para controlar versão, compose e portas por deploy. */
+    private List<PostDeployPdeDeployEnvironmentDto> fetchPdeDeployments() {
+        try {
+            return pdeDeployStatusClient.fetchStatuses().stream()
+                    .map(this::toPdeDeployEnvironmentDto)
+                    .toList();
+        } catch (Exception ex) {
+            log.error("Falha ao consultar status de deploy dos ambientes PDE", ex);
+            return List.of(new PostDeployPdeDeployEnvironmentDto(
+                    "unknown",
+                    false,
+                    "UNAVAILABLE",
+                    ex.getMessage(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    false,
+                    false,
+                    null,
+                    List.of()));
+        }
+    }
+
+    /** Converte o status técnico do deploy para o contrato administrativo do monitor. */
+    private PostDeployPdeDeployEnvironmentDto toPdeDeployEnvironmentDto(PdeDeployStatus status) {
+        return new PostDeployPdeDeployEnvironmentDto(
+                status.environment(),
+                status.available(),
+                status.status(),
+                status.errorMessage(),
+                status.composeFile(),
+                status.commitSha(),
+                status.imageTag(),
+                status.experienceVersion(),
+                status.frontendUrl(),
+                status.backendUrl(),
+                status.frontendReachable(),
+                status.backendReachable(),
+                status.deployedAt(),
+                toPdeDeployServiceDtos(status.services()));
+    }
+
+    /** Converte os containers declarados pelo deploy PDE para exibição no painel. */
+    private List<PostDeployPdeDeployServiceDto> toPdeDeployServiceDtos(
+            List<PdeDeployStatus.PdeDeployServiceStatus> services) {
+        if (services == null) {
+            return List.of();
+        }
+        return services.stream()
+                .map(service -> new PostDeployPdeDeployServiceDto(
+                        service.name(),
+                        service.containerName(),
+                        service.image(),
+                        service.publicPort(),
+                        service.targetPort(),
+                        service.role()))
+                .toList();
     }
 
     /** Converte o contrato do PDE em métricas comerciais específicas do painel. */
@@ -310,11 +381,16 @@ public class PostDeployMonitorService {
     /** Monta alertas objetivos para separar falha técnica de leitura comercial. */
     private List<String> buildAlerts(PostDeployMetaAdsSummaryDto metaAds,
                                      PostDeployPdeSummaryDto pde,
+                                     List<PostDeployPdeDeployEnvironmentDto> pdeDeployments,
                                      PostDeployFacebookLogSummaryDto logs) {
         List<String> alerts = new ArrayList<>();
         if (!pde.available()) {
             alerts.add("Analytics PDE indisponível; validar saúde do pde-platform antes de concluir resultado comercial.");
         }
+        pdeDeployments.stream()
+                .filter(deployment -> !deployment.available() || !deployment.backendReachable() || !deployment.frontendReachable())
+                .map(this::deployAlert)
+                .forEach(alerts::add);
         if (StringUtils.hasText(metaAds.lastSyncError())) {
             alerts.add("Sincronização de métricas Meta Ads possui erro recente.");
         }
@@ -325,6 +401,17 @@ public class PostDeployMonitorService {
             alerts.add("Gasto atingiu o limite de atenção sem clique no Mapa/Diagnóstico.");
         }
         return alerts;
+    }
+
+    /** Descreve o problema de deploy em linguagem operacional para decisão comercial. */
+    private String deployAlert(PostDeployPdeDeployEnvironmentDto deployment) {
+        if (!deployment.available()) {
+            return "Deploy PDE " + deployment.environment() + " indisponível; o backend do ambiente não respondeu.";
+        }
+        if (!deployment.frontendReachable()) {
+            return "Deploy PDE " + deployment.environment() + " com backend ativo, mas frontend público sem resposta.";
+        }
+        return "Deploy PDE " + deployment.environment() + " possui status incompleto.";
     }
 
     /** Decide a ação operacional recomendada com base em gasto, interação e saúde técnica. */

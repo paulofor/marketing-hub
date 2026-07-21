@@ -199,6 +199,7 @@ jobs:
             pde-platform/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
       - name: Publish PDE Platform homolog
         run: |
+          DEPLOYED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
@@ -211,6 +212,13 @@ jobs:
             && export PDE_PLATFORM_HOMOLOG_BACKEND_PORT='${PDE_PLATFORM_HOMOLOG_BACKEND_PORT}' \
             && export PDE_PLATFORM_HOMOLOG_EXPERIENCE_VERSION='${PDE_PLATFORM_HOMOLOG_EXPERIENCE_VERSION}' \
             && export PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL='${PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL}' \
+            && export PDE_DEPLOY_ENVIRONMENT=homolog \
+            && export PDE_DEPLOY_COMPOSE_FILE=docker-compose.homolog.yml \
+            && export PDE_DEPLOY_COMMIT_SHA='${GITHUB_SHA}' \
+            && export PDE_DEPLOY_IMAGE_TAG='${IMAGE_TAG}' \
+            && export PDE_DEPLOY_FRONTEND_URL=\"http://${DEPLOY_HOST}:${PDE_PLATFORM_HOMOLOG_FRONTEND_PORT}\" \
+            && export PDE_DEPLOY_BACKEND_URL=\"http://${DEPLOY_HOST}:${PDE_PLATFORM_HOMOLOG_BACKEND_PORT}\" \
+            && export PDE_DEPLOY_DEPLOYED_AT='${DEPLOYED_AT}' \
             && export AWS_REGION='${AWS_REGION}' \
             && export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}' \
             && export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}' \
@@ -282,6 +290,7 @@ jobs:
             pde-platform/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
       - name: Publish PDE Platform production
         run: |
+          DEPLOYED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
@@ -292,6 +301,13 @@ jobs:
             && export PDE_PLATFORM_NETWORK='${PDE_PLATFORM_NETWORK}' \
             && export PDE_PLATFORM_FRONTEND_PORT='${PDE_PLATFORM_FRONTEND_PORT}' \
             && export PDE_PLATFORM_BACKEND_PORT='${PDE_PLATFORM_BACKEND_PORT}' \
+            && export PDE_DEPLOY_ENVIRONMENT=production \
+            && export PDE_DEPLOY_COMPOSE_FILE=docker-compose.deploy.yml \
+            && export PDE_DEPLOY_COMMIT_SHA='${GITHUB_SHA}' \
+            && export PDE_DEPLOY_IMAGE_TAG='${IMAGE_TAG}' \
+            && export PDE_DEPLOY_FRONTEND_URL=https://clubemusa.com.br \
+            && export PDE_DEPLOY_BACKEND_URL=\"http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}\" \
+            && export PDE_DEPLOY_DEPLOYED_AT='${DEPLOYED_AT}' \
             && export AWS_REGION='${AWS_REGION}' \
             && export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}' \
             && export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}' \

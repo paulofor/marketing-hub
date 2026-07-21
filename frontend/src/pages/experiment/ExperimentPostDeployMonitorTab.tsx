@@ -83,11 +83,31 @@ function decisionBadgeClass(decision: PostDeployMonitorDecision) {
   }
 }
 
+function shortCommit(value?: string | null) {
+  if (!value || value === "unknown") return "—";
+  return value.length > 12 ? value.slice(0, 12) : value;
+}
+
+function deployHealthLabel(deployment: {
+  available: boolean;
+  frontendReachable: boolean;
+  backendReachable: boolean;
+}) {
+  if (!deployment.available || !deployment.backendReachable) {
+    return "Backend fora";
+  }
+  if (!deployment.frontendReachable) {
+    return "Frontend fora";
+  }
+  return "Online";
+}
+
 export default function ExperimentPostDeployMonitorTab({
   experimentId,
 }: ExperimentPostDeployMonitorTabProps) {
   const monitorQuery = usePostDeployMonitor(experimentId);
   const monitor = monitorQuery.data;
+  const pdeDeployments = monitor?.pdeDeployments ?? [];
   const trafficSources = monitor?.pde.trafficSources ?? [];
   const recentJourneys = monitor?.pde.recentJourneys ?? [];
 
@@ -279,6 +299,115 @@ export default function ExperimentPostDeployMonitorTab({
           </div>
         </div>
       </div>
+
+      {pdeDeployments.length > 0 ? (
+        <div className="card">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2">
+              <div>
+                <h6 className="card-title mb-1">Deploys PDE por ambiente</h6>
+                <p className="text-muted small mb-0">
+                  Confirma compose, commit, versão publicada, containers e
+                  portas antes de liberar homologação ou produção.
+                </p>
+              </div>
+            </div>
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Ambiente</th>
+                    <th>Saúde</th>
+                    <th>Versão PDE</th>
+                    <th>Commit</th>
+                    <th>Compose</th>
+                    <th>URLs</th>
+                    <th>Containers/portas</th>
+                    <th className="text-end">Publicado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pdeDeployments.map((deployment) => (
+                    <tr key={deployment.environment}>
+                      <td className="fw-semibold">{deployment.environment}</td>
+                      <td>
+                        <span
+                          className={`badge ${deployment.available && deployment.frontendReachable ? "text-bg-success" : "text-bg-warning"}`}
+                        >
+                          {deployHealthLabel(deployment)}
+                        </span>
+                        {deployment.errorMessage ? (
+                          <div className="small text-muted mt-1">
+                            {deployment.errorMessage}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td>{deployment.experienceVersion ?? "—"}</td>
+                      <td className="font-monospace small">
+                        {shortCommit(deployment.commitSha)}
+                      </td>
+                      <td>{deployment.composeFile ?? "—"}</td>
+                      <td className="small">
+                        <div>
+                          Front:{" "}
+                          {deployment.frontendUrl ? (
+                            <a
+                              href={deployment.frontendUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {deployment.frontendUrl}
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </div>
+                        <div>
+                          Back:{" "}
+                          {deployment.backendUrl ? (
+                            <a
+                              href={deployment.backendUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {deployment.backendUrl}
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </div>
+                      </td>
+                      <td className="small">
+                        {deployment.services.length > 0
+                          ? deployment.services.map((service) => (
+                              <div key={`${deployment.environment}-${service.containerName}`}>
+                                <span className="fw-semibold">
+                                  {service.containerName}
+                                </span>
+                                {service.publicPort ? (
+                                  <span className="text-muted">
+                                    {" "}
+                                    :{service.publicPort}
+                                    {service.targetPort
+                                      ? ` -> ${service.targetPort}`
+                                      : ""}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted"> sem porta</span>
+                                )}
+                              </div>
+                            ))
+                          : "—"}
+                      </td>
+                      <td className="text-end">{formatDate(deployment.deployedAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {monitor.pde.experienceVersions.length > 0 ? (
         <div className="card">

@@ -100,6 +100,32 @@ export interface PostDeployPdeSessionJourney {
   lastActionName?: string | null;
 }
 
+export interface PostDeployPdeDeployEnvironment {
+  environment: string;
+  available: boolean;
+  status: string;
+  errorMessage?: string | null;
+  composeFile?: string | null;
+  commitSha?: string | null;
+  imageTag?: string | null;
+  experienceVersion?: string | null;
+  frontendUrl?: string | null;
+  backendUrl?: string | null;
+  frontendReachable: boolean;
+  backendReachable: boolean;
+  deployedAt?: string | null;
+  services: PostDeployPdeDeployService[];
+}
+
+export interface PostDeployPdeDeployService {
+  name: string;
+  containerName: string;
+  image?: string | null;
+  publicPort?: number | null;
+  targetPort?: number | null;
+  role: string;
+}
+
 export interface PostDeployFacebookLogSummary {
   totalLogs: number;
   errorLogs: number;
@@ -116,6 +142,7 @@ export interface PostDeployMonitorResponse {
   recommendation: string;
   metaAds: PostDeployMetaAdsSummary;
   pde: PostDeployPdeSummary;
+  pdeDeployments: PostDeployPdeDeployEnvironment[];
   logs: PostDeployFacebookLogSummary;
   alerts: string[];
 }

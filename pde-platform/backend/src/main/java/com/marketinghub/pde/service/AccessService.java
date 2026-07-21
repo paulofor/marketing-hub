@@ -47,6 +47,7 @@ import org.springframework.stereotype.Service;
 public class AccessService {
     private static final Logger log = LoggerFactory.getLogger(AccessService.class);
     private static final TypeReference<Map<String, StoredAccessGrant>> STORE_TYPE = new TypeReference<>() {};
+    private static final int FUNNEL_EVENT_PERSIST_ATTEMPTS = 3;
 
     private final ProductCatalogService productCatalogService;
     private final ObjectMapper objectMapper;
@@ -251,7 +252,7 @@ public class AccessService {
         String normalizedEventType = normalizeEventType(request.eventType());
         String eventId = UUID.randomUUID().toString();
         if (usesJdbcStorage()) {
-            persistFunnelEventInDatabase(eventId, request, normalizedEventType);
+            persistFunnelEventInDatabaseWithRetry(eventId, request, normalizedEventType);
         } else {
             log.info(
                     "Evento PDE registrado sem persistência JDBC; eventId={}, productSlug={}, eventType={}, accessToken={}",
@@ -261,6 +262,40 @@ public class AccessService {
                     request.accessToken());
         }
         return new FunnelEventResponse(eventId, normalizedEventType, "RECORDED");
+    }
+
+    /** Persiste evento comercial com retentativa para oscilação transitória do MySQL. */
+    private void persistFunnelEventInDatabaseWithRetry(String eventId, FunnelEventRequest request, String eventType) {
+        RuntimeException lastFailure = null;
+        for (int attempt = 1; attempt <= FUNNEL_EVENT_PERSIST_ATTEMPTS; attempt++) {
+            try {
+                persistFunnelEventInDatabase(eventId, request, eventType);
+                if (attempt > 1) {
+                    log.info(
+                            "Evento PDE persistido após retentativa; eventId={}, productSlug={}, eventType={}, attempt={}",
+                            eventId,
+                            request.productSlug(),
+                            eventType,
+                            attempt);
+                }
+                return;
+            } catch (IllegalStateException ex) {
+                lastFailure = ex;
+                if (attempt == FUNNEL_EVENT_PERSIST_ATTEMPTS) {
+                    break;
+                }
+                log.warn(
+                        "Retentativa de persistência de evento PDE; eventId={}, productSlug={}, eventType={}, attempt={}",
+                        eventId,
+                        request.productSlug(),
+                        eventType,
+                        attempt,
+                        ex);
+            }
+        }
+        throw lastFailure == null
+                ? new IllegalStateException("Não foi possível persistir evento PDE no banco Marketing Hub")
+                : lastFailure;
     }
 
     /** Consolida métricas de funil e analytics para decisão de próximas campanhas. */

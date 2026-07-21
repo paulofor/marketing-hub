@@ -11,6 +11,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /** Valida o catálogo inicial de produtos PDE. */
@@ -73,6 +74,55 @@ class ProductCatalogServiceTest {
 
         assertThat(product.name()).isEqualTo("Método MUSA pelo Hub");
         assertThat(product.promise()).isEqualTo("Promessa publicada pelo Marketing Hub");
+        server.verify();
+    }
+
+    /** Confirma que o catálogo tenta a próxima base quando a primeira URL do Hub falha. */
+    @Test
+    void returnsMarketingHubProductFromFallbackBaseUrl() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        ProductCatalogService service = new ProductCatalogService(
+                builder,
+                "http://marketing-hub-unavailable, http://marketing-hub");
+        server.expect(requestTo("http://marketing-hub-unavailable/api/products/public/metodo-musa-7-dias/pde-experience"))
+                .andRespond(withServerError());
+        server.expect(requestTo("http://marketing-hub/api/products/public/metodo-musa-7-dias/pde-experience"))
+                .andRespond(withSuccess("""
+                        {
+                          "slug": "metodo-musa-7-dias",
+                          "name": "Método MUSA pela segunda base",
+                          "promise": "Promessa publicada pelo fallback",
+                          "audience": "Mulheres urbanas",
+                          "priceLabel": "",
+                          "theme": {
+                            "primary": "#7a2444",
+                            "accent": "#d6a75c",
+                            "background": "#fff8f3",
+                            "imageUrl": "/assets/musa-cover.png"
+                          },
+                          "diagnostic": {
+                            "title": "Mapa de Presença",
+                            "intro": "Entrada publicada no Hub",
+                            "questions": ["Pergunta 1"]
+                          },
+                          "missions": [],
+                          "supportMaterials": [],
+                          "scientificEvidencePack": {
+                            "version": "musa-evidence-pack-v1",
+                            "principles": [],
+                            "practicalApplications": [],
+                            "allowedLanguage": [],
+                            "forbiddenClaims": [],
+                            "references": []
+                          },
+                          "completionOffer": "Continuidade"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        var product = service.getProduct("metodo-musa-7-dias");
+
+        assertThat(product.name()).isEqualTo("Método MUSA pela segunda base");
         server.verify();
     }
 

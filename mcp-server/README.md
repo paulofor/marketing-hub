@@ -140,6 +140,16 @@ Com essas variáveis ativas, use as tools `pde_db_*` para análises de comportam
 
 ## Docker
 
+### Imagem versionada em registry
+
+O deploy produtivo do MCP deve usar a imagem publicada pelo GitHub Actions no GHCR:
+
+```text
+ghcr.io/<owner>/marketinghub-mcp-server:<git-sha>
+```
+
+O workflow `.github/workflows/mcp-server.yml` executa testes, publica a imagem com tag do commit e aciona o VPS para puxar exatamente essa versão. Isso substitui build manual no servidor e mantém rastreabilidade entre commit, imagem e container em produção.
+
 ### Apenas o container do MCP (desenvolvimento/local)
 
 ```bash

@@ -33,6 +33,34 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 >
 > **Nota operacional (MCP/VPS):** mantenha o arquivo de ambiente em `${DEPLOY_DIR}/.env` no servidor. O pipeline de deploy do MCP sincroniza `deploy/` com `rsync --delete`, mas preserva explicitamente o `.env` remoto para não apagar segredos locais.
 
+## Deploy do MCP via imagem versionada no registry
+
+O workflow `.github/workflows/mcp-server.yml` publica o MCP no GitHub Container Registry antes do deploy. A imagem fica versionada por commit:
+
+```text
+ghcr.io/<owner>/marketinghub-mcp-server:<git-sha>
+```
+
+O mesmo workflow também atualiza `latest`, mas o deploy do VPS usa a tag imutável do commit (`IMAGE_TAG=${GITHUB_SHA}`). Isso evita build manual no servidor e permite rastrear qual commit gerou o container em produção.
+
+Fluxo operacional:
+
+1. `mvn -B -s settings.xml test` em `mcp-server`.
+2. Build da imagem Docker.
+3. Push para GHCR com tags `latest` e `<git-sha>`.
+4. SSH no VPS `191.252.210.83`.
+5. `deploy/bin/apply-mcp-only.sh` faz login no GHCR quando `GHCR_TOKEN` estiver disponível, puxa a imagem versionada e sobe somente `mcp-server` e `mcp-nginx`.
+
+Secrets esperados no GitHub Actions:
+
+| Secret | Uso |
+|--------|-----|
+| `VPS_SSH_CHAVE` | chave SSH para acessar o VPS do MCP |
+| `GHCR_USERNAME` | opcional; usuário para pull no GHCR, fallback para o owner do repositório |
+| `GHCR_TOKEN` | opcional; token com permissão de leitura do pacote, fallback para `GITHUB_TOKEN` do workflow |
+
+O script ainda aceita o fluxo antigo com `MCP_TAR=/tmp/mcp-server-image.tar`, mas esse caminho deve ficar apenas como fallback operacional. Para produção normal, use a imagem do registry.
+
 Esse fluxo (`apply.sh`) permanece para atualizar somente backend/frontend no host principal.
 
 ## Deploy seguro do backend com Liquibase

@@ -1,3 +1,11 @@
+## 2026-07-21 — Clube MUSA: primeira dobra orientada a Mapa de Presença
+
+- causa-raiz confirmada: a campanha trazia cliques e sessões, mas a entrada do PDE não gerava microcompromisso; a copy anterior dependia de termos genéricos como ajuste/detalhe e o evento de escolha de diagnóstico não estava aceito no backend.
+- evidência comercial: análises do funil MUSA mostraram zero login comercial, zero paywall e quase nenhum scroll, apesar de tráfego pago barato e sessões com tempo de permanência.
+- foi feito: a primeira dobra passou a vender `Mapa de Presença do Dia 1`, com pergunta direta sobre o que a imagem comunica, opções de dor mais reconhecíveis, microresultado antes do e-mail e CTA `Ver meu Mapa de Presença`.
+- foi feito: o backend PDE passou a aceitar `PRESENCE_MAP_CHOICE_SELECTED` e `DIAGNOSTIC_CHOICE_SELECTED` para medir o primeiro clique antes do login.
+- impacto esperado: sair de zero interação para medir clique no mapa, preenchimento de e-mail e início de login como gargalos separados antes de escalar tráfego.
+
 ## 2026-07-20 — Clube MUSA: bloqueio anti-deploy sem analytics JDBC
 
 - causa-raiz confirmada: o backend PDE podia iniciar em modo comercial se `PDE_ACCESS_REQUIRE_JDBC` viesse ausente ou se o deploy usasse configuração local, fazendo eventos retornarem `RECORDED` sem persistir em `pde_funnel_event`.

@@ -32,27 +32,26 @@ public class ProductCatalogService {
         return new ProductExperienceResponse(
                 "metodo-musa-7-dias",
                 "Método MUSA - Experiência Guiada de 7 Dias",
-                "Monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro, compras impulsivas ou transformação radical.",
+                "Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.",
                 "Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.",
                 "",
                 new ThemeDto("#7a2444", "#d6a75c", "#fff8f3", "/assets/musa-cover.png"),
                 new DiagnosticDto(
-                        "Diagnóstico MUSA",
-                        "Comece pelo momento do espelho: quando você está pronta, mas sente que ainda falta presença, acabamento ou intenção.",
+                        "Mapa de Presença MUSA",
+                        "Comece pelo momento do espelho: quando você está pronta, mas sente que sua imagem ainda não comunica a mulher que você quer ser vista como.",
                         List.of(
-                                "Quando você se vê pronta, o que faz pensar: está ok, mas ainda não está marcante?",
-                                "Seu cabelo, pele, roupa, perfume e acessórios parecem conversar entre si?",
-                                "Qual compra você está quase fazendo para tentar compensar essa sensação?",
-                                "Em qual situação dos próximos 7 dias você quer entrar com mais presença?")),
+                                "Quando você se arruma, o que mais incomoda no resultado final?",
+                                "Qual sinal você gostaria que sua imagem comunicasse com mais clareza?",
+                                "Em qual situação dos próximos 7 dias você quer parecer mais alinhada com quem você é?")),
                 List.of(
                         new MissionDto(
                                 "dia-1-ruido-visual",
                                 1,
-                                "Sair do quase bom",
-                                "A presença cresce quando você identifica o detalhe que mais apaga o conjunto.",
-                                "Hoje você não vai tentar mudar tudo. Vista ou separe uma combinação real, olhe cabelo, pele, roupa, perfume e acessórios, escolha o detalhe que mais apaga sua presença e ajuste apenas esse ponto.",
-                                "Frase preenchida: eu me sinto arrumada, mas pouco marcante quando...",
-                                "Compare a sensação antes/depois de remover ou ajustar um detalhe."),
+                                "Ler o sinal que sua imagem comunica",
+                                "A presença cresce quando você identifica o sinal visual que mais distancia sua imagem da mulher que você quer transmitir.",
+                                "Hoje você não vai tentar mudar tudo. Vista ou separe uma combinação real, olhe roupa, cabelo, pele, perfume e detalhe final, identifique o sinal que deixa sua imagem comum ou desalinhada e escolha uma microação para comunicar mais intenção.",
+                                "Frase preenchida: hoje minha imagem comunica menos intenção quando...",
+                                "Compare a sensação antes/depois de remover ruído visual ou reforçar um sinal de presença."),
                         new MissionDto(
                                 "dia-2-assinatura",
                                 2,

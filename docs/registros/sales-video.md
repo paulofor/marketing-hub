@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-21 — Vídeos de entrada do PDE pelo Marketing Hub
+
+- Problema observado: a nova área `Vídeos` existia como planejamento local no navegador, mas isso não criava artefato rastreável no Marketing Hub.
+- Causa-raiz: a tela usava `localStorage` como fonte de verdade e não acionava o módulo canônico `sales-video`.
+- Correção preparada: a tela `/videos` passou a selecionar produto, criar perfil de vídeo do PDE, salvar roteiro aprovado e solicitar job de criação pelo backend do Marketing Hub.
+- Regra operacional: código de vídeo muda via GitHub; artefato comercial de vídeo para PDE deve nascer e evoluir pelo Marketing Hub, preservando perfil, roteiro, job, asset e versão comercial associada.
+
 ## 2026-07-12 — Token Gemini via arquivo no container de video
 
 - Problema observado: jobs de video VEO podiam falhar por provider sem token configurado quando o container nao recebia `GEMINI_API_KEY`.

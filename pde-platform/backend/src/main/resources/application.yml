@@ -37,6 +37,19 @@ pde:
     from: ${PDE_MAIL_FROM:${PDE_SMTP_FROM:area-musa@sandbox.local}}
     username: ${PDE_SMTP_USERNAME:}
     password: ${PDE_SMTP_PASSWORD:}
+  deploy:
+    environment: ${PDE_DEPLOY_ENVIRONMENT:local}
+    compose-file: ${PDE_DEPLOY_COMPOSE_FILE:docker-compose.yml}
+    commit-sha: ${PDE_DEPLOY_COMMIT_SHA:unknown}
+    image-tag: ${PDE_DEPLOY_IMAGE_TAG:unknown}
+    frontend-url: ${PDE_DEPLOY_FRONTEND_URL:http://localhost:5176}
+    backend-url: ${PDE_DEPLOY_BACKEND_URL:http://localhost:8096}
+    deployed-at: ${PDE_DEPLOY_DEPLOYED_AT:}
+    backend-image: ${PDE_PLATFORM_BACKEND_IMAGE:}
+    frontend-image: ${PDE_PLATFORM_FRONTEND_IMAGE:}
+    ai-worker-image: ${PDE_AI_WORKER_IMAGE:}
+    backend-public-port: ${PDE_DEPLOY_BACKEND_PUBLIC_PORT:8096}
+    frontend-public-port: ${PDE_DEPLOY_FRONTEND_PUBLIC_PORT:5176}
 
 management:
   endpoint:

@@ -8,6 +8,8 @@ import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
+import com.marketinghub.experiment.monitoring.pde.PdeDeployStatus;
+import com.marketinghub.experiment.monitoring.pde.PdeDeployStatusClient;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
@@ -40,6 +42,9 @@ class PostDeployMonitorServiceTest {
     @Mock
     private PdeAnalyticsClient pdeAnalyticsClient;
 
+    @Mock
+    private PdeDeployStatusClient pdeDeployStatusClient;
+
     private PostDeployMonitorService service;
 
     /** Monta o serviço com dependências controladas para cenários comerciais. */
@@ -49,7 +54,9 @@ class PostDeployMonitorServiceTest {
                 experimentRepository,
                 campaignMetricRepository,
                 apiLogService,
-                pdeAnalyticsClient);
+                pdeAnalyticsClient,
+                pdeDeployStatusClient);
+        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(availableDeployStatus()));
     }
 
     /** Recomenda pausa quando há gasto relevante sem primeira interação no PDE. */
@@ -129,6 +136,9 @@ class PostDeployMonitorServiceTest {
         assertThat(response.pde().recentJourneys())
                 .extracting("abandonmentPoint")
                 .contains("SAIU_NA_PRIMEIRA_DOBRA");
+        assertThat(response.pdeDeployments())
+                .extracting("environment")
+                .contains("homolog");
     }
 
     /** Recomenda corrigir medição quando o PDE não responde ao Hub. */
@@ -145,6 +155,37 @@ class PostDeployMonitorServiceTest {
         assertThat(response.decision()).isEqualTo(PostDeployMonitorDecision.TECHNICAL_ATTENTION);
         assertThat(response.pde().available()).isFalse();
         assertThat(response.alerts()).anyMatch(alert -> alert.contains("Analytics PDE indisponível"));
+    }
+
+    /** Alerta quando a homologação está publicada no backend, mas o frontend não responde. */
+    @Test
+    void alertsWhenPdeDeploymentFrontendIsNotReachable() {
+        Experiment experiment = Experiment.builder().id(67L).build();
+        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
+        when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric("8.00", null)));
+        when(apiLogService.findLogs(67L, 50)).thenReturn(List.of());
+        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(new PdeDeployStatus(
+                "homolog",
+                true,
+                "AVAILABLE",
+                null,
+                "docker-compose.homolog.yml",
+                "abc123",
+                "abc123",
+                "musa-pde-entry-v4-video-hero",
+                "http://191.252.102.54:5177",
+                "http://191.252.102.54:8097",
+                false,
+                true,
+                Instant.parse("2026-07-21T02:00:00Z"),
+                List.of())));
+        when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(emptyPdeSummary());
+
+        var response = service.summarize(67L, null);
+
+        assertThat(response.alerts()).anyMatch(alert -> alert.contains("frontend público sem resposta"));
+        assertThat(response.pdeDeployments().get(0).composeFile()).isEqualTo("docker-compose.homolog.yml");
+        assertThat(response.pdeDeployments().get(0).experienceVersion()).isEqualTo("musa-pde-entry-v4-video-hero");
     }
 
     /** Recomenda escala gradual quando há compra aprovada no PDE. */
@@ -201,6 +242,56 @@ class PostDeployMonitorServiceTest {
                 .spend(new BigDecimal(spend))
                 .cpc(new BigDecimal("0.10"))
                 .build();
+    }
+
+    /** Cria um status de deploy ativo para não acionar alertas técnicos nos cenários base. */
+    private PdeDeployStatus availableDeployStatus() {
+        return new PdeDeployStatus(
+                "homolog",
+                true,
+                "AVAILABLE",
+                null,
+                "docker-compose.homolog.yml",
+                "abc123",
+                "abc123",
+                "musa-pde-entry-v4-video-hero",
+                "http://191.252.102.54:5177",
+                "http://191.252.102.54:8097",
+                true,
+                true,
+                Instant.parse("2026-07-21T02:00:00Z"),
+                List.of(new PdeDeployStatus.PdeDeployServiceStatus(
+                        "pde-platform-frontend",
+                        "pde-platform-frontend-homolog",
+                        "ghcr.io/demo/pde-platform-frontend:abc123",
+                        5177,
+                        80,
+                        "frontend")));
+    }
+
+    /** Cria um resumo PDE sem conversão para cenários focados no status de deploy. */
+    private PdeAnalyticsSummary emptyPdeSummary() {
+        return new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v4-video-hero",
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
     }
 
     /** Cria um log de integração sem falha para validar o resumo de logs. */

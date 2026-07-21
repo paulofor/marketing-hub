@@ -6,6 +6,7 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployFacebookLogSummaryDt
 import com.marketinghub.experiment.monitoring.dto.PostDeployMetaAdsSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorResponseDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeExperienceVersionDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSummaryDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
@@ -121,6 +122,7 @@ public class PostDeployMonitorService {
                     false,
                     "UNAVAILABLE",
                     ex.getMessage(),
+                    null,
                     0,
                     0,
                     0,
@@ -137,7 +139,8 @@ public class PostDeployMonitorService {
                     0,
                     0,
                     null,
-                    Map.<String, Long>of());
+                    Map.<String, Long>of(),
+                    List.of());
         }
     }
 
@@ -151,6 +154,7 @@ public class PostDeployMonitorService {
                 true,
                 "AVAILABLE",
                 null,
+                summary.currentExperienceVersion(),
                 summary.totalEvents(),
                 summary.uniqueVisitors(),
                 summary.sessions(),
@@ -167,7 +171,27 @@ public class PostDeployMonitorService {
                 summary.subscriptionApproved(),
                 summary.totalVisibleMs(),
                 null,
-                events);
+                events,
+                toExperienceVersionDtos(summary));
+    }
+
+    /** Converte as métricas por versão do PDE para exibição no painel administrativo. */
+    private List<PostDeployPdeExperienceVersionDto> toExperienceVersionDtos(PdeAnalyticsSummary summary) {
+        if (summary.experienceVersions() == null) {
+            return List.of();
+        }
+        return summary.experienceVersions().stream()
+                .map(version -> new PostDeployPdeExperienceVersionDto(
+                        version.experienceVersion(),
+                        version.totalEvents(),
+                        version.sessions(),
+                        version.pdeEntries(),
+                        version.presenceMapClicks() + version.diagnosticClicks(),
+                        version.loginStarted(),
+                        version.paywallViewed(),
+                        version.subscriptionClicked() + version.checkoutStarted(),
+                        version.subscriptionApproved()))
+                .toList();
     }
 
     /** Busca a contagem do evento considerando aliases de caixa alta e baixa. */

@@ -27,6 +27,7 @@ export interface PostDeployPdeSummary {
   available: boolean;
   status: string;
   errorMessage?: string | null;
+  currentExperienceVersion?: string | null;
   totalEvents: number;
   uniqueVisitors: number;
   sessions: number;
@@ -44,6 +45,19 @@ export interface PostDeployPdeSummary {
   totalVisibleMs: number;
   lastEventAt?: string | null;
   events: Record<string, number>;
+  experienceVersions: PostDeployPdeExperienceVersion[];
+}
+
+export interface PostDeployPdeExperienceVersion {
+  experienceVersion: string;
+  totalEvents: number;
+  sessions: number;
+  pdeEntries: number;
+  firstInteractionClicks: number;
+  loginStarted: number;
+  paywallViewed: number;
+  checkoutIntent: number;
+  subscriptionApproved: number;
 }
 
 export interface PostDeployFacebookLogSummary {

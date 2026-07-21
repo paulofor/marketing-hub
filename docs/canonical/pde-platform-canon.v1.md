@@ -59,6 +59,8 @@ O objetivo é preservar a associação entre versão da experiência, campanha, 
 
 Cada contrato PDE publicado pelo Marketing Hub deve declarar uma versão comercial explícita da experiência, como `experienceVersion`, `funnelVersion` ou campo equivalente canônico. Essa versão deve mudar sempre que a alteração puder afetar conversão, interesse ou comportamento do usuário. Eventos de analytics enviados pelo frontend PDE devem carregar essa versão nos metadados persistidos para permitir comparar resultados por versão sem misturar tráfego antigo e novo.
 
+O campo canônico para comparação automática é `experienceVersion`. O campo `funnelVersion` agrupa a arquitetura comercial maior do funil. O backend PDE deve persistir `experienceVersion` em coluna própria dos eventos de funil, mantendo os metadados como apoio auditável, para permitir consulta simples por SQL e painel pós-deploy.
+
 Quando uma alteração de PDE for publicada, o relatório/painel deve separar pelo menos:
 
 - produto;

@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-21-product-musa-pde-experience-version.yaml
+  - changeSet:
+      id: 2026-07-21-product-musa-pde-experience-version-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: pde_experience_json
+        - columnExists:
+            tableName: product
+            columnName: updated_at
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET pde_experience_json = JSON_SET(
+                       pde_experience_json,
+                       '$.experienceVersion',
+                       'musa-pde-entry-v3',
+                       '$.funnelVersion',
+                       'musa-membership-funnel-v1'
+                     ),
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias'
+                 AND pde_experience_json IS NOT NULL
+                 AND pde_experience_json <> ''
+                 AND JSON_VALID(pde_experience_json) = 1;

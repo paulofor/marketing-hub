@@ -5,6 +5,7 @@ import java.util.List;
 /** Retorna o resumo de analytics e funil comercial do produto PDE. */
 public record FunnelAnalyticsSummaryResponse(
         String productSlug,
+        String currentExperienceVersion,
         long totalEvents,
         long uniqueVisitors,
         long sessions,
@@ -19,5 +20,6 @@ public record FunnelAnalyticsSummaryResponse(
         long firstUse,
         long checkoutStarted,
         long totalVisibleMs,
-        List<FunnelAnalyticsEventMetricDto> events
+        List<FunnelAnalyticsEventMetricDto> events,
+        List<FunnelAnalyticsExperienceVersionMetricDto> experienceVersions
 ) {}

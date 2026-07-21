@@ -19,6 +19,7 @@ databaseChangeLog:
                 id BIGINT NOT NULL AUTO_INCREMENT,
                 event_id VARCHAR(36) NOT NULL,
                 product_slug VARCHAR(191) NOT NULL,
+                experience_version VARCHAR(80) NULL,
                 access_token VARCHAR(36) NULL,
                 email VARCHAR(320) NULL,
                 normalized_email VARCHAR(320) NULL,
@@ -31,6 +32,7 @@ databaseChangeLog:
                 PRIMARY KEY (id),
                 UNIQUE KEY uk_pde_funnel_event_id (event_id),
                 KEY idx_pde_funnel_product_event_time (product_slug, event_type, occurred_at),
+                KEY idx_pde_funnel_product_version_time (product_slug, experience_version, occurred_at),
                 KEY idx_pde_funnel_access_token (access_token),
                 KEY idx_pde_funnel_email (normalized_email),
                 CONSTRAINT fk_pde_funnel_access_grant

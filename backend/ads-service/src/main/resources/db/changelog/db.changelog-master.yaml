@@ -24,6 +24,12 @@ databaseChangeLog:
       file: changesets/2026-07-21-product-musa-pde-single-action-entry.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-21-pde-funnel-experience-version.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-07-21-product-musa-pde-experience-version.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-19-product-musa-seven-day-journey.yaml
       relativeToChangelogFile: true
   - include:

@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-21-pde-funnel-experience-version-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_funnel_event
+        - not:
+            columnExists:
+              tableName: pde_funnel_event
+              columnName: experience_version
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pde_funnel_event
+                ADD COLUMN experience_version VARCHAR(80) NULL AFTER product_slug,
+                ADD KEY idx_pde_funnel_product_version_time (product_slug, experience_version, occurred_at);

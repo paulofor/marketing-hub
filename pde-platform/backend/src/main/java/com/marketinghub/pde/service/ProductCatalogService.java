@@ -97,6 +97,8 @@ public class ProductCatalogService {
     private static ProductExperienceResponse createMusaProduct() {
         return new ProductExperienceResponse(
                 "metodo-musa-7-dias",
+                "musa-pde-entry-v3",
+                "musa-membership-funnel-v1",
                 "Método MUSA - Experiência Guiada de 7 Dias",
                 "Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.",
                 "Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.",

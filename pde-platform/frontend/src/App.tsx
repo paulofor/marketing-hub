@@ -68,6 +68,8 @@ type ScientificEvidencePack = {
 
 type ProductExperience = {
   slug: string;
+  experienceVersion?: string;
+  funnelVersion?: string;
   name: string;
   promise: string;
   audience: string;
@@ -177,6 +179,8 @@ declare global {
 
 const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
+  experienceVersion: 'musa-pde-entry-v3',
+  funnelVersion: 'musa-membership-funnel-v1',
   name: 'Método MUSA - Experiência Guiada de 7 Dias',
   promise: 'Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.',
   audience: 'Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.',
@@ -951,10 +955,16 @@ function App() {
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
         path: window.location.pathname,
+        experienceVersion: resolveExperienceVersion(product),
+        funnelVersion: product.funnelVersion,
         ...campaignParams,
         ...options.metadata,
       },
     };
+  }
+
+  function resolveExperienceVersion(productExperience: ProductExperience) {
+    return productExperience.experienceVersion || 'sem-versao';
   }
 
   function resolveScreenName() {

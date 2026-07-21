@@ -61,6 +61,7 @@ class PostDeployMonitorServiceTest {
         when(apiLogService.findLogs(67L, 50)).thenReturn(List.of());
         when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
+                "musa-pde-entry-v3",
                 80,
                 20,
                 15,
@@ -75,13 +76,19 @@ class PostDeployMonitorServiceTest {
                 0,
                 0,
                 2000,
-                List.of()));
+                List.of(),
+                List.of(new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v3", 80, 15, 15, 0, 0, 0, 0, 0, 0, 0))));
 
         var response = service.summarize(67L, null);
 
         assertThat(response.decision()).isEqualTo(PostDeployMonitorDecision.PAUSE_AND_FIX);
         assertThat(response.alerts()).anyMatch(alert -> alert.contains("Mapa/Diagnóstico"));
         assertThat(response.metaAds().ctrPercent()).isEqualByComparingTo("5.00");
+        assertThat(response.pde().currentExperienceVersion()).isEqualTo("musa-pde-entry-v3");
+        assertThat(response.pde().experienceVersions())
+                .extracting("experienceVersion")
+                .contains("musa-pde-entry-v3");
     }
 
     /** Recomenda corrigir medição quando o PDE não responde ao Hub. */
@@ -109,6 +116,7 @@ class PostDeployMonitorServiceTest {
         when(apiLogService.findLogs(67L, 50)).thenReturn(List.of(successLog()));
         when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
+                "musa-pde-entry-v3",
                 120,
                 30,
                 20,
@@ -123,7 +131,9 @@ class PostDeployMonitorServiceTest {
                 1,
                 1,
                 9000,
-                List.of(new PdeAnalyticsSummary.PdeEventMetric("PRESENCE_MAP_CHOICE_SELECTED", 6))));
+                List.of(new PdeAnalyticsSummary.PdeEventMetric("PRESENCE_MAP_CHOICE_SELECTED", 6)),
+                List.of(new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v3", 120, 20, 20, 6, 0, 5, 2, 2, 1, 1))));
 
         var response = service.summarize(67L, null);
 

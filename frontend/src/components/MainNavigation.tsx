@@ -37,6 +37,7 @@ import {
   Inbox,
   Microscope,
   HeartPulse,
+  Video,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -147,6 +148,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/ai-services", label: "IA", icon: Bot },
       { to: "/ai/image-generator", label: "Gerador de Imagens", icon: Image },
+      { to: "/videos", label: "Vídeos", icon: Video },
       { to: "/openai-models", label: "Modelos OpenAI", icon: Cpu },
       { to: "/agents", label: "Agentes", icon: Bot },
       { to: "/agent-themes", label: "Temas de agente", icon: Layers },

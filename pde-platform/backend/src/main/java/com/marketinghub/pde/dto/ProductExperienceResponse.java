@@ -5,6 +5,8 @@ import java.util.List;
 /** Descreve o produto experiencial que o frontend renderiza para a cliente. */
 public record ProductExperienceResponse(
         String slug,
+        String experienceVersion,
+        String funnelVersion,
         String name,
         String promise,
         String audience,

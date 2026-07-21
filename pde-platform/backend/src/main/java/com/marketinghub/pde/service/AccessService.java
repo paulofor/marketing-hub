@@ -3,6 +3,7 @@ package com.marketinghub.pde.service;
 import com.marketinghub.pde.dto.AccessResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsResetResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsEventMetricDto;
+import com.marketinghub.pde.dto.FunnelAnalyticsExperienceVersionMetricDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsJourneyResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsSessionJourneyDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSessionStepDto;
@@ -248,11 +249,11 @@ public class AccessService {
 
     /** Registra um evento comercial da jornada PED/MUSA para medição do funil. */
     public FunnelEventResponse recordFunnelEvent(FunnelEventRequest request) {
-        productCatalogService.getProduct(request.productSlug());
+        ProductExperienceResponse product = productCatalogService.getProduct(request.productSlug());
         String normalizedEventType = normalizeEventType(request.eventType());
         String eventId = UUID.randomUUID().toString();
         if (usesJdbcStorage()) {
-            persistFunnelEventInDatabaseWithRetry(eventId, request, normalizedEventType);
+            persistFunnelEventInDatabaseWithRetry(eventId, request, normalizedEventType, product);
         } else {
             log.info(
                     "Evento PDE registrado sem persistência JDBC; eventId={}, productSlug={}, eventType={}, accessToken={}",
@@ -265,11 +266,12 @@ public class AccessService {
     }
 
     /** Persiste evento comercial com retentativa para oscilação transitória do MySQL. */
-    private void persistFunnelEventInDatabaseWithRetry(String eventId, FunnelEventRequest request, String eventType) {
+    private void persistFunnelEventInDatabaseWithRetry(
+            String eventId, FunnelEventRequest request, String eventType, ProductExperienceResponse product) {
         RuntimeException lastFailure = null;
         for (int attempt = 1; attempt <= FUNNEL_EVENT_PERSIST_ATTEMPTS; attempt++) {
             try {
-                persistFunnelEventInDatabase(eventId, request, eventType);
+                persistFunnelEventInDatabase(eventId, request, eventType, product);
                 if (attempt > 1) {
                     log.info(
                             "Evento PDE persistido após retentativa; eventId={}, productSlug={}, eventType={}, attempt={}",
@@ -300,7 +302,7 @@ public class AccessService {
 
     /** Consolida métricas de funil e analytics para decisão de próximas campanhas. */
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(String productSlug) {
-        productCatalogService.getProduct(productSlug);
+        ProductExperienceResponse product = productCatalogService.getProduct(productSlug);
         if (!usesJdbcStorage()) {
             return emptyFunnelAnalytics(productSlug);
         }
@@ -330,6 +332,7 @@ public class AccessService {
                 if (resultSet.next()) {
                     return new FunnelAnalyticsSummaryResponse(
                             productSlug,
+                            product.experienceVersion(),
                             resultSet.getLong("total_events"),
                             resultSet.getLong("unique_visitors"),
                             resultSet.getLong("sessions"),
@@ -344,7 +347,8 @@ public class AccessService {
                             resultSet.getLong("first_use"),
                             resultSet.getLong("checkout_started"),
                             resultSet.getLong("total_visible_ms"),
-                            loadFunnelEventMetrics(connection, productSlug));
+                            loadFunnelEventMetrics(connection, productSlug),
+                            loadExperienceVersionMetrics(connection, productSlug));
                 }
             }
         } catch (SQLException ex) {
@@ -689,7 +693,8 @@ public class AccessService {
 
     /** Retorna métricas vazias quando o backend está em modo local sem banco analítico. */
     private FunnelAnalyticsSummaryResponse emptyFunnelAnalytics(String productSlug) {
-        return new FunnelAnalyticsSummaryResponse(productSlug, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of());
+        return new FunnelAnalyticsSummaryResponse(
+                productSlug, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of(), List.of());
     }
 
     /** Converte uma linha JDBC em evento normalizado de jornada. */
@@ -742,6 +747,50 @@ public class AccessService {
                     metrics.add(new FunnelAnalyticsEventMetricDto(
                             resultSet.getString("event_type"),
                             resultSet.getLong("total")));
+                }
+                return metrics;
+            }
+        }
+    }
+
+    /** Lê as métricas agregadas por versão comercial para comparar formatos do PDE. */
+    private List<FunnelAnalyticsExperienceVersionMetricDto> loadExperienceVersionMetrics(
+            Connection connection, String productSlug) throws SQLException {
+        String sql = """
+                SELECT
+                  COALESCE(NULLIF(experience_version, ''), 'sem-versao') AS resolved_experience_version,
+                  COUNT(*) AS total_events,
+                  COUNT(DISTINCT session_id) AS sessions,
+                  SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS pde_entries,
+                  SUM(CASE WHEN event_type = 'PRESENCE_MAP_CHOICE_SELECTED' THEN 1 ELSE 0 END) AS presence_map_clicks,
+                  SUM(CASE WHEN event_type = 'DIAGNOSTIC_CHOICE_SELECTED' THEN 1 ELSE 0 END) AS diagnostic_clicks,
+                  SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
+                  SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
+                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_CLICKED' THEN 1 ELSE 0 END) AS subscription_clicked,
+                  SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
+                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' THEN 1 ELSE 0 END) AS subscription_approved
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                GROUP BY COALESCE(NULLIF(experience_version, ''), 'sem-versao')
+                ORDER BY MAX(occurred_at) DESC
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<FunnelAnalyticsExperienceVersionMetricDto> metrics = new java.util.ArrayList<>();
+                while (resultSet.next()) {
+                    metrics.add(new FunnelAnalyticsExperienceVersionMetricDto(
+                            resultSet.getString("resolved_experience_version"),
+                            resultSet.getLong("total_events"),
+                            resultSet.getLong("sessions"),
+                            resultSet.getLong("pde_entries"),
+                            resultSet.getLong("presence_map_clicks"),
+                            resultSet.getLong("diagnostic_clicks"),
+                            resultSet.getLong("login_started"),
+                            resultSet.getLong("paywall_viewed"),
+                            resultSet.getLong("subscription_clicked"),
+                            resultSet.getLong("checkout_started"),
+                            resultSet.getLong("subscription_approved")));
                 }
                 return metrics;
             }
@@ -934,46 +983,48 @@ public class AccessService {
     }
 
     /** Persiste evento comercial PED/MUSA no banco Marketing Hub. */
-    private void persistFunnelEventInDatabase(String eventId, FunnelEventRequest request, String eventType) {
+    private void persistFunnelEventInDatabase(
+            String eventId, FunnelEventRequest request, String eventType, ProductExperienceResponse product) {
         String sql = """
                 INSERT INTO pde_funnel_event (
-                  event_id, product_slug, access_token, email, normalized_email, event_type,
+                  event_id, product_slug, experience_version, access_token, email, normalized_email, event_type,
                   provider, source, page_url, referrer_url, session_id, visitor_id,
                   utm_source, utm_medium, utm_campaign, utm_content, utm_term,
                   device_type, screen_width, screen_height, viewport_width, viewport_height,
                   visible_ms, section_id, action_name, metadata_json, occurred_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """;
         try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             Map<String, Object> metadata = request.metadata();
             statement.setString(1, eventId);
             statement.setString(2, request.productSlug());
-            statement.setString(3, blankToNull(request.accessToken()));
-            statement.setString(4, blankToNull(request.email()));
-            statement.setString(5, blankToNull(normalizeEmail(request.email())));
-            statement.setString(6, eventType);
-            statement.setString(7, blankToNull(request.provider()));
-            statement.setString(8, blankToNull(request.source()));
-            statement.setString(9, blankToNull(request.pageUrl()));
-            statement.setString(10, blankToNull(metadataString(metadata, "referrerUrl")));
-            statement.setString(11, blankToNull(metadataString(metadata, "sessionId")));
-            statement.setString(12, blankToNull(metadataString(metadata, "visitorId")));
-            statement.setString(13, blankToNull(metadataString(metadata, "utmSource")));
-            statement.setString(14, blankToNull(metadataString(metadata, "utmMedium")));
-            statement.setString(15, blankToNull(metadataString(metadata, "utmCampaign")));
-            statement.setString(16, blankToNull(metadataString(metadata, "utmContent")));
-            statement.setString(17, blankToNull(metadataString(metadata, "utmTerm")));
-            statement.setString(18, blankToNull(metadataString(metadata, "deviceType")));
-            setInteger(statement, 19, metadataLong(metadata, "screenWidth"));
-            setInteger(statement, 20, metadataLong(metadata, "screenHeight"));
-            setInteger(statement, 21, metadataLong(metadata, "viewportWidth"));
-            setInteger(statement, 22, metadataLong(metadata, "viewportHeight"));
-            setLong(statement, 23, metadataLong(metadata, "visibleMs"));
-            statement.setString(24, blankToNull(metadataString(metadata, "sectionId")));
-            statement.setString(25, blankToNull(metadataString(metadata, "actionName")));
-            statement.setString(26, metadata == null ? null : objectMapper.writeValueAsString(metadata));
+            statement.setString(3, blankToNull(resolveExperienceVersion(metadata, product)));
+            statement.setString(4, blankToNull(request.accessToken()));
+            statement.setString(5, blankToNull(request.email()));
+            statement.setString(6, blankToNull(normalizeEmail(request.email())));
+            statement.setString(7, eventType);
+            statement.setString(8, blankToNull(request.provider()));
+            statement.setString(9, blankToNull(request.source()));
+            statement.setString(10, blankToNull(request.pageUrl()));
+            statement.setString(11, blankToNull(metadataString(metadata, "referrerUrl")));
+            statement.setString(12, blankToNull(metadataString(metadata, "sessionId")));
+            statement.setString(13, blankToNull(metadataString(metadata, "visitorId")));
+            statement.setString(14, blankToNull(metadataString(metadata, "utmSource")));
+            statement.setString(15, blankToNull(metadataString(metadata, "utmMedium")));
+            statement.setString(16, blankToNull(metadataString(metadata, "utmCampaign")));
+            statement.setString(17, blankToNull(metadataString(metadata, "utmContent")));
+            statement.setString(18, blankToNull(metadataString(metadata, "utmTerm")));
+            statement.setString(19, blankToNull(metadataString(metadata, "deviceType")));
+            setInteger(statement, 20, metadataLong(metadata, "screenWidth"));
+            setInteger(statement, 21, metadataLong(metadata, "screenHeight"));
+            setInteger(statement, 22, metadataLong(metadata, "viewportWidth"));
+            setInteger(statement, 23, metadataLong(metadata, "viewportHeight"));
+            setLong(statement, 24, metadataLong(metadata, "visibleMs"));
+            statement.setString(25, blankToNull(metadataString(metadata, "sectionId")));
+            statement.setString(26, blankToNull(metadataString(metadata, "actionName")));
+            statement.setString(27, metadata == null ? null : objectMapper.writeValueAsString(metadata));
             statement.executeUpdate();
         } catch (SQLException | IOException ex) {
             log.error(
@@ -984,6 +1035,15 @@ public class AccessService {
                     ex);
             throw new IllegalStateException("Não foi possível persistir evento PDE no banco Marketing Hub", ex);
         }
+    }
+
+    /** Resolve a versão comercial do evento usando o payload ou o contrato ativo do produto. */
+    private String resolveExperienceVersion(Map<String, Object> metadata, ProductExperienceResponse product) {
+        String metadataVersion = metadataString(metadata, "experienceVersion");
+        if (metadataVersion != null && !metadataVersion.isBlank()) {
+            return metadataVersion;
+        }
+        return product == null ? null : product.experienceVersion();
     }
 
     /** Converte texto vazio em null para persistência normalizada. */

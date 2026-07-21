@@ -193,6 +193,12 @@ export default function ExperimentPostDeployMonitorTab({
                   {monitor.pde.available ? "Online" : "Indisponível"}
                 </span>
               </div>
+              <div className="small text-muted mb-2">
+                Versão medida:{" "}
+                <span className="fw-semibold">
+                  {monitor.pde.currentExperienceVersion ?? "sem versão"}
+                </span>
+              </div>
               <div className="table-responsive">
                 <table className="table table-sm align-middle mb-0">
                   <tbody>
@@ -247,6 +253,44 @@ export default function ExperimentPostDeployMonitorTab({
           </div>
         </div>
       </div>
+
+      {monitor.pde.experienceVersions.length > 0 ? (
+        <div className="card">
+          <div className="card-body">
+            <h6 className="card-title">Comparação por versão PDE</h6>
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Versão</th>
+                    <th className="text-end">Sessões</th>
+                    <th className="text-end">Entradas</th>
+                    <th className="text-end">1ª ação</th>
+                    <th className="text-end">Login</th>
+                    <th className="text-end">Paywall</th>
+                    <th className="text-end">Checkout</th>
+                    <th className="text-end">Compra</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monitor.pde.experienceVersions.map((version) => (
+                    <tr key={version.experienceVersion}>
+                      <td className="fw-semibold">{version.experienceVersion}</td>
+                      <td className="text-end">{formatNumber(version.sessions)}</td>
+                      <td className="text-end">{formatNumber(version.pdeEntries)}</td>
+                      <td className="text-end">{formatNumber(version.firstInteractionClicks)}</td>
+                      <td className="text-end">{formatNumber(version.loginStarted)}</td>
+                      <td className="text-end">{formatNumber(version.paywallViewed)}</td>
+                      <td className="text-end">{formatNumber(version.checkoutIntent)}</td>
+                      <td className="text-end">{formatNumber(version.subscriptionApproved)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.monitoring.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /** Resume analytics do PDE usados para medir interação e intenção comercial. */
@@ -8,6 +9,7 @@ public record PostDeployPdeSummaryDto(
         boolean available,
         String status,
         String errorMessage,
+        String currentExperienceVersion,
         long totalEvents,
         long uniqueVisitors,
         long sessions,
@@ -24,5 +26,6 @@ public record PostDeployPdeSummaryDto(
         long subscriptionApproved,
         long totalVisibleMs,
         Instant lastEventAt,
-        Map<String, Long> events
+        Map<String, Long> events,
+        List<PostDeployPdeExperienceVersionDto> experienceVersions
 ) {}

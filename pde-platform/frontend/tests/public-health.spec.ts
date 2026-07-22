@@ -1,7 +1,54 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
+
+type PublicHealthContract = {
+  slug?: string;
+  healthPath?: string;
+  requiredTexts?: string[];
+  forbiddenTexts?: string[];
+};
+
+const defaultContract: Required<PublicHealthContract> = {
+  slug: 'metodo-musa-7-dias',
+  healthPath: '/',
+  requiredTexts: [
+    'Sua imagem comunica a mulher que você quer ser vista como?',
+    'Diagnóstico de Presença',
+    'Enviar diagnóstico',
+  ],
+  forbiddenTexts: [
+    'Application error',
+    'Cannot find module',
+    'Unexpected token',
+    'Failed to fetch dynamically imported module',
+  ],
+};
+
+function parseList(value: string | undefined) {
+  return value
+    ? value
+        .split('|')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [];
+}
+
+async function loadContract(request: APIRequestContext) {
+  const response = await request.get('/pde-health-contract.json');
+  const fileContract = response.ok() ? ((await response.json()) as PublicHealthContract) : {};
+  const envRequiredTexts = parseList(process.env.PDE_PUBLIC_HEALTH_REQUIRED_TEXTS);
+  const envForbiddenTexts = parseList(process.env.PDE_PUBLIC_HEALTH_FORBIDDEN_TEXTS);
+
+  return {
+    slug: process.env.PDE_PUBLIC_HEALTH_PRODUCT_SLUG || fileContract.slug || defaultContract.slug,
+    healthPath: process.env.PDE_PUBLIC_HEALTH_PATH || fileContract.healthPath || defaultContract.healthPath,
+    requiredTexts: envRequiredTexts.length > 0 ? envRequiredTexts : fileContract.requiredTexts || defaultContract.requiredTexts,
+    forbiddenTexts: envForbiddenTexts.length > 0 ? envForbiddenTexts : fileContract.forbiddenTexts || defaultContract.forbiddenTexts,
+  };
+}
 
 test('health publico renderiza app, javascript e texto comercial', async ({ page, request }) => {
   const pageErrors: string[] = [];
+  const contract = await loadContract(request);
 
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);
@@ -11,18 +58,16 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
   expect(staticHealth.ok()).toBeTruthy();
   expect(await staticHealth.text()).toContain('"status":"UP"');
 
-  const response = await page.goto('/', { waitUntil: 'networkidle' });
+  const response = await page.goto(contract.healthPath, { waitUntil: 'networkidle' });
   expect(response?.ok()).toBeTruthy();
 
   await expect(page.locator('#root').locator(':scope > *').first()).toBeVisible();
-  await expect(
-    page.getByRole('heading', {
-      name: /Sua imagem comunica a mulher/i,
-      level: 1,
-    }),
-  ).toBeVisible();
-  await expect(page.getByText('Diagnóstico de Presença')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Enviar diagnóstico/i })).toBeVisible();
+  for (const text of contract.requiredTexts) {
+    await expect(page.locator('body'), `Texto obrigatorio ausente no PDE ${contract.slug}: ${text}`).toContainText(text);
+  }
+  for (const text of contract.forbiddenTexts) {
+    await expect(page.locator('body'), `Texto de erro apareceu no PDE ${contract.slug}: ${text}`).not.toContainText(text);
+  }
   expect(await page.locator('script[type="module"][src]').count()).toBeGreaterThan(0);
 
   expect(pageErrors, `Erros de execucao no health publico: ${pageErrors.join(' | ')}`).toEqual([]);

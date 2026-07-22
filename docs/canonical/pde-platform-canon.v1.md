@@ -209,6 +209,29 @@ Metadados mínimos por evento quando disponíveis:
 
 O backend PDE deve persistir esses eventos em estrutura consultável e expor resumo agregado para decisão comercial. Logs técnicos não substituem analytics persistido. Antes de liberar nova campanha para o Clube MUSA/PDE, deve ser possível responder no mínimo: quantas pessoas entraram, quantas iniciaram login, quantas concluíram login, quantas viram paywall, quantas clicaram em assinatura, quantas iniciaram checkout, quantas tiveram compra aprovada, quantas receberam acesso e quantas fizeram primeiro uso.
 
+### Health check público obrigatório por PDE
+
+Todo PDE produzido para campanha, experimento ou tráfego pago deve publicar um contrato público de health comercial em `GET /pde-health-contract.json`.
+
+Esse contrato deve declarar, no mínimo:
+
+- `slug` do produto;
+- `healthPath` da entrada pública que recebe o tráfego;
+- `requiredTexts` com pelo menos headline, bloco principal da oferta/diagnóstico e CTA primário;
+- `forbiddenTexts` com mensagens de erro técnico ou tela branca que nunca podem aparecer para a cliente.
+
+O pipeline de deploy deve executar o smoke test público depois da publicação usando esse contrato. A validação mínima obrigatória é:
+
+- `GET /healthz` retorna status operacional;
+- a página pública responde com HTTP válido;
+- o JavaScript principal carrega;
+- o primeiro elemento renderizado em `#root` fica visível;
+- todos os textos comerciais críticos do contrato aparecem na tela;
+- nenhum texto proibido aparece no corpo da página;
+- não existem erros fatais de execução capturados pelo navegador.
+
+Um PDE não pode ser considerado pronto para tráfego se o smoke test público falhar, mesmo quando o status HTTP estiver 200. O objetivo é bloquear recorrência de tela branca, assets misturados entre ambientes, bundle JavaScript quebrado ou primeira dobra errada antes de gastar mídia.
+
 ## Contrato mínimo de produto
 
 Cada produto PDE deve ter, no mínimo:
@@ -274,5 +297,6 @@ Um produto PDE só pode ser considerado pronto para tráfego quando:
 7. o anúncio apontar para a entrada/login do PDE em `https://clubemusa.com.br`, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
 8. produto da cliente não expuser termos técnicos internos.
 9. funil e analytics do PED estiverem registrando eventos próprios de entrada, sessão, UTM, paywall, checkout, compra, liberação e ativação.
+10. health check público comercial estiver publicado e passando com os textos críticos do PDE.
 
 Para experimentos do tipo `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, a prontidão de campanha não deve exigir GeraSalesPage v1 como página de venda tradicional. A validação correta é: contrato comercial completo, URL canônica do Clube MUSA/PDE, criativos prontos, segmentação publicável, checkout/webhook/acesso e experiência inicial/paga validados.

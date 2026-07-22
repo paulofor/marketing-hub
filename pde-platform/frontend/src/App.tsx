@@ -162,6 +162,10 @@ declare global {
   }
 }
 
+const PUBLIC_DIAGNOSTIC_MAX_POLL_ATTEMPTS = 90;
+const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
+const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
+
 const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
   experienceVersion: 'musa-pde-entry-v3',
@@ -1447,6 +1451,7 @@ function App() {
       setPublicDiagnosticGuidance(guidance);
       await pollPublicPresenceDiagnostic(guidance.requestId);
     } catch {
+      setPublicDiagnosticGuidance(null);
       setErrorMessage('Não conseguimos acionar a Consultora MUSA agora. Tente enviar novamente em alguns instantes.');
     } finally {
       setPublicDiagnosticLoading(false);
@@ -1498,8 +1503,10 @@ function App() {
   }
 
   async function pollPublicPresenceDiagnostic(requestId: string) {
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 900 : 1800));
+    for (let attempt = 0; attempt < PUBLIC_DIAGNOSTIC_MAX_POLL_ATTEMPTS; attempt += 1) {
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, attempt === 0 ? PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS : PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS),
+      );
       const response = await fetch(`/api/pde/public/presence-diagnostic/${requestId}`);
       if (!response.ok) {
         throw new Error('Diagnóstico não encontrado.');
@@ -1510,6 +1517,7 @@ function App() {
         return;
       }
     }
+    throw new Error('Tempo limite ao aguardar diagnóstico público.');
   }
 
   function resolveAllMissionAnswers(workspaceData: Workspace) {

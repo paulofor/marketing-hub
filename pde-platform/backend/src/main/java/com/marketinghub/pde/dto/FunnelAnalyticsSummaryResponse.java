@@ -23,5 +23,7 @@ public record FunnelAnalyticsSummaryResponse(
         List<FunnelAnalyticsEventMetricDto> events,
         List<FunnelAnalyticsExperienceVersionMetricDto> experienceVersions,
         List<FunnelAnalyticsTrafficSourceMetricDto> trafficSources,
+        List<FunnelAnalyticsDeviceMetricDto> deviceBreakdown,
+        List<FunnelAnalyticsScreenSizeMetricDto> screenSizeBreakdown,
         List<FunnelAnalyticsSessionJourneyDto> recentJourneys
 ) {}

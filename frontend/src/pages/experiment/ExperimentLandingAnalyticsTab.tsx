@@ -58,6 +58,24 @@ function alertVariant(severity?: string | null) {
   return "info";
 }
 
+function getJourneyStepLabel(step: {
+  stageNumber?: number;
+  stageName?: string;
+  aidaLabel?: string;
+  stage?: string;
+}) {
+  const name = step.stageName || step.aidaLabel || step.stage || "Etapa";
+  return step.stageNumber ? `Estágio ${step.stageNumber}: ${name}` : name;
+}
+
+function getJourneyTrackedSections(step: {
+  trackedSectionIds?: string[];
+  trackedSectionId?: string;
+}) {
+  if (step.trackedSectionIds?.length) return step.trackedSectionIds;
+  return step.trackedSectionId ? [step.trackedSectionId] : [];
+}
+
 export default function ExperimentLandingAnalyticsTab({
   experimentId,
 }: ExperimentLandingAnalyticsTabProps) {
@@ -233,20 +251,43 @@ export default function ExperimentLandingAnalyticsTab({
                   <Workflow size={18} /> Jornada persuasiva interativa
                 </h5>
                 <p className="text-muted small mb-0">
-                  Leitura comercial do questionário do PDE por etapa AIDA,
+                  Leitura comercial por estágio do funil experiencial PDE,
                   usando a jornada cadastrada no produto.
                 </p>
               </div>
               <span className="badge text-bg-light border">
-                {persuasiveJourney.framework || "AIDA"} ·{" "}
+                {persuasiveJourney.framework || "Funil experiencial PDE"} ·{" "}
                 {persuasiveJourney.version || "sem versão"}
               </span>
             </div>
             <div className="row g-3">
               {persuasiveJourney.steps.map((step) => {
-                const stats = step.trackedSectionId
-                  ? sectionStats.get(step.trackedSectionId)
-                  : undefined;
+                const trackedSections = getJourneyTrackedSections(step);
+                const uniqueSessions = new Set<string>();
+                let visibleMs = 0;
+                let events = 0;
+                for (const session of sessions) {
+                  let matchedSession = false;
+                  for (const section of session.topSections) {
+                    if (!trackedSections.includes(section.sectionId)) {
+                      continue;
+                    }
+                    matchedSession = true;
+                    visibleMs += section.visibleMs;
+                    events += section.events;
+                  }
+                  if (matchedSession) {
+                    uniqueSessions.add(session.sessionId);
+                  }
+                }
+                const stats =
+                  trackedSections.length === 1
+                    ? sectionStats.get(trackedSections[0])
+                    : {
+                        sessions: uniqueSessions.size,
+                        visibleMs,
+                        events,
+                      };
                 const sessionRate =
                   data?.totalSessions && stats?.sessions
                     ? (stats.sessions / data.totalSessions) * 100
@@ -254,15 +295,22 @@ export default function ExperimentLandingAnalyticsTab({
                 return (
                   <div
                     className="col-12 col-lg-6"
-                    key={`${step.stage}-${step.trackedSectionId}`}
+                    key={`${step.stage}-${trackedSections.join("-")}`}
                   >
                     <div className="border rounded-3 p-3 h-100">
                       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                        <strong>{step.aidaLabel || step.stage}</strong>
+                        <strong>{getJourneyStepLabel(step)}</strong>
                         <span className="badge text-bg-light border">
-                          {step.trackedSectionId || "sem seção"}
+                          {trackedSections.length
+                            ? trackedSections.join(", ")
+                            : "sem seção"}
                         </span>
                       </div>
+                      {step.psychologicalRole ? (
+                        <p className="text-muted small mb-2">
+                          Apoio psicológico: {step.psychologicalRole}
+                        </p>
+                      ) : null}
                       <p className="mb-2">
                         {step.commercialFunction || "Função não cadastrada."}
                       </p>

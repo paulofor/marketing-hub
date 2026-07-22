@@ -129,7 +129,7 @@ class ProductControllerTest {
         ProductDto response = new ProductDto();
         response.setId(1L);
         response.setName("Método MUSA");
-        response.setPdeExperienceJson("{\"persuasiveJourney\":{\"framework\":\"AIDA\"}}");
+        response.setPdeExperienceJson("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\"}}");
 
         when(service.applyDefaultPdePersuasiveJourney(1L)).thenReturn(product);
         when(mapper.toDto(product)).thenReturn(response);
@@ -137,19 +137,19 @@ class ProductControllerTest {
         mockMvc.perform(post("/api/products/{id}/pde-persuasive-journey/default", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.pdeExperienceJson").value("{\"persuasiveJourney\":{\"framework\":\"AIDA\"}}"));
+                .andExpect(jsonPath("$.pdeExperienceJson").value("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\"}}"));
     }
 
     /** Deve expor a jornada persuasiva PDE como contrato JSON público. */
     @Test
     void getPublicPdePersuasiveJourney() throws Exception {
-        var journey = objectMapper.readTree("{\"framework\":\"AIDA\",\"steps\":[]}");
+        var journey = objectMapper.readTree("{\"framework\":\"Funil experiencial PDE\",\"steps\":[]}");
 
         when(service.getPublicPdePersuasiveJourney("metodo-musa-7-dias")).thenReturn(journey);
 
         mockMvc.perform(get("/api/products/public/{productCode}/pde-persuasive-journey", "metodo-musa-7-dias"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.framework").value("AIDA"));
+                .andExpect(jsonPath("$.framework").value("Funil experiencial PDE"));
     }
 }

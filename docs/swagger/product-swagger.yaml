@@ -112,10 +112,13 @@ components:
       properties:
         version:
           type: string
-          example: aida-interactive-v1
+          example: commercial-stages-v1
         framework:
           type: string
-          example: AIDA
+          example: Funil experiencial PDE
+        psychologicalModel:
+          type: string
+          example: AIDA como apoio, não como eixo principal de leitura
         name:
           type: string
           example: Jornada Persuasiva Interativa do PDE
@@ -133,15 +136,40 @@ components:
     PdePersuasiveJourneyStep:
       type: object
       properties:
+        stageNumber:
+          type: integer
+          example: 2
         stage:
           type: string
-          example: interest
+          example: diagnostic_value
+        stageName:
+          type: string
+          example: Envolvimento diagnóstico
         aidaLabel:
           type: string
           example: Interesse
+          deprecated: true
+        psychologicalRole:
+          type: string
+          example: Interesse + Desejo
         trackedSectionId:
           type: string
           example: interactive_diagnostic
+          deprecated: true
+        trackedSectionIds:
+          type: array
+          items:
+            type: string
+          example:
+            - interactive_diagnostic
+            - free_diagnostic_preview
+        eventNames:
+          type: array
+          items:
+            type: string
+          example:
+            - DIAGNOSTIC_CHOICE_SELECTED
+            - SECTION_VIEW
         commercialFunction:
           type: string
         userShift:

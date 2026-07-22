@@ -146,6 +146,24 @@ function buildIdentityColors(product: {
   return [...colors, ...supportColors];
 }
 
+function getJourneyStepLabel(step: {
+  stageNumber?: number;
+  stageName?: string;
+  aidaLabel?: string;
+  stage?: string;
+}) {
+  const name = step.stageName || step.aidaLabel || step.stage || "Etapa";
+  return step.stageNumber ? `Estágio ${step.stageNumber}: ${name}` : name;
+}
+
+function getJourneyTrackedSections(step: {
+  trackedSectionIds?: string[];
+  trackedSectionId?: string;
+}) {
+  if (step.trackedSectionIds?.length) return step.trackedSectionIds;
+  return step.trackedSectionId ? [step.trackedSectionId] : [];
+}
+
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
   const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
@@ -368,27 +386,35 @@ export default function ProductListPage() {
                       </p>
                       {persuasiveJourney && (
                         <>
-                          <h3 className="h6 mt-3">Jornada persuasiva PDE</h3>
+                          <h3 className="h6 mt-3">Jornada comercial PDE</h3>
                           <p className="small text-muted mb-2">
-                            {persuasiveJourney.framework || "AIDA"} ·{" "}
-                            {persuasiveJourney.version || "sem versão"}
+                            {persuasiveJourney.framework ||
+                              "Funil experiencial PDE"}{" "}
+                            · {persuasiveJourney.version || "sem versão"}
                           </p>
                           <ol className="product-catalog-card__journey">
-                            {persuasiveJourneySteps.map((step) => (
-                              <li
-                                key={`${step.stage}-${step.trackedSectionId}`}
-                              >
-                                <strong>{step.aidaLabel || step.stage}</strong>
-                                {step.commercialFunction
-                                  ? `: ${step.commercialFunction}`
-                                  : ""}
-                                {step.trackedSectionId ? (
-                                  <small className="d-block text-muted">
-                                    seção: {step.trackedSectionId}
-                                  </small>
-                                ) : null}
-                              </li>
-                            ))}
+                            {persuasiveJourneySteps.map((step) => {
+                              const trackedSections =
+                                getJourneyTrackedSections(step);
+                              return (
+                                <li key={`${step.stage}-${trackedSections[0]}`}>
+                                  <strong>{getJourneyStepLabel(step)}</strong>
+                                  {step.psychologicalRole ? (
+                                    <small className="d-block text-muted">
+                                      apoio: {step.psychologicalRole}
+                                    </small>
+                                  ) : null}
+                                  {step.commercialFunction
+                                    ? `: ${step.commercialFunction}`
+                                    : ""}
+                                  {trackedSections.length ? (
+                                    <small className="d-block text-muted">
+                                      seções: {trackedSections.join(", ")}
+                                    </small>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
                           </ol>
                         </>
                       )}

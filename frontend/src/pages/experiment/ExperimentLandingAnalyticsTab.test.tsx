@@ -42,6 +42,11 @@ describe("ExperimentLandingAnalyticsTab", () => {
                     visibleMs: 12000,
                     events: 1,
                   },
+                  {
+                    sectionId: "free_diagnostic_preview",
+                    visibleMs: 3000,
+                    events: 1,
+                  },
                 ],
               },
               {
@@ -61,17 +66,23 @@ describe("ExperimentLandingAnalyticsTab", () => {
       ) {
         return Promise.resolve({
           data: {
-            version: "aida-interactive-v1",
-            framework: "AIDA",
+            version: "commercial-stages-v1",
+            framework: "Funil experiencial PDE",
             steps: [
               {
-                stage: "interest",
-                aidaLabel: "Interesse",
-                trackedSectionId: "interactive_diagnostic",
+                stageNumber: 2,
+                stage: "diagnostic_value",
+                stageName: "Envolvimento diagnóstico",
+                psychologicalRole: "Interesse + Desejo",
+                trackedSectionIds: [
+                  "interactive_diagnostic",
+                  "free_diagnostic_preview",
+                ],
                 commercialFunction:
-                  "Levar a usuária a interagir com o diagnóstico.",
-                primaryMetric: "início do diagnóstico",
-                optimizationRule: "reduzir fricção da primeira pergunta",
+                  "Questionário e plano de 7 dias aumentam valor percebido.",
+                primaryMetric: "questionário concluído e plano visualizado",
+                optimizationRule:
+                  "reduzir fricção da primeira pergunta e tornar o plano mais concreto",
               },
             ],
           },
@@ -90,13 +101,14 @@ describe("ExperimentLandingAnalyticsTab", () => {
     expect(
       await screen.findByText(/Jornada persuasiva interativa/i),
     ).toBeTruthy();
-    expect(screen.getByText(/Interesse/i)).toBeTruthy();
+    expect(
+      screen.getByText(/Estágio 2: Envolvimento diagnóstico/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/Interesse \+ Desejo/i)).toBeTruthy();
     expect(
       screen.getAllByText(/interactive_diagnostic/i).length,
     ).toBeGreaterThan(0);
     expect(screen.getByText(/50.0% do tráfego/i)).toBeTruthy();
-    expect(
-      screen.getByText(/reduzir fricção da primeira pergunta/i),
-    ).toBeTruthy();
+    expect(screen.getByText(/tornar o plano mais concreto/i)).toBeTruthy();
   });
 });

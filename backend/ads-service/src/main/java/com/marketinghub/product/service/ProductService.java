@@ -248,55 +248,86 @@ public class ProductService {
         }
     }
 
-    /** Monta o modelo inicial AIDA para medir o questionário como mecanismo comercial do PDE. */
+    /** Monta o funil experiencial por estágios para medir a jornada comercial do PDE. */
     private ObjectNode buildDefaultPdePersuasiveJourney(Product product) {
         ObjectNode journey = objectMapper.createObjectNode();
-        journey.put("version", "aida-interactive-v1");
-        journey.put("framework", "AIDA");
+        journey.put("version", "commercial-stages-v1");
+        journey.put("framework", "Funil experiencial PDE");
+        journey.put("psychologicalModel", "AIDA como apoio, não como eixo principal de leitura");
         journey.put("name", "Jornada Persuasiva Interativa do PDE");
-        journey.put("objective", "Medir se o questionário aumenta consciência, desejo e avanço para login/paywall sem contaminar versões de experiência.");
+        journey.put("objective", "Medir em qual estágio comercial a pessoa ganha ou perde confiança, desejo e disposição de pagar.");
         journey.put("productSlug", valueOrFallback(product.getSlug()));
         journey.put("commercialPromise", valueOrFallback(product.getPromise()));
         ArrayNode steps = journey.putArray("steps");
-        addPersuasiveJourneyStep(steps, "attention", "Atenção", "login_hero",
-                "Capturar atenção com promessa clara e reconhecimento imediato da dor.",
-                "A pessoa entende que o produto fala diretamente com a dificuldade dela.",
-                "page_view e tempo visível na primeira dobra",
-                "Se muita gente abandona aqui, revisar promessa, hero, carregamento e clareza do primeiro CTA.");
-        addPersuasiveJourneyStep(steps, "interest", "Interesse", "interactive_diagnostic",
-                "Levar a usuária a interagir e revelar contexto próprio dentro do questionário.",
-                "A pessoa troca passividade por microcompromisso e passa a aprender sobre a própria dor.",
-                "eventos de seção e início do diagnóstico",
-                "Se há pouca interação, reduzir fricção da primeira pergunta e tornar a recompensa do diagnóstico mais concreta.");
-        addPersuasiveJourneyStep(steps, "desire", "Desejo", "free_diagnostic_preview",
-                "Entregar diagnóstico parcial que prove valor e aumente desejo pela continuidade.",
-                "A pessoa percebe personalização e imagina o resultado prometido aplicado à rotina dela.",
-                "tempo visível no diagnóstico, clique para continuar e captura de e-mail",
-                "Se o desejo não avança, fortalecer prova, especificidade do plano e contraste antes/depois.");
-        addPersuasiveJourneyStep(steps, "action", "Ação", "subscription_paywall",
-                "Converter intenção em login, paywall, checkout e compra.",
-                "A pessoa entende a próxima ação e vê motivo suficiente para liberar a experiência completa.",
-                "login, paywall, checkout e compra",
-                "Se o gargalo está aqui, revisar preço, oferta, garantia, checkout e continuidade entre diagnóstico e pagamento.");
+        addPersuasiveJourneyStep(steps, 1, "promise_contact", "Contato com a promessa", "Atenção",
+                "Anúncio e primeira dobra apresentam dor, promessa e motivo para clicar/entrar.",
+                "A pessoa deixa de ignorar o anúncio e aceita conhecer a promessa do produto.",
+                new String[] {"login_hero"},
+                new String[] {"PAGE_VIEW", "PAGE_VISIBLE_TIME"},
+                "impressões, CTR, CPC, page_view e tempo visível na primeira dobra",
+                "Se quebra aqui, revisar promessa, criativo, público, carregamento e clareza do primeiro CTA.");
+        addPersuasiveJourneyStep(steps, 2, "diagnostic_value", "Envolvimento diagnóstico", "Interesse + Desejo",
+                "Questionário e plano de 7 dias transformam curiosidade em valor percebido personalizado.",
+                "A pessoa troca passividade por microcompromisso e recebe um plano aplicável à própria rotina.",
+                new String[] {"interactive_diagnostic", "free_diagnostic_preview"},
+                new String[] {"PRESENCE_MAP_CHOICE_SELECTED", "DIAGNOSTIC_CHOICE_SELECTED", "SECTION_VIEW"},
+                "início/conclusão do questionário, visualização do plano e tempo no diagnóstico",
+                "Se quebra aqui, reduzir fricção das perguntas e tornar a recompensa do plano mais concreta.");
+        addPersuasiveJourneyStep(steps, 3, "continuity_commitment", "Compromisso de continuidade", "Desejo + Ação",
+                "Login, cadastro, salvar plano ou iniciar missão transformam valor percebido em intenção real.",
+                "A pessoa aceita deixar um sinal de identidade para continuar a jornada.",
+                new String[] {"login_panel", "guided_journey"},
+                new String[] {"LOGIN_STARTED", "LOGIN_COMPLETED", "FIRST_USE", "MISSION_OPEN"},
+                "login iniciado/concluído, plano salvo, primeira missão aberta e primeiro uso",
+                "Se quebra aqui, simplificar cadastro, reforçar continuidade do plano e explicar por que salvar a jornada.");
+        addPersuasiveJourneyStep(steps, 4, "commercial_conversion", "Conversão comercial", "Ação",
+                "Paywall, checkout e compra convertem intenção em receita.",
+                "A pessoa entende que a parte paga libera a continuidade de maior valor.",
+                new String[] {"subscription_paywall"},
+                new String[] {"PAYWALL_VIEWED", "SUBSCRIPTION_CLICKED", "CHECKOUT_STARTED", "SUBSCRIPTION_APPROVED"},
+                "paywall visto, clique de assinatura, checkout iniciado e compra aprovada",
+                "Se quebra aqui, revisar preço, oferta, garantia, prova, checkout e transição entre plano gratuito e acesso pago.");
+        addPersuasiveJourneyStep(steps, 5, "post_purchase_validation", "Validação pós-compra", "Retenção",
+                "Acesso liberado, uso inicial e missões concluídas confirmam que a promessa vendida está sendo aplicada.",
+                "A pessoa percebe progresso prático e reduz risco de arrependimento ou abandono.",
+                new String[] {"member_journey", "materials_library"},
+                new String[] {"ACCESS_RELEASED", "FIRST_USE", "MISSION_COMPLETED", "MATERIAL_OPEN"},
+                "acesso liberado, primeiro uso, missão concluída e abertura de materiais",
+                "Se quebra aqui, melhorar onboarding, missão do Dia 1, clareza dos materiais e acompanhamento inicial.");
         return journey;
     }
 
     /** Adiciona uma etapa comercial rastreável à jornada persuasiva padrão. */
     private void addPersuasiveJourneyStep(
             ArrayNode steps,
+            int stageNumber,
             String stage,
-            String aidaLabel,
-            String trackedSectionId,
+            String stageName,
+            String psychologicalRole,
             String commercialFunction,
             String userShift,
+            String[] trackedSectionIds,
+            String[] eventNames,
             String primaryMetric,
             String optimizationRule) {
         ObjectNode step = steps.addObject();
+        step.put("stageNumber", stageNumber);
         step.put("stage", stage);
-        step.put("aidaLabel", aidaLabel);
-        step.put("trackedSectionId", trackedSectionId);
+        step.put("stageName", stageName);
+        step.put("psychologicalRole", psychologicalRole);
         step.put("commercialFunction", commercialFunction);
         step.put("userShift", userShift);
+        ArrayNode sections = step.putArray("trackedSectionIds");
+        for (String trackedSectionId : trackedSectionIds) {
+            sections.add(trackedSectionId);
+        }
+        if (trackedSectionIds.length > 0) {
+            step.put("trackedSectionId", trackedSectionIds[0]);
+        }
+        ArrayNode events = step.putArray("eventNames");
+        for (String eventName : eventNames) {
+            events.add(eventName);
+        }
         step.put("primaryMetric", primaryMetric);
         step.put("optimizationRule", optimizationRule);
     }

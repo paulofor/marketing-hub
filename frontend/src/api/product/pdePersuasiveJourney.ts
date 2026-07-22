@@ -1,7 +1,12 @@
 export interface PdePersuasiveJourneyStep {
+  stageNumber?: number;
   stage: string;
+  stageName?: string;
   aidaLabel?: string;
+  psychologicalRole?: string;
   trackedSectionId?: string;
+  trackedSectionIds?: string[];
+  eventNames?: string[];
   commercialFunction?: string;
   userShift?: string;
   primaryMetric?: string;
@@ -11,6 +16,7 @@ export interface PdePersuasiveJourneyStep {
 export interface PdePersuasiveJourney {
   version?: string;
   framework?: string;
+  psychologicalModel?: string;
   name?: string;
   objective?: string;
   productSlug?: string;

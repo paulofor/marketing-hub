@@ -181,7 +181,7 @@ class ProductServiceTest {
         assertThat(json).isEqualTo("{\"slug\":\"metodo-musa-7-dias\"}");
     }
 
-    /** Deve inserir a jornada persuasiva AIDA no contrato PDE preservando dados existentes. */
+    /** Deve inserir a jornada persuasiva por estágios comerciais no contrato PDE preservando dados existentes. */
     @Test
     void applyDefaultPdePersuasiveJourney() {
         ProductRepository productRepository = mock(ProductRepository.class);
@@ -202,8 +202,10 @@ class ProductServiceTest {
 
         assertThat(updated.getPdeExperienceJson()).contains("\"experienceVersion\" : \"musa-pde-entry-v4-video-hero\"");
         assertThat(updated.getPdeExperienceJson()).contains("\"persuasiveJourney\"");
-        assertThat(updated.getPdeExperienceJson()).contains("\"framework\" : \"AIDA\"");
-        assertThat(updated.getPdeExperienceJson()).contains("\"trackedSectionId\" : \"interactive_diagnostic\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"framework\" : \"Funil experiencial PDE\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"stageName\" : \"Envolvimento diagnóstico\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"stageName\" : \"Validação pós-compra\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"trackedSectionIds\" : [ \"interactive_diagnostic\", \"free_diagnostic_preview\" ]");
         assertThat(updated.getPdeExperienceJson()).contains("\"trackedSectionId\" : \"subscription_paywall\"");
     }
 
@@ -216,14 +218,14 @@ class ProductServiceTest {
         ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
         Product product = Product.builder()
                 .slug("metodo-musa-7-dias")
-                .pdeExperienceJson("{\"persuasiveJourney\":{\"framework\":\"AIDA\",\"steps\":[]}}")
+                .pdeExperienceJson("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\",\"steps\":[]}}")
                 .build();
 
         when(productRepository.findBySlug("metodo-musa-7-dias")).thenReturn(Optional.of(product));
 
         var journey = service.getPublicPdePersuasiveJourney("metodo-musa-7-dias");
 
-        assertThat(journey.get("framework").asText()).isEqualTo("AIDA");
+        assertThat(journey.get("framework").asText()).isEqualTo("Funil experiencial PDE");
         assertThat(journey.get("steps").isArray()).isTrue();
     }
 

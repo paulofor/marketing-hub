@@ -161,15 +161,20 @@ describe("ProductListPage", () => {
           name: "Método MUSA - Presença Elegante em 7 Dias",
           pdeExperienceJson: JSON.stringify({
             persuasiveJourney: {
-              version: "aida-interactive-v1",
-              framework: "AIDA",
+              version: "commercial-stages-v1",
+              framework: "Funil experiencial PDE",
               steps: [
                 {
-                  stage: "interest",
-                  aidaLabel: "Interesse",
-                  trackedSectionId: "interactive_diagnostic",
+                  stageNumber: 2,
+                  stage: "diagnostic_value",
+                  stageName: "Envolvimento diagnóstico",
+                  psychologicalRole: "Interesse + Desejo",
+                  trackedSectionIds: [
+                    "interactive_diagnostic",
+                    "free_diagnostic_preview",
+                  ],
                   commercialFunction:
-                    "Levar a usuária a interagir com o diagnóstico.",
+                    "Questionário e plano de 7 dias aumentam valor percebido.",
                 },
               ],
             },
@@ -186,10 +191,19 @@ describe("ProductListPage", () => {
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByText(/Jornada persuasiva PDE/i)).toBeTruthy();
-    expect(screen.getByText(/AIDA · aida-interactive-v1/i)).toBeTruthy();
-    expect(screen.getByText(/Levar a usuária a interagir/i)).toBeTruthy();
-    expect(screen.getByText(/seção: interactive_diagnostic/i)).toBeTruthy();
+    expect(await screen.findByText(/Jornada comercial PDE/i)).toBeTruthy();
+    expect(
+      screen.getByText(/Funil experiencial PDE · commercial-stages-v1/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Estágio 2: Envolvimento diagnóstico/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/Questionário e plano de 7 dias/i)).toBeTruthy();
+    expect(
+      screen.getByText(
+        /seções: interactive_diagnostic, free_diagnostic_preview/i,
+      ),
+    ).toBeTruthy();
   });
 
   it("calls backend to insert the default PDE persuasive journey", async () => {

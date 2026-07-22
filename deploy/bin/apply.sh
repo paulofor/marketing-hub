@@ -9,6 +9,10 @@ BACKEND_IMAGE=${BACKEND_IMAGE:-marketinghub-backend}
 FRONTEND_IMAGE=${FRONTEND_IMAGE:-marketinghub-frontend}
 VIDEO_IMAGE=${VIDEO_IMAGE:-marketinghub-video-management}
 IMAGE_TAG=${IMAGE_TAG:-latest}
+IMAGE_LOAD_TIMEOUT=${IMAGE_LOAD_TIMEOUT:-12m}
+COMPOSE_RECREATE_TIMEOUT=${COMPOSE_RECREATE_TIMEOUT:-8m}
+BACKEND_HEALTH_URL=${BACKEND_HEALTH_URL:-http://localhost:8000/ops-mh-observability-v2/health}
+FRONTEND_HEALTH_URL=${FRONTEND_HEALTH_URL:-http://localhost:5173/}
 
 log() {
   printf '[%s] [apply.sh] %s\n' "$(date -Is)" "$*"
@@ -44,6 +48,51 @@ run_with_heartbeat() {
   return "${status}"
 }
 
+dump_app_diagnostics() {
+  log "Diagnóstico docker compose ps"
+  docker compose ps backend frontend || true
+
+  log "Últimas linhas do backend"
+  docker logs --tail 120 marketinghub-backend 2>&1 || true
+
+  log "Últimas linhas do frontend"
+  docker logs --tail 80 marketinghub-frontend 2>&1 || true
+}
+
+run_with_timeout_and_diagnostics() {
+  local description="$1"
+  local duration="$2"
+  shift 2
+
+  if ! run_with_heartbeat "${description}" timeout "${duration}" "$@"; then
+    log "Comando falhou ou excedeu o limite ${duration}: ${description}"
+    dump_app_diagnostics
+    return 1
+  fi
+}
+
+wait_http() {
+  local name="$1"
+  local url="$2"
+  local attempts="${3:-24}"
+  local interval="${4:-5}"
+
+  log "Validando ${name} em ${url}"
+  for attempt in $(seq 1 "${attempts}"); do
+    if curl -fsS --max-time 5 "${url}" >/dev/null; then
+      log "${name} respondeu com sucesso"
+      return 0
+    fi
+
+    log "Aguardando ${name} responder (${attempt}/${attempts})"
+    sleep "${interval}"
+  done
+
+  log "${name} não respondeu em ${url}"
+  dump_app_diagnostics
+  return 1
+}
+
 mkdir -p "${DEPLOY_DIR}"
 cd "${DEPLOY_DIR}"
 
@@ -51,19 +100,19 @@ log "Preparando diretórios persistentes em ${DEPLOY_DIR}"
 mkdir -p volumes/backend/uploads volumes/backend/logs
 
 if [[ -f "${BACKEND_TAR}" ]]; then
-  run_with_heartbeat "docker load backend (${BACKEND_TAR})" docker load -i "${BACKEND_TAR}"
+  run_with_timeout_and_diagnostics "docker load backend (${BACKEND_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${BACKEND_TAR}"
 else
   log "Arquivo de imagem backend não encontrado em ${BACKEND_TAR}; mantendo imagem local atual."
 fi
 
 if [[ -f "${FRONTEND_TAR}" ]]; then
-  run_with_heartbeat "docker load frontend (${FRONTEND_TAR})" docker load -i "${FRONTEND_TAR}"
+  run_with_timeout_and_diagnostics "docker load frontend (${FRONTEND_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${FRONTEND_TAR}"
 else
   log "Arquivo de imagem frontend não encontrado em ${FRONTEND_TAR}; mantendo imagem local atual."
 fi
 
 if [[ -f "${VIDEO_TAR}" ]]; then
-  run_with_heartbeat "docker load video-management (${VIDEO_TAR})" docker load -i "${VIDEO_TAR}"
+  run_with_timeout_and_diagnostics "docker load video-management (${VIDEO_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${VIDEO_TAR}"
 else
   log "Arquivo de imagem video-management não encontrado em ${VIDEO_TAR}; mantendo imagem local atual."
 fi
@@ -125,10 +174,14 @@ fi
 remove_conflicting_container "backend" "marketinghub-backend"
 remove_conflicting_container "frontend" "marketinghub-frontend"
 
-run_with_heartbeat \
+run_with_timeout_and_diagnostics \
   "recriar somente backend/frontend" \
+  "${COMPOSE_RECREATE_TIMEOUT}" \
   env BACKEND_IMAGE_TAG=latest FRONTEND_IMAGE_TAG=latest VIDEO_MGMT_IMAGE_TAG=latest \
   docker compose up -d --force-recreate --remove-orphans backend frontend
+
+wait_http "backend" "${BACKEND_HEALTH_URL}"
+wait_http "frontend" "${FRONTEND_HEALTH_URL}" 12 5
 
 cleanup_previous_tags "${BACKEND_IMAGE}" "latest"
 cleanup_previous_tags "${FRONTEND_IMAGE}" "latest"

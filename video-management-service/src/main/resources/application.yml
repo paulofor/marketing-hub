@@ -36,6 +36,7 @@ video:
         - REAL
       base-url: https://generativelanguage.googleapis.com/v1beta
       api-key: ${GEMINI_API_KEY:}
+      api-key-file: ${GEMINI_API_KEY_FILE:}
       model: veo-3.1-generate-preview
       aspect-ratio: "9:16"
       resolution: 720p

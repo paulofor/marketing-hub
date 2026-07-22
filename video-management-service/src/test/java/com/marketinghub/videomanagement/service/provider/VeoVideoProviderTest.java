@@ -14,11 +14,14 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoScriptStatus;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import okio.Buffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,7 +79,11 @@ class VeoVideoProviderTest {
         assertThat(artifacts.videoFile().assetType()).isEqualTo(AssetType.VIDEO);
         assertThat(artifacts.providerJobId()).isEqualTo("operations/video-123");
         assertThat(progress.get()).isEqualTo(95);
-        assertThat(server.takeRequest().getPath()).isEqualTo("/models/veo-3.1-generate-preview:predictLongRunning");
+        RecordedRequest renderRequest = server.takeRequest();
+        assertThat(renderRequest.getPath()).isEqualTo("/models/veo-3.1-generate-preview:predictLongRunning");
+        assertThat(renderRequest.getBody().readUtf8())
+                .contains("mulher brasileira elegante")
+                .contains("https://assets.example/musa-character.png");
         assertThat(server.takeRequest().getPath()).isEqualTo("/operations/video-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/video-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/video-123-final");
@@ -115,6 +122,36 @@ class VeoVideoProviderTest {
         VeoVideoProvider provider = new VeoVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
 
         assertThat(provider.supports(job("REAL"))).isTrue();
+    }
+
+    /** Deve aceitar chave Gemini montada em arquivo de secret no container. */
+    @Test
+    void shouldReadGeminiApiKeyFromSecretFile() throws Exception {
+        server.enqueue(json("{\"name\":\"operations/video-123\"}"));
+        server.enqueue(json("""
+                {
+                  "done": true,
+                  "response": {
+                    "generateVideoResponse": {
+                      "generatedSamples": [
+                        {"video": {"uri": "%s/download/video-123"}}
+                      ]
+                    }
+                  }
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        Path keyFile = Files.createTempFile("gemini-api-key", ".txt");
+        Files.writeString(keyFile, "gemini-file-key\n");
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getVeo().setApiKey(null);
+        properties.getProviders().getVeo().setApiKeyFile(keyFile.toString());
+        VeoVideoProvider provider = new VeoVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+
+        provider.render(job(), profile(), (percent, status, message) -> { });
+
+        assertThat(server.takeRequest().getHeader("x-goog-api-key")).isEqualTo("gemini-file-key");
+        Files.deleteIfExists(keyFile);
     }
 
     /** Cria uma resposta JSON para a Gemini API simulada. */
@@ -177,7 +214,12 @@ class VeoVideoProviderTest {
                 null,
                 null,
                 null,
-                null,
+                """
+                        {
+                          "characterImagePrompt": "mulher brasileira elegante, mentora do Metodo MUSA",
+                          "characterImageReferenceUrl": "https://assets.example/musa-character.png"
+                        }
+                        """,
                 Instant.now(),
                 Instant.now());
     }

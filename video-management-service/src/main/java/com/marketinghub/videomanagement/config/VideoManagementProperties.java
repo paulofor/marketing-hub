@@ -121,6 +121,11 @@ public class VideoManagementProperties {
          */
         private String apiKey;
 
+        /**
+         * Caminho opcional para a chave Gemini montada como secret em arquivo.
+         */
+        private String apiKeyFile;
+
         private String model = "veo-3.1-generate-preview";
         private String aspectRatio = "9:16";
         private String resolution = "720p";

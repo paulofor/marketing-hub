@@ -11,6 +11,10 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -125,7 +129,7 @@ public class VeoVideoProvider implements VideoProvider {
                                 SalesVideoScript script) {
         VideoManagementProperties.Veo config = properties.getProviders().getVeo();
         Map<String, Object> instance = new LinkedHashMap<>();
-        instance.put("prompt", buildVeoPrompt(profile, script));
+        instance.put("prompt", buildVeoPrompt(job, profile, script));
 
         Map<String, Object> parameters = new LinkedHashMap<>();
         parameters.put("aspectRatio", config.getAspectRatio());
@@ -196,24 +200,31 @@ public class VeoVideoProvider implements VideoProvider {
     }
 
     /** Monta um prompt de vídeo a partir do roteiro aprovado e do perfil comercial. */
-    private String buildVeoPrompt(SalesVideoProfile profile, SalesVideoScript script) {
+    private String buildVeoPrompt(SalesVideoJob job, SalesVideoProfile profile, SalesVideoScript script) {
         String storyboard = StringUtils.hasText(script.storyboardJson()) ? script.storyboardJson() : "[]";
+        JsonNode metadata = readMetadata(job);
+        String characterPrompt = metadata.path("characterImagePrompt").asText("");
+        String characterReferenceUrl = metadata.path("characterImageReferenceUrl").asText("");
         return """
                 Vertical short-form sales video for a digital product.
                 Language: %s.
                 Title: %s.
                 Persona: %s.
                 Voice style: %s.
+                Character reference image URL: %s.
+                Character image prompt: %s.
                 Hook: %s.
                 Script: %s.
                 CTA: %s.
                 Storyboard JSON: %s.
-                Visual direction: cinematic but direct-response oriented, clear product promise, human emotion, readable pacing, native audio, no fake UI claims, no impossible guarantees.
+                Visual direction: cinematic but direct-response oriented, keep the same character identity and style across scenes, clear product promise, human emotion, readable pacing, native audio, no fake UI claims, no impossible guarantees.
                 """.formatted(
                 nullToDefault(profile.language(), "pt-BR"),
                 nullToDefault(profile.title(), "Sales video"),
                 nullToDefault(profile.personaName(), "target customer"),
                 nullToDefault(profile.voiceStyle(), "confident"),
+                nullToDefault(characterReferenceUrl, "not available"),
+                nullToDefault(characterPrompt, "not available"),
                 nullToDefault(script.hookText(), ""),
                 script.scriptText(),
                 nullToDefault(script.ctaText(), ""),
@@ -273,13 +284,42 @@ public class VeoVideoProvider implements VideoProvider {
 
     /** Aplica a chave Gemini ao request HTTP. */
     private WebClient.RequestHeadersSpec<?> authorized(WebClient.RequestHeadersSpec<?> request) {
-        return request.header("x-goog-api-key", properties.getProviders().getVeo().getApiKey());
+        return request.header("x-goog-api-key", resolveApiKey());
     }
 
     /** Bloqueia execução real sem chave Gemini configurada. */
     private void requireApiKey() {
-        if (!StringUtils.hasText(properties.getProviders().getVeo().getApiKey())) {
+        if (!StringUtils.hasText(resolveApiKey())) {
             throw new VideoProviderException("PROVIDER_AUTH_ERROR", "GEMINI_API_KEY não configurada para VEO");
+        }
+    }
+
+    /** Resolve a chave Gemini por valor direto ou arquivo de secret montado no container. */
+    private String resolveApiKey() {
+        VideoManagementProperties.Veo config = properties.getProviders().getVeo();
+        if (StringUtils.hasText(config.getApiKey())) {
+            return config.getApiKey().trim();
+        }
+        if (!StringUtils.hasText(config.getApiKeyFile())) {
+            return null;
+        }
+        try {
+            String key = Files.readString(Path.of(config.getApiKeyFile().trim())).trim();
+            return StringUtils.hasText(key) ? key : null;
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Não foi possível ler GEMINI_API_KEY_FILE para VEO", ex);
+        }
+    }
+
+    /** Lê os metadados comerciais do job para preservar personagem e referência visual no VEO. */
+    private JsonNode readMetadata(SalesVideoJob job) {
+        if (job == null || !StringUtils.hasText(job.metadataJson())) {
+            return objectMapper.createObjectNode();
+        }
+        try {
+            return objectMapper.readTree(job.metadataJson());
+        } catch (Exception ex) {
+            throw new VideoProviderException("PROVIDER_INVALID_REQUEST", "metadataJson inválido para job VEO " + job.id(), ex);
         }
     }
 

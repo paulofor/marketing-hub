@@ -6016,3 +6016,10 @@
 - foi feito: criado smoke test público com Playwright para abrir a URL publicada, confirmar JavaScript carregado, headline comercial visível e bloco `Diagnóstico de Presença` renderizado.
 - foi feito: o workflow de homologação e produção do PDE passou a executar essa validação depois do deploy, além do health HTTP do backend.
 - impacto comercial esperado: evitar liberar tráfego pago para página que responde `200`, mas está branca, com asset JavaScript quebrado ou sem a primeira dobra comercial visível.
+
+## 2026-07-22 — PED/MUSA: jornada persuasiva interativa no Marketing Hub
+
+- foi decidido tratar o questionário do PDE como mecanismo comercial mensurável, não como formulário isolado.
+- foi feito: o cadastro de produtos passou a inserir e exibir uma `Jornada Persuasiva Interativa do PDE` no contrato do produto, usando AIDA como primeira leitura operacional.
+- foi feito: a aba de analytics do experimento passou a cruzar a jornada cadastrada com seções rastreadas do PDE, mostrando sessões, tempo visível, métrica primária e regra de otimização por etapa.
+- impacto comercial esperado: identificar se o gargalo está em atenção, interesse, desejo ou ação, orientando ajustes de promessa, pergunta inicial, diagnóstico parcial, login, paywall e checkout com base em evidência comportamental.

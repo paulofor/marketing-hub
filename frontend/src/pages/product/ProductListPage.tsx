@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
-import { Eye, Pencil, Video } from "lucide-react";
+import { Eye, Loader2, Pencil, Video, Workflow } from "lucide-react";
+import { parsePdePersuasiveJourney } from "../../api/product/pdePersuasiveJourney";
+import { useApplyDefaultPdePersuasiveJourney } from "../../api/product/useApplyDefaultPdePersuasiveJourney";
 import { useProducts } from "../../api/product/useProducts";
 import PageTitle from "../../components/PageTitle";
 
@@ -24,6 +26,22 @@ function isMusaProduct(product: { slug?: string; name?: string }) {
     slug === "metodo-musa-7-dias" ||
     name.includes("método musa") ||
     name.includes("metodo musa")
+  );
+}
+
+function isPdeProduct(product: {
+  slug?: string;
+  name?: string;
+  productType?: string;
+  pdeExperienceJson?: string;
+}) {
+  const slug = product.slug?.toLowerCase() ?? "";
+  const type = product.productType?.toLowerCase() ?? "";
+  return (
+    slug.includes("pde") ||
+    type.includes("pde") ||
+    Boolean(product.pdeExperienceJson?.trim()) ||
+    isMusaProduct(product)
   );
 }
 
@@ -130,6 +148,7 @@ function buildIdentityColors(product: {
 
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
+  const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
   const products = Array.isArray(data) ? data : [];
   if (isLoading) return <p>Carregando...</p>;
   return (
@@ -158,6 +177,14 @@ export default function ProductListPage() {
         {products.map((product) => {
           const colors = buildIdentityColors(product);
           const previewQaUrl = buildPreviewQaUrl(product);
+          const persuasiveJourney = parsePdePersuasiveJourney(
+            product.pdeExperienceJson,
+          );
+          const showPdeJourneyAction = isPdeProduct(product);
+          const persuasiveJourneySteps = persuasiveJourney?.steps ?? [];
+          const isApplyingJourney =
+            applyDefaultJourney.isPending &&
+            applyDefaultJourney.variables === product.id;
           const registeredColorCount = colors.filter(
             (color) => color.source === "Cadastrada",
           ).length;
@@ -303,6 +330,27 @@ export default function ProductListPage() {
                           Preview/QA sem métricas
                         </a>
                       )}
+                      {showPdeJourneyAction && (
+                        <button
+                          type="button"
+                          className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                          disabled={isApplyingJourney}
+                          onClick={() => applyDefaultJourney.mutate(product.id)}
+                        >
+                          {isApplyingJourney ? (
+                            <Loader2
+                              size={16}
+                              aria-hidden="true"
+                              className="product-editor__button-icon spinning"
+                            />
+                          ) : (
+                            <Workflow size={16} aria-hidden="true" />
+                          )}
+                          {persuasiveJourney
+                            ? "Atualizar jornada PDE"
+                            : "Inserir jornada PDE"}
+                        </button>
+                      )}
                     </div>
                     {!product.slug && (
                       <p className="product-catalog-card__description-links">
@@ -318,6 +366,32 @@ export default function ProductListPage() {
                           product.storytelling ||
                           "Não informada"}
                       </p>
+                      {persuasiveJourney && (
+                        <>
+                          <h3 className="h6 mt-3">Jornada persuasiva PDE</h3>
+                          <p className="small text-muted mb-2">
+                            {persuasiveJourney.framework || "AIDA"} ·{" "}
+                            {persuasiveJourney.version || "sem versão"}
+                          </p>
+                          <ol className="product-catalog-card__journey">
+                            {persuasiveJourneySteps.map((step) => (
+                              <li
+                                key={`${step.stage}-${step.trackedSectionId}`}
+                              >
+                                <strong>{step.aidaLabel || step.stage}</strong>
+                                {step.commercialFunction
+                                  ? `: ${step.commercialFunction}`
+                                  : ""}
+                                {step.trackedSectionId ? (
+                                  <small className="d-block text-muted">
+                                    seção: {step.trackedSectionId}
+                                  </small>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ol>
+                        </>
+                      )}
                       {product.sevenDayJourney && (
                         <>
                           <h3 className="h6 mt-3">Jornada de 7 dias</h3>

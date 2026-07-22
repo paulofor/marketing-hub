@@ -4,6 +4,7 @@ import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.stream.StreamSupport;
 import org.springframework.http.HttpHeaders;
@@ -45,6 +46,12 @@ public class ProductController {
         return mapper.toDto(service.updateProduct(id, request));
     }
 
+    /** Insere a jornada persuasiva interativa padrão no contrato PDE do produto. */
+    @PostMapping("/{id}/pde-persuasive-journey/default")
+    public ProductDto applyDefaultPdePersuasiveJourney(@PathVariable Long id) {
+        return mapper.toDto(service.applyDefaultPdePersuasiveJourney(id));
+    }
+
     /** Lista os produtos comerciais cadastrados no Marketing Hub. */
     @GetMapping
     public List<ProductDto> list() {
@@ -84,5 +91,13 @@ public class ProductController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(service.getPublicPdeExperienceJson(productCode));
+    }
+
+    /** Retorna a jornada persuasiva interativa cadastrada no contrato PDE do produto. */
+    @GetMapping(
+            value = "/public/{productCode}/pde-persuasive-journey",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public JsonNode getPublicPdePersuasiveJourney(@PathVariable String productCode) {
+        return service.getPublicPdePersuasiveJourney(productCode);
     }
 }

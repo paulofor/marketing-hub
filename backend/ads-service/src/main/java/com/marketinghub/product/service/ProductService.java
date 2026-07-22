@@ -1,7 +1,10 @@
 package com.marketinghub.product.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
@@ -55,6 +58,24 @@ public class ProductService {
     public Product updateProduct(Long id, CreateProductRequest request) {
         Product product = getProduct(id);
         applyRequest(product, request);
+        return repository.save(product);
+    }
+
+    /** Insere a jornada persuasiva interativa padrão no contrato PDE do produto. */
+    @Transactional
+    public Product applyDefaultPdePersuasiveJourney(Long id) {
+        Product product = getProduct(id);
+        ObjectNode contract = readPdeExperienceContract(product);
+        if (!contract.hasNonNull("slug") && product.getSlug() != null && !product.getSlug().isBlank()) {
+            contract.put("slug", product.getSlug().trim());
+        }
+        contract.set("persuasiveJourney", buildDefaultPdePersuasiveJourney(product));
+        try {
+            product.setPdeExperienceJson(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(contract));
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Não foi possível atualizar a jornada persuasiva PDE", ex);
+        }
         return repository.save(product);
     }
 
@@ -184,6 +205,19 @@ public class ProductService {
         return product.getPdeExperienceJson().trim();
     }
 
+    /** Lê a jornada persuasiva interativa publicada no contrato PDE do produto. */
+    @Transactional(readOnly = true)
+    public JsonNode getPublicPdePersuasiveJourney(String productCode) {
+        Product product = findProductByCode(productCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
+        ObjectNode contract = readPdeExperienceContract(product);
+        JsonNode journey = contract.get("persuasiveJourney");
+        if (journey == null || journey.isNull() || journey.isMissingNode()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Jornada persuasiva PDE não cadastrada");
+        }
+        return journey;
+    }
+
     /** Valida que o contrato PDE informado é JSON antes de persistir no cadastro comercial. */
     private String validatePdeExperienceJson(String rawJson) {
         if (rawJson == null || rawJson.isBlank()) {
@@ -195,6 +229,76 @@ public class ProductService {
         } catch (JsonProcessingException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Contrato JSON da experiência PDE inválido", ex);
         }
+    }
+
+    /** Converte o contrato PDE salvo em objeto JSON editável. */
+    private ObjectNode readPdeExperienceContract(Product product) {
+        String rawJson = product.getPdeExperienceJson();
+        if (rawJson == null || rawJson.isBlank()) {
+            return objectMapper.createObjectNode();
+        }
+        try {
+            JsonNode parsed = objectMapper.readTree(rawJson);
+            if (!parsed.isObject()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Contrato JSON da experiência PDE deve ser um objeto");
+            }
+            return (ObjectNode) parsed;
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Contrato JSON da experiência PDE inválido", ex);
+        }
+    }
+
+    /** Monta o modelo inicial AIDA para medir o questionário como mecanismo comercial do PDE. */
+    private ObjectNode buildDefaultPdePersuasiveJourney(Product product) {
+        ObjectNode journey = objectMapper.createObjectNode();
+        journey.put("version", "aida-interactive-v1");
+        journey.put("framework", "AIDA");
+        journey.put("name", "Jornada Persuasiva Interativa do PDE");
+        journey.put("objective", "Medir se o questionário aumenta consciência, desejo e avanço para login/paywall sem contaminar versões de experiência.");
+        journey.put("productSlug", valueOrFallback(product.getSlug()));
+        journey.put("commercialPromise", valueOrFallback(product.getPromise()));
+        ArrayNode steps = journey.putArray("steps");
+        addPersuasiveJourneyStep(steps, "attention", "Atenção", "login_hero",
+                "Capturar atenção com promessa clara e reconhecimento imediato da dor.",
+                "A pessoa entende que o produto fala diretamente com a dificuldade dela.",
+                "page_view e tempo visível na primeira dobra",
+                "Se muita gente abandona aqui, revisar promessa, hero, carregamento e clareza do primeiro CTA.");
+        addPersuasiveJourneyStep(steps, "interest", "Interesse", "interactive_diagnostic",
+                "Levar a usuária a interagir e revelar contexto próprio dentro do questionário.",
+                "A pessoa troca passividade por microcompromisso e passa a aprender sobre a própria dor.",
+                "eventos de seção e início do diagnóstico",
+                "Se há pouca interação, reduzir fricção da primeira pergunta e tornar a recompensa do diagnóstico mais concreta.");
+        addPersuasiveJourneyStep(steps, "desire", "Desejo", "free_diagnostic_preview",
+                "Entregar diagnóstico parcial que prove valor e aumente desejo pela continuidade.",
+                "A pessoa percebe personalização e imagina o resultado prometido aplicado à rotina dela.",
+                "tempo visível no diagnóstico, clique para continuar e captura de e-mail",
+                "Se o desejo não avança, fortalecer prova, especificidade do plano e contraste antes/depois.");
+        addPersuasiveJourneyStep(steps, "action", "Ação", "subscription_paywall",
+                "Converter intenção em login, paywall, checkout e compra.",
+                "A pessoa entende a próxima ação e vê motivo suficiente para liberar a experiência completa.",
+                "login, paywall, checkout e compra",
+                "Se o gargalo está aqui, revisar preço, oferta, garantia, checkout e continuidade entre diagnóstico e pagamento.");
+        return journey;
+    }
+
+    /** Adiciona uma etapa comercial rastreável à jornada persuasiva padrão. */
+    private void addPersuasiveJourneyStep(
+            ArrayNode steps,
+            String stage,
+            String aidaLabel,
+            String trackedSectionId,
+            String commercialFunction,
+            String userShift,
+            String primaryMetric,
+            String optimizationRule) {
+        ObjectNode step = steps.addObject();
+        step.put("stage", stage);
+        step.put("aidaLabel", aidaLabel);
+        step.put("trackedSectionId", trackedSectionId);
+        step.put("commercialFunction", commercialFunction);
+        step.put("userShift", userShift);
+        step.put("primaryMetric", primaryMetric);
+        step.put("optimizationRule", optimizationRule);
     }
 
     /** Busca o produto por slug público ou por identificador interno numérico. */

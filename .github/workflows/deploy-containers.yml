@@ -228,6 +228,7 @@ jobs:
   deploy-app:
     name: Deploy backend + frontend
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     needs: [detect-changes, backend-image, frontend-image]
     if: always() && needs.detect-changes.outputs.app_deploy == 'true'
     steps:
@@ -335,7 +336,7 @@ jobs:
           SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
           ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply.sh"
-          timeout 30m ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+          timeout -k 30s 18m ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
             "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image.tar FRONTEND_TAR=/tmp/frontend-image.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
 
   deploy-video-management:

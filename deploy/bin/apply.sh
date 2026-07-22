@@ -54,11 +54,12 @@ dump_app_diagnostics() {
   log "Diagnóstico de disco"
   timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" df -h "${DEPLOY_DIR}" /tmp || true
 
-  log "Diagnóstico docker system df"
-  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker system df || true
-
   log "Diagnóstico docker compose ps"
   timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker compose ps backend frontend || true
+
+  log "Diagnóstico docker inspect backend"
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker inspect marketinghub-backend \
+    --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} started={{.State.StartedAt}} finished={{.State.FinishedAt}} image={{.Config.Image}}' 2>&1 || true
 
   log "Últimas linhas do backend"
   timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker logs --tail 120 marketinghub-backend 2>&1 || true
@@ -86,7 +87,6 @@ prepare_image_load() {
   log "Preparando carga da imagem ${name}"
   ls -lh "${tar_path}" || true
   df -h "${DEPLOY_DIR}" /tmp || true
-  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker system df || true
   docker image prune -f >/dev/null 2>&1 || true
 }
 

@@ -111,7 +111,7 @@ function buildIdentityColors(product: {
 
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
-  const products = (Array.isArray(data) ? data : []).filter(isMusaProduct);
+  const products = Array.isArray(data) ? data : [];
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>
@@ -129,6 +129,13 @@ export default function ProductListPage() {
       </div>
 
       <div className="row g-3">
+        {products.length === 0 && (
+          <div className="col-12">
+            <p className="text-muted mb-0">
+              Nenhum produto comercial cadastrado.
+            </p>
+          </div>
+        )}
         {products.map((product) => {
           const colors = buildIdentityColors(product);
           const registeredColorCount = colors.filter(

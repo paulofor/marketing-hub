@@ -20,6 +20,7 @@ cd pde-platform/frontend
 npm install
 npm run build
 npm run test:visual
+PDE_PUBLIC_HEALTH_URL=http://191.252.102.54:5177 npm run test:public-health
 npm run dev
 ```
 
@@ -29,6 +30,12 @@ omita dependencias do Vite/TypeScript ou desative recursos de desenvolvimento.
 
 Playwright fica instalado no frontend do PDE para repetir validacoes visuais da
 entrada MUSA sem depender de instalacao temporaria.
+
+O health check publico do frontend fica em `GET /healthz` para validar resposta
+HTTP simples do container. Para validar o que evita tela branca comercial, use
+`npm run test:public-health` com `PDE_PUBLIC_HEALTH_URL`: o teste abre a URL
+publicada, exige JavaScript carregado, confere a headline da primeira dobra e
+confirma o bloco `Diagnóstico de Presença`.
 
 Docker:
 

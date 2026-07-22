@@ -6,6 +6,7 @@
     "check:api-boundary": "bash scripts/validate-api-boundary.sh",
     "dev": "NODE_ENV=development vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
+    "test:public-health": "playwright test tests/public-health.spec.ts --config=playwright.public.config.ts",
     "test:visual": "playwright test",
     "preview": "vite preview --host 0.0.0.0"
   },

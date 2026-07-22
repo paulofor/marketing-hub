@@ -25,6 +25,7 @@ public class PdeDatabaseMigrationService {
     private static final String ACCESS_TOKEN_COLUMN = "access_token";
     private static final String AI_GUIDANCE_ACCESS_GRANT_FK = "fk_pde_ai_guidance_access_grant";
     private static final int ACCESS_TOKEN_MIN_LENGTH = 120;
+    private static final String OPERATIONAL_FAILURE_TABLE = "pde_operational_endpoint_failure";
 
     private final String jdbcUrl;
     private final String jdbcUsername;
@@ -67,11 +68,40 @@ public class PdeDatabaseMigrationService {
         try (Connection connection = connectionProvider.open(jdbcUrl, jdbcUsername, jdbcPassword)) {
             migrateFunnelEventExperienceVersion(connection);
             migrateAiGuidancePublicAccessCompatibility(connection);
+            migrateOperationalFailureTable(connection);
         } catch (SQLException ex) {
             migrated.set(false);
             log.error("Falha ao migrar schema operacional do PDE", ex);
             throw new IllegalStateException("Não foi possível migrar schema operacional do PDE", ex);
         }
+    }
+
+    /** Garante a tabela que transforma erro técnico em alerta comercial pós-deploy. */
+    private void migrateOperationalFailureTable(Connection connection) throws SQLException {
+        if (objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+                OPERATIONAL_FAILURE_TABLE)) {
+            return;
+        }
+        executeSql(
+                connection,
+                """
+                CREATE TABLE pde_operational_endpoint_failure (
+                  id BIGINT NOT NULL AUTO_INCREMENT,
+                  endpoint VARCHAR(255) NOT NULL,
+                  http_method VARCHAR(12) NOT NULL,
+                  http_status INT NOT NULL,
+                  funnel_stage VARCHAR(80) NOT NULL,
+                  error_class VARCHAR(191) NOT NULL,
+                  error_message VARCHAR(1000) NULL,
+                  occurred_at DATETIME NOT NULL,
+                  PRIMARY KEY (id),
+                  KEY idx_pde_operational_failure_endpoint_time (endpoint, occurred_at),
+                  KEY idx_pde_operational_failure_stage_time (funnel_stage, occurred_at)
+                )
+                """);
+        log.info("Tabela de falhas operacionais PDE criada; table={}", OPERATIONAL_FAILURE_TABLE);
     }
 
     /** Garante coluna e índice usados para comparar métricas por versão comercial do PDE. */

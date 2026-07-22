@@ -25,9 +25,15 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement columnStatement = existingObjectStatement(false);
         PreparedStatement indexStatement = existingObjectStatement(false);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(false);
+        PreparedStatement operationalFailureTableStatement = existingObjectStatement(true);
         Statement ddlStatement = mock(Statement.class);
         when(connection.prepareStatement(anyString()))
-                .thenReturn(tableStatement, columnStatement, indexStatement, aiGuidanceTableStatement);
+                .thenReturn(
+                        tableStatement,
+                        columnStatement,
+                        indexStatement,
+                        aiGuidanceTableStatement,
+                        operationalFailureTableStatement);
         when(connection.createStatement()).thenReturn(ddlStatement);
         PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
                 "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
@@ -53,6 +59,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
+        PreparedStatement operationalFailureTableStatement = existingObjectStatement(true);
         when(connection.prepareStatement(anyString()))
                 .thenReturn(
                         tableStatement,
@@ -60,7 +67,8 @@ class PdeDatabaseMigrationServiceTest {
                         indexStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
-                        accessTokenLengthStatement);
+                        accessTokenLengthStatement,
+                        operationalFailureTableStatement);
         PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
                 "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
 
@@ -79,6 +87,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(true);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(40);
+        PreparedStatement operationalFailureTableStatement = existingObjectStatement(true);
         Statement ddlStatement = mock(Statement.class);
         when(connection.prepareStatement(anyString()))
                 .thenReturn(
@@ -87,7 +96,8 @@ class PdeDatabaseMigrationServiceTest {
                         indexStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
-                        accessTokenLengthStatement);
+                        accessTokenLengthStatement,
+                        operationalFailureTableStatement);
         when(connection.createStatement()).thenReturn(ddlStatement);
         PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
                 "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
@@ -111,6 +121,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(true);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(36);
+        PreparedStatement operationalFailureTableStatement = existingObjectStatement(true);
         Statement ddlStatement = mock(Statement.class);
         when(connection.prepareStatement(anyString()))
                 .thenReturn(
@@ -119,7 +130,8 @@ class PdeDatabaseMigrationServiceTest {
                         indexStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
-                        accessTokenLengthStatement);
+                        accessTokenLengthStatement,
+                        operationalFailureTableStatement);
         when(connection.createStatement()).thenReturn(ddlStatement);
         PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
                 "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
@@ -131,6 +143,37 @@ class PdeDatabaseMigrationServiceTest {
                 .executeUpdate("ALTER TABLE pde_ai_guidance_request DROP FOREIGN KEY fk_pde_ai_guidance_access_grant");
         ddlOrder.verify(ddlStatement)
                 .executeUpdate("ALTER TABLE pde_ai_guidance_request MODIFY COLUMN access_token VARCHAR(120) NOT NULL");
+    }
+
+    /** Confirma que a tabela de falhas operacionais é criada para alertar o pós-deploy. */
+    @Test
+    void createsOperationalFailureTableWhenMissing() throws Exception {
+        Connection connection = mock(Connection.class);
+        PreparedStatement tableStatement = existingObjectStatement(true);
+        PreparedStatement columnStatement = existingObjectStatement(true);
+        PreparedStatement indexStatement = existingObjectStatement(true);
+        PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
+        PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
+        PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
+        PreparedStatement operationalFailureTableStatement = existingObjectStatement(false);
+        Statement ddlStatement = mock(Statement.class);
+        when(connection.prepareStatement(anyString()))
+                .thenReturn(
+                        tableStatement,
+                        columnStatement,
+                        indexStatement,
+                        aiGuidanceTableStatement,
+                        aiGuidanceFkStatement,
+                        accessTokenLengthStatement,
+                        operationalFailureTableStatement);
+        when(connection.createStatement()).thenReturn(ddlStatement);
+        PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
+                "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
+
+        migrationService.migrateIfNeeded();
+
+        verify(ddlStatement).executeUpdate(org.mockito.ArgumentMatchers.contains(
+                "CREATE TABLE pde_operational_endpoint_failure"));
     }
 
     /** Monta um statement de metadados que retorna existência ou ausência do objeto consultado. */

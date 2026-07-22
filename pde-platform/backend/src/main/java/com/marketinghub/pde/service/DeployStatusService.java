@@ -28,6 +28,7 @@ public class DeployStatusService {
     private final String aiWorkerImage;
     private final int backendPublicPort;
     private final int frontendPublicPort;
+    private final PdeOperationalHealthService operationalHealthService;
 
     /** Recebe os metadados de deploy publicados como variáveis de ambiente. */
     public DeployStatusService(
@@ -43,7 +44,8 @@ public class DeployStatusService {
             @Value("${pde.deploy.frontend-image:}") String frontendImage,
             @Value("${pde.deploy.ai-worker-image:}") String aiWorkerImage,
             @Value("${pde.deploy.backend-public-port:8096}") int backendPublicPort,
-            @Value("${pde.deploy.frontend-public-port:5176}") int frontendPublicPort) {
+            @Value("${pde.deploy.frontend-public-port:5176}") int frontendPublicPort,
+            PdeOperationalHealthService operationalHealthService) {
         this.environment = environment;
         this.composeFile = composeFile;
         this.commitSha = commitSha;
@@ -57,6 +59,7 @@ public class DeployStatusService {
         this.aiWorkerImage = aiWorkerImage;
         this.backendPublicPort = backendPublicPort;
         this.frontendPublicPort = frontendPublicPort;
+        this.operationalHealthService = operationalHealthService;
     }
 
     /** Retorna o manifesto de ambiente e serviços para o painel do Marketing Hub. */
@@ -70,7 +73,9 @@ public class DeployStatusService {
                 frontendUrl,
                 backendUrl,
                 deployedAt,
-                services());
+                services(),
+                operationalHealthService.schemaStatus(),
+                operationalHealthService.operationalAlerts());
     }
 
     /** Lista os containers esperados pela stack publicada do PDE. */

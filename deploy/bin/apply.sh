@@ -10,6 +10,7 @@ FRONTEND_IMAGE=${FRONTEND_IMAGE:-marketinghub-frontend}
 VIDEO_IMAGE=${VIDEO_IMAGE:-marketinghub-video-management}
 IMAGE_TAG=${IMAGE_TAG:-latest}
 IMAGE_LOAD_TIMEOUT=${IMAGE_LOAD_TIMEOUT:-12m}
+COMMAND_TIMEOUT_KILL_AFTER=${COMMAND_TIMEOUT_KILL_AFTER:-30s}
 COMPOSE_RECREATE_TIMEOUT=${COMPOSE_RECREATE_TIMEOUT:-8m}
 BACKEND_HEALTH_URL=${BACKEND_HEALTH_URL:-http://localhost:8000/ops-mh-observability-v2/health}
 FRONTEND_HEALTH_URL=${FRONTEND_HEALTH_URL:-http://localhost:5173/}
@@ -49,6 +50,12 @@ run_with_heartbeat() {
 }
 
 dump_app_diagnostics() {
+  log "Diagnóstico de disco"
+  df -h "${DEPLOY_DIR}" /tmp || true
+
+  log "Diagnóstico docker system df"
+  docker system df || true
+
   log "Diagnóstico docker compose ps"
   docker compose ps backend frontend || true
 
@@ -64,11 +71,22 @@ run_with_timeout_and_diagnostics() {
   local duration="$2"
   shift 2
 
-  if ! run_with_heartbeat "${description}" timeout "${duration}" "$@"; then
+  if ! run_with_heartbeat "${description}" timeout -k "${COMMAND_TIMEOUT_KILL_AFTER}" "${duration}" "$@"; then
     log "Comando falhou ou excedeu o limite ${duration}: ${description}"
     dump_app_diagnostics
     return 1
   fi
+}
+
+prepare_image_load() {
+  local name="$1"
+  local tar_path="$2"
+
+  log "Preparando carga da imagem ${name}"
+  ls -lh "${tar_path}" || true
+  df -h "${DEPLOY_DIR}" /tmp || true
+  docker system df || true
+  docker image prune -f >/dev/null 2>&1 || true
 }
 
 wait_http() {
@@ -100,18 +118,21 @@ log "Preparando diretórios persistentes em ${DEPLOY_DIR}"
 mkdir -p volumes/backend/uploads volumes/backend/logs
 
 if [[ -f "${BACKEND_TAR}" ]]; then
+  prepare_image_load "backend" "${BACKEND_TAR}"
   run_with_timeout_and_diagnostics "docker load backend (${BACKEND_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${BACKEND_TAR}"
 else
   log "Arquivo de imagem backend não encontrado em ${BACKEND_TAR}; mantendo imagem local atual."
 fi
 
 if [[ -f "${FRONTEND_TAR}" ]]; then
+  prepare_image_load "frontend" "${FRONTEND_TAR}"
   run_with_timeout_and_diagnostics "docker load frontend (${FRONTEND_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${FRONTEND_TAR}"
 else
   log "Arquivo de imagem frontend não encontrado em ${FRONTEND_TAR}; mantendo imagem local atual."
 fi
 
 if [[ -f "${VIDEO_TAR}" ]]; then
+  prepare_image_load "video-management" "${VIDEO_TAR}"
   run_with_timeout_and_diagnostics "docker load video-management (${VIDEO_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${VIDEO_TAR}"
 else
   log "Arquivo de imagem video-management não encontrado em ${VIDEO_TAR}; mantendo imagem local atual."

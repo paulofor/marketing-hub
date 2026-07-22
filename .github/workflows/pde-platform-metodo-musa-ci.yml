@@ -251,6 +251,11 @@ jobs:
           npm ci --include=dev
           npx playwright install --with-deps chromium
           npm run test:public-health
+      - name: Validate homolog public diagnostic smoke
+        working-directory: pde-platform/frontend
+        env:
+          PDE_PUBLIC_HEALTH_URL: http://${{ env.DEPLOY_HOST }}:${{ env.PDE_PLATFORM_HOMOLOG_FRONTEND_PORT }}
+        run: npm run test:public-diagnostic-smoke
 
   deploy_production:
     name: Deploy production to Metodo MUSA host
@@ -355,3 +360,8 @@ jobs:
           npm ci --include=dev
           npx playwright install --with-deps chromium
           npm run test:public-health
+      - name: Validate production public diagnostic smoke
+        working-directory: pde-platform/frontend
+        env:
+          PDE_PUBLIC_HEALTH_URL: https://clubemusa.com.br
+        run: npm run test:public-diagnostic-smoke

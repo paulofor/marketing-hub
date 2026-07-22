@@ -31,11 +31,15 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
     @Query("""
             select c from FacebookAdsCampaign c
             join fetch c.experiment e
-            where e.status = :runningStatus
+            where c.id is not null
+              and c.id <> ''
+              and (
+                  e.status = :runningStatus
                or (
                    e.status in :settlementStatuses
                    and c.metricsFinalSyncedAt is null
                )
+              )
             """)
     List<FacebookAdsCampaign> findMetricsSyncTargets(
             @Param("runningStatus") ExperimentStatus runningStatus,

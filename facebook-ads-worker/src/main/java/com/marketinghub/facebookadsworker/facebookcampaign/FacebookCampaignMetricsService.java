@@ -91,8 +91,22 @@ public class FacebookCampaignMetricsService {
         }
 
         for (CampaignMetricsSyncTarget target : targets) {
+            if (!isValidSyncTarget(target)) {
+                LOGGER.warn(
+                        "Skipping invalid Facebook campaign metrics sync target: campaignId={} experimentId={}",
+                        target != null ? target.campaignId() : null,
+                        target != null ? target.experimentId() : null);
+                continue;
+            }
             processTarget(target);
         }
+    }
+
+    /**
+     * Verifica se o alvo recebido do backend possui identificador de campanha apto para chamadas Meta/backend.
+     */
+    private boolean isValidSyncTarget(CampaignMetricsSyncTarget target) {
+        return target != null && StringUtils.hasText(target.campaignId());
     }
 
     /**

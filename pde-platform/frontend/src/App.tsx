@@ -1207,6 +1207,19 @@ function App() {
     return 'O envio por e-mail ainda não está configurado neste ambiente. Configure o envio ou habilite o link de teste para entrar.';
   }
 
+  function resolvePublicDiagnosticEmailMessage(result: MagicLinkResponse) {
+    if (result.deliveryStatus === 'SENT') {
+      return 'Enviei para seu e-mail o caminho para salvar seu diagnóstico e abrir o roteiro detalhado dos 7 dias.';
+    }
+    if (result.accessUrl) {
+      return 'Seu roteiro detalhado foi liberado em ambiente de teste. Use o botão para abrir sua Área MUSA.';
+    }
+    if (result.deliveryStatus === 'EMAIL_SEND_FAILED') {
+      return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. A equipe MUSA precisa concluir a configuração do domínio de envio.';
+    }
+    return 'Seu acesso foi criado, mas o envio por e-mail ainda não está configurado neste ambiente.';
+  }
+
   function openDevAccess(accessUrl: string) {
     window.history.replaceState(null, '', accessUrl);
     const token = accessUrl.split('/access/')[1] ?? '';
@@ -1429,6 +1442,50 @@ function App() {
     }
   }
 
+  async function submitPublicDiagnosticEmail() {
+    if (!publicDiagnosticGuidance || publicDiagnosticGuidance.status !== 'COMPLETED') {
+      setErrorMessage('Envie o diagnóstico antes para a Consultora MUSA montar seu plano.');
+      return;
+    }
+    if (!email.trim()) {
+      setErrorMessage('Informe seu melhor e-mail para receber o roteiro detalhado do seu plano de 7 dias.');
+      return;
+    }
+    setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+    setDevAccessUrl('');
+    try {
+      await trackEvent('LOGIN_STARTED', {
+        email,
+        provider: 'EMAIL_MAGIC_LINK',
+        metadata: {
+          authMode: 'public_diagnostic_plan',
+          diagnosticRequestId: publicDiagnosticGuidance.requestId,
+          actionName: 'public_diagnostic_email_submitted',
+        },
+      });
+      const response = await fetch('/api/pde/access/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productSlug: product.slug, email }),
+      });
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}) as ApiErrorResponse);
+        throw new Error(errorBody.error ?? 'Não foi possível enviar seu roteiro por e-mail.');
+      }
+      const result: MagicLinkResponse = await response.json();
+      if (result.accessUrl) {
+        setDevAccessUrl(result.accessUrl);
+      }
+      setSuccessMessage(resolvePublicDiagnosticEmailMessage(result));
+    } catch {
+      setErrorMessage('Não conseguimos enviar seu roteiro agora. Confira o e-mail e tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function pollPublicPresenceDiagnostic(requestId: string) {
     for (let attempt = 0; attempt < 12; attempt += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 900 : 1800));
@@ -1578,6 +1635,41 @@ function App() {
                 ))}
               </ol>
               {publicDiagnosticGuidance.caution && <small>{publicDiagnosticGuidance.caution}</small>}
+              <div className="public-email-capture" data-analytics-section="public_diagnostic_email_capture">
+                <p className="section-kicker">Receba o roteiro detalhado</p>
+                <h3>Quer saber exatamente como executar esse plano sem se perder no dia a dia?</h3>
+                <p>
+                  Envie seu e-mail para salvar seu diagnóstico e receber o caminho da Área MUSA, com as instruções dos 7 dias organizadas para você aplicar uma missão por vez.
+                </p>
+                <label className="email-box public-email-box">
+                  Seu melhor e-mail
+                  <input
+                    ref={emailInputRef}
+                    type="email"
+                    placeholder="seuemail@exemplo.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        submitPublicDiagnosticEmail();
+                      }
+                    }}
+                  />
+                </label>
+                {errorMessage && <p className="form-message">{errorMessage}</p>}
+                {successMessage && <p className="form-message success-message">{successMessage}</p>}
+                {devAccessUrl ? (
+                  <button className="primary-button public-email-button" onClick={() => openDevAccess(devAccessUrl)} type="button">
+                    <LogIn size={18} />
+                    Abrir minha Área MUSA
+                  </button>
+                ) : (
+                  <button className="primary-button public-email-button" onClick={submitPublicDiagnosticEmail} disabled={loading}>
+                    <Mail size={18} />
+                    {loading ? 'Enviando roteiro...' : 'Receber roteiro detalhado dos 7 dias'}
+                  </button>
+                )}
+              </div>
             </section>
           )}
         </section>

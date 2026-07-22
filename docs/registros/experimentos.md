@@ -5995,3 +5995,9 @@
 - 2026-07-21: prevenção aplicada no workflow do PDE MUSA: pushes na `main` passam a publicar e validar homologação em `5177/8097`; produção fica separada em `workflow_dispatch` com `target_environment=production`, evitando promoção automática antes da validação visual/comercial da homologação.
 - 2026-07-21: prevenção ampliada para controle de versões/deploy PDE: o backend PDE passou a expor `GET /api/pde/deploy/status` com ambiente, compose, commit, tag de imagem, versão PDE, URLs, portas e containers declarados; o painel pós-deploy do Marketing Hub passou a exibir homologação e produção no mesmo lugar das métricas comerciais, separando GitHub verde de ambiente realmente publicado.
 - 2026-07-21: causa-raiz confirmada no host principal `191.252.181.168`: o backend Marketing Hub ficou indisponível porque o Liquibase bloqueou o startup por checksum alterado do changeset histórico `2026-07-16-pde-funnel-events-001`; correção operacional aplicada no `DATABASECHANGELOG` e prevenção registrada no changelog com checksums válidos conhecidos, evitando nova queda em ambientes que já tinham aplicado a versão anterior.
+
+## 2026-07-22 — PED/MUSA: captura de e-mail após plano por IA
+
+- foi feito: a entrada pública do PDE passou a pedir e-mail somente depois que a IA entrega o plano personalizado de 7 dias.
+- motivo comercial: a visitante agora tem um motivo concreto para deixar o e-mail: salvar o diagnóstico e receber o caminho para executar o roteiro detalhado dos 7 dias na Área MUSA.
+- impacto esperado: reduzir fricção antes do diagnóstico, aumentar microcompromisso após percepção de valor e melhorar conversão de visitante em lead identificada.

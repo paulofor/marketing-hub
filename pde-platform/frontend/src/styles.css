@@ -567,6 +567,31 @@ textarea {
   margin-top: 16px;
 }
 
+.public-email-capture {
+  background: #fff8f3;
+  border: 1px solid rgba(122, 36, 68, 0.16);
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 18px;
+}
+
+.public-email-capture h3 {
+  color: #2d2024;
+  font-size: 1.12rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.public-email-capture p {
+  margin: 0;
+}
+
+.public-email-box,
+.public-email-button {
+  width: 100%;
+}
+
 .login-panel h1 {
   font-size: 3.28rem;
   line-height: 1.04;

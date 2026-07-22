@@ -1,11 +1,13 @@
 package com.marketinghub.pde.service;
 
+import jakarta.annotation.PostConstruct;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,7 @@ public class PdeDatabaseMigrationService {
     private final String jdbcUsername;
     private final String jdbcPassword;
     private final JdbcConnectionProvider connectionProvider;
+    private final AtomicBoolean migrated = new AtomicBoolean(false);
 
     /** Recebe a configuração JDBC usada pelo PDE em produção. */
     @Autowired
@@ -47,15 +50,25 @@ public class PdeDatabaseMigrationService {
         this.connectionProvider = connectionProvider;
     }
 
-    /** Aplica as migrações necessárias antes do PDE ler ou gravar analytics. */
+    /** Aplica automaticamente as migrações do schema PDE ao iniciar o serviço. */
+    @PostConstruct
+    public void migrateOnStartup() {
+        migrateIfNeeded();
+    }
+
+    /** Aplica as migrações necessárias antes do PDE ler ou gravar dados operacionais. */
     public void migrateIfNeeded() {
         if (!usesJdbcStorage()) {
+            return;
+        }
+        if (!migrated.compareAndSet(false, true)) {
             return;
         }
         try (Connection connection = connectionProvider.open(jdbcUrl, jdbcUsername, jdbcPassword)) {
             migrateFunnelEventExperienceVersion(connection);
             migrateAiGuidancePublicAccessCompatibility(connection);
         } catch (SQLException ex) {
+            migrated.set(false);
             log.error("Falha ao migrar schema operacional do PDE", ex);
             throw new IllegalStateException("Não foi possível migrar schema operacional do PDE", ex);
         }

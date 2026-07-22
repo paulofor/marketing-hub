@@ -101,6 +101,38 @@ class PdeDatabaseMigrationServiceTest {
                 .executeUpdate("ALTER TABLE pde_ai_guidance_request MODIFY COLUMN access_token VARCHAR(120) NOT NULL");
     }
 
+    /** Confirma que a migração de startup prepara o diagnóstico público sem depender do fluxo de login. */
+    @Test
+    void migratesAiGuidancePublicAccessOnStartup() throws Exception {
+        Connection connection = mock(Connection.class);
+        PreparedStatement tableStatement = existingObjectStatement(true);
+        PreparedStatement columnStatement = existingObjectStatement(true);
+        PreparedStatement indexStatement = existingObjectStatement(true);
+        PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
+        PreparedStatement aiGuidanceFkStatement = existingObjectStatement(true);
+        PreparedStatement accessTokenLengthStatement = columnLengthStatement(36);
+        Statement ddlStatement = mock(Statement.class);
+        when(connection.prepareStatement(anyString()))
+                .thenReturn(
+                        tableStatement,
+                        columnStatement,
+                        indexStatement,
+                        aiGuidanceTableStatement,
+                        aiGuidanceFkStatement,
+                        accessTokenLengthStatement);
+        when(connection.createStatement()).thenReturn(ddlStatement);
+        PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
+                "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
+
+        migrationService.migrateOnStartup();
+
+        InOrder ddlOrder = inOrder(ddlStatement);
+        ddlOrder.verify(ddlStatement)
+                .executeUpdate("ALTER TABLE pde_ai_guidance_request DROP FOREIGN KEY fk_pde_ai_guidance_access_grant");
+        ddlOrder.verify(ddlStatement)
+                .executeUpdate("ALTER TABLE pde_ai_guidance_request MODIFY COLUMN access_token VARCHAR(120) NOT NULL");
+    }
+
     /** Monta um statement de metadados que retorna existência ou ausência do objeto consultado. */
     private PreparedStatement existingObjectStatement(boolean exists) throws Exception {
         PreparedStatement statement = mock(PreparedStatement.class);

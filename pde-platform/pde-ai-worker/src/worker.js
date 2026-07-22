@@ -121,7 +121,6 @@ async function generateGuidance(execution) {
   });
   const requestBody = {
     model: openaiModel,
-    service_tier: 'flex',
     input: [
       {
         role: 'system',
@@ -141,7 +140,7 @@ async function generateGuidance(execution) {
       },
     },
   };
-  const response = await callOpenAiWithRetry(requestBody);
+  const response = await callOpenAiWithRetry(requestBody, resolveServiceTierAttempts(execution.guidanceType));
   const outputText = extractOutputText(response.body);
   const parsed = JSON.parse(outputText);
   return {
@@ -170,8 +169,14 @@ function requireScientificEvidencePack(execution) {
   return pack;
 }
 
-async function callOpenAiWithRetry(baseRequestBody) {
-  const attempts = ['flex', 'flex', 'default'];
+function resolveServiceTierAttempts(guidanceType) {
+  if (guidanceType === 'MUSA_PUBLIC_PRESENCE_DIAGNOSTIC') {
+    return ['default', 'flex', 'default'];
+  }
+  return ['flex', 'flex', 'default'];
+}
+
+async function callOpenAiWithRetry(baseRequestBody, attempts) {
   let lastError;
   for (const tier of attempts) {
     const requestBody = tier === 'default'

@@ -28,3 +28,10 @@ Variáveis principais:
 - `OPENAI_MODEL`: modelo textual, padrão `gpt-5.5`.
 - `PDE_BACKEND_URL`: backend PDE, padrão `http://pde-platform-backend:8096`.
 - `POLL_INTERVAL_MS`: intervalo de polling, padrão `4000`.
+
+## Tier OpenAI
+
+O diagnóstico público `MUSA_PUBLIC_PRESENCE_DIAGNOSTIC` usa Standard/default na
+primeira tentativa, porque fica antes da captura de e-mail e impacta diretamente
+a conversão. As orientações internas do produto continuam usando Flex como
+padrão operacional, com fallback para Standard/default em falha transitória.

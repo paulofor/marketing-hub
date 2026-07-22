@@ -28,6 +28,14 @@ O tier efetivo de cada tentativa deve aparecer em log ou auditoria operacional s
 
 Não é permitido transformar toda a etapa em Standard/default por padrão sem registro explícito de decisão funcional, porque isso aumenta custo e remove o benefício financeiro do Flex.
 
+## Exceção funcional registrada
+
+O diagnóstico público do PDE MUSA (`MUSA_PUBLIC_PRESENCE_DIAGNOSTIC`) pode usar
+Standard/default na primeira tentativa quando estiver antes da captura de e-mail
+ou compra, porque a latência nesse ponto reduz diretamente a conversão do funil.
+Nesse caso, a decisão deve ficar versionada no worker executor e o tier efetivo
+deve continuar persistido na auditoria da execução.
+
 ## Custos
 
 Toda chamada OpenAI deve coletar tokens/custo quando o provedor retornar esses dados ou quando o backend conseguir calcular pelo catálogo canônico de modelos. O custo deve ser persistido no registro individual da execução e somado ao agregado de negócio correspondente, quando existir.

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendUrl = (process.env.PDE_BACKEND_URL ?? 'http://pde-platform-backend:8096').replace(/\/+$/, '');
 const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '4000');
-const openaiModel = process.env.OPENAI_MODEL ?? 'gpt-5.4-mini';
+const openaiModel = process.env.OPENAI_MODEL ?? 'gpt-5.5';
 const openaiApiKey = await resolveOpenAiApiKey();
 const promptDefinitions = {
   MUSA_PUBLIC_PRESENCE_DIAGNOSTIC: {

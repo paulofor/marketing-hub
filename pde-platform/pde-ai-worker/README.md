@@ -25,6 +25,6 @@ Variáveis principais:
 - `OPENAI_API_KEY_FILE`: caminho do arquivo com a chave da OpenAI, padrão `/run/secrets/openai_api_key`.
 - `OPENAI_API_KEY_HOST_FILE`: arquivo físico montado no container, padrão `/root/infra/openai-token/openai_api_key`.
 - `OPENAI_API_KEY`: fallback direto para execução real quando não houver arquivo montado.
-- `OPENAI_MODEL`: modelo textual, padrão `gpt-5.4-mini`.
+- `OPENAI_MODEL`: modelo textual, padrão `gpt-5.5`.
 - `PDE_BACKEND_URL`: backend PDE, padrão `http://pde-platform-backend:8096`.
 - `POLL_INTERVAL_MS`: intervalo de polling, padrão `4000`.

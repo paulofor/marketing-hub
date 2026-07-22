@@ -1,0 +1,188 @@
+openapi: 3.0.3
+info:
+  title: Experiment Post Deploy Monitor API
+  version: "1.0"
+  description: Contratos administrativos para monitorar PDEs e controlar promoção de homologação para produção.
+paths:
+  /api/experiments/{experimentId}/post-deploy-monitor:
+    get:
+      summary: Resume monitoramento pós-deploy do experimento
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: productSlug
+          in: query
+          required: false
+          schema:
+            type: string
+            default: metodo-musa-7-dias
+      responses:
+        "200":
+          description: Painel consolidado com mídia, analytics PDE, deploys e controle de promoção.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDeployMonitorResponse"
+  /api/experiments/{experimentId}/post-deploy-monitor/pde/production-deploy:
+    post:
+      summary: Solicita deploy produtivo do PDE pelo workflow canônico
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDeployPdeProductionDeployRequest"
+      responses:
+        "200":
+          description: Solicitação aceita ou bloqueada com causa objetiva.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDeployPdeProductionDeployResponse"
+components:
+  schemas:
+    PostDeployMonitorResponse:
+      type: object
+      required:
+        - experimentId
+        - productSlug
+        - generatedAt
+        - pdePromotionControl
+        - pdeDeployments
+        - alerts
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        productSlug:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        decision:
+          type: string
+        decisionLabel:
+          type: string
+        recommendation:
+          type: string
+        pdePromotionControl:
+          $ref: "#/components/schemas/PostDeployPdePromotionControl"
+        pdeDeployments:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostDeployPdeDeployEnvironment"
+        alerts:
+          type: array
+          items:
+            type: string
+    PostDeployPdePromotionControl:
+      type: object
+      required:
+        - homologAvailable
+        - productionAvailable
+        - productionBehind
+        - productionUpToDate
+        - productionDeployAvailable
+        - productionDeployBlocked
+        - statusLabel
+        - recommendation
+        - targetEnvironment
+        - workflowFile
+      properties:
+        homologAvailable:
+          type: boolean
+        productionAvailable:
+          type: boolean
+        productionBehind:
+          type: boolean
+        productionUpToDate:
+          type: boolean
+        productionDeployAvailable:
+          type: boolean
+        productionDeployBlocked:
+          type: boolean
+        statusLabel:
+          type: string
+        recommendation:
+          type: string
+        sourceCommitSha:
+          type: string
+          nullable: true
+        productionCommitSha:
+          type: string
+          nullable: true
+        targetEnvironment:
+          type: string
+          example: production
+        workflowFile:
+          type: string
+          example: pde-platform-metodo-musa-ci.yml
+    PostDeployPdeDeployEnvironment:
+      type: object
+      properties:
+        environment:
+          type: string
+        available:
+          type: boolean
+        commitSha:
+          type: string
+          nullable: true
+        imageTag:
+          type: string
+          nullable: true
+        composeFile:
+          type: string
+          nullable: true
+        frontendReachable:
+          type: boolean
+        backendReachable:
+          type: boolean
+    PostDeployPdeProductionDeployRequest:
+      type: object
+      properties:
+        requestedBy:
+          type: string
+        sourceCommitSha:
+          type: string
+          nullable: true
+    PostDeployPdeProductionDeployResponse:
+      type: object
+      required:
+        - accepted
+        - status
+        - message
+        - targetEnvironment
+        - workflowFile
+        - requestedAt
+      properties:
+        accepted:
+          type: boolean
+        status:
+          type: string
+          enum:
+            - DISPATCHED
+            - BLOCKED
+            - NOT_CONFIGURED
+        message:
+          type: string
+        targetEnvironment:
+          type: string
+        workflowFile:
+          type: string
+        sourceCommitSha:
+          type: string
+          nullable: true
+        requestedAt:
+          type: string
+          format: date-time

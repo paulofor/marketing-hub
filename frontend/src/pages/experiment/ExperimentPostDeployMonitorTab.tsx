@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import {
   usePostDeployMonitor,
+  useRequestPdeProductionDeploy,
   type PostDeployMonitorDecision,
 } from "../../api/experiment/usePostDeployMonitor";
 
@@ -106,8 +107,10 @@ export default function ExperimentPostDeployMonitorTab({
   experimentId,
 }: ExperimentPostDeployMonitorTabProps) {
   const monitorQuery = usePostDeployMonitor(experimentId);
+  const requestProductionDeploy = useRequestPdeProductionDeploy(experimentId);
   const monitor = monitorQuery.data;
   const pdeDeployments = monitor?.pdeDeployments ?? [];
+  const promotionControl = monitor?.pdePromotionControl;
   const trafficSources = monitor?.pde.trafficSources ?? [];
   const recentJourneys = monitor?.pde.recentJourneys ?? [];
 
@@ -312,6 +315,56 @@ export default function ExperimentPostDeployMonitorTab({
                 </p>
               </div>
             </div>
+            {promotionControl ? (
+              <div className="alert alert-light border d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3 mb-3">
+                <div>
+                  <div className="fw-semibold">
+                    Controle homologação → produção:{" "}
+                    {promotionControl.statusLabel}
+                  </div>
+                  <div className="small text-muted">
+                    {promotionControl.recommendation}
+                  </div>
+                  <div className="small mt-1">
+                    Homolog:{" "}
+                    <span className="font-monospace">
+                      {shortCommit(promotionControl.sourceCommitSha)}
+                    </span>{" "}
+                    · Produção:{" "}
+                    <span className="font-monospace">
+                      {shortCommit(promotionControl.productionCommitSha)}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={
+                    !promotionControl.productionDeployAvailable ||
+                    requestProductionDeploy.isPending
+                  }
+                  onClick={() =>
+                    requestProductionDeploy.mutate({
+                      requestedBy: "Marketing Hub",
+                      sourceCommitSha: promotionControl.sourceCommitSha,
+                    })
+                  }
+                >
+                  {requestProductionDeploy.isPending ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Solicitando produção...
+                    </>
+                  ) : (
+                    "Publicar produção"
+                  )}
+                </button>
+              </div>
+            ) : null}
             <div className="table-responsive">
               <table className="table table-sm align-middle mb-0">
                 <thead>

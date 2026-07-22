@@ -6001,3 +6001,11 @@
 - foi feito: a entrada pública do PDE passou a pedir e-mail somente depois que a IA entrega o plano personalizado de 7 dias.
 - motivo comercial: a visitante agora tem um motivo concreto para deixar o e-mail: salvar o diagnóstico e receber o caminho para executar o roteiro detalhado dos 7 dias na Área MUSA.
 - impacto esperado: reduzir fricção antes do diagnóstico, aumentar microcompromisso após percepção de valor e melhorar conversão de visitante em lead identificada.
+
+## 2026-07-22 — PED/MUSA: correção de tela branca em produção
+
+- causa-raiz confirmada: produção e homologação do PDE estavam na mesma rede Docker externa com o mesmo alias de serviço `pde-platform-frontend`; o proxy do domínio `clubemusa.com.br` resolvia esse nome via DNS interno com alternância entre os dois containers.
+- efeito observado: algumas visitas recebiam o HTML da homologação e tentavam carregar assets inexistentes na produção, causando erro de módulo JavaScript/MIME e tela branca.
+- correção operacional aplicada no host: o frontend de produção recebeu alias exclusivo `pde-platform-frontend-production` e a homologação ficou isolada no alias `pde-platform-frontend-homolog`.
+- prevenção versionada: o compose de homologação passou a usar nomes de serviço exclusivos, evitando recriar o alias compartilhado em deploys futuros.
+- impacto comercial esperado: estabilizar a primeira dobra do Clube MUSA para tráfego pago e impedir perda de cliques por tela branca intermitente.

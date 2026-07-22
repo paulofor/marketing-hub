@@ -1,5 +1,5 @@
 services:
-  pde-platform-backend:
+  pde-platform-backend-homolog:
     image: ${PDE_PLATFORM_BACKEND_IMAGE:?PDE_PLATFORM_BACKEND_IMAGE is required}
     container_name: pde-platform-backend-homolog
     restart: unless-stopped
@@ -45,11 +45,11 @@ services:
     networks:
       - pde-platform-homolog-net
 
-  pde-platform-frontend:
+  pde-platform-frontend-homolog:
     image: ${PDE_PLATFORM_FRONTEND_IMAGE:?PDE_PLATFORM_FRONTEND_IMAGE is required}
     container_name: pde-platform-frontend-homolog
     depends_on:
-      pde-platform-backend:
+      pde-platform-backend-homolog:
         condition: service_started
     restart: unless-stopped
     ports:
@@ -69,11 +69,11 @@ services:
       retries: 5
       start_period: 15s
 
-  pde-ai-worker:
+  pde-ai-worker-homolog:
     image: ${PDE_AI_WORKER_IMAGE:?PDE_AI_WORKER_IMAGE is required}
     container_name: pde-ai-worker-homolog
     depends_on:
-      pde-platform-backend:
+      pde-platform-backend-homolog:
         condition: service_started
     restart: unless-stopped
     environment:

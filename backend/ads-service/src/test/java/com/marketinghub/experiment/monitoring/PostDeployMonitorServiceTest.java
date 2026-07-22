@@ -1,15 +1,20 @@
 package com.marketinghub.experiment.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployRequestDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployResponseDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeDeployStatus;
 import com.marketinghub.experiment.monitoring.pde.PdeDeployStatusClient;
+import com.marketinghub.experiment.monitoring.pde.PdeProductionDeploymentClient;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
@@ -45,6 +50,9 @@ class PostDeployMonitorServiceTest {
     @Mock
     private PdeDeployStatusClient pdeDeployStatusClient;
 
+    @Mock
+    private PdeProductionDeploymentClient pdeProductionDeploymentClient;
+
     private PostDeployMonitorService service;
 
     /** Monta o serviço com dependências controladas para cenários comerciais. */
@@ -55,8 +63,10 @@ class PostDeployMonitorServiceTest {
                 campaignMetricRepository,
                 apiLogService,
                 pdeAnalyticsClient,
-                pdeDeployStatusClient);
+                pdeDeployStatusClient,
+                pdeProductionDeploymentClient);
         when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(availableDeployStatus()));
+        when(pdeProductionDeploymentClient.isConfigured()).thenReturn(false);
     }
 
     /** Recomenda pausa quando há gasto relevante sem primeira interação no PDE. */
@@ -225,6 +235,72 @@ class PostDeployMonitorServiceTest {
         assertThat(response.logs().totalLogs()).isEqualTo(1);
     }
 
+    /** Libera o comando de produção quando homologação está saudável e produção está defasada. */
+    @Test
+    void exposesProductionDeployActionWhenHomologIsAhead() {
+        Experiment experiment = Experiment.builder().id(67L).build();
+        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
+        when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric("8.00", null)));
+        when(apiLogService.findLogs(67L, 50)).thenReturn(List.of());
+        when(pdeProductionDeploymentClient.isConfigured()).thenReturn(true);
+        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(
+                deployStatus("homolog", "commit-homolog", true, true),
+                deployStatus("production", "commit-production", true, true)));
+        when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(emptyPdeSummary());
+
+        var response = service.summarize(67L, null);
+
+        assertThat(response.pdePromotionControl().productionBehind()).isTrue();
+        assertThat(response.pdePromotionControl().productionDeployAvailable()).isTrue();
+        assertThat(response.alerts()).anyMatch(alert -> alert.contains("commits diferentes"));
+    }
+
+    /** Dispara o workflow produtivo quando o controle de promoção está liberado. */
+    @Test
+    void dispatchesProductionDeployWhenPromotionIsAvailable() {
+        Experiment experiment = Experiment.builder().id(67L).build();
+        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
+        when(pdeProductionDeploymentClient.isConfigured()).thenReturn(true);
+        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(
+                deployStatus("homolog", "commit-homolog", true, true),
+                deployStatus("production", "commit-production", true, true)));
+        when(pdeProductionDeploymentClient.dispatchProductionDeploy(eq(67L), eq("Paulo"), eq("commit-homolog")))
+                .thenReturn(new PostDeployPdeProductionDeployResponseDto(
+                        true,
+                        "DISPATCHED",
+                        "ok",
+                        "production",
+                        "pde-platform-metodo-musa-ci.yml",
+                        "commit-homolog",
+                        Instant.parse("2026-07-21T02:10:00Z")));
+
+        var response = service.requestProductionDeploy(
+                67L,
+                new PostDeployPdeProductionDeployRequestDto("Paulo", "commit-homolog"));
+
+        assertThat(response.accepted()).isTrue();
+        assertThat(response.status()).isEqualTo("DISPATCHED");
+        verify(pdeProductionDeploymentClient).dispatchProductionDeploy(67L, "Paulo", "commit-homolog");
+    }
+
+    /** Bloqueia produção quando a homologação não está saudável. */
+    @Test
+    void blocksProductionDeployWhenHomologIsNotHealthy() {
+        Experiment experiment = Experiment.builder().id(67L).build();
+        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
+        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(
+                deployStatus("homolog", "commit-homolog", false, true),
+                deployStatus("production", "commit-production", true, true)));
+
+        var response = service.requestProductionDeploy(
+                67L,
+                new PostDeployPdeProductionDeployRequestDto("Paulo", "commit-homolog"));
+
+        assertThat(response.accepted()).isFalse();
+        assertThat(response.status()).isEqualTo("BLOCKED");
+        assertThat(response.message()).contains("Valide homologação");
+    }
+
     /** Cria uma métrica Meta Ads mínima para os cenários do painel. */
     private ExperimentCampaignMetric metric(String spend, String lastError) {
         Experiment experiment = Experiment.builder().id(67L).build();
@@ -267,6 +343,25 @@ class PostDeployMonitorServiceTest {
                         5177,
                         80,
                         "frontend")));
+    }
+
+    /** Cria status de deploy parametrizado para comparar homologação e produção. */
+    private PdeDeployStatus deployStatus(String environment, String commitSha, boolean frontendReachable, boolean backendReachable) {
+        return new PdeDeployStatus(
+                environment,
+                backendReachable,
+                backendReachable ? "AVAILABLE" : "UNAVAILABLE",
+                null,
+                "production".equals(environment) ? "docker-compose.deploy.yml" : "docker-compose.homolog.yml",
+                commitSha,
+                commitSha,
+                "musa-pde-entry-v4-video-hero",
+                "production".equals(environment) ? "https://clubemusa.com.br" : "http://191.252.102.54:5177",
+                "production".equals(environment) ? "http://191.252.102.54:8096" : "http://191.252.102.54:8097",
+                frontendReachable,
+                backendReachable,
+                Instant.parse("2026-07-21T02:00:00Z"),
+                List.of());
     }
 
     /** Cria um resumo PDE sem conversão para cenários focados no status de deploy. */

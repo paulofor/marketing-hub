@@ -6023,3 +6023,11 @@
 - foi feito: o cadastro de produtos passou a inserir e exibir uma `Jornada Persuasiva Interativa do PDE` no contrato do produto, usando AIDA como primeira leitura operacional.
 - foi feito: a aba de analytics do experimento passou a cruzar a jornada cadastrada com seções rastreadas do PDE, mostrando sessões, tempo visível, métrica primária e regra de otimização por etapa.
 - impacto comercial esperado: identificar se o gargalo está em atenção, interesse, desejo ou ação, orientando ajustes de promessa, pergunta inicial, diagnóstico parcial, login, paywall e checkout com base em evidência comportamental.
+
+## 2026-07-22 — PED/MUSA: controle de produção pelo Marketing Hub
+
+- causa-raiz operacional: o GitHub Actions publicava homologação no fluxo normal e produção apenas por execução manual, mas a decisão ficava fora do Marketing Hub; isso gerou confusão entre workflow verde, homologação publicada e produção ainda antiga.
+- foi feito: o painel pós-deploy passou a comparar homologação e produção por saúde pública, commit, compose, URLs e containers, destacando quando produção está defasada em relação à homologação.
+- foi feito: adicionada ação administrativa no Marketing Hub para solicitar deploy produtivo pelo workflow canônico do PDE com `target_environment=production`, sem SSH direto no servidor.
+- bloqueio seguro: se homologação não estiver saudável, se os commits mudarem entre leitura e clique ou se o backend não tiver token/configuração do GitHub Actions, o Hub bloqueia a promoção e mostra a causa.
+- impacto comercial esperado: reduzir atraso entre correção homologada e funil real corrigido, evitando perda de leads por versão antiga em produção.

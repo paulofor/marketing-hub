@@ -9,6 +9,9 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorResponseDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployEnvironmentDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployServiceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeExperienceVersionDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployRequestDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployResponseDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdePromotionControlDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSessionJourneyDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
@@ -16,6 +19,7 @@ import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeDeployStatus;
 import com.marketinghub.experiment.monitoring.pde.PdeDeployStatusClient;
+import com.marketinghub.experiment.monitoring.pde.PdeProductionDeploymentClient;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
@@ -46,6 +50,7 @@ public class PostDeployMonitorService {
     private final ExperimentFacebookApiLogService apiLogService;
     private final PdeAnalyticsClient pdeAnalyticsClient;
     private final PdeDeployStatusClient pdeDeployStatusClient;
+    private final PdeProductionDeploymentClient pdeProductionDeploymentClient;
 
     /** Inicializa o agregador com as fontes persistidas do Hub e o cliente do PDE. */
     public PostDeployMonitorService(
@@ -53,12 +58,14 @@ public class PostDeployMonitorService {
             ExperimentCampaignMetricRepository campaignMetricRepository,
             ExperimentFacebookApiLogService apiLogService,
             PdeAnalyticsClient pdeAnalyticsClient,
-            PdeDeployStatusClient pdeDeployStatusClient) {
+            PdeDeployStatusClient pdeDeployStatusClient,
+            PdeProductionDeploymentClient pdeProductionDeploymentClient) {
         this.experimentRepository = experimentRepository;
         this.campaignMetricRepository = campaignMetricRepository;
         this.apiLogService = apiLogService;
         this.pdeAnalyticsClient = pdeAnalyticsClient;
         this.pdeDeployStatusClient = pdeDeployStatusClient;
+        this.pdeProductionDeploymentClient = pdeProductionDeploymentClient;
     }
 
     /** Monta o painel pós-deploy para o experimento e produto PDE informados. */
@@ -70,8 +77,9 @@ public class PostDeployMonitorService {
         PostDeployMetaAdsSummaryDto metaAds = toMetaAdsSummary(metric);
         PostDeployPdeSummaryDto pde = fetchPdeSummary(resolvedProductSlug);
         List<PostDeployPdeDeployEnvironmentDto> pdeDeployments = fetchPdeDeployments();
+        PostDeployPdePromotionControlDto pdePromotionControl = buildPromotionControl(pdeDeployments);
         PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
-        List<String> alerts = buildAlerts(metaAds, pde, pdeDeployments, logs);
+        List<String> alerts = buildAlerts(metaAds, pde, pdeDeployments, pdePromotionControl, logs);
         PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
         return new PostDeployMonitorResponseDto(
                 experimentId,
@@ -82,9 +90,49 @@ public class PostDeployMonitorService {
                 recommendation(decision, pde),
                 metaAds,
                 pde,
+                pdePromotionControl,
                 pdeDeployments,
                 logs,
                 alerts);
+    }
+
+    /** Solicita produção apenas quando homologação está saudável e produção está defasada. */
+    public PostDeployPdeProductionDeployResponseDto requestProductionDeploy(
+            Long experimentId,
+            PostDeployPdeProductionDeployRequestDto request) {
+        experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
+        List<PostDeployPdeDeployEnvironmentDto> pdeDeployments = fetchPdeDeployments();
+        PostDeployPdePromotionControlDto control = buildPromotionControl(pdeDeployments);
+        if (!control.productionDeployAvailable()) {
+            return new PostDeployPdeProductionDeployResponseDto(
+                    false,
+                    "BLOCKED",
+                    control.recommendation(),
+                    control.targetEnvironment(),
+                    control.workflowFile(),
+                    control.sourceCommitSha(),
+                    Instant.now());
+        }
+        String requestedBy = request != null && StringUtils.hasText(request.requestedBy())
+                ? request.requestedBy().trim()
+                : "marketing-hub";
+        String requestedCommit = request != null && StringUtils.hasText(request.sourceCommitSha())
+                ? request.sourceCommitSha().trim()
+                : control.sourceCommitSha();
+        if (StringUtils.hasText(control.sourceCommitSha())
+                && StringUtils.hasText(requestedCommit)
+                && !control.sourceCommitSha().equals(requestedCommit)) {
+            return new PostDeployPdeProductionDeployResponseDto(
+                    false,
+                    "BLOCKED",
+                    "A homologação mudou desde que a tela foi carregada. Atualize o painel antes de publicar produção.",
+                    control.targetEnvironment(),
+                    control.workflowFile(),
+                    control.sourceCommitSha(),
+                    Instant.now());
+        }
+        return pdeProductionDeploymentClient.dispatchProductionDeploy(experimentId, requestedBy, control.sourceCommitSha());
     }
 
     /** Resolve o produto PDE padrão quando a tela não informa um slug específico. */
@@ -217,6 +265,110 @@ public class PostDeployMonitorService {
                         service.targetPort(),
                         service.role()))
                 .toList();
+    }
+
+    /** Calcula o estado de promoção homologação-produção a partir dos deploys reais. */
+    private PostDeployPdePromotionControlDto buildPromotionControl(
+            List<PostDeployPdeDeployEnvironmentDto> pdeDeployments) {
+        PostDeployPdeDeployEnvironmentDto homolog = findDeployment(pdeDeployments, "homolog");
+        PostDeployPdeDeployEnvironmentDto production = findDeployment(pdeDeployments, "production");
+        boolean homologAvailable = isDeploymentHealthy(homolog);
+        boolean productionAvailable = isDeploymentHealthy(production);
+        String homologCommit = homolog != null ? homolog.commitSha() : null;
+        String productionCommit = production != null ? production.commitSha() : null;
+        boolean hasComparableCommits = isKnownCommit(homologCommit) && isKnownCommit(productionCommit);
+        boolean productionBehind = homologAvailable
+                && hasComparableCommits
+                && !homologCommit.equals(productionCommit);
+        boolean productionUpToDate = homologAvailable
+                && productionAvailable
+                && hasComparableCommits
+                && homologCommit.equals(productionCommit);
+        boolean githubConfigured = pdeProductionDeploymentClient.isConfigured();
+        boolean deployAvailable = productionBehind && githubConfigured;
+        boolean deployBlocked = !deployAvailable;
+        String workflowFile = "pde-platform-metodo-musa-ci.yml";
+        return new PostDeployPdePromotionControlDto(
+                homologAvailable,
+                productionAvailable,
+                productionBehind,
+                productionUpToDate,
+                deployAvailable,
+                deployBlocked,
+                promotionStatusLabel(homologAvailable, productionBehind, productionUpToDate, githubConfigured),
+                promotionRecommendation(homologAvailable, productionBehind, productionUpToDate, githubConfigured),
+                homologCommit,
+                productionCommit,
+                "production",
+                workflowFile);
+    }
+
+    /** Busca um deploy por nome de ambiente sem depender de caixa alta/baixa. */
+    private PostDeployPdeDeployEnvironmentDto findDeployment(
+            List<PostDeployPdeDeployEnvironmentDto> deployments,
+            String environment) {
+        if (deployments == null) {
+            return null;
+        }
+        return deployments.stream()
+                .filter(deployment -> environment.equalsIgnoreCase(deployment.environment()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /** Confirma que backend e frontend públicos do ambiente estão respondendo. */
+    private boolean isDeploymentHealthy(PostDeployPdeDeployEnvironmentDto deployment) {
+        return deployment != null
+                && deployment.available()
+                && deployment.backendReachable()
+                && deployment.frontendReachable();
+    }
+
+    /** Verifica se o commit pode ser usado para comparar homologação e produção. */
+    private boolean isKnownCommit(String commitSha) {
+        return StringUtils.hasText(commitSha) && !"unknown".equalsIgnoreCase(commitSha);
+    }
+
+    /** Define o rótulo executivo do controle de promoção do PDE. */
+    private String promotionStatusLabel(
+            boolean homologAvailable,
+            boolean productionBehind,
+            boolean productionUpToDate,
+            boolean githubConfigured) {
+        if (!homologAvailable) {
+            return "Homologação não validada";
+        }
+        if (productionUpToDate) {
+            return "Produção atualizada";
+        }
+        if (productionBehind && githubConfigured) {
+            return "Produção pronta para publicar";
+        }
+        if (productionBehind) {
+            return "Produção pendente sem token";
+        }
+        return "Aguardando comparação";
+    }
+
+    /** Define a recomendação operacional para publicar ou bloquear produção. */
+    private String promotionRecommendation(
+            boolean homologAvailable,
+            boolean productionBehind,
+            boolean productionUpToDate,
+            boolean githubConfigured) {
+        if (!homologAvailable) {
+            return "Valide homologação com backend e frontend online antes de liberar produção.";
+        }
+        if (productionUpToDate) {
+            return "Produção já está no mesmo commit da homologação. Não há deploy pendente.";
+        }
+        if (productionBehind && githubConfigured) {
+            return "Homologação está saudável e produção está defasada. Pode solicitar deploy produtivo pelo Marketing Hub.";
+        }
+        if (productionBehind) {
+            return "Produção está defasada, mas o backend não possui token do GitHub Actions para acionar o workflow.";
+        }
+        return "Não há evidência suficiente para liberar produção. Atualize o painel e confirme os commits dos ambientes.";
     }
 
     /** Converte o contrato do PDE em métricas comerciais específicas do painel. */
@@ -382,6 +534,7 @@ public class PostDeployMonitorService {
     private List<String> buildAlerts(PostDeployMetaAdsSummaryDto metaAds,
                                      PostDeployPdeSummaryDto pde,
                                      List<PostDeployPdeDeployEnvironmentDto> pdeDeployments,
+                                     PostDeployPdePromotionControlDto promotionControl,
                                      PostDeployFacebookLogSummaryDto logs) {
         List<String> alerts = new ArrayList<>();
         if (!pde.available()) {
@@ -396,6 +549,9 @@ public class PostDeployMonitorService {
         }
         if (logs.errorLogs() > 0) {
             alerts.add("Há erros recentes nos logs da API Meta Ads.");
+        }
+        if (promotionControl.productionBehind()) {
+            alerts.add("Homologação e produção estão em commits diferentes; não liberar tráfego sem publicar ou decidir manter produção antiga.");
         }
         if (spendAtLeast(metaAds, ZERO_INTERACTION_SPEND_THRESHOLD) && pde.available() && firstInteractionCount(pde) == 0) {
             alerts.add("Gasto atingiu o limite de atenção sem clique no Mapa/Diagnóstico.");

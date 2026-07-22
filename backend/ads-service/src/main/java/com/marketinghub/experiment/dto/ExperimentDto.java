@@ -86,6 +86,9 @@ public class ExperimentDto {
     private Instant creativeGenerationStartedAt;
     private Instant creativeGenerationFinishedAt;
     private String creativeGenerationError;
+    private String lastStatusChangeReason;
+    private String lastStatusChangeAction;
+    private Instant lastStatusChangedAt;
     private String primaryVariable;
     private String primaryMetric;
     private boolean creativeApproved;

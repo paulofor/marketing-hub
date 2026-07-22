@@ -363,4 +363,70 @@ describe("ExperimentListPage", () => {
     ).toBeNull();
   });
 
+  it("reactivates a stopped experiment with a registered reason", async () => {
+    const experiments = [
+      {
+        id: "67",
+        nicheId: 10,
+        hypothesisId: "hypothesis-67",
+        name: "MUSA-H001-E005",
+        hypothesis: "Método MUSA",
+        cost: 32.34,
+        startDate: "2026-07-21",
+        endDate: null,
+        creativeApproved: true,
+        status: "USER_STOPPED",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-21T00:00:00Z",
+        updatedAt: "2026-07-22T00:16:31Z",
+      },
+    ];
+
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments")
+        return Promise.resolve({ data: experiments });
+      if (url === "/api/niches") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 10,
+              name: "Mulheres urbanas",
+              description: "",
+              demandVolume: "",
+              promises: "",
+              offers: "",
+              baseSegmentation: "",
+              interests: "",
+              demographicFilters: "",
+              extraTips: "",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: null });
+    });
+    (axios.post as any).mockResolvedValueOnce({
+      data: { ...experiments[0], status: "RUNNING" },
+    });
+
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Retornar à atividade" }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Retornar experimento à atividade" }),
+    ).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Reativar" }));
+
+    expect(axios.post).toHaveBeenCalledWith(
+      "/api/experiments/67/reactivate",
+      {
+        reason:
+          "Retomar o Experimento 67 para medir a versão atual do PDE Musa em produção como novo ciclo dentro do mesmo aprendizado.",
+      },
+    );
+  });
+
 });

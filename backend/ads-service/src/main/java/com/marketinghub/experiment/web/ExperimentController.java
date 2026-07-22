@@ -7,6 +7,7 @@ import com.marketinghub.experiment.dto.ExperimentSessionDurationSummaryDto;
 import com.marketinghub.experiment.dto.ExperimentSessionDurationVariantDto;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
@@ -148,6 +149,14 @@ public class ExperimentController {
             @PathVariable Long id,
             @RequestParam com.marketinghub.experiment.ExperimentStatus status) {
         return mapper.toDto(service.updateStatus(id, status));
+    }
+
+    /** Reativa um experimento parado registrando o motivo informado pelo usuário. */
+    @PostMapping("/{id}/reactivate")
+    public ExperimentDto reactivate(
+            @PathVariable Long id,
+            @RequestBody ReactivateExperimentRequest request) {
+        return mapper.toDto(service.reactivate(id, request));
     }
 
     /** Atualiza os campos editáveis de um experimento existente. */

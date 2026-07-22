@@ -196,6 +196,18 @@ public class Experiment {
     @Column(length = 32)
     private ExperimentStatus status;
 
+    /** Último motivo registrado para mudança administrativa de status. */
+    @Column(name = "last_status_change_reason", length = 1024)
+    private String lastStatusChangeReason;
+
+    /** Última ação administrativa que mudou o status do experimento. */
+    @Column(name = "last_status_change_action", length = 64)
+    private String lastStatusChangeAction;
+
+    /** Momento da última mudança administrativa de status. */
+    @Column(name = "last_status_changed_at")
+    private Instant lastStatusChangedAt;
+
     @Enumerated(EnumType.STRING)
     private ExperimentPlatform platform;
 

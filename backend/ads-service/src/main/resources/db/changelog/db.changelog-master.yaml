@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-22-experiment-reactivation-audit.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-16-experiment-type-pde-membership-subscription.yaml
       relativeToChangelogFile: true
   - include:

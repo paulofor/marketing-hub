@@ -13,5 +13,7 @@ public record DeployStatusResponse(
         String frontendUrl,
         String backendUrl,
         Instant deployedAt,
-        List<DeployServiceStatusResponse> services
+        List<DeployServiceStatusResponse> services,
+        DeploySchemaStatusResponse schemaStatus,
+        List<DeployOperationalAlertResponse> operationalAlerts
 ) {}

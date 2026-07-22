@@ -1,5 +1,7 @@
 package com.marketinghub.pde.support;
 
+import com.marketinghub.pde.service.PdeOperationalHealthService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+    private final PdeOperationalHealthService operationalHealthService;
+
+    /** Recebe o serviço que transforma falhas HTTP em alertas pós-deploy. */
+    public ApiExceptionHandler(PdeOperationalHealthService operationalHealthService) {
+        this.operationalHealthService = operationalHealthService;
+    }
 
     /** Responde erro de regra de negócio com mensagem objetiva. */
     @ExceptionHandler(IllegalArgumentException.class)
@@ -29,5 +37,15 @@ public class ApiExceptionHandler {
     public Map<String, String> handleValidation(MethodArgumentNotValidException ex) {
         log.warn("Falha de validação na API PDE", ex);
         return Map.of("error", "Entrada inválida para a API PDE");
+    }
+
+    /** Registra falha inesperada para impedir leitura comercial baseada em funil quebrado. */
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleUnexpected(Exception ex, HttpServletRequest request) {
+        String endpoint = request == null ? "unknown" : request.getRequestURI();
+        log.error("Falha inesperada na API PDE; endpoint={}", endpoint, ex);
+        operationalHealthService.recordEndpointFailure(request, HttpStatus.INTERNAL_SERVER_ERROR.value(), ex);
+        return Map.of("error", "Falha técnica na API PDE");
     }
 }

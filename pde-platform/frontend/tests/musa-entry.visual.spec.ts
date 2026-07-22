@@ -66,3 +66,24 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
     fullPage: true,
   });
 });
+
+test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
+  let trackedEvents = 0;
+  await page.route('/api/pde/access/events', async (route) => {
+    trackedEvents += 1;
+    await route.fulfill({ json: { status: 'RECORDED' } });
+  });
+
+  await page.goto('/?mh_preview=qa&pde_analytics=off&utm_source=internal&utm_medium=qa&utm_campaign=metodo-musa-7-dias_preview_qa&utm_content=product_card');
+
+  await expect(
+    page.getByRole('heading', {
+      name: /Sua imagem comunica a mulher/i,
+      level: 1,
+    }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
+  await page.waitForTimeout(250);
+
+  expect(trackedEvents).toBe(0);
+});

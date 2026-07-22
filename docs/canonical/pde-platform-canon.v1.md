@@ -170,6 +170,20 @@ Regras obrigatórias:
 
 O objetivo comercial é transformar o anúncio em entrada de relacionamento, permitir que a lead veja valor dentro do sistema e vender o acesso quando ela quiser continuar nas partes de maior valor.
 
+### Jornada Persuasiva Interativa do PDE
+
+A Jornada Persuasiva Interativa do PDE deve ser lida como **funil experiencial por estágios comerciais**, não como AIDA simples.
+
+O modelo AIDA pode ser usado como apoio psicológico dentro de cada estágio, mas a unidade principal de análise deve ser o avanço comercial real do consumidor:
+
+1. **Contato com a promessa**: anúncio e primeira dobra fazem a pessoa reconhecer a dor/promessa e aceitar entrar.
+2. **Envolvimento diagnóstico**: questionário e plano/amostra gratuita aumentam informação, valor percebido e desejo pela continuidade.
+3. **Compromisso de continuidade**: login, cadastro, plano salvo, primeira missão ou ação equivalente transformam interesse em intenção mensurável.
+4. **Conversão comercial**: paywall, clique de assinatura, checkout e compra transformam intenção em receita.
+5. **Validação pós-compra**: acesso liberado, primeiro uso, missão concluída e materiais abertos confirmam que a promessa vendida começou a ser aplicada.
+
+O contrato `persuasiveJourney` publicado pelo Marketing Hub deve declarar esses estágios de forma versionada, com função comercial, mudança esperada no usuário, seções/eventos rastreados, métrica principal e regra de otimização quando o estágio quebrar. O relatório do experimento deve usar essa jornada para responder em qual estágio a pessoa perdeu confiança, desejo ou disposição de pagar.
+
 ### Analytics obrigatório para campanhas PDE
 
 Toda aplicação PDE usada como destino de campanha deve registrar eventos próprios no backend PDE antes de escalar tráfego pago. A medição mínima deve permitir reconstruir o funil por produto, campanha, origem e dispositivo.

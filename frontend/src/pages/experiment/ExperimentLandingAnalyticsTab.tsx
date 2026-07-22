@@ -8,8 +8,10 @@ import {
   Tablet,
   Timer,
   Users,
+  Workflow,
 } from "lucide-react";
 import { useExperimentLandingAnalytics } from "../../api/experiment/useExperimentLandingAnalytics";
+import { usePdePersuasiveJourney } from "../../api/product/usePdePersuasiveJourney";
 
 interface ExperimentLandingAnalyticsTabProps {
   experimentId: string;
@@ -46,10 +48,32 @@ function shortUrl(value?: string | null) {
 }
 
 function alertVariant(severity?: string | null) {
-  if (severity === "success" || severity === "danger" || severity === "warning") {
+  if (
+    severity === "success" ||
+    severity === "danger" ||
+    severity === "warning"
+  ) {
     return severity;
   }
   return "info";
+}
+
+function getJourneyStepLabel(step: {
+  stageNumber?: number;
+  stageName?: string;
+  aidaLabel?: string;
+  stage?: string;
+}) {
+  const name = step.stageName || step.aidaLabel || step.stage || "Etapa";
+  return step.stageNumber ? `Estágio ${step.stageNumber}: ${name}` : name;
+}
+
+function getJourneyTrackedSections(step: {
+  trackedSectionIds?: string[];
+  trackedSectionId?: string;
+}) {
+  if (step.trackedSectionIds?.length) return step.trackedSectionIds;
+  return step.trackedSectionId ? [step.trackedSectionId] : [];
 }
 
 export default function ExperimentLandingAnalyticsTab({
@@ -57,6 +81,7 @@ export default function ExperimentLandingAnalyticsTab({
 }: ExperimentLandingAnalyticsTabProps) {
   const { data, isLoading, isError } =
     useExperimentLandingAnalytics(experimentId);
+  const { data: persuasiveJourney } = usePdePersuasiveJourney();
 
   if (isLoading) {
     return (
@@ -82,6 +107,27 @@ export default function ExperimentLandingAnalyticsTab({
     data?.mobileOperatingSystemBreakdown ?? [];
   const screenSizeBreakdown = data?.screenSizeBreakdown ?? [];
   const loadMetrics = data?.loadMetrics;
+  const sectionStats = new Map<
+    string,
+    { sessions: number; visibleMs: number; events: number }
+  >();
+  for (const session of sessions) {
+    const countedSections = new Set<string>();
+    for (const section of session.topSections) {
+      const current = sectionStats.get(section.sectionId) ?? {
+        sessions: 0,
+        visibleMs: 0,
+        events: 0,
+      };
+      current.visibleMs += section.visibleMs;
+      current.events += section.events;
+      if (!countedSections.has(section.sectionId)) {
+        current.sessions += 1;
+        countedSections.add(section.sectionId);
+      }
+      sectionStats.set(section.sectionId, current);
+    }
+  }
   const deviceIcons = {
     mobile: Smartphone,
     desktop: Monitor,
@@ -114,13 +160,17 @@ export default function ExperimentLandingAnalyticsTab({
     },
     {
       label: "Carregamento médio",
-      value: loadMetrics?.events ? formatDuration(loadMetrics.averageLoadDurationMs) : "—",
+      value: loadMetrics?.events
+        ? formatDuration(loadMetrics.averageLoadDurationMs)
+        : "—",
       icon: Clock,
       hint: "Média técnica até o evento load completo da landing.",
     },
     {
       label: "P95 carregamento",
-      value: loadMetrics?.events ? formatDuration(loadMetrics.p95LoadDurationMs) : "—",
+      value: loadMetrics?.events
+        ? formatDuration(loadMetrics.p95LoadDurationMs)
+        : "—",
       icon: Activity,
       hint: "Tempo dos piores carregamentos capturados para detectar lentidão.",
     },
@@ -169,7 +219,6 @@ export default function ExperimentLandingAnalyticsTab({
         })}
       </div>
 
-
       {loadMetrics ? (
         <div
           className={`alert alert-${alertVariant(loadMetrics.diagnosisSeverity)} mb-0`}
@@ -184,10 +233,110 @@ export default function ExperimentLandingAnalyticsTab({
               Recomendação: {loadMetrics.recommendation}
             </span>
             <span className="small text-muted">
-              Engajamento inicial: {loadMetrics.initialEngagementRate.toFixed(2)}%
-              · Sessões sem seção visível: {loadMetrics.sessionsWithoutSectionEvents}
-              · Navegador in-app: {loadMetrics.inAppBrowserPercentage.toFixed(2)}%
+              Engajamento inicial:{" "}
+              {loadMetrics.initialEngagementRate.toFixed(2)}% · Sessões sem
+              seção visível: {loadMetrics.sessionsWithoutSectionEvents}·
+              Navegador in-app: {loadMetrics.inAppBrowserPercentage.toFixed(2)}%
             </span>
+          </div>
+        </div>
+      ) : null}
+
+      {persuasiveJourney?.steps?.length ? (
+        <div className="card">
+          <div className="card-body">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <div>
+                <h5 className="card-title mb-1 d-flex align-items-center gap-2">
+                  <Workflow size={18} /> Jornada persuasiva interativa
+                </h5>
+                <p className="text-muted small mb-0">
+                  Leitura comercial por estágio do funil experiencial PDE,
+                  usando a jornada cadastrada no produto.
+                </p>
+              </div>
+              <span className="badge text-bg-light border">
+                {persuasiveJourney.framework || "Funil experiencial PDE"} ·{" "}
+                {persuasiveJourney.version || "sem versão"}
+              </span>
+            </div>
+            <div className="row g-3">
+              {persuasiveJourney.steps.map((step) => {
+                const trackedSections = getJourneyTrackedSections(step);
+                const uniqueSessions = new Set<string>();
+                let visibleMs = 0;
+                let events = 0;
+                for (const session of sessions) {
+                  let matchedSession = false;
+                  for (const section of session.topSections) {
+                    if (!trackedSections.includes(section.sectionId)) {
+                      continue;
+                    }
+                    matchedSession = true;
+                    visibleMs += section.visibleMs;
+                    events += section.events;
+                  }
+                  if (matchedSession) {
+                    uniqueSessions.add(session.sessionId);
+                  }
+                }
+                const stats =
+                  trackedSections.length === 1
+                    ? sectionStats.get(trackedSections[0])
+                    : {
+                        sessions: uniqueSessions.size,
+                        visibleMs,
+                        events,
+                      };
+                const sessionRate =
+                  data?.totalSessions && stats?.sessions
+                    ? (stats.sessions / data.totalSessions) * 100
+                    : 0;
+                return (
+                  <div
+                    className="col-12 col-lg-6"
+                    key={`${step.stage}-${trackedSections.join("-")}`}
+                  >
+                    <div className="border rounded-3 p-3 h-100">
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <strong>{getJourneyStepLabel(step)}</strong>
+                        <span className="badge text-bg-light border">
+                          {trackedSections.length
+                            ? trackedSections.join(", ")
+                            : "sem seção"}
+                        </span>
+                      </div>
+                      {step.psychologicalRole ? (
+                        <p className="text-muted small mb-2">
+                          Apoio psicológico: {step.psychologicalRole}
+                        </p>
+                      ) : null}
+                      <p className="mb-2">
+                        {step.commercialFunction || "Função não cadastrada."}
+                      </p>
+                      <div className="d-flex flex-wrap gap-2 small mb-2">
+                        <span className="badge text-bg-primary">
+                          {stats?.sessions ?? 0} sessões
+                        </span>
+                        <span className="badge text-bg-light border">
+                          {sessionRate.toFixed(1)}% do tráfego
+                        </span>
+                        <span className="badge text-bg-light border">
+                          {formatDuration(stats?.visibleMs)}
+                        </span>
+                      </div>
+                      <p className="text-muted small mb-1">
+                        Métrica: {step.primaryMetric || "não cadastrada"}
+                      </p>
+                      <p className="text-muted small mb-0">
+                        Ação se quebrar:{" "}
+                        {step.optimizationRule || "revisar esta etapa."}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       ) : null}

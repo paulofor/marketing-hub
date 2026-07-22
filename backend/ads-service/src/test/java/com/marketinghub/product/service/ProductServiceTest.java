@@ -181,6 +181,54 @@ class ProductServiceTest {
         assertThat(json).isEqualTo("{\"slug\":\"metodo-musa-7-dias\"}");
     }
 
+    /** Deve inserir a jornada persuasiva por estágios comerciais no contrato PDE preservando dados existentes. */
+    @Test
+    void applyDefaultPdePersuasiveJourney() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        Product product = Product.builder()
+                .id(1L)
+                .slug("metodo-musa-7-dias")
+                .promise("Presença elegante em 7 dias")
+                .pdeExperienceJson("{\"slug\":\"metodo-musa-7-dias\",\"experienceVersion\":\"musa-pde-entry-v4-video-hero\"}")
+                .build();
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+
+        Product updated = service.applyDefaultPdePersuasiveJourney(1L);
+
+        assertThat(updated.getPdeExperienceJson()).contains("\"experienceVersion\" : \"musa-pde-entry-v4-video-hero\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"persuasiveJourney\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"framework\" : \"Funil experiencial PDE\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"stageName\" : \"Envolvimento diagnóstico\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"stageName\" : \"Validação pós-compra\"");
+        assertThat(updated.getPdeExperienceJson()).contains("\"trackedSectionIds\" : [ \"interactive_diagnostic\", \"free_diagnostic_preview\" ]");
+        assertThat(updated.getPdeExperienceJson()).contains("\"trackedSectionId\" : \"subscription_paywall\"");
+    }
+
+    /** Deve ler a jornada persuasiva publicada no contrato PDE do produto. */
+    @Test
+    void getPublicPdePersuasiveJourney() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        Product product = Product.builder()
+                .slug("metodo-musa-7-dias")
+                .pdeExperienceJson("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\",\"steps\":[]}}")
+                .build();
+
+        when(productRepository.findBySlug("metodo-musa-7-dias")).thenReturn(Optional.of(product));
+
+        var journey = service.getPublicPdePersuasiveJourney("metodo-musa-7-dias");
+
+        assertThat(journey.get("framework").asText()).isEqualTo("Funil experiencial PDE");
+        assertThat(journey.get("steps").isArray()).isTrue();
+    }
+
     /** Deve rejeitar contrato PDE que não seja JSON válido antes de salvar o produto. */
     @Test
     void updateProductRejectsInvalidPdeExperienceJson() {

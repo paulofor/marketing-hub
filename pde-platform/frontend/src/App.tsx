@@ -484,6 +484,11 @@ function readCampaignParams() {
   };
 }
 
+function isCommercialAnalyticsSuppressed() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('mh_preview') === 'qa' || params.get('pde_analytics') === 'off';
+}
+
 function resolveUrlHost(url: string) {
   try {
     return new URL(url).hostname;
@@ -996,6 +1001,9 @@ function App() {
   }
 
   async function trackEvent(eventType: string, options: TrackingOptions = {}) {
+    if (isCommercialAnalyticsSuppressed()) {
+      return;
+    }
     try {
       await fetch('/api/pde/access/events', {
         method: 'POST',
@@ -1008,6 +1016,9 @@ function App() {
   }
 
   function sendTrackingBeacon(eventType: string, options: TrackingOptions = {}) {
+    if (isCommercialAnalyticsSuppressed()) {
+      return;
+    }
     const payload = JSON.stringify(buildTrackingPayload(eventType, options));
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/pde/access/events', new Blob([payload], { type: 'application/json' }));

@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
-import { Pencil, Video } from "lucide-react";
+import { Eye, Loader2, Pencil, Video, Workflow } from "lucide-react";
+import { parsePdePersuasiveJourney } from "../../api/product/pdePersuasiveJourney";
+import { useApplyDefaultPdePersuasiveJourney } from "../../api/product/useApplyDefaultPdePersuasiveJourney";
 import { useProducts } from "../../api/product/useProducts";
 import PageTitle from "../../components/PageTitle";
 
@@ -27,8 +29,43 @@ function isMusaProduct(product: { slug?: string; name?: string }) {
   );
 }
 
+function isPdeProduct(product: {
+  slug?: string;
+  name?: string;
+  productType?: string;
+  pdeExperienceJson?: string;
+}) {
+  const slug = product.slug?.toLowerCase() ?? "";
+  const type = product.productType?.toLowerCase() ?? "";
+  return (
+    slug.includes("pde") ||
+    type.includes("pde") ||
+    Boolean(product.pdeExperienceJson?.trim()) ||
+    isMusaProduct(product)
+  );
+}
+
 function cleanJourneyItem(value: string) {
   return value.replace(/^- /, "").replace(/\*\*/g, "");
+}
+
+function buildPreviewQaUrl(product: { publicUrl?: string; slug?: string }) {
+  if (!product.publicUrl) return "";
+  try {
+    const url = new URL(product.publicUrl);
+    url.searchParams.set("mh_preview", "qa");
+    url.searchParams.set("pde_analytics", "off");
+    url.searchParams.set("utm_source", "internal");
+    url.searchParams.set("utm_medium", "qa");
+    url.searchParams.set(
+      "utm_campaign",
+      `${product.slug || "produto"}_preview_qa`,
+    );
+    url.searchParams.set("utm_content", "product_card");
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 function extractHexColor(value: string) {
@@ -109,8 +146,27 @@ function buildIdentityColors(product: {
   return [...colors, ...supportColors];
 }
 
+function getJourneyStepLabel(step: {
+  stageNumber?: number;
+  stageName?: string;
+  aidaLabel?: string;
+  stage?: string;
+}) {
+  const name = step.stageName || step.aidaLabel || step.stage || "Etapa";
+  return step.stageNumber ? `Estágio ${step.stageNumber}: ${name}` : name;
+}
+
+function getJourneyTrackedSections(step: {
+  trackedSectionIds?: string[];
+  trackedSectionId?: string;
+}) {
+  if (step.trackedSectionIds?.length) return step.trackedSectionIds;
+  return step.trackedSectionId ? [step.trackedSectionId] : [];
+}
+
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
+  const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
   const products = Array.isArray(data) ? data : [];
   if (isLoading) return <p>Carregando...</p>;
   return (
@@ -138,6 +194,15 @@ export default function ProductListPage() {
         )}
         {products.map((product) => {
           const colors = buildIdentityColors(product);
+          const previewQaUrl = buildPreviewQaUrl(product);
+          const persuasiveJourney = parsePdePersuasiveJourney(
+            product.pdeExperienceJson,
+          );
+          const showPdeJourneyAction = isPdeProduct(product);
+          const persuasiveJourneySteps = persuasiveJourney?.steps ?? [];
+          const isApplyingJourney =
+            applyDefaultJourney.isPending &&
+            applyDefaultJourney.variables === product.id;
           const registeredColorCount = colors.filter(
             (color) => color.source === "Cadastrada",
           ).length;
@@ -272,6 +337,38 @@ export default function ProductListPage() {
                         <Video size={16} aria-hidden="true" />
                         Vídeos de venda
                       </Link>
+                      {previewQaUrl && (
+                        <a
+                          className="product-catalog-card__action-button product-catalog-card__action-button--qa"
+                          href={previewQaUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Eye size={16} aria-hidden="true" />
+                          Preview/QA sem métricas
+                        </a>
+                      )}
+                      {showPdeJourneyAction && (
+                        <button
+                          type="button"
+                          className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                          disabled={isApplyingJourney}
+                          onClick={() => applyDefaultJourney.mutate(product.id)}
+                        >
+                          {isApplyingJourney ? (
+                            <Loader2
+                              size={16}
+                              aria-hidden="true"
+                              className="product-editor__button-icon spinning"
+                            />
+                          ) : (
+                            <Workflow size={16} aria-hidden="true" />
+                          )}
+                          {persuasiveJourney
+                            ? "Atualizar jornada PDE"
+                            : "Inserir jornada PDE"}
+                        </button>
+                      )}
                     </div>
                     {!product.slug && (
                       <p className="product-catalog-card__description-links">
@@ -287,6 +384,40 @@ export default function ProductListPage() {
                           product.storytelling ||
                           "Não informada"}
                       </p>
+                      {persuasiveJourney && (
+                        <>
+                          <h3 className="h6 mt-3">Jornada comercial PDE</h3>
+                          <p className="small text-muted mb-2">
+                            {persuasiveJourney.framework ||
+                              "Funil experiencial PDE"}{" "}
+                            · {persuasiveJourney.version || "sem versão"}
+                          </p>
+                          <ol className="product-catalog-card__journey">
+                            {persuasiveJourneySteps.map((step) => {
+                              const trackedSections =
+                                getJourneyTrackedSections(step);
+                              return (
+                                <li key={`${step.stage}-${trackedSections[0]}`}>
+                                  <strong>{getJourneyStepLabel(step)}</strong>
+                                  {step.psychologicalRole ? (
+                                    <small className="d-block text-muted">
+                                      apoio: {step.psychologicalRole}
+                                    </small>
+                                  ) : null}
+                                  {step.commercialFunction
+                                    ? `: ${step.commercialFunction}`
+                                    : ""}
+                                  {trackedSections.length ? (
+                                    <small className="d-block text-muted">
+                                      seções: {trackedSections.join(", ")}
+                                    </small>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
+                          </ol>
+                        </>
+                      )}
                       {product.sevenDayJourney && (
                         <>
                           <h3 className="h6 mt-3">Jornada de 7 dias</h3>

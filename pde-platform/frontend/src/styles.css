@@ -422,6 +422,151 @@ textarea {
   padding: 44px;
 }
 
+.public-diagnostic-shell {
+  align-items: start;
+  display: grid;
+  padding: 18px;
+}
+
+.public-diagnostic-page {
+  display: grid;
+  gap: 18px;
+  margin: 0 auto;
+  max-width: 760px;
+  width: 100%;
+}
+
+.public-diagnostic-intro h1 {
+  font-size: 2.45rem;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.public-diagnostic-form,
+.public-diagnostic-result,
+.public-ai-status {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(122, 36, 68, 0.14);
+  box-shadow: 0 18px 54px rgba(61, 37, 27, 0.08);
+  padding: 22px;
+}
+
+.public-diagnostic-form h2,
+.public-diagnostic-result h2 {
+  font-size: 1.32rem;
+  line-height: 1.16;
+}
+
+.public-question-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.public-question-card {
+  border: 0;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.public-question-card legend {
+  align-items: center;
+  color: #2d2024;
+  display: flex;
+  font-weight: 850;
+  gap: 10px;
+  line-height: 1.25;
+  padding: 0;
+}
+
+.public-question-card legend span {
+  align-items: center;
+  background: #7a2444;
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 28px;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.public-option-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.public-option-grid button {
+  background: #fff8f3;
+  border: 1px solid rgba(122, 36, 68, 0.16);
+  color: #4d3b35;
+  cursor: pointer;
+  font-weight: 780;
+  min-height: 44px;
+  padding: 9px 11px;
+  text-align: left;
+}
+
+.public-option-grid button.selected {
+  background: #eef5f2;
+  border-color: rgba(47, 89, 82, 0.55);
+  box-shadow: inset 0 0 0 2px rgba(47, 89, 82, 0.14);
+  color: #284943;
+}
+
+.public-submit-button {
+  margin-top: 18px;
+  width: 100%;
+}
+
+.public-ai-status {
+  align-items: center;
+  color: #4d3b35;
+  display: flex;
+  font-weight: 760;
+  gap: 10px;
+}
+
+.public-ai-status-error {
+  color: #7a2444;
+}
+
+.public-signal-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0;
+}
+
+.public-signal-grid span {
+  background: #eef5f2;
+  border: 1px solid rgba(47, 89, 82, 0.18);
+  color: #284943;
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 10px;
+}
+
+.public-seven-day-plan {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.public-seven-day-plan li {
+  color: #4d3b35;
+  line-height: 1.38;
+}
+
+.public-diagnostic-result small {
+  color: #6b5a51;
+  display: block;
+  margin-top: 16px;
+}
+
 .login-panel h1 {
   font-size: 3.28rem;
   line-height: 1.04;
@@ -1856,6 +2001,39 @@ h3 {
     font-size: 1.48rem;
     line-height: 1.1;
     margin-bottom: 8px;
+  }
+
+  .public-diagnostic-shell {
+    padding: 10px;
+  }
+
+  .public-diagnostic-page {
+    gap: 12px;
+  }
+
+  .public-diagnostic-intro h1 {
+    font-size: 1.72rem;
+  }
+
+  .public-diagnostic-form,
+  .public-diagnostic-result,
+  .public-ai-status {
+    padding: 16px;
+  }
+
+  .public-diagnostic-form h2,
+  .public-diagnostic-result h2 {
+    font-size: 1.08rem;
+  }
+
+  .public-option-grid,
+  .public-signal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-question-card legend {
+    align-items: flex-start;
+    font-size: 0.94rem;
   }
 
   .login-panel .promise {

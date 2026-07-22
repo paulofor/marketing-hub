@@ -143,6 +143,12 @@ type MissionGuidanceConfig = {
   fields: MissionGuidanceField[];
 };
 
+type PublicDiagnosticQuestion = {
+  key: string;
+  question: string;
+  options: string[];
+};
+
 declare global {
   interface Window {
     google?: {
@@ -231,20 +237,33 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     fields: [
       {
         key: 'presenceFocus',
-        label: 'Onde você mais quer sentir presença hoje?',
+        label: 'Em qual situação você mais quer se sentir mais presente agora?',
         placeholder: 'Escolha um foco',
-        options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Conteúdo ou foto'],
+        options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
       },
       {
         key: 'mainObstacle',
-        label: 'O que mais distancia sua imagem da mulher que você quer comunicar?',
+        label: 'O que mais te incomoda quando você se olha pronta?',
         placeholder: 'Escolha um sinal',
-        options: ['Parecer comum mesmo caprichando', 'Roupa sem intenção clara', 'Acabamento pouco cuidado', 'Excesso visual sem sinal elegante'],
+        options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
       },
       {
-        key: 'evidencePhrase',
-        label: 'Complete sua frase de evidência',
-        placeholder: 'Hoje minha imagem comunica menos intenção quando...',
+        key: 'desiredSignal',
+        label: 'Qual sinal você quer comunicar com mais força?',
+        placeholder: 'Escolha um sinal',
+        options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
+      },
+      {
+        key: 'mainConstraint',
+        label: 'O que mais atrapalha sua imagem no dia a dia?',
+        placeholder: 'Escolha uma trava',
+        options: ['Pouco tempo', 'Dúvida na roupa', 'Vontade de comprar', 'Falta de constância'],
+      },
+      {
+        key: 'startingResource',
+        label: 'Com o que você prefere começar esta semana?',
+        placeholder: 'Escolha um recurso',
+        options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
       },
     ],
   },
@@ -509,6 +528,34 @@ const desiredPresenceSignals: DiagnosticOption[] = [
   },
 ];
 
+const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
+  {
+    key: 'presenceFocus',
+    question: 'Em qual situação você mais quer se sentir mais presente agora?',
+    options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
+  },
+  {
+    key: 'mainObstacle',
+    question: 'O que mais te incomoda quando você se olha pronta?',
+    options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
+  },
+  {
+    key: 'desiredSignal',
+    question: 'Qual sinal você quer comunicar com mais força?',
+    options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
+  },
+  {
+    key: 'mainConstraint',
+    question: 'O que mais atrapalha sua imagem no dia a dia?',
+    options: ['Pouco tempo', 'Dúvida na roupa', 'Vontade de comprar', 'Falta de constância'],
+  },
+  {
+    key: 'startingResource',
+    question: 'Com o que você prefere começar esta semana?',
+    options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
+  },
+];
+
 function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [product, setProduct] = useState<ProductExperience>(fallbackProduct);
@@ -522,6 +569,9 @@ function App() {
   const [devAccessUrl, setDevAccessUrl] = useState('');
   const [presenceBlocker, setPresenceBlocker] = useState('');
   const [desiredPresence, setDesiredPresence] = useState('');
+  const [publicDiagnosticAnswers, setPublicDiagnosticAnswers] = useState<Record<string, string>>({});
+  const [publicDiagnosticGuidance, setPublicDiagnosticGuidance] = useState<AiGuidance | null>(null);
+  const [publicDiagnosticLoading, setPublicDiagnosticLoading] = useState(false);
   const [missionAnswers, setMissionAnswers] = useState<Record<string, Record<string, string>>>({});
   const [aiGuidanceByMission, setAiGuidanceByMission] = useState<Record<string, AiGuidance>>({});
   const [generatingGuidance, setGeneratingGuidance] = useState(false);
@@ -1343,6 +1393,57 @@ function App() {
     }
   }
 
+  async function submitPublicPresenceDiagnostic() {
+    const answers = sanitizeAnswers(publicDiagnosticAnswers);
+    if (Object.keys(answers).length < publicDiagnosticQuestions.length) {
+      setErrorMessage('Responda as 5 perguntas para a Consultora MUSA montar seu plano personalizado.');
+      return;
+    }
+    setPublicDiagnosticLoading(true);
+    setPublicDiagnosticGuidance(null);
+    setErrorMessage('');
+    setSuccessMessage('');
+    try {
+      await trackEvent('DIAGNOSTIC_CHOICE_SELECTED', {
+        metadata: {
+          diagnosticStep: 'presence_diagnostic_5_questions',
+          answerKeys: Object.keys(answers),
+          actionName: 'presence_diagnostic_submitted',
+        },
+      });
+      const response = await fetch('/api/pde/public/presence-diagnostic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers }),
+      });
+      if (!response.ok) {
+        throw new Error('Não foi possível solicitar o diagnóstico.');
+      }
+      const guidance = (await response.json()) as AiGuidance;
+      setPublicDiagnosticGuidance(guidance);
+      await pollPublicPresenceDiagnostic(guidance.requestId);
+    } catch {
+      setErrorMessage('Não conseguimos acionar a Consultora MUSA agora. Tente enviar novamente em alguns instantes.');
+    } finally {
+      setPublicDiagnosticLoading(false);
+    }
+  }
+
+  async function pollPublicPresenceDiagnostic(requestId: string) {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 900 : 1800));
+      const response = await fetch(`/api/pde/public/presence-diagnostic/${requestId}`);
+      if (!response.ok) {
+        throw new Error('Diagnóstico não encontrado.');
+      }
+      const guidance = (await response.json()) as AiGuidance;
+      setPublicDiagnosticGuidance(guidance);
+      if (guidance.status === 'COMPLETED' || guidance.status === 'FAILED') {
+        return;
+      }
+    }
+  }
+
   function resolveAllMissionAnswers(workspaceData: Workspace) {
     return (workspaceData.missionInteractions ?? []).reduce<Record<string, Record<string, string>>>((answers, interaction) => {
       answers[interaction.missionId] = answers[interaction.missionId] ?? {};
@@ -1394,6 +1495,94 @@ function App() {
         [key]: value,
       },
     }));
+  }
+
+  function updatePublicDiagnosticAnswer(key: string, value: string) {
+    setPublicDiagnosticAnswers((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  if (!workspace) {
+    const publicDiagnosticReady = publicDiagnosticQuestions.every((question) => publicDiagnosticAnswers[question.key]?.trim());
+    const publicDiagnosticPending = publicDiagnosticLoading || publicDiagnosticGuidance?.status === 'PENDING';
+    const publicDiagnosticCompleted = publicDiagnosticGuidance?.status === 'COMPLETED';
+
+    return (
+      <main className="app-shell public-diagnostic-shell">
+        <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
+          <div className="public-diagnostic-intro">
+            <h1>Sua imagem comunica a mulher que você quer ser vista como?</h1>
+          </div>
+
+          <section className="public-diagnostic-form" aria-label="Diagnóstico de Presença">
+            <p className="section-kicker">Diagnóstico de Presença</p>
+            <h2>Responda 5 perguntas e receba seu plano personalizado de 7 dias.</h2>
+            <div className="public-question-list">
+              {publicDiagnosticQuestions.map((question, index) => (
+                <fieldset className="public-question-card" key={question.key}>
+                  <legend>
+                    <span>{index + 1}</span>
+                    {question.question}
+                  </legend>
+                  <div className="public-option-grid">
+                    {question.options.map((option) => (
+                      <button
+                        key={option}
+                        className={publicDiagnosticAnswers[question.key] === option ? 'selected' : ''}
+                        type="button"
+                        onClick={() => updatePublicDiagnosticAnswer(question.key, option)}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+            </div>
+            {errorMessage && <p className="form-message">{errorMessage}</p>}
+            <button className="primary-button public-submit-button" disabled={publicDiagnosticPending || !publicDiagnosticReady} onClick={submitPublicPresenceDiagnostic}>
+              {publicDiagnosticPending ? <LoaderCircle className="button-spinner" size={18} /> : <Sparkles size={18} />}
+              {publicDiagnosticPending ? 'Montando seu plano...' : 'Enviar diagnóstico'}
+            </button>
+          </section>
+
+          {publicDiagnosticPending && (
+            <section className="public-ai-status" role="status" aria-live="polite">
+              <LoaderCircle className="button-spinner" size={20} />
+              <span>A Consultora MUSA está lendo suas respostas e criando um plano de 7 dias para sua rotina.</span>
+            </section>
+          )}
+
+          {publicDiagnosticGuidance?.status === 'FAILED' && (
+            <section className="public-ai-status public-ai-status-error" role="status">
+              <Sparkles size={20} />
+              <span>Suas respostas foram recebidas, mas a IA não concluiu agora. Envie novamente em alguns instantes.</span>
+            </section>
+          )}
+
+          {publicDiagnosticCompleted && (
+            <section className="public-diagnostic-result" aria-label="Plano personalizado de 7 dias">
+              <p className="section-kicker">Plano personalizado por IA</p>
+              <h2>{publicDiagnosticGuidance.headline}</h2>
+              <p>{publicDiagnosticGuidance.summary}</p>
+              <div className="public-signal-grid">
+                {publicDiagnosticGuidance.signals.map((signal) => (
+                  <span key={signal}>{signal}</span>
+                ))}
+              </div>
+              <ol className="public-seven-day-plan">
+                {publicDiagnosticGuidance.microActions.map((action) => (
+                  <li key={action}>{action}</li>
+                ))}
+              </ol>
+              {publicDiagnosticGuidance.caution && <small>{publicDiagnosticGuidance.caution}</small>}
+            </section>
+          )}
+        </section>
+      </main>
+    );
   }
 
   if (!workspace) {

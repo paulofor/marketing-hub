@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["headline", "summary", "signals", "microActions", "caution"],
+  "properties": {
+    "headline": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 900
+    },
+    "signals": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "maxLength": 140
+      }
+    },
+    "microActions": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "string",
+        "maxLength": 220
+      }
+    },
+    "caution": {
+      "type": "string",
+      "maxLength": 260
+    }
+  }
+}

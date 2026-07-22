@@ -345,6 +345,7 @@ class AccessServiceTest {
                 "CTA_VIEWED",
                 "PRESENCE_MAP_CHOICE_SELECTED",
                 "DIAGNOSTIC_CHOICE_SELECTED",
+                "DIAGNOSTIC_SUBMITTED",
                 "CHECKOUT_STARTED",
                 "MISSION_OPEN",
                 "MISSION_COMPLETED",
@@ -454,6 +455,7 @@ class AccessServiceTest {
                 tempDir.resolve("access-grants.json").toString());
         AiGuidanceService aiGuidanceService = new AiGuidanceService(
                 accessService,
+                productCatalogService,
                 objectMapper,
                 tempDir.resolve("ai-guidance.json").toString(),
                 "",
@@ -491,6 +493,7 @@ class AccessServiceTest {
                 tempDir.resolve("access-grants.json").toString());
         AiGuidanceService aiGuidanceService = new AiGuidanceService(
                 accessService,
+                productCatalogService,
                 objectMapper,
                 tempDir.resolve("ai-guidance.json").toString(),
                 "",
@@ -533,6 +536,7 @@ class AccessServiceTest {
                 tempDir.resolve("access-grants.json").toString());
         AiGuidanceService aiGuidanceService = new AiGuidanceService(
                 accessService,
+                productCatalogService,
                 objectMapper,
                 tempDir.resolve("ai-guidance.json").toString(),
                 "",
@@ -568,6 +572,43 @@ class AccessServiceTest {
         assertThat(fetched.headline()).contains("assinatura MUSA");
         assertThat(fetched.signals()).containsExactly("Pele iluminada", "Off-white", "Perfume assinatura");
         assertThat(fetched.serviceTier()).isEqualTo("flex");
+    }
+
+    /** Confirma que o diagnóstico público usa o contrato de IA com plano de 7 dias. */
+    @Test
+    void acceptsPublicPresenceDiagnosticGuidanceType() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        ObjectMapper objectMapper = new ObjectMapper();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                objectMapper,
+                tempDir.resolve("access-grants.json").toString());
+        AiGuidanceService aiGuidanceService = new AiGuidanceService(
+                accessService,
+                productCatalogService,
+                objectMapper,
+                tempDir.resolve("ai-guidance-public.json").toString(),
+                "",
+                "",
+                "");
+        AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "diagnostico+visitante@clubemusa.local", "DIAGNOSTIC");
+
+        var guidance = aiGuidanceService.createGuidanceRequest(
+                access.token(),
+                "dia-1-ruido-visual",
+                new AiGuidanceCreateRequest("MUSA_PUBLIC_PRESENCE_DIAGNOSTIC", Map.of(
+                        "presenceFocus", "Trabalho ou reunião",
+                        "mainObstacle", "Falta acabamento",
+                        "desiredSignal", "Elegância discreta",
+                        "mainConstraint", "Pouco tempo",
+                        "startingResource", "Cabelo e pele")));
+        var pending = aiGuidanceService.getPendingGuidance();
+
+        assertThat(guidance.status()).isEqualTo("PENDING");
+        assertThat(guidance.guidanceType()).isEqualTo("MUSA_PUBLIC_PRESENCE_DIAGNOSTIC");
+        assertThat(pending).isPresent();
+        assertThat(pending.get().missionId()).isEqualTo("dia-1-ruido-visual");
+        assertThat(pending.get().product().slug()).isEqualTo("metodo-musa-7-dias");
     }
 
     /** Confirma que eventos comportamentais ricos da tela fazem parte do contrato analítico. */

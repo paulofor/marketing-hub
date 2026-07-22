@@ -4,6 +4,7 @@ import com.marketinghub.pde.dto.AiGuidanceCreateRequest;
 import com.marketinghub.pde.dto.AiGuidancePendingResponse;
 import com.marketinghub.pde.dto.AiGuidanceResponse;
 import com.marketinghub.pde.dto.AiGuidanceResultRequest;
+import com.marketinghub.pde.dto.PublicPresenceDiagnosticRequest;
 import com.marketinghub.pde.service.AiGuidanceService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -35,6 +36,21 @@ public class AiGuidanceController {
             @PathVariable("missionId") String missionId,
             @Valid @RequestBody AiGuidanceCreateRequest request) {
         return aiGuidanceService.createGuidanceRequest(token, missionId, request);
+    }
+
+    /** Cria um diagnóstico público de presença com plano de 7 dias gerado por IA. */
+    @PostMapping("/api/pde/public/presence-diagnostic")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AiGuidanceResponse createPublicPresenceDiagnostic(
+            @Valid @RequestBody PublicPresenceDiagnosticRequest request) {
+        return aiGuidanceService.createPublicPresenceDiagnostic(request);
+    }
+
+    /** Retorna o estado do diagnóstico público de presença. */
+    @GetMapping("/api/pde/public/presence-diagnostic/{requestId}")
+    public AiGuidanceResponse getPublicPresenceDiagnostic(
+            @PathVariable("requestId") String requestId) {
+        return aiGuidanceService.getPublicPresenceDiagnostic(requestId);
     }
 
     /** Retorna o estado atual de uma orientação guiada por IA. */

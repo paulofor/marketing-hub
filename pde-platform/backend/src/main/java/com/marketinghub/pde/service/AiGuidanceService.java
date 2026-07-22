@@ -9,6 +9,7 @@ import com.marketinghub.pde.dto.AiGuidanceResultRequest;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
+import com.marketinghub.pde.dto.PublicPresenceDiagnosticRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -39,7 +40,12 @@ public class AiGuidanceService {
     private static final Logger log = LoggerFactory.getLogger(AiGuidanceService.class);
     private static final TypeReference<Map<String, StoredAiGuidance>> STORE_TYPE = new TypeReference<>() {};
     private static final String STAGE_CODE = "pde-ai-guidance-v1";
+    private static final String MUSA_PRODUCT_SLUG = "metodo-musa-7-dias";
+    private static final String PUBLIC_ACCESS_PREFIX = "public-presence-diagnostic:";
+    private static final String PUBLIC_DIAGNOSTIC_MISSION_ID = "diagnostico-presenca-publico";
+    private static final String PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE = "MUSA_PUBLIC_PRESENCE_DIAGNOSTIC";
     private static final Set<String> ALLOWED_GUIDANCE_TYPES = Set.of(
+            PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE,
             "MUSA_DAY_1_PRESENCE_DIAGNOSIS",
             "MUSA_DAY_2_SIGNATURE",
             "MUSA_DAY_3_WARDROBE_REUSE",
@@ -49,6 +55,7 @@ public class AiGuidanceService {
             "MUSA_DAY_7_MAINTENANCE_PLAN");
 
     private final AccessService accessService;
+    private final ProductCatalogService productCatalogService;
     private final ObjectMapper objectMapper;
     private final Path storagePath;
     private final String jdbcUrl;
@@ -59,12 +66,14 @@ public class AiGuidanceService {
     /** Recebe dependências e carrega solicitações de IA já persistidas. */
     public AiGuidanceService(
             AccessService accessService,
+            ProductCatalogService productCatalogService,
             ObjectMapper objectMapper,
             @Value("${pde.ai.storage-path:/data/pde/ai-guidance-requests.json}") String storagePath,
             @Value("${pde.access.jdbc-url:}") String jdbcUrl,
             @Value("${pde.access.jdbc-username:}") String jdbcUsername,
             @Value("${pde.access.jdbc-password:}") String jdbcPassword) {
         this.accessService = accessService;
+        this.productCatalogService = productCatalogService;
         this.objectMapper = objectMapper;
         this.storagePath = Path.of(storagePath);
         this.jdbcUrl = jdbcUrl;
@@ -101,6 +110,34 @@ public class AiGuidanceService {
                 "pde-platform",
                 null,
                 Map.of("missionId", missionId, "guidanceType", request.guidanceType(), "requestId", requestId)));
+        return toResponse(stored);
+    }
+
+    /** Cria um diagnóstico público de presença sem exigir e-mail antes da entrega. */
+    public AiGuidanceResponse createPublicPresenceDiagnostic(PublicPresenceDiagnosticRequest request) {
+        validateGuidanceType(PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE);
+        String requestId = UUID.randomUUID().toString();
+        StoredAiGuidance stored = StoredAiGuidance.pending(
+                requestId,
+                PUBLIC_ACCESS_PREFIX + requestId,
+                MUSA_PRODUCT_SLUG,
+                "diagnostico-publico@musa.local",
+                PUBLIC_DIAGNOSTIC_MISSION_ID,
+                PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE,
+                sanitizeAnswers(request.answers()),
+                Map.of(),
+                Instant.now().toString());
+        requestsById.put(requestId, stored);
+        persistRequest(stored);
+        return toResponse(stored);
+    }
+
+    /** Retorna o diagnóstico público de presença pelo identificador opaco da solicitação. */
+    public AiGuidanceResponse getPublicPresenceDiagnostic(String requestId) {
+        StoredAiGuidance stored = getRequest(requestId);
+        if (!stored.accessToken().startsWith(PUBLIC_ACCESS_PREFIX)) {
+            throw new IllegalArgumentException("Diagnóstico público de presença não encontrado");
+        }
         return toResponse(stored);
     }
 
@@ -193,7 +230,9 @@ public class AiGuidanceService {
 
     /** Converte uma pendência interna no contrato consumido pelo worker. */
     private AiGuidancePendingResponse toPendingResponse(StoredAiGuidance stored) {
-        ProductExperienceResponse product = accessService.getWorkspace(stored.accessToken()).product();
+        ProductExperienceResponse product = stored.accessToken().startsWith(PUBLIC_ACCESS_PREFIX)
+                ? productCatalogService.getProduct(stored.productSlug())
+                : accessService.getWorkspace(stored.accessToken()).product();
         return new AiGuidancePendingResponse(
                 stored.requestId(),
                 stored.productSlug(),

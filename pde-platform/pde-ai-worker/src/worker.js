@@ -8,6 +8,10 @@ const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '4000');
 const openaiModel = process.env.OPENAI_MODEL ?? 'gpt-5.4-mini';
 const openaiApiKey = await resolveOpenAiApiKey();
 const promptDefinitions = {
+  MUSA_PUBLIC_PRESENCE_DIAGNOSTIC: {
+    dir: path.resolve(__dirname, '../prompts/musa-public-presence-diagnostic'),
+    schemaName: 'musa_public_presence_diagnostic',
+  },
   MUSA_DAY_1_PRESENCE_DIAGNOSIS: {
     dir: path.resolve(__dirname, '../prompts/musa-daily-guidance'),
     schemaName: 'musa_day_1_presence_diagnosis',

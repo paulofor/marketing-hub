@@ -81,4 +81,12 @@ describe('prompts da Consultora MUSA', () => {
     assert.match(worker, /scientificEvidencePackJson: JSON\.stringify\(scientificEvidencePack, null, 2\)/);
     assert.match(worker, /Pacote cientifico operacional ausente ou incompleto/);
   });
+
+  it('diagnóstico público usa standard como primeira tentativa por impacto de conversão', async () => {
+    const worker = await readFile(new URL('../src/worker.js', import.meta.url), 'utf8');
+
+    assert.match(worker, /MUSA_PUBLIC_PRESENCE_DIAGNOSTIC/);
+    assert.match(worker, /return \['default', 'flex', 'default'\]/);
+    assert.match(worker, /return \['flex', 'flex', 'default'\]/);
+  });
 });

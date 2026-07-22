@@ -714,6 +714,7 @@ public class AccessService {
                 "FIELD_ABANDONED",
                 "PRESENCE_MAP_CHOICE_SELECTED",
                 "DIAGNOSTIC_CHOICE_SELECTED",
+                "DIAGNOSTIC_SUBMITTED",
                 "LOGIN_STARTED",
                 "LOGIN_COMPLETED",
                 "PAYWALL_VIEWED",

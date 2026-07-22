@@ -7,6 +7,8 @@ const promptFiles = [
   'prompts/musa-daily-guidance/user.md',
   'prompts/musa-day-2-signature/system.md',
   'prompts/musa-day-2-signature/user.md',
+  'prompts/musa-public-presence-diagnostic/system.md',
+  'prompts/musa-public-presence-diagnostic/user.md',
 ];
 
 const forbiddenTerms = [
@@ -62,6 +64,7 @@ describe('prompts da Consultora MUSA', () => {
     for (const promptFile of [
       'prompts/musa-daily-guidance/user.md',
       'prompts/musa-day-2-signature/user.md',
+      'prompts/musa-public-presence-diagnostic/user.md',
     ]) {
       const content = await readFile(new URL(`../${promptFile}`, import.meta.url), 'utf8');
 

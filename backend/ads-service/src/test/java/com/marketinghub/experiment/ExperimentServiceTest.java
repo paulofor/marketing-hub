@@ -2,6 +2,7 @@ package com.marketinghub.experiment;
 
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.experiment.MetricPresetRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentStatusChangeRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
@@ -67,6 +68,8 @@ class ExperimentServiceTest {
     com.marketinghub.repository.jpa.experiment.MetricPresetRepository metricPresetRepository;
     @Autowired
     ExperimentRepository experimentRepository;
+    @Autowired
+    ExperimentStatusChangeRepository experimentStatusChangeRepository;
     @Autowired
     JourneyTemplateRepository journeyTemplateRepository;
     @Autowired
@@ -808,6 +811,79 @@ class ExperimentServiceTest {
         assertThat(stored.getStopCompletedAt()).isNull();
         assertThat(stored.getStopLastError()).isNull();
         assertThat(stored.getStopReason()).isEqualTo(FacebookCampaignStopReason.ADMIN_EXPERIMENT_PAUSED);
+    }
+
+    @Test
+    void reactivateStoppedExperimentRegistersReasonAndHistory() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Reactivation").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ARX").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HRX")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150_REACTIVATE")
+                .name("Lean-Startup 150 Reactivate")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("ExpReactivate");
+        req.setHypothesis("H");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150_REACTIVATE");
+        req.setDailyBudget(new BigDecimal("25"));
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+        experiment.setStatus(ExperimentStatus.USER_STOPPED);
+        experimentRepository.save(experiment);
+
+        FacebookAccount facebookAccount = facebookAccountRepository.save(FacebookAccount.builder()
+                .name("Conta Facebook Reactivation")
+                .adAccountId("act_reactivation")
+                .build());
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId("campaign-reactivation");
+        campaign.setExternalId("meta-reactivation");
+        campaign.setAdAccountId("act_reactivation");
+        campaign.setExperiment(experiment);
+        campaign.setFacebookAccount(facebookAccount);
+        campaign.setName("Campanha para reativar");
+        campaign.setObjective("OUTCOME_LEADS");
+        campaign.setStatus(FacebookAdStatus.PAUSED);
+        campaign.setBudgetMode(BudgetMode.CAMPAIGN);
+        facebookAdsCampaignRepository.save(campaign);
+
+        Experiment reactivated = service.reactivate(
+                experiment.getId(),
+                new com.marketinghub.experiment.dto.ReactivateExperimentRequest(
+                        "Retomar ciclo controlado para validar a nova entrada do PDE Musa."));
+
+        assertThat(reactivated.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+        assertThat(reactivated.getLastStatusChangeAction()).isEqualTo("REACTIVATE");
+        assertThat(reactivated.getLastStatusChangeReason()).contains("Retomar ciclo controlado");
+        assertThat(reactivated.getLastStatusChangedAt()).isNotNull();
+        assertThat(experimentStatusChangeRepository.findAll())
+                .anySatisfy(change -> {
+                    assertThat(change.getExperiment().getId()).isEqualTo(experiment.getId());
+                    assertThat(change.getPreviousStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+                    assertThat(change.getNewStatus()).isEqualTo(ExperimentStatus.RUNNING);
+                    assertThat(change.getAction()).isEqualTo("REACTIVATE");
+                });
+        reactivated.setStatus(ExperimentStatus.USER_STOPPED);
+        experimentRepository.save(reactivated);
     }
 
     @Test

@@ -12,6 +12,7 @@ import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.experiment.*;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStandbyService;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
@@ -20,6 +21,7 @@ import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentStatusChangeRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
@@ -63,6 +65,7 @@ public class ExperimentService {
     private static final String MUSA_PDE_CANONICAL_HOST = "clubemusa.com.br";
 
     private final ExperimentRepository repository;
+    private final ExperimentStatusChangeRepository statusChangeRepository;
     private final ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository;
     private final MarketNicheRepository nicheRepository;
     private final com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository;
@@ -90,7 +93,9 @@ public class ExperimentService {
     private final ProductAiExperimentPreparationService productAiExperimentPreparationService;
     private final ExperimentFunnelStandbyService experimentFunnelStandbyService;
 
+    /** Inicializa o serviço com repositórios, integrações e validadores usados pelos experimentos. */
     public ExperimentService(ExperimentRepository repository,
+                             ExperimentStatusChangeRepository statusChangeRepository,
                              ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository,
                              MarketNicheRepository nicheRepository,
                              com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository,
@@ -118,6 +123,7 @@ public class ExperimentService {
                              ProductAiExperimentPreparationService productAiExperimentPreparationService,
                              ExperimentFunnelStandbyService experimentFunnelStandbyService) {
         this.repository = repository;
+        this.statusChangeRepository = statusChangeRepository;
         this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -578,6 +584,60 @@ public class ExperimentService {
             );
         }
         return exp;
+    }
+
+    /**
+     * Reativa um experimento parado registrando motivo de negócio e histórico auditável.
+     */
+    @Transactional
+    public Experiment reactivate(Long id, ReactivateExperimentRequest request) {
+        String reason = normalizeStatusChangeReason(request != null ? request.reason() : null);
+        Experiment exp = repository.findById(id).orElseThrow();
+        ExperimentStatus previousStatus = exp.getStatus();
+        if (!canReactivate(previousStatus)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "experiment status does not allow reactivation");
+        }
+        validateRunningStatusTransition(exp);
+        exp.setStatus(ExperimentStatus.RUNNING);
+        exp.setLastStatusChangeAction("REACTIVATE");
+        exp.setLastStatusChangeReason(reason);
+        exp.setLastStatusChangedAt(Instant.now());
+        statusChangeRepository.save(ExperimentStatusChange.builder()
+                .experiment(exp)
+                .previousStatus(previousStatus)
+                .newStatus(ExperimentStatus.RUNNING)
+                .action("REACTIVATE")
+                .reason(reason)
+                .changedBy("ADMIN_UI")
+                .changedAt(exp.getLastStatusChangedAt())
+                .build());
+        return exp;
+    }
+
+    /** Verifica se o status atual representa um experimento parado que pode voltar à atividade. */
+    private boolean canReactivate(ExperimentStatus status) {
+        return status == ExperimentStatus.PAUSED
+                || status == ExperimentStatus.STANDBY
+                || status == ExperimentStatus.USER_STOPPED
+                || status == ExperimentStatus.INCONCLUSIVE
+                || status == ExperimentStatus.FAILED;
+    }
+
+    /** Normaliza e valida o motivo informado para mudança auditável de status. */
+    private String normalizeStatusChangeReason(String reason) {
+        if (!StringUtils.hasText(reason)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "reason required");
+        }
+        String normalized = reason.trim();
+        if (normalized.length() < 10) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "reason must have at least 10 characters");
+        }
+        if (normalized.length() > 1024) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "reason must have at most 1024 characters");
+        }
+        return normalized;
     }
 
     /** Valida as evidências mínimas antes de aceitar experimento como em execução. */

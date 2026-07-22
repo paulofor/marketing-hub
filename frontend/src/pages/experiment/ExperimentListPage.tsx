@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { useExperiments } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
-import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
+import {
+  useReactivateExperiment,
+  useUpdateExperimentStatus,
+} from "../../api/experiment/useUpdateExperimentStatus";
 import { useCloseExperimentPipelineJobs } from "../../api/experiment/useCloseExperimentPipelineJobs";
 import { useLatestPromiseOptionsDraft } from "../../api/experiment/useGeneratePromiseOptions";
 import PageTitle from "../../components/PageTitle";
@@ -12,6 +15,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 const PAGE_SIZE = 25;
+const REACTIVATABLE_STATUSES = new Set([
+  "PAUSED",
+  "STANDBY",
+  "USER_STOPPED",
+  "INCONCLUSIVE",
+  "FAILED",
+]);
 
 function parseDate(date?: string | null) {
   if (!date) return 0;
@@ -65,6 +75,7 @@ export default function ExperimentListPage() {
   const { data, isLoading } = useExperiments();
   const { data: niches } = useNiches();
   const updateStatus = useUpdateExperimentStatus();
+  const reactivateExperiment = useReactivateExperiment();
   const closePipelineJobs = useCloseExperimentPipelineJobs();
   const queryClient = useQueryClient();
   const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
@@ -78,6 +89,10 @@ export default function ExperimentListPage() {
   const [retryingExperimentId, setRetryingExperimentId] = useState<
     string | null
   >(null);
+  const [reactivationExperimentId, setReactivationExperimentId] = useState<
+    string | null
+  >(null);
+  const [reactivationReason, setReactivationReason] = useState("");
   const retryRelease = useMutation({
     mutationFn: async (experimentId: string) => {
       const { data } = await axios.post(
@@ -206,6 +221,26 @@ export default function ExperimentListPage() {
     }
   }
 
+  async function handleReactivate() {
+    if (!reactivationExperimentId) return;
+    const reason = reactivationReason.trim();
+    if (reason.length < 10) {
+      toast.error("Informe um motivo com pelo menos 10 caracteres.");
+      return;
+    }
+    try {
+      await reactivateExperiment.mutateAsync({
+        id: reactivationExperimentId,
+        reason,
+      });
+      toast.success("Experimento reativado com motivo registrado.");
+      setReactivationExperimentId(null);
+      setReactivationReason("");
+    } catch {
+      toast.error("Não foi possível reativar o experimento.");
+    }
+  }
+
   if (isLoading) return <p>Carregando...</p>;
 
   return (
@@ -291,6 +326,7 @@ export default function ExperimentListPage() {
           <tbody>
             {paginated.map((e) => {
               const canStop = e.status === "RUNNING";
+              const canReactivate = REACTIVATABLE_STATUSES.has(e.status);
               const isStopping = stoppingExperimentId === String(e.id);
               const isRetrying = retryingExperimentId === String(e.id);
               return (
@@ -363,6 +399,22 @@ export default function ExperimentListPage() {
                         Parada do usuário
                       </button>
                     )}
+                    {canReactivate && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-success ms-1"
+                        onClick={() => {
+                          setReactivationExperimentId(String(e.id));
+                          setReactivationReason(
+                            e.id === "67"
+                              ? "Retomar o Experimento 67 para medir a versão atual do PDE Musa em produção como novo ciclo dentro do mesmo aprendizado."
+                              : "",
+                          );
+                        }}
+                      >
+                        Retornar à atividade
+                      </button>
+                    )}
                     {e.status === "FAILED" && (
                       <button
                         type="button"
@@ -390,6 +442,69 @@ export default function ExperimentListPage() {
       {sorted.length === 0 && (
         <div className="alert alert-light border" role="status">
           Nenhum experimento encontrado para os filtros selecionados.
+        </div>
+      )}
+      {reactivationExperimentId && (
+        <div className="modal d-block" tabIndex={-1} role="dialog">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h2 className="modal-title h5">Retornar experimento à atividade</h2>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Fechar"
+                  onClick={() => {
+                    setReactivationExperimentId(null);
+                    setReactivationReason("");
+                  }}
+                />
+              </div>
+              <div className="modal-body">
+                <label className="form-label" htmlFor="reactivation-reason">
+                  Motivo do retorno
+                </label>
+                <textarea
+                  id="reactivation-reason"
+                  className="form-control"
+                  rows={4}
+                  maxLength={1024}
+                  value={reactivationReason}
+                  onChange={(event) => setReactivationReason(event.target.value)}
+                />
+                <div className="form-text">
+                  Esse motivo fica registrado no histórico do experimento.
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => {
+                    setReactivationExperimentId(null);
+                    setReactivationReason("");
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  disabled={reactivateExperiment.isPending}
+                  onClick={handleReactivate}
+                >
+                  {reactivateExperiment.isPending && (
+                    <span
+                      className="spinner-border spinner-border-sm me-1"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                  )}
+                  Reativar
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       {totalPages > 1 && (

@@ -165,6 +165,9 @@ export interface Experiment {
   creativeGenerationStartedAt?: string | null;
   creativeGenerationFinishedAt?: string | null;
   creativeGenerationError?: string | null;
+  lastStatusChangeReason?: string | null;
+  lastStatusChangeAction?: string | null;
+  lastStatusChangedAt?: string | null;
   primaryVariable?: string | null;
   primaryMetric?: string | null;
   createdAt: string;

@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-22-experiment-reactivation-audit
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: last_status_change_reason
+                  type: varchar(1024)
+              - column:
+                  name: last_status_change_action
+                  type: varchar(64)
+              - column:
+                  name: last_status_changed_at
+                  type: datetime
+        - createTable:
+            tableName: experiment_status_change
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: experiment_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: previous_status
+                  type: varchar(32)
+              - column:
+                  name: new_status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: varchar(1024)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_by
+                  type: varchar(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_at
+                  type: datetime
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: experiment_status_change
+            baseColumnNames: experiment_id
+            constraintName: fk_experiment_status_change_experiment
+            referencedTableName: experiment
+            referencedColumnNames: id
+        - createIndex:
+            tableName: experiment_status_change
+            indexName: idx_experiment_status_change_experiment_changed
+            columns:
+              - column:
+                  name: experiment_id
+              - column:
+                  name: changed_at
+      rollback:
+        - dropTable:
+            tableName: experiment_status_change
+        - dropColumn:
+            tableName: experiment
+            columnName: last_status_change_reason
+        - dropColumn:
+            tableName: experiment
+            columnName: last_status_change_action
+        - dropColumn:
+            tableName: experiment
+            columnName: last_status_changed_at

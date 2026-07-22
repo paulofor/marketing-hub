@@ -12,6 +12,7 @@ IMAGE_TAG=${IMAGE_TAG:-latest}
 IMAGE_LOAD_TIMEOUT=${IMAGE_LOAD_TIMEOUT:-12m}
 COMMAND_TIMEOUT_KILL_AFTER=${COMMAND_TIMEOUT_KILL_AFTER:-30s}
 COMPOSE_RECREATE_TIMEOUT=${COMPOSE_RECREATE_TIMEOUT:-8m}
+DIAGNOSTIC_COMMAND_TIMEOUT=${DIAGNOSTIC_COMMAND_TIMEOUT:-20s}
 BACKEND_HEALTH_URL=${BACKEND_HEALTH_URL:-http://localhost:8000/ops-mh-observability-v2/health}
 FRONTEND_HEALTH_URL=${FRONTEND_HEALTH_URL:-http://localhost:5173/}
 
@@ -51,19 +52,19 @@ run_with_heartbeat() {
 
 dump_app_diagnostics() {
   log "Diagnóstico de disco"
-  df -h "${DEPLOY_DIR}" /tmp || true
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" df -h "${DEPLOY_DIR}" /tmp || true
 
   log "Diagnóstico docker system df"
-  docker system df || true
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker system df || true
 
   log "Diagnóstico docker compose ps"
-  docker compose ps backend frontend || true
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker compose ps backend frontend || true
 
   log "Últimas linhas do backend"
-  docker logs --tail 120 marketinghub-backend 2>&1 || true
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker logs --tail 120 marketinghub-backend 2>&1 || true
 
   log "Últimas linhas do frontend"
-  docker logs --tail 80 marketinghub-frontend 2>&1 || true
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker logs --tail 80 marketinghub-frontend 2>&1 || true
 }
 
 run_with_timeout_and_diagnostics() {
@@ -85,7 +86,7 @@ prepare_image_load() {
   log "Preparando carga da imagem ${name}"
   ls -lh "${tar_path}" || true
   df -h "${DEPLOY_DIR}" /tmp || true
-  docker system df || true
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker system df || true
   docker image prune -f >/dev/null 2>&1 || true
 }
 

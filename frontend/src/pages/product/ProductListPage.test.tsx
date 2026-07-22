@@ -113,4 +113,35 @@ describe("ProductListPage", () => {
       "/api/products/public/metodo-musa-7-dias/marketing-definition.md",
     );
   });
+
+  it("shows preview QA link that suppresses commercial metrics", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          slug: "metodo-musa-7-dias",
+          name: "Método MUSA - Presença Elegante em 7 Dias",
+          publicUrl: "https://clubemusa.com.br",
+        },
+      ],
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    const previewLink = await screen.findByRole("link", {
+      name: /Preview\/QA sem métricas/i,
+    });
+
+    expect(previewLink).toHaveAttribute(
+      "href",
+      "https://clubemusa.com.br/?mh_preview=qa&pde_analytics=off&utm_source=internal&utm_medium=qa&utm_campaign=metodo-musa-7-dias_preview_qa&utm_content=product_card",
+    );
+    expect(previewLink).toHaveAttribute("target", "_blank");
+  });
 });

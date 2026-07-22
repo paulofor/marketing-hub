@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
-import { Pencil, Video } from "lucide-react";
+import { Eye, Pencil, Video } from "lucide-react";
 import { useProducts } from "../../api/product/useProducts";
 import PageTitle from "../../components/PageTitle";
 
@@ -29,6 +29,25 @@ function isMusaProduct(product: { slug?: string; name?: string }) {
 
 function cleanJourneyItem(value: string) {
   return value.replace(/^- /, "").replace(/\*\*/g, "");
+}
+
+function buildPreviewQaUrl(product: { publicUrl?: string; slug?: string }) {
+  if (!product.publicUrl) return "";
+  try {
+    const url = new URL(product.publicUrl);
+    url.searchParams.set("mh_preview", "qa");
+    url.searchParams.set("pde_analytics", "off");
+    url.searchParams.set("utm_source", "internal");
+    url.searchParams.set("utm_medium", "qa");
+    url.searchParams.set(
+      "utm_campaign",
+      `${product.slug || "produto"}_preview_qa`,
+    );
+    url.searchParams.set("utm_content", "product_card");
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 function extractHexColor(value: string) {
@@ -138,6 +157,7 @@ export default function ProductListPage() {
         )}
         {products.map((product) => {
           const colors = buildIdentityColors(product);
+          const previewQaUrl = buildPreviewQaUrl(product);
           const registeredColorCount = colors.filter(
             (color) => color.source === "Cadastrada",
           ).length;
@@ -272,6 +292,17 @@ export default function ProductListPage() {
                         <Video size={16} aria-hidden="true" />
                         Vídeos de venda
                       </Link>
+                      {previewQaUrl && (
+                        <a
+                          className="product-catalog-card__action-button product-catalog-card__action-button--qa"
+                          href={previewQaUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Eye size={16} aria-hidden="true" />
+                          Preview/QA sem métricas
+                        </a>
+                      )}
                     </div>
                     {!product.slug && (
                       <p className="product-catalog-card__description-links">

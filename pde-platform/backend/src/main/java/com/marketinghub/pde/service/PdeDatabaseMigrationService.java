@@ -21,6 +21,7 @@ public class PdeDatabaseMigrationService {
     private static final String EXPERIENCE_VERSION_INDEX = "idx_pde_funnel_product_version_time";
     private static final String AI_GUIDANCE_TABLE = "pde_ai_guidance_request";
     private static final String ACCESS_TOKEN_COLUMN = "access_token";
+    private static final String AI_GUIDANCE_ACCESS_GRANT_FK = "fk_pde_ai_guidance_access_grant";
     private static final int ACCESS_TOKEN_MIN_LENGTH = 120;
 
     private final String jdbcUrl;
@@ -53,7 +54,7 @@ public class PdeDatabaseMigrationService {
         }
         try (Connection connection = connectionProvider.open(jdbcUrl, jdbcUsername, jdbcPassword)) {
             migrateFunnelEventExperienceVersion(connection);
-            migrateAiGuidanceAccessTokenLength(connection);
+            migrateAiGuidancePublicAccessCompatibility(connection);
         } catch (SQLException ex) {
             log.error("Falha ao migrar schema operacional do PDE", ex);
             throw new IllegalStateException("Não foi possível migrar schema operacional do PDE", ex);
@@ -93,14 +94,23 @@ public class PdeDatabaseMigrationService {
         }
     }
 
-    /** Garante espaço suficiente para tokens públicos de diagnóstico com prefixo e UUID. */
-    private void migrateAiGuidanceAccessTokenLength(Connection connection) throws SQLException {
+    /** Garante que o diagnóstico público possa ser salvo antes de existir acesso pago/logado. */
+    private void migrateAiGuidancePublicAccessCompatibility(Connection connection) throws SQLException {
         if (!objectExists(
                 connection,
                 "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
                 AI_GUIDANCE_TABLE)) {
             log.warn("Migração PDE ignorada porque a tabela de orientação IA ainda não existe; table={}", AI_GUIDANCE_TABLE);
             return;
+        }
+        if (objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?",
+                AI_GUIDANCE_TABLE,
+                AI_GUIDANCE_ACCESS_GRANT_FK)) {
+            executeSql(connection, "ALTER TABLE pde_ai_guidance_request DROP FOREIGN KEY fk_pde_ai_guidance_access_grant");
+            log.info("Chave estrangeira incompatível com diagnóstico público removida; constraint={}", AI_GUIDANCE_ACCESS_GRANT_FK);
         }
         Integer currentLength = columnMaxLength(connection, AI_GUIDANCE_TABLE, ACCESS_TOKEN_COLUMN);
         if (currentLength != null && currentLength < ACCESS_TOKEN_MIN_LENGTH) {

@@ -54,3 +54,41 @@ databaseChangeLog:
                   FOREIGN KEY (access_token) REFERENCES pde_access_grant (token)
                   ON DELETE CASCADE
               );
+
+  - changeSet:
+      id: 2026-07-22-pde-ai-guidance-public-access-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_ai_guidance_request
+        - foreignKeyConstraintExists:
+            foreignKeyName: fk_pde_ai_guidance_access_grant
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pde_ai_guidance_request
+                DROP FOREIGN KEY fk_pde_ai_guidance_access_grant;
+
+  - changeSet:
+      id: 2026-07-22-pde-ai-guidance-public-access-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_ai_guidance_request
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pde_ai_guidance_request
+                MODIFY COLUMN access_token VARCHAR(120) NOT NULL;

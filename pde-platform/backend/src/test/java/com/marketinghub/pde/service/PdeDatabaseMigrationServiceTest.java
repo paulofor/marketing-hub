@@ -51,9 +51,16 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement columnStatement = existingObjectStatement(true);
         PreparedStatement indexStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
+        PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
         when(connection.prepareStatement(anyString()))
-                .thenReturn(tableStatement, columnStatement, indexStatement, aiGuidanceTableStatement, accessTokenLengthStatement);
+                .thenReturn(
+                        tableStatement,
+                        columnStatement,
+                        indexStatement,
+                        aiGuidanceTableStatement,
+                        aiGuidanceFkStatement,
+                        accessTokenLengthStatement);
         PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
                 "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
 
@@ -70,17 +77,27 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement columnStatement = existingObjectStatement(true);
         PreparedStatement indexStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
+        PreparedStatement aiGuidanceFkStatement = existingObjectStatement(true);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(40);
         Statement ddlStatement = mock(Statement.class);
         when(connection.prepareStatement(anyString()))
-                .thenReturn(tableStatement, columnStatement, indexStatement, aiGuidanceTableStatement, accessTokenLengthStatement);
+                .thenReturn(
+                        tableStatement,
+                        columnStatement,
+                        indexStatement,
+                        aiGuidanceTableStatement,
+                        aiGuidanceFkStatement,
+                        accessTokenLengthStatement);
         when(connection.createStatement()).thenReturn(ddlStatement);
         PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
                 "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
 
         migrationService.migrateIfNeeded();
 
-        verify(ddlStatement)
+        InOrder ddlOrder = inOrder(ddlStatement);
+        ddlOrder.verify(ddlStatement)
+                .executeUpdate("ALTER TABLE pde_ai_guidance_request DROP FOREIGN KEY fk_pde_ai_guidance_access_grant");
+        ddlOrder.verify(ddlStatement)
                 .executeUpdate("ALTER TABLE pde_ai_guidance_request MODIFY COLUMN access_token VARCHAR(120) NOT NULL");
     }
 

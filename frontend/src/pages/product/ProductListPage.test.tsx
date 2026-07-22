@@ -1,13 +1,21 @@
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import ProductListPage from "./ProductListPage";
 import axios from "axios";
 
 vi.mock("axios");
 
 describe("ProductListPage", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
   it("renders product actions", async () => {
     (axios.get as any).mockResolvedValue({ data: [] });
     const client = new QueryClient();
@@ -26,8 +34,8 @@ describe("ProductListPage", () => {
       data: [
         {
           id: 1,
-          slug: "metodo-musa-7-dias",
-          name: "Método MUSA - Presença Elegante em 7 Dias",
+          slug: "pde-anti-invisibilidade-profissional-7-dias",
+          name: "PDE Anti-Invisibilidade Profissional",
           currentPriceBrl: 47,
         },
       ],
@@ -43,6 +51,25 @@ describe("ProductListPage", () => {
 
     const editLink = await screen.findByRole("link", { name: /Editar dados/i });
     expect(editLink).toHaveAttribute("href", "/products/1/edit");
+    expect(
+      await screen.findByText("PDE Anti-Invisibilidade Profissional"),
+    ).toBeTruthy();
+  });
+
+  it("shows empty state when there are no products", async () => {
+    (axios.get as any).mockResolvedValue({ data: [] });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText(/Nenhum produto comercial cadastrado/i),
+    ).toBeTruthy();
   });
 
   it("shows marketing definition links for listed product", async () => {

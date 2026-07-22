@@ -28,10 +28,10 @@ describe("lead portal form responses navigation", () => {
     ).toBeTruthy();
   });
 
-  it("contains menu item for form responses", () => {
+  it("keeps form responses out of the main menu", () => {
     setup(["/"]);
-    const link = screen.getByRole("link", { name: /respostas de formulários/i });
-    expect(link).toBeTruthy();
-    expect(link.getAttribute("href")).toBe("/lead-portal/form-responses");
+    expect(
+      screen.queryByRole("link", { name: /respostas de formulários/i }),
+    ).toBeNull();
   });
 });

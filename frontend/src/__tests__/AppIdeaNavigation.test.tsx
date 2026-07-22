@@ -26,10 +26,10 @@ describe("app ideas navigation", () => {
     ).toBeTruthy();
   });
 
-  it("has menu link to /app-ideas", () => {
+  it("keeps obsolete app ideas route out of the main menu", () => {
     setup(<App />, ["/"]);
-    const link = screen.getByRole("link", { name: /ideias de aplicativo/i });
-    expect(link).toBeTruthy();
-    expect(link.getAttribute("href")).toBe("/app-ideas");
+    expect(
+      screen.queryByRole("link", { name: /ideias de aplicativo/i }),
+    ).toBeNull();
   });
 });

@@ -33,6 +33,7 @@ import { useTenantContext } from "../../utils/tenantContext";
 
 const PROVIDER_FAMILIES: SalesVideoProviderFamily[] = ["EXTERNAL_VIDEO_MODULE", "OPENAI"];
 const EXECUTION_MODES: SalesVideoExecutionMode[] = ["TEST", "PRODUCTION"];
+const DEFAULT_RENDER_PROVIDER = "VEO";
 
 export default function SalesVideoProfileDetailPage() {
   const { profileId } = useParams();
@@ -57,7 +58,7 @@ export default function SalesVideoProfileDetailPage() {
   const [renderForm, setRenderForm] = useState({
     requestedBy: tenantContext.userEmail,
     providerFamily: "EXTERNAL_VIDEO_MODULE" as SalesVideoProviderFamily,
-    providerName: "video-management-service",
+    providerName: DEFAULT_RENDER_PROVIDER,
     executionMode: "TEST" as SalesVideoExecutionMode,
   });
   const [complianceForm, setComplianceForm] = useState({
@@ -564,7 +565,7 @@ export default function SalesVideoProfileDetailPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="form-label">Provider (opcional)</label>
+                  <label className="form-label">Provider real do vídeo</label>
                   <input
                     className="form-control"
                     value={renderForm.providerName}

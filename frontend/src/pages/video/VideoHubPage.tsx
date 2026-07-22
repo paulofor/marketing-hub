@@ -73,6 +73,7 @@ const STATUS_LABELS: Record<VideoStageStatus, string> = {
 };
 
 const CURRENT_PDE_VERSION = "musa-pde-entry-v4-video-hero";
+const DEFAULT_RENDER_PROVIDER = "VEO";
 
 export default function VideoHubPage() {
   const tenantContext = useTenantContext();
@@ -201,7 +202,7 @@ export default function VideoHubPage() {
       await requestRender.mutateAsync({
         requestedBy: tenantContext.userEmail,
         providerFamily: "EXTERNAL_VIDEO_MODULE",
-        providerName: "video-management-service",
+        providerName: DEFAULT_RENDER_PROVIDER,
         executionMode: "TEST",
       });
       toast.success("Criação do vídeo solicitada pelo Marketing Hub");

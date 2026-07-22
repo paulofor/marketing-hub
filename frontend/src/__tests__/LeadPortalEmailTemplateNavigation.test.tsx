@@ -28,10 +28,10 @@ describe("lead portal email template navigation", () => {
     ).toBeTruthy();
   });
 
-  it("contains menu item for the email template", () => {
+  it("keeps lead email template out of the main menu", () => {
     setup(["/"]);
-    const link = screen.getByRole("link", { name: /template do e-mail do lead/i });
-    expect(link).toBeTruthy();
-    expect(link.getAttribute("href")).toBe("/lead-portal/email-template");
+    expect(
+      screen.queryByRole("link", { name: /template do e-mail do lead/i }),
+    ).toBeNull();
   });
 });

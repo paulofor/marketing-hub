@@ -6009,3 +6009,10 @@
 - correção operacional aplicada no host: o frontend de produção recebeu alias exclusivo `pde-platform-frontend-production` e a homologação ficou isolada no alias `pde-platform-frontend-homolog`.
 - prevenção versionada: o compose de homologação passou a usar nomes de serviço exclusivos, evitando recriar o alias compartilhado em deploys futuros.
 - impacto comercial esperado: estabilizar a primeira dobra do Clube MUSA para tráfego pago e impedir perda de cliques por tela branca intermitente.
+
+## 2026-07-22 — PED/MUSA: health check público contra tela branca
+
+- foi feito: o frontend PDE passou a expor `GET /healthz` como sinal público simples do container.
+- foi feito: criado smoke test público com Playwright para abrir a URL publicada, confirmar JavaScript carregado, headline comercial visível e bloco `Diagnóstico de Presença` renderizado.
+- foi feito: o workflow de homologação e produção do PDE passou a executar essa validação depois do deploy, além do health HTTP do backend.
+- impacto comercial esperado: evitar liberar tráfego pago para página que responde `200`, mas está branca, com asset JavaScript quebrado ou sem a primeira dobra comercial visível.

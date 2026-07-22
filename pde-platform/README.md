@@ -34,8 +34,21 @@ entrada MUSA sem depender de instalacao temporaria.
 O health check publico do frontend fica em `GET /healthz` para validar resposta
 HTTP simples do container. Para validar o que evita tela branca comercial, use
 `npm run test:public-health` com `PDE_PUBLIC_HEALTH_URL`: o teste abre a URL
-publicada, exige JavaScript carregado, confere a headline da primeira dobra e
-confirma o bloco `Diagnóstico de Presença`.
+publicada, exige JavaScript carregado e confere os textos comerciais obrigatorios
+do contrato publico em `GET /pde-health-contract.json`.
+
+Todo PDE produzido para campanha deve publicar seu proprio
+`pde-health-contract.json` com:
+
+- `slug` do produto;
+- `healthPath` que representa a entrada publica do funil;
+- `requiredTexts` com headline, bloco principal e CTA;
+- `forbiddenTexts` com mensagens de erro que nunca podem aparecer para a cliente.
+
+Em validacoes pontuais, o pipeline tambem aceita override por ambiente:
+`PDE_PUBLIC_HEALTH_PRODUCT_SLUG`, `PDE_PUBLIC_HEALTH_PATH`,
+`PDE_PUBLIC_HEALTH_REQUIRED_TEXTS` e `PDE_PUBLIC_HEALTH_FORBIDDEN_TEXTS`.
+Listas por variavel usam `|` como separador.
 
 Docker:
 

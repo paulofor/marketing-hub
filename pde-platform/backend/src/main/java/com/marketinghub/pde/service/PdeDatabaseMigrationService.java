@@ -67,12 +67,25 @@ public class PdeDatabaseMigrationService {
         }
         try (Connection connection = connectionProvider.open(jdbcUrl, jdbcUsername, jdbcPassword)) {
             migrateFunnelEventExperienceVersion(connection);
-            migrateAiGuidancePublicAccessCompatibility(connection);
+            migrateAiGuidanceStorageTable(connection);
             migrateOperationalFailureTable(connection);
         } catch (SQLException ex) {
             migrated.set(false);
             log.error("Falha ao migrar schema operacional do PDE", ex);
             throw new IllegalStateException("Não foi possível migrar schema operacional do PDE", ex);
+        }
+    }
+
+    /** Garante sob demanda que a persistência de orientação por IA aceita o diagnóstico público. */
+    public void ensureAiGuidanceStorageReady() {
+        if (!usesJdbcStorage()) {
+            return;
+        }
+        try (Connection connection = connectionProvider.open(jdbcUrl, jdbcUsername, jdbcPassword)) {
+            migrateAiGuidanceStorageTable(connection);
+        } catch (SQLException ex) {
+            log.error("Falha ao preparar schema de orientação IA do PDE", ex);
+            throw new IllegalStateException("Não foi possível preparar schema de orientação IA do PDE", ex);
         }
     }
 
@@ -137,14 +150,13 @@ public class PdeDatabaseMigrationService {
         }
     }
 
-    /** Garante que o diagnóstico público possa ser salvo antes de existir acesso pago/logado. */
-    private void migrateAiGuidancePublicAccessCompatibility(Connection connection) throws SQLException {
+    /** Garante tabela e coluna para salvar orientação IA antes de existir acesso pago/logado. */
+    private void migrateAiGuidanceStorageTable(Connection connection) throws SQLException {
         if (!objectExists(
                 connection,
                 "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
                 AI_GUIDANCE_TABLE)) {
-            log.warn("Migração PDE ignorada porque a tabela de orientação IA ainda não existe; table={}", AI_GUIDANCE_TABLE);
-            return;
+            createAiGuidanceTable(connection);
         }
         if (objectExists(
                 connection,
@@ -164,6 +176,47 @@ public class PdeDatabaseMigrationService {
                     currentLength,
                     ACCESS_TOKEN_MIN_LENGTH);
         }
+    }
+
+    /** Cria a tabela canônica de solicitações de orientação por IA do PDE. */
+    private void createAiGuidanceTable(Connection connection) throws SQLException {
+        executeSql(
+                connection,
+                """
+                CREATE TABLE pde_ai_guidance_request (
+                  request_id VARCHAR(36) NOT NULL,
+                  access_token VARCHAR(120) NOT NULL,
+                  product_slug VARCHAR(120) NOT NULL,
+                  email VARCHAR(255) NOT NULL,
+                  mission_id VARCHAR(120) NOT NULL,
+                  guidance_type VARCHAR(120) NOT NULL,
+                  stage_code VARCHAR(80) NOT NULL,
+                  status VARCHAR(40) NOT NULL,
+                  answers_json TEXT NOT NULL,
+                  previous_answers_json TEXT NOT NULL,
+                  headline VARCHAR(500) NULL,
+                  summary TEXT NULL,
+                  signals_json TEXT NOT NULL,
+                  micro_actions_json TEXT NOT NULL,
+                  caution TEXT NULL,
+                  model VARCHAR(80) NULL,
+                  service_tier VARCHAR(40) NULL,
+                  raw_request_json MEDIUMTEXT NULL,
+                  raw_response_json MEDIUMTEXT NULL,
+                  input_tokens INT NULL,
+                  output_tokens INT NULL,
+                  cost_usd DECIMAL(12,6) NULL,
+                  error_message TEXT NULL,
+                  created_at DATETIME NOT NULL,
+                  finished_at DATETIME NULL,
+                  updated_at DATETIME NOT NULL,
+                  PRIMARY KEY (request_id),
+                  KEY idx_pde_ai_guidance_status_created (status, created_at),
+                  KEY idx_pde_ai_guidance_access_token (access_token),
+                  KEY idx_pde_ai_guidance_product_type (product_slug, guidance_type)
+                )
+                """);
+        log.info("Tabela de orientação IA PDE criada; table={}", AI_GUIDANCE_TABLE);
     }
 
     /** Verifica existência de tabela, coluna ou índice no schema atual. */

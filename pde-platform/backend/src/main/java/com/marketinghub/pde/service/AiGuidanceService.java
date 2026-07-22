@@ -61,6 +61,7 @@ public class AiGuidanceService {
     private final String jdbcUrl;
     private final String jdbcUsername;
     private final String jdbcPassword;
+    private final PdeDatabaseMigrationService databaseMigrationService;
     private final Map<String, StoredAiGuidance> requestsById = new ConcurrentHashMap<>();
 
     /** Recebe dependências e carrega solicitações de IA já persistidas. */
@@ -71,7 +72,8 @@ public class AiGuidanceService {
             @Value("${pde.ai.storage-path:/data/pde/ai-guidance-requests.json}") String storagePath,
             @Value("${pde.access.jdbc-url:}") String jdbcUrl,
             @Value("${pde.access.jdbc-username:}") String jdbcUsername,
-            @Value("${pde.access.jdbc-password:}") String jdbcPassword) {
+            @Value("${pde.access.jdbc-password:}") String jdbcPassword,
+            PdeDatabaseMigrationService databaseMigrationService) {
         this.accessService = accessService;
         this.productCatalogService = productCatalogService;
         this.objectMapper = objectMapper;
@@ -79,6 +81,7 @@ public class AiGuidanceService {
         this.jdbcUrl = jdbcUrl;
         this.jdbcUsername = jdbcUsername;
         this.jdbcPassword = jdbcPassword;
+        this.databaseMigrationService = databaseMigrationService;
         loadPersistedRequests();
     }
 
@@ -323,6 +326,7 @@ public class AiGuidanceService {
     /** Persiste uma solicitação de IA no armazenamento configurado. */
     private synchronized void persistRequest(StoredAiGuidance request) {
         if (usesJdbcStorage()) {
+            databaseMigrationService.ensureAiGuidanceStorageReady();
             persistGuidanceInDatabase(request);
             return;
         }
@@ -344,6 +348,7 @@ public class AiGuidanceService {
 
     /** Carrega orientações recentes do banco para acelerar consultas locais. */
     private void loadRecentGuidanceFromDatabase() {
+        databaseMigrationService.ensureAiGuidanceStorageReady();
         String sql = """
                 SELECT *
                 FROM pde_ai_guidance_request

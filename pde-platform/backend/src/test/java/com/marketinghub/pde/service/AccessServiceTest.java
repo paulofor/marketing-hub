@@ -460,7 +460,8 @@ class AccessServiceTest {
                 tempDir.resolve("ai-guidance.json").toString(),
                 "",
                 "",
-                "");
+                "",
+                new PdeDatabaseMigrationService("", "", ""));
         AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
 
         var guidance = aiGuidanceService.createGuidanceRequest(
@@ -498,7 +499,8 @@ class AccessServiceTest {
                 tempDir.resolve("ai-guidance.json").toString(),
                 "",
                 "",
-                "");
+                "",
+                new PdeDatabaseMigrationService("", "", ""));
         AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
 
         Map<String, String> guidanceTypesByMission = Map.of(
@@ -541,7 +543,8 @@ class AccessServiceTest {
                 tempDir.resolve("ai-guidance.json").toString(),
                 "",
                 "",
-                "");
+                "",
+                new PdeDatabaseMigrationService("", "", ""));
         AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "CHECKOUT");
         var guidance = aiGuidanceService.createGuidanceRequest(
                 access.token(),
@@ -590,7 +593,8 @@ class AccessServiceTest {
                 tempDir.resolve("ai-guidance-public.json").toString(),
                 "",
                 "",
-                "");
+                "",
+                new PdeDatabaseMigrationService("", "", ""));
         AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "diagnostico+visitante@clubemusa.local", "DIAGNOSTIC");
 
         var guidance = aiGuidanceService.createGuidanceRequest(

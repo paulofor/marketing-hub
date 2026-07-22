@@ -154,6 +154,21 @@ class FacebookCampaignMetricsServiceTest {
         assertThat(shouldPause).isFalse();
     }
 
+    /** Garante que alvo sem campanha nao entra no ciclo de metricas. */
+    @Test
+    void isValidSyncTargetRejectsBlankCampaignId() throws Exception {
+        FacebookCampaignMetricsService service = service();
+        var target = new FacebookCampaignMetricsService.CampaignMetricsSyncTarget("", 66L, null);
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "isValidSyncTarget",
+                FacebookCampaignMetricsService.CampaignMetricsSyncTarget.class);
+        method.setAccessible(true);
+        boolean valid = (boolean) method.invoke(service, target);
+
+        assertThat(valid).isFalse();
+    }
+
     /** Cria o serviço com dependências simuladas para testar apenas o mapeamento local. */
     private FacebookCampaignMetricsService service() {
         return service(mock(FacebookAdsService.class));

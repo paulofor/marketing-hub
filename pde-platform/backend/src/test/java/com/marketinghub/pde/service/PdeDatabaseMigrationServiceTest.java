@@ -176,6 +176,86 @@ class PdeDatabaseMigrationServiceTest {
                 "CREATE TABLE pde_operational_endpoint_failure"));
     }
 
+    /** Confirma que a tabela de orientação IA é criada quando o schema antigo não a possui. */
+    @Test
+    void createsAiGuidanceTableWhenMissing() throws Exception {
+        Connection connection = mock(Connection.class);
+        PreparedStatement tableStatement = existingObjectStatement(true);
+        PreparedStatement columnStatement = existingObjectStatement(true);
+        PreparedStatement indexStatement = existingObjectStatement(true);
+        PreparedStatement aiGuidanceTableStatement = existingObjectStatement(false);
+        PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
+        PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
+        PreparedStatement operationalFailureTableStatement = existingObjectStatement(true);
+        Statement ddlStatement = mock(Statement.class);
+        when(connection.prepareStatement(anyString()))
+                .thenReturn(
+                        tableStatement,
+                        columnStatement,
+                        indexStatement,
+                        aiGuidanceTableStatement,
+                        aiGuidanceFkStatement,
+                        accessTokenLengthStatement,
+                        operationalFailureTableStatement);
+        when(connection.createStatement()).thenReturn(ddlStatement);
+        PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
+                "jdbc:mysql://pde", "user", "pass", (url, username, password) -> connection);
+
+        migrationService.migrateIfNeeded();
+
+        verify(ddlStatement).executeUpdate(org.mockito.ArgumentMatchers.contains(
+                "CREATE TABLE pde_ai_guidance_request"));
+    }
+
+    /** Confirma que a checagem sob demanda repara token curto mesmo após migração inicial. */
+    @Test
+    void ensuresAiGuidanceStorageReadyAfterStartupMigrationAlreadyRan() throws Exception {
+        Connection startupConnection = mock(Connection.class);
+        Connection runtimeConnection = mock(Connection.class);
+        PreparedStatement funnelTableStatement = existingObjectStatement(false);
+        PreparedStatement startupAiGuidanceTableStatement = existingObjectStatement(true);
+        PreparedStatement startupAiGuidanceFkStatement = existingObjectStatement(false);
+        PreparedStatement startupAccessTokenLengthStatement = columnLengthStatement(120);
+        PreparedStatement operationalFailureTableStatement = existingObjectStatement(true);
+        PreparedStatement runtimeAiGuidanceTableStatement = existingObjectStatement(true);
+        PreparedStatement runtimeAiGuidanceFkStatement = existingObjectStatement(false);
+        PreparedStatement runtimeAccessTokenLengthStatement = columnLengthStatement(40);
+        Statement runtimeDdlStatement = mock(Statement.class);
+        when(startupConnection.prepareStatement(anyString()))
+                .thenReturn(
+                        funnelTableStatement,
+                        startupAiGuidanceTableStatement,
+                        startupAiGuidanceFkStatement,
+                        startupAccessTokenLengthStatement,
+                        operationalFailureTableStatement);
+        when(runtimeConnection.prepareStatement(anyString()))
+                .thenReturn(
+                        runtimeAiGuidanceTableStatement,
+                        runtimeAiGuidanceFkStatement,
+                        runtimeAccessTokenLengthStatement);
+        when(runtimeConnection.createStatement()).thenReturn(runtimeDdlStatement);
+        PdeDatabaseMigrationService migrationService = new PdeDatabaseMigrationService(
+                "jdbc:mysql://pde",
+                "user",
+                "pass",
+                new PdeDatabaseMigrationService.JdbcConnectionProvider() {
+                    private int calls;
+
+                    /** Retorna conexões diferentes para simular startup e execução em produção. */
+                    @Override
+                    public Connection open(String url, String username, String password) {
+                        calls += 1;
+                        return calls == 1 ? startupConnection : runtimeConnection;
+                    }
+                });
+
+        migrationService.migrateIfNeeded();
+        migrationService.ensureAiGuidanceStorageReady();
+
+        verify(runtimeDdlStatement)
+                .executeUpdate("ALTER TABLE pde_ai_guidance_request MODIFY COLUMN access_token VARCHAR(120) NOT NULL");
+    }
+
     /** Monta um statement de metadados que retorna existência ou ausência do objeto consultado. */
     private PreparedStatement existingObjectStatement(boolean exists) throws Exception {
         PreparedStatement statement = mock(PreparedStatement.class);

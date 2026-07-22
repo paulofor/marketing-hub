@@ -67,6 +67,65 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
   });
 });
 
+test('continua aguardando diagnostico publico quando IA demora mais que 20 segundos', async ({ page }) => {
+  const pendingGuidance = {
+    requestId: 'diagnostico-lento-1',
+    productSlug: 'metodo-musa-7-dias',
+    missionId: 'diagnostico-presenca-publico',
+    guidanceType: 'MUSA_PUBLIC_PRESENCE_DIAGNOSTIC',
+    status: 'PENDING',
+    headline: '',
+    summary: '',
+    signals: [],
+    microActions: [],
+    caution: '',
+  };
+  const completedGuidance = {
+    ...pendingGuidance,
+    status: 'COMPLETED',
+    headline: 'Seu plano chegou sem travar a tela',
+    summary: 'A Consultora MUSA terminou depois da janela curta antiga e o resultado apareceu corretamente.',
+    signals: ['Tempo de IA', 'Polling longo', 'Resultado entregue'],
+    microActions: [
+      'Dia 1: escolha uma base simples.',
+      'Dia 2: retire um excesso visual.',
+      'Dia 3: repita um detalhe de acabamento.',
+      'Dia 4: alinhe cabelo ou pele.',
+      'Dia 5: fotografe a combinacao.',
+      'Dia 6: ajuste postura e presenca.',
+      'Dia 7: salve sua formula final.',
+    ],
+    caution: 'Comece pelo que voce ja tem.',
+  };
+  let pollRequests = 0;
+
+  await page.addInitScript(() => {
+    const originalSetTimeout = window.setTimeout;
+    window.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) =>
+      originalSetTimeout(handler, Math.min(Number(timeout ?? 0), 5), ...args)) as typeof window.setTimeout;
+  });
+  await page.route('/api/pde/public/presence-diagnostic', async (route) => {
+    await route.fulfill({ json: pendingGuidance });
+  });
+  await page.route('/api/pde/public/presence-diagnostic/diagnostico-lento-1', async (route) => {
+    pollRequests += 1;
+    await route.fulfill({ json: pollRequests <= 14 ? pendingGuidance : completedGuidance });
+  });
+
+  await page.goto('/');
+
+  await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
+  await page.getByRole('button', { name: 'Falta acabamento' }).click();
+  await page.getByRole('button', { name: 'Elegância discreta' }).click();
+  await page.getByRole('button', { name: 'Pouco tempo' }).click();
+  await page.getByRole('button', { name: 'Roupa que já tenho' }).click();
+  await page.getByRole('button', { name: /Enviar diagnóstico/i }).click();
+
+  await expect(page.getByRole('button', { name: /Montando seu plano/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Seu plano chegou sem travar a tela/i })).toBeVisible();
+  expect(pollRequests).toBeGreaterThan(12);
+});
+
 test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
   let trackedEvents = 0;
   await page.route('/api/pde/access/events', async (route) => {

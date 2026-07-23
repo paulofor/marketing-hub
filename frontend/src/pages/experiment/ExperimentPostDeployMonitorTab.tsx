@@ -53,6 +53,10 @@ function formatDuration(ms?: number | null) {
   return minutes > 0 ? `${minutes}min ${seconds}s` : `${seconds}s`;
 }
 
+function averageDuration(totalMs?: number | null, sessions?: number | null) {
+  return totalMs && sessions ? totalMs / sessions : 0;
+}
+
 function abandonmentLabel(value?: string | null) {
   const labels: Record<string, string> = {
     ASSINATURA_APROVADA: "Compra aprovada",
@@ -524,7 +528,7 @@ export default function ExperimentPostDeployMonitorTab({
                     <th className="text-end">Login</th>
                     <th className="text-end">Paywall</th>
                     <th className="text-end">Compra</th>
-                    <th className="text-end">Tempo</th>
+                    <th className="text-end">Tempo médio/sessão</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -539,7 +543,7 @@ export default function ExperimentPostDeployMonitorTab({
                       <td className="text-end">{formatNumber(source.loginStarted)}</td>
                       <td className="text-end">{formatNumber(source.paywallViewed)}</td>
                       <td className="text-end">{formatNumber(source.subscriptionApproved)}</td>
-                      <td className="text-end">{formatDuration(source.totalVisibleMs)}</td>
+                      <td className="text-end">{formatDuration(averageDuration(source.totalVisibleMs, source.sessions))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -558,12 +562,13 @@ export default function ExperimentPostDeployMonitorTab({
                 <thead>
                   <tr>
                     <th>Sessão</th>
+                    <th>IP</th>
                     <th>Abandono</th>
                     <th>Última ação</th>
                     <th>Telas/seções</th>
                     <th className="text-end">Scroll</th>
                     <th className="text-end">Tempo</th>
-                    <th className="text-end">Último evento</th>
+                    <th className="text-end">Último evento (Brasília)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -572,6 +577,7 @@ export default function ExperimentPostDeployMonitorTab({
                       <td className="font-monospace small">
                         {(journey.sessionId ?? "sem-sessao").slice(0, 12)}
                       </td>
+                      <td className="font-monospace small">{journey.clientIp ?? "—"}</td>
                       <td className="fw-semibold">{abandonmentLabel(journey.abandonmentPoint)}</td>
                       <td>{journey.lastActionName ?? journey.lastEventType ?? "—"}</td>
                       <td className="small text-muted">

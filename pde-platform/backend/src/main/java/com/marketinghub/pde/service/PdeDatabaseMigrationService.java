@@ -21,6 +21,7 @@ public class PdeDatabaseMigrationService {
     private static final String FUNNEL_EVENT_TABLE = "pde_funnel_event";
     private static final String EXPERIENCE_VERSION_COLUMN = "experience_version";
     private static final String EXPERIENCE_VERSION_INDEX = "idx_pde_funnel_product_version_time";
+    private static final String CLIENT_IP_COLUMN = "client_ip";
     private static final String AI_GUIDANCE_TABLE = "pde_ai_guidance_request";
     private static final String ACCESS_TOKEN_COLUMN = "access_token";
     private static final String AI_GUIDANCE_ACCESS_GRANT_FK = "fk_pde_ai_guidance_access_grant";
@@ -147,6 +148,15 @@ public class PdeDatabaseMigrationService {
                             + "ADD KEY idx_pde_funnel_product_version_time "
                             + "(product_slug(100), experience_version(80), occurred_at)");
             log.info("Índice de versão comercial criado no funil PDE; index={}", EXPERIENCE_VERSION_INDEX);
+        }
+        if (!objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                FUNNEL_EVENT_TABLE,
+                CLIENT_IP_COLUMN)) {
+            executeSql(connection, "ALTER TABLE pde_funnel_event ADD COLUMN client_ip VARCHAR(45) NULL AFTER page_url");
+            log.info("Coluna de IP do visitante criada no funil PDE; column={}", CLIENT_IP_COLUMN);
         }
     }
 

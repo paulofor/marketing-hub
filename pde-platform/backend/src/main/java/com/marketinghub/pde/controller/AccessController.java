@@ -16,6 +16,7 @@ import com.marketinghub.pde.dto.PepperSyncResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.service.AccessService;
 import com.marketinghub.pde.service.PepperTransactionSyncService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,8 +112,23 @@ public class AccessController {
 
     /** Registra eventos comerciais da jornada MUSA/PDE para medir o funil de assinatura. */
     @PostMapping("/events")
-    public FunnelEventResponse recordFunnelEvent(@Valid @RequestBody FunnelEventRequest request) {
-        return accessService.recordFunnelEvent(request);
+    public FunnelEventResponse recordFunnelEvent(
+            @Valid @RequestBody FunnelEventRequest request,
+            HttpServletRequest httpRequest) {
+        return accessService.recordFunnelEvent(request.withClientIp(resolveClientIp(httpRequest)));
+    }
+
+    /** Resolve o IP público mais provável preservado pelo proxy antes do backend PDE. */
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",", 2)[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 
     /** Retorna métricas consolidadas do funil e analytics do produto PDE. */

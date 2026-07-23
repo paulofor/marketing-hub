@@ -83,6 +83,7 @@ public record PdeAnalyticsSummary(
     public record PdeSessionJourney(
             String sessionId,
             String visitorId,
+            String clientIp,
             String firstEventAt,
             String lastEventAt,
             long totalVisibleMs,

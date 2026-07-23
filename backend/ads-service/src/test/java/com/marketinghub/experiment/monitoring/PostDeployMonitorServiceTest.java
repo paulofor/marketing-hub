@@ -109,9 +109,12 @@ class PostDeployMonitorServiceTest {
                         0,
                         2000,
                         "2026-07-21T02:00:00Z")),
+                List.of(),
+                List.of(),
                 List.of(new PdeAnalyticsSummary.PdeSessionJourney(
                         "session-1",
                         "visitor-1",
+                        "203.0.113.10",
                         "2026-07-21T01:59:00Z",
                         "2026-07-21T02:00:00Z",
                         2000,
@@ -137,6 +140,7 @@ class PostDeployMonitorServiceTest {
         assertThat(response.alerts()).anyMatch(alert -> alert.contains("Mapa/Diagnóstico"));
         assertThat(response.metaAds().ctrPercent()).isEqualByComparingTo("5.00");
         assertThat(response.pde().currentExperienceVersion()).isEqualTo("musa-pde-entry-v3");
+        assertThat(response.pde().averageVisibleMsPerSession()).isEqualTo(133);
         assertThat(response.pde().experienceVersions())
                 .extracting("experienceVersion")
                 .contains("musa-pde-entry-v3");
@@ -146,6 +150,9 @@ class PostDeployMonitorServiceTest {
         assertThat(response.pde().recentJourneys())
                 .extracting("abandonmentPoint")
                 .contains("SAIU_NA_PRIMEIRA_DOBRA");
+        assertThat(response.pde().recentJourneys())
+                .extracting("clientIp")
+                .contains("203.0.113.10");
         assertThat(response.pdeDeployments())
                 .extracting("environment")
                 .contains("homolog");
@@ -225,6 +232,8 @@ class PostDeployMonitorServiceTest {
                 List.of(new PdeAnalyticsSummary.PdeEventMetric("PRESENCE_MAP_CHOICE_SELECTED", 6)),
                 List.of(new PdeAnalyticsSummary.PdeExperienceVersionMetric(
                         "musa-pde-entry-v3", 120, 20, 20, 6, 0, 5, 2, 2, 1, 1)),
+                List.of(),
+                List.of(),
                 List.of(),
                 List.of()));
 
@@ -383,6 +392,8 @@ class PostDeployMonitorServiceTest {
                 0,
                 0,
                 0,
+                List.of(),
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),

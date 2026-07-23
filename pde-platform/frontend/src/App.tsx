@@ -182,7 +182,7 @@ const fallbackProduct: ProductExperience = {
   },
   diagnostic: {
     title: 'Mapa de Presença MUSA',
-    intro: 'Comece pelo espelho: descubra o primeiro ajuste para sua imagem comunicar mais intenção hoje, usando o que você já tem.',
+    intro: 'Comece pelo espelho: descubra o primeiro passo para sua imagem comunicar mais intenção hoje, usando o que você já tem.',
     questions: ['O que minha imagem comunica hoje?'],
   },
   missions: [
@@ -1590,11 +1590,23 @@ function App() {
         <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
           <div className="public-diagnostic-intro">
             <h1>Sua imagem comunica a mulher que você quer ser vista como?</h1>
+            <p>Responda em 30 segundos e veja o primeiro passo que mais pode aumentar sua presença hoje.</p>
           </div>
 
           <section className="public-diagnostic-form" aria-label="Diagnóstico de Presença">
             <p className="section-kicker">Diagnóstico de Presença</p>
-            <h2>Responda 5 perguntas e receba seu plano personalizado de 7 dias.</h2>
+            <h2>Toque nas respostas e receba um plano de 7 dias feito para sua rotina.</h2>
+            <div className="public-progress-strip" aria-label="Progresso do diagnóstico">
+              <span>
+                <Check size={15} /> 5 perguntas rápidas
+              </span>
+              <span>
+                <Sparkles size={15} /> Primeiro passo hoje
+              </span>
+              <span>
+                <Lock size={15} /> Sem preço antes do resultado
+              </span>
+            </div>
             <div className="public-question-list">
               {publicDiagnosticQuestions.map((question, index) => (
                 <fieldset className="public-question-card" key={question.key}>
@@ -1620,7 +1632,7 @@ function App() {
             {errorMessage && <p className="form-message">{errorMessage}</p>}
             <button className="primary-button public-submit-button" disabled={publicDiagnosticPending || !publicDiagnosticReady} onClick={submitPublicPresenceDiagnostic}>
               {publicDiagnosticPending ? <LoaderCircle className="button-spinner" size={18} /> : <Sparkles size={18} />}
-              {publicDiagnosticPending ? 'Montando seu plano...' : 'Enviar diagnóstico'}
+              {publicDiagnosticPending ? 'Montando seu plano...' : 'Ver meu primeiro passo'}
             </button>
           </section>
 
@@ -1756,7 +1768,7 @@ function App() {
               <div className="interactive-diagnostic" data-analytics-section="interactive_diagnostic">
                 <div className="diagnostic-step">
                   <span>Diagnóstico gratuito</span>
-                  <h2>Veja o primeiro ajuste para aumentar sua presença hoje.</h2>
+                  <h2>Veja o primeiro passo para aumentar sua presença hoje.</h2>
                   <button className={presenceBlocker ? 'diagnostic-start-button selected' : 'diagnostic-start-button'} onClick={startPresenceMap} type="button">
                     <Sparkles size={18} />
                     <strong>Descobrir o que minha imagem comunica hoje</strong>
@@ -1857,7 +1869,7 @@ function App() {
               <div className="video-hero-caption">
                 <span>{heroVideoUrl ? 'Prévia em vídeo' : 'Prévia visual'}</span>
                 <strong>Veja o gesto simples que muda a percepção da sua presença.</strong>
-                <p>{heroVideoUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro ajuste prático do Dia 1.' : 'Vídeo VEO ainda não configurado neste ambiente. A tela preserva a promessa e bloqueia liberação como vídeo real.'}</p>
+                <p>{heroVideoUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro passo prático do Dia 1.' : 'Vídeo VEO ainda não configurado neste ambiente. A tela preserva a promessa e bloqueia liberação como vídeo real.'}</p>
               </div>
             </div>
           ) : (

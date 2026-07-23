@@ -12,5 +12,25 @@ public record FunnelEventRequest(
         String provider,
         String source,
         String pageUrl,
+        String clientIp,
         Map<String, Object> metadata
-) {}
+) {
+    /** Mantém compatibilidade com chamadas internas que não possuem IP de requisição pública. */
+    public FunnelEventRequest(
+            String productSlug,
+            String eventType,
+            String accessToken,
+            String email,
+            String provider,
+            String source,
+            String pageUrl,
+            Map<String, Object> metadata) {
+        this(productSlug, eventType, accessToken, email, provider, source, pageUrl, null, metadata);
+    }
+
+    /** Cria uma cópia do evento contendo o IP resolvido pelo backend público. */
+    public FunnelEventRequest withClientIp(String clientIp) {
+        return new FunnelEventRequest(
+                productSlug, eventType, accessToken, email, provider, source, pageUrl, clientIp, metadata);
+    }
+}

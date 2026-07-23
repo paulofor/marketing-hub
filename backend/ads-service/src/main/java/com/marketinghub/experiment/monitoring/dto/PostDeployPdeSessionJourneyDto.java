@@ -6,6 +6,7 @@ import java.util.List;
 public record PostDeployPdeSessionJourneyDto(
         String sessionId,
         String visitorId,
+        String clientIp,
         String firstEventAt,
         String lastEventAt,
         long totalVisibleMs,

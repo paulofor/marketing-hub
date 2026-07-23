@@ -44,6 +44,7 @@ export interface PostDeployPdeSummary {
   checkoutStarted: number;
   subscriptionApproved: number;
   totalVisibleMs: number;
+  averageVisibleMsPerSession: number;
   lastEventAt?: string | null;
   events: Record<string, number>;
   experienceVersions: PostDeployPdeExperienceVersion[];
@@ -99,6 +100,7 @@ export interface PostDeployPdeTrafficSource {
 export interface PostDeployPdeSessionJourney {
   sessionId: string;
   visitorId?: string | null;
+  clientIp?: string | null;
   firstEventAt?: string | null;
   lastEventAt?: string | null;
   totalVisibleMs: number;

@@ -24,6 +24,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement tableStatement = existingObjectStatement(true);
         PreparedStatement columnStatement = existingObjectStatement(false);
         PreparedStatement indexStatement = existingObjectStatement(false);
+        PreparedStatement clientIpColumnStatement = existingObjectStatement(false);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(false);
         PreparedStatement operationalFailureTableStatement = existingObjectStatement(true);
         Statement ddlStatement = mock(Statement.class);
@@ -32,6 +33,7 @@ class PdeDatabaseMigrationServiceTest {
                         tableStatement,
                         columnStatement,
                         indexStatement,
+                        clientIpColumnStatement,
                         aiGuidanceTableStatement,
                         operationalFailureTableStatement);
         when(connection.createStatement()).thenReturn(ddlStatement);
@@ -47,6 +49,8 @@ class PdeDatabaseMigrationServiceTest {
                 "ALTER TABLE pde_funnel_event "
                         + "ADD KEY idx_pde_funnel_product_version_time "
                         + "(product_slug(100), experience_version(80), occurred_at)");
+        ddlOrder.verify(ddlStatement).executeUpdate(
+                "ALTER TABLE pde_funnel_event ADD COLUMN client_ip VARCHAR(45) NULL AFTER page_url");
     }
 
     /** Confirma que a migração não executa DDL quando o schema já está atualizado. */
@@ -56,6 +60,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement tableStatement = existingObjectStatement(true);
         PreparedStatement columnStatement = existingObjectStatement(true);
         PreparedStatement indexStatement = existingObjectStatement(true);
+        PreparedStatement clientIpColumnStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
@@ -65,6 +70,7 @@ class PdeDatabaseMigrationServiceTest {
                         tableStatement,
                         columnStatement,
                         indexStatement,
+                        clientIpColumnStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,
@@ -84,6 +90,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement tableStatement = existingObjectStatement(true);
         PreparedStatement columnStatement = existingObjectStatement(true);
         PreparedStatement indexStatement = existingObjectStatement(true);
+        PreparedStatement clientIpColumnStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(true);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(40);
@@ -94,6 +101,7 @@ class PdeDatabaseMigrationServiceTest {
                         tableStatement,
                         columnStatement,
                         indexStatement,
+                        clientIpColumnStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,
@@ -118,6 +126,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement tableStatement = existingObjectStatement(true);
         PreparedStatement columnStatement = existingObjectStatement(true);
         PreparedStatement indexStatement = existingObjectStatement(true);
+        PreparedStatement clientIpColumnStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(true);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(36);
@@ -128,6 +137,7 @@ class PdeDatabaseMigrationServiceTest {
                         tableStatement,
                         columnStatement,
                         indexStatement,
+                        clientIpColumnStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,
@@ -152,6 +162,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement tableStatement = existingObjectStatement(true);
         PreparedStatement columnStatement = existingObjectStatement(true);
         PreparedStatement indexStatement = existingObjectStatement(true);
+        PreparedStatement clientIpColumnStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
@@ -162,6 +173,7 @@ class PdeDatabaseMigrationServiceTest {
                         tableStatement,
                         columnStatement,
                         indexStatement,
+                        clientIpColumnStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,
@@ -183,6 +195,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement tableStatement = existingObjectStatement(true);
         PreparedStatement columnStatement = existingObjectStatement(true);
         PreparedStatement indexStatement = existingObjectStatement(true);
+        PreparedStatement clientIpColumnStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(false);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
@@ -193,6 +206,7 @@ class PdeDatabaseMigrationServiceTest {
                         tableStatement,
                         columnStatement,
                         indexStatement,
+                        clientIpColumnStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,

@@ -25,6 +25,7 @@ public record PostDeployPdeSummaryDto(
         long checkoutStarted,
         long subscriptionApproved,
         long totalVisibleMs,
+        long averageVisibleMsPerSession,
         Instant lastEventAt,
         Map<String, Long> events,
         List<PostDeployPdeExperienceVersionDto> experienceVersions,

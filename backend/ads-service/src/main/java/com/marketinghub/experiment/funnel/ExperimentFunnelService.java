@@ -13,6 +13,8 @@ import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAna
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSessionDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorsDto;
+import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
+import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
@@ -32,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -57,6 +60,7 @@ public class ExperimentFunnelService {
     private final LeadRepository leadRepository;
     private final JdbcTemplate jdbcTemplate;
     private final ExperimentFunnelStandbyService standbyService;
+    private final PdeAnalyticsClient pdeAnalyticsClient;
 
     static final String FLOW_SCOPE_CONDITION = """
             (
@@ -71,6 +75,7 @@ public class ExperimentFunnelService {
             """;
     private static final int MAX_CAMPAIGN_CODE_LENGTH = 190;
     private static final long PAGE_VIEW_DEDUPLICATION_WINDOW_SECONDS = 3;
+    private static final String DEFAULT_PDE_PRODUCT_SLUG = "metodo-musa-7-dias";
 
     /**
      * Consolida as métricas automáticas e eventos registrados por etapa do funil.
@@ -82,6 +87,7 @@ public class ExperimentFunnelService {
 
         applyManualEvents(experiment.getId(), baseline, stages);
         applyAutomaticMetrics(experiment.getId(), baseline, stages);
+        applyPdeMembershipMetrics(experiment, stages);
         adaptStagesForExperimentType(experiment, stages);
         fillDefaultSourceWhenMissing(stages);
 
@@ -843,6 +849,181 @@ public class ExperimentFunnelService {
                           AND (? IS NULL OR p.images_viewed_at > ?)
                         """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
                 "Downloads/visualizações do material pago (flow_submission_image_package.images_viewed_at)");
+    }
+
+    /**
+     * Aplica métricas reais do backend PDE/MUSA ao funil de assinatura, preservando a atribuição por campanha.
+     */
+    private void applyPdeMembershipMetrics(Experiment experiment, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
+        if (!isPdeMembershipSubscriptionFunnel(experiment)) {
+            return;
+        }
+        PdeAnalyticsSummary summary;
+        try {
+            summary = pdeAnalyticsClient.fetchSummary(DEFAULT_PDE_PRODUCT_SLUG);
+        } catch (Exception ex) {
+            log.error("Falha ao consultar analytics PDE para consolidar funil do experimento; experimentId={} productSlug={}",
+                    experiment.getId(),
+                    DEFAULT_PDE_PRODUCT_SLUG,
+                    ex);
+            return;
+        }
+        if (summary == null) {
+            return;
+        }
+
+        List<String> attributionCodes = fetchExperimentAttributionCodes(experiment.getId());
+        PdeMembershipMetric metric = aggregatePdeMembershipMetric(summary, attributionCodes);
+        mergeMetric(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
+                new AggregatedMetric(metric.pdeEntries(), null, metric.lastEventAt()),
+                "Entradas reais do PDE/MUSA filtradas por UTM da campanha do experimento");
+        mergeMetric(stages, ExperimentFunnelStage.ENVIO_FORM,
+                new AggregatedMetric(metric.loginStarted(), null, metric.lastEventAt()),
+                "Logins ou criações de conta registrados no analytics PDE/MUSA");
+        mergeMetric(stages, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA,
+                new AggregatedMetric(metric.paywallViewed(), null, metric.lastEventAt()),
+                "Visualizações de paywall/oferta registradas no analytics PDE/MUSA");
+        mergeMetric(stages, ExperimentFunnelStage.ACESSO_CHECKOUT,
+                new AggregatedMetric(metric.checkoutIntent(), null, metric.lastEventAt()),
+                "Cliques em plano ou checkout registrados no analytics PDE/MUSA");
+        mergeMetric(stages, ExperimentFunnelStage.COMPRA,
+                new AggregatedMetric(metric.subscriptionApproved(), null, metric.lastEventAt()),
+                "Assinaturas aprovadas registradas no analytics PDE/MUSA");
+        mergeMetric(stages, ExperimentFunnelStage.ABERTURA_EMAIL_COMPRA,
+                new AggregatedMetric(metric.accessReleased(), null, metric.lastEventAt()),
+                "Liberações de acesso registradas no analytics PDE/MUSA");
+        mergeMetric(stages, ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO,
+                new AggregatedMetric(metric.firstUse(), null, metric.lastEventAt()),
+                "Primeiro uso registrado no analytics PDE/MUSA");
+    }
+
+    /**
+     * Busca os códigos Meta e UTMs persistidos para atribuir o analytics PDE ao experimento correto.
+     */
+    private List<String> fetchExperimentAttributionCodes(Long experimentId) {
+        return jdbcTemplate.queryForList("""
+                SELECT DISTINCT code
+                FROM (
+                    SELECT fac.id AS code
+                    FROM facebook_ads_campaign fac
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fac.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fas.id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fas.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT faa.id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT faa.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT utm.utm_campaign AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    JOIN facebook_ads_ad_tracking_utm utm ON utm.ad_id = faa.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT utm.utm_content AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    JOIN facebook_ads_ad_tracking_utm utm ON utm.ad_id = faa.id
+                    WHERE fac.experiment_id = ?
+                ) codes
+                WHERE code IS NOT NULL
+                  AND TRIM(code) <> ''
+                """, String.class,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId);
+    }
+
+    /**
+     * Agrega métricas PDE usando apenas origens de tráfego ligadas à campanha quando os códigos existem.
+     */
+    private PdeMembershipMetric aggregatePdeMembershipMetric(PdeAnalyticsSummary summary, List<String> attributionCodes) {
+        if (attributionCodes == null || attributionCodes.isEmpty() || summary.trafficSources() == null) {
+            return new PdeMembershipMetric(
+                    summary.pedEntries(),
+                    summary.loginStarted(),
+                    summary.paywallViewed(),
+                    Math.max(summary.subscriptionClicked(), summary.checkoutStarted()),
+                    summary.subscriptionApproved(),
+                    summary.accessReleased(),
+                    summary.firstUse(),
+                    null);
+        }
+        long pdeEntries = 0;
+        long loginStarted = 0;
+        long paywallViewed = 0;
+        long checkoutIntent = 0;
+        long subscriptionApproved = 0;
+        Instant lastEventAt = null;
+        for (PdeAnalyticsSummary.PdeTrafficSourceMetric source : summary.trafficSources()) {
+            if (source == null || !matchesPdeAttribution(source, attributionCodes)) {
+                continue;
+            }
+            pdeEntries += source.pdeEntries();
+            loginStarted += source.loginStarted();
+            paywallViewed += source.paywallViewed();
+            checkoutIntent += source.checkoutStarted();
+            subscriptionApproved += source.subscriptionApproved();
+            lastEventAt = max(lastEventAt, parsePdeInstant(source.lastEventAt()));
+        }
+        return new PdeMembershipMetric(
+                pdeEntries,
+                loginStarted,
+                paywallViewed,
+                checkoutIntent,
+                subscriptionApproved,
+                summary.accessReleased(),
+                summary.firstUse(),
+                lastEventAt);
+    }
+
+    /**
+     * Confirma se a origem PDE pertence ao experimento por campanha ou criativo Meta.
+     */
+    private boolean matchesPdeAttribution(PdeAnalyticsSummary.PdeTrafficSourceMetric source, List<String> attributionCodes) {
+        return attributionCodes.contains(source.utmCampaign()) || attributionCodes.contains(source.utmContent());
+    }
+
+    /**
+     * Converte datas ISO do PDE em Instant, ignorando valores ausentes ou inválidos sem quebrar o painel.
+     */
+    private Instant parsePdeInstant(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Instant.parse(value.trim());
+        } catch (DateTimeParseException ex) {
+            log.warn("Data de último evento PDE ignorada por formato inválido; value={}", value);
+            return null;
+        }
     }
 
     /**
@@ -1747,5 +1928,19 @@ public class ExperimentFunnelService {
      * Métrica agregada usada para transportar total, contagem única e último evento das consultas SQL.
      */
     private record AggregatedMetric(long total, Long uniqueCount, Instant lastEvent) {
+    }
+
+    /**
+     * Métrica consolidada do funil PDE/MUSA já atribuída ao experimento.
+     */
+    private record PdeMembershipMetric(
+            long pdeEntries,
+            long loginStarted,
+            long paywallViewed,
+            long checkoutIntent,
+            long subscriptionApproved,
+            long accessReleased,
+            long firstUse,
+            Instant lastEventAt) {
     }
 }

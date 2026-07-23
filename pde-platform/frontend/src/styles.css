@@ -442,6 +442,15 @@ textarea {
   margin: 0;
 }
 
+.public-diagnostic-intro p {
+  color: #5a4a42;
+  font-size: 1.04rem;
+  font-weight: 760;
+  line-height: 1.36;
+  margin: 10px 0 0;
+  max-width: 620px;
+}
+
 .public-diagnostic-form,
 .public-diagnostic-result,
 .public-ai-status {
@@ -455,6 +464,30 @@ textarea {
 .public-diagnostic-result h2 {
   font-size: 1.32rem;
   line-height: 1.16;
+}
+
+.public-progress-strip {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.public-progress-strip span {
+  align-items: center;
+  background: #eef5f2;
+  border: 1px solid rgba(47, 89, 82, 0.18);
+  color: #2f5952;
+  display: flex;
+  font-size: 0.8rem;
+  font-weight: 850;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.public-progress-strip svg {
+  flex: 0 0 auto;
 }
 
 .public-question-list {
@@ -2040,6 +2073,10 @@ h3 {
     font-size: 1.72rem;
   }
 
+  .public-diagnostic-intro p {
+    font-size: 0.9rem;
+  }
+
   .public-diagnostic-form,
   .public-diagnostic-result,
   .public-ai-status {
@@ -2049,6 +2086,10 @@ h3 {
   .public-diagnostic-form h2,
   .public-diagnostic-result h2 {
     font-size: 1.08rem;
+  }
+
+  .public-progress-strip {
+    grid-template-columns: 1fr;
   }
 
   .public-option-grid,

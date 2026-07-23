@@ -122,10 +122,10 @@ export default function ExperimentLandingAnalyticsTab({
         hint: "Eventos comportamentais gravados pelo PDE atual.",
       },
       {
-        label: "Tempo visível",
-        value: formatDuration(pde?.totalVisibleMs),
+        label: "Tempo médio/sessão",
+        value: formatDuration(pde?.averageVisibleMsPerSession),
         icon: Timer,
-        hint: "Tempo total visível nas sessões capturadas.",
+        hint: "Média do tempo visível por sessão capturada.",
       },
     ];
 

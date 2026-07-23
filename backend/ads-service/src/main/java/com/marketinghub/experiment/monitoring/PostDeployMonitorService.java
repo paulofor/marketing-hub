@@ -199,6 +199,7 @@ public class PostDeployMonitorService {
                     0,
                     0,
                     0,
+                    0,
                     null,
                     Map.<String, Long>of(),
                     List.of(),
@@ -401,6 +402,7 @@ public class PostDeployMonitorService {
                 summary.checkoutStarted(),
                 summary.subscriptionApproved(),
                 summary.totalVisibleMs(),
+                calculateAverageVisibleMsPerSession(summary),
                 null,
                 events,
                 toExperienceVersionDtos(summary),
@@ -408,6 +410,11 @@ public class PostDeployMonitorService {
                 toDeviceDtos(summary),
                 toScreenSizeDtos(summary),
                 toSessionJourneyDtos(summary));
+    }
+
+    /** Calcula o tempo médio visível por sessão PDE para leitura comercial do funil. */
+    private long calculateAverageVisibleMsPerSession(PdeAnalyticsSummary summary) {
+        return summary.sessions() > 0 ? summary.totalVisibleMs() / summary.sessions() : 0;
     }
 
     /** Converte distribuição por dispositivo do PDE para exibição no painel administrativo. */

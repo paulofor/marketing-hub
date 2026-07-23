@@ -48,16 +48,15 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: /Sua imagem comunica a mulher/i,
+      name: /Descubra em 30 segundos/i,
       level: 1,
     }),
   ).toBeVisible();
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeDisabled();
-  await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Falta acabamento' }).click();
+  await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Elegância discreta' }).click();
-  await page.getByRole('button', { name: 'Pouco tempo' }).click();
   await page.getByRole('button', { name: 'Cabelo e pele' }).click();
   await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeEnabled();
   await page.getByRole('button', { name: /Ver meu primeiro passo/i }).click();
@@ -123,10 +122,9 @@ test('continua aguardando diagnostico publico quando IA demora mais que 20 segun
 
   await page.goto('/?musa_video_variant=control');
 
-  await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Falta acabamento' }).click();
+  await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Elegância discreta' }).click();
-  await page.getByRole('button', { name: 'Pouco tempo' }).click();
   await page.getByRole('button', { name: 'Roupa que já tenho' }).click();
   await page.getByRole('button', { name: /Ver meu primeiro passo/i }).click();
 
@@ -146,11 +144,11 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: /Sua imagem comunica a mulher/i,
+      name: /Descubra em 30 segundos/i,
       level: 1,
     }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
+  await page.getByRole('button', { name: 'Falta acabamento' }).click();
   await page.waitForTimeout(250);
 
   expect(trackedEvents).toBe(0);
@@ -166,5 +164,5 @@ test('exibe video no topo somente na variante B do diagnostico publico', async (
   await page.goto('/?musa_video_variant=control');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /Sua imagem comunica a mulher/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
 });

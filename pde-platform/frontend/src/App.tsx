@@ -146,11 +146,13 @@ type MissionGuidanceConfig = {
 
 type PublicDiagnosticQuestion = {
   key: string;
+  stageLabel: string;
   question: string;
   options: string[];
   imageUrl: string;
   visualTitle: string;
   visualText: string;
+  journeyEventType: string;
 };
 
 type PublicDiagnosticVideoVariant = 'control' | 'video';
@@ -174,7 +176,7 @@ const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
 
 const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
-  experienceVersion: 'musa-pde-entry-v3',
+  experienceVersion: 'musa-pde-entry-v5-estrada-desejo',
   funnelVersion: 'musa-membership-funnel-v1',
   name: 'Método MUSA - Experiência Guiada de 7 Dias',
   promise: 'Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.',
@@ -563,44 +565,44 @@ const desiredPresenceSignals: DiagnosticOption[] = [
 
 const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
   {
-    key: 'presenceFocus',
-    question: 'Em qual situação você mais quer se sentir mais presente agora?',
-    options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
-    imageUrl: '/assets/musa-diagnostic-slide-1.png',
-    visualTitle: 'Escolha a cena onde sua presença precisa aparecer primeiro.',
-    visualText: 'A pergunta entra como uma conversa no espelho: uma escolha por vez, sem parecer questionário frio.',
-  },
-  {
     key: 'mainObstacle',
+    stageLabel: 'Espelho da dor',
     question: 'O que mais te incomoda quando você se olha pronta?',
     options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
+    imageUrl: '/assets/musa-diagnostic-slide-1.png',
+    visualTitle: 'Comece pelo detalhe que mais rouba intenção.',
+    visualText: 'A primeira tela transforma a dor ampla do espelho em um sinal concreto para a Consultora MUSA ler.',
+    journeyEventType: 'PROBLEM_RECOGNIZED',
+  },
+  {
+    key: 'presenceFocus',
+    stageLabel: 'Entrada real mínima',
+    question: 'Em qual situação você quer se sentir mais presente primeiro?',
+    options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
     imageUrl: '/assets/musa-diagnostic-slide-2.png',
-    visualTitle: 'Agora identifique o ruído que rouba intenção.',
-    visualText: 'Cada resposta muda o foco da jornada e prepara a Consultora MUSA para gerar um plano mais específico.',
+    visualTitle: 'Escolha uma cena real, não uma mudança de vida inteira.',
+    visualText: 'A estrada reduz esforço porque a visitante só precisa apontar onde a presença deve aparecer hoje.',
+    journeyEventType: 'REAL_INPUT_SUBMITTED',
   },
   {
     key: 'desiredSignal',
-    question: 'Qual sinal você quer comunicar com mais força?',
+    stageLabel: 'Mecanismo MUSA',
+    question: 'Qual sinal você quer comunicar com mais força nessa cena?',
     options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
     imageUrl: '/assets/musa-diagnostic-slide-3.png',
-    visualTitle: 'Defina o sinal que deve ficar na memória.',
-    visualText: 'A experiência reforça desejo, não obrigação: ela mostra a mulher que a visitante quer comunicar.',
-  },
-  {
-    key: 'mainConstraint',
-    question: 'O que mais atrapalha sua imagem no dia a dia?',
-    options: ['Pouco tempo', 'Dúvida na roupa', 'Vontade de comprar', 'Falta de constância'],
-    imageUrl: '/assets/musa-diagnostic-slide-4.png',
-    visualTitle: 'Traga a barreira real para o plano funcionar na rotina.',
-    visualText: 'O movimento entre perguntas mantém atenção e reduz a sensação de esforço até o resultado.',
+    visualTitle: 'A Consultora MUSA conecta dor, situação e sinal desejado.',
+    visualText: 'Aqui entram os pilares do método: reduzir ruído, escolher peça-sinal e ajustar cor, acabamento e postura.',
+    journeyEventType: 'MECHANISM_VIEWED',
   },
   {
     key: 'startingResource',
-    question: 'Com o que você prefere começar esta semana?',
+    stageLabel: 'Microresultado gratuito',
+    question: 'Com o que você prefere começar hoje, sem comprar nada novo?',
     options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
-    imageUrl: '/assets/musa-diagnostic-slide-5.png',
-    visualTitle: 'Finalize com o primeiro recurso que ela já tem em mãos.',
-    visualText: 'O CTA aparece depois de uma pequena vitória: ela já se enxergou e já escolheu o ponto de partida.',
+    imageUrl: '/assets/musa-diagnostic-slide-4.png',
+    visualTitle: 'Antes do e-mail, ela já escolhe o primeiro ponto de ação.',
+    visualText: 'O resultado gratuito nasce das respostas e prepara a continuidade paga como próximo passo natural.',
+    journeyEventType: 'CATEGORY_UNDERSTOOD',
   },
 ];
 
@@ -643,6 +645,9 @@ function App() {
   const missionPanelRef = useRef<HTMLElement>(null);
   const videoExperimentTrackedRef = useRef(false);
   const publicDiagnosticCompletedTrackedRef = useRef('');
+  const publicJourneyStartedTrackedRef = useRef(false);
+  const publicRoadPresentedTrackedRef = useRef(false);
+  const paidContinuationTrackedRef = useRef('');
   const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
@@ -738,6 +743,19 @@ function App() {
   }, [workspace, publicDiagnosticVideoVariant, heroVideoUrl]);
 
   useEffect(() => {
+    if (workspace || publicRoadPresentedTrackedRef.current || resolveExperienceVersion(product) !== 'musa-pde-entry-v5-estrada-desejo') {
+      return;
+    }
+    publicRoadPresentedTrackedRef.current = true;
+    trackEvent('CATEGORY_UNDERSTOOD', {
+      metadata: {
+        actionName: 'musa_desire_road_presented',
+        journeyVersion: 'musa-pde-entry-v5-estrada-desejo',
+      },
+    });
+  }, [workspace, product.experienceVersion]);
+
+  useEffect(() => {
     if (workspace || publicDiagnosticGuidance?.status !== 'COMPLETED') {
       return;
     }
@@ -753,7 +771,30 @@ function App() {
         primarySignal: resolvePrincipalPresenceSignal(publicDiagnosticGuidance),
       },
     });
+    trackEvent('MICRO_RESULT_RECEIVED', {
+      metadata: {
+        actionName: 'musa_free_micro_result_received',
+        diagnosticRequestId: publicDiagnosticGuidance.requestId,
+        primarySignal: resolvePrincipalPresenceSignal(publicDiagnosticGuidance),
+      },
+    });
   }, [workspace, publicDiagnosticGuidance, publicDiagnosticAnswers]);
+
+  useEffect(() => {
+    if (workspace || publicDiagnosticGuidance?.status !== 'COMPLETED') {
+      return;
+    }
+    if (paidContinuationTrackedRef.current === publicDiagnosticGuidance.requestId) {
+      return;
+    }
+    paidContinuationTrackedRef.current = publicDiagnosticGuidance.requestId;
+    trackEvent('PAID_CONTINUATION_VIEWED', {
+      metadata: {
+        actionName: 'musa_paid_continuation_presented',
+        diagnosticRequestId: publicDiagnosticGuidance.requestId,
+      },
+    });
+  }, [workspace, publicDiagnosticGuidance]);
 
   useEffect(() => {
     const observedSections = Array.from(document.querySelectorAll<HTMLElement>('[data-analytics-section]'));
@@ -1505,7 +1546,7 @@ function App() {
   async function submitPublicPresenceDiagnostic() {
     const answers = sanitizeAnswers(publicDiagnosticAnswers);
     if (Object.keys(answers).length < publicDiagnosticQuestions.length) {
-      setErrorMessage('Responda as 5 perguntas para a Consultora MUSA montar seu plano personalizado.');
+      setErrorMessage('Responda as 4 telas para a Consultora MUSA montar seu primeiro ajuste personalizado.');
       return;
     }
     setPublicDiagnosticLoading(true);
@@ -1515,7 +1556,7 @@ function App() {
     try {
       await trackEvent('DIAGNOSTIC_CHOICE_SELECTED', {
         metadata: {
-          diagnosticStep: 'presence_diagnostic_5_questions',
+          diagnosticStep: 'musa_desire_road_4_screens',
           answerKeys: Object.keys(answers),
           actionName: 'presence_diagnostic_submitted',
         },
@@ -1726,11 +1767,32 @@ function App() {
   }
 
   function updatePublicDiagnosticAnswer(key: string, value: string) {
+    const answeredQuestionIndex = publicDiagnosticQuestions.findIndex((question) => question.key === key);
+    const answeredQuestion = publicDiagnosticQuestions[answeredQuestionIndex];
+    if (!publicJourneyStartedTrackedRef.current) {
+      publicJourneyStartedTrackedRef.current = true;
+      trackEvent('MICRO_EXPERIENCE_STARTED', {
+        metadata: {
+          actionName: 'musa_desire_road_started',
+          firstQuestionKey: key,
+        },
+      });
+    }
+    if (answeredQuestion) {
+      trackEvent(answeredQuestion.journeyEventType, {
+        metadata: {
+          actionName: 'musa_desire_road_step_answered',
+          diagnosticStep: answeredQuestion.stageLabel,
+          questionKey: key,
+          selectedOption: value,
+          stepIndex: answeredQuestionIndex + 1,
+        },
+      });
+    }
     setPublicDiagnosticAnswers((current) => ({
       ...current,
       [key]: value,
     }));
-    const answeredQuestionIndex = publicDiagnosticQuestions.findIndex((question) => question.key === key);
     if (answeredQuestionIndex >= 0 && answeredQuestionIndex < publicDiagnosticQuestions.length - 1) {
       window.setTimeout(() => goToPublicDiagnosticStep(answeredQuestionIndex + 1), 180);
     }
@@ -1756,8 +1818,8 @@ function App() {
       <main className="app-shell public-diagnostic-shell">
         <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
           <div className="public-diagnostic-intro">
-            <h1>Sua imagem comunica a mulher que você quer ser vista como?</h1>
-            <p>Responda em 30 segundos e veja o primeiro passo que mais pode aumentar sua presença hoje.</p>
+            <h1>Descubra em 30 segundos qual detalhe está deixando sua imagem menos elegante hoje.</h1>
+            <p>Entre pela estrada MUSA: reconheça o ruído, escolha uma situação real e receba um primeiro ajuste antes de salvar o plano.</p>
           </div>
 
           {showPublicDiagnosticVideoHero && (
@@ -1804,7 +1866,8 @@ function App() {
                 <fieldset className="public-question-card public-question-card-active">
                   <legend>
                     <span>{publicDiagnosticStep + 1}</span>
-                    {activePublicDiagnosticQuestion.question}
+                    <small>{activePublicDiagnosticQuestion.stageLabel}</small>
+                    <strong>{activePublicDiagnosticQuestion.question}</strong>
                   </legend>
                   <div className="public-option-grid">
                     {activePublicDiagnosticQuestion.options.map((option) => (
@@ -1841,19 +1904,26 @@ function App() {
               </div>
               <div className="public-diagnostic-stage">
                 <div className="public-diagnostic-stage-top">
-                  <p className="section-kicker">Diagnóstico de Presença</p>
-                  <span>{answeredPublicDiagnosticCount}/5 respostas</span>
+                  <p className="section-kicker">Estrada MUSA</p>
+                  <span>{answeredPublicDiagnosticCount}/{publicDiagnosticQuestions.length} telas</span>
                 </div>
-                <h2>Toque nas respostas e receba um plano de 7 dias feito para sua rotina.</h2>
+                <h2>Do espelho da dor ao primeiro ajuste de presença, sem pedir e-mail antes do valor.</h2>
+                <div className="public-road-steps" aria-label="Etapas da estrada MUSA">
+                  {publicDiagnosticQuestions.map((question, index) => (
+                    <span key={question.key} className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}>
+                      {question.stageLabel}
+                    </span>
+                  ))}
+                </div>
                 <div className="public-progress-track" aria-label={`Progresso do diagnóstico: ${publicDiagnosticProgressPercent}%`}>
                   <span style={{ width: `${publicDiagnosticProgressPercent}%` }} />
                 </div>
                 <div className="public-progress-strip" aria-label="Progresso do diagnóstico">
                   <span>
-                    <Check size={15} /> 5 perguntas rápidas
+                    <Check size={15} /> 4 telas rápidas
                   </span>
                   <span>
-                    <Sparkles size={15} /> Primeiro passo hoje
+                    <Sparkles size={15} /> Microresultado grátis
                   </span>
                   <span>
                     <Lock size={15} /> Sem preço antes do resultado

@@ -2,6 +2,7 @@ package com.marketinghub.experiment.video.web;
 
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
+import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
@@ -46,6 +47,14 @@ public class ExperimentVideoAssetController {
     public ExperimentVideoAssetDto requestVeoRender(@PathVariable Long experimentId,
                                                     @Valid @RequestBody RequestExperimentVeoVideoRequest request) {
         return service.requestVeoRender(experimentId, request);
+    }
+
+    /** Cria jobs de render para vídeos planejados sem perder o vínculo dos ativos existentes. */
+    @PostMapping("/planned-render-requests")
+    public List<ExperimentVideoAssetDto> requestPlannedRenders(
+            @PathVariable Long experimentId,
+            @Valid @RequestBody RequestPlannedExperimentVideoRenderRequest request) {
+        return service.requestPlannedRenders(experimentId, request);
     }
 
     /** Atualiza status, revisão e vínculos de um vídeo comercial do experimento. */

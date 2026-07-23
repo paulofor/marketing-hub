@@ -8,6 +8,7 @@ import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
+import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.niche.MarketNiche;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 /**
  * Valida o registro de vídeos como ativos comerciais vinculados ao experimento.
@@ -190,6 +193,72 @@ class ExperimentVideoAssetServiceTest {
         assertThat(dto.requiredForRelease()).isTrue();
         assertThat(dto.cost()).isEqualByComparingTo("12.0000");
         assertThat(dto.prompt()).contains("gpt-image-2", "Retrato vertical de consultora brasileira elegante");
+    }
+
+    /** Garante que ativos planejados viram jobs de render sem criar ativos duplicados. */
+    @Test
+    void shouldRequestRenderForExistingPlannedVideoAssets() {
+        MarketNiche niche = MarketNiche.builder().id(31L).name("Beleza").build();
+        Experiment experiment = Experiment.builder()
+                .id(68L)
+                .niche(niche)
+                .name("Metodo MUSA")
+                .singlePain("Imagem sem presenca")
+                .funnelPromise("Parecer mais elegante em 7 dias")
+                .build();
+        Product product = Product.builder().id(3L).marketNiche(niche).build();
+        SalesVideoProfile profile = SalesVideoProfile.builder().id(12L).product(product).build();
+        SalesVideoJob job = SalesVideoJob.builder().id(20431L).profile(profile).build();
+        ExperimentVideoAsset plannedAsset = ExperimentVideoAsset.builder()
+                .id(5L)
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Aumentar clique no diagnostico")
+                .primaryMetric("diagnostico iniciado")
+                .script("Clipe 1 - Dor do espelho.")
+                .prompt("Video vertical 9:16, 8 segundos, estilo editorial realista.")
+                .provider("LUMA_RAY_3_2")
+                .model("luma-ray-3.2")
+                .durationSeconds(8)
+                .aspectRatio("9:16")
+                .status(ExperimentVideoStatus.PLANNED)
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build();
+        SalesVideoProfileDto profileDto = new SalesVideoProfileDto();
+        profileDto.setId(12L);
+        SalesVideoJobDto jobDto = new SalesVideoJobDto();
+        jobDto.setId(20431L);
+        given(experimentRepository.findById(68L)).willReturn(Optional.of(experiment));
+        given(productRepository.findFirstByMarketNiche_IdOrderByCreatedAtDesc(31L)).willReturn(Optional.of(product));
+        given(landingPageRepository.findByExperimentId(68L)).willReturn(List.of());
+        given(repository.findByExperimentIdOrderByCreatedAtDesc(68L)).willReturn(List.of(plannedAsset));
+        given(salesVideoService.createProfile(any(), any())).willReturn(profileDto);
+        given(salesVideoService.requestRender(any(), any())).willReturn(jobDto);
+        given(profileRepository.findById(12L)).willReturn(Optional.of(profile));
+        given(jobRepository.findById(20431L)).willReturn(Optional.of(job));
+        given(repository.save(any(ExperimentVideoAsset.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        List<ExperimentVideoAssetDto> result = service.requestPlannedRenders(
+                68L,
+                new RequestPlannedExperimentVideoRenderRequest(
+                        "time@marketinghub.io",
+                        SalesVideoExecutionMode.TEST,
+                        null,
+                        "editorial premium acessivel",
+                        "natural",
+                        "pt-BR",
+                        true));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(5L);
+        assertThat(result.get(0).status()).isEqualTo(ExperimentVideoStatus.GENERATING);
+        assertThat(result.get(0).provider()).isEqualTo("LUMA_RAY_3_2");
+        assertThat(result.get(0).salesVideoProfileId()).isEqualTo(12L);
+        assertThat(result.get(0).salesVideoJobId()).isEqualTo(20431L);
+        ArgumentCaptor<ExperimentVideoAsset> savedAsset = ArgumentCaptor.forClass(ExperimentVideoAsset.class);
+        verify(repository).save(savedAsset.capture());
+        assertThat(savedAsset.getValue().getId()).isEqualTo(5L);
     }
 
     /** Garante que a landing de outro experimento não pode contaminar o aprendizado do funil atual. */

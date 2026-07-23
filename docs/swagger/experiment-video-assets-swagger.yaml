@@ -79,6 +79,25 @@ paths:
       responses:
         "200":
           description: Job VEO criado e vinculado ao experimento
+  /api/experiments/{experimentId}/video-assets/planned-render-requests:
+    post:
+      summary: Solicita render dos vídeos planejados preservando os ativos existentes
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestPlannedExperimentVideoRenderRequest"
+      responses:
+        "200":
+          description: Jobs criados e vinculados aos ativos planejados
 components:
   schemas:
     CreateExperimentVideoAssetRequest:
@@ -204,5 +223,26 @@ components:
           enum: [TEST, PRODUCTION]
         requestedBy:
           type: string
+        requiredForRelease:
+          type: boolean
+    RequestPlannedExperimentVideoRenderRequest:
+      type: object
+      required:
+        - requestedBy
+      properties:
+        requestedBy:
+          type: string
+        executionMode:
+          type: string
+          enum: [TEST, PRODUCTION]
+        personaName:
+          type: string
+        personaStyle:
+          type: string
+        voiceStyle:
+          type: string
+        language:
+          type: string
+          example: pt-BR
         requiredForRelease:
           type: boolean

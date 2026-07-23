@@ -10,6 +10,7 @@ import {
   SalesVideoExecutionMode,
   useExperimentVideoAssets,
 } from "../../api/experiment/useExperimentVideoAssets";
+import { useRequestPlannedExperimentVideoRenders } from "../../api/experiment/useRequestPlannedExperimentVideoRenders";
 import { useRequestExperimentVeoVideo } from "../../api/experiment/useRequestExperimentVeoVideo";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { useTenantContext } from "../../utils/tenantContext";
@@ -117,6 +118,9 @@ export default function ExperimentVideoTab({
   );
   const geraSalesPagePublications = useGeraSalesPagePublications(experiment.id);
   const requestVeoVideo = useRequestExperimentVeoVideo(experiment.id);
+  const requestPlannedRenders = useRequestPlannedExperimentVideoRenders(
+    experiment.id,
+  );
   const [formState, setFormState] = useState({
     slot: "LANDING_HERO" as ExperimentVideoSlot,
     title: `Vídeo VEO - Experimento ${experiment.id}`,
@@ -143,6 +147,13 @@ export default function ExperimentVideoTab({
   });
 
   const sortedAssets = useMemo(() => videoAssets ?? [], [videoAssets]);
+  const plannedAssetsWithoutJob = useMemo(
+    () =>
+      sortedAssets.filter(
+        (asset) => asset.status === "PLANNED" && !asset.salesVideoJobId,
+      ),
+    [sortedAssets],
+  );
   const landingHeroAsset = useMemo(
     () =>
       sortedAssets.find(
@@ -184,6 +195,38 @@ export default function ExperimentVideoTab({
     formState.scriptText.trim().length > 0 &&
     tenantContext.userEmail.trim().length > 0 &&
     !requestVeoVideo.isPending;
+  const canRequestPlannedRenders =
+    !alterationLocked &&
+    plannedAssetsWithoutJob.length > 0 &&
+    tenantContext.userEmail.trim().length > 0 &&
+    !requestPlannedRenders.isPending;
+
+  const handleRequestPlannedRenders = async () => {
+    try {
+      const updatedAssets = await requestPlannedRenders.mutateAsync({
+        requestedBy: tenantContext.userEmail,
+        executionMode: "TEST",
+        personaStyle: "editorial, realista e premium acessivel",
+        voiceStyle: "natural, direta e comercial",
+        language: "pt-BR",
+        requiredForRelease: true,
+      });
+      if (updatedAssets.length === 0) {
+        toast.info("Nenhum vídeo planejado sem job para renderizar.");
+        return;
+      }
+      toast.success(
+        `${updatedAssets.length} vídeo(s) planejado(s) enviados para render.`,
+      );
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível solicitar os renders planejados.")
+        : "Não foi possível solicitar os renders planejados.";
+      toast.error(message);
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -352,9 +395,21 @@ export default function ExperimentVideoTab({
                 página.
               </p>
             </div>
-            <span className="badge text-bg-secondary">
-              {sortedAssets.length} ativo(s)
-            </span>
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                disabled={!canRequestPlannedRenders}
+                onClick={handleRequestPlannedRenders}
+              >
+                {requestPlannedRenders.isPending
+                  ? "Solicitando..."
+                  : "Renderizar planejados"}
+              </button>
+              <span className="badge text-bg-secondary">
+                {sortedAssets.length} ativo(s)
+              </span>
+            </div>
           </div>
           <div className="table-responsive mt-3">
             <table className="table table-sm align-middle">

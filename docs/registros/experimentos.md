@@ -6040,3 +6040,10 @@
 - foi feito: adicionada ação administrativa no Marketing Hub para solicitar deploy produtivo pelo workflow canônico do PDE com `target_environment=production`, sem SSH direto no servidor.
 - bloqueio seguro: se homologação não estiver saudável, se os commits mudarem entre leitura e clique ou se o backend não tiver token/configuração do GitHub Actions, o Hub bloqueia a promoção e mostra a causa.
 - impacto comercial esperado: reduzir atraso entre correção homologada e funil real corrigido, evitando perda de leads por versão antiga em produção.
+
+## 2026-07-23 — PED/MUSA: vídeos planejados viram jobs de render
+
+- causa-raiz confirmada: o experimento 68 tinha 4 vídeos `LANDING_HERO` planejados para Luma Ray 3.2, mas nenhum `sales_video_job_id`; o endpoint existente de VEO criava um novo ativo em vez de anexar render ao ativo planejado.
+- foi feito: criado fluxo para solicitar render dos vídeos planejados preservando os IDs dos ativos, criando profile/script/job no módulo SalesVideo e marcando os ativos como `GENERATING`.
+- foi feito: a aba Vídeo do experimento passou a oferecer a ação `Renderizar planejados`, com execução em modo `TEST` e provider/model vindos do ativo planejado.
+- impacto comercial esperado: destravar o hero de vídeo do MUSA sem perder rastreabilidade de criativo, custo, job e aprendizado por clipe.

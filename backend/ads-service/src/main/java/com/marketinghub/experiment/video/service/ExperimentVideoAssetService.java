@@ -10,6 +10,7 @@ import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
+import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.media.Asset;
@@ -196,6 +197,29 @@ public class ExperimentVideoAssetService {
         return toDto(repository.save(videoAsset));
     }
 
+    /** Cria jobs de render para ativos planejados e preserva o vínculo original do experimento. */
+    @Transactional
+    public List<ExperimentVideoAssetDto> requestPlannedRenders(
+            Long experimentId,
+            RequestPlannedExperimentVideoRenderRequest request) {
+        Experiment experiment = ensureExperiment(experimentId);
+        Product product = resolveOrCreateProduct(experiment);
+        Long landingPageId = resolveLandingPageId(experimentId);
+        List<ExperimentVideoAsset> plannedAssets = repository.findByExperimentIdOrderByCreatedAtDesc(experimentId)
+                .stream()
+                .filter(videoAsset -> videoAsset.getStatus() == ExperimentVideoStatus.PLANNED)
+                .filter(videoAsset -> videoAsset.getSalesVideoJob() == null)
+                .toList();
+        if (plannedAssets.isEmpty()) {
+            return List.of();
+        }
+        return plannedAssets.stream()
+                .map(videoAsset -> requestRenderForPlannedAsset(videoAsset, product, landingPageId, request))
+                .map(repository::save)
+                .map(this::toDto)
+                .toList();
+    }
+
     /** Atualiza um vídeo de experimento sem perder os campos não enviados. */
     @Transactional
     public ExperimentVideoAssetDto update(Long experimentId, Long videoAssetId, UpdateExperimentVideoAssetRequest request) {
@@ -351,6 +375,64 @@ public class ExperimentVideoAssetService {
                 .orElse(null);
     }
 
+    /** Solicita render no módulo SalesVideo usando o roteiro e prompt já planejados no ativo. */
+    private ExperimentVideoAsset requestRenderForPlannedAsset(ExperimentVideoAsset videoAsset,
+                                                              Product product,
+                                                              Long landingPageId,
+                                                              RequestPlannedExperimentVideoRenderRequest request) {
+        String scriptText = trimToNull(videoAsset.getScript());
+        if (scriptText == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "planned video asset script is required");
+        }
+        String providerName = Optional.ofNullable(trimToNull(videoAsset.getProvider())).orElse("LUMA_RAY_3_2");
+        Long experimentId = videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null;
+        String title = "Vídeo planejado #%d - experimento %d".formatted(videoAsset.getId(), experimentId);
+
+        CreateSalesVideoProfileRequest profileRequest = new CreateSalesVideoProfileRequest();
+        profileRequest.setVideoKind(SalesVideoKind.HERO);
+        profileRequest.setTitle(title);
+        profileRequest.setPersonaName(trimToNull(request.personaName()));
+        profileRequest.setPersonaStyle(trimToNull(request.personaStyle()));
+        profileRequest.setVoiceStyle(trimToNull(request.voiceStyle()));
+        profileRequest.setLanguage(Optional.ofNullable(trimToNull(request.language())).orElse("pt-BR"));
+        profileRequest.setTargetDurationSeconds(videoAsset.getDurationSeconds());
+        profileRequest.setLandingPageId(landingPageId);
+        SalesVideoProfileDto profile = salesVideoService.createProfile(product.getId(), profileRequest);
+
+        ApproveSalesVideoScriptRequest scriptRequest = new ApproveSalesVideoScriptRequest();
+        scriptRequest.setScriptText(scriptText);
+        scriptRequest.setApprovedBy(request.requestedBy().trim());
+        salesVideoService.approveScript(profile.getId(), scriptRequest);
+
+        RequestVideoRenderRequest renderRequest = new RequestVideoRenderRequest();
+        renderRequest.setRequestedBy(request.requestedBy().trim());
+        renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+        renderRequest.setProviderName(providerName);
+        renderRequest.setExecutionMode(request.executionMode());
+        renderRequest.setMetadataJson(buildPlannedRenderMetadata(videoAsset, request));
+        SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
+
+        videoAsset.setSalesVideoProfile(resolveProfile(profile.getId()));
+        videoAsset.setSalesVideoJob(resolveJob(job.getId()));
+        videoAsset.setProvider(providerName);
+        videoAsset.setModel(Optional.ofNullable(trimToNull(videoAsset.getModel())).orElse(providerName));
+        videoAsset.setStatus(ExperimentVideoStatus.GENERATING);
+        videoAsset.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+        if (request.requiredForRelease() != null) {
+            videoAsset.setRequiredForRelease(request.requiredForRelease());
+        }
+        BigDecimal estimatedCost = resolveCost(
+                videoAsset.getCost(),
+                videoAsset.getProvider(),
+                videoAsset.getModel(),
+                videoAsset.getDurationSeconds(),
+                null);
+        if (estimatedCost != null) {
+            videoAsset.setCost(estimatedCost);
+        }
+        return videoAsset;
+    }
+
     /** Monta um resumo auditável do prompt enviado ao fluxo VEO. */
     private String buildVeoPromptSnapshot(RequestExperimentVeoVideoRequest request) {
         return """
@@ -398,6 +480,33 @@ public class ExperimentVideoAssetService {
             return OBJECT_MAPPER.writeValueAsString(metadata);
         } catch (JsonProcessingException ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "video metadata serialization failed", ex);
+        }
+    }
+
+    /** Monta metadados estruturados para renderizar um ativo planejado existente. */
+    private String buildPlannedRenderMetadata(ExperimentVideoAsset videoAsset,
+                                              RequestPlannedExperimentVideoRenderRequest request) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("artifactType", "experiment.plannedVideoRenderRequest.v1");
+        metadata.put("experimentId", videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null);
+        metadata.put("experimentVideoAssetId", videoAsset.getId());
+        metadata.put("slot", videoAsset.getSlot());
+        metadata.put("provider", trimToNull(videoAsset.getProvider()));
+        metadata.put("model", trimToNull(videoAsset.getModel()));
+        metadata.put("durationSeconds", videoAsset.getDurationSeconds());
+        metadata.put("aspectRatio", trimToNull(videoAsset.getAspectRatio()));
+        metadata.put("objective", trimToNull(videoAsset.getObjective()));
+        metadata.put("primaryMetric", trimToNull(videoAsset.getPrimaryMetric()));
+        metadata.put("prompt", trimToNull(videoAsset.getPrompt()));
+        metadata.put("scriptText", trimToNull(videoAsset.getScript()));
+        metadata.put("requestedBy", request.requestedBy().trim());
+        try {
+            return OBJECT_MAPPER.writeValueAsString(metadata);
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "planned video metadata serialization failed",
+                    ex);
         }
     }
 

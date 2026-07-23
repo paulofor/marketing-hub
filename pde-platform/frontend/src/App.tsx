@@ -147,6 +147,7 @@ type PublicDiagnosticQuestion = {
   key: string;
   question: string;
   options: string[];
+  imageUrl: string;
   visualTitle: string;
   visualText: string;
 };
@@ -544,6 +545,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'presenceFocus',
     question: 'Em qual situação você mais quer se sentir mais presente agora?',
     options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
+    imageUrl: '/assets/musa-diagnostic-slide-1.svg',
     visualTitle: 'Escolha a cena onde sua presença precisa aparecer primeiro.',
     visualText: 'A pergunta entra como uma conversa no espelho: uma escolha por vez, sem parecer questionário frio.',
   },
@@ -551,6 +553,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'mainObstacle',
     question: 'O que mais te incomoda quando você se olha pronta?',
     options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
+    imageUrl: '/assets/musa-diagnostic-slide-2.svg',
     visualTitle: 'Agora identifique o ruído que rouba intenção.',
     visualText: 'Cada resposta muda o foco da jornada e prepara a Consultora MUSA para gerar um plano mais específico.',
   },
@@ -558,6 +561,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'desiredSignal',
     question: 'Qual sinal você quer comunicar com mais força?',
     options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
+    imageUrl: '/assets/musa-diagnostic-slide-3.svg',
     visualTitle: 'Defina o sinal que deve ficar na memória.',
     visualText: 'A experiência reforça desejo, não obrigação: ela mostra a mulher que a visitante quer comunicar.',
   },
@@ -565,6 +569,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'mainConstraint',
     question: 'O que mais atrapalha sua imagem no dia a dia?',
     options: ['Pouco tempo', 'Dúvida na roupa', 'Vontade de comprar', 'Falta de constância'],
+    imageUrl: '/assets/musa-diagnostic-slide-4.svg',
     visualTitle: 'Traga a barreira real para o plano funcionar na rotina.',
     visualText: 'O movimento entre perguntas mantém atenção e reduz a sensação de esforço até o resultado.',
   },
@@ -572,6 +577,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'startingResource',
     question: 'Com o que você prefere começar esta semana?',
     options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
+    imageUrl: '/assets/musa-diagnostic-slide-5.svg',
     visualTitle: 'Finalize com o primeiro recurso que ela já tem em mãos.',
     visualText: 'O CTA aparece depois de uma pequena vitória: ela já se enxergou e já escolheu o ponto de partida.',
   },
@@ -592,6 +598,7 @@ function App() {
   const [desiredPresence, setDesiredPresence] = useState('');
   const [publicDiagnosticAnswers, setPublicDiagnosticAnswers] = useState<Record<string, string>>({});
   const [publicDiagnosticStep, setPublicDiagnosticStep] = useState(0);
+  const [publicDiagnosticDirection, setPublicDiagnosticDirection] = useState<'forward' | 'backward'>('forward');
   const [publicDiagnosticGuidance, setPublicDiagnosticGuidance] = useState<AiGuidance | null>(null);
   const [publicDiagnosticLoading, setPublicDiagnosticLoading] = useState(false);
   const [missionAnswers, setMissionAnswers] = useState<Record<string, Record<string, string>>>({});
@@ -1593,8 +1600,14 @@ function App() {
     }));
     const answeredQuestionIndex = publicDiagnosticQuestions.findIndex((question) => question.key === key);
     if (answeredQuestionIndex >= 0 && answeredQuestionIndex < publicDiagnosticQuestions.length - 1) {
-      window.setTimeout(() => setPublicDiagnosticStep(answeredQuestionIndex + 1), 180);
+      window.setTimeout(() => goToPublicDiagnosticStep(answeredQuestionIndex + 1), 180);
     }
+  }
+
+  function goToPublicDiagnosticStep(nextStep: number) {
+    const boundedNextStep = Math.max(0, Math.min(publicDiagnosticQuestions.length - 1, nextStep));
+    setPublicDiagnosticDirection(boundedNextStep >= publicDiagnosticStep ? 'forward' : 'backward');
+    setPublicDiagnosticStep(boundedNextStep);
   }
 
   if (!workspace) {
@@ -1616,12 +1629,52 @@ function App() {
 
           <section className="public-diagnostic-form" aria-label="Diagnóstico de Presença">
             <div className="public-diagnostic-experience">
-              <div className="public-diagnostic-visual" aria-hidden="true">
-                <img src="/assets/musa-editorial-presenca.png" alt="" />
-                <div className="public-diagnostic-visual-copy" key={`visual-${activePublicDiagnosticQuestion.key}`}>
+              <div
+                className={`public-diagnostic-visual public-diagnostic-visual-${publicDiagnosticDirection}`}
+                key={`slide-${activePublicDiagnosticQuestion.key}`}
+              >
+                <img src={activePublicDiagnosticQuestion.imageUrl} alt="" />
+                <div className="public-diagnostic-visual-copy">
                   <span>Diagnóstico de Presença</span>
                   <strong>{activePublicDiagnosticQuestion.visualTitle}</strong>
                   <p>{activePublicDiagnosticQuestion.visualText}</p>
+                </div>
+                <fieldset className="public-question-card public-question-card-active">
+                  <legend>
+                    <span>{publicDiagnosticStep + 1}</span>
+                    {activePublicDiagnosticQuestion.question}
+                  </legend>
+                  <div className="public-option-grid">
+                    {activePublicDiagnosticQuestion.options.map((option) => (
+                      <button
+                        key={option}
+                        className={activePublicDiagnosticAnswer === option ? 'selected' : ''}
+                        type="button"
+                        onClick={() => updatePublicDiagnosticAnswer(activePublicDiagnosticQuestion.key, option)}
+                      >
+                        {option}
+                        <ChevronRight size={17} />
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+                <div className="public-question-navigation">
+                  {publicDiagnosticStep > 0 && (
+                    <button className="public-back-button" type="button" onClick={() => goToPublicDiagnosticStep(publicDiagnosticStep - 1)}>
+                      Voltar
+                    </button>
+                  )}
+                  <div className="public-question-dots" aria-label="Navegar entre perguntas">
+                    {publicDiagnosticQuestions.map((question, index) => (
+                      <button
+                        key={question.key}
+                        aria-label={`Pergunta ${index + 1}`}
+                        className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}
+                        type="button"
+                        onClick={() => goToPublicDiagnosticStep(index)}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="public-diagnostic-stage">
@@ -1644,41 +1697,6 @@ function App() {
                     <Lock size={15} /> Sem preço antes do resultado
                   </span>
                 </div>
-                <fieldset className="public-question-card public-question-card-active" key={activePublicDiagnosticQuestion.key}>
-                  <legend>
-                    <span>{publicDiagnosticStep + 1}</span>
-                    {activePublicDiagnosticQuestion.question}
-                  </legend>
-                  <div className="public-option-grid">
-                    {activePublicDiagnosticQuestion.options.map((option) => (
-                      <button
-                        key={option}
-                        className={activePublicDiagnosticAnswer === option ? 'selected' : ''}
-                        type="button"
-                        onClick={() => updatePublicDiagnosticAnswer(activePublicDiagnosticQuestion.key, option)}
-                      >
-                        {option}
-                        <ChevronRight size={17} />
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-                <div className="public-question-dots" aria-label="Navegar entre perguntas">
-                  {publicDiagnosticQuestions.map((question, index) => (
-                    <button
-                      key={question.key}
-                      aria-label={`Pergunta ${index + 1}`}
-                      className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}
-                      type="button"
-                      onClick={() => setPublicDiagnosticStep(index)}
-                    />
-                  ))}
-                </div>
-                {publicDiagnosticStep > 0 && (
-                  <button className="public-back-button" type="button" onClick={() => setPublicDiagnosticStep((current) => Math.max(0, current - 1))}>
-                    Voltar uma pergunta
-                  </button>
-                )}
               </div>
             </div>
             {errorMessage && <p className="form-message">{errorMessage}</p>}

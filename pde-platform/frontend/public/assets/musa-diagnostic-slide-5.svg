@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Primeiro recurso disponível</title>
+  <desc id="desc">Cena editorial abstrata de pequena vitória no espelho usando recursos acessíveis.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7e4c6"/>
+      <stop offset="0.48" stop-color="#f3c9c1"/>
+      <stop offset="1" stop-color="#7a2444"/>
+    </linearGradient>
+    <radialGradient id="light" cx="45%" cy="22%" r="48%">
+      <stop offset="0" stop-color="#fff8f3" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#fff8f3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f2a2c" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1f1417" stop-opacity="0.96"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <rect width="900" height="1200" fill="url(#light)"/>
+  <rect x="520" y="122" width="258" height="646" rx="129" fill="none" stroke="#d6a75c" stroke-width="16" opacity="0.72"/>
+  <path d="M317 278c-64 16-108 78-108 160 0 67 29 125 75 156l-52 286h303l-46-287c48-31 78-90 78-157 0-88-52-156-124-164-29-3-84 0-126 6Z" fill="#fff8f3" opacity="0.84"/>
+  <path d="M317 280c36-60 136-66 178-8 39 53 20 151-44 182-8-49-26-83-57-101-35-21-62-45-77-73Z" fill="#7a2444" opacity="0.9"/>
+  <path d="M301 418c0-52 42-94 94-94s94 42 94 94-42 94-94 94-94-42-94-94Z" fill="#6d3340" opacity="0.9"/>
+  <path d="M206 641c96 55 212 57 345 8" fill="none" stroke="#d6a75c" stroke-width="12" opacity="0.62"/>
+  <circle cx="653" cy="599" r="54" fill="#d6a75c" opacity="0.55"/>
+  <rect x="633" y="646" width="42" height="118" rx="19" fill="#fff8f3" opacity="0.7"/>
+  <path d="M0 797c93 35 193 30 300-15 126-53 250-40 373 38 84 53 160 66 227 39v341H0Z" fill="url(#shade)"/>
+  <path d="M119 1002c151-38 294-34 430 11 87 29 174 26 260-10" fill="none" stroke="#f7e4c6" stroke-width="8" opacity="0.26"/>
+</svg>

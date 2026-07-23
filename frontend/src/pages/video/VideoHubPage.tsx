@@ -107,18 +107,29 @@ export default function VideoHubPage() {
     }
     const musaProduct =
       productList.find((product) => product.slug === "metodo-musa-7-dias") ?? productList[0];
-    setSelectedProductId(String(musaProduct.id));
+    const nextProductId = String(musaProduct.id);
+    if (nextProductId !== selectedProductId) {
+      setSelectedProductId(nextProductId);
+    }
   }, [productList, selectedProductId]);
 
   useEffect(() => {
     if (profileList.length === 0) {
-      setSelectedProfileId("");
+      if (selectedProfileId) {
+        setSelectedProfileId("");
+      }
+      return;
+    }
+    if (profileList.some((profile) => String(profile.id) === selectedProfileId)) {
       return;
     }
     const pdeProfile =
       profileList.find((profile) => profile.title.includes(CURRENT_PDE_VERSION)) ?? profileList[0];
-    setSelectedProfileId(String(pdeProfile.id));
-  }, [profileList]);
+    const nextProfileId = String(pdeProfile.id);
+    if (nextProfileId !== selectedProfileId) {
+      setSelectedProfileId(nextProfileId);
+    }
+  }, [profileList, selectedProfileId]);
 
   const updateStageContent = (stageId: string, content: string) => {
     setStages((current) =>

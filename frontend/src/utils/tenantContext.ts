@@ -12,6 +12,11 @@ const DEFAULT_CONTEXT: TenantContextValue = {
 };
 
 const listeners = new Set<() => void>();
+let cachedSnapshot: TenantContextValue | null = null;
+
+function sameContext(first: TenantContextValue, second: TenantContextValue) {
+  return first.tenantId === second.tenantId && first.userEmail === second.userEmail;
+}
 
 function readFromStorage(): TenantContextValue {
   if (typeof window === "undefined") {
@@ -45,14 +50,28 @@ function subscribe(listener: () => void) {
 }
 
 export function setTenantContext(value: TenantContextValue) {
-  writeToStorage(value);
+  const normalized = {
+    tenantId: value.tenantId || DEFAULT_CONTEXT.tenantId,
+    userEmail: value.userEmail || DEFAULT_CONTEXT.userEmail,
+  };
+  const current = getTenantContextSnapshot();
+  if (sameContext(current, normalized)) {
+    return;
+  }
+  writeToStorage(normalized);
+  cachedSnapshot = normalized;
   listeners.forEach((listener) => listener());
 }
 
 export function getTenantContextSnapshot(): TenantContextValue {
-  return readFromStorage();
+  const nextSnapshot = readFromStorage();
+  if (cachedSnapshot && sameContext(cachedSnapshot, nextSnapshot)) {
+    return cachedSnapshot;
+  }
+  cachedSnapshot = nextSnapshot;
+  return cachedSnapshot;
 }
 
 export function useTenantContext() {
-  return useSyncExternalStore(subscribe, readFromStorage, () => DEFAULT_CONTEXT);
+  return useSyncExternalStore(subscribe, getTenantContextSnapshot, () => DEFAULT_CONTEXT);
 }

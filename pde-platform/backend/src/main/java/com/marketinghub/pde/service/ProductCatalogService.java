@@ -117,11 +117,11 @@ public class ProductCatalogService {
                 .toList();
     }
 
-    /** Cria a primeira configuração do produto MUSA para o experimento 66. */
+    /** Cria a configuração local do produto MUSA usada quando o Marketing Hub não entrega o contrato. */
     private static ProductExperienceResponse createMusaProduct() {
         return new ProductExperienceResponse(
                 "metodo-musa-7-dias",
-                "musa-pde-entry-v3",
+                "musa-pde-entry-v5-estrada-desejo",
                 "musa-membership-funnel-v1",
                 "Método MUSA - Experiência Guiada de 7 Dias",
                 "Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.",

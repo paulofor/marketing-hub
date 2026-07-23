@@ -1,8 +1,16 @@
-# Método MUSA — Vídeo hero em 4 clipes VEO
+# Método MUSA — Vídeo hero em cenas com streaming adaptativo
 
 ## Objetivo comercial
 
-Criar um vídeo vertical para o topo do diagnóstico MUSA que complete a cadeia **Dor -> Resultado -> Mecanismo -> CTA** sem depender de um único render longo. Cada clipe deve funcionar isoladamente como teaser de 8 segundos e, quando montado em sequência, formar um criativo de aproximadamente 32 segundos.
+Criar um vídeo vertical para o topo do diagnóstico MUSA que complete a cadeia **Dor -> Resultado -> Mecanismo -> CTA** sem depender de um único render curto. Cada cena deve funcionar isoladamente como teaser e, quando montada em sequência, formar um criativo de aproximadamente 30 segundos.
+
+## Estratégia de providers
+
+- **Luma Ray 3.2:** provider principal recomendado para vídeo hero premium do PDE, por permitir cena mais longa e estética editorial.
+- **Kling 3.0:** provider alternativo de teste para comparar retenção, qualidade visual e clique no diagnóstico.
+- **Veo:** manter para teaser curto ou cenas isoladas; não usar sozinho como vídeo de venda de 30 segundos.
+
+O Marketing Hub deve registrar `providerName`, duração alvo, duração real auditada, plano de cenas, URL de streaming publicável (`streamPlaybackUrl`) e MP4 bruto como fallback/auditoria.
 
 ## Fonte de verdade
 
@@ -15,8 +23,8 @@ Criar um vídeo vertical para o topo do diagnóstico MUSA que complete a cadeia 
 ## Direção criativa
 
 - Formato: vertical 9:16.
-- Duração por clipe: 8 segundos.
-- Duração final montada: aproximadamente 32 segundos.
+- Duração por cena: 8 a 20 segundos, conforme provider.
+- Duração final montada: aproximadamente 30 segundos.
 - Estética: editorial acessível, urbana, feminina, elegante, íntima e prática.
 - Visual: mulher urbana realista, luz natural, espelho, guarda-roupa possível, detalhes de acabamento, sensação de presença sem luxo ostensivo.
 - Linguagem de legenda: curta, grande, emocional e direta.
@@ -70,16 +78,19 @@ Criar um vídeo vertical para o topo do diagnóstico MUSA que complete a cadeia 
 
 **Prompt base:** Vídeo vertical 9:16, 8 segundos, estilo editorial realista e aspiracional. Mulher urbana segura o celular em ambiente claro, toca na tela para começar uma experiência de diagnóstico, sem mostrar textos legíveis. Corte suave para ela olhando no espelho com sorriso discreto e postura mais segura, sensação de primeiro passo simples e prazeroso. Paleta vinho, creme, blush quente e dourado discreto, luz natural, câmera próxima, sem texto embutido, sem marcas, sem interfaces deformadas.
 
-## Montagem final
+## Montagem final e entrega
 
 - Ordem: Clipe 1 -> Clipe 2 -> Clipe 3 -> Clipe 4.
 - Áudio: trilha leve, feminina, elegante e crescente; sem depender de narração para entender a mensagem.
 - Legendas finais devem ser adicionadas na montagem, não dentro dos prompts VEO.
 - CTA final na tela: "Ver meu plano MUSA de 7 dias".
 - Uso recomendado: variante de vídeo no topo do diagnóstico público e criativo de anúncio em Reels/Stories.
+- Entrega principal: HLS adaptativo via `streamPlaybackUrl`, para iniciar rápido no celular e não obrigar a cliente a baixar MP4 grande.
+- Fallback: MP4 bruto apenas para contingência, revisão e auditoria.
 
 ## Critério de aprovação
 
-- Cada clipe deve ter duração auditada entre 7 e 8 segundos.
+- Cada cena deve ter duração auditada compatível com o provider escolhido.
 - A montagem final deve ter duração auditada mínima de 28 segundos para perfil alvo de 30 segundos.
 - O vídeo final só pode ser tratado como pronto quando completar Dor, Resultado, Mecanismo e CTA.
+- O vídeo final só deve ser usado no funil público quando houver stream adaptativo publicável ou fallback MP4 explícito.

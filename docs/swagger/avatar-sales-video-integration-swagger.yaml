@@ -568,8 +568,13 @@ components:
       properties:
         requestedBy: { type: string }
         providerFamily: { $ref: '#/components/schemas/SalesVideoProviderFamily' }
-        providerName: { type: string }
+        providerName:
+          type: string
+          description: Provider concreto solicitado. Para hero PDE, usar preferencialmente `LUMA_RAY_3_2`; `KLING_3_0` como alternativa de teste; `VEO` apenas para teaser/cenas curtas.
         executionMode: { $ref: '#/components/schemas/SalesVideoExecutionMode' }
+        metadataJson:
+          type: string
+          description: Plano comercial/operacional do render. Para hero PDE deve registrar estratégia de provider, montagem Dor -> Resultado -> Mecanismo -> CTA, duração mínima aceita e exigência de `streamPlaybackUrl` HLS.
 
     JobHeartbeatRequest:
       type: object

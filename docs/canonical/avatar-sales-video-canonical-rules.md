@@ -139,6 +139,15 @@ Um vídeo só pode ir para `PUBLISHED` se:
 4. CTA estiver alinhado à oferta real e ao estágio do público;
 5. evento de auditoria de publicação for registrado.
 
+## 6.1 Vídeo hero comercial, providers e streaming
+
+- Vídeo hero de venda para PDE/funil público deve ser tratado como peça comercial completa, não como clipe técnico isolado.
+- Quando o perfil pedir duração alvo maior que a duração nativa do provider, o fluxo deve gerar cenas/montagem suficiente para completar **Dor -> Resultado -> Mecanismo -> CTA**.
+- Para o Método MUSA, o provider recomendado para hero premium é `LUMA_RAY_3_2`; `KLING_3_0` deve ser usado como alternativa de teste; `VEO` deve ficar restrito a teaser curto ou cena isolada dentro de montagem.
+- Todo render final deve registrar duração real auditada em `metadataJson.duration_seconds`.
+- Render com duração menor que o mínimo comercial do perfil não pode ficar como `VIDEO_READY`.
+- A experiência principal da usuária deve priorizar streaming adaptativo via `streamPlaybackUrl` HLS/DASH. MP4 bruto deve ser fallback, auditoria ou contingência.
+
 ---
 
 ## 7. Observabilidade obrigatória

@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-23 — Providers múltiplos e montagem de vídeo hero MUSA
+
+- Problema observado: o VEO entregou clipe de 8s e o vídeo foi percebido como incompleto para venda, apesar de o job técnico estar pronto.
+- Causa-raiz tratada: a operação tratava provider curto como suficiente para um perfil comercial de 30s e não carregava no job uma estratégia clara de provider, cenas e montagem final.
+- Correção preparada: a tela `/videos` e o detalhe do perfil passaram a usar catálogo de providers com Luma Ray 3.2 como padrão para hero premium, Kling 3.0 como alternativa de teste e Veo como teaser/cena curta; o pedido de render agora envia `metadataJson` com plano de montagem Dor -> Resultado -> Mecanismo -> CTA, duração mínima comercial e exigência de streaming HLS.
+- Regra operacional: vídeo hero de venda do PDE deve ser montado por cenas e entregue como stream adaptativo; Veo não deve ser aprovado como peça única de 30s.
+
 ## 2026-07-23 — Player de streaming adaptativo para vídeo comercial
 
 - Problema observado: entregar MP4 bruto direto para a cliente aumenta tempo de início, consumo de banda e risco de abandono no celular.

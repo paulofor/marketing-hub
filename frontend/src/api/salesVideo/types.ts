@@ -163,6 +163,7 @@ export interface RequestVideoRenderPayload {
   providerFamily?: SalesVideoProviderFamily;
   providerName?: string;
   executionMode?: SalesVideoExecutionMode;
+  metadataJson?: string;
 }
 
 export interface UpdateSalesVideoCompliancePayload {

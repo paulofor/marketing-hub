@@ -32,10 +32,15 @@ import {
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { TenantContextBanner } from "../../components/TenantContextBanner";
 import { useTenantContext } from "../../utils/tenantContext";
+import {
+  buildSalesVideoRenderMetadata,
+  DEFAULT_SALES_VIDEO_PROVIDER,
+  findSalesVideoProviderOption,
+  SALES_VIDEO_PROVIDER_OPTIONS,
+} from "../../api/salesVideo/videoProviderCatalog";
 
 const PROVIDER_FAMILIES: SalesVideoProviderFamily[] = ["EXTERNAL_VIDEO_MODULE", "OPENAI"];
 const EXECUTION_MODES: SalesVideoExecutionMode[] = ["TEST", "PRODUCTION"];
-const DEFAULT_RENDER_PROVIDER = "VEO";
 
 export default function SalesVideoProfileDetailPage() {
   const { profileId } = useParams();
@@ -59,8 +64,8 @@ export default function SalesVideoProfileDetailPage() {
   });
   const [renderForm, setRenderForm] = useState({
     requestedBy: tenantContext.userEmail,
-    providerFamily: "EXTERNAL_VIDEO_MODULE" as SalesVideoProviderFamily,
-    providerName: DEFAULT_RENDER_PROVIDER,
+    providerFamily: DEFAULT_SALES_VIDEO_PROVIDER.providerFamily,
+    providerName: DEFAULT_SALES_VIDEO_PROVIDER.providerName,
     executionMode: "TEST" as SalesVideoExecutionMode,
   });
   const [complianceForm, setComplianceForm] = useState({
@@ -185,6 +190,8 @@ export default function SalesVideoProfileDetailPage() {
   const watchableAssetUrl = watchableAsset?.publicUrl ?? "";
   const watchableStreamUrl = latestWatchableJob?.streamPlaybackUrl?.trim() ?? "";
   const watchablePlaybackUrl = watchableStreamUrl || watchableAssetUrl;
+  const selectedRenderProvider =
+    findSalesVideoProviderOption(renderForm.providerName) ?? DEFAULT_SALES_VIDEO_PROVIDER;
 
   if (!profileId) {
     return (
@@ -252,9 +259,10 @@ export default function SalesVideoProfileDetailPage() {
     try {
       await requestRender.mutateAsync({
         requestedBy: tenantContext.userEmail,
-        providerFamily: renderForm.providerFamily,
-        providerName: renderForm.providerName.trim() || undefined,
+        providerFamily: selectedRenderProvider.providerFamily,
+        providerName: selectedRenderProvider.providerName,
         executionMode: renderForm.executionMode,
+        metadataJson: buildSalesVideoRenderMetadata(selectedRenderProvider),
       });
       toast.success("Render solicitado");
     } catch (error) {
@@ -579,12 +587,7 @@ export default function SalesVideoProfileDetailPage() {
                   <select
                     className="form-select"
                     value={renderForm.providerFamily}
-                    onChange={(event) =>
-                      setRenderForm((prev) => ({
-                        ...prev,
-                        providerFamily: event.target.value as SalesVideoProviderFamily,
-                      }))
-                    }
+                    disabled
                   >
                     {PROVIDER_FAMILIES.map((family) => (
                       <option key={family} value={family}>
@@ -614,13 +617,33 @@ export default function SalesVideoProfileDetailPage() {
                 </div>
                 <div>
                   <label className="form-label">Provider real do vídeo</label>
-                  <input
-                    className="form-control"
+                  <select
+                    className="form-select"
                     value={renderForm.providerName}
                     onChange={(event) =>
-                      setRenderForm((prev) => ({ ...prev, providerName: event.target.value }))
+                      setRenderForm((prev) => {
+                        const provider =
+                          findSalesVideoProviderOption(event.target.value) ??
+                          DEFAULT_SALES_VIDEO_PROVIDER;
+                        return {
+                          ...prev,
+                          providerFamily: provider.providerFamily,
+                          providerName: provider.providerName,
+                        };
+                      })
                     }
-                  />
+                  >
+                    {SALES_VIDEO_PROVIDER_OPTIONS.map((provider) => (
+                      <option key={provider.key} value={provider.providerName}>
+                        {provider.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="form-text mb-0">{selectedRenderProvider.recommendedUse}</p>
+                  <p className="form-text mb-0">
+                    O pedido envia plano de montagem em cenas e exige stream HLS publicável como
+                    entrega principal.
+                  </p>
                 </div>
                 <button className="btn btn-outline-primary" type="submit" disabled={requestRender.isPending}>
                   {requestRender.isPending && <span className="spinner-border spinner-border-sm me-2" />}

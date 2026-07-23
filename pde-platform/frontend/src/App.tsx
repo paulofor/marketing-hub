@@ -152,6 +152,8 @@ type PublicDiagnosticQuestion = {
   visualText: string;
 };
 
+type PublicDiagnosticVideoVariant = 'control' | 'video';
+
 declare global {
   interface Window {
     google?: {
@@ -469,6 +471,24 @@ function stableBrowserId(storageKey: string) {
   return generatedId;
 }
 
+function resolvePublicDiagnosticVideoVariant(): PublicDiagnosticVideoVariant {
+  const params = new URLSearchParams(window.location.search);
+  const forcedVariant = params.get('musa_video_variant') ?? params.get('musa_ab_video');
+  if (forcedVariant === 'control' || forcedVariant === 'video') {
+    window.localStorage.setItem('musaPublicDiagnosticVideoVariant', forcedVariant);
+    return forcedVariant;
+  }
+
+  const storedVariant = window.localStorage.getItem('musaPublicDiagnosticVideoVariant');
+  if (storedVariant === 'control' || storedVariant === 'video') {
+    return storedVariant;
+  }
+
+  const generatedVariant: PublicDiagnosticVideoVariant = Math.random() < 0.5 ? 'control' : 'video';
+  window.localStorage.setItem('musaPublicDiagnosticVideoVariant', generatedVariant);
+  return generatedVariant;
+}
+
 function resolveDeviceType() {
   const width = window.innerWidth;
   if (width < 768) {
@@ -620,6 +640,8 @@ function App() {
   const maxScrollDepthRef = useRef(0);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const missionPanelRef = useRef<HTMLElement>(null);
+  const videoExperimentTrackedRef = useRef(false);
+  const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
   const heroVideoUrl = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? '');
@@ -695,6 +717,21 @@ function App() {
       },
     });
   }, [workspace?.email, workspace?.subscriptionStatus, workspace?.progressPercent, accessToken, activeMission?.id, authMode]);
+
+  useEffect(() => {
+    if (workspace || videoExperimentTrackedRef.current) {
+      return;
+    }
+    videoExperimentTrackedRef.current = true;
+    trackEvent('FUNNEL_EXPERIMENT_ASSIGNED', {
+      metadata: {
+        actionName: 'public_diagnostic_video_ab_assigned',
+        experimentKey: 'musa_public_diagnostic_video_top_v1',
+        variant: publicDiagnosticVideoVariant,
+        hasHeroVideoUrl: Boolean(heroVideoUrl),
+      },
+    });
+  }, [workspace, publicDiagnosticVideoVariant, heroVideoUrl]);
 
   useEffect(() => {
     const observedSections = Array.from(document.querySelectorAll<HTMLElement>('[data-analytics-section]'));
@@ -1097,6 +1134,8 @@ function App() {
         path: window.location.pathname,
         experienceVersion: resolveExperienceVersion(product),
         funnelVersion: product.funnelVersion,
+        experimentKey: 'musa_public_diagnostic_video_top_v1',
+        publicDiagnosticVideoVariant,
         ...campaignParams,
         ...options.metadata,
       },
@@ -1618,6 +1657,7 @@ function App() {
     const activePublicDiagnosticAnswer = publicDiagnosticAnswers[activePublicDiagnosticQuestion.key];
     const answeredPublicDiagnosticCount = publicDiagnosticQuestions.filter((question) => publicDiagnosticAnswers[question.key]?.trim()).length;
     const publicDiagnosticProgressPercent = Math.round((answeredPublicDiagnosticCount / publicDiagnosticQuestions.length) * 100);
+    const showPublicDiagnosticVideoHero = publicDiagnosticVideoVariant === 'video';
 
     return (
       <main className="app-shell public-diagnostic-shell">
@@ -1626,6 +1666,35 @@ function App() {
             <h1>Sua imagem comunica a mulher que você quer ser vista como?</h1>
             <p>Responda em 30 segundos e veja o primeiro passo que mais pode aumentar sua presença hoje.</p>
           </div>
+
+          {showPublicDiagnosticVideoHero && (
+            <section className="public-video-hero" aria-label="Vídeo curto Método MUSA" data-analytics-section="public_diagnostic_video_hero">
+              <div className="public-video-frame">
+                {heroVideoUrl ? (
+                  <video className="public-hero-video" src={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
+                ) : (
+                  <div className="public-video-storyboard" aria-hidden="true">
+                    <img src="/assets/musa-diagnostic-slide-1.svg" alt="" />
+                    <img src="/assets/musa-diagnostic-slide-2.svg" alt="" />
+                    <img src="/assets/musa-diagnostic-slide-3.svg" alt="" />
+                  </div>
+                )}
+                <div className="public-video-play-badge">
+                  <Sparkles size={17} />
+                  <span>{heroVideoUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
+                </div>
+              </div>
+              <div className="public-video-copy">
+                <p className="section-kicker">Teste A/B de pré-venda</p>
+                <h2>Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.</h2>
+                <p>A promessa continua simples: identificar o ruído visual, escolher um sinal de presença e começar com uma microação usando o que você já tem.</p>
+                <button className="secondary-button public-video-cta" type="button" onClick={() => document.querySelector('.public-diagnostic-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  Começar diagnóstico
+                  <ChevronRight size={17} />
+                </button>
+              </div>
+            </section>
+          )}
 
           <section className="public-diagnostic-form" aria-label="Diagnóstico de Presença">
             <div className="public-diagnostic-experience">

@@ -7,6 +7,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.LandingPage;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
@@ -52,6 +53,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class ExperimentVideoAssetService {
+    private static final int LANDING_HERO_LUMA_TARGET_SECONDS = 30;
+
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
             .findAndAddModules()
             .build();
@@ -385,6 +388,7 @@ public class ExperimentVideoAssetService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "planned video asset script is required");
         }
         String providerName = Optional.ofNullable(trimToNull(videoAsset.getProvider())).orElse("LUMA_RAY_3_2");
+        Integer targetDurationSeconds = resolvePlannedRenderTargetDurationSeconds(videoAsset, providerName);
         Long experimentId = videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null;
         String title = "Vídeo planejado #%d - experimento %d".formatted(videoAsset.getId(), experimentId);
 
@@ -395,7 +399,7 @@ public class ExperimentVideoAssetService {
         profileRequest.setPersonaStyle(trimToNull(request.personaStyle()));
         profileRequest.setVoiceStyle(trimToNull(request.voiceStyle()));
         profileRequest.setLanguage(Optional.ofNullable(trimToNull(request.language())).orElse("pt-BR"));
-        profileRequest.setTargetDurationSeconds(videoAsset.getDurationSeconds());
+        profileRequest.setTargetDurationSeconds(targetDurationSeconds);
         profileRequest.setLandingPageId(landingPageId);
         SalesVideoProfileDto profile = salesVideoService.createProfile(product.getId(), profileRequest);
 
@@ -409,7 +413,7 @@ public class ExperimentVideoAssetService {
         renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
         renderRequest.setProviderName(providerName);
         renderRequest.setExecutionMode(request.executionMode());
-        renderRequest.setMetadataJson(buildPlannedRenderMetadata(videoAsset, request));
+        renderRequest.setMetadataJson(buildPlannedRenderMetadata(videoAsset, targetDurationSeconds, request));
         SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
 
         videoAsset.setSalesVideoProfile(resolveProfile(profile.getId()));
@@ -417,6 +421,7 @@ public class ExperimentVideoAssetService {
         videoAsset.setProvider(providerName);
         videoAsset.setModel(Optional.ofNullable(trimToNull(videoAsset.getModel())).orElse(providerName));
         videoAsset.setStatus(ExperimentVideoStatus.GENERATING);
+        videoAsset.setDurationSeconds(targetDurationSeconds);
         videoAsset.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
         if (request.requiredForRelease() != null) {
             videoAsset.setRequiredForRelease(request.requiredForRelease());
@@ -431,6 +436,23 @@ public class ExperimentVideoAssetService {
             videoAsset.setCost(estimatedCost);
         }
         return videoAsset;
+    }
+
+    /** Normaliza a duração comercial do render planejado conforme o papel do vídeo no funil. */
+    private Integer resolvePlannedRenderTargetDurationSeconds(ExperimentVideoAsset videoAsset, String providerName) {
+        Integer plannedDurationSeconds = videoAsset.getDurationSeconds();
+        boolean lumaHero = videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO
+                && isLumaProvider(providerName);
+        if (lumaHero && (plannedDurationSeconds == null || plannedDurationSeconds < 25)) {
+            return LANDING_HERO_LUMA_TARGET_SECONDS;
+        }
+        return plannedDurationSeconds;
+    }
+
+    /** Identifica providers Luma para aplicar a estratégia comercial de hero premium. */
+    private boolean isLumaProvider(String providerName) {
+        String normalizedProviderName = Optional.ofNullable(trimToNull(providerName)).orElse("").toUpperCase();
+        return normalizedProviderName.contains("LUMA") || normalizedProviderName.contains("RAY_3_2");
     }
 
     /** Identifica ativos planejados ou falhados que podem receber novo job sem duplicar o ativo. */
@@ -497,6 +519,7 @@ public class ExperimentVideoAssetService {
 
     /** Monta metadados estruturados para renderizar um ativo planejado existente. */
     private String buildPlannedRenderMetadata(ExperimentVideoAsset videoAsset,
+                                              Integer targetDurationSeconds,
                                               RequestPlannedExperimentVideoRenderRequest request) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("artifactType", "experiment.plannedVideoRenderRequest.v1");
@@ -505,7 +528,8 @@ public class ExperimentVideoAssetService {
         metadata.put("slot", videoAsset.getSlot());
         metadata.put("provider", trimToNull(videoAsset.getProvider()));
         metadata.put("model", trimToNull(videoAsset.getModel()));
-        metadata.put("durationSeconds", videoAsset.getDurationSeconds());
+        metadata.put("durationSeconds", targetDurationSeconds);
+        metadata.put("commercialStrategy", buildCommercialStrategyMetadata(videoAsset));
         metadata.put("aspectRatio", trimToNull(videoAsset.getAspectRatio()));
         metadata.put("objective", trimToNull(videoAsset.getObjective()));
         metadata.put("primaryMetric", trimToNull(videoAsset.getPrimaryMetric()));
@@ -520,6 +544,31 @@ public class ExperimentVideoAssetService {
                     "planned video metadata serialization failed",
                     ex);
         }
+    }
+
+    /** Descreve nos metadados como o ativo deve ser usado para maximizar venda no funil. */
+    private Map<String, Object> buildCommercialStrategyMetadata(ExperimentVideoAsset videoAsset) {
+        Map<String, Object> strategy = new LinkedHashMap<>();
+        boolean landingHero = videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO;
+        boolean luma = isLumaProvider(videoAsset.getProvider());
+        if (landingHero && luma) {
+            strategy.put("funnelRole", "LANDING_HERO");
+            strategy.put("recommendedUse", "hero principal da landing para atravessar dor, mecanismo, desejo e CTA");
+            strategy.put("recommendedPrimaryDurationSeconds", LANDING_HERO_LUMA_TARGET_SECONDS);
+            strategy.put("recommendedPaidTrafficDerivativeSeconds", List.of(10, 15));
+            strategy.put("approvalRule", "aprovar um hero principal e usar os demais como variacoes ou base para cortes curtos");
+            strategy.put("salesJourney", "desconhecimento -> relevancia -> mecanismo -> desejo -> compra");
+        } else if (videoAsset.getSlot() == ExperimentVideoSlot.AD) {
+            strategy.put("funnelRole", "PAID_TRAFFIC_HOOK");
+            strategy.put("recommendedUse", "criativo curto para captar atencao e levar para a landing");
+            strategy.put("recommendedPrimaryDurationSeconds", 15);
+            strategy.put("salesJourney", "desconhecimento -> relevancia");
+        } else {
+            strategy.put("funnelRole", videoAsset.getSlot() != null ? videoAsset.getSlot().name() : "EXPERIMENT_VIDEO");
+            strategy.put("recommendedUse", "apoio de funil conforme contexto do experimento");
+            strategy.put("salesJourney", "reduzir incerteza e esforco percebido");
+        }
+        return strategy;
     }
 
     /** Resolve o custo em USD informado ou calculado pela tabela oficial do provider. */

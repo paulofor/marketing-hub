@@ -26,6 +26,8 @@ import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.SalesVideoStatus;
+import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
+import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
@@ -255,11 +257,23 @@ class ExperimentVideoAssetServiceTest {
         assertThat(result.get(0).id()).isEqualTo(5L);
         assertThat(result.get(0).status()).isEqualTo(ExperimentVideoStatus.GENERATING);
         assertThat(result.get(0).provider()).isEqualTo("LUMA_RAY_3_2");
+        assertThat(result.get(0).durationSeconds()).isEqualTo(30);
         assertThat(result.get(0).salesVideoProfileId()).isEqualTo(12L);
         assertThat(result.get(0).salesVideoJobId()).isEqualTo(20431L);
+        ArgumentCaptor<CreateSalesVideoProfileRequest> profileRequest =
+                ArgumentCaptor.forClass(CreateSalesVideoProfileRequest.class);
+        verify(salesVideoService).createProfile(any(), profileRequest.capture());
+        assertThat(profileRequest.getValue().getTargetDurationSeconds()).isEqualTo(30);
+        ArgumentCaptor<RequestVideoRenderRequest> renderRequest = ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
+        verify(salesVideoService).requestRender(any(), renderRequest.capture());
+        assertThat(renderRequest.getValue().getMetadataJson())
+                .contains("\"durationSeconds\":30")
+                .contains("\"funnelRole\":\"LANDING_HERO\"")
+                .contains("\"recommendedPaidTrafficDerivativeSeconds\":[10,15]");
         ArgumentCaptor<ExperimentVideoAsset> savedAsset = ArgumentCaptor.forClass(ExperimentVideoAsset.class);
         verify(repository).save(savedAsset.capture());
         assertThat(savedAsset.getValue().getId()).isEqualTo(5L);
+        assertThat(savedAsset.getValue().getDurationSeconds()).isEqualTo(30);
     }
 
     /** Permite reprocessar o mesmo ativo quando o job anterior falhou no executor de vídeo. */
@@ -322,6 +336,7 @@ class ExperimentVideoAssetServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo(5L);
         assertThat(result.get(0).status()).isEqualTo(ExperimentVideoStatus.GENERATING);
+        assertThat(result.get(0).durationSeconds()).isEqualTo(30);
         assertThat(result.get(0).salesVideoProfileId()).isEqualTo(13L);
         assertThat(result.get(0).salesVideoJobId()).isEqualTo(20435L);
     }

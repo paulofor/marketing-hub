@@ -108,6 +108,46 @@ function getAspectRatioStyle(asset: ExperimentVideoAsset) {
   return { aspectRatio: normalizedRatio };
 }
 
+function getCommercialVideoRole(asset: ExperimentVideoAsset) {
+  const duration = asset.durationSeconds ?? 0;
+  const provider = `${asset.provider ?? ""} ${asset.model ?? ""}`.toUpperCase();
+  const isLuma = provider.includes("LUMA") || provider.includes("RAY");
+
+  if (asset.slot === "LANDING_HERO" && isLuma && duration >= 25) {
+    return "Hero de venda";
+  }
+  if (asset.slot === "LANDING_HERO" && duration > 0 && duration < 25) {
+    return "Cena curta";
+  }
+  if (asset.slot === "AD" || (duration >= 10 && duration <= 15)) {
+    return "Hook de mídia";
+  }
+  if (asset.slot === "FORM_EXPLAINER") {
+    return "Redução de dúvida";
+  }
+  if (asset.slot === "PRE_CHECKOUT") {
+    return "Pré-checkout";
+  }
+  return "Apoio de funil";
+}
+
+function getCommercialVideoUse(asset: ExperimentVideoAsset) {
+  const role = getCommercialVideoRole(asset);
+  if (role === "Hero de venda") {
+    return "Landing";
+  }
+  if (role === "Cena curta" || role === "Hook de mídia") {
+    return "Ads/Reels";
+  }
+  if (role === "Redução de dúvida") {
+    return "Formulário";
+  }
+  if (role === "Pré-checkout") {
+    return "Checkout";
+  }
+  return "Teste";
+}
+
 export default function ExperimentVideoTab({
   experiment,
   alterationLocked = false,
@@ -147,6 +187,28 @@ export default function ExperimentVideoTab({
   });
 
   const sortedAssets = useMemo(() => videoAssets ?? [], [videoAssets]);
+  const readyHeroAssets = useMemo(
+    () =>
+      sortedAssets.filter(
+        (asset) =>
+          asset.slot === "LANDING_HERO" &&
+          asset.status === "READY" &&
+          Boolean(asset.assetUrl) &&
+          getCommercialVideoRole(asset) === "Hero de venda",
+      ),
+    [sortedAssets],
+  );
+  const approvedHeroAssets = useMemo(
+    () => readyHeroAssets.filter((asset) => asset.reviewStatus === "APPROVED"),
+    [readyHeroAssets],
+  );
+  const shortTrafficAssets = useMemo(
+    () =>
+      sortedAssets.filter((asset) =>
+        ["Cena curta", "Hook de mídia"].includes(getCommercialVideoRole(asset)),
+      ),
+    [sortedAssets],
+  );
   const plannedAssetsWithoutJob = useMemo(
     () =>
       sortedAssets.filter(
@@ -412,11 +474,26 @@ export default function ExperimentVideoTab({
             </div>
           </div>
           <div className="table-responsive mt-3">
+            <div className="alert alert-light border experiment-video-strategy-panel mb-3">
+              <div>
+                <div className="fw-semibold">Estratégia recomendada</div>
+                <div className="small text-muted">
+                  Hero de 30s na landing; cortes de 10-15s para tráfego pago.
+                </div>
+              </div>
+              <div className="experiment-video-strategy-panel__metrics">
+                <span>Hero pronto: {readyHeroAssets.length}</span>
+                <span>Hero aprovado: {approvedHeroAssets.length}</span>
+                <span>Cortes curtos: {shortTrafficAssets.length}</span>
+              </div>
+            </div>
             <table className="table table-sm align-middle">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Slot</th>
+                  <th>Papel no funil</th>
+                  <th>Uso</th>
                   <th>Status</th>
                   <th>Revisão</th>
                   <th>Provider</th>
@@ -430,13 +507,13 @@ export default function ExperimentVideoTab({
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={10} className="text-muted">
+                    <td colSpan={12} className="text-muted">
                       Carregando vídeos...
                     </td>
                   </tr>
                 ) : sortedAssets.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="text-muted">
+                    <td colSpan={12} className="text-muted">
                       Nenhum vídeo registrado para este experimento.
                     </td>
                   </tr>
@@ -445,6 +522,8 @@ export default function ExperimentVideoTab({
                     <tr key={asset.id}>
                       <td>{asset.id}</td>
                       <td>{asset.slot}</td>
+                      <td>{getCommercialVideoRole(asset)}</td>
+                      <td>{getCommercialVideoUse(asset)}</td>
                       <td>
                         <span className="badge text-bg-info">
                           {asset.status}
@@ -493,7 +572,11 @@ export default function ExperimentVideoTab({
 
       <form className="card" onSubmit={handleSubmit}>
         <div className="card-body">
-          <h5 className="card-title mb-3">Solicitar vídeo VEO</h5>
+          <h5 className="card-title mb-1">Solicitar vídeo VEO</h5>
+          <p className="text-muted small mb-3">
+            Use como teaser/cena curta. Para hero principal, priorize Luma nos
+            vídeos planejados.
+          </p>
           <div className="row g-3">
             <div className="col-md-3">
               <label className="form-label">Slot</label>

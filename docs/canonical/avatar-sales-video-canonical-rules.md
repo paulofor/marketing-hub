@@ -144,6 +144,8 @@ Um vídeo só pode ir para `PUBLISHED` se:
 - Vídeo hero de venda para PDE/funil público deve ser tratado como peça comercial completa, não como clipe técnico isolado.
 - Quando o perfil pedir duração alvo maior que a duração nativa do provider, o fluxo deve gerar cenas/montagem suficiente para completar **Dor -> Resultado -> Mecanismo -> CTA**.
 - Para o Método MUSA, o provider recomendado para hero premium é `LUMA_RAY_3_2`; `KLING_3_0` deve ser usado como alternativa de teste; `VEO` deve ficar restrito a teaser curto ou cena isolada dentro de montagem.
+- Para `LANDING_HERO` com Luma, durações planejadas menores que 25s devem ser tratadas como legado/limite de provider antigo e normalizadas para alvo comercial de 30s no render. Cortes de 10-15s devem existir como derivados para mídia paga, não como substitutos do hero principal da landing.
+- A aprovação comercial deve escolher um hero principal para a landing e classificar os demais vídeos prontos como variações de teste, retargeting ou base para derivados curtos.
 - Todo render final deve registrar duração real auditada em `metadataJson.duration_seconds`.
 - Render com duração menor que o mínimo comercial do perfil não pode ficar como `VIDEO_READY`.
 - A experiência principal da usuária deve priorizar streaming adaptativo via `streamPlaybackUrl` HLS/DASH. MP4 bruto deve ser fallback, auditoria ou contingência.

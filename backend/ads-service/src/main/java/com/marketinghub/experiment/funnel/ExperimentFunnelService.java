@@ -872,8 +872,8 @@ public class ExperimentFunnelService {
             return;
         }
 
-        List<String> campaignCodes = fetchExperimentCampaignCodes(experiment.getId());
-        PdeMembershipMetric metric = aggregatePdeMembershipMetric(summary, campaignCodes);
+        List<String> attributionCodes = fetchExperimentAttributionCodes(experiment.getId());
+        PdeMembershipMetric metric = aggregatePdeMembershipMetric(summary, attributionCodes);
         mergeMetric(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
                 new AggregatedMetric(metric.pdeEntries(), null, metric.lastEventAt()),
                 "Entradas reais do PDE/MUSA filtradas por UTM da campanha do experimento");
@@ -898,23 +898,74 @@ public class ExperimentFunnelService {
     }
 
     /**
-     * Busca os códigos externos da campanha Meta para atribuir o analytics PDE ao experimento correto.
+     * Busca os códigos Meta e UTMs persistidos para atribuir o analytics PDE ao experimento correto.
      */
-    private List<String> fetchExperimentCampaignCodes(Long experimentId) {
+    private List<String> fetchExperimentAttributionCodes(Long experimentId) {
         return jdbcTemplate.queryForList("""
-                SELECT DISTINCT fac.external_id
-                FROM facebook_ads_campaign fac
-                WHERE fac.experiment_id = ?
-                  AND fac.external_id IS NOT NULL
-                  AND TRIM(fac.external_id) <> ''
-                """, String.class, experimentId);
+                SELECT DISTINCT code
+                FROM (
+                    SELECT fac.id AS code
+                    FROM facebook_ads_campaign fac
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fac.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fas.id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fas.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT faa.id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT faa.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT utm.utm_campaign AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    JOIN facebook_ads_ad_tracking_utm utm ON utm.ad_id = faa.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT utm.utm_content AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    JOIN facebook_ads_ad_tracking_utm utm ON utm.ad_id = faa.id
+                    WHERE fac.experiment_id = ?
+                ) codes
+                WHERE code IS NOT NULL
+                  AND TRIM(code) <> ''
+                """, String.class,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId,
+                experimentId);
     }
 
     /**
      * Agrega métricas PDE usando apenas origens de tráfego ligadas à campanha quando os códigos existem.
      */
-    private PdeMembershipMetric aggregatePdeMembershipMetric(PdeAnalyticsSummary summary, List<String> campaignCodes) {
-        if (campaignCodes == null || campaignCodes.isEmpty() || summary.trafficSources() == null) {
+    private PdeMembershipMetric aggregatePdeMembershipMetric(PdeAnalyticsSummary summary, List<String> attributionCodes) {
+        if (attributionCodes == null || attributionCodes.isEmpty() || summary.trafficSources() == null) {
             return new PdeMembershipMetric(
                     summary.pedEntries(),
                     summary.loginStarted(),
@@ -932,7 +983,7 @@ public class ExperimentFunnelService {
         long subscriptionApproved = 0;
         Instant lastEventAt = null;
         for (PdeAnalyticsSummary.PdeTrafficSourceMetric source : summary.trafficSources()) {
-            if (source == null || !campaignCodes.contains(source.utmCampaign())) {
+            if (source == null || !matchesPdeAttribution(source, attributionCodes)) {
                 continue;
             }
             pdeEntries += source.pdeEntries();
@@ -951,6 +1002,13 @@ public class ExperimentFunnelService {
                 summary.accessReleased(),
                 summary.firstUse(),
                 lastEventAt);
+    }
+
+    /**
+     * Confirma se a origem PDE pertence ao experimento por campanha ou criativo Meta.
+     */
+    private boolean matchesPdeAttribution(PdeAnalyticsSummary.PdeTrafficSourceMetric source, List<String> attributionCodes) {
+        return attributionCodes.contains(source.utmCampaign()) || attributionCodes.contains(source.utmContent());
     }
 
     /**

@@ -744,7 +744,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 .build();
         when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
         when(eventRepository.aggregateManualByExperiment(67L, null)).thenReturn(List.of());
-        when(jdbcTemplate.queryForList(any(String.class), eq(String.class), eq(67L)))
+        when(jdbcTemplate.queryForList(any(String.class), eq(String.class), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(List.of("120250506594240326"));
         when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -805,6 +805,66 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals("Entrada na tela inicial do PED/MUSA", pdeEntry.getLabel());
         assertEquals(29, pdeEntry.getTotalCount());
         assertEquals(Instant.parse("2026-07-22T23:07:32Z"), pdeEntry.getLastEventAt());
+    }
+
+    /**
+     * Valida que o funil PDE atribui entrada quando o PDE envia o ID do anúncio no utm_content.
+     */
+    @Test
+    void summarizePdeMembershipUsesPdeAnalyticsFilteredByAdContent() {
+        Experiment experiment = Experiment.builder()
+                .id(68L)
+                .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+                .build();
+        when(experimentRepository.findById(68L)).thenReturn(Optional.of(experiment));
+        when(eventRepository.aggregateManualByExperiment(68L, null)).thenReturn(List.of());
+        when(jdbcTemplate.queryForList(any(String.class), eq(String.class), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(List.of("120250506596000326"));
+        when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v3",
+                50,
+                10,
+                10,
+                10,
+                10,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                120000,
+                List.of(),
+                List.of(),
+                List.of(
+                        new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                                "ig",
+                                "campanha-nao-salva",
+                                "120250506596000326",
+                                10,
+                                10,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                120000,
+                                "2026-07-23T02:00:00Z")),
+                List.of(),
+                List.of(),
+                List.of()));
+
+        var summary = service.summarize(68L);
+
+        var pdeEntry = summary.stream()
+                .filter(stage -> stage.getStage() == ExperimentFunnelStage.VISUALIZACAO_FORM)
+                .findFirst()
+                .orElseThrow();
+        assertEquals(10, pdeEntry.getTotalCount());
+        assertEquals(Instant.parse("2026-07-23T02:00:00Z"), pdeEntry.getLastEventAt());
     }
 
     /**

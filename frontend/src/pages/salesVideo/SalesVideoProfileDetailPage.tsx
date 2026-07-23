@@ -19,6 +19,7 @@ import { useSalesVideoCommercialPlaybooks } from "../../api/salesVideo/useSalesV
 import { useCreateSalesVideoCommercialPlaybook } from "../../api/salesVideo/useCreateSalesVideoCommercialPlaybook";
 import { useCreateSalesVideoConversionEvent } from "../../api/salesVideo/useCreateSalesVideoConversionEvent";
 import { useSalesVideoPerformanceSummary } from "../../api/salesVideo/useSalesVideoPerformanceSummary";
+import { useAsset } from "../../api/media/useAsset";
 import {
   LandingVideoSlot,
   SalesVideoConversionEventType,
@@ -173,6 +174,11 @@ export default function SalesVideoProfileDetailPage() {
   const readyJobsWithAsset = useMemo(() => {
     return (jobs ?? []).filter((job): job is SalesVideoJob & { assetId: number } => Boolean(job.assetId));
   }, [jobs]);
+  const latestWatchableJob = useMemo(() => {
+    return readyJobsWithAsset[0] ?? undefined;
+  }, [readyJobsWithAsset]);
+  const { data: watchableAsset } = useAsset(latestWatchableJob?.assetId);
+  const watchableAssetUrl = watchableAsset?.publicUrl ?? "";
 
   if (!profileId) {
     return (
@@ -405,6 +411,41 @@ export default function SalesVideoProfileDetailPage() {
               <strong>Landing:</strong> {profile.landingPageId ?? "—"}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="mb-4">
+        <div className="card p-3">
+          <div className="d-flex justify-content-between gap-3 align-items-start mb-3">
+            <div>
+              <h2 className="h5 mb-1">Assistir ao vídeo</h2>
+              <p className="text-muted mb-0">
+                Player do asset final renderizado. Enquanto o render não termina, use o roteiro e
+                solicite a criação abaixo.
+              </p>
+            </div>
+            {latestWatchableJob ? (
+              <span className="badge bg-success">Job #{latestWatchableJob.id}</span>
+            ) : (
+              <span className="badge bg-secondary">Sem MP4 final</span>
+            )}
+          </div>
+          {watchableAssetUrl ? (
+            <video
+              src={watchableAssetUrl}
+              className="w-100 bg-dark rounded"
+              style={{ maxHeight: 560 }}
+              controls
+            />
+          ) : (
+            <div className="border rounded p-4 text-center bg-light">
+              <p className="fw-semibold mb-1">O vídeo real ainda não foi renderizado.</p>
+              <p className="text-muted mb-0">
+                Salve/aprove o roteiro MUSA e clique em “Solicitar renderização”. Quando o job
+                devolver um asset, ele aparecerá aqui.
+              </p>
+            </div>
+          )}
         </div>
       </section>
       <section className="mb-4">

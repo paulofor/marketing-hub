@@ -147,6 +147,8 @@ type PublicDiagnosticQuestion = {
   key: string;
   question: string;
   options: string[];
+  visualTitle: string;
+  visualText: string;
 };
 
 declare global {
@@ -542,26 +544,36 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'presenceFocus',
     question: 'Em qual situação você mais quer se sentir mais presente agora?',
     options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
+    visualTitle: 'Escolha a cena onde sua presença precisa aparecer primeiro.',
+    visualText: 'A pergunta entra como uma conversa no espelho: uma escolha por vez, sem parecer questionário frio.',
   },
   {
     key: 'mainObstacle',
     question: 'O que mais te incomoda quando você se olha pronta?',
     options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
+    visualTitle: 'Agora identifique o ruído que rouba intenção.',
+    visualText: 'Cada resposta muda o foco da jornada e prepara a Consultora MUSA para gerar um plano mais específico.',
   },
   {
     key: 'desiredSignal',
     question: 'Qual sinal você quer comunicar com mais força?',
     options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
+    visualTitle: 'Defina o sinal que deve ficar na memória.',
+    visualText: 'A experiência reforça desejo, não obrigação: ela mostra a mulher que a visitante quer comunicar.',
   },
   {
     key: 'mainConstraint',
     question: 'O que mais atrapalha sua imagem no dia a dia?',
     options: ['Pouco tempo', 'Dúvida na roupa', 'Vontade de comprar', 'Falta de constância'],
+    visualTitle: 'Traga a barreira real para o plano funcionar na rotina.',
+    visualText: 'O movimento entre perguntas mantém atenção e reduz a sensação de esforço até o resultado.',
   },
   {
     key: 'startingResource',
     question: 'Com o que você prefere começar esta semana?',
     options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
+    visualTitle: 'Finalize com o primeiro recurso que ela já tem em mãos.',
+    visualText: 'O CTA aparece depois de uma pequena vitória: ela já se enxergou e já escolheu o ponto de partida.',
   },
 ];
 
@@ -579,6 +591,7 @@ function App() {
   const [presenceBlocker, setPresenceBlocker] = useState('');
   const [desiredPresence, setDesiredPresence] = useState('');
   const [publicDiagnosticAnswers, setPublicDiagnosticAnswers] = useState<Record<string, string>>({});
+  const [publicDiagnosticStep, setPublicDiagnosticStep] = useState(0);
   const [publicDiagnosticGuidance, setPublicDiagnosticGuidance] = useState<AiGuidance | null>(null);
   const [publicDiagnosticLoading, setPublicDiagnosticLoading] = useState(false);
   const [missionAnswers, setMissionAnswers] = useState<Record<string, Record<string, string>>>({});
@@ -1578,12 +1591,20 @@ function App() {
       ...current,
       [key]: value,
     }));
+    const answeredQuestionIndex = publicDiagnosticQuestions.findIndex((question) => question.key === key);
+    if (answeredQuestionIndex >= 0 && answeredQuestionIndex < publicDiagnosticQuestions.length - 1) {
+      window.setTimeout(() => setPublicDiagnosticStep(answeredQuestionIndex + 1), 180);
+    }
   }
 
   if (!workspace) {
     const publicDiagnosticReady = publicDiagnosticQuestions.every((question) => publicDiagnosticAnswers[question.key]?.trim());
     const publicDiagnosticPending = publicDiagnosticLoading || publicDiagnosticGuidance?.status === 'PENDING';
     const publicDiagnosticCompleted = publicDiagnosticGuidance?.status === 'COMPLETED';
+    const activePublicDiagnosticQuestion = publicDiagnosticQuestions[publicDiagnosticStep] ?? publicDiagnosticQuestions[0];
+    const activePublicDiagnosticAnswer = publicDiagnosticAnswers[activePublicDiagnosticQuestion.key];
+    const answeredPublicDiagnosticCount = publicDiagnosticQuestions.filter((question) => publicDiagnosticAnswers[question.key]?.trim()).length;
+    const publicDiagnosticProgressPercent = Math.round((answeredPublicDiagnosticCount / publicDiagnosticQuestions.length) * 100);
 
     return (
       <main className="app-shell public-diagnostic-shell">
@@ -1594,40 +1615,71 @@ function App() {
           </div>
 
           <section className="public-diagnostic-form" aria-label="Diagnóstico de Presença">
-            <p className="section-kicker">Diagnóstico de Presença</p>
-            <h2>Toque nas respostas e receba um plano de 7 dias feito para sua rotina.</h2>
-            <div className="public-progress-strip" aria-label="Progresso do diagnóstico">
-              <span>
-                <Check size={15} /> 5 perguntas rápidas
-              </span>
-              <span>
-                <Sparkles size={15} /> Primeiro passo hoje
-              </span>
-              <span>
-                <Lock size={15} /> Sem preço antes do resultado
-              </span>
-            </div>
-            <div className="public-question-list">
-              {publicDiagnosticQuestions.map((question, index) => (
-                <fieldset className="public-question-card" key={question.key}>
+            <div className="public-diagnostic-experience">
+              <div className="public-diagnostic-visual" aria-hidden="true">
+                <img src="/assets/musa-editorial-presenca.png" alt="" />
+                <div className="public-diagnostic-visual-copy" key={`visual-${activePublicDiagnosticQuestion.key}`}>
+                  <span>Diagnóstico de Presença</span>
+                  <strong>{activePublicDiagnosticQuestion.visualTitle}</strong>
+                  <p>{activePublicDiagnosticQuestion.visualText}</p>
+                </div>
+              </div>
+              <div className="public-diagnostic-stage">
+                <div className="public-diagnostic-stage-top">
+                  <p className="section-kicker">Diagnóstico de Presença</p>
+                  <span>{answeredPublicDiagnosticCount}/5 respostas</span>
+                </div>
+                <h2>Toque nas respostas e receba um plano de 7 dias feito para sua rotina.</h2>
+                <div className="public-progress-track" aria-label={`Progresso do diagnóstico: ${publicDiagnosticProgressPercent}%`}>
+                  <span style={{ width: `${publicDiagnosticProgressPercent}%` }} />
+                </div>
+                <div className="public-progress-strip" aria-label="Progresso do diagnóstico">
+                  <span>
+                    <Check size={15} /> 5 perguntas rápidas
+                  </span>
+                  <span>
+                    <Sparkles size={15} /> Primeiro passo hoje
+                  </span>
+                  <span>
+                    <Lock size={15} /> Sem preço antes do resultado
+                  </span>
+                </div>
+                <fieldset className="public-question-card public-question-card-active" key={activePublicDiagnosticQuestion.key}>
                   <legend>
-                    <span>{index + 1}</span>
-                    {question.question}
+                    <span>{publicDiagnosticStep + 1}</span>
+                    {activePublicDiagnosticQuestion.question}
                   </legend>
                   <div className="public-option-grid">
-                    {question.options.map((option) => (
+                    {activePublicDiagnosticQuestion.options.map((option) => (
                       <button
                         key={option}
-                        className={publicDiagnosticAnswers[question.key] === option ? 'selected' : ''}
+                        className={activePublicDiagnosticAnswer === option ? 'selected' : ''}
                         type="button"
-                        onClick={() => updatePublicDiagnosticAnswer(question.key, option)}
+                        onClick={() => updatePublicDiagnosticAnswer(activePublicDiagnosticQuestion.key, option)}
                       >
                         {option}
+                        <ChevronRight size={17} />
                       </button>
                     ))}
                   </div>
                 </fieldset>
-              ))}
+                <div className="public-question-dots" aria-label="Navegar entre perguntas">
+                  {publicDiagnosticQuestions.map((question, index) => (
+                    <button
+                      key={question.key}
+                      aria-label={`Pergunta ${index + 1}`}
+                      className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}
+                      type="button"
+                      onClick={() => setPublicDiagnosticStep(index)}
+                    />
+                  ))}
+                </div>
+                {publicDiagnosticStep > 0 && (
+                  <button className="public-back-button" type="button" onClick={() => setPublicDiagnosticStep((current) => Math.max(0, current - 1))}>
+                    Voltar uma pergunta
+                  </button>
+                )}
+              </div>
             </div>
             {errorMessage && <p className="form-message">{errorMessage}</p>}
             <button className="primary-button public-submit-button" disabled={publicDiagnosticPending || !publicDiagnosticReady} onClick={submitPublicPresenceDiagnostic}>

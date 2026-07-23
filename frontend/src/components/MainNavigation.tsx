@@ -17,6 +17,7 @@ import {
   Mail,
   Microscope,
   HeartPulse,
+  Image,
   Instagram,
   MessageSquare,
 } from "lucide-react";
@@ -113,6 +114,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Campanhas",
     items: [
       { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
+      { to: "/ai/image-generator", label: "Gerador de Imagens", icon: Image },
       {
         to: "/facebook-campaigns/ready",
         label: "Experimentos prontos",

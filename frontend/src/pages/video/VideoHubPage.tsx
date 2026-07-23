@@ -18,7 +18,14 @@ import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSales
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
 import { useAsset } from "../../api/media/useAsset";
+import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import { useTenantContext } from "../../utils/tenantContext";
+import {
+  buildSalesVideoRenderMetadata,
+  DEFAULT_SALES_VIDEO_PROVIDER,
+  findSalesVideoProviderOption,
+  SALES_VIDEO_PROVIDER_OPTIONS,
+} from "../../api/salesVideo/videoProviderCatalog";
 import "./VideoHubPage.css";
 
 type VideoStageStatus = "READY" | "DRAFT";
@@ -43,7 +50,7 @@ const DEFAULT_STAGES: VideoStage[] = [
     title: "Briefing comercial",
     status: "READY",
     content:
-      "Tipo: vídeo explicativo para entrada do PDE.\nDuração alvo: 20 a 35 segundos.\nPrimeira dobra: acima do CTA principal.\nPromessa: mostrar em poucos segundos o que a imagem da mulher comunica hoje e qual pequeno ajuste pode aumentar presença, desejo e segurança visual.\nTom: íntimo, elegante, direto e sem parecer aula longa.",
+      "Tipo: vídeo explicativo para entrada do PDE.\nDuração alvo: 30 segundos.\nProvider principal recomendado: Luma Ray 3.2.\nProvider alternativo de teste: Kling 3.0.\nVeo deve ser usado apenas como teaser curto ou cenas isoladas para montagem.\nPrimeira dobra: acima do CTA principal.\nPromessa: mostrar em poucos segundos o que a imagem da mulher comunica hoje e qual pequeno ajuste pode aumentar presença, desejo e segurança visual.\nTom: íntimo, elegante, direto e sem parecer aula longa.",
   },
   {
     id: "script",
@@ -57,7 +64,7 @@ const DEFAULT_STAGES: VideoStage[] = [
     title: "Criação",
     status: "DRAFT",
     content:
-      "Formato recomendado: vertical 9:16, 20 a 25 segundos, cortes rápidos e inspiradores.\nCena 1: mulher urbana em frente ao espelho, elegante sem ostentação, com luz editorial quente.\nCena 2: close em detalhe de acabamento: brinco, tecido, cabelo, botão, bolsa ou colar como peça-sinal.\nCena 3: gesto de retirar excesso visual e escolher uma combinação mais limpa.\nCena 4: postura final mais segura, expressão leve e confiante, sem antes/depois agressivo.\nLegenda fixa: \"Presença elegante começa com pequenos sinais\".\nAsset final: MP4 vertical vinculado ao perfil e publicado no slot hero do Clube MUSA.",
+      "Formato recomendado: vertical 9:16, montagem final de aproximadamente 30 segundos, cortes rápidos e inspiradores.\nCena 1: mulher urbana em frente ao espelho, elegante sem ostentação, com luz editorial quente.\nCena 2: close em detalhe de acabamento: brinco, tecido, cabelo, botão, bolsa ou colar como peça-sinal.\nCena 3: gesto de retirar excesso visual e escolher uma combinação mais limpa.\nCena 4: postura final mais segura, expressão leve e confiante, sem antes/depois agressivo.\nLegenda fixa: \"Presença elegante começa com pequenos sinais\".\nEntrega publicável: stream HLS adaptativo para o player do Clube MUSA, com MP4 apenas como fallback.",
   },
   {
     id: "validation",
@@ -74,7 +81,6 @@ const STATUS_LABELS: Record<VideoStageStatus, string> = {
 };
 
 const CURRENT_PDE_VERSION = "musa-pde-entry-v4-video-hero";
-const DEFAULT_RENDER_PROVIDER = "VEO";
 
 export default function VideoHubPage() {
   const tenantContext = useTenantContext();
@@ -82,6 +88,9 @@ export default function VideoHubPage() {
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [stages, setStages] = useState<VideoStage[]>(DEFAULT_STAGES);
+  const [selectedProviderName, setSelectedProviderName] = useState(
+    DEFAULT_SALES_VIDEO_PROVIDER.providerName,
+  );
 
   const { data: profiles, isLoading: profilesLoading } =
     useSalesVideoProfiles(selectedProductId || undefined);
@@ -100,6 +109,10 @@ export default function VideoHubPage() {
   const scriptStage = stages.find((stage) => stage.id === "script") ?? stages[2];
   const readyCount = stages.filter((stage) => stage.status === "READY").length;
   const latestAssetUrl = latestAsset?.publicUrl ?? "";
+  const latestStreamPlaybackUrl = latestJob?.streamPlaybackUrl?.trim() ?? "";
+  const latestPlaybackUrl = latestStreamPlaybackUrl || latestAssetUrl;
+  const selectedProvider =
+    findSalesVideoProviderOption(selectedProviderName) ?? DEFAULT_SALES_VIDEO_PROVIDER;
 
   useEffect(() => {
     if (selectedProductId || productList.length === 0) {
@@ -107,18 +120,29 @@ export default function VideoHubPage() {
     }
     const musaProduct =
       productList.find((product) => product.slug === "metodo-musa-7-dias") ?? productList[0];
-    setSelectedProductId(String(musaProduct.id));
+    const nextProductId = String(musaProduct.id);
+    if (nextProductId !== selectedProductId) {
+      setSelectedProductId(nextProductId);
+    }
   }, [productList, selectedProductId]);
 
   useEffect(() => {
     if (profileList.length === 0) {
-      setSelectedProfileId("");
+      if (selectedProfileId) {
+        setSelectedProfileId("");
+      }
+      return;
+    }
+    if (profileList.some((profile) => String(profile.id) === selectedProfileId)) {
       return;
     }
     const pdeProfile =
       profileList.find((profile) => profile.title.includes(CURRENT_PDE_VERSION)) ?? profileList[0];
-    setSelectedProfileId(String(pdeProfile.id));
-  }, [profileList]);
+    const nextProfileId = String(pdeProfile.id);
+    if (nextProfileId !== selectedProfileId) {
+      setSelectedProfileId(nextProfileId);
+    }
+  }, [profileList, selectedProfileId]);
 
   const updateStageContent = (stageId: string, content: string) => {
     setStages((current) =>
@@ -162,7 +186,7 @@ export default function VideoHubPage() {
         personaStyle: "mulher buscando presença visual, elegância e segurança",
         voiceStyle: "íntima, elegante, direta e comercialmente clara",
         language: "pt-BR",
-        targetDurationSeconds: 25,
+        targetDurationSeconds: 30,
       });
       setSelectedProfileId(String(profile.id));
       toast.success("Perfil de vídeo criado no Marketing Hub");
@@ -205,9 +229,10 @@ export default function VideoHubPage() {
     try {
       await requestRender.mutateAsync({
         requestedBy: tenantContext.userEmail,
-        providerFamily: "EXTERNAL_VIDEO_MODULE",
-        providerName: DEFAULT_RENDER_PROVIDER,
+        providerFamily: selectedProvider.providerFamily,
+        providerName: selectedProvider.providerName,
         executionMode: "TEST",
+        metadataJson: buildSalesVideoRenderMetadata(selectedProvider),
       });
       toast.success("Criação do vídeo solicitada pelo Marketing Hub");
     } catch (error) {
@@ -279,6 +304,26 @@ export default function VideoHubPage() {
               ))}
             </select>
 
+            <label className="form-label" htmlFor="video-provider">
+              Provider de render
+            </label>
+            <select
+              id="video-provider"
+              className="form-select"
+              value={selectedProvider.providerName}
+              onChange={(event) => setSelectedProviderName(event.target.value)}
+            >
+              {SALES_VIDEO_PROVIDER_OPTIONS.map((provider) => (
+                <option key={provider.key} value={provider.providerName}>
+                  {provider.label}
+                </option>
+              ))}
+            </select>
+            <div className="video-hub-page__provider-note">
+              <strong>{selectedProvider.label}</strong>
+              <span>{selectedProvider.recommendedUse}</span>
+            </div>
+
             <button
               type="submit"
               className="btn btn-primary w-100"
@@ -295,28 +340,44 @@ export default function VideoHubPage() {
             <SummaryMetric label="Produto" value={selectedProduct?.name || selectedProduct?.slug || "-"} />
             <SummaryMetric label="Versão PDE" value={CURRENT_PDE_VERSION} />
             <SummaryMetric label="Etapas prontas" value={`${readyCount}/5`} />
-            <SummaryMetric label="Status do vídeo" value={selectedProfile?.status ?? "Sem perfil"} />
+            <SummaryMetric label="Provider" value={selectedProvider.label} />
           </div>
 
           <div className="video-hub-page__notice">
             <CheckCircle2 size={18} aria-hidden="true" />
             <span>
               Procedimento correto: código muda via GitHub; artefato de vídeo nasce como perfil,
-              roteiro aprovado e job dentro do Marketing Hub.
+              roteiro aprovado, job, stream HLS e fallback MP4 dentro do Marketing Hub.
             </span>
           </div>
+
+          <section className="video-hub-page__strategy">
+            <article>
+              <strong>Hero premium</strong>
+              <span>Luma Ray 3.2 é o padrão para vídeo principal do PDE.</span>
+            </article>
+            <article>
+              <strong>Teste criativo</strong>
+              <span>Kling entra como alternativa para comparar retenção e clique.</span>
+            </article>
+            <article>
+              <strong>Teaser curto</strong>
+              <span>Veo fica para cenas de 8s ou montagem, não como vídeo único de 30s.</span>
+            </article>
+          </section>
 
           <section className="video-hub-page__watch">
             <div className="video-hub-page__watch-copy">
               <span className="video-hub-page__stage-kicker">Assistir</span>
               <h2>Vídeo MUSA do diagnóstico</h2>
               <p>
-                Quando o render terminar, o MP4 aparece aqui para revisão antes de entrar no funil.
+                Quando o stream estiver processado, o player usa HLS adaptativo. O MP4 fica como
+                fallback para revisão e contingência, evitando download pesado como experiência principal.
               </p>
             </div>
             <div className="video-hub-page__player">
-              {latestAssetUrl ? (
-                <video src={latestAssetUrl} controls poster={undefined} />
+              {latestPlaybackUrl ? (
+                <AdaptiveVideoPlayer src={latestPlaybackUrl} fallbackSrc={latestAssetUrl} controls />
               ) : (
                 <div className="video-hub-page__player-empty">
                   <PlayCircle size={44} aria-hidden="true" />
@@ -399,6 +460,12 @@ export default function VideoHubPage() {
               <span className="video-hub-page__job-ready">
                 <PlayCircle size={16} aria-hidden="true" />
                 Asset #{latestJob.assetId}
+              </span>
+            ) : null}
+            {latestStreamPlaybackUrl ? (
+              <span className="video-hub-page__job-ready">
+                <PlayCircle size={16} aria-hidden="true" />
+                Stream HLS pronto
               </span>
             ) : null}
           </div>

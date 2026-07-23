@@ -22,6 +22,12 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
     caution: 'Use como orientação prática, sem promessa automática de resultado universal.',
   };
 
+  await page.route('/api/pde/access/events', async (route) => {
+    await route.fulfill({ json: { status: 'RECORDED' } });
+  });
+  await page.route('/api/pde/products/metodo-musa-7-dias', async (route) => {
+    await route.fulfill({ status: 404, json: { error: 'Produto carregado pelo fallback do teste visual.' } });
+  });
   await page.route('/api/pde/public/presence-diagnostic', async (route) => {
     await route.fulfill({ json: completedGuidance });
   });
@@ -56,9 +62,12 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeEnabled();
   await page.getByRole('button', { name: /Ver meu primeiro passo/i }).click();
   await expect(page.getByRole('heading', { name: /Seu plano começa reduzindo ruído visual/i })).toBeVisible();
-  await expect(page.getByText(/Quer saber exatamente como executar esse plano/i)).toBeVisible();
+  await expect(page.getByText(/Resultado MUSA gratuito/i)).toBeVisible();
+  await expect(page.getByText(/Seu sinal principal hoje/i)).toBeVisible();
+  await expect(page.getByRole('region', { name: /Preview bloqueado do plano MUSA de 7 dias/i })).toBeVisible();
+  await expect(page.getByText(/Salve seu Plano MUSA/i)).toBeVisible();
   await page.getByPlaceholder('seuemail@exemplo.com').fill('teste+diagnostico@sandbox.local');
-  await page.getByRole('button', { name: /Receber roteiro detalhado dos 7 dias/i }).click();
+  await page.getByRole('button', { name: /Salvar meu Plano MUSA de 7 dias/i }).click();
   await expect(page.getByText(/Enviei para seu e-mail/i)).toBeVisible();
 
   await page.screenshot({

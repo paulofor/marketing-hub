@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, CalendarDays, Check, ChevronRight, ClipboardCheck, CreditCard, Gauge, KeyRound, Library, LoaderCircle, Lock, LogIn, Mail, Pencil, Sparkles, Target, User } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
+import { AdaptiveVideoPlayer } from './AdaptiveVideoPlayer';
 import './styles.css';
 
 type Theme = {
@@ -524,7 +525,7 @@ function resolveUrlHost(url: string) {
   }
 }
 
-function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID' | 'VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE' | 'VITE_MUSA_HERO_VIDEO_URL', fallback = '') {
+function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID' | 'VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE' | 'VITE_MUSA_HERO_VIDEO_URL' | 'VITE_MUSA_HERO_STREAM_URL', fallback = '') {
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
 }
 
@@ -641,10 +642,13 @@ function App() {
   const emailInputRef = useRef<HTMLInputElement>(null);
   const missionPanelRef = useRef<HTMLElement>(null);
   const videoExperimentTrackedRef = useRef(false);
+  const publicDiagnosticCompletedTrackedRef = useRef('');
   const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
   const heroVideoUrl = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? '');
+  const heroStreamUrl = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
+  const heroPlaybackUrl = heroStreamUrl || heroVideoUrl;
 
   const activeMission = useMemo(() => {
     const missionList = workspace?.product.missions ?? product.missions;
@@ -732,6 +736,24 @@ function App() {
       },
     });
   }, [workspace, publicDiagnosticVideoVariant, heroVideoUrl]);
+
+  useEffect(() => {
+    if (workspace || publicDiagnosticGuidance?.status !== 'COMPLETED') {
+      return;
+    }
+    if (publicDiagnosticCompletedTrackedRef.current === publicDiagnosticGuidance.requestId) {
+      return;
+    }
+    publicDiagnosticCompletedTrackedRef.current = publicDiagnosticGuidance.requestId;
+    trackEvent('DIAGNOSTIC_COMPLETED', {
+      metadata: {
+        actionName: 'public_diagnostic_result_viewed',
+        diagnosticRequestId: publicDiagnosticGuidance.requestId,
+        answeredQuestions: Object.keys(sanitizeAnswers(publicDiagnosticAnswers)).length,
+        primarySignal: resolvePrincipalPresenceSignal(publicDiagnosticGuidance),
+      },
+    });
+  }, [workspace, publicDiagnosticGuidance, publicDiagnosticAnswers]);
 
   useEffect(() => {
     const observedSections = Array.from(document.querySelectorAll<HTMLElement>('[data-analytics-section]'));
@@ -1508,7 +1530,9 @@ function App() {
       }
       const guidance = (await response.json()) as AiGuidance;
       setPublicDiagnosticGuidance(guidance);
-      await pollPublicPresenceDiagnostic(guidance.requestId);
+      if (guidance.status === 'PENDING') {
+        await pollPublicPresenceDiagnostic(guidance.requestId);
+      }
     } catch {
       setPublicDiagnosticGuidance(null);
       setErrorMessage('Não conseguimos acionar a Consultora MUSA agora. Tente enviar novamente em alguns instantes.');
@@ -1595,6 +1619,75 @@ function App() {
     );
   }
 
+  function resolvePublicDiagnosticHeadline(guidance: AiGuidance) {
+    return guidance.headline?.trim() || 'Seu primeiro sinal de presença já apareceu';
+  }
+
+  function resolvePublicDiagnosticSummary(guidance: AiGuidance) {
+    return (
+      guidance.summary?.trim() ||
+      'Pelas suas respostas, o primeiro ganho vem de reduzir ruído visual e escolher um detalhe simples para comunicar mais intenção hoje.'
+    );
+  }
+
+  function resolvePrincipalPresenceSignal(guidance: AiGuidance) {
+    const firstSignal = guidance.signals.find((signal) => signal.trim());
+    if (firstSignal) {
+      return firstSignal;
+    }
+    const desiredSignal = publicDiagnosticAnswers.desiredSignal;
+    if (desiredSignal) {
+      return desiredSignal;
+    }
+    return 'Presença com intenção';
+  }
+
+  function resolveFreeInsightBullets(guidance: AiGuidance) {
+    const focus = publicDiagnosticAnswers.presenceFocus || 'sua rotina real';
+    const obstacle = publicDiagnosticAnswers.mainObstacle || 'o ruído visual';
+    const desiredSignal = publicDiagnosticAnswers.desiredSignal || 'mais elegância';
+    const startingResource = publicDiagnosticAnswers.startingResource || 'algo que você já tem';
+    const guidanceSignals = guidance.signals.filter((signal) => signal.trim()).slice(0, 3);
+
+    if (guidanceSignals.length >= 3) {
+      return [
+        `Seu foco imediato está em ${focus.toLowerCase()}, então o plano precisa funcionar sem esforço extra.`,
+        `${guidanceSignals[0]} é o sinal que deve aparecer antes de qualquer compra nova.`,
+        `O próximo passo é usar ${startingResource.toLowerCase()} para comunicar ${desiredSignal.toLowerCase()} com mais clareza.`,
+      ];
+    }
+
+    return [
+      `Seu foco imediato está em ${focus.toLowerCase()}, então a orientação precisa ser simples e aplicável hoje.`,
+      `O ponto que mais pode estar enfraquecendo sua presença é: ${obstacle.toLowerCase()}.`,
+      `A primeira vitória vem de usar ${startingResource.toLowerCase()} para comunicar ${desiredSignal.toLowerCase()} com mais intenção.`,
+    ];
+  }
+
+  function resolveTodayMicroAction(guidance: AiGuidance) {
+    const firstAction = guidance.microActions.find((action) => action.trim());
+    if (firstAction) {
+      return firstAction.replace(/^Dia 1:\s*/i, '');
+    }
+    return 'Antes de sair, retire um excesso visual e escolha um detalhe que pareça intencional: brinco, cabelo, cor, acabamento ou postura.';
+  }
+
+  function resolveLockedPlanPreview(guidance: AiGuidance) {
+    const actions = guidance.microActions.filter((action) => action.trim());
+    if (actions.length >= 7) {
+      return actions.slice(0, 7);
+    }
+    return [
+      'Dia 1: identificar o sinal que hoje deixa sua imagem menos intencional.',
+      'Dia 2: limpar ruído visual sem comprar roupa nova.',
+      'Dia 3: escolher uma peça-sinal para repetir com elegância.',
+      'Dia 4: montar uma combinação mais coerente com o que já existe.',
+      'Dia 5: ajustar cor e acabamento para parecer mais cuidada.',
+      'Dia 6: alinhar postura, presença e detalhe final.',
+      'Dia 7: salvar sua fórmula MUSA pessoal para repetir com menos dúvida.',
+    ];
+  }
+
   const currentProduct = workspace?.product ?? product;
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
@@ -1670,8 +1763,8 @@ function App() {
           {showPublicDiagnosticVideoHero && (
             <section className="public-video-hero" aria-label="Vídeo curto Método MUSA" data-analytics-section="public_diagnostic_video_hero">
               <div className="public-video-frame">
-                {heroVideoUrl ? (
-                  <video className="public-hero-video" src={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
+                {heroPlaybackUrl ? (
+                  <AdaptiveVideoPlayer className="public-hero-video" src={heroPlaybackUrl} fallbackSrc={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
                 ) : (
                   <div className="public-video-storyboard" aria-hidden="true">
                     <img src="/assets/musa-diagnostic-slide-1.png" alt="" />
@@ -1681,7 +1774,7 @@ function App() {
                 )}
                 <div className="public-video-play-badge">
                   <Sparkles size={17} />
-                  <span>{heroVideoUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
+                  <span>{heroPlaybackUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
                 </div>
               </div>
               <div className="public-video-copy">
@@ -1791,28 +1884,63 @@ function App() {
 
           {publicDiagnosticCompleted && (
             <section className="public-diagnostic-result" aria-label="Plano personalizado de 7 dias">
-              <p className="section-kicker">Plano personalizado por IA</p>
-              <h2>{publicDiagnosticGuidance.headline}</h2>
-              <p>{publicDiagnosticGuidance.summary}</p>
-              <div className="public-signal-grid">
-                {publicDiagnosticGuidance.signals.map((signal) => (
-                  <span key={signal}>{signal}</span>
+              <div className="public-result-hero">
+                <div>
+                  <p className="section-kicker">Resultado MUSA gratuito</p>
+                  <h2>{resolvePublicDiagnosticHeadline(publicDiagnosticGuidance)}</h2>
+                  <p>{resolvePublicDiagnosticSummary(publicDiagnosticGuidance)}</p>
+                </div>
+                <div className="public-main-signal" aria-label="Seu sinal principal de presença">
+                  <span>Seu sinal principal hoje</span>
+                  <strong>{resolvePrincipalPresenceSignal(publicDiagnosticGuidance)}</strong>
+                </div>
+              </div>
+
+              <div className="public-consultation-grid">
+                {resolveFreeInsightBullets(publicDiagnosticGuidance).map((insight) => (
+                  <article key={insight} className="public-insight-card">
+                    <Check size={17} />
+                    <p>{insight}</p>
+                  </article>
                 ))}
               </div>
-              <ol className="public-seven-day-plan">
-                {publicDiagnosticGuidance.microActions.map((action) => (
-                  <li key={action}>{action}</li>
-                ))}
-              </ol>
+
+              <article className="public-today-action" aria-label="Microação prática para hoje">
+                <span>
+                  <Sparkles size={18} />
+                  Microação para hoje
+                </span>
+                <p>{resolveTodayMicroAction(publicDiagnosticGuidance)}</p>
+              </article>
+
+              <div className="public-locked-plan" role="region" aria-label="Preview bloqueado do plano MUSA de 7 dias">
+                <div className="public-locked-plan-header">
+                  <div>
+                    <p className="section-kicker">Seu plano de 7 dias</p>
+                    <h3>O caminho completo já está desenhado. Salve para liberar a execução guiada.</h3>
+                  </div>
+                  <Lock size={22} />
+                </div>
+                <ol className="public-seven-day-plan">
+                  {resolveLockedPlanPreview(publicDiagnosticGuidance).map((action, index) => (
+                    <li key={action} className={index > 1 ? 'locked' : ''}>
+                      <span>{index + 1}</span>
+                      <p>{action.replace(/^Dia \d+:\s*/i, '')}</p>
+                      {index > 1 && <Lock size={14} />}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
               {publicDiagnosticGuidance.caution && <small>{publicDiagnosticGuidance.caution}</small>}
               <div className="public-email-capture" data-analytics-section="public_diagnostic_email_capture">
-                <p className="section-kicker">Receba o roteiro detalhado</p>
-                <h3>Quer saber exatamente como executar esse plano sem se perder no dia a dia?</h3>
+                <p className="section-kicker">Salvar e liberar</p>
+                <h3>Salve seu Plano MUSA para receber as 7 missões completas e continuar na Área MUSA.</h3>
                 <p>
-                  Envie seu e-mail para salvar seu diagnóstico e receber o caminho da Área MUSA, com as instruções dos 7 dias organizadas para você aplicar uma missão por vez.
+                  O diagnóstico gratuito já mostrou o ponto de partida. Agora entre para manter o plano salvo, ver os exemplos visuais, receber os checklists e aplicar uma missão por vez.
                 </p>
                 <label className="email-box public-email-box">
-                  Seu melhor e-mail
+                  E-mail para salvar seu plano
                   <input
                     ref={emailInputRef}
                     type="email"
@@ -1836,7 +1964,7 @@ function App() {
                 ) : (
                   <button className="primary-button public-email-button" onClick={submitPublicDiagnosticEmail} disabled={loading}>
                     <Mail size={18} />
-                    {loading ? 'Enviando roteiro...' : 'Receber roteiro detalhado dos 7 dias'}
+                    {loading ? 'Salvando plano...' : 'Salvar meu Plano MUSA de 7 dias'}
                   </button>
                 )}
               </div>
@@ -1998,17 +2126,17 @@ function App() {
           </div>
           {showVideoHero ? (
             <div className="experience-card login-cover video-login-cover" aria-label="Vídeo da experiência Método MUSA" data-analytics-section="musa_video_hero">
-              {heroVideoUrl ? (
-                <video className="musa-hero-video" src={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
+              {heroPlaybackUrl ? (
+                <AdaptiveVideoPlayer className="musa-hero-video" src={heroPlaybackUrl} fallbackSrc={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
               ) : (
                 <div className="musa-video-fallback" aria-hidden="true">
                   <img src="/assets/musa-editorial-presenca.png" alt="" />
                 </div>
               )}
               <div className="video-hero-caption">
-                <span>{heroVideoUrl ? 'Prévia em vídeo' : 'Prévia visual'}</span>
+                <span>{heroPlaybackUrl ? 'Prévia em vídeo' : 'Prévia visual'}</span>
                 <strong>Veja o gesto simples que muda a percepção da sua presença.</strong>
-                <p>{heroVideoUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro passo prático do Dia 1.' : 'Vídeo VEO ainda não configurado neste ambiente. A tela preserva a promessa e bloqueia liberação como vídeo real.'}</p>
+                <p>{heroPlaybackUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro passo prático do Dia 1.' : 'Vídeo hero ainda não configurado neste ambiente. A tela preserva a promessa e bloqueia liberação como vídeo real.'}</p>
               </div>
             </div>
           ) : (

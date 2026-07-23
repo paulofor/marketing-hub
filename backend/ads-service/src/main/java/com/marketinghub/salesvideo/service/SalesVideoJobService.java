@@ -33,6 +33,7 @@ import java.util.Optional;
 @Component
 public class SalesVideoJobService {
     private static final int MAX_PAGE_SIZE = 200;
+    private static final String SHORT_DURATION_FAILURE_CODE = "RENDER_DURATION_SHORT";
 
     private final SalesVideoJobRepository jobRepository;
     private final SalesVideoJobEventRepository eventRepository;
@@ -174,15 +175,24 @@ public class SalesVideoJobService {
         return SalesVideoMapper.toDto(job);
     }
 
+    /** Finaliza um job e bloqueia renders que nao atendem a duracao comercial minima. */
     @Transactional
     public SalesVideoJobDto complete(Long jobId, JobCompletionRequest request) {
         SalesVideoJob job = loadJob(jobId);
         SalesVideoStatus previous = job.getStatus();
         SalesVideoStatus finalStatus = Optional.ofNullable(request.getStatus())
                 .orElse(defaultCompletionStatus(job.getJobType()));
+        Integer durationSeconds = resolveDurationSeconds(job, request);
+        DurationValidation durationValidation = validateRenderDuration(job, durationSeconds);
+        if (!durationValidation.valid()) {
+            finalStatus = SalesVideoStatus.VIDEO_FAILED;
+            job.setFailureCode(SHORT_DURATION_FAILURE_CODE);
+            job.setFailureDetail(durationValidation.message());
+        }
         job.setStatus(finalStatus);
         job.setFinishedAt(Instant.now());
         job.setProviderJobId(request.getProviderJobId());
+        job.setStreamPlaybackUrl(normalizeStreamPlaybackUrl(request.getStreamPlaybackUrl()));
         job.setMetadataJson(request.getMetadataJson());
         attachAsset(job::setAsset, request.getAssetId());
         attachAsset(job::setPosterAsset, request.getPosterAssetId());
@@ -192,10 +202,10 @@ public class SalesVideoJobService {
             job.setScript(persistedScript);
         }
         jobRepository.save(job);
-        syncExperimentVideoAsset(job, request);
+        syncExperimentVideoAsset(job, request, durationSeconds);
         maybeUpdateProfileStatus(job, finalStatus);
         registerEvent(job, SalesVideoJobEventType.COMPLETED, previous, finalStatus,
-                request.getMessage(), request.getDetailsJson());
+                completionMessage(request, durationValidation), completionDetails(request, durationValidation));
         return SalesVideoMapper.toDto(job);
     }
 
@@ -288,15 +298,16 @@ public class SalesVideoJobService {
         return saved;
     }
 
-    /** Notifica a porta de sincronizacao de ativos quando um render e concluido. */
-    private void syncExperimentVideoAsset(SalesVideoJob job, JobCompletionRequest request) {
-        if (job.getId() == null || job.getJobType() != SalesVideoJobType.RENDER) {
+    /** Notifica a porta de sincronizacao de ativos quando um render valido e concluido. */
+    private void syncExperimentVideoAsset(SalesVideoJob job, JobCompletionRequest request, Integer durationSeconds) {
+        if (job.getId() == null || job.getJobType() != SalesVideoJobType.RENDER
+                || job.getStatus() != SalesVideoStatus.VIDEO_READY) {
             return;
         }
         completedRenderAssetSync.syncCompletedRender(
                 job,
                 request,
-                resolveDurationSeconds(job, request),
+                durationSeconds,
                 resolveResolution(request));
     }
 
@@ -309,9 +320,55 @@ public class SalesVideoJobService {
         return job.getProfile() != null ? job.getProfile().getTargetDurationSeconds() : null;
     }
 
+    /** Valida se o render atingiu duração comercial mínima para o perfil. */
+    private DurationValidation validateRenderDuration(SalesVideoJob job, Integer durationSeconds) {
+        if (job.getJobType() != SalesVideoJobType.RENDER && job.getJobType() != SalesVideoJobType.RETRY) {
+            return DurationValidation.validResult();
+        }
+        Integer targetDuration = job.getProfile() != null ? job.getProfile().getTargetDurationSeconds() : null;
+        if (targetDuration == null || targetDuration <= 0 || durationSeconds == null || durationSeconds <= 0) {
+            return DurationValidation.validResult();
+        }
+        int minimumAcceptedDuration = minimumAcceptedDuration(targetDuration);
+        if (durationSeconds >= minimumAcceptedDuration) {
+            return DurationValidation.validResult();
+        }
+        return DurationValidation.invalid("Render rejeitado: duração auditada de " + durationSeconds
+                + "s ficou abaixo do mínimo comercial de " + minimumAcceptedDuration
+                + "s para perfil alvo de " + targetDuration
+                + "s. Gere uma sequência de clipes ou novo render antes de publicar.");
+    }
+
+    /** Calcula a menor duracao aceita com tolerancia para arredondamentos do provider. */
+    private int minimumAcceptedDuration(int targetDuration) {
+        int toleranceSeconds = Math.max(2, (int) Math.ceil(targetDuration * 0.10));
+        return Math.max(1, targetDuration - toleranceSeconds);
+    }
+
+    /** Define a mensagem do evento de conclusão respeitando bloqueios comerciais. */
+    private String completionMessage(JobCompletionRequest request, DurationValidation durationValidation) {
+        if (!durationValidation.valid()) {
+            return durationValidation.message();
+        }
+        return request.getMessage();
+    }
+
+    /** Define os detalhes do evento de conclusão respeitando bloqueios comerciais. */
+    private String completionDetails(JobCompletionRequest request, DurationValidation durationValidation) {
+        if (!durationValidation.valid()) {
+            return durationValidation.message();
+        }
+        return request.getDetailsJson();
+    }
+
     /** Extrai a resolução auditada do metadata do worker quando disponível. */
     private String resolveResolution(JobCompletionRequest request) {
         return readStringField(request.getMetadataJson(), "resolution");
+    }
+
+    /** Normaliza a URL HLS/DASH publicavel recebida do pipeline de midia. */
+    private String normalizeStreamPlaybackUrl(String streamPlaybackUrl) {
+        return StringUtils.hasText(streamPlaybackUrl) ? streamPlaybackUrl.trim() : null;
     }
 
     /** Lê um campo numérico simples de um payload JSON de metadata. */
@@ -432,6 +489,19 @@ public class SalesVideoJobService {
         if (syncable.contains(status)) {
             job.getProfile().setStatus(status);
             profileRepository.save(job.getProfile());
+        }
+    }
+
+    /** Resultado interno da validacao de duracao do render. */
+    private record DurationValidation(boolean valid, String message) {
+        /** Cria resultado valido sem mensagem de bloqueio. */
+        private static DurationValidation validResult() {
+            return new DurationValidation(true, null);
+        }
+
+        /** Cria resultado invalido com a causa do bloqueio. */
+        private static DurationValidation invalid(String message) {
+            return new DurationValidation(false, message);
         }
     }
 }

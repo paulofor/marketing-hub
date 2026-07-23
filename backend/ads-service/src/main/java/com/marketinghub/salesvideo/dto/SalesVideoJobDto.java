@@ -22,6 +22,7 @@ public class SalesVideoJobDto {
     private SalesVideoExecutionMode executionMode;
     private String providerName;
     private String providerJobId;
+    private String streamPlaybackUrl;
     private SalesVideoJobType jobType;
     private SalesVideoStatus status;
     private Integer retryAttempt;

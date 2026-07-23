@@ -139,6 +139,7 @@ paths:
     post:
       tags: [InternalVideoJobs]
       summary: Marca job como concluído
+      description: Para jobs de render, o backend valida a duração auditada informada em `metadataJson.duration_seconds` contra `targetDurationSeconds` do perfil. Render curto demais é registrado como `VIDEO_FAILED` com `failureCode=RENDER_DURATION_SHORT`, mesmo quando o provider terminou tecnicamente.
       parameters:
         - $ref: '#/components/parameters/JobId'
       requestBody:
@@ -463,6 +464,9 @@ components:
         executionMode: { $ref: '#/components/schemas/SalesVideoExecutionMode' }
         providerName: { type: string }
         providerJobId: { type: string }
+        streamPlaybackUrl:
+          type: string
+          description: URL publicavel de streaming adaptativo, preferencialmente HLS/DASH, usada pelo player comercial antes do MP4 bruto.
         jobType: { $ref: '#/components/schemas/SalesVideoJobType' }
         status: { $ref: '#/components/schemas/SalesVideoStatus' }
         retryAttempt: { type: integer }
@@ -564,8 +568,13 @@ components:
       properties:
         requestedBy: { type: string }
         providerFamily: { $ref: '#/components/schemas/SalesVideoProviderFamily' }
-        providerName: { type: string }
+        providerName:
+          type: string
+          description: Provider concreto solicitado. Para hero PDE, usar preferencialmente `LUMA_RAY_3_2`; `KLING_3_0` como alternativa de teste; `VEO` apenas para teaser/cenas curtas.
         executionMode: { $ref: '#/components/schemas/SalesVideoExecutionMode' }
+        metadataJson:
+          type: string
+          description: Plano comercial/operacional do render. Para hero PDE deve registrar estratégia de provider, montagem Dor -> Resultado -> Mecanismo -> CTA, duração mínima aceita e exigência de `streamPlaybackUrl` HLS.
 
     JobHeartbeatRequest:
       type: object
@@ -600,7 +609,12 @@ components:
         posterAssetId: { type: integer, format: int64 }
         vttAssetId: { type: integer, format: int64 }
         providerJobId: { type: string }
-        metadataJson: { type: string }
+        streamPlaybackUrl:
+          type: string
+          description: URL publicavel de streaming adaptativo gerada pelo pipeline de midia para o player comercial.
+        metadataJson:
+          type: string
+          description: Metadata estruturado do worker. Para render, deve incluir `duration_seconds` e `resolution` para auditoria comercial do vídeo.
         message: { type: string }
         detailsJson: { type: string }
         scriptResult:

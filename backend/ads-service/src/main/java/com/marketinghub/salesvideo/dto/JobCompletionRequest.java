@@ -14,6 +14,7 @@ public class JobCompletionRequest {
     private Long posterAssetId;
     private Long vttAssetId;
     private String providerJobId;
+    private String streamPlaybackUrl;
     private String metadataJson;
     private BigDecimal costUsd;
     private String message;

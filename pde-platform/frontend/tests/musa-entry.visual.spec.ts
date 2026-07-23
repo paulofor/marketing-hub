@@ -47,14 +47,14 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
     }),
   ).toBeVisible();
   await expect(page.getByText('Diagnóstico de Presença')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Enviar diagnóstico/i })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeDisabled();
   await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Falta acabamento' }).click();
   await page.getByRole('button', { name: 'Elegância discreta' }).click();
   await page.getByRole('button', { name: 'Pouco tempo' }).click();
   await page.getByRole('button', { name: 'Cabelo e pele' }).click();
-  await expect(page.getByRole('button', { name: /Enviar diagnóstico/i })).toBeEnabled();
-  await page.getByRole('button', { name: /Enviar diagnóstico/i }).click();
+  await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeEnabled();
+  await page.getByRole('button', { name: /Ver meu primeiro passo/i }).click();
   await expect(page.getByRole('heading', { name: /Seu plano começa reduzindo ruído visual/i })).toBeVisible();
   await expect(page.getByText(/Quer saber exatamente como executar esse plano/i)).toBeVisible();
   await page.getByPlaceholder('seuemail@exemplo.com').fill('teste+diagnostico@sandbox.local');
@@ -119,7 +119,7 @@ test('continua aguardando diagnostico publico quando IA demora mais que 20 segun
   await page.getByRole('button', { name: 'Elegância discreta' }).click();
   await page.getByRole('button', { name: 'Pouco tempo' }).click();
   await page.getByRole('button', { name: 'Roupa que já tenho' }).click();
-  await page.getByRole('button', { name: /Enviar diagnóstico/i }).click();
+  await page.getByRole('button', { name: /Ver meu primeiro passo/i }).click();
 
   await expect(page.getByRole('button', { name: /Montando seu plano/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Seu plano chegou sem travar a tela/i })).toBeVisible();

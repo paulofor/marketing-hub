@@ -53,10 +53,10 @@ class LumaRayVideoProviderTest {
                     {
                       "id": "generation-%d",
                       "state": "completed",
-                      "output": [{"url": "%s/download/scene-%d.mp4"}],
+                      "output": [{"url": "%s/download/scene-%d.mp4?X-Amz-Expires=3600&X-Amz-Signature=assinatura-%d"}],
                       "model": "ray-3.2"
                     }
-                    """.formatted(i, server.url("/").toString().replaceAll("/$", ""), i)));
+                    """.formatted(i, server.url("/").toString().replaceAll("/$", ""), i, i)));
             server.enqueue(mp4Response());
         }
         LumaRayVideoProvider provider = new LumaRayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
@@ -79,6 +79,13 @@ class LumaRayVideoProviderTest {
                 .contains("\"type\":\"video\"")
                 .contains("\"aspect_ratio\":\"9:16\"")
                 .contains("Método MUSA");
+        RecordedRequest firstPoll = server.takeRequest();
+        assertThat(firstPoll.getPath()).isEqualTo("/v1/generations/generation-1");
+        assertThat(firstPoll.getHeader("Authorization")).isEqualTo("Bearer luma-test-key");
+        RecordedRequest firstDownload = server.takeRequest();
+        assertThat(firstDownload.getPath())
+                .isEqualTo("/download/scene-1.mp4?X-Amz-Expires=3600&X-Amz-Signature=assinatura-1");
+        assertThat(firstDownload.getHeader("Authorization")).isNull();
     }
 
     /** Deve falhar cedo quando a chave Luma não estiver configurada. */

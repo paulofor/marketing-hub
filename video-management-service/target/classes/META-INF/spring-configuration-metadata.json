@@ -21,6 +21,11 @@
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Providers"
     },
     {
+      "name": "video.providers.post-production",
+      "type": "com.marketinghub.videomanagement.config.VideoManagementProperties$PostProduction",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Providers"
+    },
+    {
       "name": "video.providers.real",
       "type": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real",
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Providers"
@@ -163,6 +168,42 @@
       "type": "java.lang.Integer",
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
       "defaultValue": 3
+    },
+    {
+      "name": "video.providers.post-production.accepted-names",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Nomes que identificam jobs de acabamento comercial local.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$PostProduction"
+    },
+    {
+      "name": "video.providers.post-production.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$PostProduction",
+      "defaultValue": false
+    },
+    {
+      "name": "video.providers.post-production.espeak-path",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$PostProduction",
+      "defaultValue": "espeak-ng"
+    },
+    {
+      "name": "video.providers.post-production.espeak-voice",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$PostProduction",
+      "defaultValue": "pt-br"
+    },
+    {
+      "name": "video.providers.post-production.ffmpeg-path",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$PostProduction",
+      "defaultValue": "ffmpeg"
+    },
+    {
+      "name": "video.providers.post-production.font-file",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$PostProduction",
+      "defaultValue": "\/usr\/share\/fonts\/truetype\/dejavu\/DejaVuSans-Bold.ttf"
     },
     {
       "name": "video.providers.real.accepted-names",

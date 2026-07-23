@@ -3,6 +3,7 @@ package com.marketinghub.experiment.video.web;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
 import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
+import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
@@ -55,6 +56,14 @@ public class ExperimentVideoAssetController {
             @PathVariable Long experimentId,
             @Valid @RequestBody RequestPlannedExperimentVideoRenderRequest request) {
         return service.requestPlannedRenders(experimentId, request);
+    }
+
+    /** Cria jobs de pós-produção para vídeos prontos virarem peças comerciais finalizadas. */
+    @PostMapping("/post-production-requests")
+    public List<ExperimentVideoAssetDto> requestPostProduction(
+            @PathVariable Long experimentId,
+            @Valid @RequestBody RequestExperimentVideoPostProductionRequest request) {
+        return service.requestPostProduction(experimentId, request);
     }
 
     /** Atualiza status, revisão e vínculos de um vídeo comercial do experimento. */

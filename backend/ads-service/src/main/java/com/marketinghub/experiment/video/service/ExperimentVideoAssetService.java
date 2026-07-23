@@ -12,6 +12,7 @@ import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
 import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
+import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.media.Asset;
@@ -25,16 +26,21 @@ import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.LandingVideoSlot;
+import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoKind;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
+import com.marketinghub.salesvideo.SalesVideoScript;
+import com.marketinghub.salesvideo.SalesVideoScriptStatus;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.ApproveSalesVideoScriptRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.salesvideo.service.SalesVideoJobService;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
@@ -54,6 +60,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ExperimentVideoAssetService {
     private static final int LANDING_HERO_LUMA_TARGET_SECONDS = 30;
+    private static final String POST_PRODUCTION_PROVIDER = "MUSA_POST_PRODUCTION";
 
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
             .findAndAddModules()
@@ -68,6 +75,7 @@ public class ExperimentVideoAssetService {
     private final ProductRepository productRepository;
     private final LandingPageRepository landingPageRepository;
     private final SalesVideoService salesVideoService;
+    private final SalesVideoJobService salesVideoJobService;
     private final SalesVideoProductionCostCalculator costCalculator;
 
     /** Inicializa o serviço com os repositórios dos vínculos de experimento e vídeo. */
@@ -80,6 +88,7 @@ public class ExperimentVideoAssetService {
                                        ProductRepository productRepository,
                                        LandingPageRepository landingPageRepository,
                                        SalesVideoService salesVideoService,
+                                       SalesVideoJobService salesVideoJobService,
                                        SalesVideoProductionCostCalculator costCalculator) {
         this.repository = repository;
         this.experimentRepository = experimentRepository;
@@ -90,6 +99,7 @@ public class ExperimentVideoAssetService {
         this.productRepository = productRepository;
         this.landingPageRepository = landingPageRepository;
         this.salesVideoService = salesVideoService;
+        this.salesVideoJobService = salesVideoJobService;
         this.costCalculator = costCalculator;
     }
 
@@ -218,6 +228,26 @@ public class ExperimentVideoAssetService {
         }
         return plannedAssets.stream()
                 .map(videoAsset -> requestRenderForPlannedAsset(videoAsset, product, landingPageId, request))
+                .map(repository::save)
+                .map(this::toDto)
+                .toList();
+    }
+
+    /** Cria jobs de pós-produção para ativos prontos sem perder o vídeo bruto usado como fonte. */
+    @Transactional
+    public List<ExperimentVideoAssetDto> requestPostProduction(
+            Long experimentId,
+            RequestExperimentVideoPostProductionRequest request) {
+        ensureExperiment(experimentId);
+        List<ExperimentVideoAsset> assets = repository.findByExperimentIdOrderByCreatedAtDesc(experimentId)
+                .stream()
+                .filter(this::requiresPostProductionJob)
+                .toList();
+        if (assets.isEmpty()) {
+            return List.of();
+        }
+        return assets.stream()
+                .map(videoAsset -> requestPostProductionForReadyAsset(videoAsset, request))
                 .map(repository::save)
                 .map(this::toDto)
                 .toList();
@@ -467,6 +497,47 @@ public class ExperimentVideoAssetService {
                         || videoAsset.getStatus() == ExperimentVideoStatus.FAILED);
     }
 
+    /** Identifica vídeos brutos prontos que ainda precisam de acabamento comercial. */
+    private boolean requiresPostProductionJob(ExperimentVideoAsset videoAsset) {
+        SalesVideoJob currentJob = videoAsset.getSalesVideoJob();
+        if (currentJob != null
+                && currentJob.getJobType() == SalesVideoJobType.POST_PRODUCTION
+                && currentJob.getStatus() == SalesVideoStatus.VIDEO_READY) {
+            return false;
+        }
+        if (currentJob != null
+                && currentJob.getJobType() == SalesVideoJobType.POST_PRODUCTION
+                && currentJob.getStatus() == SalesVideoStatus.VIDEO_FAILED) {
+            return true;
+        }
+        return videoAsset.getStatus() == ExperimentVideoStatus.READY
+                && StringUtils.hasText(videoAsset.getAssetUrl())
+                && videoAsset.getSalesVideoProfile() != null;
+    }
+
+    /** Solicita a finalização com voz, legenda e trilha usando o vídeo pronto como fonte. */
+    private ExperimentVideoAsset requestPostProductionForReadyAsset(
+            ExperimentVideoAsset videoAsset,
+            RequestExperimentVideoPostProductionRequest request) {
+        SalesVideoProfile profile = videoAsset.getSalesVideoProfile();
+        SalesVideoJob job = salesVideoJobService.createJob(
+                profile,
+                resolveApprovedScript(profile),
+                SalesVideoJobType.POST_PRODUCTION,
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                POST_PRODUCTION_PROVIDER,
+                request.requestedBy().trim(),
+                Optional.ofNullable(request.executionMode()).orElse(SalesVideoExecutionMode.TEST));
+        job.setMetadataJson(buildPostProductionMetadata(videoAsset, request));
+        SalesVideoJob savedJob = jobRepository.save(job);
+        videoAsset.setSalesVideoJob(savedJob);
+        videoAsset.setProvider(POST_PRODUCTION_PROVIDER);
+        videoAsset.setModel(POST_PRODUCTION_PROVIDER);
+        videoAsset.setStatus(ExperimentVideoStatus.GENERATING);
+        videoAsset.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+        return videoAsset;
+    }
+
     /** Monta um resumo auditável do prompt enviado ao fluxo VEO. */
     private String buildVeoPromptSnapshot(RequestExperimentVeoVideoRequest request) {
         return """
@@ -569,6 +640,75 @@ public class ExperimentVideoAssetService {
             strategy.put("salesJourney", "reduzir incerteza e esforco percebido");
         }
         return strategy;
+    }
+
+    /** Monta metadados para o worker finalizar o vídeo bruto em peça pronta para venda. */
+    private String buildPostProductionMetadata(ExperimentVideoAsset videoAsset,
+                                               RequestExperimentVideoPostProductionRequest request) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("artifactType", "experiment.videoPostProductionRequest.v1");
+        metadata.put("experimentId", videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null);
+        metadata.put("experimentVideoAssetId", videoAsset.getId());
+        metadata.put("sourceVideoUrl", trimToNull(videoAsset.getAssetUrl()));
+        metadata.put("sourceAssetId", videoAsset.getAsset() != null ? videoAsset.getAsset().getId() : null);
+        metadata.put("sourceProvider", trimToNull(videoAsset.getProvider()));
+        metadata.put("sourceModel", trimToNull(videoAsset.getModel()));
+        metadata.put("voiceOverScript", Optional.ofNullable(trimToNull(request.voiceOverScript()))
+                .orElse(defaultMusaVoiceOver(videoAsset)));
+        metadata.put("captionText", Optional.ofNullable(trimToNull(request.captionText()))
+                .orElse(defaultMusaCaption(videoAsset)));
+        metadata.put("soundtrackStyle", Optional.ofNullable(trimToNull(request.soundtrackStyle()))
+                .orElse("trilha leve, elegante e discreta, baixa o suficiente para a voz vender"));
+        metadata.put("outputVariant", Optional.ofNullable(trimToNull(request.outputVariant()))
+                .orElse("LANDING_HERO_FINAL"));
+        metadata.put("createShortDerivatives", Boolean.TRUE.equals(request.createShortDerivatives()));
+        metadata.put("commercialStrategy", Map.of(
+                "funnelRole", "FINISHED_SALES_VIDEO",
+                "recommendedUse", "landing hero com voz off, legenda grande e CTA; derivar cortes para Ads/Reels",
+                "salesJourney", "dor reconhecivel -> mecanismo simples -> microexperiencia -> CTA"));
+        try {
+            return OBJECT_MAPPER.writeValueAsString(metadata);
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "video post-production metadata serialization failed",
+                    ex);
+        }
+    }
+
+    /** Define uma voz off padrão aderente ao PDE MUSA quando a tela não informar texto próprio. */
+    private String defaultMusaVoiceOver(ExperimentVideoAsset videoAsset) {
+        String cta = videoAsset.getExperiment() != null && StringUtils.hasText(videoAsset.getExperiment().getPrimaryCta())
+                ? videoAsset.getExperiment().getPrimaryCta()
+                : "Ver meu plano MUSA de 7 dias";
+        return """
+                Você se arruma, olha no espelho e ainda sente que falta presença?
+                O Método MUSA te guia por microações simples para reduzir ruído visual,
+                escolher melhor cores, acabamento e peça-sinal, usando o que você já tem.
+                Em sete dias, você entende um caminho mais elegante, marcante e possível.
+                %s.
+                """.formatted(cta).trim();
+    }
+
+    /** Define a legenda principal para vender mesmo quando a usuária assistir sem áudio. */
+    private String defaultMusaCaption(ExperimentVideoAsset videoAsset) {
+        String cta = videoAsset.getExperiment() != null && StringUtils.hasText(videoAsset.getExperiment().getPrimaryCta())
+                ? videoAsset.getExperiment().getPrimaryCta()
+                : "Ver meu plano MUSA de 7 dias";
+        return "Pare de se sentir comum no espelho. Veja seu plano MUSA de 7 dias. " + cta + ".";
+    }
+
+    /** Seleciona o roteiro aprovado mais recente para manter o job de pós-produção auditável. */
+    private SalesVideoScript resolveApprovedScript(SalesVideoProfile profile) {
+        if (profile == null || profile.getScripts() == null) {
+            return null;
+        }
+        return profile.getScripts().stream()
+                .filter(script -> script.getStatus() == SalesVideoScriptStatus.APPROVED)
+                .max((left, right) -> Integer.compare(
+                        Optional.ofNullable(left.getVersion()).orElse(0),
+                        Optional.ofNullable(right.getVersion()).orElse(0)))
+                .orElse(null);
     }
 
     /** Resolve o custo em USD informado ou calculado pela tabela oficial do provider. */

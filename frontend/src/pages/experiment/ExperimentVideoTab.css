@@ -79,7 +79,37 @@
   text-align: center;
 }
 
+.experiment-video-strategy-panel {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.experiment-video-strategy-panel__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.experiment-video-strategy-panel__metrics span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--bs-body-bg);
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
 @media (max-width: 767.98px) {
+  .experiment-video-strategy-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .experiment-video-preview-card__sales-page {
     min-height: 28rem;
   }

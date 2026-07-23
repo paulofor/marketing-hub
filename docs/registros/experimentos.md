@@ -6047,3 +6047,11 @@
 - foi feito: criado fluxo para solicitar render dos vídeos planejados preservando os IDs dos ativos, criando profile/script/job no módulo SalesVideo e marcando os ativos como `GENERATING`.
 - foi feito: a aba Vídeo do experimento passou a oferecer a ação `Renderizar planejados`, com execução em modo `TEST` e provider/model vindos do ativo planejado.
 - impacto comercial esperado: destravar o hero de vídeo do MUSA sem perder rastreabilidade de criativo, custo, job e aprendizado por clipe.
+
+## 2026-07-23 — PED/MUSA: estratégia híbrida de vídeos para venda
+
+- decisão comercial: o vídeo hero da landing deve ser uma peça de venda completa de aproximadamente 30s, atravessando dor, mecanismo, desejo e CTA; vídeos de 10-15s devem ser derivados para mídia paga e não substitutos do hero.
+- causa-raiz tratada: durações curtas em assets `LANDING_HERO` com Luma podem vir de limite legado do provider VEO; o backend agora normaliza esse caso para alvo comercial de 30s ao solicitar render planejado.
+- foi feito: os metadados do render planejado passaram a registrar `commercialStrategy`, com papel no funil, uso recomendado, duração hero e derivados curtos recomendados.
+- foi feito: a aba Vídeo passou a mostrar um painel de estratégia com contagem de hero pronto, hero aprovado e cortes curtos, além de classificar cada asset por papel no funil e uso recomendado.
+- impacto comercial esperado: aprovar um hero principal para conversão na landing e usar os demais vídeos como variações/retargeting/base de cortes, aumentando clareza de decisão e evitando otimização apenas por clipe curto.

@@ -82,6 +82,7 @@ paths:
   /api/experiments/{experimentId}/video-assets/planned-render-requests:
     post:
       summary: Solicita render dos vídeos planejados preservando os ativos existentes
+      description: Para ativos `LANDING_HERO` com Luma, o backend normaliza duração curta legada para hero comercial de 30s e registra metadados de estratégia híbrida, recomendando derivados de 10-15s para mídia paga.
       parameters:
         - name: experimentId
           in: path

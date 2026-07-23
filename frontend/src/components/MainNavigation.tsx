@@ -20,6 +20,7 @@ import {
   Image,
   Instagram,
   MessageSquare,
+  Video,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -114,6 +115,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Campanhas",
     items: [
       { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
+      { to: "/videos", label: "Vídeos", icon: Video },
       { to: "/ai/image-generator", label: "Gerador de Imagens", icon: Image },
       {
         to: "/facebook-campaigns/ready",

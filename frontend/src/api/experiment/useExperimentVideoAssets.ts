@@ -74,3 +74,15 @@ export function useExperimentVideoAssets(experimentId?: string | number) {
     },
   });
 }
+
+export function useAllExperimentVideoAssets() {
+  return useQuery({
+    queryKey: ["experiment-video-assets", "all"],
+    queryFn: async () => {
+      const { data } = await axios.get<ExperimentVideoAsset[]>(
+        "/api/experiments/video-assets",
+      );
+      return data;
+    },
+  });
+}

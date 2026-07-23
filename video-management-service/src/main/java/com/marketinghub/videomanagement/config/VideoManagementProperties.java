@@ -65,7 +65,52 @@ public class VideoManagementProperties {
         private Real real = new Real();
 
         @NotNull
+        private Luma luma = new Luma();
+
+        @NotNull
         private Veo veo = new Veo();
+    }
+
+    @Getter
+    @Setter
+    public static class Luma {
+        private boolean enabled = false;
+
+        /**
+         * Nomes que identificam jobs destinados ao adapter direto da Luma Agents.
+         */
+        @NotNull
+        private List<String> acceptedNames = new ArrayList<>(List.of("LUMA_RAY_3_2", "LUMA", "RAY_3_2"));
+
+        /**
+         * Base URL oficial da Luma Agents API.
+         */
+        @NotNull
+        private URI baseUrl = URI.create("https://api.lumalabs.ai");
+
+        /**
+         * Chave da Luma Agents API usada apenas pelo módulo executor de vídeo.
+         */
+        private String apiKey;
+
+        /**
+         * Caminho opcional para a chave Luma montada como secret em arquivo.
+         */
+        private String apiKeyFile;
+
+        private String model = "ray-3.2";
+        private String aspectRatio = "9:16";
+        private String resolution = "720p";
+        private String duration = "10s";
+        private int sceneCount = 3;
+
+        @NotNull
+        private Duration pollInterval = Duration.ofSeconds(10);
+
+        @Min(1)
+        private int maxPollAttempts = 120;
+
+        private String ffmpegPath = "ffmpeg";
     }
 
     @Getter

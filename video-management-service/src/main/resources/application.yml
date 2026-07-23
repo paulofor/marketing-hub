@@ -14,6 +14,23 @@ video:
     backend-call-backoff: PT2S
     backend-call-max-attempts: 3
   providers:
+    luma:
+      enabled: false
+      accepted-names:
+        - LUMA_RAY_3_2
+        - LUMA
+        - RAY_3_2
+      base-url: https://api.lumalabs.ai
+      api-key: ${LUMA_AGENTS_API_KEY:${VIDEO_PROVIDERS_LUMA_API_KEY:}}
+      api-key-file: ${LUMA_API_KEY_FILE:}
+      model: ray-3.2
+      aspect-ratio: "9:16"
+      resolution: 720p
+      duration: 10s
+      scene-count: 3
+      poll-interval: PT10S
+      max-poll-attempts: 120
+      ffmpeg-path: ffmpeg
     real:
       enabled: false
       accepted-names:

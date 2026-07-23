@@ -139,6 +139,7 @@ paths:
     post:
       tags: [InternalVideoJobs]
       summary: Marca job como concluído
+      description: Para jobs de render, o backend valida a duração auditada informada em `metadataJson.duration_seconds` contra `targetDurationSeconds` do perfil. Render curto demais é registrado como `VIDEO_FAILED` com `failureCode=RENDER_DURATION_SHORT`, mesmo quando o provider terminou tecnicamente.
       parameters:
         - $ref: '#/components/parameters/JobId'
       requestBody:
@@ -600,7 +601,9 @@ components:
         posterAssetId: { type: integer, format: int64 }
         vttAssetId: { type: integer, format: int64 }
         providerJobId: { type: string }
-        metadataJson: { type: string }
+        metadataJson:
+          type: string
+          description: Metadata estruturado do worker. Para render, deve incluir `duration_seconds` e `resolution` para auditoria comercial do vídeo.
         message: { type: string }
         detailsJson: { type: string }
         scriptResult:

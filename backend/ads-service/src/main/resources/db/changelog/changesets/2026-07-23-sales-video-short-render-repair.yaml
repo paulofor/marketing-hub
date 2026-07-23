@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-23-sales-video-short-render-repair
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: sales_video_job
+        - tableExists:
+            tableName: sales_video_profile
+        - columnExists:
+            tableName: sales_video_job
+            columnName: metadata_json
+        - columnExists:
+            tableName: sales_video_profile
+            columnName: target_duration_seconds
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE sales_video_job j
+              JOIN sales_video_profile p ON p.id = j.profile_id
+              SET j.status = 'VIDEO_FAILED',
+                  j.failure_code = 'RENDER_DURATION_SHORT',
+                  j.failure_detail = CONCAT(
+                      'Render rejeitado por reparo historico: duracao auditada de ',
+                      CAST(JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.duration_seconds')) AS UNSIGNED),
+                      's ficou abaixo do minimo comercial para perfil alvo de ',
+                      p.target_duration_seconds,
+                      's. Gere uma sequencia de clipes ou novo render antes de publicar.'
+                  )
+              WHERE j.status = 'VIDEO_READY'
+                AND j.job_type = 'RENDER'
+                AND p.target_duration_seconds IS NOT NULL
+                AND p.target_duration_seconds > 0
+                AND JSON_VALID(j.metadata_json)
+                AND JSON_EXTRACT(j.metadata_json, '$.duration_seconds') IS NOT NULL
+                AND CAST(JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.duration_seconds')) AS UNSIGNED)
+                    < GREATEST(1, p.target_duration_seconds - GREATEST(2, CEIL(p.target_duration_seconds * 0.10)));
+
+              UPDATE sales_video_profile p
+              JOIN sales_video_job j ON j.profile_id = p.id
+              SET p.status = 'VIDEO_FAILED'
+              WHERE p.status = 'VIDEO_READY'
+                AND j.status = 'VIDEO_FAILED'
+                AND j.failure_code = 'RENDER_DURATION_SHORT';

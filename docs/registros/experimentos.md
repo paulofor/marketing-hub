@@ -1,3 +1,12 @@
+## 2026-07-23 — MUSA: vídeo hero em 4 clipes e bloqueio de render curto
+
+- causa-raiz confirmada via MCP: o job `20430` do perfil `Vídeo hero PDE v4 - Método MUSA` estava `VIDEO_READY`, mas o metadata do render registrava `duration_seconds=8` enquanto o perfil tinha `target_duration_seconds=30`.
+- decisão comercial: vídeo VEO de 8s deve ser usado como clipe/teaser, não como vídeo principal de venda quando o roteiro precisa concluir Dor -> Resultado -> Mecanismo -> CTA.
+- foi feito: criada a especificação `docs/marketing/musa-video-hero-4-clipes.md` com quatro clipes de 8s para formar um criativo final de aproximadamente 32s.
+- foi feito: o backend passou a bloquear conclusão de render curto demais, marcando o job como `VIDEO_FAILED` com `failureCode=RENDER_DURATION_SHORT` quando a duração auditada não atingir a tolerância comercial do perfil.
+- foi feito: criado changeset incremental para reparar jobs históricos já marcados como prontos apesar de duração curta, incluindo o caso do job `20430`.
+- prevenção de recorrência: teste unitário cobre perfil de 30s recebendo render de 8s e impede sincronização/publicação do ativo como vídeo pronto.
+
 ## 2026-07-21 — PDE/MUSA: migração operacional de versão da experiência
 
 - causa-raiz confirmada: a coluna `experience_version` foi adicionada ao changelog do backend principal, mas a tabela `pde_funnel_event` pertence ao schema operacional do `pde-platform`; por isso o deploy do PDE passou a consultar/gravar a coluna antes de ela existir no banco efetivo.

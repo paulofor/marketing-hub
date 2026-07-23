@@ -515,6 +515,9 @@ databaseChangeLog:
       file: changesets/2037-02-15-sales-video-hardening.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-23-sales-video-short-render-repair.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2037-04-17-sales-video-compliance-governance.yaml
       relativeToChangelogFile: true
   - include:

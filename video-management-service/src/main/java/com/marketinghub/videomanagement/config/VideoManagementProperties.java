@@ -86,7 +86,7 @@ public class VideoManagementProperties {
          * Base URL oficial da Luma Agents API.
          */
         @NotNull
-        private URI baseUrl = URI.create("https://api.lumalabs.ai");
+        private URI baseUrl = URI.create("https://agents.lumalabs.ai");
 
         /**
          * Chave da Luma Agents API usada apenas pelo módulo executor de vídeo.

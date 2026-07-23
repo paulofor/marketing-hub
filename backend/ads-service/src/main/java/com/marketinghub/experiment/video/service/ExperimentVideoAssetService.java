@@ -28,6 +28,7 @@ import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoKind;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
+import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.ApproveSalesVideoScriptRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
@@ -207,8 +208,7 @@ public class ExperimentVideoAssetService {
         Long landingPageId = resolveLandingPageId(experimentId);
         List<ExperimentVideoAsset> plannedAssets = repository.findByExperimentIdOrderByCreatedAtDesc(experimentId)
                 .stream()
-                .filter(videoAsset -> videoAsset.getStatus() == ExperimentVideoStatus.PLANNED)
-                .filter(videoAsset -> videoAsset.getSalesVideoJob() == null)
+                .filter(this::requiresRenderJob)
                 .toList();
         if (plannedAssets.isEmpty()) {
             return List.of();
@@ -431,6 +431,18 @@ public class ExperimentVideoAssetService {
             videoAsset.setCost(estimatedCost);
         }
         return videoAsset;
+    }
+
+    /** Identifica ativos planejados ou falhados que podem receber novo job sem duplicar o ativo. */
+    private boolean requiresRenderJob(ExperimentVideoAsset videoAsset) {
+        if (videoAsset.getStatus() == ExperimentVideoStatus.PLANNED && videoAsset.getSalesVideoJob() == null) {
+            return true;
+        }
+        SalesVideoJob currentJob = videoAsset.getSalesVideoJob();
+        return currentJob != null
+                && currentJob.getStatus() == SalesVideoStatus.VIDEO_FAILED
+                && (videoAsset.getStatus() == ExperimentVideoStatus.GENERATING
+                        || videoAsset.getStatus() == ExperimentVideoStatus.FAILED);
     }
 
     /** Monta um resumo auditável do prompt enviado ao fluxo VEO. */

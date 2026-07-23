@@ -203,6 +203,7 @@ public class SalesVideoJobService {
         }
         jobRepository.save(job);
         syncExperimentVideoAsset(job, request, durationSeconds);
+        syncFailedExperimentVideoAsset(job, completionFailureRequest(request));
         maybeUpdateProfileStatus(job, finalStatus);
         registerEvent(job, SalesVideoJobEventType.COMPLETED, previous, finalStatus,
                 completionMessage(request, durationValidation), completionDetails(request, durationValidation));
@@ -220,6 +221,7 @@ public class SalesVideoJobService {
         job.setFailureDetail(request.getFailureDetail());
         job.setFinishedAt(Instant.now());
         jobRepository.save(job);
+        syncFailedExperimentVideoAsset(job, request);
         maybeUpdateProfileStatus(job, newStatus);
         registerEvent(job, SalesVideoJobEventType.FAILED, previous, newStatus,
                 request.getMessage(), request.getFailureDetail());
@@ -309,6 +311,25 @@ public class SalesVideoJobService {
                 request,
                 durationSeconds,
                 resolveResolution(request));
+    }
+
+    /** Notifica a porta de sincronizacao quando um render vinculado falha definitivamente. */
+    private void syncFailedExperimentVideoAsset(SalesVideoJob job, JobFailureRequest request) {
+        if (job.getId() == null || job.getJobType() != SalesVideoJobType.RENDER
+                || job.getStatus() != SalesVideoStatus.VIDEO_FAILED) {
+            return;
+        }
+        completedRenderAssetSync.syncFailedRender(job, request);
+    }
+
+    /** Converte uma conclusao bloqueada em payload de falha para sincronizacao externa. */
+    private JobFailureRequest completionFailureRequest(JobCompletionRequest request) {
+        JobFailureRequest failureRequest = new JobFailureRequest();
+        failureRequest.setStatus(SalesVideoStatus.VIDEO_FAILED);
+        failureRequest.setFailureCode(SHORT_DURATION_FAILURE_CODE);
+        failureRequest.setFailureDetail(request.getDetailsJson());
+        failureRequest.setMessage(request.getMessage());
+        return failureRequest;
     }
 
     /** Extrai a duração auditada do metadata do worker quando disponível. */

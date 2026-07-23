@@ -8,6 +8,7 @@ import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
+import com.marketinghub.salesvideo.dto.JobFailureRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
@@ -142,6 +143,9 @@ class SalesVideoJobServiceTest {
                 org.mockito.Mockito.any(),
                 org.mockito.Mockito.any(),
                 org.mockito.Mockito.any());
+        verify(completedRenderAssetSync).syncFailedRender(
+                org.mockito.Mockito.eq(job),
+                org.mockito.Mockito.any(JobFailureRequest.class));
     }
 
     /** Aceita render quando a duração auditada atende a tolerância comercial do perfil. */
@@ -176,5 +180,27 @@ class SalesVideoJobServiceTest {
                 org.mockito.Mockito.eq(request),
                 org.mockito.Mockito.eq(28),
                 org.mockito.Mockito.eq("720p"));
+    }
+
+    /** Propaga falha de render para ativos comerciais vinculados ao job. */
+    @Test
+    void shouldSyncFailedRenderWithExperimentVideoAssets() {
+        SalesVideoJob job = SalesVideoJob.builder()
+                .id(20431L)
+                .jobType(SalesVideoJobType.RENDER)
+                .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                .status(SalesVideoStatus.VIDEO_PROCESSING)
+                .build();
+        JobFailureRequest request = new JobFailureRequest();
+        request.setStatus(SalesVideoStatus.VIDEO_FAILED);
+        request.setFailureCode("VIDEO_MODULE_ERROR");
+        request.setFailureDetail("404 Not Found from POST https://agents.lumalabs.ai/v1/generations");
+        given(jobRepository.findById(20431L)).willReturn(Optional.of(job));
+        given(jobRepository.save(job)).willReturn(job);
+
+        SalesVideoJobDto result = service.fail(20431L, request);
+
+        assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
+        verify(completedRenderAssetSync).syncFailedRender(job, request);
     }
 }

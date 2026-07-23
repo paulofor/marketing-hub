@@ -93,6 +93,15 @@ class LumaRayVideoProviderTest {
                 .hasMessageContaining("LUMA_AGENTS_API_KEY");
     }
 
+    /** Mantem o host oficial da Luma Agents como padrao para evitar chamadas ao contrato legado. */
+    @Test
+    void shouldUseOfficialLumaAgentsBaseUrlByDefault() {
+        VideoManagementProperties properties = new VideoManagementProperties();
+
+        assertThat(properties.getProviders().getLuma().getBaseUrl())
+                .isEqualTo(URI.create("https://agents.lumalabs.ai"));
+    }
+
     /** Cria uma resposta JSON para a Luma Agents API simulada. */
     private MockResponse json(String body) {
         return new MockResponse()

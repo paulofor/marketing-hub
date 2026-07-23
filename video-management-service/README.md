@@ -45,6 +45,7 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.providers.veo.model` | Modelo VEO usado para gerar vídeo. | `veo-3.1-generate-preview` |
 | `video.providers.veo.duration-seconds` | Duração numérica enviada ao VEO. | `8` |
 | `video.providers.luma.enabled` | Habilita o adapter direto Luma Ray 3.2. | `false` |
+| `video.providers.luma.base-url` | Host oficial da Luma Agents API. | `https://agents.lumalabs.ai` |
 | `video.providers.luma.api-key` | Chave Luma Agents usada pelo adapter Luma. | `${LUMA_AGENTS_API_KEY}` / `${VIDEO_PROVIDERS_LUMA_API_KEY}` |
 | `video.providers.luma.api-key-file` | Arquivo montado com a chave Luma. | `${LUMA_API_KEY_FILE}` |
 | `video.providers.luma.scene-count` | Quantidade de cenas Ray 3.2 para montagem do hero. | `3` |

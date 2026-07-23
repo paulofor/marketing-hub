@@ -25,6 +25,7 @@ import com.marketinghub.salesvideo.LandingVideoSlot;
 import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoProfile;
+import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
@@ -259,6 +260,70 @@ class ExperimentVideoAssetServiceTest {
         ArgumentCaptor<ExperimentVideoAsset> savedAsset = ArgumentCaptor.forClass(ExperimentVideoAsset.class);
         verify(repository).save(savedAsset.capture());
         assertThat(savedAsset.getValue().getId()).isEqualTo(5L);
+    }
+
+    /** Permite reprocessar o mesmo ativo quando o job anterior falhou no executor de vídeo. */
+    @Test
+    void shouldRequestNewRenderForAssetWithFailedSalesVideoJob() {
+        MarketNiche niche = MarketNiche.builder().id(31L).name("Beleza").build();
+        Experiment experiment = Experiment.builder().id(68L).niche(niche).name("Metodo MUSA").build();
+        Product product = Product.builder().id(3L).marketNiche(niche).build();
+        SalesVideoProfile oldProfile = SalesVideoProfile.builder().id(12L).product(product).build();
+        SalesVideoJob failedJob = SalesVideoJob.builder()
+                .id(20431L)
+                .profile(oldProfile)
+                .status(SalesVideoStatus.VIDEO_FAILED)
+                .build();
+        SalesVideoProfile newProfile = SalesVideoProfile.builder().id(13L).product(product).build();
+        SalesVideoJob newJob = SalesVideoJob.builder().id(20435L).profile(newProfile).build();
+        ExperimentVideoAsset asset = ExperimentVideoAsset.builder()
+                .id(5L)
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Aumentar clique no diagnostico")
+                .primaryMetric("diagnostico iniciado")
+                .script("Clipe 1 - Dor do espelho.")
+                .prompt("Video vertical 9:16, 8 segundos, estilo editorial realista.")
+                .provider("LUMA_RAY_3_2")
+                .model("luma-ray-3.2")
+                .durationSeconds(8)
+                .aspectRatio("9:16")
+                .status(ExperimentVideoStatus.GENERATING)
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .salesVideoProfile(oldProfile)
+                .salesVideoJob(failedJob)
+                .requiredForRelease(true)
+                .build();
+        SalesVideoProfileDto profileDto = new SalesVideoProfileDto();
+        profileDto.setId(13L);
+        SalesVideoJobDto jobDto = new SalesVideoJobDto();
+        jobDto.setId(20435L);
+        given(experimentRepository.findById(68L)).willReturn(Optional.of(experiment));
+        given(productRepository.findFirstByMarketNiche_IdOrderByCreatedAtDesc(31L)).willReturn(Optional.of(product));
+        given(landingPageRepository.findByExperimentId(68L)).willReturn(List.of());
+        given(repository.findByExperimentIdOrderByCreatedAtDesc(68L)).willReturn(List.of(asset));
+        given(salesVideoService.createProfile(any(), any())).willReturn(profileDto);
+        given(salesVideoService.requestRender(any(), any())).willReturn(jobDto);
+        given(profileRepository.findById(13L)).willReturn(Optional.of(newProfile));
+        given(jobRepository.findById(20435L)).willReturn(Optional.of(newJob));
+        given(repository.save(any(ExperimentVideoAsset.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        List<ExperimentVideoAssetDto> result = service.requestPlannedRenders(
+                68L,
+                new RequestPlannedExperimentVideoRenderRequest(
+                        "time@marketinghub.io",
+                        SalesVideoExecutionMode.TEST,
+                        null,
+                        "editorial premium acessivel",
+                        "natural",
+                        "pt-BR",
+                        true));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(5L);
+        assertThat(result.get(0).status()).isEqualTo(ExperimentVideoStatus.GENERATING);
+        assertThat(result.get(0).salesVideoProfileId()).isEqualTo(13L);
+        assertThat(result.get(0).salesVideoJobId()).isEqualTo(20435L);
     }
 
     /** Garante que a landing de outro experimento não pode contaminar o aprendizado do funil atual. */

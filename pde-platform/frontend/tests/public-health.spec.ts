@@ -13,7 +13,7 @@ const defaultContract: Required<PublicHealthContract> = {
   requiredTexts: [
     'Sua imagem comunica a mulher que você quer ser vista como?',
     'Diagnóstico de Presença',
-    'Enviar diagnóstico',
+    'Ver meu primeiro passo',
   ],
   forbiddenTexts: [
     'Application error',

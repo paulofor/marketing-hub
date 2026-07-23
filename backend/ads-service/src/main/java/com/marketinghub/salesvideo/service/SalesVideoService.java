@@ -125,6 +125,11 @@ public class SalesVideoService {
         return jobService.listJobsByProfile(profileId);
     }
 
+    /** Lista todos os jobs de vídeo de um produto. */
+    public List<SalesVideoJobDto> listJobsByProduct(Long productId) {
+        return jobService.listJobsByProduct(productId);
+    }
+
     /** Consulta um job pelo identificador. */
     public SalesVideoJobDto getJob(Long jobId) {
         return jobService.getJob(jobId);

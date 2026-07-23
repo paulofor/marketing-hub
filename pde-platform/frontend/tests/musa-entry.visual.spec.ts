@@ -38,7 +38,7 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
     });
   });
 
-  await page.goto('/');
+  await page.goto('/?musa_video_variant=control');
 
   await expect(
     page.getByRole('heading', {
@@ -46,7 +46,7 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
       level: 1,
     }),
   ).toBeVisible();
-  await expect(page.getByText('Diagnóstico de Presença')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeDisabled();
   await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Falta acabamento' }).click();
@@ -112,7 +112,7 @@ test('continua aguardando diagnostico publico quando IA demora mais que 20 segun
     await route.fulfill({ json: pollRequests <= 14 ? pendingGuidance : completedGuidance });
   });
 
-  await page.goto('/');
+  await page.goto('/?musa_video_variant=control');
 
   await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Falta acabamento' }).click();
@@ -145,4 +145,17 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
   await page.waitForTimeout(250);
 
   expect(trackedEvents).toBe(0);
+});
+
+test('exibe video no topo somente na variante B do diagnostico publico', async ({ page }) => {
+  await page.goto('/?musa_video_variant=video');
+
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Veja em poucos segundos/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Começar diagnóstico/i })).toBeVisible();
+
+  await page.goto('/?musa_video_variant=control');
+
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Sua imagem comunica a mulher/i })).toBeVisible();
 });

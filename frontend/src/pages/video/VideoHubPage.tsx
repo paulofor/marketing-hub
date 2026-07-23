@@ -17,6 +17,7 @@ import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfile
 import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSalesVideoScript";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
+import { useAsset } from "../../api/media/useAsset";
 import { useTenantContext } from "../../utils/tenantContext";
 import "./VideoHubPage.css";
 
@@ -49,14 +50,14 @@ const DEFAULT_STAGES: VideoStage[] = [
     title: "Roteiro",
     status: "DRAFT",
     content:
-      "Antes de mudar roupa, maquiagem ou postura, você precisa entender uma coisa: sua imagem já está comunicando algo.\nO Mapa de Presença mostra qual mensagem você passa hoje e qual ajuste simples pode aproximar você da mulher que quer ser percebida.\nÉ uma leitura rápida, sem julgamento e feita para começar pelo Dia 1.\nClique em Descobrir o que minha imagem comunica hoje e veja seu primeiro mapa.",
+      "Você já se arrumou, olhou no espelho e sentiu que ainda faltava presença?\nNão é sobre comprar mais roupa. É sobre entender quais pequenos sinais deixam sua imagem comum, apagada ou desalinhada.\nO Método MUSA começa com um diagnóstico rápido para mostrar o que sua imagem comunica hoje e qual ajuste simples pode aproximar você da mulher elegante, segura e intencional que quer ser percebida.\nResponda agora e veja seu plano MUSA de 7 dias.",
   },
   {
     id: "creation",
     title: "Criação",
     status: "DRAFT",
     content:
-      "Formato recomendado: vertical 9:16 com corte seguro para mobile.\nCena 1: rosto confiante olhando para câmera, ambiente claro e sofisticado.\nCena 2: detalhes de roupa, postura e expressão, sem excesso de produção.\nCena 3: tela ou gesto apontando para o Mapa de Presença.\nLegenda fixa: \"Descubra o que sua imagem comunica hoje\".\nAsset final: arquivo versionado e vinculado à versão comercial do PDE no Marketing Hub.",
+      "Formato recomendado: vertical 9:16, 20 a 25 segundos, cortes rápidos e inspiradores.\nCena 1: mulher urbana em frente ao espelho, elegante sem ostentação, com luz editorial quente.\nCena 2: close em detalhe de acabamento: brinco, tecido, cabelo, botão, bolsa ou colar como peça-sinal.\nCena 3: gesto de retirar excesso visual e escolher uma combinação mais limpa.\nCena 4: postura final mais segura, expressão leve e confiante, sem antes/depois agressivo.\nLegenda fixa: \"Presença elegante começa com pequenos sinais\".\nAsset final: MP4 vertical vinculado ao perfil e publicado no slot hero do Clube MUSA.",
   },
   {
     id: "validation",
@@ -94,8 +95,11 @@ export default function VideoHubPage() {
   const selectedProduct = productList.find((product) => String(product.id) === selectedProductId);
   const selectedProfile = profileList.find((profile) => String(profile.id) === selectedProfileId);
   const latestJob = jobs?.[0];
+  const latestAssetId = latestJob?.assetId ?? undefined;
+  const { data: latestAsset } = useAsset(latestAssetId);
   const scriptStage = stages.find((stage) => stage.id === "script") ?? stages[2];
   const readyCount = stages.filter((stage) => stage.status === "READY").length;
+  const latestAssetUrl = latestAsset?.publicUrl ?? "";
 
   useEffect(() => {
     if (selectedProductId || productList.length === 0) {
@@ -301,6 +305,30 @@ export default function VideoHubPage() {
               roteiro aprovado e job dentro do Marketing Hub.
             </span>
           </div>
+
+          <section className="video-hub-page__watch">
+            <div className="video-hub-page__watch-copy">
+              <span className="video-hub-page__stage-kicker">Assistir</span>
+              <h2>Vídeo MUSA do diagnóstico</h2>
+              <p>
+                Quando o render terminar, o MP4 aparece aqui para revisão antes de entrar no funil.
+              </p>
+            </div>
+            <div className="video-hub-page__player">
+              {latestAssetUrl ? (
+                <video src={latestAssetUrl} controls poster={undefined} />
+              ) : (
+                <div className="video-hub-page__player-empty">
+                  <PlayCircle size={44} aria-hidden="true" />
+                  <strong>Vídeo final ainda não renderizado</strong>
+                  <span>
+                    Salve o roteiro e solicite a criação. O player será preenchido pelo asset final
+                    do job.
+                  </span>
+                </div>
+              )}
+            </div>
+          </section>
 
           <div className="video-hub-page__stages">
             {stages.map((stage, index) => (

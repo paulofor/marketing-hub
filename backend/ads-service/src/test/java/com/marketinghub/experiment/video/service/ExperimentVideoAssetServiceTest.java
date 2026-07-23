@@ -9,8 +9,10 @@ import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
 import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
+import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
+import com.marketinghub.media.Asset;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -24,12 +26,16 @@ import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.LandingVideoSlot;
 import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoProfile;
+import com.marketinghub.salesvideo.SalesVideoScript;
+import com.marketinghub.salesvideo.SalesVideoScriptStatus;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.salesvideo.service.SalesVideoJobService;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.util.List;
@@ -71,6 +77,8 @@ class ExperimentVideoAssetServiceTest {
     private LandingPageRepository landingPageRepository;
     @Mock
     private SalesVideoService salesVideoService;
+    @Mock
+    private SalesVideoJobService salesVideoJobService;
 
     private ExperimentVideoAssetService service;
 
@@ -87,6 +95,7 @@ class ExperimentVideoAssetServiceTest {
                 productRepository,
                 landingPageRepository,
                 salesVideoService,
+                salesVideoJobService,
                 new SalesVideoProductionCostCalculator());
     }
 
@@ -339,6 +348,92 @@ class ExperimentVideoAssetServiceTest {
         assertThat(result.get(0).durationSeconds()).isEqualTo(30);
         assertThat(result.get(0).salesVideoProfileId()).isEqualTo(13L);
         assertThat(result.get(0).salesVideoJobId()).isEqualTo(20435L);
+    }
+
+    /** Garante que vídeo pronto vira job de pós-produção com fonte, voz, legenda e trilha auditáveis. */
+    @Test
+    void shouldRequestPostProductionForReadyVideoAssets() {
+        Experiment experiment = Experiment.builder()
+                .id(68L)
+                .name("Metodo MUSA")
+                .primaryCta("Ver meu plano MUSA de 7 dias")
+                .build();
+        Product product = Product.builder().id(3L).build();
+        SalesVideoScript script = SalesVideoScript.builder()
+                .id(101L)
+                .version(1)
+                .status(SalesVideoScriptStatus.APPROVED)
+                .scriptText("Roteiro aprovado")
+                .build();
+        SalesVideoProfile profile = SalesVideoProfile.builder().id(12L).product(product).build();
+        profile.getScripts().add(script);
+        SalesVideoJob renderJob = SalesVideoJob.builder()
+                .id(20442L)
+                .profile(profile)
+                .jobType(SalesVideoJobType.RENDER)
+                .status(SalesVideoStatus.VIDEO_READY)
+                .build();
+        Asset sourceAsset = Asset.builder().id(9001L).url("https://cdn.test/musa-raw.mp4").build();
+        ExperimentVideoAsset readyAsset = ExperimentVideoAsset.builder()
+                .id(5L)
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Aumentar clique no diagnostico")
+                .primaryMetric("diagnostico iniciado")
+                .script("Dor do espelho")
+                .provider("LUMA_RAY_3_2")
+                .model("ray-3.2")
+                .status(ExperimentVideoStatus.READY)
+                .assetUrl("https://cdn.test/musa-raw.mp4")
+                .durationSeconds(30)
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .salesVideoProfile(profile)
+                .salesVideoJob(renderJob)
+                .asset(sourceAsset)
+                .requiredForRelease(true)
+                .build();
+        SalesVideoJob postJob = SalesVideoJob.builder()
+                .id(20500L)
+                .profile(profile)
+                .jobType(SalesVideoJobType.POST_PRODUCTION)
+                .status(SalesVideoStatus.VIDEO_REQUESTED)
+                .build();
+        given(experimentRepository.findById(68L)).willReturn(Optional.of(experiment));
+        given(repository.findByExperimentIdOrderByCreatedAtDesc(68L)).willReturn(List.of(readyAsset));
+        given(salesVideoJobService.createJob(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any())).willReturn(postJob);
+        given(jobRepository.save(postJob)).willReturn(postJob);
+        given(repository.save(any(ExperimentVideoAsset.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        List<ExperimentVideoAssetDto> result = service.requestPostProduction(
+                68L,
+                new RequestExperimentVideoPostProductionRequest(
+                        "time@marketinghub.io",
+                        SalesVideoExecutionMode.TEST,
+                        null,
+                        null,
+                        null,
+                        "LANDING_HERO_FINAL",
+                        true));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(5L);
+        assertThat(result.get(0).status()).isEqualTo(ExperimentVideoStatus.GENERATING);
+        assertThat(result.get(0).provider()).isEqualTo("MUSA_POST_PRODUCTION");
+        assertThat(result.get(0).salesVideoJobId()).isEqualTo(20500L);
+        assertThat(postJob.getMetadataJson())
+                .contains("\"artifactType\":\"experiment.videoPostProductionRequest.v1\"")
+                .contains("\"sourceVideoUrl\":\"https://cdn.test/musa-raw.mp4\"")
+                .contains("\"voiceOverScript\"")
+                .contains("\"captionText\"")
+                .contains("\"soundtrackStyle\"")
+                .contains("\"createShortDerivatives\":true");
     }
 
     /** Garante que a landing de outro experimento não pode contaminar o aprendizado do funil atual. */

@@ -1,8 +1,9 @@
-/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/architecture/ArquiteturaTest.java
-/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoJobProcessorTest.java
-/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoAssetUploaderTest.java
-/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/LumaRayVideoProviderTest.java
-/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/VeoVideoProviderTest.java
-/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/client/BackendVideoClientTest.java
-/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/StubVideoProviderTest.java
-/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/VideoManagementServiceApplicationTests.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/client/BackendVideoClientTest.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/LumaRayVideoProviderTest.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/VideoManagementServiceApplicationTests.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/StubVideoProviderTest.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/architecture/ArquiteturaTest.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/PostProductionVideoProviderTest.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoJobProcessorTest.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoAssetUploaderTest.java
+/root/ai-hub/src/ai-hub-b118386a-5f20-45ca-ade8-a2873cafe2e5-5s2T43/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/VeoVideoProviderTest.java

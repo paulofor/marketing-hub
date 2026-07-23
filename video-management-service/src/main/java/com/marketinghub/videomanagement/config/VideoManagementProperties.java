@@ -69,6 +69,9 @@ public class VideoManagementProperties {
 
         @NotNull
         private Veo veo = new Veo();
+
+        @NotNull
+        private PostProduction postProduction = new PostProduction();
     }
 
     @Getter
@@ -182,5 +185,22 @@ public class VideoManagementProperties {
 
         @Min(1)
         private int maxPollAttempts = 120;
+    }
+
+    @Getter
+    @Setter
+    public static class PostProduction {
+        private boolean enabled = false;
+
+        /**
+         * Nomes que identificam jobs de acabamento comercial local.
+         */
+        @NotNull
+        private List<String> acceptedNames = new ArrayList<>(List.of("MUSA_POST_PRODUCTION", "POST_PRODUCTION"));
+
+        private String ffmpegPath = "ffmpeg";
+        private String espeakPath = "espeak-ng";
+        private String espeakVoice = "pt-br";
+        private String fontFile = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
     }
 }

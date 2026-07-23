@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.videomanagement.architecture.ArquiteturaTest" time="5.345" tests="6" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.videomanagement.service.provider.PostProductionVideoProviderTest" time="0.269" tests="1" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -54,13 +54,5 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="executorDeveUsarContratosInternosCanonicosDoBackend" classname="com.marketinghub.videomanagement.architecture.ArquiteturaTest" time="0.002">
-    <system-out><![CDATA[21:52:46.423 [main] INFO com.tngtech.archunit.core.PluginLoader -- Detected Java version 21.0.11
-]]></system-out>
-  </testcase>
-  <testcase name="providersConcretosDevemImplementarContratoDeVideo" classname="com.marketinghub.videomanagement.architecture.ArquiteturaTest" time="0.057"/>
-  <testcase name="nucleoOperacionalNaoDeveDependerDeProvidersConcretos" classname="com.marketinghub.videomanagement.architecture.ArquiteturaTest" time="0.102"/>
-  <testcase name="providersConcretosNaoDevemDependerEntreSi" classname="com.marketinghub.videomanagement.architecture.ArquiteturaTest" time="0.008"/>
-  <testcase name="nucleoOperacionalNaoDeveDependerDeTecnologiasExternasDeRender" classname="com.marketinghub.videomanagement.architecture.ArquiteturaTest" time="0.008"/>
-  <testcase name="executorNaoDeveDeclararProximaEtapaInternaSemContratoBackend" classname="com.marketinghub.videomanagement.architecture.ArquiteturaTest" time="0.008"/>
+  <testcase name="shouldPostProduceVideoWithVoiceCaptionsAndMusicMetadata" classname="com.marketinghub.videomanagement.service.provider.PostProductionVideoProviderTest" time="0.268"/>
 </testsuite>

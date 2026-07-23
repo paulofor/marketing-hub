@@ -302,7 +302,7 @@ public class SalesVideoJobService {
 
     /** Notifica a porta de sincronizacao de ativos quando um render valido e concluido. */
     private void syncExperimentVideoAsset(SalesVideoJob job, JobCompletionRequest request, Integer durationSeconds) {
-        if (job.getId() == null || job.getJobType() != SalesVideoJobType.RENDER
+        if (job.getId() == null || !isExperimentVideoAssetSyncJob(job)
                 || job.getStatus() != SalesVideoStatus.VIDEO_READY) {
             return;
         }
@@ -315,11 +315,17 @@ public class SalesVideoJobService {
 
     /** Notifica a porta de sincronizacao quando um render vinculado falha definitivamente. */
     private void syncFailedExperimentVideoAsset(SalesVideoJob job, JobFailureRequest request) {
-        if (job.getId() == null || job.getJobType() != SalesVideoJobType.RENDER
+        if (job.getId() == null || !isExperimentVideoAssetSyncJob(job)
                 || job.getStatus() != SalesVideoStatus.VIDEO_FAILED) {
             return;
         }
         completedRenderAssetSync.syncFailedRender(job, request);
+    }
+
+    /** Identifica jobs que devem atualizar o ativo comercial do experimento. */
+    private boolean isExperimentVideoAssetSyncJob(SalesVideoJob job) {
+        return job.getJobType() == SalesVideoJobType.RENDER
+                || job.getJobType() == SalesVideoJobType.POST_PRODUCTION;
     }
 
     /** Converte uma conclusao bloqueada em payload de falha para sincronizacao externa. */
@@ -461,7 +467,7 @@ public class SalesVideoJobService {
         return switch (jobType) {
             case SCRIPT -> SalesVideoStatus.SCRIPT_PENDING;
             case STORYBOARD -> SalesVideoStatus.STORYBOARD_PENDING;
-            case RENDER, RETRY -> SalesVideoStatus.VIDEO_REQUESTED;
+            case RENDER, POST_PRODUCTION, RETRY -> SalesVideoStatus.VIDEO_REQUESTED;
             case PUBLISH -> SalesVideoStatus.PUBLISHED;
         };
     }
@@ -470,7 +476,7 @@ public class SalesVideoJobService {
         return switch (jobType) {
             case SCRIPT -> SalesVideoStatus.SCRIPT_READY;
             case STORYBOARD -> SalesVideoStatus.STORYBOARD_READY;
-            case RENDER, RETRY -> SalesVideoStatus.VIDEO_READY;
+            case RENDER, POST_PRODUCTION, RETRY -> SalesVideoStatus.VIDEO_READY;
             case PUBLISH -> SalesVideoStatus.PUBLISHED;
         };
     }

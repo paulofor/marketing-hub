@@ -7,6 +7,7 @@ public enum SalesVideoJobType {
     SCRIPT,
     STORYBOARD,
     RENDER,
+    POST_PRODUCTION,
     PUBLISH,
     RETRY
 }

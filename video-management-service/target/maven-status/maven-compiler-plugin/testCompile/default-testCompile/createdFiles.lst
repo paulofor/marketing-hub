@@ -7,4 +7,5 @@ com/marketinghub/videomanagement/service/provider/LumaRayVideoProviderTest.class
 com/marketinghub/videomanagement/architecture/ArquiteturaTest$1.class
 com/marketinghub/videomanagement/VideoManagementServiceApplicationTests.class
 com/marketinghub/videomanagement/client/BackendVideoClientTest.class
+com/marketinghub/videomanagement/service/provider/PostProductionVideoProviderTest.class
 com/marketinghub/videomanagement/architecture/ArquiteturaTest$2.class

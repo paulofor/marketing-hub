@@ -11,6 +11,7 @@ import {
   useExperimentVideoAssets,
 } from "../../api/experiment/useExperimentVideoAssets";
 import { useRequestPlannedExperimentVideoRenders } from "../../api/experiment/useRequestPlannedExperimentVideoRenders";
+import { useRequestExperimentVideoPostProduction } from "../../api/experiment/useRequestExperimentVideoPostProduction";
 import { useRequestExperimentVeoVideo } from "../../api/experiment/useRequestExperimentVeoVideo";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { useTenantContext } from "../../utils/tenantContext";
@@ -111,6 +112,9 @@ function getAspectRatioStyle(asset: ExperimentVideoAsset) {
 function getCommercialVideoRole(asset: ExperimentVideoAsset) {
   const duration = asset.durationSeconds ?? 0;
   const provider = `${asset.provider ?? ""} ${asset.model ?? ""}`.toUpperCase();
+  if (provider.includes("MUSA_POST_PRODUCTION")) {
+    return "Vídeo final";
+  }
   const isLuma = provider.includes("LUMA") || provider.includes("RAY");
 
   if (asset.slot === "LANDING_HERO" && isLuma && duration >= 25) {
@@ -136,6 +140,9 @@ function getCommercialVideoUse(asset: ExperimentVideoAsset) {
   if (role === "Hero de venda") {
     return "Landing";
   }
+  if (role === "Vídeo final") {
+    return "Landing/Ads";
+  }
   if (role === "Cena curta" || role === "Hook de mídia") {
     return "Ads/Reels";
   }
@@ -159,6 +166,9 @@ export default function ExperimentVideoTab({
   const geraSalesPagePublications = useGeraSalesPagePublications(experiment.id);
   const requestVeoVideo = useRequestExperimentVeoVideo(experiment.id);
   const requestPlannedRenders = useRequestPlannedExperimentVideoRenders(
+    experiment.id,
+  );
+  const requestPostProduction = useRequestExperimentVideoPostProduction(
     experiment.id,
   );
   const [formState, setFormState] = useState({
@@ -201,6 +211,29 @@ export default function ExperimentVideoTab({
   const approvedHeroAssets = useMemo(
     () => readyHeroAssets.filter((asset) => asset.reviewStatus === "APPROVED"),
     [readyHeroAssets],
+  );
+  const finishedSalesAssets = useMemo(
+    () =>
+      sortedAssets.filter(
+        (asset) =>
+          asset.provider === "MUSA_POST_PRODUCTION" &&
+          asset.status === "READY" &&
+          Boolean(asset.assetUrl),
+      ),
+    [sortedAssets],
+  );
+  const postProductionCandidates = useMemo(
+    () =>
+      sortedAssets.filter((asset) => {
+        if (
+          asset.provider === "MUSA_POST_PRODUCTION" &&
+          asset.status === "FAILED"
+        ) {
+          return true;
+        }
+        return readyHeroAssets.includes(asset);
+      }),
+    [readyHeroAssets, sortedAssets],
   );
   const shortTrafficAssets = useMemo(
     () =>
@@ -262,6 +295,11 @@ export default function ExperimentVideoTab({
     plannedAssetsWithoutJob.length > 0 &&
     tenantContext.userEmail.trim().length > 0 &&
     !requestPlannedRenders.isPending;
+  const canRequestPostProduction =
+    !alterationLocked &&
+    postProductionCandidates.length > 0 &&
+    tenantContext.userEmail.trim().length > 0 &&
+    !requestPostProduction.isPending;
 
   const handleRequestPlannedRenders = async () => {
     try {
@@ -286,6 +324,31 @@ export default function ExperimentVideoTab({
           error.response?.data?.detail ??
           "Não foi possível solicitar os renders planejados.")
         : "Não foi possível solicitar os renders planejados.";
+      toast.error(message);
+    }
+  };
+
+  const handleRequestPostProduction = async () => {
+    try {
+      const updatedAssets = await requestPostProduction.mutateAsync({
+        requestedBy: tenantContext.userEmail,
+        executionMode: "TEST",
+        outputVariant: "LANDING_HERO_FINAL",
+        createShortDerivatives: true,
+      });
+      if (updatedAssets.length === 0) {
+        toast.info("Nenhum vídeo pronto aguardando pós-produção.");
+        return;
+      }
+      toast.success(
+        `${updatedAssets.length} vídeo(s) enviado(s) para pós-produção.`,
+      );
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível solicitar a pós-produção.")
+        : "Não foi possível solicitar a pós-produção.";
       toast.error(message);
     }
   };
@@ -468,6 +531,16 @@ export default function ExperimentVideoTab({
                   ? "Solicitando..."
                   : "Renderizar planejados"}
               </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-primary"
+                disabled={!canRequestPostProduction}
+                onClick={handleRequestPostProduction}
+              >
+                {requestPostProduction.isPending
+                  ? "Finalizando..."
+                  : "Finalizar para venda"}
+              </button>
               <span className="badge text-bg-secondary">
                 {sortedAssets.length} ativo(s)
               </span>
@@ -479,11 +552,14 @@ export default function ExperimentVideoTab({
                 <div className="fw-semibold">Estratégia recomendada</div>
                 <div className="small text-muted">
                   Hero de 30s na landing; cortes de 10-15s para tráfego pago.
+                  Finalize os vídeos brutos com voz off, legenda e trilha antes
+                  de aprovar para campanha.
                 </div>
               </div>
               <div className="experiment-video-strategy-panel__metrics">
                 <span>Hero pronto: {readyHeroAssets.length}</span>
                 <span>Hero aprovado: {approvedHeroAssets.length}</span>
+                <span>Finalizados: {finishedSalesAssets.length}</span>
                 <span>Cortes curtos: {shortTrafficAssets.length}</span>
               </div>
             </div>

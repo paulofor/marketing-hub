@@ -61,6 +61,15 @@ video:
       duration-seconds: 8
       poll-interval: PT10S
       max-poll-attempts: 120
+    post-production:
+      enabled: false
+      accepted-names:
+        - MUSA_POST_PRODUCTION
+        - POST_PRODUCTION
+      ffmpeg-path: ffmpeg
+      espeak-path: espeak-ng
+      espeak-voice: pt-br
+      font-file: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
 
 management:
   endpoints:

@@ -565,7 +565,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'presenceFocus',
     question: 'Em qual situação você mais quer se sentir mais presente agora?',
     options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
-    imageUrl: '/assets/musa-diagnostic-slide-1.svg',
+    imageUrl: '/assets/musa-diagnostic-slide-1.png',
     visualTitle: 'Escolha a cena onde sua presença precisa aparecer primeiro.',
     visualText: 'A pergunta entra como uma conversa no espelho: uma escolha por vez, sem parecer questionário frio.',
   },
@@ -573,7 +573,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'mainObstacle',
     question: 'O que mais te incomoda quando você se olha pronta?',
     options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
-    imageUrl: '/assets/musa-diagnostic-slide-2.svg',
+    imageUrl: '/assets/musa-diagnostic-slide-2.png',
     visualTitle: 'Agora identifique o ruído que rouba intenção.',
     visualText: 'Cada resposta muda o foco da jornada e prepara a Consultora MUSA para gerar um plano mais específico.',
   },
@@ -581,7 +581,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'desiredSignal',
     question: 'Qual sinal você quer comunicar com mais força?',
     options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
-    imageUrl: '/assets/musa-diagnostic-slide-3.svg',
+    imageUrl: '/assets/musa-diagnostic-slide-3.png',
     visualTitle: 'Defina o sinal que deve ficar na memória.',
     visualText: 'A experiência reforça desejo, não obrigação: ela mostra a mulher que a visitante quer comunicar.',
   },
@@ -589,7 +589,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'mainConstraint',
     question: 'O que mais atrapalha sua imagem no dia a dia?',
     options: ['Pouco tempo', 'Dúvida na roupa', 'Vontade de comprar', 'Falta de constância'],
-    imageUrl: '/assets/musa-diagnostic-slide-4.svg',
+    imageUrl: '/assets/musa-diagnostic-slide-4.png',
     visualTitle: 'Traga a barreira real para o plano funcionar na rotina.',
     visualText: 'O movimento entre perguntas mantém atenção e reduz a sensação de esforço até o resultado.',
   },
@@ -597,7 +597,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'startingResource',
     question: 'Com o que você prefere começar esta semana?',
     options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
-    imageUrl: '/assets/musa-diagnostic-slide-5.svg',
+    imageUrl: '/assets/musa-diagnostic-slide-5.png',
     visualTitle: 'Finalize com o primeiro recurso que ela já tem em mãos.',
     visualText: 'O CTA aparece depois de uma pequena vitória: ela já se enxergou e já escolheu o ponto de partida.',
   },
@@ -1674,9 +1674,9 @@ function App() {
                   <video className="public-hero-video" src={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
                 ) : (
                   <div className="public-video-storyboard" aria-hidden="true">
-                    <img src="/assets/musa-diagnostic-slide-1.svg" alt="" />
-                    <img src="/assets/musa-diagnostic-slide-2.svg" alt="" />
-                    <img src="/assets/musa-diagnostic-slide-3.svg" alt="" />
+                    <img src="/assets/musa-diagnostic-slide-1.png" alt="" />
+                    <img src="/assets/musa-diagnostic-slide-2.png" alt="" />
+                    <img src="/assets/musa-diagnostic-slide-3.png" alt="" />
                   </div>
                 )}
                 <div className="public-video-play-badge">

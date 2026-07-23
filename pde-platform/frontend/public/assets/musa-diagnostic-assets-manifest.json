@@ -1,0 +1,27 @@
+{
+  "source": "musa-editorial-presenca.png",
+  "generatedBy": "scripts/generate-musa-diagnostic-assets.mjs",
+  "purpose": "Slides inspiradores para o diagnostico publico MUSA",
+  "slides": [
+    {
+      "fileName": "musa-diagnostic-slide-1.png",
+      "label": "presenca"
+    },
+    {
+      "fileName": "musa-diagnostic-slide-2.png",
+      "label": "ruido"
+    },
+    {
+      "fileName": "musa-diagnostic-slide-3.png",
+      "label": "sinal"
+    },
+    {
+      "fileName": "musa-diagnostic-slide-4.png",
+      "label": "rotina"
+    },
+    {
+      "fileName": "musa-diagnostic-slide-5.png",
+      "label": "plano"
+    }
+  ]
+}

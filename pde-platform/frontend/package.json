@@ -5,6 +5,7 @@
   "scripts": {
     "check:api-boundary": "bash scripts/validate-api-boundary.sh",
     "dev": "NODE_ENV=development vite --host 0.0.0.0",
+    "generate:musa-diagnostic-assets": "node scripts/generate-musa-diagnostic-assets.mjs",
     "build": "tsc --noEmit && vite build",
     "test:public-diagnostic-smoke": "playwright test tests/public-presence-diagnostic.smoke.spec.ts --config=playwright.public-api.config.ts",
     "test:public-health": "playwright test tests/public-health.spec.ts --config=playwright.public.config.ts",

@@ -141,6 +141,9 @@ Um vídeo só pode ir para `PUBLISHED` se:
 
 ## 6.1 Vídeo hero comercial, providers e streaming
 
+- A localização única de criação, geração, pós-produção, custo e gerenciamento de vídeos comerciais é a tela do produto: `/products/{productId}/sales-videos`.
+- Experimentos não devem criar, renderizar ou pós-produzir vídeos diretamente. A aba de vídeo do experimento deve atuar apenas como revisão/consulta dos ativos historicamente vinculados ou consumidos pela campanha, direcionando qualquer nova operação para a central de vídeos do produto.
+- O custo de vídeo deve ser auditável por job de produção e exibido na central do produto tanto individualmente quanto como total do produto. Quando o provider ainda não devolver custo conhecido, a UI deve evidenciar ausência de custo em vez de estimar valor não auditado.
 - Vídeo hero de venda para PDE/funil público deve ser tratado como peça comercial completa, não como clipe técnico isolado.
 - Quando o perfil pedir duração alvo maior que a duração nativa do provider, o fluxo deve gerar cenas/montagem suficiente para completar **Dor -> Resultado -> Mecanismo -> CTA**.
 - Para o Método MUSA, o provider recomendado para hero premium é `LUMA_RAY_3_2`; `KLING_3_0` deve ser usado como alternativa de teste; `VEO` deve ficar restrito a teaser curto ou cena isolada dentro de montagem.

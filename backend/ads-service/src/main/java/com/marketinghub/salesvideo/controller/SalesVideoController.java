@@ -137,6 +137,12 @@ public class SalesVideoController {
         return salesVideoService.listJobsByProfile(profileId);
     }
 
+    /** Lista jobs administrativos de todos os perfis de um produto. */
+    @GetMapping("/api/products/{productId}/sales-videos/jobs")
+    public List<SalesVideoJobDto> listJobsByProduct(@PathVariable Long productId) {
+        return salesVideoService.listJobsByProduct(productId);
+    }
+
     /** Consulta um job administrativo. */
     @GetMapping("/api/sales-videos/jobs/{jobId}")
     public SalesVideoJobDto getAdminJob(@PathVariable Long jobId) {

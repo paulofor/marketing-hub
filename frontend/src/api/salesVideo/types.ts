@@ -13,7 +13,8 @@ export type SalesVideoStatus =
   | "ARCHIVED";
 export type SalesVideoProviderFamily = "OPENAI" | "EXTERNAL_VIDEO_MODULE";
 export type SalesVideoExecutionMode = "TEST" | "PRODUCTION";
-export type SalesVideoJobType = "SCRIPT" | "STORYBOARD" | "RENDER" | "PUBLISH" | "RETRY";
+export type SalesVideoJobType =
+  "SCRIPT" | "STORYBOARD" | "RENDER" | "POST_PRODUCTION" | "PUBLISH" | "RETRY";
 export type SalesVideoRetryReason =
   | "MANUAL_INTERVENTION"
   | "PROVIDER_FAILURE"
@@ -21,7 +22,8 @@ export type SalesVideoRetryReason =
   | "QUALITY_ASSURANCE"
   | "AUTO_RECOVERY"
   | "OTHER";
-export type SalesVideoScriptStatus = "DRAFT" | "READY_FOR_REVIEW" | "APPROVED" | "ARCHIVED";
+export type SalesVideoScriptStatus =
+  "DRAFT" | "READY_FOR_REVIEW" | "APPROVED" | "ARCHIVED";
 export type SalesVideoScriptSource = "MANUAL" | "OPENAI";
 
 export interface SalesVideoScript {
@@ -70,6 +72,7 @@ export interface SalesVideoJob {
   posterAssetId?: number | null;
   vttAssetId?: number | null;
   metadataJson?: string | null;
+  auditSnapshotJson?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -226,13 +229,8 @@ export interface LandingVideoSlotHistory {
   notes?: string | null;
 }
 
-
 export type SalesVideoConversionEventType =
-  | "VIEW"
-  | "LEAD"
-  | "QUALIFIED_LEAD"
-  | "CHECKOUT_STARTED"
-  | "PURCHASE";
+  "VIEW" | "LEAD" | "QUALIFIED_LEAD" | "CHECKOUT_STARTED" | "PURCHASE";
 
 export interface SalesVideoCommercialPlaybook {
   id: number;

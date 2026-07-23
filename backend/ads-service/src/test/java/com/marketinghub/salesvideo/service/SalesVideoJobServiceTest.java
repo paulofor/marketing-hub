@@ -20,6 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
+import com.marketinghub.salesvideo.tenant.TenantContext;
+import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 
 import java.time.Instant;
 import java.util.List;
@@ -99,6 +101,42 @@ class SalesVideoJobServiceTest {
                 .extracting(SalesVideoJobDto::getId)
                 .isEqualTo(55L);
         assertThat(result.get(0).getStatus()).isEqualTo(SalesVideoStatus.VIDEO_REQUESTED);
+    }
+
+    /** Garante que a tela de produto lista todos os jobs do produto no tenant atual. */
+    @Test
+    void shouldListJobsByProduct() {
+        long productId = 4L;
+        TenantContextHolder.set(new TenantContext("tenant-a", "seller@example.com", false));
+        SalesVideoProfile profile = SalesVideoProfile.builder()
+                .id(10L)
+                .tenantId("tenant-a")
+                .build();
+        SalesVideoJob job = SalesVideoJob.builder()
+                .id(56L)
+                .profile(profile)
+                .tenantId("tenant-a")
+                .jobType(SalesVideoJobType.RENDER)
+                .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                .status(SalesVideoStatus.VIDEO_READY)
+                .requestedAt(Instant.parse("2024-01-01T10:15:30Z"))
+                .metadataJson("{\"cost_usd\":12.34}")
+                .build();
+        given(jobRepository.findByProfileProductIdAndTenantIdOrderByRequestedAtDesc(productId, "tenant-a"))
+                .willReturn(List.of(job));
+
+        try {
+            List<SalesVideoJobDto> result = service.listJobsByProduct(productId);
+
+            assertThat(result)
+                    .hasSize(1)
+                    .first()
+                    .extracting(SalesVideoJobDto::getId)
+                    .isEqualTo(56L);
+            assertThat(result.get(0).getMetadataJson()).contains("cost_usd");
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 
     /** Garante erro de negocio quando o perfil solicitado nao existe. */

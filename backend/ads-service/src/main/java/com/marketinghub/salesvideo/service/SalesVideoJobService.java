@@ -138,6 +138,16 @@ public class SalesVideoJobService {
                 .toList();
     }
 
+    /** Lista todos os jobs de vídeo de um produto para gestão e totalização de custo. */
+    @Transactional(readOnly = true)
+    public List<SalesVideoJobDto> listJobsByProduct(Long productId) {
+        String tenantId = TenantContextHolder.requireTenant();
+        return jobRepository.findByProfileProductIdAndTenantIdOrderByRequestedAtDesc(productId, tenantId)
+                .stream()
+                .map(SalesVideoMapper::toDto)
+                .toList();
+    }
+
     @Transactional
     public SalesVideoJobDto claimJob(Long jobId, JobClaimRequest request) {
         SalesVideoJob job = loadJob(jobId);

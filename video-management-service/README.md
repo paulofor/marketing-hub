@@ -43,6 +43,8 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.providers.veo.api-key` | Chave Gemini usada pelo adapter VEO. | `${GEMINI_API_KEY}` ou arquivo em `${GEMINI_API_KEY_FILE}` |
 | `video.providers.veo.model` | Modelo VEO usado para gerar vídeo. | `veo-3.1-generate-preview` |
 | `video.providers.veo.duration-seconds` | Duração numérica enviada ao VEO. | `8` |
+| `LUMA_API_KEY_FILE` | Arquivo montado com a chave Luma usada por integrações Ray/Agents. | `/run/secrets/luma_api_key` |
+| `KLING_API_KEY_FILE` | Arquivo montado com a chave Kling usada pelo fallback de vídeo. | `/run/secrets/kling_api_key` |
 
 ### Nota operacional sobre VEO
 
@@ -51,6 +53,15 @@ O VEO ja foi validado para experimentos do Marketing Hub. Desde 2026-07-10, este
 O adapter direto usa o contrato REST da Gemini API: cria uma operacao `predictLongRunning`, faz polling em `operations/...` e baixa o MP4 retornado. O fluxo manual continua sendo fallback operacional quando nao houver chave Gemini ou quando o provider externo estiver indisponivel.
 
 No container, o compose monta por padrao `/root/infra/gemini-token/gemini_api_key` em `/run/secrets/gemini_api_key:ro`; o entrypoint carrega esse arquivo para `GEMINI_API_KEY` antes de iniciar a aplicacao.
+
+### Nota operacional sobre Luma e Kling
+
+O compose monta por padrao os arquivos criados no host de video:
+
+- `/root/infra/luma-token/luma_api_key` em `/run/secrets/luma_api_key:ro`
+- `/root/infra/kling-token/kling_api_key` em `/run/secrets/kling_api_key:ro`
+
+O entrypoint carrega esses arquivos sem imprimir os valores. A chave Luma fica disponivel como `LUMA_API_KEY`, `LUMA_AGENTS_API_KEY` e `VIDEO_PROVIDERS_LUMA_API_KEY`, cobrindo o contrato novo da Luma Agents usado por Ray 3.2. A chave Kling fica disponivel como `KLING_API_KEY` e `VIDEO_PROVIDERS_KLING_API_KEY`.
 
 ## Observabilidade (Sprint V3)
 

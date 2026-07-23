@@ -1,5 +1,7 @@
 # Da Resistência ao Desejo de Compra
 
+<!-- markdownlint-disable MD013 MD024 -->
+
 ## Uma estrada para tornar o valor de um produto novo compreensível, observável e desejável
 
 ---
@@ -21,31 +23,29 @@ O objetivo da comunicação não é empurrar o cliente diretamente para a compra
 
 A jornada pode ser representada assim:
 
-\[
-\boxed{
-\text{Desconhecido}
-\xrightarrow{\text{relevância}}
-\text{Importante}
-\xrightarrow{\text{analogia}}
-\text{Compreensível}
-\xrightarrow{\text{mecanismo}}
-\text{Plausível}
-\xrightarrow{\text{microexperiência}}
-\text{Valioso para mim}
-\xrightarrow{\text{redução de risco}}
-\text{Desejável}
-\xrightarrow{\text{oferta}}
-\text{Comprável}
-}
-\]
+```text
+Desconhecido
+--relevância-->
+Importante
+--analogia-->
+Compreensível
+--mecanismo-->
+Plausível
+--microexperiência-->
+Valioso para mim
+--redução de risco-->
+Desejável
+--oferta-->
+Comprável
+```
 
 O erro mais comum é tentar saltar diretamente de:
 
-\[
-\text{“Nunca ouvi falar nisso”}
-\rightarrow
-\text{“Compre agora”}
-\]
+```text
+“Nunca ouvi falar nisso”
+->
+“Compre agora”
+```
 
 ---
 
@@ -53,42 +53,32 @@ O erro mais comum é tentar saltar diretamente de:
 
 Podemos representar a disposição para comprar assim:
 
-\[
-D_t=
-\alpha R_t+
-\beta V_t+
-\gamma F_t+
-\delta T_t
--
-\left(
-\eta U_t+
-\theta K_t+
-\iota E_t+
-\kappa P
-\right)
-\]
+```text
+D_t = alpha R_t + beta V_t + gamma F_t + delta T_t
+      - (eta U_t + theta K_t + iota E_t + kappa P)
+```
 
 Onde:
 
-- \(D_t\): desejo de compra;
-- \(R_t\): relevância percebida;
-- \(V_t\): valor percebido;
-- \(F_t\): adequação ao caso pessoal;
-- \(T_t\): confiança;
-- \(U_t\): incerteza;
-- \(K_t\): risco percebido;
-- \(E_t\): esforço esperado;
-- \(P\): peso do preço.
+- `D_t`: desejo de compra;
+- `R_t`: relevância percebida;
+- `V_t`: valor percebido;
+- `F_t`: adequação ao caso pessoal;
+- `T_t`: confiança;
+- `U_t`: incerteza;
+- `K_t`: risco percebido;
+- `E_t`: esforço esperado;
+- `P`: peso do preço.
 
 A comunicação e a experiência de venda precisam fazer duas coisas ao mesmo tempo:
 
-\[
-R+V+F+T\uparrow
-\]
+```text
+R+V+F+T ↑
+```
 
-\[
-U+K+E\downarrow
-\]
+```text
+U+K+E ↓
+```
 
 Em linguagem prática:
 
@@ -102,9 +92,9 @@ Em linguagem prática:
 
 ---
 
-# 3. A estrada completa
+## 3. A estrada completa
 
-## Etapa 1 — Desconhecimento para relevância
+### Etapa 1 — Desconhecimento para relevância
 
 ### Estado mental do cliente
 
@@ -126,13 +116,13 @@ Use:
 
 A estrutura é:
 
-\[
-\text{situação reconhecível}
-\rightarrow
-\text{problema percebido}
-\rightarrow
-\text{atenção}
-\]
+```text
+situação reconhecível
+->
+problema percebido
+->
+atenção
+```
 
 ### Objetivo mental
 
@@ -153,7 +143,7 @@ Tempo de página, sozinho, não comprova relevância.
 
 ---
 
-## Etapa 2 — Relevância para curiosidade segura
+### Etapa 2 — Relevância para curiosidade segura
 
 ### Estado mental do cliente
 
@@ -163,21 +153,19 @@ A novidade precisa ser conectada a uma estrutura já conhecida.
 
 ### Use uma analogia útil
 
-\[
-\text{produto novo}
+```text
+produto novo
 =
-\text{categoria conhecida}
+categoria conhecida
 +
-\text{diferença específica}
-\]
+diferença específica
+```
 
 Exemplos:
 
-> “É como um GPS, mas para organizar decisões de marketing.”
-
-> “É como ter um analista acompanhando seus dados continuamente.”
-
-> “É como uma primeira sessão de consultoria transformada em experiência digital.”
+- “É como um GPS, mas para organizar decisões de marketing.”
+- “É como ter um analista acompanhando seus dados continuamente.”
+- “É como uma primeira sessão de consultoria transformada em experiência digital.”
 
 ### A analogia precisa responder
 
@@ -195,7 +183,7 @@ Uma analogia ruim pode criar uma expectativa errada. Ela deve reduzir esforço c
 
 ---
 
-## Etapa 3 — Curiosidade para compreensão do mecanismo
+### Etapa 3 — Curiosidade para compreensão do mecanismo
 
 ### Estado mental do cliente
 
@@ -203,15 +191,13 @@ Uma analogia ruim pode criar uma expectativa errada. Ela deve reduzir esforço c
 
 Mostre uma cadeia causal simples:
 
-\[
-\boxed{
-\text{entrada do cliente}
-\rightarrow
-\text{mecanismo}
-\rightarrow
-\text{resultado}
-}
-\]
+```text
+entrada do cliente
+->
+mecanismo
+->
+resultado
+```
 
 Exemplo:
 
@@ -237,17 +223,17 @@ Explique o efeito:
 
 ### Regra
 
-\[
-\text{benefício sem mecanismo}
+```text
+benefício sem mecanismo
 =
-\text{promessa}
-\]
+promessa
+```
 
-\[
-\text{benefício com mecanismo}
+```text
+benefício com mecanismo
 =
-\text{possibilidade plausível}
-\]
+possibilidade plausível
+```
 
 ### Objetivo mental
 
@@ -255,7 +241,7 @@ Explique o efeito:
 
 ---
 
-## Etapa 4 — Compreensão para valor pessoal
+### Etapa 4 — Compreensão para valor pessoal
 
 Esta é a etapa mais importante.
 
@@ -265,25 +251,23 @@ Esta é a etapa mais importante.
 
 A resposta mais forte é uma **microexperiência de valor**.
 
-## MVE — Minimum Valuable Experience
+### MVE — Minimum Valuable Experience
 
-\[
-\boxed{
-\text{MVE}
+```text
+MVE
 =
-\text{menor experiência capaz de demonstrar o mecanismo}
-}
-\]
+menor experiência capaz de demonstrar o mecanismo
+```
 
 A estrutura é:
 
-\[
-\text{entrada pessoal}
+```text
+entrada pessoal
 +
-\text{mecanismo real}
-\rightarrow
-\text{microresultado pessoal}
-\]
+mecanismo real
+->
+microresultado pessoal
+```
 
 A entrada pode ser:
 
@@ -297,29 +281,29 @@ A entrada pode ser:
 
 ### O microresultado precisa criar algo novo
 
-\[
-\text{confusão}
-\rightarrow
-\text{mapa}
-\]
+```text
+confusão
+->
+mapa
+```
 
-\[
-\text{texto original}
-\rightarrow
-\text{versão melhorada}
-\]
+```text
+texto original
+->
+versão melhorada
+```
 
-\[
-\text{dados dispersos}
-\rightarrow
-\text{descoberta}
-\]
+```text
+dados dispersos
+->
+descoberta
+```
 
-\[
-\text{muitas possibilidades}
-\rightarrow
-\text{recomendação justificada}
-\]
+```text
+muitas possibilidades
+->
+recomendação justificada
+```
 
 ### Exemplo
 
@@ -339,10 +323,10 @@ Primeiro passo:
 
 A transformação observável é:
 
-\[
-\Delta X=
-X_{\text{depois}}-X_{\text{antes}}
-\]
+```text
+Delta X=
+X_depois-X_antes
+```
 
 ### Objetivo mental
 
@@ -350,7 +334,7 @@ X_{\text{depois}}-X_{\text{antes}}
 
 ---
 
-## Etapa 5 — Valor pessoal para confiança
+### Etapa 5 — Valor pessoal para confiança
 
 ### Estado mental do cliente
 
@@ -384,11 +368,11 @@ Mostre:
 
 Apresente casos próximos do perfil do visitante.
 
-\[
-\text{similaridade percebida}
-\rightarrow
-\text{maior capacidade de projeção}
-\]
+```text
+similaridade percebida
+->
+maior capacidade de projeção
+```
 
 Evite usar apenas casos extraordinários. O cliente pode pensar:
 
@@ -400,7 +384,7 @@ Evite usar apenas casos extraordinários. O cliente pode pensar:
 
 ---
 
-## Etapa 6 — Confiança para desejo
+### Etapa 6 — Confiança para desejo
 
 Confiança significa:
 
@@ -412,13 +396,13 @@ Desejo significa:
 
 O cliente precisa conseguir simular a transformação futura.
 
-\[
-\text{estado atual}
-\rightarrow
-\text{uso do produto}
-\rightarrow
-\text{nova situação}
-\]
+```text
+estado atual
+->
+uso do produto
+->
+nova situação
+```
 
 ### Mostre uma sequência concreta
 
@@ -440,21 +424,21 @@ você deixa de reiniciar a análise sempre que surge um dado novo.
 
 Uma transformação gigantesca e imediata parece fantasia:
 
-\[
-X_0\rightarrow X_3
-\]
+```text
+X_0-> X_3
+```
 
 Uma trajetória por etapas parece possível:
 
-\[
+```text
 X_0
-\rightarrow
+->
 X_1
-\rightarrow
+->
 X_2
-\rightarrow
+->
 X_3
-\]
+```
 
 ### Objetivo mental
 
@@ -462,15 +446,15 @@ X_3
 
 ---
 
-## Etapa 7 — Desejo para compra
+### Etapa 7 — Desejo para compra
 
 Mesmo desejando, o cliente ainda compara:
 
-\[
-\text{benefício esperado}
-\quad\text{versus}\quad
-\text{preço}+\text{risco}+\text{esforço}
-\]
+```text
+benefício esperado
+versus
+preço+risco+esforço
+```
 
 A oferta precisa deixar claro:
 
@@ -526,23 +510,23 @@ Isso mantém a continuidade mental já iniciada.
 
 ---
 
-# 4. A experiência de venda em uma página
+## 4. A experiência de venda em uma página
 
 A jornada pode ser organizada em oito blocos.
 
-## 1. Espelho
+### 1. Espelho
 
 > “Você vive esta situação?”
 
 Mostre o problema em uma cena reconhecível.
 
-## 2. Ponte familiar
+### 2. Ponte familiar
 
 > “É como X, mas aplicado a Y.”
 
 Crie uma categoria mental.
 
-## 3. Mecanismo simples
+### 3. Mecanismo simples
 
 ```text
 entrada real
@@ -550,11 +534,11 @@ entrada real
 → primeiro resultado
 ```
 
-## 4. Microexperiência
+### 4. Microexperiência
 
 O cliente fornece uma entrada própria.
 
-## 5. Resultado personalizado
+### 5. Resultado personalizado
 
 Mostre:
 
@@ -565,11 +549,11 @@ o primeiro resultado
 como chegamos a ele
 ```
 
-## 6. Continuidade
+### 6. Continuidade
 
 > “Agora você recebeu o primeiro resultado. O produto completo desenvolve A, B e C ao longo da jornada.”
 
-## 7. Prova e segurança
+### 7. Prova e segurança
 
 Inclua:
 
@@ -580,7 +564,7 @@ Inclua:
 - preço;
 - reversibilidade.
 
-## 8. Oferta
+### 8. Oferta
 
 Use um único próximo passo:
 
@@ -588,10 +572,10 @@ Use um único próximo passo:
 
 ---
 
-# 5. As cinco resistências e suas pontes
+## 5. As cinco resistências e suas pontes
 
 | Resistência | Pensamento do cliente | Ponte necessária |
-|---|---|---|
+| --- | --- | --- |
 | Uso | “Parece difícil.” | Primeira experiência guiada |
 | Valor | “Não é melhor que minha solução atual.” | Comparação antes/depois |
 | Risco | “Posso perder dinheiro, tempo ou dados.” | Teste pequeno, transparência e reversibilidade |
@@ -602,7 +586,7 @@ A resistência não deve ser tratada como objeção irracional. Ela indica uma l
 
 ---
 
-# 6. Como medir a estrada
+## 6. Como medir a estrada
 
 Não registre apenas:
 
@@ -626,109 +610,81 @@ checkout_started
 purchase_completed
 ```
 
-## Métricas por etapa
+### Métricas por etapa
 
 ### Relevância para experiência
 
-\[
-\frac{
-\text{microexperiências iniciadas}
-}{
-\text{problemas reconhecidos}
-}
-\]
+```text
+microexperiências iniciadas / problemas reconhecidos
+```
 
 ### Experiência para percepção de valor
 
-\[
-\frac{
-\text{microresultados usados}
-}{
-\text{microresultados recebidos}
-}
-\]
+```text
+microresultados usados / microresultados recebidos
+```
 
 ### Valor para interesse na continuidade
 
-\[
-\frac{
-\text{ofertas visualizadas}
-}{
-\text{microresultados recebidos}
-}
-\]
+```text
+ofertas visualizadas / microresultados recebidos
+```
 
 ### Oferta para compra
 
-\[
-\frac{
-\text{compras}
-}{
-\text{ofertas visualizadas}
-}
-\]
+```text
+compras / ofertas visualizadas
+```
 
 ### Tempo até o primeiro valor
 
-\[
-TTV=
-t_{\text{primeiro valor}}
--
-t_{\text{entrada}}
-\]
+```text
+TTV = t_primeiro_valor - t_entrada
+```
 
 Quanto menor o `TTV`, melhor, desde que o resultado continue relevante e confiável.
 
 ---
 
-# 7. Como escolher a melhor microexperiência
+## 7. Como escolher a melhor microexperiência
 
 Crie algumas possibilidades de demonstração e pontue cada uma.
 
-\[
-S(d)=
-\Delta V_p(d)
-+
-\lambda\Delta U(d)
--
-E(d)
--
-R(d)
-\]
+```text
+S(d) = Delta V_p(d) + lambda Delta U(d) - E(d) - R(d)
+```
 
 Onde:
 
-- \(\Delta V_p\): aumento do valor percebido;
-- \(\Delta U\): redução da incerteza;
-- \(E\): esforço necessário;
-- \(R\): risco ou desconforto;
-- \(d\): demonstração avaliada.
+- `Delta V_p`: aumento do valor percebido;
+- `Delta U`: redução da incerteza;
+- `E`: esforço necessário;
+- `R`: risco ou desconforto;
+- `d`: demonstração avaliada.
 
 A melhor experiência é:
 
-\[
-\boxed{
-d^*=
-\arg\max_d
+```text
+d*=
+argmax(d)
 [
-\text{valor percebido}
+valor percebido
 +
-\text{incerteza reduzida}
+incerteza reduzida
 -
-\text{esforço}
+esforço
 -
-\text{risco}
+risco
 ]
-}
-\]
+```
 
 A demonstração vencedora não é necessariamente a mais impressionante. É aquela que entrega o resultado mais convincente com o menor atrito.
 
 ---
 
-# 8. MVP de quatro telas
+## 8. MVP de quatro telas
 
-## Tela 1 — Reconhecimento
+### Tela 1 — Reconhecimento
 
 Pergunta:
 
@@ -736,7 +692,7 @@ Pergunta:
 
 A pessoa escolhe um cenário.
 
-## Tela 2 — Entrada real
+### Tela 2 — Entrada real
 
 Pergunta:
 
@@ -744,7 +700,7 @@ Pergunta:
 
 A pessoa fornece uma informação mínima.
 
-## Tela 3 — Microresultado
+### Tela 3 — Microresultado
 
 A aplicação entrega:
 
@@ -755,7 +711,7 @@ Primeiro resultado
 Como chegamos a ele
 ```
 
-## Tela 4 — Continuidade paga
+### Tela 4 — Continuidade paga
 
 ```text
 Você recebeu:
@@ -771,7 +727,7 @@ CTA:
 
 ---
 
-# 9. Estrutura de resposta da IA
+## 9. Estrutura de resposta da IA
 
 Uma saída estruturada para a microexperiência pode ser:
 
@@ -798,59 +754,54 @@ O modelo de IA interpreta e personaliza. O backend deve:
 
 ---
 
-# 10. Plano de teste
+## 10. Plano de teste
 
 Crie três versões e um controle.
 
-## Controle
+### Controle
 
 Página de venda tradicional.
 
-## Experiência A — Diagnóstico
+### Experiência A — Diagnóstico
 
 O cliente informa uma situação e recebe uma análise personalizada.
 
-## Experiência B — Produção
+### Experiência B — Produção
 
 O cliente fornece um material e recebe um artefato utilizável.
 
-## Experiência C — Simulação
+### Experiência C — Simulação
 
 O cliente vê uma prévia interativa da experiência completa.
 
 Compare:
 
-\[
-P(\text{compra}\mid A)
-\]
+```text
+P(compra| A)
+```
 
-\[
-P(\text{compra}\mid B)
-\]
+```text
+P(compra| B)
+```
 
-\[
-P(\text{compra}\mid C)
-\]
+```text
+P(compra| C)
+```
 
-\[
-P(\text{compra}\mid \text{controle})
-\]
+```text
+P(compra| controle)
+```
 
 Calcule o ganho:
 
-\[
-\text{Lift}
-=
-\frac{
-CR_{\text{experiência}}-CR_{\text{controle}}
-}{
-CR_{\text{controle}}
-}
-\]
+```text
+Lift
+= (CR_experiência - CR_controle) / CR_controle
+```
 
 ---
 
-# 11. Modelo para preencher
+## 11. Modelo para preencher
 
 Use este formulário como esqueleto da estrada.
 
@@ -888,7 +839,7 @@ Use este formulário como esqueleto da estrada.
 
 ---
 
-# 12. Checklist antes de publicar
+## 12. Checklist antes de publicar
 
 - [ ] O início fala da situação do cliente, e não da tecnologia?
 - [ ] O visitante entende o que é o produto por uma analogia simples?
@@ -908,53 +859,51 @@ Use este formulário como esqueleto da estrada.
 
 ---
 
-# 13. Princípio fundamental
+## 13. Princípio fundamental
 
 Você não deve tentar empurrar o cliente do desconhecimento para o desejo.
 
 Deve construir evidências suficientes para que ele próprio faça estas atualizações:
 
-\[
-\text{“não conheço”}
-\rightarrow
-\text{“isso se relaciona comigo”}
-\]
+```text
+“não conheço”
+->
+“isso se relaciona comigo”
+```
 
-\[
-\text{“parece estranho”}
-\rightarrow
-\text{“agora entendo”}
-\]
+```text
+“parece estranho”
+->
+“agora entendo”
+```
 
-\[
-\text{“talvez funcione”}
-\rightarrow
-\text{“vi funcionar no meu caso”}
-\]
+```text
+“talvez funcione”
+->
+“vi funcionar no meu caso”
+```
 
-\[
-\text{“é interessante”}
-\rightarrow
-\text{“quero a continuidade desse resultado”}
-\]
+```text
+“é interessante”
+->
+“quero a continuidade desse resultado”
+```
 
 A estrada comercial mais forte é:
 
-\[
-\boxed{
-\text{problema familiar}
-\rightarrow
-\text{categoria compreensível}
-\rightarrow
-\text{mecanismo plausível}
-\rightarrow
-\text{microresultado pessoal}
-\rightarrow
-\text{futuro desejável}
-\rightarrow
-\text{oferta segura}
-}
-\]
+```text
+problema familiar
+->
+categoria compreensível
+->
+mecanismo plausível
+->
+microresultado pessoal
+->
+futuro desejável
+->
+oferta segura
+```
 
 A página de vendas deixa de ser apenas uma apresentação e se transforma na **primeira utilização real do produto**.
 

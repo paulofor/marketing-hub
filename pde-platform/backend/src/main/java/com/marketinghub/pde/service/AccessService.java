@@ -30,6 +30,7 @@ import java.sql.Timestamp;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -50,6 +51,7 @@ public class AccessService {
     private static final Logger log = LoggerFactory.getLogger(AccessService.class);
     private static final TypeReference<Map<String, StoredAccessGrant>> STORE_TYPE = new TypeReference<>() {};
     private static final int FUNNEL_EVENT_PERSIST_ATTEMPTS = 3;
+    private static final ZoneId OPERATIONAL_TIME_ZONE = ZoneId.of("America/Sao_Paulo");
 
     private final ProductCatalogService productCatalogService;
     private final ObjectMapper objectMapper;
@@ -755,12 +757,17 @@ public class AccessService {
                 nullableLong(resultSet, "visible_ms"),
                 resultSet.getString("section_id"),
                 resultSet.getString("action_name"),
-                resultSet.getTimestamp("occurred_at").toInstant(),
+                toOperationalInstant(resultSet.getTimestamp("occurred_at")),
                 metadataString(metadata, "screenName"),
                 metadataLong(metadata, "scrollDepthPercent"),
                 metadataLong(metadata, "maxScrollDepthPercent"),
                 metadataString(metadata, "fieldName"),
                 metadataString(metadata, "elementText"));
+    }
+
+    /** Interpreta DATETIME do MySQL como horário operacional de Brasília antes de serializar para APIs. */
+    static Instant toOperationalInstant(Timestamp timestamp) {
+        return timestamp.toLocalDateTime().atZone(OPERATIONAL_TIME_ZONE).toInstant();
     }
 
     /** Lê o JSON de metadados salvo no evento para detalhar tela, campo e clique. */
@@ -890,7 +897,7 @@ public class AccessService {
                             resultSet.getLong("checkout_started"),
                             resultSet.getLong("subscription_approved"),
                             resultSet.getLong("total_visible_ms"),
-                            lastEventAt == null ? null : lastEventAt.toInstant().toString()));
+                            lastEventAt == null ? null : toOperationalInstant(lastEventAt).toString()));
                 }
                 return metrics;
             }

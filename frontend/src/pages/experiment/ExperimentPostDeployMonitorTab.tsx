@@ -568,7 +568,7 @@ export default function ExperimentPostDeployMonitorTab({
                     <th>Telas/seções</th>
                     <th className="text-end">Scroll</th>
                     <th className="text-end">Tempo</th>
-                    <th className="text-end">Último evento</th>
+                    <th className="text-end">Último evento (Brasília)</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -13,6 +13,8 @@ import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.io.TempDir;
@@ -23,6 +25,14 @@ class AccessServiceTest {
 
     @TempDir
     Path tempDir;
+
+    /** Confirma que horários do funil PDE preservam a leitura operacional de Brasília. */
+    @Test
+    void convertsMysqlDatetimeAsBrazilOperationalTime() {
+        Instant instant = AccessService.toOperationalInstant(Timestamp.valueOf("2026-07-22 23:13:00"));
+
+        assertThat(instant.toString()).isEqualTo("2026-07-23T02:13:00Z");
+    }
 
     /** Confirma que um acesso liberado retorna a experiência e progride ao concluir missão. */
     @Test

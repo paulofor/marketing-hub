@@ -3,6 +3,8 @@ package com.marketinghub.experiment.funnel;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
+import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
+import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.LandingAnalyticsEventProjection;
@@ -57,6 +59,9 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
     @Mock
     private JdbcTemplate jdbcTemplate;
+
+    @Mock
+    private PdeAnalyticsClient pdeAnalyticsClient;
 
     @InjectMocks
     private ExperimentFunnelService service;
@@ -726,6 +731,80 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 eq(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE),
                 eq(null),
                 eq(null));
+    }
+
+    /**
+     * Valida que o funil PDE usa entradas reais do analytics MUSA atribuídas à campanha Meta do experimento.
+     */
+    @Test
+    void summarizePdeMembershipUsesPdeAnalyticsFilteredByCampaign() {
+        Experiment experiment = Experiment.builder()
+                .id(67L)
+                .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+                .build();
+        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
+        when(eventRepository.aggregateManualByExperiment(67L, null)).thenReturn(List.of());
+        when(jdbcTemplate.queryForList(any(String.class), eq(String.class), eq(67L)))
+                .thenReturn(List.of("120250506594240326"));
+        when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v3",
+                289,
+                31,
+                33,
+                33,
+                33,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                3765490,
+                List.of(),
+                List.of(),
+                List.of(
+                        new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                                "ig",
+                                "120250506594240326",
+                                "120250506596000326",
+                                29,
+                                29,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                3519549,
+                                "2026-07-22T23:07:32Z"),
+                        new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                                "codex",
+                                "codex-mkt-analytics-test",
+                                "browser-submit-20260723",
+                                1,
+                                1,
+                                1,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                "2026-07-22T22:45:54Z")),
+                List.of(),
+                List.of(),
+                List.of()));
+
+        var summary = service.summarize(67L);
+
+        var pdeEntry = summary.stream()
+                .filter(stage -> stage.getStage() == ExperimentFunnelStage.VISUALIZACAO_FORM)
+                .findFirst()
+                .orElseThrow();
+        assertEquals("Entrada na tela inicial do PED/MUSA", pdeEntry.getLabel());
+        assertEquals(29, pdeEntry.getTotalCount());
+        assertEquals(Instant.parse("2026-07-22T23:07:32Z"), pdeEntry.getLastEventAt());
     }
 
     /**

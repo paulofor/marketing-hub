@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.funnel;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -48,6 +49,9 @@ class ExperimentFunnelServiceSubmissionTest {
 
     @Mock
     private ExperimentFunnelStandbyService standbyService;
+
+    @Mock
+    private PdeAnalyticsClient pdeAnalyticsClient;
 
     @InjectMocks
     private ExperimentFunnelService service;

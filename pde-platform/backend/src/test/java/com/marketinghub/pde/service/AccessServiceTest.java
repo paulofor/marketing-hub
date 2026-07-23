@@ -13,6 +13,8 @@ import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -396,6 +398,64 @@ class AccessServiceTest {
         assertThat(summary.events()).isEmpty();
     }
 
+    /** Confirma que o resumo analítico expõe dispositivo e resolução gravados pelos eventos do PDE. */
+    @Test
+    void summarizesDeviceAndScreenSizeAnalyticsFromJdbcEvents() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_device_analytics;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "PAGE_VIEW",
+                null,
+                "cliente@sandbox.local",
+                "TEST",
+                "test",
+                "http://localhost:5176/?utm_source=ig&utm_campaign=campanha&utm_content=criativo",
+                Map.of(
+                        "visitorId", "visitor-mobile",
+                        "sessionId", "session-mobile",
+                        "utmSource", "ig",
+                        "utmCampaign", "campanha",
+                        "utmContent", "criativo",
+                        "deviceType", "mobile",
+                        "screenWidth", 390,
+                        "screenHeight", 844,
+                        "viewportWidth", 390,
+                        "viewportHeight", 844)));
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.deviceBreakdown())
+                .anySatisfy(device -> {
+                    assertThat(device.deviceType()).isEqualTo("mobile");
+                    assertThat(device.label()).isEqualTo("Mobile");
+                    assertThat(device.sessions()).isEqualTo(1);
+                    assertThat(device.percentage()).isEqualTo(100.0);
+                });
+        assertThat(summary.screenSizeBreakdown())
+                .singleElement()
+                .satisfies(screen -> {
+                    assertThat(screen.screenSize()).isEqualTo("390x844");
+                    assertThat(screen.label()).isEqualTo("390x844");
+                    assertThat(screen.sessions()).isEqualTo(1);
+                    assertThat(screen.percentage()).isEqualTo(100.0);
+                });
+    }
+
     /** Confirma que jornadas por sessão retornam vazio no modo local sem banco analítico. */
     @Test
     void returnsEmptySessionJourneysWithoutJdbcStorage() {
@@ -679,6 +739,72 @@ class AccessServiceTest {
                 "test",
                 null,
                 Map.of())));
+    }
+
+    /** Cria a tabela mínima de eventos PDE usada pelas consultas analíticas do serviço. */
+    private static void createPdeFunnelEventSchema(String jdbcUrl) throws SQLException {
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TABLE pde_access_grant (
+                      token VARCHAR(120) PRIMARY KEY,
+                      product_slug VARCHAR(120) NOT NULL,
+                      email VARCHAR(191) NOT NULL,
+                      source VARCHAR(80) NOT NULL,
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_access_mission_completion (
+                      access_token VARCHAR(120) NOT NULL,
+                      mission_id VARCHAR(120) NOT NULL,
+                      completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_access_mission_interaction_answer (
+                      access_token VARCHAR(120) NOT NULL,
+                      mission_id VARCHAR(120) NOT NULL,
+                      question_key VARCHAR(120) NOT NULL,
+                      answer_text TEXT,
+                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_funnel_event (
+                      id BIGINT AUTO_INCREMENT,
+                      event_id VARCHAR(64) PRIMARY KEY,
+                      product_slug VARCHAR(120) NOT NULL,
+                      experience_version VARCHAR(80),
+                      access_token VARCHAR(120),
+                      email VARCHAR(191),
+                      normalized_email VARCHAR(191),
+                      event_type VARCHAR(80) NOT NULL,
+                      provider VARCHAR(80),
+                      source VARCHAR(120),
+                      page_url VARCHAR(1024),
+                      client_ip VARCHAR(45),
+                      referrer_url VARCHAR(1024),
+                      session_id VARCHAR(64),
+                      visitor_id VARCHAR(64),
+                      utm_source VARCHAR(120),
+                      utm_medium VARCHAR(120),
+                      utm_campaign VARCHAR(191),
+                      utm_content VARCHAR(191),
+                      utm_term VARCHAR(191),
+                      device_type VARCHAR(40),
+                      screen_width INT,
+                      screen_height INT,
+                      viewport_width INT,
+                      viewport_height INT,
+                      visible_ms BIGINT,
+                      section_id VARCHAR(120),
+                      action_name VARCHAR(120),
+                      metadata_json TEXT,
+                      occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+        }
     }
 
     /** Simula provedor configurado que rejeita o envio do link mágico. */

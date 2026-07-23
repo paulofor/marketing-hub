@@ -97,6 +97,14 @@ public class ExperimentVideoAssetService {
                 .toList();
     }
 
+    /** Lista todos os vídeos registrados para acompanhamento operacional. */
+    @Transactional(readOnly = true)
+    public List<ExperimentVideoAssetDto> listAll() {
+        return repository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     /** Cria um vídeo de experimento com seus vínculos opcionais validados. */
     @Transactional
     public ExperimentVideoAssetDto create(Long experimentId, CreateExperimentVideoAssetRequest request) {

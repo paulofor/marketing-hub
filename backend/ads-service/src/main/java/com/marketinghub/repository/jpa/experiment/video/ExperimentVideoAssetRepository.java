@@ -13,6 +13,10 @@ import org.springframework.data.repository.query.Param;
  * Repositório dos vídeos comerciais vinculados a experimentos.
  */
 public interface ExperimentVideoAssetRepository extends JpaRepository<ExperimentVideoAsset, Long> {
+    /** Lista todos os vídeos de experimento para a biblioteca operacional. */
+    @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
+    List<ExperimentVideoAsset> findAllByOrderByCreatedAtDesc();
+
     /** Lista os vídeos de um experimento com os vínculos necessários para resposta da API. */
     @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
     List<ExperimentVideoAsset> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);

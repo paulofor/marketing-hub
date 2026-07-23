@@ -299,4 +299,41 @@ class ExperimentVideoAssetServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).slot()).isEqualTo(ExperimentVideoSlot.FORM_EXPLAINER);
     }
+
+    /** Garante que a biblioteca operacional lista vídeos de diferentes experimentos. */
+    @Test
+    void shouldListAllVideoAssetsForOperationalLibrary() {
+        Experiment firstExperiment = Experiment.builder().id(39L).build();
+        Experiment secondExperiment = Experiment.builder().id(40L).build();
+        ExperimentVideoAsset firstVideo = ExperimentVideoAsset.builder()
+                .id(5L)
+                .experiment(firstExperiment)
+                .slot(ExperimentVideoSlot.FORM_EXPLAINER)
+                .objective("Reduzir duvida")
+                .primaryMetric("form_submit_rate")
+                .provider("VEO")
+                .model("veo-3.1-generate-preview")
+                .status(ExperimentVideoStatus.READY)
+                .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+                .requiredForRelease(true)
+                .build();
+        ExperimentVideoAsset secondVideo = ExperimentVideoAsset.builder()
+                .id(6L)
+                .experiment(secondExperiment)
+                .slot(ExperimentVideoSlot.AD)
+                .objective("Aumentar CTR")
+                .primaryMetric("ctr")
+                .provider("LUMA")
+                .model("ray-3.2")
+                .status(ExperimentVideoStatus.PLANNED)
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build();
+        given(repository.findAllByOrderByCreatedAtDesc()).willReturn(List.of(firstVideo, secondVideo));
+
+        List<ExperimentVideoAssetDto> result = service.listAll();
+
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(ExperimentVideoAssetDto::experimentId).containsExactly(39L, 40L);
+    }
 }

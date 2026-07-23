@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   CheckCircle2,
   Clapperboard,
@@ -12,14 +13,21 @@ import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
 import { TenantContextBanner } from "../../components/TenantContextBanner";
 import { useProducts } from "../../api/product/useProducts";
+import { useExperiments } from "../../api/experiment/useExperiments";
 import { useCreateSalesVideoProfile } from "../../api/salesVideo/useCreateSalesVideoProfile";
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
 import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSalesVideoScript";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
 import { useAsset } from "../../api/media/useAsset";
+import {
+  ExperimentVideoAsset,
+  ExperimentVideoStatus,
+  useAllExperimentVideoAssets,
+} from "../../api/experiment/useExperimentVideoAssets";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import { useTenantContext } from "../../utils/tenantContext";
+import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import {
   buildSalesVideoRenderMetadata,
   DEFAULT_SALES_VIDEO_PROVIDER,
@@ -82,15 +90,34 @@ const STATUS_LABELS: Record<VideoStageStatus, string> = {
 
 const CURRENT_PDE_VERSION = "musa-pde-entry-v4-video-hero";
 
+const VIDEO_STATUS_OPTIONS: Array<"ALL" | ExperimentVideoStatus> = [
+  "ALL",
+  "PLANNED",
+  "GENERATING",
+  "READY",
+  "FAILED",
+];
+
+const VIDEO_STATUS_LABELS: Record<"ALL" | ExperimentVideoStatus, string> = {
+  ALL: "Todos",
+  PLANNED: "Planejados",
+  GENERATING: "Gerando",
+  READY: "Prontos",
+  FAILED: "Falharam",
+};
+
 export default function VideoHubPage() {
   const tenantContext = useTenantContext();
   const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: experiments } = useExperiments();
+  const videoLibraryQuery = useAllExperimentVideoAssets();
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [stages, setStages] = useState<VideoStage[]>(DEFAULT_STAGES);
   const [selectedProviderName, setSelectedProviderName] = useState(
     DEFAULT_SALES_VIDEO_PROVIDER.providerName,
   );
+  const [videoStatusFilter, setVideoStatusFilter] = useState<"ALL" | ExperimentVideoStatus>("ALL");
 
   const { data: profiles, isLoading: profilesLoading } =
     useSalesVideoProfiles(selectedProductId || undefined);
@@ -102,6 +129,31 @@ export default function VideoHubPage() {
   const productList = useMemo(() => products ?? [], [products]);
   const profileList = useMemo(() => profiles ?? [], [profiles]);
   const selectedProduct = productList.find((product) => String(product.id) === selectedProductId);
+  const experimentById = useMemo(() => {
+    return new Map((experiments ?? []).map((experiment) => [Number(experiment.id), experiment]));
+  }, [experiments]);
+  const videoLibrary = useMemo(() => videoLibraryQuery.data ?? [], [videoLibraryQuery.data]);
+  const filteredVideoLibrary = useMemo(() => {
+    return videoLibrary.filter((video) =>
+      videoStatusFilter === "ALL" ? true : video.status === videoStatusFilter,
+    );
+  }, [videoLibrary, videoStatusFilter]);
+  const videoLibraryMetrics = useMemo(() => {
+    const requiredBlockers = videoLibrary.filter(
+      (video) =>
+        video.requiredForRelease &&
+        (video.status !== "READY" || video.reviewStatus !== "APPROVED"),
+    ).length;
+    return {
+      total: videoLibrary.length,
+      planned: videoLibrary.filter((video) => video.status === "PLANNED").length,
+      generating: videoLibrary.filter((video) => video.status === "GENERATING").length,
+      readyApproved: videoLibrary.filter(
+        (video) => video.status === "READY" && video.reviewStatus === "APPROVED",
+      ).length,
+      requiredBlockers,
+    };
+  }, [videoLibrary]);
   const selectedProfile = profileList.find((profile) => String(profile.id) === selectedProfileId);
   const latestJob = jobs?.[0];
   const latestAssetId = latestJob?.assetId ?? undefined;
@@ -258,6 +310,59 @@ export default function VideoHubPage() {
       </div>
 
       <TenantContextBanner className="mb-3" />
+
+      <section className="video-hub-page__library">
+        <div className="video-hub-page__library-header">
+          <div>
+            <span className="video-hub-page__stage-kicker">Biblioteca</span>
+            <h2>Vídeos dos experimentos</h2>
+            <p>
+              Visão de campanha para acompanhar vídeos planejados, em geração, prontos e bloqueando
+              liberação de tráfego.
+            </p>
+          </div>
+          <div className="video-hub-page__filters" role="group" aria-label="Filtrar vídeos por status">
+            {VIDEO_STATUS_OPTIONS.map((status) => (
+              <button
+                key={status}
+                type="button"
+                className={`video-hub-page__filter ${
+                  videoStatusFilter === status ? "video-hub-page__filter--active" : ""
+                }`}
+                onClick={() => setVideoStatusFilter(status)}
+              >
+                {VIDEO_STATUS_LABELS[status]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="video-hub-page__library-metrics">
+          <SummaryMetric label="Vídeos" value={String(videoLibraryMetrics.total)} />
+          <SummaryMetric label="Planejados" value={String(videoLibraryMetrics.planned)} />
+          <SummaryMetric label="Gerando" value={String(videoLibraryMetrics.generating)} />
+          <SummaryMetric label="Prontos aprovados" value={String(videoLibraryMetrics.readyApproved)} />
+          <SummaryMetric label="Bloqueios" value={String(videoLibraryMetrics.requiredBlockers)} />
+        </div>
+
+        {videoLibraryQuery.isLoading ? (
+          <div className="video-hub-page__empty-state">Carregando vídeos dos experimentos...</div>
+        ) : filteredVideoLibrary.length === 0 ? (
+          <div className="video-hub-page__empty-state">Nenhum vídeo encontrado para este filtro.</div>
+        ) : (
+          <div className="video-hub-page__cards">
+            {filteredVideoLibrary.map((video) => (
+              <ExperimentVideoCard
+                key={video.id}
+                video={video}
+                experimentName={
+                  experimentById.get(video.experimentId)?.name ?? `Experimento #${video.experimentId}`
+                }
+              />
+            ))}
+          </div>
+        )}
+      </section>
 
       <div className="video-hub-page__grid">
         <aside className="video-hub-page__type-list">
@@ -481,5 +586,77 @@ function SummaryMetric({ label, value }: { label: string; value: string }) {
       <div className="video-hub-page__metric-label">{label}</div>
       <div className="video-hub-page__metric-value">{value}</div>
     </div>
+  );
+}
+
+function ExperimentVideoCard({
+  video,
+  experimentName,
+}: {
+  video: ExperimentVideoAsset;
+  experimentName: string;
+}) {
+  const playbackUrl = video.assetUrl ? resolveAssetUrl(video.assetUrl) : "";
+  const thumbnailUrl = video.thumbnailUrl ? resolveAssetUrl(video.thumbnailUrl) : "";
+  const blocksRelease =
+    video.requiredForRelease &&
+    (video.status !== "READY" || video.reviewStatus !== "APPROVED");
+
+  return (
+    <article className="video-hub-page__video-card">
+      <div className="video-hub-page__video-preview">
+        {playbackUrl ? (
+          <video src={playbackUrl} poster={thumbnailUrl || undefined} controls playsInline preload="metadata" />
+        ) : (
+          <div className="video-hub-page__video-placeholder">
+            <PlayCircle size={32} aria-hidden="true" />
+            <span>Sem arquivo renderizado</span>
+          </div>
+        )}
+      </div>
+      <div className="video-hub-page__video-body">
+        <div className="video-hub-page__video-topline">
+          <span>{video.slot}</span>
+          <span className={blocksRelease ? "video-hub-page__blocker" : "video-hub-page__ok"}>
+            {blocksRelease ? "Bloqueia liberação" : video.reviewStatus}
+          </span>
+        </div>
+        <h3>{experimentName}</h3>
+        <p>{video.objective}</p>
+        <dl>
+          <div>
+            <dt>Status</dt>
+            <dd>{video.status}</dd>
+          </div>
+          <div>
+            <dt>Métrica</dt>
+            <dd>{video.primaryMetric}</dd>
+          </div>
+          <div>
+            <dt>Provider</dt>
+            <dd>{video.provider} · {video.model}</dd>
+          </div>
+          <div>
+            <dt>Duração</dt>
+            <dd>{video.durationSeconds ? `${video.durationSeconds}s` : "Não definida"}</dd>
+          </div>
+        </dl>
+        <div className="video-hub-page__video-actions">
+          <Link className="btn btn-sm btn-outline-primary" to={`/experiments/${video.experimentId}`}>
+            Abrir experimento
+          </Link>
+          {playbackUrl ? (
+            <a className="btn btn-sm btn-outline-secondary" href={playbackUrl} target="_blank" rel="noreferrer">
+              Abrir arquivo
+            </a>
+          ) : null}
+          {video.salesVideoProfileId ? (
+            <Link className="btn btn-sm btn-outline-secondary" to={`/sales-videos/profiles/${video.salesVideoProfileId}`}>
+              Ver produção
+            </Link>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }

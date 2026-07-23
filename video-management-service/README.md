@@ -10,6 +10,7 @@ Módulo dedicado ao gerenciamento técnico do ciclo de vida de vídeos que não 
 - Upload automático de vídeo, poster e legendas através do novo endpoint interno `/internal/video/assets` do backend.
 - Provider `stub` que lê o script aprovado do perfil, gera artefatos fictícios (MP4, PNG e VTT) e reporta progresso durante o pipeline.
 - Provider `real` com integração HTTP configurável (request render + polling + download), com normalização de falhas/expiração para o backend.
+- Provider `luma` com integração direta à Luma Agents API para jobs `providerName=LUMA_RAY_3_2`, gerando três cenas Ray 3.2 de 10s e montando o MP4 final com `ffmpeg`.
 - Provider `veo` com integração direta à Gemini API para jobs `providerName=VEO`, incluindo criação da operação, polling e download do MP4 final.
 - Dispatcher multi-thread com controle contra concorrência duplicada.
 - Poller interno que consome jobs `RENDER` com `provider_family=EXTERNAL_VIDEO_MODULE` e envia para o dispatcher.
@@ -43,6 +44,11 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.providers.veo.api-key` | Chave Gemini usada pelo adapter VEO. | `${GEMINI_API_KEY}` ou arquivo em `${GEMINI_API_KEY_FILE}` |
 | `video.providers.veo.model` | Modelo VEO usado para gerar vídeo. | `veo-3.1-generate-preview` |
 | `video.providers.veo.duration-seconds` | Duração numérica enviada ao VEO. | `8` |
+| `video.providers.luma.enabled` | Habilita o adapter direto Luma Ray 3.2. | `false` |
+| `video.providers.luma.api-key` | Chave Luma Agents usada pelo adapter Luma. | `${LUMA_AGENTS_API_KEY}` / `${VIDEO_PROVIDERS_LUMA_API_KEY}` |
+| `video.providers.luma.api-key-file` | Arquivo montado com a chave Luma. | `${LUMA_API_KEY_FILE}` |
+| `video.providers.luma.scene-count` | Quantidade de cenas Ray 3.2 para montagem do hero. | `3` |
+| `video.providers.luma.duration` | Duração por cena enviada à Luma Agents API. | `10s` |
 | `LUMA_API_KEY_FILE` | Arquivo montado com a chave Luma usada por integrações Ray/Agents. | `/run/secrets/luma_api_key` |
 | `KLING_API_KEY_FILE` | Arquivo montado com a chave Kling usada pelo fallback de vídeo. | `/run/secrets/kling_api_key` |
 

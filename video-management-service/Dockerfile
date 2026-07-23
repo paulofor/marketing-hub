@@ -11,6 +11,7 @@ RUN mvn -B -f video-management-service/pom.xml package -DskipTests && \
     mv video-management-service/target/video-management-service-0.0.1-SNAPSHOT.jar video-management-service/target/app.jar
 
 FROM eclipse-temurin:21-jre
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /workspace/video-management-service/target/app.jar app.jar
 EXPOSE 8095

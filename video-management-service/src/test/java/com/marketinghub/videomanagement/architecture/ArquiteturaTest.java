@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 class ArquiteturaTest {
     private static final String BASE_PACKAGE = "com.marketinghub.videomanagement";
     private static final Set<String> PROVIDERS_CONCRETOS = Set.of(
+            "LumaRayVideoProvider",
             "RealVideoProvider",
             "StubVideoProvider",
             "VeoVideoProvider");
@@ -33,6 +34,7 @@ class ArquiteturaTest {
         noClasses().that().resideInAPackage("..videomanagement.service..")
                 .and().resideOutsideOfPackage("..videomanagement.service.provider..")
                 .should().dependOnClassesThat().haveSimpleName("RealVideoProvider")
+                .orShould().dependOnClassesThat().haveSimpleName("LumaRayVideoProvider")
                 .orShould().dependOnClassesThat().haveSimpleName("StubVideoProvider")
                 .orShould().dependOnClassesThat().haveSimpleName("VeoVideoProvider")
                 .because("[ARQUITETURA] O núcleo do executor de vídeo deve depender do contrato VideoProvider, nunca de provider concreto.")

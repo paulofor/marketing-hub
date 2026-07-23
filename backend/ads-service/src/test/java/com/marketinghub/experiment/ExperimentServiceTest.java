@@ -665,6 +665,7 @@ class ExperimentServiceTest {
         assertThat(result).extracting(Experiment::getId).containsExactly(expApproved.getId());
     }
 
+    /** Garante que pausa administrativa preserva o timestamp persistido de liberação para Facebook. */
     @Test
     void updateStatusPreservesReleaseTimestampForBaseline() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Status").build());
@@ -702,12 +703,13 @@ class ExperimentServiceTest {
 
         Experiment released = service.releaseForFacebook(experiment.getId());
         assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
-        var releaseTimestamp = released.getFacebookReleaseRequestedAt();
+        var releaseTimestamp = Instant.parse("2026-07-23T12:00:00Z");
+        released.setFacebookReleaseRequestedAt(releaseTimestamp);
+        experimentRepository.saveAndFlush(released);
 
         Experiment paused = service.updateStatus(experiment.getId(), ExperimentStatus.PAUSED);
         assertThat(paused.getFacebookReleaseRequestedAt()).isNotNull();
-        assertThat(paused.getFacebookReleaseRequestedAt().toEpochMilli())
-                .isEqualTo(releaseTimestamp.toEpochMilli());
+        assertThat(paused.getFacebookReleaseRequestedAt()).isEqualTo(releaseTimestamp);
     }
 
     @Test

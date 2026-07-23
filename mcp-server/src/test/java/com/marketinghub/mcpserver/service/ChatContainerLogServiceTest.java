@@ -82,6 +82,7 @@ class ChatContainerLogServiceTest {
                 "/tmp/oprm-coletor-receita.log",
                 "/tmp/ops-monitor-worker.log",
                 "/tmp/pde-platform-backend.log",
+                "/tmp/video-management-service.log",
                 2,
                 3,
                 1,

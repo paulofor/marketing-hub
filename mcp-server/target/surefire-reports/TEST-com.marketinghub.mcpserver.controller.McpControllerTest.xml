@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.mcpserver.controller.McpControllerTest" time="2.977" tests="23" errors="0" skipped="0" failures="0">
+  <properties>
+    <property name="java.specification.version" value="21"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.class.path" value="/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server/target/test-classes:/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server/target/classes:/root/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.2.5/spring-boot-starter-web-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter/3.2.5/spring-boot-starter-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot/3.2.5/spring-boot-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.2.5/spring-boot-autoconfigure-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.2.5/spring-boot-starter-logging-3.2.5.jar:/root/.m2/repository/ch/qos/logback/logback-classic/1.4.14/logback-classic-1.4.14.jar:/root/.m2/repository/ch/qos/logback/logback-core/1.4.14/logback-core-1.4.14.jar:/root/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.21.1/log4j-to-slf4j-2.21.1.jar:/root/.m2/repository/org/apache/logging/log4j/log4j-api/2.21.1/log4j-api-2.21.1.jar:/root/.m2/repository/org/slf4j/jul-to-slf4j/2.0.13/jul-to-slf4j-2.0.13.jar:/root/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar:/root/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.2.5/spring-boot-starter-json-3.2.5.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.15.4/jackson-databind-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.15.4/jackson-annotations-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.15.4/jackson-core-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.15.4/jackson-datatype-jdk8-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.4/jackson-datatype-jsr310-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.15.4/jackson-module-parameter-names-2.15.4.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.2.5/spring-boot-starter-tomcat-3.2.5.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.20/tomcat-embed-core-10.1.20.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.20/tomcat-embed-websocket-10.1.20.jar:/root/.m2/repository/org/springframework/spring-web/6.1.6/spring-web-6.1.6.jar:/root/.m2/repository/org/springframework/spring-beans/6.1.6/spring-beans-6.1.6.jar:/root/.m2/repository/org/springframework/spring-webmvc/6.1.6/spring-webmvc-6.1.6.jar:/root/.m2/repository/org/springframework/spring-aop/6.1.6/spring-aop-6.1.6.jar:/root/.m2/repository/org/springframework/spring-context/6.1.6/spring-context-6.1.6.jar:/root/.m2/repository/org/springframework/spring-expression/6.1.6/spring-expression-6.1.6.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.2.5/spring-boot-starter-validation-3.2.5.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.20/tomcat-embed-el-10.1.20.jar:/root/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar:/root/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar:/root/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar:/root/.m2/repository/com/fasterxml/classmate/1.6.0/classmate-1.6.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.2.5/spring-boot-starter-jdbc-3.2.5.jar:/root/.m2/repository/com/zaxxer/HikariCP/5.0.1/HikariCP-5.0.1.jar:/root/.m2/repository/org/slf4j/slf4j-api/2.0.13/slf4j-api-2.0.13.jar:/root/.m2/repository/org/springframework/spring-jdbc/6.1.6/spring-jdbc-6.1.6.jar:/root/.m2/repository/org/springframework/spring-tx/6.1.6/spring-tx-6.1.6.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-actuator/3.2.5/spring-boot-starter-actuator-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-actuator-autoconfigure/3.2.5/spring-boot-actuator-autoconfigure-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-actuator/3.2.5/spring-boot-actuator-3.2.5.jar:/root/.m2/repository/io/micrometer/micrometer-observation/1.12.5/micrometer-observation-1.12.5.jar:/root/.m2/repository/io/micrometer/micrometer-commons/1.12.5/micrometer-commons-1.12.5.jar:/root/.m2/repository/io/micrometer/micrometer-jakarta9/1.12.5/micrometer-jakarta9-1.12.5.jar:/root/.m2/repository/io/micrometer/micrometer-core/1.12.5/micrometer-core-1.12.5.jar:/root/.m2/repository/org/hdrhistogram/HdrHistogram/2.1.12/HdrHistogram-2.1.12.jar:/root/.m2/repository/org/latencyutils/LatencyUtils/2.0.3/LatencyUtils-2.0.3.jar:/root/.m2/repository/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar:/root/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.2.5/spring-boot-starter-test-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-test/3.2.5/spring-boot-test-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.2.5/spring-boot-test-autoconfigure-3.2.5.jar:/root/.m2/repository/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar:/root/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.2/jakarta.xml.bind-api-4.0.2.jar:/root/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.3/jakarta.activation-api-2.1.3.jar:/root/.m2/repository/net/minidev/json-smart/2.5.1/json-smart-2.5.1.jar:/root/.m2/repository/net/minidev/accessors-smart/2.5.1/accessors-smart-2.5.1.jar:/root/.m2/repository/org/ow2/asm/asm/9.6/asm-9.6.jar:/root/.m2/repository/org/assertj/assertj-core/3.24.2/assertj-core-3.24.2.jar:/root/.m2/repository/net/bytebuddy/byte-buddy/1.14.13/byte-buddy-1.14.13.jar:/root/.m2/repository/org/awaitility/awaitility/4.2.1/awaitility-4.2.1.jar:/root/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/root/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/root/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/root/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/root/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/root/.m2/repository/org/mockito/mockito-core/5.7.0/mockito-core-5.7.0.jar:/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.13/byte-buddy-agent-1.14.13.jar:/root/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/root/.m2/repository/org/mockito/mockito-junit-jupiter/5.7.0/mockito-junit-jupiter-5.7.0.jar:/root/.m2/repository/org/skyscreamer/jsonassert/1.5.1/jsonassert-1.5.1.jar:/root/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar:/root/.m2/repository/org/springframework/spring-core/6.1.6/spring-core-6.1.6.jar:/root/.m2/repository/org/springframework/spring-jcl/6.1.6/spring-jcl-6.1.6.jar:/root/.m2/repository/org/springframework/spring-test/6.1.6/spring-test-6.1.6.jar:/root/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar:"/>
+    <property name="java.vm.vendor" value="Eclipse Adoptium"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.vendor.url" value="https://adoptium.net/"/>
+    <property name="user.timezone" value="Etc/UTC"/>
+    <property name="org.jboss.logging.provider" value="slf4j"/>
+    <property name="os.name" value="Linux"/>
+    <property name="java.vm.specification.version" value="21"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/temurin-21-jdk-amd64/lib"/>
+    <property name="sun.java.command" value="/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server/target/surefire/surefirebooter-20260723184230959_3.jar /root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server/target/surefire 2026-07-23T18-42-30_882-jvmRun1 surefire-20260723184230959_1tmp surefire_0-20260723184230959_2tmp"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="surefire.test.class.path" value="/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server/target/test-classes:/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server/target/classes:/root/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.2.5/spring-boot-starter-web-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter/3.2.5/spring-boot-starter-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot/3.2.5/spring-boot-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.2.5/spring-boot-autoconfigure-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.2.5/spring-boot-starter-logging-3.2.5.jar:/root/.m2/repository/ch/qos/logback/logback-classic/1.4.14/logback-classic-1.4.14.jar:/root/.m2/repository/ch/qos/logback/logback-core/1.4.14/logback-core-1.4.14.jar:/root/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.21.1/log4j-to-slf4j-2.21.1.jar:/root/.m2/repository/org/apache/logging/log4j/log4j-api/2.21.1/log4j-api-2.21.1.jar:/root/.m2/repository/org/slf4j/jul-to-slf4j/2.0.13/jul-to-slf4j-2.0.13.jar:/root/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar:/root/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.2.5/spring-boot-starter-json-3.2.5.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.15.4/jackson-databind-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.15.4/jackson-annotations-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.15.4/jackson-core-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.15.4/jackson-datatype-jdk8-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.4/jackson-datatype-jsr310-2.15.4.jar:/root/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.15.4/jackson-module-parameter-names-2.15.4.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.2.5/spring-boot-starter-tomcat-3.2.5.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.20/tomcat-embed-core-10.1.20.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.20/tomcat-embed-websocket-10.1.20.jar:/root/.m2/repository/org/springframework/spring-web/6.1.6/spring-web-6.1.6.jar:/root/.m2/repository/org/springframework/spring-beans/6.1.6/spring-beans-6.1.6.jar:/root/.m2/repository/org/springframework/spring-webmvc/6.1.6/spring-webmvc-6.1.6.jar:/root/.m2/repository/org/springframework/spring-aop/6.1.6/spring-aop-6.1.6.jar:/root/.m2/repository/org/springframework/spring-context/6.1.6/spring-context-6.1.6.jar:/root/.m2/repository/org/springframework/spring-expression/6.1.6/spring-expression-6.1.6.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.2.5/spring-boot-starter-validation-3.2.5.jar:/root/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.20/tomcat-embed-el-10.1.20.jar:/root/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar:/root/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar:/root/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar:/root/.m2/repository/com/fasterxml/classmate/1.6.0/classmate-1.6.0.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.2.5/spring-boot-starter-jdbc-3.2.5.jar:/root/.m2/repository/com/zaxxer/HikariCP/5.0.1/HikariCP-5.0.1.jar:/root/.m2/repository/org/slf4j/slf4j-api/2.0.13/slf4j-api-2.0.13.jar:/root/.m2/repository/org/springframework/spring-jdbc/6.1.6/spring-jdbc-6.1.6.jar:/root/.m2/repository/org/springframework/spring-tx/6.1.6/spring-tx-6.1.6.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-actuator/3.2.5/spring-boot-starter-actuator-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-actuator-autoconfigure/3.2.5/spring-boot-actuator-autoconfigure-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-actuator/3.2.5/spring-boot-actuator-3.2.5.jar:/root/.m2/repository/io/micrometer/micrometer-observation/1.12.5/micrometer-observation-1.12.5.jar:/root/.m2/repository/io/micrometer/micrometer-commons/1.12.5/micrometer-commons-1.12.5.jar:/root/.m2/repository/io/micrometer/micrometer-jakarta9/1.12.5/micrometer-jakarta9-1.12.5.jar:/root/.m2/repository/io/micrometer/micrometer-core/1.12.5/micrometer-core-1.12.5.jar:/root/.m2/repository/org/hdrhistogram/HdrHistogram/2.1.12/HdrHistogram-2.1.12.jar:/root/.m2/repository/org/latencyutils/LatencyUtils/2.0.3/LatencyUtils-2.0.3.jar:/root/.m2/repository/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar:/root/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar:/root/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.2.5/spring-boot-starter-test-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-test/3.2.5/spring-boot-test-3.2.5.jar:/root/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.2.5/spring-boot-test-autoconfigure-3.2.5.jar:/root/.m2/repository/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar:/root/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.2/jakarta.xml.bind-api-4.0.2.jar:/root/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.3/jakarta.activation-api-2.1.3.jar:/root/.m2/repository/net/minidev/json-smart/2.5.1/json-smart-2.5.1.jar:/root/.m2/repository/net/minidev/accessors-smart/2.5.1/accessors-smart-2.5.1.jar:/root/.m2/repository/org/ow2/asm/asm/9.6/asm-9.6.jar:/root/.m2/repository/org/assertj/assertj-core/3.24.2/assertj-core-3.24.2.jar:/root/.m2/repository/net/bytebuddy/byte-buddy/1.14.13/byte-buddy-1.14.13.jar:/root/.m2/repository/org/awaitility/awaitility/4.2.1/awaitility-4.2.1.jar:/root/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/root/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/root/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/root/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/root/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/root/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/root/.m2/repository/org/mockito/mockito-core/5.7.0/mockito-core-5.7.0.jar:/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.13/byte-buddy-agent-1.14.13.jar:/root/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/root/.m2/repository/org/mockito/mockito-junit-jupiter/5.7.0/mockito-junit-jupiter-5.7.0.jar:/root/.m2/repository/org/skyscreamer/jsonassert/1.5.1/jsonassert-1.5.1.jar:/root/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar:/root/.m2/repository/org/springframework/spring-core/6.1.6/spring-core-6.1.6.jar:/root/.m2/repository/org/springframework/spring-jcl/6.1.6/spring-jcl-6.1.6.jar:/root/.m2/repository/org/springframework/spring-test/6.1.6/spring-test-6.1.6.jar:/root/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar:"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="user.home" value="/root"/>
+    <property name="user.language" value="en"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.version.date" value="2026-04-21"/>
+    <property name="java.home" value="/usr/lib/jvm/temurin-21-jdk-amd64"/>
+    <property name="file.separator" value="/"/>
+    <property name="basedir" value="/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server"/>
+    <property name="java.vm.compressedOopsMode" value="32-bit"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="FILE_LOG_CHARSET" value="UTF-8"/>
+    <property name="java.awt.headless" value="true"/>
+    <property name="surefire.real.class.path" value="/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server/target/surefire/surefirebooter-20260723184230959_3.jar"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="java.runtime.version" value="21.0.11+10-LTS"/>
+    <property name="user.name" value="root"/>
+    <property name="stdout.encoding" value="UTF-8"/>
+    <property name="path.separator" value=":"/>
+    <property name="os.version" value="6.8.0-31-generic"/>
+    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+    <property name="java.vendor.version" value="Temurin-21.0.11+10"/>
+    <property name="LOG_FILE" value="/tmp/mcp-server.log"/>
+    <property name="localRepository" value="/root/.m2/repository"/>
+    <property name="java.vendor.url.bug" value="https://github.com/adoptium/adoptium-support/issues"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="com.zaxxer.hikari.pool_number" value="1"/>
+    <property name="java.version" value="21.0.11"/>
+    <property name="user.dir" value="/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="PID" value="12755"/>
+    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
+    <property name="native.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="stderr.encoding" value="UTF-8"/>
+    <property name="java.vendor" value="Eclipse Adoptium"/>
+    <property name="java.vm.version" value="21.0.11+10-LTS"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="java.class.version" value="65.0"/>
+    <property name="LOGGED_APPLICATION_NAME" value="[mcp-server] "/>
+  </properties>
+  <testcase name="shouldRejectInvalidJavaModuleName" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.771">
+    <system-out><![CDATA[18:42:32.529 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.marketinghub.mcpserver.controller.McpControllerTest]: McpControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+18:42:32.613 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.marketinghub.mcpserver.McpServerApplication for test class com.marketinghub.mcpserver.controller.McpControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2026-07-23T18:42:32.888Z  INFO 12755 --- [mcp-server] [           main] c.m.m.controller.McpControllerTest       : Starting McpControllerTest using Java 21.0.11 with PID 12755 (started by root in /root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/mcp-server)
+2026-07-23T18:42:32.889Z  INFO 12755 --- [mcp-server] [           main] c.m.m.controller.McpControllerTest       : No active profile set, falling back to 1 default profile: "default"
+2026-07-23T18:42:34.207Z  INFO 12755 --- [mcp-server] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-07-23T18:42:34.207Z  INFO 12755 --- [mcp-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-07-23T18:42:34.212Z  INFO 12755 --- [mcp-server] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoint(s) beneath base path '/actuator'
+2026-07-23T18:42:34.223Z  INFO 12755 --- [mcp-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 15 ms
+2026-07-23T18:42:34.273Z  INFO 12755 --- [mcp-server] [           main] c.m.m.controller.McpControllerTest       : Started McpControllerTest in 1.599 seconds (process running for 3.241)
+2026-07-23T18:42:34.333Z  INFO 12755 --- [mcp-server] [           main] c.m.m.c.DatabaseConnectionAttemptLogger  : Tentando conexão com banco de dados jdbcUrl='jdbc:h2:mem:mcpdb;MODE=MySQL;DB_CLOSE_DELAY=-1' host='unknown' port='3306' user='sa'
+2026-07-23T18:42:34.995Z  INFO 12755 --- [mcp-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-07-23T18:42:35.007Z  INFO 12755 --- [mcp-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-07-23T18:42:35.073Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=11 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.074Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=java_module_logs requestId=11 argumentKeys=[module]
+2026-07-23T18:42:35.074Z  WARN 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP java_module_logs inválido: requestId=11 module=unknown motivo=module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service
+]]></system-out>
+    <system-err><![CDATA[WARNING: A Java agent has been loaded dynamically (/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.13/byte-buddy-agent-1.14.13.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+  </testcase>
+  <testcase name="shouldFilterAndPaginateJavaModuleLogs" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.021">
+    <system-out><![CDATA[2026-07-23T18:42:35.131Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=15 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.132Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=java_module_logs requestId=15 argumentKeys=[contains, offset, module, lines]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldInitializeMcpServer" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.011">
+    <system-out><![CDATA[2026-07-23T18:42:35.152Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=1 method=initialize remoteAddr=127.0.0.1 userAgent=null
+]]></system-out>
+  </testcase>
+  <testcase name="shouldHandleErrorResponseWhenRequestIdIsNull" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.022">
+    <system-out><![CDATA[2026-07-23T18:42:35.173Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=null method=unknown_method remoteAddr=127.0.0.1 userAgent=null
+]]></system-out>
+  </testcase>
+  <testcase name="shouldExecuteReadOnlyQueryTool" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.026">
+    <system-out><![CDATA[2026-07-23T18:42:35.191Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=8 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.191Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=db_query requestId=8 argumentKeys=[query, limit]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldReadTableRows" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.015">
+    <system-out><![CDATA[2026-07-23T18:42:35.217Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=6 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.218Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=db_read_table requestId=6 argumentKeys=[offset, limit, table]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldReadJavaModuleLogs" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.021">
+    <system-out><![CDATA[2026-07-23T18:42:35.238Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=10 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.238Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=java_module_logs requestId=10 argumentKeys=[module, lines]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldReadChatContainerLogs" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.019">
+    <system-out><![CDATA[2026-07-23T18:42:35.259Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=18 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.260Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=chat_container_logs requestId=18 argumentKeys=[container, contains, lines]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldReadVideoManagementServiceLogs" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.011">
+    <system-out><![CDATA[2026-07-23T18:42:35.280Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=21 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.280Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=java_module_logs requestId=21 argumentKeys=[module, lines]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldRejectInvalidTableName" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.011">
+    <system-out><![CDATA[2026-07-23T18:42:35.294Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=7 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.294Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=db_read_table requestId=7 argumentKeys=[table]
+2026-07-23T18:42:35.294Z  WARN 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP db_read_table inválido: requestId=7 table=leads;drop table leads motivo=table contains invalid characters
+]]></system-out>
+  </testcase>
+  <testcase name="shouldRejectGithubToolWhenDisabled" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.012">
+    <system-out><![CDATA[2026-07-23T18:42:35.308Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=14 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.308Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=github_actions_get_run_logs requestId=14 argumentKeys=[run_id]
+2026-07-23T18:42:35.308Z  WARN 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP github_actions_get_run_logs inválido: requestId=14 runId=123 motivo=github tools are disabled (set mcp.github.enabled=true)
+]]></system-out>
+  </testcase>
+  <testcase name="shouldRejectNonSelectQuery" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.008">
+    <system-out><![CDATA[2026-07-23T18:42:35.317Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=9 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.318Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=db_query requestId=9 argumentKeys=[query]
+2026-07-23T18:42:35.318Z  WARN 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP db_query inválido: requestId=9 limit=100 motivo=only SELECT queries are allowed
+]]></system-out>
+  </testcase>
+  <testcase name="shouldReadMoisSalesLibraryWorkerLogs" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.015">
+    <system-out><![CDATA[2026-07-23T18:42:35.332Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=16 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.333Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=java_module_logs requestId=16 argumentKeys=[module, lines]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldReadPdePlatformBackendLogs" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.011">
+    <system-out><![CDATA[2026-07-23T18:42:35.345Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=20 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.345Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=java_module_logs requestId=20 argumentKeys=[module, lines]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldListDatabaseTables" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.019">
+    <system-out><![CDATA[2026-07-23T18:42:35.362Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=5 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.363Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=db_list_tables requestId=5 argumentKeys=[]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldRejectChatContainerOutsideAllowList" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.007">
+    <system-out><![CDATA[2026-07-23T18:42:35.379Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=19 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.379Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=chat_container_logs requestId=19 argumentKeys=[container, lines]
+2026-07-23T18:42:35.379Z  WARN 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP chat_container_logs inválido: requestId=19 container=marketinghub-backend motivo=container must be one of: marketinghub-fashion-chat
+]]></system-out>
+  </testcase>
+  <testcase name="shouldCallDbHealthTool" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.007">
+    <system-out><![CDATA[2026-07-23T18:42:35.386Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=2 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.386Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=db_health requestId=2 argumentKeys=[]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldExposeGetEndpointForReachabilityChecks" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.006"/>
+  <testcase name="shouldReadOpsMonitorWorkerLogs" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.006">
+    <system-out><![CDATA[2026-07-23T18:42:35.399Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=17 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.399Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=java_module_logs requestId=17 argumentKeys=[module, lines]
+]]></system-out>
+  </testcase>
+  <testcase name="shouldRejectMetaToolWhenDisabled" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.005">
+    <system-out><![CDATA[2026-07-23T18:42:35.405Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=13 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.405Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=meta_graph_get requestId=13 argumentKeys=[path]
+2026-07-23T18:42:35.405Z  WARN 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP meta_graph_get inválido: requestId=13 path=me motivo=meta tools are disabled (set mcp.meta.enabled=true)
+]]></system-out>
+  </testcase>
+  <testcase name="shouldListMetaTools" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.007">
+    <system-out><![CDATA[2026-07-23T18:42:35.410Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=12 method=tools/list remoteAddr=127.0.0.1 userAgent=null
+]]></system-out>
+  </testcase>
+  <testcase name="shouldIgnoreAuthorizationHeaderWhenClientStillSendsBearerToken" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.005">
+    <system-out><![CDATA[2026-07-23T18:42:35.418Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=17 method=initialize remoteAddr=127.0.0.1 userAgent=null
+]]></system-out>
+  </testcase>
+  <testcase name="shouldCallPdeDatabaseTools" classname="com.marketinghub.mcpserver.controller.McpControllerTest" time="0.009">
+    <system-out><![CDATA[2026-07-23T18:42:35.424Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=51 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.425Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=pde_db_health requestId=51 argumentKeys=[]
+2026-07-23T18:42:35.427Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : Nova requisição MCP recebida: requestId=52 method=tools/call remoteAddr=127.0.0.1 userAgent=null
+2026-07-23T18:42:35.427Z  INFO 12755 --- [mcp-server] [           main] c.m.mcpserver.controller.McpController   : MCP tool call recebido: tool=pde_db_query requestId=52 argumentKeys=[query, limit]
+]]></system-out>
+  </testcase>
+</testsuite>

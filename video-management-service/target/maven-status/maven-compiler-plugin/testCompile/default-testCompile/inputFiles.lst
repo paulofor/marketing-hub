@@ -1,1 +1,8 @@
-/root/ai-hub/src/ai-hub-91739aac-eb07-4253-bd75-6429899c5835-4ls0lz/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/VideoManagementServiceApplicationTests.java
+/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/architecture/ArquiteturaTest.java
+/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoJobProcessorTest.java
+/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoAssetUploaderTest.java
+/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/LumaRayVideoProviderTest.java
+/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/VeoVideoProviderTest.java
+/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/client/BackendVideoClientTest.java
+/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/StubVideoProviderTest.java
+/root/ai-hub/src/ai-hub-349f70da-a9e5-4547-a2a2-51405c0f6e2d-OoEs7n/repo/video-management-service/src/test/java/com/marketinghub/videomanagement/VideoManagementServiceApplicationTests.java

@@ -12,6 +12,7 @@ import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -41,6 +42,7 @@ public class LumaRayVideoProvider implements VideoProvider {
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
+    private final WebClient downloadWebClient;
 
     /** Inicializa o provider Luma com configuração, mapper JSON e WebClient. */
     public LumaRayVideoProvider(VideoManagementProperties properties,
@@ -50,6 +52,12 @@ public class LumaRayVideoProvider implements VideoProvider {
         this.objectMapper = objectMapper;
         this.webClient = webClientBuilder
                 .baseUrl(resolveBaseUrl())
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
+                .exchangeStrategies(ExchangeStrategies.builder()
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
+                        .build())
+                .build();
+        this.downloadWebClient = webClientBuilder.clone()
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
@@ -171,8 +179,8 @@ public class LumaRayVideoProvider implements VideoProvider {
 
     /** Baixa uma cena MP4 gerada pela Luma. */
     private Path downloadScene(SalesVideoJob job, int sceneIndex, String videoUrl) {
-        ResponseEntity<byte[]> response = webClient.get()
-                .uri(videoUrl)
+        ResponseEntity<byte[]> response = downloadWebClient.get()
+                .uri(URI.create(videoUrl))
                 .retrieve()
                 .toEntity(byte[].class)
                 .block();

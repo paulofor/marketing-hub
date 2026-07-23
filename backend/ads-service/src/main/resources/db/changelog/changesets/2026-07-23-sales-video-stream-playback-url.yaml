@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-23-sales-video-stream-playback-url
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: sales_video_job
+        - not:
+            - columnExists:
+                tableName: sales_video_job
+                columnName: stream_playback_url
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_job
+                  ADD COLUMN stream_playback_url VARCHAR(2048) NULL AFTER provider_job_id;

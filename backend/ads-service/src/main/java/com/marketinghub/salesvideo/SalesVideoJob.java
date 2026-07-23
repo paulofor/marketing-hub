@@ -69,6 +69,9 @@ public class SalesVideoJob {
     private String providerName;
     private String providerJobId;
 
+    @Column(name = "stream_playback_url", length = 2048)
+    private String streamPlaybackUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "job_type", nullable = false, length = 32)
     private SalesVideoJobType jobType;

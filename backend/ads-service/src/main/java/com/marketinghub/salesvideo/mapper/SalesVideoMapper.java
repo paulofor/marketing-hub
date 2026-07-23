@@ -10,6 +10,7 @@ public final class SalesVideoMapper {
     private SalesVideoMapper() {
     }
 
+    /** Converte o perfil de video para o contrato de leitura usado pelas telas. */
     public static SalesVideoProfileDto toDto(SalesVideoProfile profile,
                                              SalesVideoScript latestScript,
                                              SalesVideoJob lastJob) {
@@ -44,6 +45,7 @@ public final class SalesVideoMapper {
         return dto;
     }
 
+    /** Converte um roteiro de video para DTO. */
     public static SalesVideoScriptDto toDto(SalesVideoScript script) {
         if (script == null) {
             return null;
@@ -67,6 +69,7 @@ public final class SalesVideoMapper {
         return dto;
     }
 
+    /** Converte um job de video para DTO, incluindo a URL publicavel de streaming. */
     public static SalesVideoJobDto toDto(SalesVideoJob job) {
         if (job == null) {
             return null;
@@ -80,6 +83,7 @@ public final class SalesVideoMapper {
         dto.setExecutionMode(job.getExecutionMode());
         dto.setProviderName(job.getProviderName());
         dto.setProviderJobId(job.getProviderJobId());
+        dto.setStreamPlaybackUrl(job.getStreamPlaybackUrl());
         dto.setJobType(job.getJobType());
         dto.setStatus(job.getStatus());
         dto.setRetryAttempt(job.getRetryAttempt());
@@ -104,6 +108,7 @@ public final class SalesVideoMapper {
         return dto;
     }
 
+    /** Converte um evento de job para DTO de auditoria. */
     public static SalesVideoJobEventDto toDto(SalesVideoJobEvent event) {
         if (event == null) {
             return null;
@@ -119,6 +124,7 @@ public final class SalesVideoMapper {
         return dto;
     }
 
+    /** Converte um slot de video publicado na landing para DTO. */
     public static LandingVideoSlotDto toDto(LandingVideoSlot slot) {
         if (slot == null) {
             return null;
@@ -146,6 +152,7 @@ public final class SalesVideoMapper {
         dto.setUpdatedAt(slot.getUpdatedAt());
         return dto;
     }
+    /** Converte historico de slot de video para DTO de auditoria. */
     public static LandingVideoSlotHistoryDto toDto(LandingVideoSlotHistory history) {
         if (history == null) {
             return null;

@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-23 — Player de streaming adaptativo para vídeo comercial
+
+- Problema observado: entregar MP4 bruto direto para a cliente aumenta tempo de início, consumo de banda e risco de abandono no celular.
+- Causa-raiz tratada: o contrato de conclusão do render só expunha asset bruto, sem URL publicável de streaming adaptativo.
+- Correção preparada: `sales_video_job` passou a persistir `stream_playback_url`; o callback de conclusão aceita `streamPlaybackUrl`; os DTOs expõem essa URL; Marketing Hub e PDE priorizam HLS adaptativo com MP4 como fallback.
+- Regra operacional: vídeo bruto/renderizado é ativo de auditoria e contingência; a experiência principal da usuária deve usar stream adaptativo sempre que houver URL processada pelo pipeline de mídia.
+
 ## 2026-07-21 — Vídeos de entrada do PDE pelo Marketing Hub
 
 - Problema observado: a nova área `Vídeos` existia como planejamento local no navegador, mas isso não criava artefato rastreável no Marketing Hub.

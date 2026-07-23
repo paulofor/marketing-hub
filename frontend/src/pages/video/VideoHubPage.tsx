@@ -18,6 +18,7 @@ import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSales
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
 import { useAsset } from "../../api/media/useAsset";
+import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import { useTenantContext } from "../../utils/tenantContext";
 import "./VideoHubPage.css";
 
@@ -100,6 +101,8 @@ export default function VideoHubPage() {
   const scriptStage = stages.find((stage) => stage.id === "script") ?? stages[2];
   const readyCount = stages.filter((stage) => stage.status === "READY").length;
   const latestAssetUrl = latestAsset?.publicUrl ?? "";
+  const latestStreamPlaybackUrl = latestJob?.streamPlaybackUrl?.trim() ?? "";
+  const latestPlaybackUrl = latestStreamPlaybackUrl || latestAssetUrl;
 
   useEffect(() => {
     if (selectedProductId || productList.length === 0) {
@@ -322,12 +325,13 @@ export default function VideoHubPage() {
               <span className="video-hub-page__stage-kicker">Assistir</span>
               <h2>Vídeo MUSA do diagnóstico</h2>
               <p>
-                Quando o render terminar, o MP4 aparece aqui para revisão antes de entrar no funil.
+                Quando o stream estiver processado, o player usa HLS adaptativo. O MP4 fica como
+                fallback para revisão e contingência.
               </p>
             </div>
             <div className="video-hub-page__player">
-              {latestAssetUrl ? (
-                <video src={latestAssetUrl} controls poster={undefined} />
+              {latestPlaybackUrl ? (
+                <AdaptiveVideoPlayer src={latestPlaybackUrl} fallbackSrc={latestAssetUrl} controls />
               ) : (
                 <div className="video-hub-page__player-empty">
                   <PlayCircle size={44} aria-hidden="true" />
@@ -410,6 +414,12 @@ export default function VideoHubPage() {
               <span className="video-hub-page__job-ready">
                 <PlayCircle size={16} aria-hidden="true" />
                 Asset #{latestJob.assetId}
+              </span>
+            ) : null}
+            {latestStreamPlaybackUrl ? (
+              <span className="video-hub-page__job-ready">
+                <PlayCircle size={16} aria-hidden="true" />
+                Stream HLS pronto
               </span>
             ) : null}
           </div>

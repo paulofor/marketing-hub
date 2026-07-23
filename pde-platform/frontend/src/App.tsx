@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, CalendarDays, Check, ChevronRight, ClipboardCheck, CreditCard, Gauge, KeyRound, Library, LoaderCircle, Lock, LogIn, Mail, Pencil, Sparkles, Target, User } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
+import { AdaptiveVideoPlayer } from './AdaptiveVideoPlayer';
 import './styles.css';
 
 type Theme = {
@@ -524,7 +525,7 @@ function resolveUrlHost(url: string) {
   }
 }
 
-function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID' | 'VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE' | 'VITE_MUSA_HERO_VIDEO_URL', fallback = '') {
+function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID' | 'VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE' | 'VITE_MUSA_HERO_VIDEO_URL' | 'VITE_MUSA_HERO_STREAM_URL', fallback = '') {
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
 }
 
@@ -646,6 +647,8 @@ function App() {
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
   const heroVideoUrl = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? '');
+  const heroStreamUrl = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
+  const heroPlaybackUrl = heroStreamUrl || heroVideoUrl;
 
   const activeMission = useMemo(() => {
     const missionList = workspace?.product.missions ?? product.missions;
@@ -1760,8 +1763,8 @@ function App() {
           {showPublicDiagnosticVideoHero && (
             <section className="public-video-hero" aria-label="Vídeo curto Método MUSA" data-analytics-section="public_diagnostic_video_hero">
               <div className="public-video-frame">
-                {heroVideoUrl ? (
-                  <video className="public-hero-video" src={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
+                {heroPlaybackUrl ? (
+                  <AdaptiveVideoPlayer className="public-hero-video" src={heroPlaybackUrl} fallbackSrc={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
                 ) : (
                   <div className="public-video-storyboard" aria-hidden="true">
                     <img src="/assets/musa-diagnostic-slide-1.png" alt="" />
@@ -1771,7 +1774,7 @@ function App() {
                 )}
                 <div className="public-video-play-badge">
                   <Sparkles size={17} />
-                  <span>{heroVideoUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
+                  <span>{heroPlaybackUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
                 </div>
               </div>
               <div className="public-video-copy">
@@ -2123,17 +2126,17 @@ function App() {
           </div>
           {showVideoHero ? (
             <div className="experience-card login-cover video-login-cover" aria-label="Vídeo da experiência Método MUSA" data-analytics-section="musa_video_hero">
-              {heroVideoUrl ? (
-                <video className="musa-hero-video" src={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
+              {heroPlaybackUrl ? (
+                <AdaptiveVideoPlayer className="musa-hero-video" src={heroPlaybackUrl} fallbackSrc={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
               ) : (
                 <div className="musa-video-fallback" aria-hidden="true">
                   <img src="/assets/musa-editorial-presenca.png" alt="" />
                 </div>
               )}
               <div className="video-hero-caption">
-                <span>{heroVideoUrl ? 'Prévia em vídeo' : 'Prévia visual'}</span>
+                <span>{heroPlaybackUrl ? 'Prévia em vídeo' : 'Prévia visual'}</span>
                 <strong>Veja o gesto simples que muda a percepção da sua presença.</strong>
-                <p>{heroVideoUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro passo prático do Dia 1.' : 'Vídeo VEO ainda não configurado neste ambiente. A tela preserva a promessa e bloqueia liberação como vídeo real.'}</p>
+                <p>{heroPlaybackUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro passo prático do Dia 1.' : 'Vídeo VEO ainda não configurado neste ambiente. A tela preserva a promessa e bloqueia liberação como vídeo real.'}</p>
               </div>
             </div>
           ) : (

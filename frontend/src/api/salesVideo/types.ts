@@ -51,6 +51,7 @@ export interface SalesVideoJob {
   executionMode?: SalesVideoExecutionMode | null;
   providerName?: string | null;
   providerJobId?: string | null;
+  streamPlaybackUrl?: string | null;
   jobType: SalesVideoJobType;
   status: SalesVideoStatus;
   retryAttempt?: number | null;

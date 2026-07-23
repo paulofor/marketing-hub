@@ -162,12 +162,14 @@ class SalesVideoJobServiceTest {
         JobCompletionRequest request = new JobCompletionRequest();
         request.setStatus(SalesVideoStatus.VIDEO_READY);
         request.setMetadataJson("{\"duration_seconds\":28,\"resolution\":\"720p\"}");
+        request.setStreamPlaybackUrl(" https://stream.example.com/video/playlist.m3u8 ");
         given(jobRepository.findById(20431L)).willReturn(Optional.of(job));
         given(jobRepository.save(job)).willReturn(job);
 
         SalesVideoJobDto result = service.complete(20431L, request);
 
         assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
+        assertThat(result.getStreamPlaybackUrl()).isEqualTo("https://stream.example.com/video/playlist.m3u8");
         assertThat(job.getFailureCode()).isNull();
         verify(completedRenderAssetSync).syncCompletedRender(
                 org.mockito.Mockito.eq(job),

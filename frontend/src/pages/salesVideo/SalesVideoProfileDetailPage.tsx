@@ -20,6 +20,7 @@ import { useCreateSalesVideoCommercialPlaybook } from "../../api/salesVideo/useC
 import { useCreateSalesVideoConversionEvent } from "../../api/salesVideo/useCreateSalesVideoConversionEvent";
 import { useSalesVideoPerformanceSummary } from "../../api/salesVideo/useSalesVideoPerformanceSummary";
 import { useAsset } from "../../api/media/useAsset";
+import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import {
   LandingVideoSlot,
   SalesVideoConversionEventType,
@@ -171,14 +172,19 @@ export default function SalesVideoProfileDetailPage() {
     setSelectedSlotId(null);
   }, [landingId]);
 
+  const readyWatchableJobs = useMemo(() => {
+    return (jobs ?? []).filter((job) => Boolean(job.streamPlaybackUrl || job.assetId));
+  }, [jobs]);
   const readyJobsWithAsset = useMemo(() => {
     return (jobs ?? []).filter((job): job is SalesVideoJob & { assetId: number } => Boolean(job.assetId));
   }, [jobs]);
   const latestWatchableJob = useMemo(() => {
-    return readyJobsWithAsset[0] ?? undefined;
-  }, [readyJobsWithAsset]);
+    return readyWatchableJobs[0] ?? undefined;
+  }, [readyWatchableJobs]);
   const { data: watchableAsset } = useAsset(latestWatchableJob?.assetId);
   const watchableAssetUrl = watchableAsset?.publicUrl ?? "";
+  const watchableStreamUrl = latestWatchableJob?.streamPlaybackUrl?.trim() ?? "";
+  const watchablePlaybackUrl = watchableStreamUrl || watchableAssetUrl;
 
   if (!profileId) {
     return (
@@ -420,19 +426,20 @@ export default function SalesVideoProfileDetailPage() {
             <div>
               <h2 className="h5 mb-1">Assistir ao vídeo</h2>
               <p className="text-muted mb-0">
-                Player do asset final renderizado. Enquanto o render não termina, use o roteiro e
-                solicite a criação abaixo.
+                Player do stream publicável. Quando HLS ainda não existe, usa o MP4 renderizado como
+                fallback.
               </p>
             </div>
             {latestWatchableJob ? (
               <span className="badge bg-success">Job #{latestWatchableJob.id}</span>
             ) : (
-              <span className="badge bg-secondary">Sem MP4 final</span>
+              <span className="badge bg-secondary">Sem vídeo final</span>
             )}
           </div>
-          {watchableAssetUrl ? (
-            <video
-              src={watchableAssetUrl}
+          {watchablePlaybackUrl ? (
+            <AdaptiveVideoPlayer
+              src={watchablePlaybackUrl}
+              fallbackSrc={watchableAssetUrl}
               className="w-100 bg-dark rounded"
               style={{ maxHeight: 560 }}
               controls
@@ -442,7 +449,7 @@ export default function SalesVideoProfileDetailPage() {
               <p className="fw-semibold mb-1">O vídeo real ainda não foi renderizado.</p>
               <p className="text-muted mb-0">
                 Salve/aprove o roteiro MUSA e clique em “Solicitar renderização”. Quando o job
-                devolver um asset, ele aparecerá aqui.
+                devolver um stream ou asset, ele aparecerá aqui.
               </p>
             </div>
           )}

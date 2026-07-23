@@ -192,6 +192,7 @@ public class SalesVideoJobService {
         job.setStatus(finalStatus);
         job.setFinishedAt(Instant.now());
         job.setProviderJobId(request.getProviderJobId());
+        job.setStreamPlaybackUrl(normalizeStreamPlaybackUrl(request.getStreamPlaybackUrl()));
         job.setMetadataJson(request.getMetadataJson());
         attachAsset(job::setAsset, request.getAssetId());
         attachAsset(job::setPosterAsset, request.getPosterAssetId());
@@ -363,6 +364,11 @@ public class SalesVideoJobService {
     /** Extrai a resolução auditada do metadata do worker quando disponível. */
     private String resolveResolution(JobCompletionRequest request) {
         return readStringField(request.getMetadataJson(), "resolution");
+    }
+
+    /** Normaliza a URL HLS/DASH publicavel recebida do pipeline de midia. */
+    private String normalizeStreamPlaybackUrl(String streamPlaybackUrl) {
+        return StringUtils.hasText(streamPlaybackUrl) ? streamPlaybackUrl.trim() : null;
     }
 
     /** Lê um campo numérico simples de um payload JSON de metadata. */

@@ -464,6 +464,9 @@ components:
         executionMode: { $ref: '#/components/schemas/SalesVideoExecutionMode' }
         providerName: { type: string }
         providerJobId: { type: string }
+        streamPlaybackUrl:
+          type: string
+          description: URL publicavel de streaming adaptativo, preferencialmente HLS/DASH, usada pelo player comercial antes do MP4 bruto.
         jobType: { $ref: '#/components/schemas/SalesVideoJobType' }
         status: { $ref: '#/components/schemas/SalesVideoStatus' }
         retryAttempt: { type: integer }
@@ -601,6 +604,9 @@ components:
         posterAssetId: { type: integer, format: int64 }
         vttAssetId: { type: integer, format: int64 }
         providerJobId: { type: string }
+        streamPlaybackUrl:
+          type: string
+          description: URL publicavel de streaming adaptativo gerada pelo pipeline de midia para o player comercial.
         metadataJson:
           type: string
           description: Metadata estruturado do worker. Para render, deve incluir `duration_seconds` e `resolution` para auditoria comercial do vídeo.

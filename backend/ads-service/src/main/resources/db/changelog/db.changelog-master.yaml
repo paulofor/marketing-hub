@@ -1373,6 +1373,10 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-07-23-pde-funnel-client-ip.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-07-18-pde-mission-interactions.yaml
       relativeToChangelogFile: true
 

@@ -562,6 +562,7 @@ export default function ExperimentPostDeployMonitorTab({
                 <thead>
                   <tr>
                     <th>Sessão</th>
+                    <th>IP</th>
                     <th>Abandono</th>
                     <th>Última ação</th>
                     <th>Telas/seções</th>
@@ -576,6 +577,7 @@ export default function ExperimentPostDeployMonitorTab({
                       <td className="font-monospace small">
                         {(journey.sessionId ?? "sem-sessao").slice(0, 12)}
                       </td>
+                      <td className="font-monospace small">{journey.clientIp ?? "—"}</td>
                       <td className="fw-semibold">{abandonmentLabel(journey.abandonmentPoint)}</td>
                       <td>{journey.lastActionName ?? journey.lastEventType ?? "—"}</td>
                       <td className="small text-muted">

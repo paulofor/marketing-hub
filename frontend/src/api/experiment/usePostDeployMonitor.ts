@@ -100,6 +100,7 @@ export interface PostDeployPdeTrafficSource {
 export interface PostDeployPdeSessionJourney {
   sessionId: string;
   visitorId?: string | null;
+  clientIp?: string | null;
   firstEventAt?: string | null;
   lastEventAt?: string | null;
   totalVisibleMs: number;

@@ -418,6 +418,7 @@ public class AccessService {
                 SELECT
                   COALESCE(e.session_id, e.event_id) AS resolved_session_id,
                   e.visitor_id,
+                  e.client_ip,
                   e.event_type,
                   e.page_url,
                   e.visible_ms,
@@ -748,6 +749,7 @@ public class AccessService {
         Map<String, Object> metadata = readMetadata(resultSet.getString("metadata_json"));
         return new SessionJourneyEvent(
                 resultSet.getString("visitor_id"),
+                resultSet.getString("client_ip"),
                 resultSet.getString("event_type"),
                 resultSet.getString("page_url"),
                 nullableLong(resultSet, "visible_ms"),
@@ -1198,12 +1200,12 @@ public class AccessService {
         String sql = """
                 INSERT INTO pde_funnel_event (
                   event_id, product_slug, experience_version, access_token, email, normalized_email, event_type,
-                  provider, source, page_url, referrer_url, session_id, visitor_id,
+                  provider, source, page_url, client_ip, referrer_url, session_id, visitor_id,
                   utm_source, utm_medium, utm_campaign, utm_content, utm_term,
                   device_type, screen_width, screen_height, viewport_width, viewport_height,
                   visible_ms, section_id, action_name, metadata_json, occurred_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """;
         try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -1218,23 +1220,24 @@ public class AccessService {
             statement.setString(8, blankToNull(request.provider()));
             statement.setString(9, blankToNull(request.source()));
             statement.setString(10, blankToNull(request.pageUrl()));
-            statement.setString(11, blankToNull(metadataString(metadata, "referrerUrl")));
-            statement.setString(12, blankToNull(metadataString(metadata, "sessionId")));
-            statement.setString(13, blankToNull(metadataString(metadata, "visitorId")));
-            statement.setString(14, blankToNull(metadataString(metadata, "utmSource")));
-            statement.setString(15, blankToNull(metadataString(metadata, "utmMedium")));
-            statement.setString(16, blankToNull(metadataString(metadata, "utmCampaign")));
-            statement.setString(17, blankToNull(metadataString(metadata, "utmContent")));
-            statement.setString(18, blankToNull(metadataString(metadata, "utmTerm")));
-            statement.setString(19, blankToNull(metadataString(metadata, "deviceType")));
-            setInteger(statement, 20, metadataLong(metadata, "screenWidth"));
-            setInteger(statement, 21, metadataLong(metadata, "screenHeight"));
-            setInteger(statement, 22, metadataLong(metadata, "viewportWidth"));
-            setInteger(statement, 23, metadataLong(metadata, "viewportHeight"));
-            setLong(statement, 24, metadataLong(metadata, "visibleMs"));
-            statement.setString(25, blankToNull(metadataString(metadata, "sectionId")));
-            statement.setString(26, blankToNull(metadataString(metadata, "actionName")));
-            statement.setString(27, metadata == null ? null : objectMapper.writeValueAsString(metadata));
+            statement.setString(11, blankToNull(request.clientIp()));
+            statement.setString(12, blankToNull(metadataString(metadata, "referrerUrl")));
+            statement.setString(13, blankToNull(metadataString(metadata, "sessionId")));
+            statement.setString(14, blankToNull(metadataString(metadata, "visitorId")));
+            statement.setString(15, blankToNull(metadataString(metadata, "utmSource")));
+            statement.setString(16, blankToNull(metadataString(metadata, "utmMedium")));
+            statement.setString(17, blankToNull(metadataString(metadata, "utmCampaign")));
+            statement.setString(18, blankToNull(metadataString(metadata, "utmContent")));
+            statement.setString(19, blankToNull(metadataString(metadata, "utmTerm")));
+            statement.setString(20, blankToNull(metadataString(metadata, "deviceType")));
+            setInteger(statement, 21, metadataLong(metadata, "screenWidth"));
+            setInteger(statement, 22, metadataLong(metadata, "screenHeight"));
+            setInteger(statement, 23, metadataLong(metadata, "viewportWidth"));
+            setInteger(statement, 24, metadataLong(metadata, "viewportHeight"));
+            setLong(statement, 25, metadataLong(metadata, "visibleMs"));
+            statement.setString(26, blankToNull(metadataString(metadata, "sectionId")));
+            statement.setString(27, blankToNull(metadataString(metadata, "actionName")));
+            statement.setString(28, metadata == null ? null : objectMapper.writeValueAsString(metadata));
             statement.executeUpdate();
         } catch (SQLException | IOException ex) {
             log.error(
@@ -1304,6 +1307,7 @@ public class AccessService {
     /** Evento interno já enriquecido para compor uma jornada individual. */
     private record SessionJourneyEvent(
             String visitorId,
+            String clientIp,
             String eventType,
             String pageUrl,
             Long visibleMs,
@@ -1323,6 +1327,7 @@ public class AccessService {
         private final Set<String> screenNames = new LinkedHashSet<>();
         private final Set<String> sectionIds = new LinkedHashSet<>();
         private String visitorId;
+        private String clientIp;
         private Instant firstEventAt;
         private Instant lastEventAt;
         private long totalVisibleMs;
@@ -1348,6 +1353,9 @@ public class AccessService {
         private void add(SessionJourneyEvent event) {
             if (visitorId == null || visitorId.isBlank()) {
                 visitorId = event.visitorId();
+            }
+            if (clientIp == null || clientIp.isBlank()) {
+                clientIp = event.clientIp();
             }
             firstEventAt = firstEventAt == null || event.occurredAt().isBefore(firstEventAt)
                     ? event.occurredAt()
@@ -1391,6 +1399,7 @@ public class AccessService {
             return new FunnelAnalyticsSessionJourneyDto(
                     sessionId,
                     visitorId,
+                    clientIp,
                     firstEventAt == null ? null : firstEventAt.toString(),
                     lastEventAt == null ? null : lastEventAt.toString(),
                     totalVisibleMs,

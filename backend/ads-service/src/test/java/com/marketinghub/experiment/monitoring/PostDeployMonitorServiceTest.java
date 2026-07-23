@@ -114,6 +114,7 @@ class PostDeployMonitorServiceTest {
                 List.of(new PdeAnalyticsSummary.PdeSessionJourney(
                         "session-1",
                         "visitor-1",
+                        "203.0.113.10",
                         "2026-07-21T01:59:00Z",
                         "2026-07-21T02:00:00Z",
                         2000,
@@ -149,6 +150,9 @@ class PostDeployMonitorServiceTest {
         assertThat(response.pde().recentJourneys())
                 .extracting("abandonmentPoint")
                 .contains("SAIU_NA_PRIMEIRA_DOBRA");
+        assertThat(response.pde().recentJourneys())
+                .extracting("clientIp")
+                .contains("203.0.113.10");
         assertThat(response.pdeDeployments())
                 .extracting("environment")
                 .contains("homolog");

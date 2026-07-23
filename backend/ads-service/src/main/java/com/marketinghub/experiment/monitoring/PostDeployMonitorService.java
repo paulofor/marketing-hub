@@ -497,6 +497,7 @@ public class PostDeployMonitorService {
                 .map(journey -> new PostDeployPdeSessionJourneyDto(
                         journey.sessionId(),
                         journey.visitorId(),
+                        journey.clientIp(),
                         journey.firstEventAt(),
                         journey.lastEventAt(),
                         journey.totalVisibleMs(),

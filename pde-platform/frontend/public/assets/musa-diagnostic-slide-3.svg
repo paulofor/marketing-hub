@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Peça-sinal MUSA</title>
+  <desc id="desc">Cena editorial abstrata com detalhe dourado e presença feminina.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff8f3"/>
+      <stop offset="0.42" stop-color="#f3c9c1"/>
+      <stop offset="1" stop-color="#2f2a2c"/>
+    </linearGradient>
+    <radialGradient id="gold" cx="68%" cy="34%" r="42%">
+      <stop offset="0" stop-color="#d6a75c" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#d6a75c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f2029" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1f1518" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <rect width="900" height="1200" fill="url(#gold)"/>
+  <path d="M428 204c-74 10-137 86-137 186 0 73 34 139 87 169l-52 303h310l-48-303c55-31 89-97 89-171 0-108-73-188-163-188-27 0-54 2-86 4Z" fill="#7a2444" opacity="0.88"/>
+  <path d="M376 336c0-58 46-105 103-105s104 47 104 105-47 105-104 105-103-47-103-105Z" fill="#6d3340"/>
+  <path d="M608 388c38 0 69 31 69 69s-31 69-69 69-69-31-69-69 31-69 69-69Z" fill="none" stroke="#d6a75c" stroke-width="16"/>
+  <path d="M684 626c39 0 70 31 70 70s-31 70-70 70-70-31-70-70 31-70 70-70Z" fill="#f7e4c6" opacity="0.68"/>
+  <path d="M112 158h168v646H112z" fill="#fff8f3" opacity="0.28"/>
+  <path d="M0 796c95 45 201 45 319 0 141-53 274-39 399 43 69 46 130 62 182 49v312H0Z" fill="url(#shade)"/>
+  <path d="M124 997c122-32 238-30 348 5 113 36 207 35 282-5" fill="none" stroke="#d6a75c" stroke-width="8" opacity="0.28"/>
+</svg>

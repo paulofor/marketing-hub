@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Rotina com pouco tempo</title>
+  <desc id="desc">Cena editorial abstrata sobre escolher presença com praticidade na rotina.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff8f3"/>
+      <stop offset="0.48" stop-color="#f7e4c6"/>
+      <stop offset="1" stop-color="#6f7a52"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f2a2c" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1e1717" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <circle cx="174" cy="170" r="144" fill="#f3c9c1" opacity="0.6"/>
+  <rect x="586" y="124" width="176" height="232" rx="30" fill="#fff8f3" opacity="0.7"/>
+  <path d="M674 177v78l54 32" fill="none" stroke="#7a2444" stroke-width="14" stroke-linecap="round" opacity="0.68"/>
+  <path d="M256 298h192c25 0 45 20 45 45v515H211V343c0-25 20-45 45-45Z" fill="#7a2444" opacity="0.82"/>
+  <path d="M540 342h155c20 0 37 17 37 37v455H503V379c0-20 17-37 37-37Z" fill="#fff8f3" opacity="0.78"/>
+  <path d="M264 455c62 34 133 34 212 0" fill="none" stroke="#d6a75c" stroke-width="11" opacity="0.58"/>
+  <path d="M537 488c54 30 112 30 176 0" fill="none" stroke="#6f7a52" stroke-width="10" opacity="0.52"/>
+  <path d="M0 782c81 20 168 17 260-8 108-30 218-21 329 28 123 54 226 65 311 33v365H0Z" fill="url(#shade)"/>
+  <path d="M105 1011c154-38 297-34 428 13 80 28 167 26 260-7" fill="none" stroke="#f7e4c6" stroke-width="8" opacity="0.26"/>
+</svg>

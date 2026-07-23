@@ -2915,7 +2915,10 @@ export default function ExperimentDetailPage() {
             <ExperimentSalesPageAbTab experimentId={expId} />
           </Tabs.Content>
           <Tabs.Content value="analytics" asChild>
-            <ExperimentLandingAnalyticsTab experimentId={expId} />
+            <ExperimentLandingAnalyticsTab
+              experimentId={expId}
+              experimentType={data?.experimentType}
+            />
           </Tabs.Content>
           <Tabs.Content value="creatives" asChild>
             <CriativosTab

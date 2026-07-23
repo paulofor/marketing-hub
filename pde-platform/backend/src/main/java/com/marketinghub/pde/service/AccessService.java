@@ -383,6 +383,8 @@ public class AccessService {
                             loadFunnelEventMetrics(connection, productSlug),
                             loadExperienceVersionMetrics(connection, productSlug),
                             loadTrafficSourceMetrics(connection, productSlug),
+                            loadDeviceMetrics(connection, productSlug),
+                            loadScreenSizeMetrics(connection, productSlug),
                             loadSessionJourneyDtos(connection, productSlug, 20));
                 }
             }
@@ -737,7 +739,8 @@ public class AccessService {
     /** Retorna métricas vazias quando o backend está em modo local sem banco analítico. */
     private FunnelAnalyticsSummaryResponse emptyFunnelAnalytics(String productSlug) {
         return new FunnelAnalyticsSummaryResponse(
-                productSlug, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of());
+                productSlug, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     /** Converte uma linha JDBC em evento normalizado de jornada. */
@@ -890,6 +893,118 @@ public class AccessService {
                 return metrics;
             }
         }
+    }
+
+    /** Lê distribuição de sessões por dispositivo para diagnosticar aderência do tráfego pago ao PDE. */
+    private List<com.marketinghub.pde.dto.FunnelAnalyticsDeviceMetricDto> loadDeviceMetrics(
+            Connection connection, String productSlug) throws SQLException {
+        long totalSessions = countSessions(connection, productSlug);
+        String sql = """
+                SELECT
+                  COALESCE(NULLIF(device_type, ''), 'desktop') AS resolved_device_type,
+                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                GROUP BY COALESCE(NULLIF(device_type, ''), 'desktop')
+                """;
+        Map<String, Long> sessionsByDevice = new java.util.HashMap<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    sessionsByDevice.put(
+                            normalizeDeviceType(resultSet.getString("resolved_device_type")),
+                            resultSet.getLong("sessions"));
+                }
+            }
+        }
+        return java.util.List.of("mobile", "desktop", "tablet").stream()
+                .map(deviceType -> new com.marketinghub.pde.dto.FunnelAnalyticsDeviceMetricDto(
+                        deviceType,
+                        deviceLabel(deviceType),
+                        sessionsByDevice.getOrDefault(deviceType, 0L),
+                        percentage(sessionsByDevice.getOrDefault(deviceType, 0L), totalSessions)))
+                .toList();
+    }
+
+    /** Lê distribuição de sessões por tamanho de tela capturado pelo frontend PDE. */
+    private List<com.marketinghub.pde.dto.FunnelAnalyticsScreenSizeMetricDto> loadScreenSizeMetrics(
+            Connection connection, String productSlug) throws SQLException {
+        long totalSessions = countSessions(connection, productSlug);
+        String sql = """
+                SELECT
+                  viewport_width,
+                  viewport_height,
+                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                  AND viewport_width IS NOT NULL
+                  AND viewport_height IS NOT NULL
+                GROUP BY viewport_width, viewport_height
+                ORDER BY sessions DESC, viewport_width ASC, viewport_height ASC
+                LIMIT 10
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<com.marketinghub.pde.dto.FunnelAnalyticsScreenSizeMetricDto> metrics =
+                        new java.util.ArrayList<>();
+                while (resultSet.next()) {
+                    int width = resultSet.getInt("viewport_width");
+                    int height = resultSet.getInt("viewport_height");
+                    long sessions = resultSet.getLong("sessions");
+                    String label = width + "x" + height;
+                    metrics.add(new com.marketinghub.pde.dto.FunnelAnalyticsScreenSizeMetricDto(
+                            label,
+                            label,
+                            width,
+                            height,
+                            sessions,
+                            percentage(sessions, totalSessions)));
+                }
+                return metrics;
+            }
+        }
+    }
+
+    /** Conta sessões totais do produto para calcular percentuais de agregados comerciais. */
+    private long countSessions(Connection connection, String productSlug) throws SQLException {
+        String sql = """
+                SELECT COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getLong("sessions") : 0L;
+            }
+        }
+    }
+
+    /** Normaliza o dispositivo para os grupos exibidos na tela de marketing. */
+    private String normalizeDeviceType(String deviceType) {
+        if ("mobile".equalsIgnoreCase(deviceType) || "tablet".equalsIgnoreCase(deviceType)) {
+            return deviceType.toLowerCase();
+        }
+        return "desktop";
+    }
+
+    /** Retorna rótulo comercial do dispositivo usado nos cards da tela. */
+    private String deviceLabel(String deviceType) {
+        return switch (deviceType) {
+            case "mobile" -> "Mobile";
+            case "tablet" -> "Tablet";
+            default -> "Computador";
+        };
+    }
+
+    /** Calcula percentual com duas casas sem gerar divisão por zero. */
+    private double percentage(long value, long total) {
+        if (total <= 0) {
+            return 0.0;
+        }
+        return Math.round((value * 10000.0) / total) / 100.0;
     }
 
     /** Carrega acessos persistidos para evitar perda de progresso em reinícios. */

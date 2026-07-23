@@ -23,6 +23,8 @@ public record PdeAnalyticsSummary(
         List<PdeEventMetric> events,
         List<PdeExperienceVersionMetric> experienceVersions,
         List<PdeTrafficSourceMetric> trafficSources,
+        List<PdeDeviceMetric> deviceBreakdown,
+        List<PdeScreenSizeMetric> screenSizeBreakdown,
         List<PdeSessionJourney> recentJourneys
 ) {
     /** Representa a contagem agregada por tipo de evento do PDE. */
@@ -57,6 +59,24 @@ public record PdeAnalyticsSummary(
             long subscriptionApproved,
             long totalVisibleMs,
             String lastEventAt
+    ) {}
+
+    /** Representa sessões do PDE por dispositivo capturado no navegador. */
+    public record PdeDeviceMetric(
+            String deviceType,
+            String label,
+            long sessions,
+            double percentage
+    ) {}
+
+    /** Representa sessões do PDE por resolução de tela capturada no navegador. */
+    public record PdeScreenSizeMetric(
+            String screenSize,
+            String label,
+            Integer width,
+            Integer height,
+            long sessions,
+            double percentage
     ) {}
 
     /** Representa uma jornada recente por sessão retornada pelo PDE. */

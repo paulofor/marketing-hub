@@ -6,12 +6,14 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployFacebookLogSummaryDt
 import com.marketinghub.experiment.monitoring.dto.PostDeployMetaAdsSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorResponseDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeviceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployEnvironmentDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployServiceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeExperienceVersionDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployRequestDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployResponseDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdePromotionControlDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeScreenSizeDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSessionJourneyDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
@@ -199,6 +201,8 @@ public class PostDeployMonitorService {
                     0,
                     null,
                     Map.<String, Long>of(),
+                    List.of(),
+                    List.of(),
                     List.of(),
                     List.of(),
                     List.of());
@@ -401,7 +405,39 @@ public class PostDeployMonitorService {
                 events,
                 toExperienceVersionDtos(summary),
                 toTrafficSourceDtos(summary),
+                toDeviceDtos(summary),
+                toScreenSizeDtos(summary),
                 toSessionJourneyDtos(summary));
+    }
+
+    /** Converte distribuição por dispositivo do PDE para exibição no painel administrativo. */
+    private List<PostDeployPdeDeviceDto> toDeviceDtos(PdeAnalyticsSummary summary) {
+        if (summary.deviceBreakdown() == null) {
+            return List.of();
+        }
+        return summary.deviceBreakdown().stream()
+                .map(device -> new PostDeployPdeDeviceDto(
+                        device.deviceType(),
+                        device.label(),
+                        device.sessions(),
+                        device.percentage()))
+                .toList();
+    }
+
+    /** Converte distribuição por tamanho de tela do PDE para exibição no painel administrativo. */
+    private List<PostDeployPdeScreenSizeDto> toScreenSizeDtos(PdeAnalyticsSummary summary) {
+        if (summary.screenSizeBreakdown() == null) {
+            return List.of();
+        }
+        return summary.screenSizeBreakdown().stream()
+                .map(screen -> new PostDeployPdeScreenSizeDto(
+                        screen.screenSize(),
+                        screen.label(),
+                        screen.width(),
+                        screen.height(),
+                        screen.sessions(),
+                        screen.percentage()))
+                .toList();
     }
 
     /** Converte as métricas por versão do PDE para exibição no painel administrativo. */

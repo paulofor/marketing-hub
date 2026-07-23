@@ -11,10 +11,12 @@ import {
   Workflow,
 } from "lucide-react";
 import { useExperimentLandingAnalytics } from "../../api/experiment/useExperimentLandingAnalytics";
+import { usePostDeployMonitor } from "../../api/experiment/usePostDeployMonitor";
 import { usePdePersuasiveJourney } from "../../api/product/usePdePersuasiveJourney";
 
 interface ExperimentLandingAnalyticsTabProps {
   experimentId: string;
+  experimentType?: string | null;
 }
 
 function formatDate(value?: string | null) {
@@ -78,10 +80,255 @@ function getJourneyTrackedSections(step: {
 
 export default function ExperimentLandingAnalyticsTab({
   experimentId,
+  experimentType,
 }: ExperimentLandingAnalyticsTabProps) {
+  const isPdeExperiment = experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
   const { data, isLoading, isError } =
-    useExperimentLandingAnalytics(experimentId);
+    useExperimentLandingAnalytics(isPdeExperiment ? undefined : experimentId);
+  const pdeMonitorQuery = usePostDeployMonitor(
+    isPdeExperiment ? experimentId : undefined,
+  );
   const { data: persuasiveJourney } = usePdePersuasiveJourney();
+
+  if (isPdeExperiment) {
+    const monitor = pdeMonitorQuery.data;
+    const pde = monitor?.pde;
+    const pdeDeviceBreakdown = pde?.deviceBreakdown ?? [];
+    const pdeScreenSizeBreakdown = pde?.screenSizeBreakdown ?? [];
+    const pdeTrafficSources = pde?.trafficSources ?? [];
+    const pdeCards = [
+      {
+        label: "Sessões PDE",
+        value: pde?.sessions ?? 0,
+        icon: Users,
+        hint: "Sessões reais capturadas no Clube MUSA.",
+      },
+      {
+        label: "Page views PDE",
+        value: pde?.pageViews ?? 0,
+        icon: Eye,
+        hint: "Entradas medidas no produto digital experiencial.",
+      },
+      {
+        label: "Eventos PDE",
+        value: pde?.totalEvents ?? 0,
+        icon: Activity,
+        hint: "Eventos comportamentais gravados pelo PDE atual.",
+      },
+      {
+        label: "Tempo visível",
+        value: formatDuration(pde?.totalVisibleMs),
+        icon: Timer,
+        hint: "Tempo total visível nas sessões capturadas.",
+      },
+    ];
+
+    if (pdeMonitorQuery.isLoading) {
+      return (
+        <div className="d-flex justify-content-center py-5">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Carregando analytics PDE...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (pdeMonitorQuery.isError || !monitor || !pde) {
+      return (
+        <div className="alert alert-danger mt-3" role="alert">
+          Não foi possível carregar os analytics do PDE agora.
+        </div>
+      );
+    }
+
+    return (
+      <div className="d-flex flex-column gap-3 mt-3">
+        <div className="creative-toolbar align-items-start">
+          <div>
+            <h5 className="mb-1 d-flex align-items-center gap-2">
+              <Activity size={18} /> Analytics do PDE atual
+            </h5>
+            <p className="text-muted small mb-0">
+              Dados capturados diretamente no Clube MUSA e consolidados por
+              sessão, campanha, criativo, dispositivo e tela.
+            </p>
+          </div>
+          <span className="badge text-bg-light border d-inline-flex align-items-center gap-1">
+            <Clock size={14} /> Última atualização:{" "}
+            {formatDate(monitor.generatedAt)}
+          </span>
+        </div>
+
+        <div className="alert alert-info mb-0" role="status">
+          Esta aba está usando o analytics do PDE atual. O analytics antigo de
+          landing não entra na leitura deste experimento.
+        </div>
+
+        <div className="creative-grid">
+          {pdeCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div className="creative-card" key={card.label}>
+                <div className="creative-card-body">
+                  <div className="d-flex align-items-center justify-content-between gap-2">
+                    <span className="text-muted small fw-semibold text-uppercase">
+                      {card.label}
+                    </span>
+                    <Icon size={18} className="text-primary" />
+                  </div>
+                  <strong className="fs-3">{card.value}</strong>
+                  <p className="text-muted small mb-0">{card.hint}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="card">
+          <div className="card-body">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <div>
+                <h5 className="card-title mb-1">Acessos por dispositivo</h5>
+                <p className="text-muted small mb-0">
+                  Percentual de sessões identificadas como Mobile, Computador
+                  ou Tablet no PDE.
+                </p>
+              </div>
+              <span className="badge text-bg-light border">
+                {pde.sessions} sessões
+              </span>
+            </div>
+            <div className="row g-3">
+              {pdeDeviceBreakdown.map((device) => {
+                const Icon =
+                  deviceIcons[device.deviceType as keyof typeof deviceIcons] ??
+                  Monitor;
+                return (
+                  <div className="col-12 col-md-4" key={device.deviceType}>
+                    <div className="border rounded-3 p-3 h-100">
+                      <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                        <span className="fw-semibold d-inline-flex align-items-center gap-2">
+                          <Icon size={18} className="text-primary" />{" "}
+                          {device.label}
+                        </span>
+                        <strong>{device.percentage.toFixed(1)}%</strong>
+                      </div>
+                      <div
+                        className="progress"
+                        role="progressbar"
+                        aria-label={`Percentual PDE ${device.label}`}
+                        aria-valuenow={device.percentage}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <div
+                          className="progress-bar"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, device.percentage))}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="text-muted small mt-2">
+                        {device.sessions} sessões
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="row g-3">
+          <div className="col-12 col-lg-7">
+            <div className="card h-100">
+              <div className="card-body">
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                  <div>
+                    <h5 className="card-title mb-1">Tamanho de tela</h5>
+                    <p className="text-muted small mb-0">
+                      Principais resoluções capturadas pelo viewport do PDE.
+                    </p>
+                  </div>
+                  <span className="badge text-bg-light border">
+                    {pdeScreenSizeBreakdown.length} resoluções
+                  </span>
+                </div>
+                {pdeScreenSizeBreakdown.length === 0 ? (
+                  <p className="text-muted small mb-0">
+                    Nenhuma resolução capturada ainda no PDE.
+                  </p>
+                ) : (
+                  <div className="d-flex flex-column gap-3">
+                    {pdeScreenSizeBreakdown.map((screen) => (
+                      <div key={screen.screenSize}>
+                        <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                          <span className="fw-semibold">{screen.label}</span>
+                          <strong>{screen.percentage.toFixed(1)}%</strong>
+                        </div>
+                        <div
+                          className="progress"
+                          role="progressbar"
+                          aria-label={`Percentual PDE tela ${screen.label}`}
+                          aria-valuenow={screen.percentage}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                        >
+                          <div
+                            className="progress-bar"
+                            style={{
+                              width: `${Math.min(100, Math.max(0, screen.percentage))}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="text-muted small mt-1">
+                          {screen.sessions} sessões
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="col-12 col-lg-5">
+            <div className="card h-100">
+              <div className="card-body">
+                <h5 className="card-title mb-1">Origem do tráfego</h5>
+                <p className="text-muted small mb-3">
+                  Sessões do PDE por campanha e criativo Meta.
+                </p>
+                <div className="d-flex flex-column gap-2">
+                  {pdeTrafficSources.map((source) => (
+                    <div
+                      className="border rounded-3 p-3"
+                      key={`${source.utmSource}-${source.utmCampaign}-${source.utmContent}`}
+                    >
+                      <div className="fw-semibold">
+                        {source.utmSource} · {source.utmContent}
+                      </div>
+                      <div className="text-muted small">
+                        Campanha {source.utmCampaign}
+                      </div>
+                      <div className="small mt-2">
+                        {source.sessions} sessões · {source.pdeEntries} entradas
+                        no PDE
+                      </div>
+                    </div>
+                  ))}
+                  {pdeTrafficSources.length === 0 ? (
+                    <p className="text-muted small mb-0">
+                      Nenhuma origem capturada ainda.
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

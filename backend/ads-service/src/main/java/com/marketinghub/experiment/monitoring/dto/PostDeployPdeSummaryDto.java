@@ -29,5 +29,7 @@ public record PostDeployPdeSummaryDto(
         Map<String, Long> events,
         List<PostDeployPdeExperienceVersionDto> experienceVersions,
         List<PostDeployPdeTrafficSourceDto> trafficSources,
+        List<PostDeployPdeDeviceDto> deviceBreakdown,
+        List<PostDeployPdeScreenSizeDto> screenSizeBreakdown,
         List<PostDeployPdeSessionJourneyDto> recentJourneys
 ) {}

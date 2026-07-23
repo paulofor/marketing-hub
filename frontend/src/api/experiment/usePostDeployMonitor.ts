@@ -48,7 +48,25 @@ export interface PostDeployPdeSummary {
   events: Record<string, number>;
   experienceVersions: PostDeployPdeExperienceVersion[];
   trafficSources: PostDeployPdeTrafficSource[];
+  deviceBreakdown: PostDeployPdeDevice[];
+  screenSizeBreakdown: PostDeployPdeScreenSize[];
   recentJourneys: PostDeployPdeSessionJourney[];
+}
+
+export interface PostDeployPdeDevice {
+  deviceType: "mobile" | "desktop" | "tablet" | string;
+  label: string;
+  sessions: number;
+  percentage: number;
+}
+
+export interface PostDeployPdeScreenSize {
+  screenSize: string;
+  label: string;
+  width?: number | null;
+  height?: number | null;
+  sessions: number;
+  percentage: number;
 }
 
 export interface PostDeployPdeExperienceVersion {

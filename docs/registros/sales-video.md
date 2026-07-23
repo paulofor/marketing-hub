@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-23 — Tokens Luma e Kling via arquivo no container de video
+
+- Problema observado: os arquivos de token Luma e Kling foram criados no host de video, mas o container ainda so montava e carregava automaticamente o arquivo do Gemini.
+- Causa-raiz tratada: a operacao real passou a seguir o padrao de secrets por arquivo para multiplos providers, mas o compose e o entrypoint ainda estavam limitados ao VEO/Gemini.
+- Correção preparada: compose local e compose de deploy montam `/root/infra/luma-token/luma_api_key` e `/root/infra/kling-token/kling_api_key` como secrets somente leitura; o entrypoint carrega Luma em `LUMA_API_KEY`, `LUMA_AGENTS_API_KEY` e `VIDEO_PROVIDERS_LUMA_API_KEY`, e Kling em `KLING_API_KEY` e `VIDEO_PROVIDERS_KLING_API_KEY`.
+- Regra operacional: provider de video com token em arquivo deve ser montado pelo compose versionado e carregado no entrypoint sem imprimir segredo em logs, `.env` ou documentacao.
+
 ## 2026-07-23 — Providers múltiplos e montagem de vídeo hero MUSA
 
 - Problema observado: o VEO entregou clipe de 8s e o vídeo foi percebido como incompleto para venda, apesar de o job técnico estar pronto.

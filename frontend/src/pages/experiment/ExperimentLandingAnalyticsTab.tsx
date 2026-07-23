@@ -78,6 +78,12 @@ function getJourneyTrackedSections(step: {
   return step.trackedSectionId ? [step.trackedSectionId] : [];
 }
 
+const deviceIcons = {
+  mobile: Smartphone,
+  desktop: Monitor,
+  tablet: Tablet,
+} as const;
+
 export default function ExperimentLandingAnalyticsTab({
   experimentId,
   experimentType,
@@ -375,11 +381,6 @@ export default function ExperimentLandingAnalyticsTab({
       sectionStats.set(section.sectionId, current);
     }
   }
-  const deviceIcons = {
-    mobile: Smartphone,
-    desktop: Monitor,
-    tablet: Tablet,
-  } as const;
   const cards = [
     {
       label: "Sessões",

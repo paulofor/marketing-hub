@@ -92,6 +92,8 @@ Os logs também passam a incluir correlação por MDC com:
 - `providerJobId`
 - `tenant`
 
+Em produção, o serviço grava o arquivo em `/app/logs/video-management-service.log` e expõe a leitura operacional em `/actuator/logfile`, usado pelo MCP no módulo `video-management-service`.
+
 ### Dashboards/alertas mínimos recomendados
 
 - **Backlog**: painel com `video_jobs_backlog` por status.

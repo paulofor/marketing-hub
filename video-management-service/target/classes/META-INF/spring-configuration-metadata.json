@@ -9,42 +9,288 @@
       "name": "video.jobs",
       "type": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties"
+    },
+    {
+      "name": "video.providers",
+      "type": "com.marketinghub.videomanagement.config.VideoManagementProperties$Providers",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties"
+    },
+    {
+      "name": "video.providers.luma",
+      "type": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Providers"
+    },
+    {
+      "name": "video.providers.real",
+      "type": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Providers"
+    },
+    {
+      "name": "video.providers.veo",
+      "type": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Providers"
     }
   ],
   "properties": [
     {
       "name": "video.auth-token",
       "type": "java.lang.String",
-      "description": "Token opcional para autenticação mútua entre serviços.",
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties"
     },
     {
       "name": "video.backend-base-url",
-      "type": "java.lang.String",
-      "description": "Base URL do backend\/ads-service acessível a partir do container.",
+      "type": "java.net.URI",
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties",
       "defaultValue": "http:\/\/backend:8000"
     },
     {
+      "name": "video.jobs.backend-call-backoff",
+      "type": "java.time.Duration",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
+      "defaultValue": "2s"
+    },
+    {
+      "name": "video.jobs.backend-call-max-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
+      "defaultValue": 3
+    },
+    {
       "name": "video.jobs.batch-size",
       "type": "java.lang.Integer",
-      "description": "Quantidade máxima de jobs buscados a cada ciclo.",
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
       "defaultValue": 10
     },
     {
+      "name": "video.jobs.orphan-recovery-enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
+      "defaultValue": true
+    },
+    {
+      "name": "video.jobs.orphan-threshold",
+      "type": "java.time.Duration",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
+      "defaultValue": "10m"
+    },
+    {
       "name": "video.jobs.poll-interval",
       "type": "java.time.Duration",
-      "description": "Intervalo entre execuções do poller.",
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
       "defaultValue": "30s"
     },
     {
       "name": "video.jobs.polling-enabled",
       "type": "java.lang.Boolean",
-      "description": "Habilita ou desabilita o polling automático.",
       "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Jobs",
       "defaultValue": false
+    },
+    {
+      "name": "video.providers.luma.accepted-names",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Nomes que identificam jobs destinados ao adapter direto da Luma Agents.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma"
+    },
+    {
+      "name": "video.providers.luma.api-key",
+      "type": "java.lang.String",
+      "description": "Chave da Luma Agents API usada apenas pelo módulo executor de vídeo.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma"
+    },
+    {
+      "name": "video.providers.luma.api-key-file",
+      "type": "java.lang.String",
+      "description": "Caminho opcional para a chave Luma montada como secret em arquivo.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma"
+    },
+    {
+      "name": "video.providers.luma.aspect-ratio",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": "9:16"
+    },
+    {
+      "name": "video.providers.luma.base-url",
+      "type": "java.net.URI",
+      "description": "Base URL oficial da Luma Agents API.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": "https:\/\/agents.lumalabs.ai"
+    },
+    {
+      "name": "video.providers.luma.duration",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": "10s"
+    },
+    {
+      "name": "video.providers.luma.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": false
+    },
+    {
+      "name": "video.providers.luma.ffmpeg-path",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": "ffmpeg"
+    },
+    {
+      "name": "video.providers.luma.max-poll-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": 120
+    },
+    {
+      "name": "video.providers.luma.model",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": "ray-3.2"
+    },
+    {
+      "name": "video.providers.luma.poll-interval",
+      "type": "java.time.Duration",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": "10s"
+    },
+    {
+      "name": "video.providers.luma.resolution",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": "720p"
+    },
+    {
+      "name": "video.providers.luma.scene-count",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Luma",
+      "defaultValue": 3
+    },
+    {
+      "name": "video.providers.real.accepted-names",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Nomes que identificam o provider real dentro de providerName do job.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real"
+    },
+    {
+      "name": "video.providers.real.auth-token",
+      "type": "java.lang.String",
+      "description": "Token opcional para autenticação bearer na API do provider.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real"
+    },
+    {
+      "name": "video.providers.real.base-url",
+      "type": "java.net.URI",
+      "description": "Base URL da API do provider real.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real"
+    },
+    {
+      "name": "video.providers.real.create-path",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real",
+      "defaultValue": "\/v1\/renders"
+    },
+    {
+      "name": "video.providers.real.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real",
+      "defaultValue": false
+    },
+    {
+      "name": "video.providers.real.max-poll-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real",
+      "defaultValue": 120
+    },
+    {
+      "name": "video.providers.real.poll-interval",
+      "type": "java.time.Duration",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real",
+      "defaultValue": "5s"
+    },
+    {
+      "name": "video.providers.real.status-path-template",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Real",
+      "defaultValue": "\/v1\/renders\/{providerJobId}"
+    },
+    {
+      "name": "video.providers.veo.accepted-names",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Nomes que identificam jobs destinados ao adapter direto do VEO.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo"
+    },
+    {
+      "name": "video.providers.veo.api-key",
+      "type": "java.lang.String",
+      "description": "Chave da Gemini API usada apenas pelo módulo executor de vídeo.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo"
+    },
+    {
+      "name": "video.providers.veo.api-key-file",
+      "type": "java.lang.String",
+      "description": "Caminho opcional para a chave Gemini montada como secret em arquivo.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo"
+    },
+    {
+      "name": "video.providers.veo.aspect-ratio",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": "9:16"
+    },
+    {
+      "name": "video.providers.veo.base-url",
+      "type": "java.net.URI",
+      "description": "Base URL oficial da Gemini API para geração de vídeos.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": "https:\/\/generativelanguage.googleapis.com\/v1beta"
+    },
+    {
+      "name": "video.providers.veo.duration-seconds",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": 8
+    },
+    {
+      "name": "video.providers.veo.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": false
+    },
+    {
+      "name": "video.providers.veo.max-poll-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": 120
+    },
+    {
+      "name": "video.providers.veo.model",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": "veo-3.1-generate-preview"
+    },
+    {
+      "name": "video.providers.veo.person-generation",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": "allow_all"
+    },
+    {
+      "name": "video.providers.veo.poll-interval",
+      "type": "java.time.Duration",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": "10s"
+    },
+    {
+      "name": "video.providers.veo.resolution",
+      "type": "java.lang.String",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties$Veo",
+      "defaultValue": "720p"
+    },
+    {
+      "name": "video.worker-id",
+      "type": "java.lang.String",
+      "description": "Identificador usado para registrar claim e heartbeat junto ao backend.",
+      "sourceType": "com.marketinghub.videomanagement.config.VideoManagementProperties",
+      "defaultValue": "video-management-service"
     }
   ],
   "hints": []

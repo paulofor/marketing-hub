@@ -70,6 +70,8 @@ class McpControllerTest {
         registry.add("mcp.logs.ops-monitor-worker-path", () -> TEST_LOG_DIR.resolve("ops-monitor-worker.log").toString());
         registry.add("mcp.logs.pde-platform-backend-path",
                 () -> TEST_LOG_DIR.resolve("pde-platform-backend.log").toString());
+        registry.add("mcp.logs.video-management-service-path",
+                () -> TEST_LOG_DIR.resolve("video-management-service.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.enabled", () -> "true");
         registry.add("mcp.chat-logs.allowed-containers", () -> "marketinghub-fashion-chat");
@@ -120,6 +122,9 @@ class McpControllerTest {
                 StandardCharsets.UTF_8);
         Files.writeString(TEST_LOG_DIR.resolve("pde-platform-backend.log"),
                 "pde-platform-backend-line-1\npde-platform-backend-line-2\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(TEST_LOG_DIR.resolve("video-management-service.log"),
+                "video-management-service-line-1\nvideo-management-service-line-2\n",
                 StandardCharsets.UTF_8);
         Path fakeDocker = TEST_LOG_DIR.resolve("docker-fake.sh");
         Files.writeString(fakeDocker,
@@ -340,6 +345,24 @@ class McpControllerTest {
     }
 
     /**
+     * Garante que o MCP expõe os logs do executor operacional de vídeo.
+     */
+    @Test
+    void shouldReadVideoManagementServiceLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":21,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"video-management-service","lines":1}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.module").value("video-management-service"))
+                .andExpect(jsonPath("$.result.structuredContent.path")
+                        .value(TEST_LOG_DIR.resolve("video-management-service.log").toString()))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value("video-management-service-line-2"));
+    }
+
+    /**
      * Garante que a tool java_module_logs rejeita módulos fora da lista permitida.
      */
     @Test
@@ -352,7 +375,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service"));
     }
 
     /**

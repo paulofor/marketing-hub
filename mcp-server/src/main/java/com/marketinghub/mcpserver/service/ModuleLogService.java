@@ -257,6 +257,7 @@ public class ModuleLogService {
             case "oprm-coletor-receita" -> properties.logs().oprmColetorReceitaPath();
             case "ops-monitor-worker" -> properties.logs().opsMonitorWorkerPath();
             case "pde-platform-backend" -> properties.logs().pdePlatformBackendPath();
+            case "video-management-service" -> properties.logs().videoManagementServicePath();
             default -> throw new IllegalArgumentException("Unknown module: " + module);
         };
     }
@@ -272,11 +273,12 @@ public class ModuleLogService {
         return switch (normalized) {
             case "backend", "ai-worker", "lead-portal", "facebook-ads", "email-service", "lead-portal-payment",
                     "mds", "mois", "mois-sales-library-worker", "mois-hotmart", "clickbank-coletor-mois",
-                    "oprm-coletor-receita", "ops-monitor-worker", "pde-platform-backend" -> normalized;
+                    "oprm-coletor-receita", "ops-monitor-worker", "pde-platform-backend",
+                    "video-management-service" -> normalized;
             default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, "
                     + "facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, "
                     + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, "
-                    + "pde-platform-backend");
+                    + "pde-platform-backend, video-management-service");
         };
     }
 

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 class ArquiteturaTest {
     private static final String BASE_PACKAGE = "com.marketinghub.videomanagement";
     private static final Set<String> PROVIDERS_CONCRETOS = Set.of(
+            "HeyGenVideoProvider",
             "KlingVideoProvider",
             "LumaRayVideoProvider",
             "PostProductionVideoProvider",
@@ -36,6 +37,7 @@ class ArquiteturaTest {
         noClasses().that().resideInAPackage("..videomanagement.service..")
                 .and().resideOutsideOfPackage("..videomanagement.service.provider..")
                 .should().dependOnClassesThat().haveSimpleName("RealVideoProvider")
+                .orShould().dependOnClassesThat().haveSimpleName("HeyGenVideoProvider")
                 .orShould().dependOnClassesThat().haveSimpleName("KlingVideoProvider")
                 .orShould().dependOnClassesThat().haveSimpleName("LumaRayVideoProvider")
                 .orShould().dependOnClassesThat().haveSimpleName("PostProductionVideoProvider")

@@ -59,7 +59,16 @@ public class StatusController {
                                 "openAiImageModel",
                                 properties.getProviders().getLuma().getOpenAiImageModel(),
                                 "openAiImageToolModel",
-                                properties.getProviders().getLuma().getOpenAiImageToolModel()))
+                                properties.getProviders().getLuma().getOpenAiImageToolModel()),
+                        "heygen", Map.of(
+                                "enabled", properties.getProviders().getHeygen().isEnabled(),
+                                "acceptedNames", properties.getProviders().getHeygen().getAcceptedNames(),
+                                "apiKeyConfigured",
+                                hasText(properties.getProviders().getHeygen().getApiKey())
+                                        || hasText(properties.getProviders().getHeygen().getApiKeyFile()),
+                                "avatarIdConfigured", hasText(properties.getProviders().getHeygen().getAvatarId()),
+                                "voiceIdConfigured", hasText(properties.getProviders().getHeygen().getVoiceId()),
+                                "engineType", properties.getProviders().getHeygen().getEngineType()))
         );
     }
 

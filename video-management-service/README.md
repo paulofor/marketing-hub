@@ -34,7 +34,7 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.jobs.poll-interval` | Intervalo em ISO-8601 (ex.: `PT30S`). | `PT30S` |
 | `video.jobs.batch-size` | Número máximo de jobs por ciclo. | `10` |
 | `video.providers.real.enabled` | Habilita adapter do provider real. | `false` |
-| `video.providers.real.accepted-names` | Valores de `providerName` que ativam o provider real genérico. | `REAL,HEYGEN,SYNTHESIA,VEO` |
+| `video.providers.real.accepted-names` | Valores de `providerName` que ativam o provider real genérico. | `REAL,SYNTHESIA,VEO` |
 | `video.providers.real.base-url` | Base URL da API do provider real. | `http://real-video-provider:8080` |
 | `video.providers.real.create-path` | Path para criar render no provider. | `/v1/renders` |
 | `video.providers.real.status-path-template` | Path para consultar status do render por `providerJobId`. | `/v1/renders/{providerJobId}` |
@@ -50,9 +50,13 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.providers.luma.api-key-file` | Arquivo montado com a chave Luma. | `${LUMA_API_KEY_FILE}` |
 | `video.providers.luma.scene-count` | Quantidade de cenas Ray 3.2 para montagem do hero. | `3` |
 | `video.providers.luma.duration` | Duração por cena enviada à Luma Agents API. | `10s` |
+| `video.providers.heygen.enabled` | Habilita o adapter direto HeyGen. | `false` |
+| `video.providers.heygen.api-key` | Chave HeyGen usada pelo adapter direto. | `${HEYGEN_API_KEY}` ou arquivo em `${HEYGEN_API_KEY_FILE}` |
+| `video.providers.heygen.avatar-id` | Avatar/apresentadora HeyGen usado por padrão quando o job não informar `heygen_avatar_id`. | `${VIDEO_PROVIDERS_HEYGEN_AVATAR_ID}` |
+| `video.providers.heygen.voice-id` | Voz HeyGen usada por padrão quando o job não informar `heygen_voice_id`. | `${VIDEO_PROVIDERS_HEYGEN_VOICE_ID}` |
 | `LUMA_API_KEY_FILE` | Arquivo montado com a chave Luma usada por integrações Ray/Agents. | `/run/secrets/luma_api_key` |
 | `KLING_API_KEY_FILE` | Arquivo montado com a chave Kling usada pelo fallback de vídeo. | `/run/secrets/kling_api_key` |
-| `HEYGEN_API_KEY_FILE` | Arquivo montado com a chave HeyGen para o adapter HeyGen/futuro provider direto. | `/run/secrets/heygen_api_key` |
+| `HEYGEN_API_KEY_FILE` | Arquivo montado com a chave HeyGen para o adapter HeyGen. | `/run/secrets/heygen_api_key` |
 
 ### Nota operacional sobre VEO
 
@@ -74,6 +78,8 @@ O entrypoint carrega esses arquivos sem imprimir os valores. A chave Luma fica d
 ### Nota operacional sobre HeyGen
 
 O compose monta por padrao `/root/infra/heygen-token/heygen_api_key` em `/run/secrets/heygen_api_key:ro`. O entrypoint carrega esse arquivo sem imprimir o valor e deixa a chave disponivel como `HEYGEN_API_KEY` e `VIDEO_PROVIDERS_HEYGEN_API_KEY`, seguindo o mesmo padrao de Luma/Kling/VEO.
+
+O adapter direto `HeyGenVideoProvider` processa jobs `providerName=HEYGEN` usando `POST /v3/videos`, polling em `GET /v3/videos/{videoId}` e download do MP4 final retornado pela API. Para gerar de ponta a ponta, o ambiente precisa informar uma apresentadora e uma voz por `VIDEO_PROVIDERS_HEYGEN_AVATAR_ID` e `VIDEO_PROVIDERS_HEYGEN_VOICE_ID`, ou o job precisa trazer `heygen_avatar_id` e `heygen_voice_id` no `metadataJson`.
 
 ## Observabilidade (Sprint V3)
 

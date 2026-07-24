@@ -1,8 +1,6 @@
 package com.marketinghub.salesvideo.service;
 
-import com.marketinghub.experiment.video.ExperimentVideoAsset;
-import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
-import com.marketinghub.experiment.video.ExperimentVideoStatus;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetProviderReviewProjection;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoCommercialPlaybookRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoConversionEventRepository;
@@ -203,14 +201,14 @@ public class SalesVideoCommercialInsightsService {
                 accumulator.failedJobs++;
             }
         }
-        for (ExperimentVideoAsset asset : experimentVideoAssetRepository.findBySalesVideoProfileIdOrderByCreatedAtDesc(profileId)) {
+        for (ExperimentVideoAssetProviderReviewProjection asset
+                : experimentVideoAssetRepository.findProviderReviewsBySalesVideoProfileId(profileId)) {
             ProviderScoreAccumulator accumulator = providers.computeIfAbsent(normalizeProvider(asset.getProvider()),
                     ProviderScoreAccumulator::new);
-            if (asset.getStatus() == ExperimentVideoStatus.READY
-                    && asset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED) {
+            if ("READY".equals(asset.getStatus()) && "APPROVED".equals(asset.getReviewStatus())) {
                 accumulator.approvedAssets++;
             }
-            if (asset.getReviewStatus() == ExperimentVideoReviewStatus.REJECTED) {
+            if ("REJECTED".equals(asset.getReviewStatus())) {
                 accumulator.rejectedAssets++;
             }
         }

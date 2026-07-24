@@ -29,6 +29,18 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
     @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
     List<ExperimentVideoAsset> findBySalesVideoProfileIdOrderByCreatedAtDesc(Long salesVideoProfileId);
 
+    /** Lista dados mínimos de reputação de provider para consumo por módulos externos ao domínio de experimento. */
+    @Query(value = """
+            select v.provider as provider,
+                   v.status as status,
+                   v.review_status as reviewStatus
+            from experiment_video_asset v
+            where v.sales_video_profile_id = :salesVideoProfileId
+            order by v.created_at desc
+            """, nativeQuery = true)
+    List<ExperimentVideoAssetProviderReviewProjection> findProviderReviewsBySalesVideoProfileId(
+            @Param("salesVideoProfileId") Long salesVideoProfileId);
+
     /** Verifica se existem vídeos obrigatórios que ainda bloqueiam a publicação. */
     @Query("""
             select case when count(v) > 0 then true else false end

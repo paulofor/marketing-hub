@@ -50,6 +50,17 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     supportsHeroVideo: false,
     supportsSceneAssembly: true,
   },
+  {
+    key: "heygen-avatar-video",
+    label: "HeyGen",
+    providerName: "HEYGEN",
+    providerFamily: "EXTERNAL_VIDEO_MODULE",
+    recommendedUse:
+      "Teste de avatar e narração sincronizada para ofertas educativas; requer HEYGEN_API_KEY no executor.",
+    clipDurationSeconds: 30,
+    supportsHeroVideo: true,
+    supportsSceneAssembly: false,
+  },
 ];
 
 export const DEFAULT_SALES_VIDEO_PROVIDER = SALES_VIDEO_PROVIDER_OPTIONS[0];

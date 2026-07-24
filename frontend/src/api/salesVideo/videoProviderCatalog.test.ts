@@ -41,4 +41,18 @@ describe("videoProviderCatalog", () => {
       "Imagem muito nítida e luz constante.",
     );
   });
+
+  it("inclui HeyGen como fornecedor de avatar e narracao sincronizada", () => {
+    const provider = findSalesVideoProviderOption("HEYGEN");
+
+    expect(provider).toBeDefined();
+    expect(provider?.supportsHeroVideo).toBe(true);
+    expect(provider?.supportsSceneAssembly).toBe(false);
+    expect(provider?.recommendedUse).toContain("HEYGEN_API_KEY");
+
+    const metadata = JSON.parse(buildSalesVideoRenderMetadata(provider!));
+
+    expect(metadata.provider_strategy.provider_name).toBe("HEYGEN");
+    expect(metadata.provider_strategy.supports_scene_assembly).toBe(false);
+  });
 });

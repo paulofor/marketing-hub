@@ -9,6 +9,7 @@ import {
   RefreshCcw,
   Save,
   ShieldCheck,
+  Sparkles,
   Video,
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -22,6 +23,7 @@ import { useCreateSalesVideoProfile } from "../../api/salesVideo/useCreateSalesV
 import { useProductSalesVideoJobs } from "../../api/salesVideo/useProductSalesVideoJobs";
 import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSalesVideoScript";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
+import { useRequestSalesVideoPostProduction } from "../../api/salesVideo/useRequestSalesVideoPostProduction";
 import { useTenantContext } from "../../utils/tenantContext";
 import {
   SalesVideoJob,
@@ -31,6 +33,7 @@ import {
 import {
   buildSalesVideoRenderMetadata,
   DEFAULT_SALES_VIDEO_PROVIDER,
+  DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
   findSalesVideoProviderOption,
   SALES_VIDEO_PROVIDER_OPTIONS,
 } from "../../api/salesVideo/videoProviderCatalog";
@@ -46,6 +49,17 @@ const DEFAULT_SCRIPT = [
   "Desejo: pequenos sinais visuais mudam como voce se percebe e como entra nos ambientes.",
   "CTA: veja agora seu plano MUSA personalizado.",
 ].join("\n\n");
+
+const DEFAULT_POST_PRODUCTION_VOICE = [
+  "Você se arruma, olha no espelho e ainda sente que falta presença?",
+  "Às vezes não é falta de roupa. É falta de clareza sobre os pequenos sinais que sua imagem comunica.",
+  "O Método MUSA te guia por microações simples: reduzir ruído visual, escolher uma peça-sinal, ajustar cor, acabamento e postura usando o que você já tem.",
+  "Em 7 dias, você enxerga um caminho mais elegante, marcante e possível.",
+  "Faça o diagnóstico gratuito e veja seu Plano MUSA de 7 dias.",
+].join(" ");
+
+const DEFAULT_POST_PRODUCTION_CAPTION =
+  "Presença elegante começa com pequenos sinais. Veja seu Plano MUSA de 7 dias.";
 
 type ProfileFormState = {
   videoKind: SalesVideoKind;
@@ -84,6 +98,15 @@ export default function ProductSalesVideoPage() {
   const [selectedProviderName, setSelectedProviderName] = useState(
     DEFAULT_SALES_VIDEO_PROVIDER.providerName,
   );
+  const [visualProviderDirectives, setVisualProviderDirectives] = useState(
+    DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
+  );
+  const [postProductionVoiceOver, setPostProductionVoiceOver] = useState(
+    DEFAULT_POST_PRODUCTION_VOICE,
+  );
+  const [postProductionCaption, setPostProductionCaption] = useState(
+    DEFAULT_POST_PRODUCTION_CAPTION,
+  );
   const [profileForm, setProfileForm] =
     useState<ProfileFormState>(emptyProfileForm);
   const [scriptText, setScriptText] = useState(DEFAULT_SCRIPT);
@@ -105,6 +128,14 @@ export default function ProductSalesVideoPage() {
     }
     return existingVideoJobs[0];
   }, [existingVideoJobs, selectedJobId]);
+  const { data: selectedVideoAsset } = useAsset(
+    selectedVideoJob?.assetId ?? undefined,
+  );
+  const requestPostProduction = useRequestSalesVideoPostProduction(
+    selectedVideoJob?.id,
+    productId,
+    selectedVideoJob?.profileId,
+  );
   const selectedProfile = useMemo(() => {
     if (selectedProfileId) {
       return profileList.find(
@@ -119,6 +150,10 @@ export default function ProductSalesVideoPage() {
     return profileList[0];
   }, [profileList, selectedProfileId, selectedVideoJob]);
   const effectiveProfileId = selectedProfile ? String(selectedProfile.id) : "";
+  const selectedVideoSourceUrl =
+    selectedVideoJob?.streamPlaybackUrl?.trim() ||
+    selectedVideoAsset?.publicUrl ||
+    "";
   const selectedProvider =
     findSalesVideoProviderOption(selectedProviderName) ??
     DEFAULT_SALES_VIDEO_PROVIDER;
@@ -226,12 +261,41 @@ export default function ProductSalesVideoPage() {
         providerFamily: selectedProvider.providerFamily,
         providerName: selectedProvider.providerName,
         executionMode: "TEST",
-        metadataJson: buildSalesVideoRenderMetadata(selectedProvider),
+        metadataJson: buildSalesVideoRenderMetadata(
+          selectedProvider,
+          visualProviderDirectives,
+        ),
       });
       toast.success("Geração de vídeo solicitada");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Falha ao solicitar geração",
+      );
+    }
+  };
+
+  const handleRequestPostProduction = async () => {
+    if (!selectedVideoJob) {
+      toast.error("Selecione um vídeo pronto antes da pós-produção");
+      return;
+    }
+    if (!postProductionVoiceOver.trim() || !postProductionCaption.trim()) {
+      toast.error("Informe voz off e legenda para finalizar o vídeo");
+      return;
+    }
+    try {
+      await requestPostProduction.mutateAsync({
+        requestedBy: tenantContext.userEmail,
+        sourceVideoUrl: selectedVideoSourceUrl || undefined,
+        voiceOverScript: postProductionVoiceOver.trim(),
+        captionText: postProductionCaption.trim(),
+      });
+      toast.success("Pós-produção solicitada");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Falha ao solicitar pós-produção",
       );
     }
   };
@@ -594,6 +658,22 @@ export default function ProductSalesVideoPage() {
                 <strong>{selectedProvider.label}</strong>
                 <span>{selectedProvider.recommendedUse}</span>
               </div>
+              <label
+                className="form-label"
+                htmlFor="visual-provider-directives"
+              >
+                Diretivas visuais do provider
+              </label>
+              <textarea
+                id="visual-provider-directives"
+                className="form-control product-video-page__visual-directives"
+                rows={7}
+                value={visualProviderDirectives}
+                onChange={(event) =>
+                  setVisualProviderDirectives(event.target.value)
+                }
+                placeholder="Nitidez, foco, luz constante, câmera direta..."
+              />
               <div className="product-video-page__strategy">
                 <strong>Direção comercial</strong>
                 <span>VEO para blocos curtos falados e anúncios.</span>
@@ -604,6 +684,59 @@ export default function ProductSalesVideoPage() {
                   Vídeo final deve conduzir dor, mecanismo, desejo e CTA.
                 </span>
               </div>
+            </div>
+
+            <div className="product-video-page__post-production">
+              <div className="product-video-page__panel-heading">
+                <Sparkles size={18} aria-hidden="true" />
+                <strong>Pós-produção</strong>
+              </div>
+              <label className="form-label" htmlFor="post-production-voice">
+                Voz off
+              </label>
+              <textarea
+                id="post-production-voice"
+                className="form-control"
+                rows={7}
+                value={postProductionVoiceOver}
+                onChange={(event) =>
+                  setPostProductionVoiceOver(event.target.value)
+                }
+              />
+              <label className="form-label" htmlFor="post-production-caption">
+                Legenda principal
+              </label>
+              <textarea
+                id="post-production-caption"
+                className="form-control"
+                rows={3}
+                value={postProductionCaption}
+                onChange={(event) =>
+                  setPostProductionCaption(event.target.value)
+                }
+              />
+              <div className="product-video-page__strategy">
+                <strong>Uso recomendado</strong>
+                <span>Finalize vídeos Luma/Kling aprovados visualmente.</span>
+                <span>
+                  O resultado cria um novo job com áudio, legenda e trilha.
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleRequestPostProduction}
+                disabled={
+                  !selectedVideoJob ||
+                  !isExistingVideoJob(selectedVideoJob) ||
+                  requestPostProduction.isPending
+                }
+              >
+                <Sparkles size={16} aria-hidden="true" />
+                {requestPostProduction.isPending
+                  ? "Solicitando..."
+                  : "Finalizar com áudio"}
+              </button>
             </div>
           </section>
 

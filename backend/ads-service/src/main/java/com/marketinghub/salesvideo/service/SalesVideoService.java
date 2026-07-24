@@ -21,6 +21,7 @@ import com.marketinghub.salesvideo.dto.JobProgressRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotHistoryDto;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RetrySalesVideoJobRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoConversionEventDto;
@@ -143,6 +144,11 @@ public class SalesVideoService {
     /** Reprocessa um job elegível. */
     public SalesVideoJobDto retry(Long jobId, RetrySalesVideoJobRequest request) {
         return jobService.retry(jobId, request);
+    }
+
+    /** Solicita pós-produção de um vídeo bruto já renderizado. */
+    public SalesVideoJobDto requestPostProduction(Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
+        return jobService.requestPostProduction(sourceJobId, request);
     }
 
     /** Faz claim operacional de um job por um worker. */

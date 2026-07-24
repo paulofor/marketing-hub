@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildSalesVideoRenderMetadata,
+  DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
   DEFAULT_SALES_VIDEO_PROVIDER,
   findSalesVideoProviderOption,
 } from "./videoProviderCatalog";
@@ -20,8 +21,24 @@ describe("videoProviderCatalog", () => {
 
     expect(metadata.provider_strategy.stream_required).toBe(true);
     expect(metadata.provider_strategy.stream_target).toBe("HLS_ADAPTIVE");
+    expect(metadata.visual_provider_directives).toBe(
+      DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
+    );
     expect(metadata.assembly_plan.required).toBe(true);
     expect(metadata.assembly_plan.minimum_accepted_duration_seconds).toBe(28);
     expect(metadata.assembly_plan.scenes).toHaveLength(4);
+  });
+
+  it("preserva diretivas visuais customizadas para teste por provider", () => {
+    const metadata = JSON.parse(
+      buildSalesVideoRenderMetadata(
+        DEFAULT_SALES_VIDEO_PROVIDER,
+        "Imagem muito nítida e luz constante.",
+      ),
+    );
+
+    expect(metadata.visual_provider_directives).toBe(
+      "Imagem muito nítida e luz constante.",
+    );
   });
 });

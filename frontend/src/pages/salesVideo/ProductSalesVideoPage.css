@@ -63,7 +63,8 @@
 .product-video-page__panel,
 .product-video-page__hero-panel,
 .product-video-page__script,
-.product-video-page__render {
+.product-video-page__render,
+.product-video-page__post-production {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #ffffff;
@@ -90,14 +91,16 @@
 .product-video-page__profile-list,
 .product-video-page__panel,
 .product-video-page__script,
-.product-video-page__render {
+.product-video-page__render,
+.product-video-page__post-production {
   display: grid;
   gap: 0.75rem;
 }
 
 .product-video-page__panel,
 .product-video-page__script,
-.product-video-page__render {
+.product-video-page__render,
+.product-video-page__post-production {
   padding: 1rem;
 }
 
@@ -280,6 +283,15 @@
 
 .product-video-page__script textarea {
   min-height: 250px;
+  resize: vertical;
+}
+
+.product-video-page__visual-directives {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.product-video-page__post-production textarea {
   resize: vertical;
 }
 

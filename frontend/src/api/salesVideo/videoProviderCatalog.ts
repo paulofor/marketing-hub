@@ -11,6 +11,14 @@ export type SalesVideoProviderOption = {
   supportsSceneAssembly: boolean;
 };
 
+export const DEFAULT_VISUAL_PROVIDER_DIRECTIVES = [
+  "Direct camera shot, no mirror and no reflection.",
+  "Very sharp image, crisp focus on face and eyes, clear skin texture.",
+  "Stable exposure, constant soft natural daylight, no haze, no blur, no dreamy filter, no flickering.",
+  "Brazilian urban woman in her 30s, elegant but accessible, premium but human.",
+  "No embedded text, no logos, no distorted hands, no luxury ostentation.",
+].join(" ");
+
 export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
   {
     key: "luma-ray-3-2",
@@ -50,9 +58,15 @@ export function findSalesVideoProviderOption(providerName: string) {
   return SALES_VIDEO_PROVIDER_OPTIONS.find((option) => option.providerName === providerName);
 }
 
-export function buildSalesVideoRenderMetadata(provider: SalesVideoProviderOption) {
+export function buildSalesVideoRenderMetadata(
+  provider: SalesVideoProviderOption,
+  visualProviderDirectives?: string,
+) {
+  const normalizedVisualProviderDirectives =
+    visualProviderDirectives?.trim() || DEFAULT_VISUAL_PROVIDER_DIRECTIVES;
   return JSON.stringify({
     commercial_goal: "PDE_MUSA_HERO_VIDEO",
+    visual_provider_directives: normalizedVisualProviderDirectives,
     provider_strategy: {
       provider_name: provider.providerName,
       recommended_use: provider.recommendedUse,

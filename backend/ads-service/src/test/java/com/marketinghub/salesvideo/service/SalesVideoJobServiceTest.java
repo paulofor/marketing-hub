@@ -9,6 +9,7 @@ import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -240,5 +242,54 @@ class SalesVideoJobServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
         verify(completedRenderAssetSync).syncFailedRender(job, request);
+    }
+
+    /** Cria job de pós-produção preservando origem e textos comerciais do vídeo final. */
+    @Test
+    void shouldRequestPostProductionFromReadyVideoJob() {
+        TenantContextHolder.set(new TenantContext("tenant-a", "seller@example.com", false));
+        SalesVideoProfile profile = SalesVideoProfile.builder()
+                .id(6L)
+                .tenantId("tenant-a")
+                .status(SalesVideoStatus.VIDEO_READY)
+                .build();
+        SalesVideoJob sourceJob = SalesVideoJob.builder()
+                .id(20432L)
+                .profile(profile)
+                .tenantId("tenant-a")
+                .jobType(SalesVideoJobType.RENDER)
+                .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                .providerName("LUMA_RAY_3_2")
+                .executionMode(com.marketinghub.salesvideo.SalesVideoExecutionMode.TEST)
+                .status(SalesVideoStatus.VIDEO_READY)
+                .streamPlaybackUrl("https://cdn.example.com/source.mp4")
+                .requestedAt(Instant.parse("2026-07-24T10:00:00Z"))
+                .build();
+        RequestSalesVideoPostProductionRequest request = new RequestSalesVideoPostProductionRequest();
+        request.setRequestedBy("operator@tenant.io");
+        request.setVoiceOverScript("Você se arruma e sente que falta presença.");
+        request.setCaptionText("Veja seu plano MUSA de 7 dias.");
+
+        given(jobRepository.findById(20432L)).willReturn(Optional.of(sourceJob));
+        given(jobRepository.save(any(SalesVideoJob.class))).willAnswer(invocation -> {
+            SalesVideoJob saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(20433L);
+            }
+            return saved;
+        });
+        given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+
+        try {
+            SalesVideoJobDto result = service.requestPostProduction(20432L, request);
+
+            assertThat(result.getJobType()).isEqualTo(SalesVideoJobType.POST_PRODUCTION);
+            assertThat(result.getProviderName()).isEqualTo("MUSA_POST_PRODUCTION");
+            assertThat(result.getMetadataJson()).contains("sourceVideoUrl");
+            assertThat(result.getMetadataJson()).contains("voiceOverScript");
+            assertThat(result.getAuditSnapshotJson()).contains("\"sourceJobId\":20432");
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 }

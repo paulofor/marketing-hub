@@ -118,6 +118,12 @@ describe("niche navigation", () => {
     await screen.findByText("Fitness");
     await user.click(screen.getByRole("link", { name: "Detalhes" }));
     await screen.findByText("Hipóteses do nicho");
+    await user.click(screen.getByRole("link", { name: /produzir vídeos/i }));
+    expect(await screen.findAllByText("Produção de vídeo")).not.toHaveLength(0);
+    await screen.findByText("Avatar HeyGen");
+    await screen.findByRole("button", { name: /solicitar avatar/i });
+    await user.click(screen.getByRole("link", { name: /voltar ao nicho/i }));
+    await screen.findByText("Hipóteses do nicho");
     expect(screen.queryByRole("link", { name: /^criar hipótese$/i })).toBeNull();
     await user.click(screen.getByRole("link", { name: /entrar/i }));
     await screen.findByText("Dor");

@@ -21,6 +21,7 @@ import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetai
 import EditSuccessProductPage from "./pages/successProduct/EditSuccessProductPage";
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
 import NicheListPage from "./pages/niche/NicheListPage";
+import NicheVideoProductionPage from "./pages/niche/NicheVideoProductionPage";
 import AiServiceListPage from "./pages/aiService/AiServiceListPage";
 import NewAiServicePage from "./pages/aiService/NewAiServicePage";
 import EditAiServicePage from "./pages/aiService/EditAiServicePage";
@@ -223,6 +224,10 @@ export default function App() {
                 <Route index element={<NicheListPage />} />
                 <Route path="new" element={<Navigate to=".." replace />} />
                 <Route path=":nicheId" element={<NicheDetailPage />} />
+                <Route
+                  path=":nicheId/video-production"
+                  element={<NicheVideoProductionPage />}
+                />
                 <Route path=":nicheId/edit" element={<LegacyNicheRedirect />} />
                 <Route
                   path=":nicheId/hypotheses/new"

@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-24-product-musa-current-price-47.yaml
+  - changeSet:
+      id: 2026-07-24-product-musa-current-price-47-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: current_price_brl
+        - columnExists:
+            tableName: product
+            columnName: updated_at
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET current_price_brl = 47.00,
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias';

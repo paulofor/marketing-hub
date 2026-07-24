@@ -21,6 +21,7 @@ import com.marketinghub.salesvideo.dto.JobProgressRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotHistoryDto;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoMontageRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RetrySalesVideoJobRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
@@ -149,6 +150,11 @@ public class SalesVideoService {
     /** Solicita pós-produção de um vídeo bruto já renderizado. */
     public SalesVideoJobDto requestPostProduction(Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
         return jobService.requestPostProduction(sourceJobId, request);
+    }
+
+    /** Solicita montagem de múltiplos clipes prontos em um vídeo único. */
+    public SalesVideoJobDto requestMontage(RequestSalesVideoMontageRequest request) {
+        return jobService.requestMontage(request);
     }
 
     /** Faz claim operacional de um job por um worker. */

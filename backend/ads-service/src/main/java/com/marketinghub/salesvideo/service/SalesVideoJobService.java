@@ -26,9 +26,11 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Contém as regras de negócio relativas aos jobs do módulo de vídeo.
@@ -308,6 +310,35 @@ public class SalesVideoJobService {
         return SalesVideoMapper.toDto(postProductionJob);
     }
 
+    /** Cria job de montagem a partir de múltiplos vídeos prontos e auditáveis. */
+    @Transactional
+    public SalesVideoJobDto requestMontage(RequestSalesVideoMontageRequest request) {
+        List<Long> sourceJobIds = normalizeSourceJobIds(request.getSourceJobIds());
+        List<SalesVideoJob> sourceJobs = sourceJobIds.stream()
+                .map(this::loadJob)
+                .toList();
+        sourceJobs.forEach(this::ensureReadySourceForMontage);
+        SalesVideoJob firstSource = sourceJobs.get(0);
+        String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
+        SalesVideoJob montageJob = createJob(
+                firstSource.getProfile(),
+                firstSource.getScript(),
+                SalesVideoJobType.POST_PRODUCTION,
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                "MUSA_VIDEO_MONTAGE",
+                requestedBy,
+                firstSource.getExecutionMode());
+        montageJob.setRetryOfJob(firstSource);
+        montageJob.setRetryAttempt(firstSource.getRetryAttempt() + 1);
+        montageJob.setMetadataJson(buildMontageMetadata(sourceJobs));
+        montageJob.setAuditSnapshotJson(buildMontageAuditSnapshot(sourceJobs, montageJob, requestedBy));
+        jobRepository.save(montageJob);
+        registerEvent(montageJob, SalesVideoJobEventType.PROGRESS, montageJob.getStatus(), montageJob.getStatus(),
+                "Montagem solicitada com " + sourceJobs.size() + " clipes",
+                montageJob.getMetadataJson());
+        return SalesVideoMapper.toDto(montageJob);
+    }
+
     private SalesVideoScript maybePersistScriptResult(SalesVideoJob job,
                                                           GeneratedScriptResultPayload payload) {
         if (job.getJobType() != SalesVideoJobType.SCRIPT || payload == null) {
@@ -389,6 +420,68 @@ public class SalesVideoJobService {
         snapshot.put("executionMode", postProductionJob.getExecutionMode());
         snapshot.put("postProductionMetadataJson", postProductionJob.getMetadataJson());
         return writeJson(snapshot, "Falha ao serializar snapshot de auditoria da pós-produção.");
+    }
+
+    /** Normaliza e valida a lista de jobs fonte para montagem. */
+    private List<Long> normalizeSourceJobIds(List<Long> sourceJobIds) {
+        if (sourceJobIds == null) {
+            throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST,
+                    "Selecione pelo menos dois vídeos para montagem.");
+        }
+        Set<Long> uniqueIds = new LinkedHashSet<>(sourceJobIds.stream()
+                .filter(id -> id != null && id > 0)
+                .toList());
+        if (uniqueIds.size() < 2) {
+            throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST,
+                    "Selecione pelo menos dois vídeos prontos para montagem.");
+        }
+        return List.copyOf(uniqueIds);
+    }
+
+    /** Garante que o clipe selecionado possui arquivo disponível para composição. */
+    private void ensureReadySourceForMontage(SalesVideoJob sourceJob) {
+        if (sourceJob.getStatus() != SalesVideoStatus.VIDEO_READY) {
+            throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST,
+                    "Montagem exige apenas vídeos com status VIDEO_READY. Job inválido: " + sourceJob.getId());
+        }
+        resolveSourceVideoUrl(sourceJob, null);
+    }
+
+    /** Monta o metadata operacional consumido pelo provider local de montagem. */
+    private String buildMontageMetadata(List<SalesVideoJob> sourceJobs) {
+        List<Map<String, Object>> sources = sourceJobs.stream()
+                .map(sourceJob -> {
+                    Map<String, Object> source = new LinkedHashMap<>();
+                    source.put("sourceJobId", sourceJob.getId());
+                    source.put("sourceVideoUrl", resolveSourceVideoUrl(sourceJob, null));
+                    source.put("sourceAssetId", sourceJob.getAsset() != null ? sourceJob.getAsset().getId() : null);
+                    source.put("sourceProviderName", sourceJob.getProviderName());
+                    return source;
+                })
+                .toList();
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("sourceJobIds", sourceJobs.stream().map(SalesVideoJob::getId).toList());
+        metadata.put("sourceVideos", sources);
+        metadata.put("commercialIntent",
+                "Montar clipes curtos aprovados em uma sequência única para experimento de venda.");
+        return writeJson(metadata, "Falha ao serializar metadata da montagem de vídeo.");
+    }
+
+    /** Monta snapshot de auditoria para rastrear os clipes que originaram a montagem. */
+    private String buildMontageAuditSnapshot(List<SalesVideoJob> sourceJobs,
+                                             SalesVideoJob montageJob,
+                                             String requestedBy) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("capturedAt", Instant.now().toString());
+        snapshot.put("requestedBy", requestedBy);
+        snapshot.put("sourceJobIds", sourceJobs.stream().map(SalesVideoJob::getId).toList());
+        snapshot.put("sourceProviderNames", sourceJobs.stream().map(SalesVideoJob::getProviderName).toList());
+        snapshot.put("profileId", montageJob.getProfile() != null ? montageJob.getProfile().getId() : null);
+        snapshot.put("providerFamily", montageJob.getProviderFamily());
+        snapshot.put("providerName", montageJob.getProviderName());
+        snapshot.put("executionMode", montageJob.getExecutionMode());
+        snapshot.put("montageMetadataJson", montageJob.getMetadataJson());
+        return writeJson(snapshot, "Falha ao serializar snapshot de auditoria da montagem de vídeo.");
     }
 
     /** Serializa objetos simples para JSON de job com erro operacional padronizado. */

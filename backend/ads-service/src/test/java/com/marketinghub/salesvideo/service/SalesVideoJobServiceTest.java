@@ -9,6 +9,7 @@ import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoMontageRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
@@ -288,6 +289,67 @@ class SalesVideoJobServiceTest {
             assertThat(result.getMetadataJson()).contains("sourceVideoUrl");
             assertThat(result.getMetadataJson()).contains("voiceOverScript");
             assertThat(result.getAuditSnapshotJson()).contains("\"sourceJobId\":20432");
+        } finally {
+            TenantContextHolder.clear();
+        }
+    }
+
+    /** Cria job de montagem preservando a ordem e as URLs dos clipes selecionados. */
+    @Test
+    void shouldRequestMontageFromReadyVideoJobs() {
+        TenantContextHolder.set(new TenantContext("tenant-a", "seller@example.com", false));
+        SalesVideoProfile profile = SalesVideoProfile.builder()
+                .id(6L)
+                .tenantId("tenant-a")
+                .status(SalesVideoStatus.VIDEO_READY)
+                .build();
+        SalesVideoJob firstSource = SalesVideoJob.builder()
+                .id(20440L)
+                .profile(profile)
+                .tenantId("tenant-a")
+                .jobType(SalesVideoJobType.RENDER)
+                .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                .providerName("VEO")
+                .executionMode(com.marketinghub.salesvideo.SalesVideoExecutionMode.TEST)
+                .status(SalesVideoStatus.VIDEO_READY)
+                .streamPlaybackUrl("https://cdn.example.com/scene-1.mp4")
+                .requestedAt(Instant.parse("2026-07-24T10:00:00Z"))
+                .build();
+        SalesVideoJob secondSource = SalesVideoJob.builder()
+                .id(20441L)
+                .profile(profile)
+                .tenantId("tenant-a")
+                .jobType(SalesVideoJobType.RENDER)
+                .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                .providerName("VEO")
+                .executionMode(com.marketinghub.salesvideo.SalesVideoExecutionMode.TEST)
+                .status(SalesVideoStatus.VIDEO_READY)
+                .streamPlaybackUrl("https://cdn.example.com/scene-2.mp4")
+                .requestedAt(Instant.parse("2026-07-24T10:01:00Z"))
+                .build();
+        RequestSalesVideoMontageRequest request = new RequestSalesVideoMontageRequest();
+        request.setRequestedBy("operator@tenant.io");
+        request.setSourceJobIds(List.of(20440L, 20441L));
+
+        given(jobRepository.findById(20440L)).willReturn(Optional.of(firstSource));
+        given(jobRepository.findById(20441L)).willReturn(Optional.of(secondSource));
+        given(jobRepository.save(any(SalesVideoJob.class))).willAnswer(invocation -> {
+            SalesVideoJob saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(20442L);
+            }
+            return saved;
+        });
+        given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+
+        try {
+            SalesVideoJobDto result = service.requestMontage(request);
+
+            assertThat(result.getJobType()).isEqualTo(SalesVideoJobType.POST_PRODUCTION);
+            assertThat(result.getProviderName()).isEqualTo("MUSA_VIDEO_MONTAGE");
+            assertThat(result.getMetadataJson()).contains("sourceVideos");
+            assertThat(result.getMetadataJson()).contains("scene-1.mp4", "scene-2.mp4");
+            assertThat(result.getAuditSnapshotJson()).contains("\"sourceJobIds\":[20440,20441]");
         } finally {
             TenantContextHolder.clear();
         }

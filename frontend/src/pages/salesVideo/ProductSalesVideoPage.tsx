@@ -5,6 +5,7 @@ import {
   BadgeDollarSign,
   Clapperboard,
   FileText,
+  Layers,
   PlayCircle,
   RefreshCcw,
   Save,
@@ -22,6 +23,7 @@ import { useCreateSalesVideoProfile } from "../../api/salesVideo/useCreateSalesV
 import { useProductSalesVideoJobs } from "../../api/salesVideo/useProductSalesVideoJobs";
 import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSalesVideoScript";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
+import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
 import { useRequestSalesVideoPostProduction } from "../../api/salesVideo/useRequestSalesVideoPostProduction";
 import { useTenantContext } from "../../utils/tenantContext";
 import {
@@ -106,6 +108,7 @@ export default function ProductSalesVideoPage() {
   const [postProductionCaption, setPostProductionCaption] = useState(
     DEFAULT_POST_PRODUCTION_CAPTION,
   );
+  const [montageJobIds, setMontageJobIds] = useState<string[]>([]);
   const [profileForm, setProfileForm] =
     useState<ProfileFormState>(emptyProfileForm);
   const [scriptText, setScriptText] = useState(DEFAULT_SCRIPT);
@@ -114,6 +117,7 @@ export default function ProductSalesVideoPage() {
     selectedProfileId || undefined,
   );
   const requestRender = useRequestVideoRender(selectedProfileId || undefined);
+  const requestMontage = useRequestSalesVideoMontage(productId);
 
   const profileList = useMemo(() => profiles ?? [], [profiles]);
   const jobList = useMemo(() => jobs ?? [], [jobs]);
@@ -184,6 +188,14 @@ export default function ProductSalesVideoPage() {
       );
     }
   }, [existingVideoJobs, selectedJobId]);
+
+  useEffect(() => {
+    setMontageJobIds((current) =>
+      current.filter((jobId) =>
+        existingVideoJobs.some((job) => String(job.id) === jobId),
+      ),
+    );
+  }, [existingVideoJobs]);
 
   if (!productId) {
     return (
@@ -295,6 +307,33 @@ export default function ProductSalesVideoPage() {
         error instanceof Error
           ? error.message
           : "Falha ao solicitar pós-produção",
+      );
+    }
+  };
+
+  const handleToggleMontageJob = (jobId: number) => {
+    const key = String(jobId);
+    setMontageJobIds((current) =>
+      current.includes(key)
+        ? current.filter((selectedId) => selectedId !== key)
+        : [...current, key],
+    );
+  };
+
+  const handleRequestMontage = async () => {
+    if (montageJobIds.length < 2) {
+      toast.error("Selecione pelo menos dois vídeos prontos para montar");
+      return;
+    }
+    try {
+      await requestMontage.mutateAsync({
+        requestedBy: tenantContext.userEmail,
+        sourceJobIds: montageJobIds.map(Number),
+      });
+      toast.success("Montagem de clipes solicitada");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Falha ao solicitar montagem",
       );
     }
   };
@@ -687,6 +726,43 @@ export default function ProductSalesVideoPage() {
               <div className="product-video-page__panel-heading">
                 <Sparkles size={18} aria-hidden="true" />
                 <strong>Pós-produção</strong>
+              </div>
+              <div className="product-video-page__montage-box">
+                <div className="product-video-page__panel-heading">
+                  <Layers size={17} aria-hidden="true" />
+                  <strong>Montagem de clipes</strong>
+                </div>
+                <span>
+                  {montageJobIds.length} vídeo(s) selecionado(s) para sequência.
+                </span>
+                <div className="product-video-page__montage-list">
+                  {existingVideoJobs.map((job) => (
+                    <label
+                      key={job.id}
+                      className="product-video-page__montage-checkbox"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={montageJobIds.includes(String(job.id))}
+                        onChange={() => handleToggleMontageJob(job.id)}
+                      />
+                      <span>
+                        Job #{job.id} · {profileTitle(profileList, job.profileId)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={handleRequestMontage}
+                  disabled={montageJobIds.length < 2 || requestMontage.isPending}
+                >
+                  <Layers size={16} aria-hidden="true" />
+                  {requestMontage.isPending
+                    ? "Solicitando..."
+                    : "Montar clipes"}
+                </button>
               </div>
               <label className="form-label" htmlFor="post-production-voice">
                 Voz off

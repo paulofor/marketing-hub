@@ -298,11 +298,39 @@
 .product-video-page__provider-note,
 .product-video-page__objective,
 .product-video-page__quality,
-.product-video-page__strategy {
+.product-video-page__strategy,
+.product-video-page__montage-box {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
   padding: 0.75rem;
+}
+
+.product-video-page__montage-box {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.product-video-page__montage-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 170px;
+  overflow: auto;
+}
+
+.product-video-page__montage-checkbox {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0;
+  color: #334155;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.product-video-page__montage-checkbox input {
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
 }
 
 .product-video-page__objective {

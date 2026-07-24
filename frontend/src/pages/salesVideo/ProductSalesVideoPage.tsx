@@ -1,12 +1,14 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  AlertTriangle,
   BadgeDollarSign,
   Clapperboard,
   FileText,
   PlayCircle,
   RefreshCcw,
   Save,
+  ShieldCheck,
   Video,
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -35,6 +37,7 @@ import {
 import "./ProductSalesVideoPage.css";
 
 const VIDEO_KIND_OPTIONS: SalesVideoKind[] = ["HERO", "OBJECTION", "PROOF"];
+const USD_TO_BRL_RATE = 5;
 
 const DEFAULT_SCRIPT = [
   "Hook: voce sente que sua imagem ainda nao comunica a presenca que voce quer?",
@@ -77,6 +80,7 @@ export default function ProductSalesVideoPage() {
   const { data: jobs, isLoading: jobsLoading } =
     useProductSalesVideoJobs(productId);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [selectedProviderName, setSelectedProviderName] = useState(
     DEFAULT_SALES_VIDEO_PROVIDER.providerName,
   );
@@ -91,27 +95,39 @@ export default function ProductSalesVideoPage() {
 
   const profileList = useMemo(() => profiles ?? [], [profiles]);
   const jobList = useMemo(() => jobs ?? [], [jobs]);
+  const existingVideoJobs = useMemo(
+    () => jobList.filter(isExistingVideoJob),
+    [jobList],
+  );
+  const selectedVideoJob = useMemo(() => {
+    if (selectedJobId) {
+      return existingVideoJobs.find((job) => String(job.id) === selectedJobId);
+    }
+    return existingVideoJobs[0];
+  }, [existingVideoJobs, selectedJobId]);
   const selectedProfile = useMemo(() => {
     if (selectedProfileId) {
       return profileList.find(
         (profile) => String(profile.id) === selectedProfileId,
       );
     }
+    if (selectedVideoJob) {
+      return profileList.find(
+        (profile) => profile.id === selectedVideoJob.profileId,
+      );
+    }
     return profileList[0];
-  }, [profileList, selectedProfileId]);
+  }, [profileList, selectedProfileId, selectedVideoJob]);
   const effectiveProfileId = selectedProfile ? String(selectedProfile.id) : "";
   const selectedProvider =
     findSalesVideoProviderOption(selectedProviderName) ??
     DEFAULT_SALES_VIDEO_PROVIDER;
-  const latestReadyJob = useMemo(
-    () =>
-      jobList.find(
-        (job) =>
-          job.status === "VIDEO_READY" &&
-          (Boolean(job.streamPlaybackUrl) || Boolean(job.assetId)),
-      ),
-    [jobList],
-  );
+  const selectedVideoObjective = selectedVideoJob
+    ? describeVideoObjective(selectedProfile, selectedVideoJob)
+    : undefined;
+  const selectedVisualQuality = selectedVideoJob
+    ? assessVideoVisualQuality(selectedProfile, selectedVideoJob)
+    : undefined;
   const productCost = useMemo(
     () => summarizeProductVideoCost(jobList),
     [jobList],
@@ -120,6 +136,20 @@ export default function ProductSalesVideoPage() {
     () => summarizeFunnel(profileList, jobList),
     [profileList, jobList],
   );
+
+  useEffect(() => {
+    if (!selectedJobId && existingVideoJobs.length > 0) {
+      setSelectedJobId(String(existingVideoJobs[0].id));
+    }
+    if (
+      selectedJobId &&
+      !existingVideoJobs.some((job) => String(job.id) === selectedJobId)
+    ) {
+      setSelectedJobId(
+        existingVideoJobs[0] ? String(existingVideoJobs[0].id) : "",
+      );
+    }
+  }, [existingVideoJobs, selectedJobId]);
 
   if (!productId) {
     return (
@@ -251,9 +281,16 @@ export default function ProductSalesVideoPage() {
         <Metric label="Perfis de vídeo" value={String(profileList.length)} />
         <Metric label="Jobs de produção" value={String(jobList.length)} />
         <Metric label="Vídeos prontos" value={String(funnelMetrics.ready)} />
+        <Metric
+          label="Bloqueados por QA"
+          value={String(funnelMetrics.visualBlocked)}
+        />
         <Metric label="Em produção" value={String(funnelMetrics.running)} />
         <Metric label="Falhas" value={String(funnelMetrics.failed)} />
-        <Metric label="Custo total" value={formatUsd(productCost.total)} />
+        <Metric
+          label="Custo total"
+          value={formatUsdWithBrl(productCost.total)}
+        />
       </section>
 
       <section className="product-video-page__layout">
@@ -264,28 +301,45 @@ export default function ProductSalesVideoPage() {
               <strong>Vídeos cadastrados</strong>
             </div>
             <div className="product-video-page__profile-list">
-              {profileList.length === 0 ? (
+              {existingVideoJobs.length === 0 ? (
                 <p className="product-video-page__empty">
-                  Nenhum vídeo criado para este produto.
+                  Nenhum vídeo pronto encontrado para este produto.
                 </p>
               ) : (
-                profileList.map((profile) => (
-                  <button
-                    key={profile.id}
-                    type="button"
-                    className={
-                      String(profile.id) === effectiveProfileId
-                        ? "product-video-page__profile product-video-page__profile--active"
-                        : "product-video-page__profile"
-                    }
-                    onClick={() => setSelectedProfileId(String(profile.id))}
-                  >
-                    <strong>{profile.title}</strong>
-                    <span>
-                      {profile.videoKind} · {profile.status}
-                    </span>
-                  </button>
-                ))
+                existingVideoJobs.map((job) => {
+                  const profile = findProfile(profileList, job.profileId);
+                  const objective = describeVideoObjective(profile, job);
+                  const visualQuality = assessVideoVisualQuality(profile, job);
+                  return (
+                    <button
+                      key={job.id}
+                      type="button"
+                      className={
+                        String(job.id) === String(selectedVideoJob?.id)
+                          ? "product-video-page__profile product-video-page__profile--active"
+                          : "product-video-page__profile"
+                      }
+                      onClick={() => {
+                        setSelectedJobId(String(job.id));
+                        setSelectedProfileId(String(job.profileId));
+                      }}
+                    >
+                      <strong>
+                        {profileTitle(profileList, job.profileId)}
+                      </strong>
+                      <span>
+                        Job #{job.id} · {job.providerName ?? job.providerFamily}
+                      </span>
+                      <span>{formatUsdWithBrl(readJobCost(job))}</span>
+                      <em>{objective.stage}</em>
+                      <small
+                        className={`product-video-page__quality-pill product-video-page__quality-pill--${visualQuality.status}`}
+                      >
+                        {visualQuality.label}
+                      </small>
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -428,13 +482,44 @@ export default function ProductSalesVideoPage() {
         <main className="product-video-page__main">
           <section className="product-video-page__hero-panel">
             <div className="product-video-page__hero-copy">
-              <span>Produção selecionada</span>
+              <span>Vídeo selecionado</span>
               <h2>{selectedProfile?.title ?? "Nenhum vídeo selecionado"}</h2>
               <p>
                 Use esta área para roteiro, geração e acompanhamento.
                 Experimentos devem consumir vídeos aprovados daqui, sem criar
                 vídeos próprios.
               </p>
+              {selectedVideoObjective ? (
+                <div className="product-video-page__objective">
+                  <span>Objetivo do vídeo na estrada de compra</span>
+                  <strong>{selectedVideoObjective.stage}</strong>
+                  <p>{selectedVideoObjective.goal}</p>
+                  <small>{selectedVideoObjective.evidence}</small>
+                </div>
+              ) : null}
+              {selectedVisualQuality ? (
+                <div
+                  className={`product-video-page__quality product-video-page__quality--${selectedVisualQuality.status}`}
+                >
+                  <div className="product-video-page__quality-header">
+                    {selectedVisualQuality.status === "approved" ? (
+                      <ShieldCheck size={18} aria-hidden="true" />
+                    ) : (
+                      <AlertTriangle size={18} aria-hidden="true" />
+                    )}
+                    <div>
+                      <span>Checagem visual comercial</span>
+                      <strong>{selectedVisualQuality.label}</strong>
+                    </div>
+                  </div>
+                  <p>{selectedVisualQuality.recommendation}</p>
+                  <ul>
+                    {selectedVisualQuality.issues.map((issue) => (
+                      <li key={issue}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <div className="product-video-page__hero-actions">
                 {selectedProfile ? (
                   <Link
@@ -455,7 +540,7 @@ export default function ProductSalesVideoPage() {
                 </button>
               </div>
             </div>
-            <LatestVideoPreview job={latestReadyJob} />
+            <LatestVideoPreview job={selectedVideoJob} />
           </section>
 
           <section className="product-video-page__workflow">
@@ -542,6 +627,7 @@ export default function ProductSalesVideoPage() {
                     <th>Status</th>
                     <th>Provider</th>
                     <th>Custo</th>
+                    <th>Qualidade visual</th>
                     <th>Asset</th>
                     <th>Atualizado</th>
                   </tr>
@@ -549,31 +635,47 @@ export default function ProductSalesVideoPage() {
                 <tbody>
                   {jobList.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-muted text-center">
+                      <td colSpan={9} className="text-muted text-center">
                         Nenhum job registrado para este produto.
                       </td>
                     </tr>
                   ) : (
-                    jobList.map((job) => (
-                      <tr key={job.id}>
-                        <td>#{job.id}</td>
-                        <td>{profileTitle(profileList, job.profileId)}</td>
-                        <td>{job.jobType}</td>
-                        <td>
-                          <span className="badge text-bg-info">
-                            {job.status}
-                          </span>
-                        </td>
-                        <td>{job.providerName ?? job.providerFamily}</td>
-                        <td>{formatUsd(readJobCost(job))}</td>
-                        <td>{job.assetId ? `#${job.assetId}` : "—"}</td>
-                        <td>
-                          {formatDate(
-                            job.updatedAt ?? job.finishedAt ?? job.requestedAt,
-                          )}
-                        </td>
-                      </tr>
-                    ))
+                    jobList.map((job) => {
+                      const profile = findProfile(profileList, job.profileId);
+                      const visualQuality = assessVideoVisualQuality(
+                        profile,
+                        job,
+                      );
+                      return (
+                        <tr key={job.id}>
+                          <td>#{job.id}</td>
+                          <td>{profileTitle(profileList, job.profileId)}</td>
+                          <td>{job.jobType}</td>
+                          <td>
+                            <span className="badge text-bg-info">
+                              {job.status}
+                            </span>
+                          </td>
+                          <td>{job.providerName ?? job.providerFamily}</td>
+                          <td>{formatUsdWithBrl(readJobCost(job))}</td>
+                          <td>
+                            <span
+                              className={`product-video-page__table-quality product-video-page__table-quality--${visualQuality.status}`}
+                            >
+                              {visualQuality.label}
+                            </span>
+                          </td>
+                          <td>{job.assetId ? `#${job.assetId}` : "—"}</td>
+                          <td>
+                            {formatDate(
+                              job.updatedAt ??
+                                job.finishedAt ??
+                                job.requestedAt,
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -620,7 +722,14 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function summarizeFunnel(profiles: SalesVideoProfile[], jobs: SalesVideoJob[]) {
   return {
-    ready: jobs.filter((job) => job.status === "VIDEO_READY").length,
+    ready: jobs.filter(isExistingVideoJob).length,
+    visualBlocked: jobs.filter((job) => {
+      if (!isExistingVideoJob(job)) {
+        return false;
+      }
+      const profile = findProfile(profiles, job.profileId);
+      return assessVideoVisualQuality(profile, job).status === "blocked";
+    }).length,
     running: jobs.filter((job) =>
       [
         "VIDEO_REQUESTED",
@@ -634,6 +743,13 @@ function summarizeFunnel(profiles: SalesVideoProfile[], jobs: SalesVideoJob[]) {
       (profile) => profile.latestScript?.status === "APPROVED",
     ).length,
   };
+}
+
+function isExistingVideoJob(job: SalesVideoJob) {
+  return (
+    job.status === "VIDEO_READY" &&
+    (Boolean(job.streamPlaybackUrl?.trim()) || Boolean(job.assetId))
+  );
 }
 
 function summarizeProductVideoCost(jobs: SalesVideoJob[]) {
@@ -691,10 +807,375 @@ function readNumericJsonField(
 }
 
 function profileTitle(profiles: SalesVideoProfile[], profileId: number) {
-  return (
-    profiles.find((profile) => profile.id === profileId)?.title ??
-    `Profile #${profileId}`
-  );
+  return findProfile(profiles, profileId)?.title ?? `Profile #${profileId}`;
+}
+
+function findProfile(profiles: SalesVideoProfile[], profileId: number) {
+  return profiles.find((profile) => profile.id === profileId);
+}
+
+function describeVideoObjective(
+  profile: SalesVideoProfile | undefined,
+  job: SalesVideoJob,
+) {
+  const profileTitleText = profile?.title?.toLowerCase() ?? "";
+  const plannedObjective = describeKnownMusaPlannedVideo(profileTitleText);
+  if (plannedObjective) {
+    return plannedObjective;
+  }
+
+  const searchableText = [
+    profile?.title,
+    profile?.videoKind,
+    profile?.personaStyle,
+    profile?.voiceStyle,
+    job.providerName,
+    job.metadataJson,
+    job.auditSnapshotJson,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    containsAny(searchableText, ["espelho", "dor", "hook", "apagada", "#5"])
+  ) {
+    return {
+      stage: "Desconhecimento -> relevancia",
+      goal: "Abrir com uma cena reconhecivel para a visitante pensar: isso acontece comigo.",
+      evidence:
+        "Criterio da estrada: situacao reconhecivel antes de explicar o produto.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, [
+      "microacoes",
+      "microações",
+      "mecanismo",
+      "7 dias",
+      "#7",
+    ])
+  ) {
+    return {
+      stage: "Curiosidade -> mecanismo plausivel",
+      goal: "Mostrar como pequenas decisoes guiadas produzem uma presenca mais intencional.",
+      evidence:
+        "Criterio da estrada: entrada da cliente, mecanismo simples e resultado imaginavel.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, [
+      "plano",
+      "personalizado",
+      "diagnostico",
+      "diagnóstico",
+      "cta",
+      "#8",
+    ])
+  ) {
+    return {
+      stage: "Desejo -> compra",
+      goal: "Conectar o valor percebido ao proximo passo: ver e continuar o plano MUSA.",
+      evidence:
+        "Criterio da estrada: oferta como continuidade do resultado, nao como compra fria.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, [
+      "presenca",
+      "presença",
+      "luxo",
+      "sofisticacao",
+      "sofisticação",
+      "#6",
+    ])
+  ) {
+    return {
+      stage: "Confianca -> desejo",
+      goal: "Ajudar a cliente a se imaginar com mais elegancia sem depender de luxo caro.",
+      evidence:
+        "Criterio da estrada: simular a transformacao futura em uma trajetoria possivel.",
+    };
+  }
+
+  if (profile?.videoKind === "PROOF") {
+    return {
+      stage: "Valor pessoal -> confianca",
+      goal: "Reforcar prova de produto, mecanismo e casos semelhantes antes da decisao.",
+      evidence:
+        "Criterio da estrada: transformar interesse inicial em confianca no produto.",
+    };
+  }
+
+  if (profile?.videoKind === "OBJECTION") {
+    return {
+      stage: "Reducao de risco",
+      goal: "Diminuir incerteza, risco e esforco percebido antes do checkout.",
+      evidence:
+        "Criterio da estrada: remover resistencias de uso, valor, risco, tradicao e imagem.",
+    };
+  }
+
+  return {
+    stage: "Relevancia -> compreensao",
+    goal: "Conectar a dor de imagem ao Metodo MUSA com clareza suficiente para continuar.",
+    evidence:
+      "Criterio da estrada: aumentar relevancia, valor, adequacao pessoal e confianca.",
+  };
+}
+
+function describeKnownMusaPlannedVideo(profileTitleText: string) {
+  if (profileTitleText.includes("#5")) {
+    return {
+      stage: "Desconhecimento -> relevancia",
+      goal: "Abrir com a dor do espelho para a visitante reconhecer a propria inseguranca visual.",
+      evidence:
+        "Criterio da estrada: comecar por situacao reconhecivel, problema percebido e atencao.",
+    };
+  }
+
+  if (profileTitleText.includes("#6")) {
+    return {
+      stage: "Confianca -> desejo",
+      goal: "Mostrar a presenca elegante acessivel como transformacao desejavel sem luxo caro.",
+      evidence:
+        "Criterio da estrada: ajudar a cliente a simular uma nova situacao futura.",
+    };
+  }
+
+  if (profileTitleText.includes("#7")) {
+    return {
+      stage: "Curiosidade -> mecanismo plausivel",
+      goal: "Explicar as microacoes de 7 dias para reduzir esforco e tornar o resultado possivel.",
+      evidence:
+        "Criterio da estrada: entrada da cliente, mecanismo simples e resultado imaginavel.",
+    };
+  }
+
+  if (profileTitleText.includes("#8")) {
+    return {
+      stage: "Desejo -> compra",
+      goal: "Levar a visitante do desejo ao plano MUSA personalizado como proximo passo natural.",
+      evidence:
+        "Criterio da estrada: oferta como continuidade do resultado, nao como compra fria.",
+    };
+  }
+
+  if (profileTitleText.includes("#9")) {
+    return {
+      stage: "Desconhecimento -> relevancia",
+      goal: "Usar fala curta para capturar atencao e fazer a cliente reconhecer rapidamente a dor.",
+      evidence:
+        "Criterio da estrada: situacao reconhecivel antes de pedir acao comercial.",
+    };
+  }
+
+  return null;
+}
+
+function containsAny(value: string, needles: string[]) {
+  return needles.some((needle) => value.includes(needle));
+}
+
+type VideoVisualQualityStatus = "approved" | "warning" | "blocked";
+
+type VideoVisualQualityAssessment = {
+  status: VideoVisualQualityStatus;
+  label: string;
+  issues: string[];
+  recommendation: string;
+};
+
+function assessVideoVisualQuality(
+  profile: SalesVideoProfile | undefined,
+  job: SalesVideoJob,
+): VideoVisualQualityAssessment {
+  const searchableText = [
+    profile?.title,
+    profile?.videoKind,
+    profile?.personaStyle,
+    profile?.voiceStyle,
+    job.providerName,
+    job.providerJobId,
+    job.metadataJson,
+    job.auditSnapshotJson,
+    job.assetId ? `asset ${job.assetId}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  const knownMusaIssue = assessKnownMusaVisualIssue(searchableText, job);
+  if (knownMusaIssue) {
+    return knownMusaIssue;
+  }
+
+  if (
+    containsAny(searchableText, [
+      "haze",
+      "fog",
+      "mist",
+      "nevoa",
+      "névoa",
+      "white cloud",
+      "low contrast",
+      "flicker",
+      "exposure shift",
+      "lighting oscillation",
+      "oscilacao",
+      "oscilação",
+    ])
+  ) {
+    return {
+      status: "blocked",
+      label: "Bloqueado para hero",
+      issues: [
+        "Metadados indicam névoa, contraste baixo ou oscilação de iluminação.",
+        "A primeira dobra pode parecer menos premium e reduzir confiança.",
+      ],
+      recommendation:
+        "Não usar como hero principal. Regenerar com prompt exigindo imagem limpa, sem haze/fumaça/blur e iluminação estável.",
+    };
+  }
+
+  if (isLumaJob(job)) {
+    return {
+      status: "warning",
+      label: "Revisão visual necessária",
+      issues: [
+        "Provider visual premium sem garantia de fala ou áudio nativo.",
+        "Verificar manualmente névoa, nitidez e estabilidade de luz antes de aprovar.",
+      ],
+      recommendation:
+        "Usar somente após revisão humana. Para hero, prefira imagem nítida nos 3 primeiros segundos e pós-produção com voz/legenda.",
+    };
+  }
+
+  if (isVeoJob(job)) {
+    return {
+      status: "approved",
+      label: "Apto para teste",
+      issues: [
+        "Vídeo curto falado é mais forte para hook e tráfego frio.",
+        "Ainda precisa de revisão humana antes de virar peça final de campanha.",
+      ],
+      recommendation:
+        "Usar como criativo curto ou referência de tom. Para vídeo maior, montar sequência de blocos falados.",
+    };
+  }
+
+  return {
+    status: "warning",
+    label: "Revisar antes de aprovar",
+    issues: [
+      "Sem diagnóstico visual específico salvo para este vídeo.",
+      "Validar nitidez, contraste, estabilidade de iluminação e coerência com o objetivo comercial.",
+    ],
+    recommendation:
+      "Assistir no player antes de escolher como hero ou anúncio. Se houver névoa/oscilação, regenerar.",
+  };
+}
+
+function assessKnownMusaVisualIssue(
+  searchableText: string,
+  job: SalesVideoJob,
+): VideoVisualQualityAssessment | null {
+  if (containsAny(searchableText, ["#5", "asset 5", "dor do espelho"])) {
+    return {
+      status: "blocked",
+      label: "Bloqueado: névoa branca",
+      issues: [
+        "Névoa branca forte reduz nitidez da personagem e do espelho.",
+        "Contraste baixo enfraquece o impacto inicial da dor.",
+      ],
+      recommendation:
+        "Não aprovar como hero. Regenerar o mesmo ângulo com imagem limpa, iluminação natural clara, sem haze, fumaça, blur ou filtro leitoso.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, ["#8", "asset 8", "cta", "plano personalizado"])
+  ) {
+    return {
+      status: "blocked",
+      label: "Bloqueado: luz oscilando",
+      issues: [
+        "Oscilação de iluminação entre cenas passa sensação de inconsistência.",
+        "CTA perde força quando a imagem parece instável ou artificial.",
+      ],
+      recommendation:
+        "Não usar como vídeo final de CTA. Regenerar com exposição travada, luz contínua e transições visuais discretas.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, [
+      "#6",
+      "asset 6",
+      "presença sem luxo",
+      "presenca sem luxo",
+    ])
+  ) {
+    return {
+      status: "warning",
+      label: "Atenção: névoa parcial",
+      issues: [
+        "Execução visual melhor que o asset 5, mas ainda pode ter filtro/neblina em parte da cena.",
+        "Serve como variação aspiracional apenas se a revisão humana confirmar nitidez.",
+      ],
+      recommendation:
+        "Não escolher automaticamente como hero. Revisar no player e usar no máximo como variação até regenerar versão mais limpa.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, ["#7", "asset 7", "microações", "microacoes"])
+  ) {
+    return {
+      status: "warning",
+      label: "Atenção: contraste baixo",
+      issues: [
+        "Imagem tende a ficar lavada, com baixa saturação e pouco contraste.",
+        "Pode enfraquecer a explicação do mecanismo se usada sem legenda/voz forte.",
+      ],
+      recommendation:
+        "Usar apenas como apoio de mecanismo com pós-produção. Para anúncio ou hero, regenerar com contraste e nitidez maiores.",
+    };
+  }
+
+  if (containsAny(searchableText, ["#9", "asset 9"]) || isVeoJob(job)) {
+    return {
+      status: "approved",
+      label: "Apto para criativo curto",
+      issues: [
+        "Comunicação falada favorece hook rápido e entendimento imediato.",
+        "Duração curta não substitui sozinha um hero explicativo maior.",
+      ],
+      recommendation:
+        "Usar como referência e criativo de anúncio. Para vídeo de landing, montar blocos falados ou pós-produzir um hero maior.",
+    };
+  }
+
+  return null;
+}
+
+function isLumaJob(job: SalesVideoJob) {
+  return [job.providerName, job.providerJobId, job.metadataJson]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .includes("luma");
+}
+
+function isVeoJob(job: SalesVideoJob) {
+  return [job.providerName, job.providerJobId, job.metadataJson]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .includes("veo");
 }
 
 function parseOptionalNumber(value: string) {
@@ -720,6 +1201,21 @@ function formatUsd(value?: number | null) {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 4,
+  }).format(value);
+}
+
+function formatUsdWithBrl(value?: number | null) {
+  if (value == null) {
+    return "—";
+  }
+  return `${formatUsd(value)} · ${formatBrl(value * USD_TO_BRL_RATE)}`;
+}
+
+function formatBrl(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 2,
   }).format(value);
 }
 

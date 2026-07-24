@@ -63,6 +63,9 @@ const DEFAULT_POST_PRODUCTION_VOICE = [
 const DEFAULT_POST_PRODUCTION_CAPTION =
   "Presença elegante começa com pequenos sinais. Veja seu Plano MUSA de 7 dias.";
 
+const DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT =
+  "Imagem-base MUSA anti-sensualizacao: mulher brasileira adulta em um ambiente claro e cotidiano, organizando roupa e anotacoes do plano, postura natural, expressao de alivio e clareza, elegancia acessivel, sem pose sedutora, sem foco corporal, sem luxo ostensivo.";
+
 type ProfileFormState = {
   videoKind: SalesVideoKind;
   title: string;
@@ -103,6 +106,12 @@ export default function ProductSalesVideoPage() {
   const [visualProviderDirectives, setVisualProviderDirectives] = useState(
     DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
   );
+  const [openAiReferenceImageEnabled, setOpenAiReferenceImageEnabled] =
+    useState(false);
+  const [openAiReferenceImagePrompt, setOpenAiReferenceImagePrompt] = useState(
+    DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT,
+  );
+  const [referenceImageCount, setReferenceImageCount] = useState("1");
   const [postProductionVoiceOver, setPostProductionVoiceOver] = useState(
     DEFAULT_POST_PRODUCTION_VOICE,
   );
@@ -278,7 +287,12 @@ export default function ProductSalesVideoPage() {
         executionMode: "TEST",
         metadataJson: buildSalesVideoRenderMetadata(
           selectedProvider,
-          visualProviderDirectives,
+          {
+            visualProviderDirectives,
+            openAiReferenceImageEnabled,
+            openAiReferenceImagePrompt,
+            referenceImageCount: Number(referenceImageCount),
+          },
         ),
       });
       toast.success("Geração de vídeo solicitada");
@@ -732,6 +746,58 @@ export default function ProductSalesVideoPage() {
                 <strong>{selectedProvider.label}</strong>
                 <span>{selectedProvider.recommendedUse}</span>
               </div>
+              {selectedProvider.supportsOpenAiReferenceImage ? (
+                <div className="product-video-page__reference-image-box">
+                  <label className="product-video-page__toggle">
+                    <input
+                      type="checkbox"
+                      checked={openAiReferenceImageEnabled}
+                      onChange={(event) =>
+                        setOpenAiReferenceImageEnabled(event.target.checked)
+                      }
+                    />
+                    <span>Gerar imagem-base com OpenAI antes da Luma</span>
+                  </label>
+                  <div className="product-video-page__inline-fields">
+                    <div>
+                      <label
+                        className="form-label"
+                        htmlFor="reference-image-count"
+                      >
+                        Imagens base
+                      </label>
+                      <select
+                        id="reference-image-count"
+                        className="form-select"
+                        value={referenceImageCount}
+                        onChange={(event) =>
+                          setReferenceImageCount(event.target.value)
+                        }
+                        disabled={!openAiReferenceImageEnabled}
+                      >
+                        <option value="1">1 imagem inicial</option>
+                        <option value="2">2 imagens: início e fim</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label
+                    className="form-label"
+                    htmlFor="openai-reference-image-prompt"
+                  >
+                    Prompt da imagem-base
+                  </label>
+                  <textarea
+                    id="openai-reference-image-prompt"
+                    className="form-control"
+                    rows={5}
+                    value={openAiReferenceImagePrompt}
+                    onChange={(event) =>
+                      setOpenAiReferenceImagePrompt(event.target.value)
+                    }
+                    disabled={!openAiReferenceImageEnabled}
+                  />
+                </div>
+              ) : null}
               <label
                 className="form-label"
                 htmlFor="visual-provider-directives"

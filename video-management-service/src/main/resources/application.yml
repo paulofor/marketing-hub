@@ -31,6 +31,12 @@ video:
       poll-interval: PT10S
       max-poll-attempts: 120
       ffmpeg-path: ffmpeg
+      open-ai-reference-image-enabled: ${VIDEO_PROVIDERS_LUMA_OPENAI_REFERENCE_IMAGE_ENABLED:false}
+      open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      open-ai-api-key: ${OPENAI_API_KEY:}
+      open-ai-api-key-file: ${OPENAI_API_KEY_FILE:}
+      open-ai-image-model: ${OPENAI_IMAGE_MODEL:gpt-5.6}
+      open-ai-image-tool-model: ${OPENAI_IMAGE_TOOL_MODEL:gpt-image-2}
     kling:
       enabled: false
       accepted-names:

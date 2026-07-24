@@ -9,6 +9,14 @@ export type SalesVideoProviderOption = {
   clipDurationSeconds: number;
   supportsHeroVideo: boolean;
   supportsSceneAssembly: boolean;
+  supportsOpenAiReferenceImage: boolean;
+};
+
+export type SalesVideoRenderMetadataOptions = {
+  visualProviderDirectives?: string;
+  openAiReferenceImageEnabled?: boolean;
+  openAiReferenceImagePrompt?: string;
+  referenceImageCount?: number;
 };
 
 export const DEFAULT_VISUAL_PROVIDER_DIRECTIVES = [
@@ -29,6 +37,7 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     clipDurationSeconds: 20,
     supportsHeroVideo: true,
     supportsSceneAssembly: true,
+    supportsOpenAiReferenceImage: true,
   },
   {
     key: "kling-3-0",
@@ -39,6 +48,7 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     clipDurationSeconds: 15,
     supportsHeroVideo: true,
     supportsSceneAssembly: true,
+    supportsOpenAiReferenceImage: false,
   },
   {
     key: "veo-teaser",
@@ -49,6 +59,7 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     clipDurationSeconds: 8,
     supportsHeroVideo: false,
     supportsSceneAssembly: true,
+    supportsOpenAiReferenceImage: false,
   },
   {
     key: "heygen-avatar-video",
@@ -60,6 +71,7 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     clipDurationSeconds: 30,
     supportsHeroVideo: true,
     supportsSceneAssembly: false,
+    supportsOpenAiReferenceImage: false,
   },
 ];
 
@@ -71,13 +83,36 @@ export function findSalesVideoProviderOption(providerName: string) {
 
 export function buildSalesVideoRenderMetadata(
   provider: SalesVideoProviderOption,
-  visualProviderDirectives?: string,
+  options?: string | SalesVideoRenderMetadataOptions,
 ) {
+  const renderOptions =
+    typeof options === "string" ? { visualProviderDirectives: options } : options;
   const normalizedVisualProviderDirectives =
-    visualProviderDirectives?.trim() || DEFAULT_VISUAL_PROVIDER_DIRECTIVES;
+    renderOptions?.visualProviderDirectives?.trim() || DEFAULT_VISUAL_PROVIDER_DIRECTIVES;
+  const openAiReferenceImageEnabled = Boolean(
+    renderOptions?.openAiReferenceImageEnabled && provider.supportsOpenAiReferenceImage,
+  );
+  const referenceImageCount = Math.min(
+    2,
+    Math.max(1, Number(renderOptions?.referenceImageCount ?? 1)),
+  );
   return JSON.stringify({
     commercial_goal: "PDE_MUSA_HERO_VIDEO",
+    generation_strategy: openAiReferenceImageEnabled
+      ? "OPENAI_IMAGE_TO_LUMA_VIDEO"
+      : "TEXT_TO_VIDEO",
     visual_provider_directives: normalizedVisualProviderDirectives,
+    image_to_video: {
+      enabled: openAiReferenceImageEnabled,
+      source_image_provider: openAiReferenceImageEnabled ? "OPENAI" : null,
+      animation_provider: provider.providerName,
+      reference_image_count: referenceImageCount,
+      image_prompt:
+        renderOptions?.openAiReferenceImagePrompt?.trim() ||
+        "Quadro-base MUSA anti-sensualizacao: mulher brasileira adulta em acao pratica, organizando visual com clareza, alivio e presenca elegante acessivel.",
+      expected_benefit:
+        "Controlar composicao, postura e luz antes de animar na Luma para reduzir cenas sensualizadas ou nebulosas.",
+    },
     provider_strategy: {
       provider_name: provider.providerName,
       recommended_use: provider.recommendedUse,

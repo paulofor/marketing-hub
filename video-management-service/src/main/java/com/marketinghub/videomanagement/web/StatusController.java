@@ -47,7 +47,19 @@ public class StatusController {
                                 "openAiTtsModel",
                                 properties.getProviders().getPostProduction().getOpenAiTtsModel(),
                                 "openAiTtsVoice",
-                                properties.getProviders().getPostProduction().getOpenAiTtsVoice()))
+                                properties.getProviders().getPostProduction().getOpenAiTtsVoice()),
+                        "luma", Map.of(
+                                "enabled", properties.getProviders().getLuma().isEnabled(),
+                                "acceptedNames", properties.getProviders().getLuma().getAcceptedNames(),
+                                "openAiReferenceImageEnabled",
+                                properties.getProviders().getLuma().isOpenAiReferenceImageEnabled(),
+                                "openAiApiKeyConfigured",
+                                hasText(properties.getProviders().getLuma().getOpenAiApiKey())
+                                        || hasText(properties.getProviders().getLuma().getOpenAiApiKeyFile()),
+                                "openAiImageModel",
+                                properties.getProviders().getLuma().getOpenAiImageModel(),
+                                "openAiImageToolModel",
+                                properties.getProviders().getLuma().getOpenAiImageToolModel()))
         );
     }
 

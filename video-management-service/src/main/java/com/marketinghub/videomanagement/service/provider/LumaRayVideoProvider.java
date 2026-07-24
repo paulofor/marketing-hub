@@ -2,6 +2,7 @@ package com.marketinghub.videomanagement.service.provider;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.videomanagement.client.VideoAssetClient;
 import com.marketinghub.videomanagement.client.dto.AssetType;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJobType;
@@ -13,14 +14,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -37,19 +41,26 @@ import reactor.netty.http.client.HttpClient;
 @ConditionalOnProperty(prefix = "video.providers.luma", name = "enabled", havingValue = "true")
 public class LumaRayVideoProvider implements VideoProvider {
     private static final MediaType VIDEO_MP4 = MediaType.valueOf("video/mp4");
+    private static final MediaType IMAGE_PNG = MediaType.IMAGE_PNG;
     private static final int MAX_VIDEO_DOWNLOAD_BYTES = 100 * 1024 * 1024;
+    private static final String REFERENCE_IMAGE_PROMPT_PATH = "prompts/sales-video/openai-reference-image.md";
+    private static final String SERVICE_TIER = "flex";
 
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
+    private final VideoAssetClient assetClient;
     private final WebClient webClient;
+    private final WebClient openAiWebClient;
     private final WebClient downloadWebClient;
 
     /** Inicializa o provider Luma com configuração, mapper JSON e WebClient. */
     public LumaRayVideoProvider(VideoManagementProperties properties,
                                 ObjectMapper objectMapper,
+                                VideoAssetClient assetClient,
                                 WebClient.Builder webClientBuilder) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.assetClient = assetClient;
         this.webClient = webClientBuilder
                 .baseUrl(resolveBaseUrl())
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
@@ -59,6 +70,12 @@ public class LumaRayVideoProvider implements VideoProvider {
                 .build();
         this.downloadWebClient = webClientBuilder.clone()
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
+                .exchangeStrategies(ExchangeStrategies.builder()
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
+                        .build())
+                .build();
+        this.openAiWebClient = webClientBuilder.clone()
+                .baseUrl(properties.getProviders().getLuma().getOpenAiBaseUrl().toString())
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
@@ -95,7 +112,13 @@ public class LumaRayVideoProvider implements VideoProvider {
                 int startProgress = 5 + ((sceneIndex - 1) * 25);
                 progressCallback.onProgress(startProgress, SalesVideoStatus.VIDEO_PROCESSING,
                         "Enviando cena %d/%d para Luma Ray 3.2".formatted(sceneIndex, sceneCount));
-                String generationId = submitScene(job, profile, script, sceneIndex, sceneCount);
+                List<Map<String, Object>> referenceImages = generateReferenceImagesIfRequested(
+                        job,
+                        profile,
+                        script,
+                        sceneIndex,
+                        sceneCount);
+                String generationId = submitScene(job, profile, script, sceneIndex, sceneCount, referenceImages);
                 JsonNode finalStatus = waitUntilCompleted(generationId, sceneIndex, sceneCount, progressCallback);
                 String videoUrl = resolveVideoUrl(finalStatus);
                 if (!StringUtils.hasText(videoUrl)) {
@@ -104,7 +127,7 @@ public class LumaRayVideoProvider implements VideoProvider {
                 }
                 Path sceneFile = downloadScene(job, sceneIndex, videoUrl);
                 sceneFiles.add(sceneFile);
-                sceneMetadata.add(sceneMetadata(sceneIndex, generationId, finalStatus));
+                sceneMetadata.add(sceneMetadata(sceneIndex, generationId, finalStatus, referenceImages));
             }
             progressCallback.onProgress(86, SalesVideoStatus.VIDEO_PROCESSING, "Montando vídeo final Luma");
             ProviderFile video = assembleFinalVideo(job, sceneFiles);
@@ -121,7 +144,8 @@ public class LumaRayVideoProvider implements VideoProvider {
                                SalesVideoProfile profile,
                                SalesVideoScript script,
                                int sceneIndex,
-                               int sceneCount) {
+                               int sceneCount,
+                               List<Map<String, Object>> referenceImages) {
         VideoManagementProperties.Luma config = properties.getProviders().getLuma();
         Map<String, Object> video = new LinkedHashMap<>();
         video.put("resolution", config.getResolution());
@@ -133,6 +157,9 @@ public class LumaRayVideoProvider implements VideoProvider {
         payload.put("prompt", buildScenePrompt(job, profile, script, sceneIndex, sceneCount));
         payload.put("aspect_ratio", config.getAspectRatio());
         payload.put("video", video);
+        if (!referenceImages.isEmpty()) {
+            payload.put("keyframes", lumaKeyframes(referenceImages));
+        }
 
         JsonNode response = authorized(webClient.post()
                         .uri("/v1/generations")
@@ -147,6 +174,141 @@ public class LumaRayVideoProvider implements VideoProvider {
                     "Luma não retornou id de geração para o job " + job.id());
         }
         return generationId;
+    }
+
+    /** Gera e publica imagens OpenAI para usar como keyframes Luma quando o job solicitar esse modo. */
+    private List<Map<String, Object>> generateReferenceImagesIfRequested(SalesVideoJob job,
+                                                                          SalesVideoProfile profile,
+                                                                          SalesVideoScript script,
+                                                                          int sceneIndex,
+                                                                          int sceneCount) {
+        JsonNode metadata = readMetadata(job);
+        JsonNode imageToVideo = metadata.path("image_to_video");
+        boolean enabled = imageToVideo.path("enabled").asBoolean(false)
+                || "OPENAI_IMAGE_TO_LUMA_VIDEO".equalsIgnoreCase(metadata.path("generation_strategy").asText(""));
+        if (!enabled) {
+            return List.of();
+        }
+        requireOpenAiImageApiKey();
+        int count = Math.max(1, Math.min(2, imageToVideo.path("reference_image_count").asInt(1)));
+        List<Map<String, Object>> references = new ArrayList<>();
+        for (int index = 1; index <= count; index++) {
+            String prompt = buildReferenceImagePrompt(job, profile, script, sceneIndex, sceneCount, index, count);
+            byte[] image = generateOpenAiReferenceImage(prompt);
+            ProviderFile file = new ProviderFile(
+                    "sales-video-" + job.id() + "-luma-reference-scene-" + sceneIndex + "-" + index + ".png",
+                    IMAGE_PNG,
+                    AssetType.IMAGE,
+                    ProviderAssetRole.IMAGE,
+                    image);
+            String metadataJson = writeJson(Map.of(
+                    "job_id", job.id(),
+                    "profile_id", job.profileId(),
+                    "script_id", job.scriptId(),
+                    "role", "LUMA_REFERENCE_IMAGE",
+                    "scene_index", sceneIndex,
+                    "reference_index", index,
+                    "provider", "OPENAI",
+                    "model", properties.getProviders().getLuma().getOpenAiImageModel(),
+                    "image_tool_model", properties.getProviders().getLuma().getOpenAiImageToolModel(),
+                    "service_tier", SERVICE_TIER));
+            var asset = assetClient.uploadAsset(file, metadataJson);
+            if (asset == null || !StringUtils.hasText(asset.url())) {
+                throw new VideoProviderException("VIDEO_REFERENCE_IMAGE_FAILED",
+                        "Imagem OpenAI foi gerada, mas o backend não retornou URL pública");
+            }
+            references.add(Map.of(
+                    "reference_index", index,
+                    "asset_id", asset.id(),
+                    "url", asset.url(),
+                    "model", properties.getProviders().getLuma().getOpenAiImageModel(),
+                    "image_tool_model", properties.getProviders().getLuma().getOpenAiImageToolModel(),
+                    "service_tier", SERVICE_TIER));
+        }
+        return references;
+    }
+
+    /** Monta keyframes no contrato aceito pela Luma para imagem inicial e, opcionalmente, final. */
+    private Map<String, Object> lumaKeyframes(List<Map<String, Object>> referenceImages) {
+        Map<String, Object> keyframes = new LinkedHashMap<>();
+        if (!referenceImages.isEmpty()) {
+            keyframes.put("frame0", Map.of("type", "image", "url", referenceImages.getFirst().get("url")));
+        }
+        if (referenceImages.size() > 1) {
+            keyframes.put("frame1", Map.of("type", "image", "url", referenceImages.get(1).get("url")));
+        }
+        return keyframes;
+    }
+
+    /** Gera imagem base64 via Responses API com ferramenta de geração de imagem e modo Flex. */
+    private byte[] generateOpenAiReferenceImage(String prompt) {
+        VideoManagementProperties.Luma config = properties.getProviders().getLuma();
+        Map<String, Object> payload = Map.of(
+                "model", config.getOpenAiImageModel(),
+                "input", prompt,
+                "service_tier", SERVICE_TIER,
+                "tool_choice", Map.of("type", "image_generation"),
+                "tools", List.of(Map.of(
+                        "type", "image_generation",
+                        "action", "generate",
+                        "model", config.getOpenAiImageToolModel(),
+                        "output_format", "png")));
+        JsonNode response = openAiWebClient.post()
+                .uri("/responses")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + resolveOpenAiApiKey())
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+        return Base64.getDecoder().decode(extractOpenAiImageBase64(response));
+    }
+
+    /** Extrai o PNG base64 retornado pela ferramenta image_generation. */
+    private String extractOpenAiImageBase64(JsonNode response) {
+        JsonNode output = response == null ? null : response.path("output");
+        if (output == null || !output.isArray()) {
+            throw new VideoProviderException("VIDEO_REFERENCE_IMAGE_FAILED", "OpenAI não retornou output de imagem");
+        }
+        for (JsonNode item : output) {
+            if ("image_generation_call".equals(item.path("type").asText())
+                    && StringUtils.hasText(item.path("result").asText())) {
+                return item.path("result").asText();
+            }
+        }
+        throw new VideoProviderException("VIDEO_REFERENCE_IMAGE_FAILED", "OpenAI não retornou imagem base64");
+    }
+
+    /** Monta prompt versionado da imagem de referência com a cena e a estratégia comercial. */
+    private String buildReferenceImagePrompt(SalesVideoJob job,
+                                             SalesVideoProfile profile,
+                                             SalesVideoScript script,
+                                             int sceneIndex,
+                                             int sceneCount,
+                                             int referenceIndex,
+                                             int referenceCount) {
+        JsonNode metadata = readMetadata(job);
+        String sceneBrief = sceneBrief(metadata.path("assembly_plan").path("scenes"), sceneIndex, sceneCount);
+        String imagePrompt = metadata.path("image_to_video").path("image_prompt").asText("");
+        String commercialGoal = StringUtils.hasText(imagePrompt)
+                ? imagePrompt.trim()
+                : "Criar quadro-base funcional, anti-sensualizacao, para conduzir a cliente da dor reconhecivel ao desejo de ver o Plano MUSA.";
+        if (referenceCount > 1) {
+            commercialGoal = commercialGoal + " Reference frame " + referenceIndex
+                    + " of " + referenceCount + ": "
+                    + (referenceIndex == 1 ? "inicio da microacao, ainda com duvida."
+                    : "fim da microacao, com alivio e clareza.");
+        }
+        try {
+            ClassPathResource resource = new ClassPathResource(REFERENCE_IMAGE_PROMPT_PATH);
+            return resource.getContentAsString(StandardCharsets.UTF_8)
+                    .replace("{{COMMERCIAL_GOAL}}", commercialGoal)
+                    .replace("{{SCENE_BRIEF}}", sceneBrief)
+                    .replace("{{APPROVED_SCRIPT}}", script.scriptText())
+                    .replace("{{VISUAL_DIRECTIVES}}", visualProviderDirectives(metadata));
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Não foi possível carregar prompt de imagem-base OpenAI", ex);
+        }
     }
 
     /** Aguarda a cena chegar em completed ou falha objetivamente. */
@@ -331,12 +493,18 @@ public class LumaRayVideoProvider implements VideoProvider {
     }
 
     /** Gera metadados de uma cena para auditoria. */
-    private Map<String, Object> sceneMetadata(int sceneIndex, String generationId, JsonNode finalStatus) {
+    private Map<String, Object> sceneMetadata(int sceneIndex,
+                                              String generationId,
+                                              JsonNode finalStatus,
+                                              List<Map<String, Object>> referenceImages) {
         Map<String, Object> scene = new LinkedHashMap<>();
         scene.put("scene_index", sceneIndex);
         scene.put("generation_id", generationId);
         scene.put("state", finalStatus.path("state").asText(null));
         scene.put("model", finalStatus.path("model").asText(properties.getProviders().getLuma().getModel()));
+        if (!referenceImages.isEmpty()) {
+            scene.put("reference_images", referenceImages);
+        }
         return scene;
     }
 
@@ -351,6 +519,7 @@ public class LumaRayVideoProvider implements VideoProvider {
         metadata.put("duration_seconds", sceneCount * parseDurationSeconds(properties.getProviders().getLuma().getDuration()));
         metadata.put("scene_count", sceneCount);
         metadata.put("scenes", scenes);
+        metadata.put("image_to_video_enabled", scenes.stream().anyMatch(scene -> scene.containsKey("reference_images")));
         metadata.put("cost_usd", estimateCostUsd(sceneCount));
         metadata.put("pricing_source", "Luma Agents pricing: ray-3.2 standard video generation by resolution and duration");
         metadata.put("polled_at", Instant.now().toString());
@@ -419,6 +588,19 @@ public class LumaRayVideoProvider implements VideoProvider {
         }
     }
 
+    /** Exige chave OpenAI quando o modo imagem-para-vídeo for solicitado. */
+    private void requireOpenAiImageApiKey() {
+        VideoManagementProperties.Luma config = properties.getProviders().getLuma();
+        if (!config.isOpenAiReferenceImageEnabled()) {
+            throw new VideoProviderException("VIDEO_REFERENCE_IMAGE_FAILED",
+                    "Geração de imagem OpenAI para Luma não está habilitada no video-management-service");
+        }
+        if (!StringUtils.hasText(resolveOpenAiApiKey())) {
+            throw new VideoProviderException("PROVIDER_AUTH_ERROR",
+                    "OPENAI_API_KEY não configurada para imagem-base do Luma");
+        }
+    }
+
     /** Aplica autorização Bearer em chamadas Luma. */
     private WebClient.RequestHeadersSpec<?> authorized(WebClient.RequestHeadersSpec<?> request) {
         request.header(HttpHeaders.AUTHORIZATION, "Bearer " + resolveApiKey());
@@ -443,6 +625,35 @@ public class LumaRayVideoProvider implements VideoProvider {
             return Files.readString(path).trim();
         } catch (IOException ex) {
             throw new UncheckedIOException("Não foi possível ler LUMA_API_KEY_FILE", ex);
+        }
+    }
+
+    /** Resolve chave OpenAI por variável direta ou arquivo de secret. */
+    private String resolveOpenAiApiKey() {
+        VideoManagementProperties.Luma config = properties.getProviders().getLuma();
+        if (StringUtils.hasText(config.getOpenAiApiKey())) {
+            return config.getOpenAiApiKey().trim();
+        }
+        if (!StringUtils.hasText(config.getOpenAiApiKeyFile())) {
+            return "";
+        }
+        try {
+            Path path = Path.of(config.getOpenAiApiKeyFile().trim());
+            if (!Files.isReadable(path)) {
+                return "";
+            }
+            return Files.readString(path).trim();
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Não foi possível ler OPENAI_API_KEY_FILE", ex);
+        }
+    }
+
+    /** Serializa metadados de imagem sem expor payload sensível. */
+    private String writeJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Não foi possível serializar metadata de imagem-base", ex);
         }
     }
 

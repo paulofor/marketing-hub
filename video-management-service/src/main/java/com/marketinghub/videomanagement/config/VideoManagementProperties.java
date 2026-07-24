@@ -117,6 +117,12 @@ public class VideoManagementProperties {
         private int maxPollAttempts = 120;
 
         private String ffmpegPath = "ffmpeg";
+        private boolean openAiReferenceImageEnabled = false;
+        private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
+        private String openAiApiKey;
+        private String openAiApiKeyFile;
+        private String openAiImageModel = "gpt-5.6";
+        private String openAiImageToolModel = "gpt-image-2";
     }
 
     @Getter

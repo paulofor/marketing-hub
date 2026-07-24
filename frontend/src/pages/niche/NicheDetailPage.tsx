@@ -38,6 +38,7 @@ import {
   Target,
   Briefcase,
   Activity,
+  Video,
 } from "lucide-react";
 import "./NicheDetailPage.css";
 
@@ -481,6 +482,13 @@ export default function NicheDetailPage() {
           </p>
         </div>
         <div className="niche-detail__actions">
+          <Link
+            className="btn btn-primary niche-detail__action-btn"
+            to="video-production"
+          >
+            <Video size={18} />
+            <span>Produzir vídeos</span>
+          </Link>
           <button
             type="button"
             className="btn btn-outline-secondary niche-detail__action-btn"

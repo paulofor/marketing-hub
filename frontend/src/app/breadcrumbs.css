@@ -64,6 +64,7 @@
   align-items: center;
   gap: 0.35rem;
   line-height: 1.2;
+  min-width: 0;
   white-space: nowrap;
 }
 
@@ -84,7 +85,10 @@
 
 .app-breadcrumbs__item-text {
   display: inline-block;
+  max-width: min(52vw, 42rem);
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

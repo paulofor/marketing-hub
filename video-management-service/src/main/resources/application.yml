@@ -55,11 +55,33 @@ video:
       negative-prompt: "sensualized woman, seductive pose, body focus, exposed body, luxury ostentation, dark haze, blur, distorted hands, embedded text, logo"
       poll-interval: PT10S
       max-poll-attempts: 120
+    heygen:
+      enabled: false
+      accepted-names:
+        - HEYGEN
+        - HEYGEN_AVATAR
+      base-url: https://api.heygen.com
+      api-key: ${HEYGEN_API_KEY:${VIDEO_PROVIDERS_HEYGEN_API_KEY:}}
+      api-key-file: ${HEYGEN_API_KEY_FILE:}
+      create-path: /v3/videos
+      status-path-template: /v3/videos/{videoId}
+      avatar-id: ${VIDEO_PROVIDERS_HEYGEN_AVATAR_ID:}
+      voice-id: ${VIDEO_PROVIDERS_HEYGEN_VOICE_ID:}
+      aspect-ratio: "9:16"
+      output-format: mp4
+      engine-type: ${VIDEO_PROVIDERS_HEYGEN_ENGINE_TYPE:avatar_iv}
+      caption-enabled: ${VIDEO_PROVIDERS_HEYGEN_CAPTION_ENABLED:true}
+      caption-style: ${VIDEO_PROVIDERS_HEYGEN_CAPTION_STYLE:default}
+      background-value: ${VIDEO_PROVIDERS_HEYGEN_BACKGROUND_VALUE:#F8F0EA}
+      voice-speed: ${VIDEO_PROVIDERS_HEYGEN_VOICE_SPEED:1.0}
+      voice-pitch: ${VIDEO_PROVIDERS_HEYGEN_VOICE_PITCH:0.0}
+      voice-volume: ${VIDEO_PROVIDERS_HEYGEN_VOICE_VOLUME:1.0}
+      poll-interval: PT10S
+      max-poll-attempts: 120
     real:
       enabled: false
       accepted-names:
         - REAL
-        - HEYGEN
         - SYNTHESIA
         - VEO
       base-url: http://real-video-provider:8080

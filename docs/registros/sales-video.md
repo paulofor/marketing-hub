@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-24 — Adapter direto HeyGen para avatar com voz sincronizada
+
+- Problema observado: HeyGen aparecia na combo do Marketing Hub, mas ainda dependia de implementação futura no executor para criar asset real.
+- Causa-raiz tratada: o catálogo visual do frontend e a configuração de segredo avançaram antes do `video-management-service` ter um provider direto para `providerName=HEYGEN`.
+- Correção preparada: criado `HeyGenVideoProvider` com autenticação `X-Api-Key`, criação por `POST /v3/videos`, polling por `GET /v3/videos/{videoId}`, download do MP4 final e auditoria de request/status no metadata do job.
+- Regra operacional: para geração real, o token HeyGen não basta; o ambiente ou o job deve informar `VIDEO_PROVIDERS_HEYGEN_AVATAR_ID`/`heygen_avatar_id` e `VIDEO_PROVIDERS_HEYGEN_VOICE_ID`/`heygen_voice_id`, porque a escolha da apresentadora e da voz é decisão criativa do produto.
+
 ## 2026-07-24 — Token HeyGen via arquivo no container de video
 
 - Problema observado: HeyGen ja aparecia no catalogo de fornecedores do Marketing Hub, mas o container de video ainda nao recebia o token pelo mesmo padrao operacional de Luma/Kling/VEO.

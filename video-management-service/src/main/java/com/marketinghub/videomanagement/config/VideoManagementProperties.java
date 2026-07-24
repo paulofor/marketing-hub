@@ -71,6 +71,9 @@ public class VideoManagementProperties {
         private Kling kling = new Kling();
 
         @NotNull
+        private HeyGen heygen = new HeyGen();
+
+        @NotNull
         private Veo veo = new Veo();
 
         @NotNull
@@ -169,6 +172,54 @@ public class VideoManagementProperties {
 
     @Getter
     @Setter
+    public static class HeyGen {
+        private boolean enabled = false;
+
+        /**
+         * Nomes que identificam jobs destinados ao adapter direto da HeyGen.
+         */
+        @NotNull
+        private List<String> acceptedNames = new ArrayList<>(List.of("HEYGEN", "HEYGEN_AVATAR"));
+
+        /**
+         * Base URL oficial da API HeyGen.
+         */
+        @NotNull
+        private URI baseUrl = URI.create("https://api.heygen.com");
+
+        /**
+         * Chave HeyGen usada apenas pelo módulo executor de vídeo.
+         */
+        private String apiKey;
+
+        /**
+         * Caminho opcional para a chave HeyGen montada como secret em arquivo.
+         */
+        private String apiKeyFile;
+
+        private String createPath = "/v3/videos";
+        private String statusPathTemplate = "/v3/videos/{videoId}";
+        private String avatarId;
+        private String voiceId;
+        private String aspectRatio = "9:16";
+        private String outputFormat = "mp4";
+        private String engineType = "avatar_iv";
+        private boolean captionEnabled = true;
+        private String captionStyle = "default";
+        private String backgroundValue = "#F8F0EA";
+        private double voiceSpeed = 1.0;
+        private double voicePitch = 0.0;
+        private double voiceVolume = 1.0;
+
+        @NotNull
+        private Duration pollInterval = Duration.ofSeconds(10);
+
+        @Min(1)
+        private int maxPollAttempts = 120;
+    }
+
+    @Getter
+    @Setter
     public static class Real {
         private boolean enabled = false;
 
@@ -176,7 +227,7 @@ public class VideoManagementProperties {
          * Nomes que identificam o provider real dentro de providerName do job.
          */
         @NotNull
-        private List<String> acceptedNames = new ArrayList<>(List.of("REAL", "HEYGEN", "SYNTHESIA"));
+        private List<String> acceptedNames = new ArrayList<>(List.of("REAL", "SYNTHESIA"));
 
         /**
          * Base URL da API do provider real.

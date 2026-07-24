@@ -278,7 +278,12 @@ class ExperimentVideoAssetServiceTest {
         assertThat(renderRequest.getValue().getMetadataJson())
                 .contains("\"durationSeconds\":30")
                 .contains("\"funnelRole\":\"LANDING_HERO\"")
-                .contains("\"recommendedPaidTrafficDerivativeSeconds\":[10,15]");
+                .contains("\"recommendedPaidTrafficDerivativeSeconds\":[10,15]")
+                .contains("\"generation_strategy\":\"OPENAI_IMAGE_TO_LUMA_VIDEO\"")
+                .contains("\"enabled\":true")
+                .contains("\"reference_image_count\":2")
+                .contains("no flickering")
+                .contains("lighting oscillation");
         ArgumentCaptor<ExperimentVideoAsset> savedAsset = ArgumentCaptor.forClass(ExperimentVideoAsset.class);
         verify(repository).save(savedAsset.capture());
         assertThat(savedAsset.getValue().getId()).isEqualTo(5L);

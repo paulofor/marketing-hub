@@ -117,7 +117,7 @@ export default function ProductSalesVideoPage() {
     DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
   );
   const [openAiReferenceImageEnabled, setOpenAiReferenceImageEnabled] =
-    useState(false);
+    useState(DEFAULT_SALES_VIDEO_PROVIDER.supportsOpenAiReferenceImage);
   const [openAiReferenceImagePrompt, setOpenAiReferenceImagePrompt] = useState(
     DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT,
   );

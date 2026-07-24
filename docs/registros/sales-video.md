@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-24 — Bloqueio visual não pode virar criativo
+
+- Problema observado: o vídeo MUSA do experimento 71/job `20454` foi gerado pela Luma e ficou tecnicamente `VIDEO_READY`, mas a checagem visual comercial da tela marcou `Bloqueado: luz oscilando`.
+- Causa-raiz tratada: o job nasceu como Luma text-to-video puro (`image_to_video_enabled=false`) e sem imagem-base OpenAI, apesar de o acervo já ter recurso preventivo para travar composição/luz antes da animação. Além disso, o bloqueio visual estava mais forte na UI do que no contrato operacional do render.
+- Correção preparada: renders planejados comerciais Luma para `LANDING_HERO` ou `AD` passam a carregar `generation_strategy=OPENAI_IMAGE_TO_LUMA_VIDEO`, `image_to_video.enabled=true`, diretivas anti-flicker/haze/blur e `quality_gate.reject_if` com os problemas visuais que bloqueiam uso comercial. A tela de vídeo do produto também passa a deixar a imagem-base OpenAI ligada por padrão quando o provider suporta esse recurso.
+- Regra operacional: asset bloqueado por QA visual não pode ser aceito como criativo, hero, retargeting, variação publicável ou referência final. Ele só serve como evidência de falha ou insumo de regeneração.
+
 ## 2026-07-24 — TTS OpenAI obrigatório para pós-produção comercial
 
 - Problema observado: vídeos comerciais do MUSA podiam ficar tecnicamente renderizados, mas sem voz/legenda/trilha quando a pós-produção falhava por ausência de `OPENAI_API_KEY_FILE` no runtime do `video-management-service`.

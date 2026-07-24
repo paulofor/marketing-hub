@@ -24,9 +24,22 @@ describe("videoProviderCatalog", () => {
     expect(metadata.visual_provider_directives).toBe(
       DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
     );
+    expect(metadata.generation_strategy).toBe("TEXT_TO_VIDEO");
+    expect(metadata.image_to_video.enabled).toBe(false);
     expect(metadata.assembly_plan.required).toBe(true);
     expect(metadata.assembly_plan.minimum_accepted_duration_seconds).toBe(28);
     expect(metadata.assembly_plan.scenes).toHaveLength(4);
+  });
+
+  it("usa imagem-base OpenAI por padrao quando o provider Luma suporta o recurso", () => {
+    const metadata = JSON.parse(
+      buildSalesVideoRenderMetadata(DEFAULT_SALES_VIDEO_PROVIDER),
+    );
+
+    expect(metadata.generation_strategy).toBe("OPENAI_IMAGE_TO_LUMA_VIDEO");
+    expect(metadata.image_to_video.enabled).toBe(true);
+    expect(metadata.image_to_video.source_image_provider).toBe("OPENAI");
+    expect(metadata.image_to_video.reference_image_count).toBe(1);
   });
 
   it("preserva diretivas visuais customizadas para teste por provider", () => {

@@ -90,7 +90,8 @@ export function buildSalesVideoRenderMetadata(
   const normalizedVisualProviderDirectives =
     renderOptions?.visualProviderDirectives?.trim() || DEFAULT_VISUAL_PROVIDER_DIRECTIVES;
   const openAiReferenceImageEnabled = Boolean(
-    renderOptions?.openAiReferenceImageEnabled && provider.supportsOpenAiReferenceImage,
+    (renderOptions?.openAiReferenceImageEnabled ?? provider.supportsOpenAiReferenceImage)
+      && provider.supportsOpenAiReferenceImage,
   );
   const referenceImageCount = Math.min(
     2,

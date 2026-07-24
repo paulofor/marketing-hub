@@ -15,7 +15,7 @@ ai_worker_generation|114
 angle|8
 asset|757
 chat_dialog|48
-creative|15
+creative|17
 creative_variants|2
 DATABASECHANGELOG|247
 deliverable|4
@@ -169,7 +169,9 @@ creative|lead_gen_form_id|varchar(64)|YES|NULL||
 creative|instagram_user_id|varchar(64)|YES|NULL||
 creative|image_hash|varchar(255)|YES|NULL||
 creative|video_id|varchar(255)|YES|NULL||
-creative|status|enum('DRAFT','READY')|YES|NULL||
+creative|video_url|varchar(1024)|YES|NULL||
+creative|status|varchar(20)|YES|NULL||
+creative|rejection_reason|longtext|YES|NULL||
 creative_variants|id|bigint(20)|NO|NULL|PRI|auto_increment
 creative_variants|headline|varchar(255)|YES|NULL||
 creative_variants|image_url|varchar(255)|YES|NULL||

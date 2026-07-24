@@ -88,6 +88,7 @@ public class CreativeService {
                     .leadGenFormId(request.getLeadGenFormId())
                     .instagramUserId(request.getInstagramUserId())
                     .status(request.getStatus())
+                    .rejectionReason(null)
                     .build();
             Creative saved = repository.save(creative);
             applyGenerationCost(exp, request.getCostUsd());
@@ -128,6 +129,7 @@ public class CreativeService {
         creative.setLeadGenFormId(request.getLeadGenFormId());
         creative.setInstagramUserId(request.getInstagramUserId());
         creative.setStatus(request.getStatus());
+        creative.setRejectionReason(null);
         Creative saved = repository.save(creative);
         refreshExperimentApproval(saved.getExperiment());
         return saved;
@@ -146,31 +148,55 @@ public class CreativeService {
     }
 
     /**
-     * Atualiza somente o status de aprovação do criativo.
+     * Atualiza somente o status de revisão do criativo.
      */
     @Transactional
     public Creative updateStatus(Long id, CreativeStatus status) {
+        return updateStatus(id, status, null);
+    }
+
+    /**
+     * Atualiza o status de revisão do criativo e persiste o motivo quando ele for reprovado.
+     */
+    @Transactional
+    public Creative updateStatus(Long id, CreativeStatus status, String rejectionReason) {
         try {
             if (status == null) {
                 throw new IllegalArgumentException("Status do criativo é obrigatório.");
             }
             Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
             validateReadyCreativeHasMedia(creative, status);
+            String normalizedRejectionReason = normalizeRejectionReason(status, rejectionReason);
             creative.setStatus(status);
+            creative.setRejectionReason(normalizedRejectionReason);
             Creative saved = repository.save(creative);
             refreshExperimentApproval(saved.getExperiment());
             return saved;
         } catch (RuntimeException ex) {
             log.error(
                     "Falha ao atualizar status do criativo no backend. classe={} operacao=updateCreativeStatus "
-                            + "creativeId={} status={} erro='{}'",
+                            + "creativeId={} status={} rejectionReasonPresent={} erro='{}'",
                     getClass().getSimpleName(),
                     id,
                     status,
+                    StringUtils.hasText(rejectionReason),
                     ex.getMessage(),
                     ex);
             throw ex;
         }
+    }
+
+    /**
+     * Normaliza e valida o motivo obrigatório para reprovação comercial.
+     */
+    private String normalizeRejectionReason(CreativeStatus status, String rejectionReason) {
+        if (status != CreativeStatus.REJECTED) {
+            return null;
+        }
+        if (!StringUtils.hasText(rejectionReason)) {
+            throw new IllegalArgumentException("Informe o motivo da reprovação do vídeo.");
+        }
+        return rejectionReason.trim();
     }
 
     /**
@@ -298,7 +324,8 @@ public class CreativeService {
                 creative.getDescription(),
                 creative.getCta(),
                 creative.getDestinationUrl(),
-                creative.getStatus());
+                creative.getStatus(),
+                creative.getRejectionReason());
     }
 
     /**

@@ -64,7 +64,12 @@ public class Creative {
     private String instagramUserId;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status")
     private CreativeStatus status;
+
+    /** Motivo comercial informado quando o criativo é reprovado na revisão humana. */
+    @Column(name = "rejection_reason", columnDefinition = "LONGTEXT")
+    private String rejectionReason;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "creative_angle",

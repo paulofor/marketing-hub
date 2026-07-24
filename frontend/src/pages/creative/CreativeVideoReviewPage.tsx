@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CheckCircle2, ExternalLink, RefreshCcw, RotateCcw, Video } from "lucide-react";
+import { CheckCircle2, ExternalLink, RefreshCcw, RotateCcw, Video, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
@@ -16,18 +16,24 @@ type ReviewFilter = "ALL" | CreativeVideoReviewStatus;
 const REVIEW_FILTERS: Array<{ value: ReviewFilter; label: string }> = [
   { value: "DRAFT", label: "Pendentes" },
   { value: "READY", label: "Aprovados" },
+  { value: "REJECTED", label: "Reprovados" },
   { value: "ALL", label: "Todos" },
 ];
 
 const STATUS_LABELS: Record<CreativeVideoReviewStatus, string> = {
   DRAFT: "Pendente",
   READY: "Aprovado",
+  REJECTED: "Reprovado",
 };
 
 function statusClassName(status: CreativeVideoReviewStatus) {
-  return status === "READY"
-    ? "creative-video-review-page__status creative-video-review-page__status--ready"
-    : "creative-video-review-page__status creative-video-review-page__status--draft";
+  if (status === "READY") {
+    return "creative-video-review-page__status creative-video-review-page__status--ready";
+  }
+  if (status === "REJECTED") {
+    return "creative-video-review-page__status creative-video-review-page__status--rejected";
+  }
+  return "creative-video-review-page__status creative-video-review-page__status--draft";
 }
 
 function primaryMediaUrl(video: CreativeVideoReview) {
@@ -36,11 +42,13 @@ function primaryMediaUrl(video: CreativeVideoReview) {
 
 export default function CreativeVideoReviewPage() {
   const [filter, setFilter] = useState<ReviewFilter>("DRAFT");
+  const [rejectionReasons, setRejectionReasons] = useState<Record<number, string>>({});
   const reviewQuery = useCreativeVideoReviews(filter);
   const updateStatus = useUpdateCreativeVideoReviewStatus();
   const videos = useMemo(() => reviewQuery.data ?? [], [reviewQuery.data]);
   const pendingCount = videos.filter((video) => video.status === "DRAFT").length;
   const approvedCount = videos.filter((video) => video.status === "READY").length;
+  const rejectedCount = videos.filter((video) => video.status === "REJECTED").length;
   const musaCount = videos.filter((video) =>
     `${video.experimentName} ${video.hypothesisTitle ?? ""} ${video.nicheName ?? ""}`
       .toLocaleLowerCase("pt-BR")
@@ -50,14 +58,30 @@ export default function CreativeVideoReviewPage() {
   const handleStatusChange = async (
     video: CreativeVideoReview,
     status: CreativeVideoReviewStatus,
+    rejectionReason?: string,
   ) => {
     try {
-      await updateStatus.mutateAsync({ id: video.id, status });
-      toast.success(status === "READY" ? "Vídeo aprovado para campanha" : "Vídeo voltou para revisão");
+      await updateStatus.mutateAsync({ id: video.id, status, rejectionReason });
+      if (status === "READY") {
+        toast.success("Vídeo aprovado para campanha");
+      } else if (status === "REJECTED") {
+        toast.success("Vídeo reprovado com motivo registrado");
+      } else {
+        toast.success("Vídeo voltou para revisão");
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Falha ao atualizar vídeo";
       toast.error(message);
     }
+  };
+
+  const handleReject = (video: CreativeVideoReview) => {
+    const reason = rejectionReasons[video.id]?.trim() ?? "";
+    if (!reason) {
+      toast.error("Informe o motivo da reprovação.");
+      return;
+    }
+    handleStatusChange(video, "REJECTED", reason);
   };
 
   return (
@@ -79,6 +103,10 @@ export default function CreativeVideoReviewPage() {
         <div className="creative-video-review-page__metric">
           <span>Aprovados no filtro</span>
           <strong>{approvedCount}</strong>
+        </div>
+        <div className="creative-video-review-page__metric">
+          <span>Reprovados no filtro</span>
+          <strong>{rejectedCount}</strong>
         </div>
         <div className="creative-video-review-page__metric">
           <span>Relacionados a MUSA</span>
@@ -188,6 +216,30 @@ export default function CreativeVideoReviewPage() {
                     </div>
                   </dl>
 
+                  {video.status === "REJECTED" && video.rejectionReason ? (
+                    <div className="creative-video-review-page__rejection">
+                      <strong>Motivo da reprovação</strong>
+                      <p>{video.rejectionReason}</p>
+                    </div>
+                  ) : null}
+
+                  {video.status === "DRAFT" ? (
+                    <label className="creative-video-review-page__reject-reason">
+                      <span>Motivo da reprovação <b aria-hidden="true">*</b></span>
+                      <textarea
+                        value={rejectionReasons[video.id] ?? ""}
+                        onChange={(event) =>
+                          setRejectionReasons((current) => ({
+                            ...current,
+                            [video.id]: event.target.value,
+                          }))
+                        }
+                        placeholder="Explique o que precisa ser corrigido antes de liberar para campanha."
+                        rows={3}
+                      />
+                    </label>
+                  ) : null}
+
                   <div className="creative-video-review-page__actions">
                     {video.status !== "READY" ? (
                       <button
@@ -196,7 +248,11 @@ export default function CreativeVideoReviewPage() {
                         disabled={isPending || !mediaUrl}
                         onClick={() => handleStatusChange(video, "READY")}
                       >
-                        <CheckCircle2 size={16} aria-hidden="true" />
+                        {isPending ? (
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                        ) : (
+                          <CheckCircle2 size={16} aria-hidden="true" />
+                        )}
                         {isPending ? "Aprovando..." : "Aprovar"}
                       </button>
                     ) : (
@@ -206,10 +262,29 @@ export default function CreativeVideoReviewPage() {
                         disabled={isPending}
                         onClick={() => handleStatusChange(video, "DRAFT")}
                       >
-                        <RotateCcw size={16} aria-hidden="true" />
+                        {isPending ? (
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                        ) : (
+                          <RotateCcw size={16} aria-hidden="true" />
+                        )}
                         {isPending ? "Atualizando..." : "Voltar para revisão"}
                       </button>
                     )}
+                    {video.status === "DRAFT" ? (
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm"
+                        disabled={isPending || !(rejectionReasons[video.id]?.trim())}
+                        onClick={() => handleReject(video)}
+                      >
+                        {isPending ? (
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                        ) : (
+                          <XCircle size={16} aria-hidden="true" />
+                        )}
+                        {isPending ? "Reprovando..." : "Reprovar"}
+                      </button>
+                    ) : null}
                     {mediaUrl ? (
                       <a
                         className="btn btn-outline-secondary btn-sm"

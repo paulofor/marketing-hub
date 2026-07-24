@@ -1,9 +1,10 @@
 package com.marketinghub.creative;
 
 /**
- * Status for creatives.
+ * Responsabilidade: representar o estado operacional de revisão de um criativo.
  */
 public enum CreativeStatus {
     DRAFT,
-    READY
+    READY,
+    REJECTED
 }

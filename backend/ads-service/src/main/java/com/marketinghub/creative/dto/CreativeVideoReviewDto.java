@@ -27,5 +27,6 @@ public record CreativeVideoReviewDto(
         String description,
         String cta,
         String destinationUrl,
-        CreativeStatus status) {
+        CreativeStatus status,
+        String rejectionReason) {
 }

@@ -24,4 +24,5 @@ public class CreativeDto {
     private String imagePrompt;
     private String imageIntermediatePrompt;
     private CreativeStatus status;
+    private String rejectionReason;
 }

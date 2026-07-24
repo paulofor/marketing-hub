@@ -411,7 +411,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [DRAFT, READY]
+            enum: [DRAFT, READY, REJECTED]
       responses:
         '200':
           description: Fila de criativos de vídeo com contexto de experimento, hipótese e nicho
@@ -424,7 +424,7 @@ paths:
   /api/creatives/{id}/status:
     patch:
       tags: [Creatives]
-      summary: Atualizar status de aprovação do criativo
+      summary: Atualizar status de revisão do criativo
       parameters:
         - in: path
           name: id
@@ -1793,14 +1793,18 @@ components:
           type: string
         status:
           type: string
-          enum: [DRAFT, READY]
+          enum: [DRAFT, READY, REJECTED]
+        rejectionReason:
+          type: string
     UpdateCreativeStatusRequest:
       type: object
       required: [status]
       properties:
         status:
           type: string
-          enum: [DRAFT, READY]
+          enum: [DRAFT, READY, REJECTED]
+        rejectionReason:
+          type: string
     CreativeVideoReviewDto:
       type: object
       properties:
@@ -1844,7 +1848,9 @@ components:
           type: string
         status:
           type: string
-          enum: [DRAFT, READY]
+          enum: [DRAFT, READY, REJECTED]
+        rejectionReason:
+          type: string
     CreateLandingPageRequest:
       type: object
       properties:

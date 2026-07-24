@@ -15,7 +15,6 @@ import {
 import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
-import { TenantContextBanner } from "../../components/TenantContextBanner";
 import { useAsset } from "../../api/media/useAsset";
 import { useProduct } from "../../api/product/useProduct";
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
@@ -323,8 +322,6 @@ export default function ProductSalesVideoPage() {
           Voltar
         </Link>
       </div>
-
-      <TenantContextBanner className="mb-3" />
 
       <section className="product-video-page__context">
         <div>

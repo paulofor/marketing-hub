@@ -42,6 +42,13 @@
 - Correção preparada: compose local e compose de deploy montam `/root/infra/heygen-token/heygen_api_key` como secret somente leitura; o entrypoint carrega HeyGen em `HEYGEN_API_KEY` e `VIDEO_PROVIDERS_HEYGEN_API_KEY`.
 - Regra operacional: token HeyGen deve seguir o mesmo padrao de segredo por arquivo, sem valor real em compose, Markdown, `.env`, logs ou resposta.
 
+## 2026-07-24 — Token Runway via arquivo no container de video
+
+- Problema observado: o token Runway foi disponibilizado no host de video, mas o container ainda nao o recebia pelo mesmo padrao operacional de Luma/Kling/VEO/HeyGen.
+- Causa-raiz tratada: a configuracao versionada do modulo de video ainda nao montava nem carregava automaticamente `RUNWAY_API_KEY`.
+- Correção preparada: compose local e compose de deploy montam `/root/infra/runaway-token/runaway_api_key` como secret somente leitura; o entrypoint carrega Runway em `RUNWAY_API_KEY` e `VIDEO_PROVIDERS_RUNWAY_API_KEY`.
+- Regra operacional: token Runway deve seguir o mesmo padrao de segredo por arquivo, sem valor real em compose, Markdown, `.env`, logs ou resposta.
+
 ## 2026-07-23 — Tokens Luma e Kling via arquivo no container de video
 
 - Problema observado: os arquivos de token Luma e Kling foram criados no host de video, mas o container ainda so montava e carregava automaticamente o arquivo do Gemini.

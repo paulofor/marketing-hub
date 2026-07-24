@@ -1,0 +1,136 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-24-experiment-audience-tests
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_audience_test
+      changes:
+        - createTable:
+            tableName: experiment_audience_test
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: experiment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hypothesis
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: success_metric
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: daily_budget
+                  type: DECIMAL(10,2)
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  defaultValue: DRAFT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addForeignKeyConstraint:
+            baseTableName: experiment_audience_test
+            baseColumnNames: experiment_id
+            constraintName: fk_experiment_audience_test_experiment
+            referencedTableName: experiment
+            referencedColumnNames: id
+        - createIndex:
+            tableName: experiment_audience_test
+            indexName: idx_experiment_audience_test_experiment
+            columns:
+              - column:
+                  name: experiment_id
+  - changeSet:
+      id: 2026-07-24-experiment-audience-test-items
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_audience_test_item
+      changes:
+        - createTable:
+            tableName: experiment_audience_test_item
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: audience_test_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: candidate_type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: term
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: targeting_element_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: experiment_audience_test_item
+            baseColumnNames: audience_test_id
+            constraintName: fk_experiment_audience_test_item_test
+            referencedTableName: experiment_audience_test
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: experiment_audience_test_item
+            baseColumnNames: targeting_element_id
+            constraintName: fk_experiment_audience_test_item_element
+            referencedTableName: targeting_element
+            referencedColumnNames: id
+        - createIndex:
+            tableName: experiment_audience_test_item
+            indexName: idx_experiment_audience_test_item_test
+            columns:
+              - column:
+                  name: audience_test_id
+        - createIndex:
+            tableName: experiment_audience_test_item
+            indexName: idx_experiment_audience_test_item_element
+            columns:
+              - column:
+                  name: targeting_element_id

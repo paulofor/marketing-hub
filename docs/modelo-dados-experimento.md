@@ -553,6 +553,17 @@ erDiagram
 - O disparo do fluxo simples cria uma `targeting_request` interna para resolver os códigos da Meta Ads.
 - `targeting_request` agora possui `experiment_id` (FK) para rastrear execuções por experimento e permitir expor status/erros operacionais diretamente na UI.
 
+### Teste de públicos por experimento
+
+As tabelas `experiment_audience_test` e `experiment_audience_test_item` permitem planejar variações de público dentro de um experimento sem alterar automaticamente campanhas em execução.
+
+- `experiment_audience_test` guarda nome, hipótese, métrica principal, orçamento diário opcional e status da variação.
+- `experiment_audience_test_item` guarda os itens oficiais de targeting usados na variação, sempre vinculados a `targeting_element`.
+- A variação nasce como `DRAFT`; publicação/ativação de mídia deve ser uma ação operacional separada.
+- O uso recomendado é comparar público mantendo criativo, oferta, preço e landing constantes.
+
+Para MUSA, este recurso deve ajudar a separar hipóteses como público amplo, público de imagem pessoal/elegância, público moda/beleza e público profissional feminino.
+
 ## Funil de vendas do experimento
 
 Para cada experimento passamos a acompanhar um funil operacional padronizado de

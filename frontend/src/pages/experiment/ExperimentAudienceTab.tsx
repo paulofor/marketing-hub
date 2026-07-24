@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, HelpCircle, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  HelpCircle,
+  Trash2,
+  Users,
+} from "lucide-react";
+import {
+  useCreateExperimentAudienceTest,
+  useDeleteExperimentAudienceTest,
+  useExperimentAudienceTests,
+} from "../../api/experiment/useExperimentAudienceTests";
 import {
   useExperimentTargetingSelections,
   useSaveExperimentTargetingSelections,
@@ -101,6 +112,10 @@ export function ExperimentAudienceTab({
   const { data: savedSelections } =
     useExperimentTargetingSelections(experimentId);
   const saveSelections = useSaveExperimentTargetingSelections(experimentId);
+  const { data: audienceTests, isLoading: isLoadingAudienceTests } =
+    useExperimentAudienceTests(experimentId);
+  const createAudienceTest = useCreateExperimentAudienceTest(experimentId);
+  const deleteAudienceTest = useDeleteExperimentAudienceTest(experimentId);
 
   const availableOptions = useMemo(
     () =>
@@ -111,6 +126,12 @@ export function ExperimentAudienceTab({
   );
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [testName, setTestName] = useState("");
+  const [testHypothesis, setTestHypothesis] = useState("");
+  const [testMetric, setTestMetric] = useState(
+    "Início do diagnóstico por sessão paga",
+  );
+  const [testDailyBudget, setTestDailyBudget] = useState("");
 
   useEffect(() => {
     if (!savedSelections || availableOptions.length === 0) {
@@ -204,6 +225,24 @@ export function ExperimentAudienceTab({
         targetingElementId: item.id,
       })),
     });
+  };
+
+  const handleCreateAudienceTest = async () => {
+    if (alterationLocked || selectedReadyOptions.length === 0) return;
+    await createAudienceTest.mutateAsync({
+      name: testName.trim(),
+      hypothesis: testHypothesis.trim(),
+      successMetric: testMetric.trim(),
+      dailyBudget: testDailyBudget ? Number(testDailyBudget) : null,
+      items: selectedReadyOptions.map((item) => ({
+        candidateType: toCandidateType(item.type),
+        targetingElementId: item.id,
+      })),
+    });
+    setTestName("");
+    setTestHypothesis("");
+    setTestMetric("Início do diagnóstico por sessão paga");
+    setTestDailyBudget("");
   };
 
   if (nicheId == null) {
@@ -451,6 +490,145 @@ export function ExperimentAudienceTab({
             </div>
           </details>
         ) : null}
+
+        <section className="audience-test-panel" aria-label="Teste de públicos">
+          <div className="audience-test-panel__header">
+            <div>
+              <h5>Teste de públicos</h5>
+              <p>
+                Salve variações para comparar segmentações mantendo criativo e
+                página constantes.
+              </p>
+            </div>
+            <span>{audienceTests?.length ?? 0} variação</span>
+          </div>
+
+          <div className="audience-test-form">
+            <label>
+              <span>Nome da variação</span>
+              <input
+                className="form-control"
+                value={testName}
+                onChange={(event) => setTestName(event.target.value)}
+                placeholder="Imagem pessoal e elegância"
+                disabled={alterationLocked}
+              />
+            </label>
+            <label>
+              <span>Orçamento diário opcional</span>
+              <input
+                className="form-control"
+                type="number"
+                min="0"
+                step="1"
+                value={testDailyBudget}
+                onChange={(event) => setTestDailyBudget(event.target.value)}
+                placeholder="25"
+                disabled={alterationLocked}
+              />
+            </label>
+            <label className="audience-test-form__wide">
+              <span>Hipótese</span>
+              <textarea
+                className="form-control"
+                rows={2}
+                value={testHypothesis}
+                onChange={(event) => setTestHypothesis(event.target.value)}
+                placeholder="Mulheres interessadas em imagem pessoal iniciam mais diagnósticos que público amplo."
+                disabled={alterationLocked}
+              />
+            </label>
+            <label className="audience-test-form__wide">
+              <span>Métrica principal</span>
+              <input
+                className="form-control"
+                value={testMetric}
+                onChange={(event) => setTestMetric(event.target.value)}
+                disabled={alterationLocked}
+              />
+            </label>
+            <button
+              className="btn btn-outline-primary audience-test-form__button"
+              onClick={handleCreateAudienceTest}
+              disabled={
+                alterationLocked ||
+                createAudienceTest.isPending ||
+                selectedReadyOptions.length === 0 ||
+                !testName.trim() ||
+                !testHypothesis.trim() ||
+                !testMetric.trim()
+              }
+            >
+              {createAudienceTest.isPending
+                ? "Criando..."
+                : "Criar variação com selecionados"}
+            </button>
+          </div>
+
+          {isLoadingAudienceTests ? (
+            <div className="text-muted small">Carregando variações...</div>
+          ) : audienceTests && audienceTests.length > 0 ? (
+            <div className="audience-test-list">
+              {audienceTests.map((test) => (
+                <article className="audience-test-card" key={test.id}>
+                  <div className="audience-test-card__top">
+                    <div>
+                      <h6>{test.name}</h6>
+                      <span>{test.status}</span>
+                    </div>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => deleteAudienceTest.mutate(test.id)}
+                      disabled={
+                        alterationLocked ||
+                        deleteAudienceTest.isPending ||
+                        test.status === "RUNNING"
+                      }
+                      title="Remover variação"
+                      aria-label={`Remover variação ${test.name}`}
+                    >
+                      <Trash2 size={15} aria-hidden="true" />
+                    </button>
+                  </div>
+                  <p>{test.hypothesis}</p>
+                  <div className="audience-test-card__metrics">
+                    <span>{test.items.length} itens</span>
+                    <span>
+                      {formatCombinedAudienceRange(
+                        test.audienceSizeLowerBound,
+                        test.audienceSizeUpperBound,
+                      )}
+                    </span>
+                    {test.dailyBudget ? (
+                      <span>
+                        R${" "}
+                        {Number(test.dailyBudget).toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                        })}
+                        /dia
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="audience-test-card__metric">
+                    {test.successMetric}
+                  </div>
+                  <div className="audience-test-card__items">
+                    {test.items.map((item) => (
+                      <span key={`${test.id}-${item.targetingElementId}`}>
+                        {item.term}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="audience-empty-state">
+              Nenhuma variação criada. Selecione públicos prontos e salve um
+              teste para comparar hipóteses.
+            </div>
+          )}
+        </section>
 
         <div className="audience-actions">
           <div className="text-muted small">

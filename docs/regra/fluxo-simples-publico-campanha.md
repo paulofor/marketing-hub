@@ -61,11 +61,28 @@ Depois de executar o fluxo simples, a aba de segmentação do experimento exibe:
 
 O painel atualiza automaticamente a cada 10 segundos enquanto houver candidatos pendentes.
 
+## 6) Teste de públicos
+
+Na mesma aba, o operador pode criar **variações de público** para testar hipóteses de segmentação sem misturar aprendizado com criativo ou landing.
+
+Regra comercial:
+
+- cada variação deve ter nome, hipótese, métrica principal e itens oficiais da Meta;
+- o teste deve manter criativo, oferta, preço e página constantes sempre que a hipótese for apenas público;
+- a variação nasce em `DRAFT` e não altera automaticamente campanha em execução;
+- uma campanha `RUNNING` só deve trocar ou publicar novo público por ação operacional explícita;
+- para MUSA, priorizar variações ligadas à dor de imagem pessoal, elegância prática, moda/beleza acessível e presença profissional feminina.
+
+Resultado esperado: comparar públicos com rastreabilidade antes de gastar mídia em segmentações amplas demais.
+
 ## Endpoints envolvidos
 
 - `PUT /api/experiments/{experimentId}/targeting-selections`
 - `GET /api/experiments/{experimentId}/targeting-selections`
 - `POST /api/experiments/{experimentId}/targeting-selections/run-simple-flow`
+- `GET /api/experiments/{experimentId}/audience-tests`
+- `POST /api/experiments/{experimentId}/audience-tests`
+- `DELETE /api/experiments/{experimentId}/audience-tests/{audienceTestId}`
 - `GET /api/internal/targeting/elements/metaads-pending`
 - `PATCH /api/internal/targeting/elements/{id}/metaads`
 

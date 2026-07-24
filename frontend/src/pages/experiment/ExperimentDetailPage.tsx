@@ -51,6 +51,7 @@ import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExp
 import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
 import { useExperimentPipelineJobHistory } from "../../api/experiment/useExperimentPipelineJobHistory";
 import { useExperimentVideoAssets } from "../../api/experiment/useExperimentVideoAssets";
+import { useUpdateExperimentLearnedLessons } from "../../api/experiment/useUpdateExperimentLearnedLessons";
 import { buildExperimentCostSummary } from "./experimentCostSummary";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
@@ -318,6 +319,83 @@ function isExperimentAlterationLocked(experiment: {
   return (
     Boolean(experiment.facebookReleaseRequestedAt) ||
     EXPERIMENT_ALTERATION_LOCK_STATUSES.has(normalizedStatus)
+  );
+}
+
+export function buildLearnedLessonsPayload(value: string) {
+  const normalized = value.trim();
+  return { learnedLessons: normalized ? normalized : null };
+}
+
+function ExperimentLearnedLessonsCard({
+  experimentId,
+  learnedLessons,
+}: {
+  experimentId: string;
+  learnedLessons?: string | null;
+}) {
+  const [draft, setDraft] = useState(learnedLessons ?? "");
+  const updateLearnedLessons = useUpdateExperimentLearnedLessons(experimentId);
+  const hasChanges = draft !== (learnedLessons ?? "");
+
+  useEffect(() => {
+    setDraft(learnedLessons ?? "");
+  }, [learnedLessons]);
+
+  const handleSave = async () => {
+    try {
+      await updateLearnedLessons.mutateAsync(buildLearnedLessonsPayload(draft));
+      toast.success("Lições aprendidas salvas.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível salvar as lições aprendidas.")
+        : "Não foi possível salvar as lições aprendidas.";
+      toast.error(message);
+    }
+  };
+
+  return (
+    <div className="card">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+          <div>
+            <h5 className="card-title mb-1">Lições aprendidas</h5>
+            <p className="text-muted small mb-0">
+              Registre a conclusão comercial para orientar próximos criativos,
+              públicos, PDEs e hipóteses.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={handleSave}
+            disabled={!hasChanges || updateLearnedLessons.isPending}
+          >
+            {updateLearnedLessons.isPending ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                />
+                Salvando...
+              </>
+            ) : (
+              "Salvar"
+            )}
+          </button>
+        </div>
+        <textarea
+          className="form-control"
+          rows={6}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="Ex.: CTR atraiu curiosidade, mas não houve início de diagnóstico. Próximo teste deve prometer uma primeira ação mais concreta e reduzir fricção na primeira dobra."
+        />
+      </div>
+    </div>
   );
 }
 
@@ -2774,6 +2852,10 @@ export default function ExperimentDetailPage() {
           <Tabs.Content value="overview" asChild>
             <div className="d-flex flex-column gap-3">
               <ExperimentRunPanel experimentId={expId} compact />
+              <ExperimentLearnedLessonsCard
+                experimentId={expId}
+                learnedLessons={data?.learnedLessons}
+              />
               <div className="card">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">

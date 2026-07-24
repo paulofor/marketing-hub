@@ -8,6 +8,7 @@ import com.marketinghub.experiment.dto.ExperimentSessionDurationVariantDto;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentLearnedLessonsRequest;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
@@ -163,6 +164,14 @@ public class ExperimentController {
     @RequestMapping(value = "/{id}", method = {RequestMethod.PUT, RequestMethod.PATCH})
     public ExperimentDto update(@PathVariable Long id, @RequestBody UpdateExperimentRequest request) {
         return mapper.toDto(service.update(id, request));
+    }
+
+    /** Atualiza somente as lições aprendidas do experimento. */
+    @PatchMapping("/{id}/learned-lessons")
+    public ExperimentDto updateLearnedLessons(
+            @PathVariable Long id,
+            @RequestBody UpdateExperimentLearnedLessonsRequest request) {
+        return mapper.toDto(service.updateLearnedLessons(id, request.learnedLessons()));
     }
 
     /** Solicita geração de criativos para o experimento. */

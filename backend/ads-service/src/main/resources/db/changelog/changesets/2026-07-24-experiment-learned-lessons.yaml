@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-24-experiment-learned-lessons.yaml
+  - changeSet:
+      id: 2026-07-24-experiment-learned-lessons-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: learned_lessons
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                ADD COLUMN learned_lessons LONGTEXT NULL;

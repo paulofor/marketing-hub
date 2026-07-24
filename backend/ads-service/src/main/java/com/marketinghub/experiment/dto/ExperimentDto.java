@@ -53,6 +53,7 @@ public class ExperimentDto {
     private String landingPageQualityReview;
     private String landingPageDeliverables;
     private String landingPageHtml;
+    private String learnedLessons;
     private InstagramAccountDto instagramAccount;
     private String facebookPixelId;
     private String facebookPixelCode;

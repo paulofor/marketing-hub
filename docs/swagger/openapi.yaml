@@ -262,6 +262,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentLandingAnalyticsVisitors'
+  /api/experiments/{id}/learned-lessons:
+    patch:
+      tags: [Experiments]
+      summary: Atualizar lições aprendidas do experimento
+      description: Salva a síntese comercial do que o experimento ensinou sem alterar os demais campos operacionais.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExperimentLearnedLessonsRequest'
+      responses:
+        '200':
+          description: Experimento atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+        '404':
+          description: Experimento não encontrado
   /api/experiments/{id}/creatives:
     post:
       tags: [Creatives]
@@ -1405,6 +1432,13 @@ components:
         journeyTemplateId:
           type: integer
           format: int64
+    UpdateExperimentLearnedLessonsRequest:
+      type: object
+      properties:
+        learnedLessons:
+          type: string
+          nullable: true
+          description: Síntese comercial livre das lições aprendidas no experimento.
     Experiment:
       type: object
       properties:
@@ -1422,6 +1456,10 @@ components:
           type: string
         primaryCta:
           type: string
+        learnedLessons:
+          type: string
+          nullable: true
+          description: Síntese comercial das lições aprendidas com o experimento.
         campaignObjective:
           type: string
           enum: [LEADS, TRAFFIC]

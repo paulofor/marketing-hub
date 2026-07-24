@@ -242,6 +242,52 @@ class ExperimentServiceTest {
     }
 
     @Test
+    void updateLearnedLessonsStoresAndClearsCommercialSynthesis() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste aprendizados").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Aprendizado").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150_LEARNINGS")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp aprendizados");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150_LEARNINGS");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        Experiment exp = service.create(req);
+
+        Experiment updated = service.updateLearnedLessons(
+                exp.getId(),
+                "  CTR alto, mas sem avanço para diagnóstico.\nPróximo teste precisa reduzir fricção da primeira ação.  ");
+
+        assertThat(updated.getLearnedLessons())
+                .isEqualTo("CTR alto, mas sem avanço para diagnóstico.\nPróximo teste precisa reduzir fricção da primeira ação.");
+
+        Experiment cleared = service.updateLearnedLessons(exp.getId(), " ");
+
+        assertThat(cleared.getLearnedLessons()).isNull();
+    }
+
+    @Test
     void createNewExperimentWithExistingNiche() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());

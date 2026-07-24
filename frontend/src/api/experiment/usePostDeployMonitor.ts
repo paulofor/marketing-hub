@@ -163,6 +163,42 @@ export interface PostDeployPdeProductionDeployResponse {
   requestedAt: string;
 }
 
+export type PdeProductionSlotStatus =
+  | "PLANNED"
+  | "READY"
+  | "ACTIVE"
+  | "PAUSED"
+  | "RETIRED";
+
+export interface PostDeployPdeProductionSlot {
+  id: number;
+  slotCode: string;
+  productSlug: string;
+  domain: string;
+  publicUrl: string;
+  backendUrl?: string | null;
+  experienceVersion: string;
+  targetEnvironment: string;
+  status: PdeProductionSlotStatus;
+  sourceExperimentId?: number | null;
+  notes?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface SavePdeProductionSlotRequest {
+  slotCode: string;
+  productSlug: string;
+  domain: string;
+  publicUrl?: string;
+  backendUrl?: string;
+  experienceVersion: string;
+  targetEnvironment?: string;
+  status?: PdeProductionSlotStatus;
+  sourceExperimentId?: number;
+  notes?: string;
+}
+
 export interface PostDeployPdeDeployService {
   name: string;
   containerName: string;
@@ -189,6 +225,7 @@ export interface PostDeployMonitorResponse {
   metaAds: PostDeployMetaAdsSummary;
   pde: PostDeployPdeSummary;
   pdePromotionControl: PostDeployPdePromotionControl;
+  pdeProductionSlots: PostDeployPdeProductionSlot[];
   pdeDeployments: PostDeployPdeDeployEnvironment[];
   logs: PostDeployFacebookLogSummary;
   alerts: string[];
@@ -234,6 +271,28 @@ export function useRequestPdeProductionDeploy(experimentId?: string) {
     },
     onError: () => {
       toast.error("Não foi possível solicitar o deploy de produção agora.");
+    },
+  });
+}
+
+export function useSavePdeProductionSlot(experimentId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (variables: SavePdeProductionSlotRequest) => {
+      const { data } = await axios.post<PostDeployPdeProductionSlot>(
+        `/api/experiments/${experimentId}/post-deploy-monitor/pde/production-slots`,
+        variables,
+      );
+      return data;
+    },
+    onSuccess: (slot) => {
+      toast.success(`Slot PDE ${slot.slotCode} salvo.`);
+      queryClient.invalidateQueries({
+        queryKey: ["experiment", experimentId, "post-deploy-monitor"],
+      });
+    },
+    onError: () => {
+      toast.error("Não foi possível salvar o slot produtivo PDE agora.");
     },
   });
 }

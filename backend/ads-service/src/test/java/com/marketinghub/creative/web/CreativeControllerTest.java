@@ -25,7 +25,10 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -92,6 +95,54 @@ class CreativeControllerTest {
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
         assertThat(repository.count()).isEqualTo(1);
+    }
+
+    /** Garante que a API exponha a fila de aprovação de vídeos. */
+    @Test
+    void listVideoReviewEndpointReturnsVideoCreatives() throws Exception {
+        CreateCreativeRequest req = new CreateCreativeRequest();
+        req.setFormat("VIDEO");
+        req.setHeadline("Video");
+        req.setPrimaryText("P");
+        req.setVideoUrl("https://cdn.test/video.mp4");
+        req.setStatus(CreativeStatus.DRAFT);
+        mockMvc.perform(post("/api/experiments/" + expId + "/creatives")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/creatives/video-review").param("status", "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].headline").value("Video"))
+                .andExpect(jsonPath("$[0].status").value("DRAFT"))
+                .andExpect(jsonPath("$[0].videoUrl").value("https://cdn.test/video.mp4"));
+    }
+
+    /** Garante que a API permita aprovar somente o status do vídeo. */
+    @Test
+    void updateStatusEndpointApprovesVideoCreative() throws Exception {
+        CreateCreativeRequest req = new CreateCreativeRequest();
+        req.setFormat("VIDEO");
+        req.setHeadline("Video");
+        req.setPrimaryText("P");
+        req.setVideoUrl("https://cdn.test/video.mp4");
+        req.setStatus(CreativeStatus.DRAFT);
+        String resp = mockMvc.perform(post("/api/experiments/" + expId + "/creatives")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        com.marketinghub.creative.dto.CreativeDto created =
+                mapper.readValue(resp, com.marketinghub.creative.dto.CreativeDto.class);
+
+        mockMvc.perform(patch("/api/creatives/" + created.getId() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"READY\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("READY"));
+
+        Experiment experiment = experimentRepository.findById(expId).orElseThrow();
+        assertThat(experiment.isCreativeApproved()).isTrue();
     }
 
     @Test

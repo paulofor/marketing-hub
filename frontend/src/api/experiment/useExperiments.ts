@@ -116,6 +116,7 @@ export interface Experiment {
   landingPageDeliverables?: string | null;
   landingPageHtml?: string | null;
   htmlGeraLanding?: string | null;
+  learnedLessons?: string | null;
   creativeImagePrompt?: string | null;
   instagramAccount?: InstagramAccountSummary | null;
   /**

@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   ClipboardCheck,
+  BadgeCheck,
   Flag,
   Package,
   PanelLeftClose,
@@ -116,6 +117,11 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
       { to: "/videos", label: "Vídeos", icon: Video },
+      {
+        to: "/creative-video-review",
+        label: "Aprovar vídeos",
+        icon: BadgeCheck,
+      },
       { to: "/ai/image-generator", label: "Gerador de Imagens", icon: Image },
       {
         to: "/facebook-campaigns/ready",

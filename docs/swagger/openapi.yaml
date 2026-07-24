@@ -262,6 +262,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentLandingAnalyticsVisitors'
+  /api/experiments/{id}/learned-lessons:
+    patch:
+      tags: [Experiments]
+      summary: Atualizar lições aprendidas do experimento
+      description: Salva a síntese comercial do que o experimento ensinou sem alterar os demais campos operacionais.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExperimentLearnedLessonsRequest'
+      responses:
+        '200':
+          description: Experimento atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+        '404':
+          description: Experimento não encontrado
   /api/experiments/{id}/creatives:
     post:
       tags: [Creatives]
@@ -374,6 +401,45 @@ paths:
       responses:
         '200':
           description: Preview retornado
+  /api/creatives/video-review:
+    get:
+      tags: [Creatives]
+      summary: Listar criativos de vídeo para aprovação comercial
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [DRAFT, READY]
+      responses:
+        '200':
+          description: Fila de criativos de vídeo com contexto de experimento, hipótese e nicho
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreativeVideoReviewDto'
+  /api/creatives/{id}/status:
+    patch:
+      tags: [Creatives]
+      summary: Atualizar status de aprovação do criativo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreativeStatusRequest'
+      responses:
+        '200':
+          description: Criativo atualizado
   /api/experiments/{experimentId}/landing:
     post:
       tags: [Landing Pages]
@@ -1366,6 +1432,13 @@ components:
         journeyTemplateId:
           type: integer
           format: int64
+    UpdateExperimentLearnedLessonsRequest:
+      type: object
+      properties:
+        learnedLessons:
+          type: string
+          nullable: true
+          description: Síntese comercial livre das lições aprendidas no experimento.
     Experiment:
       type: object
       properties:
@@ -1383,6 +1456,10 @@ components:
           type: string
         primaryCta:
           type: string
+        learnedLessons:
+          type: string
+          nullable: true
+          description: Síntese comercial das lições aprendidas com o experimento.
         campaignObjective:
           type: string
           enum: [LEADS, TRAFFIC]
@@ -1692,11 +1769,78 @@ components:
     CreateCreativeRequest:
       type: object
       properties:
+        format:
+          type: string
         headline:
           type: string
         primaryText:
           type: string
         imageUrl:
+          type: string
+        videoId:
+          type: string
+        videoUrl:
+          type: string
+        description:
+          type: string
+        cta:
+          type: string
+        destinationUrl:
+          type: string
+        leadGenFormId:
+          type: string
+        instagramUserId:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, READY]
+    UpdateCreativeStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [DRAFT, READY]
+    CreativeVideoReviewDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        experimentId:
+          type: integer
+          format: int64
+        experimentName:
+          type: string
+        experimentStatus:
+          type: string
+        hypothesisId:
+          type: string
+          format: uuid
+        hypothesisTitle:
+          type: string
+        hypothesisStatus:
+          type: string
+        nicheId:
+          type: integer
+          format: int64
+        nicheName:
+          type: string
+        format:
+          type: string
+        headline:
+          type: string
+        primaryText:
+          type: string
+        videoId:
+          type: string
+        videoUrl:
+          type: string
+        description:
+          type: string
+        cta:
+          type: string
+        destinationUrl:
           type: string
         status:
           type: string

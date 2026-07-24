@@ -264,6 +264,25 @@ Quando a homologação estiver saudável e produção estiver em commit diferent
 
 Se o backend do Marketing Hub não possuir token/configuração para acionar o GitHub Actions, o painel deve mostrar a produção como pendente sem token e orientar configuração operacional, sem fingir que a publicação foi solicitada.
 
+### Slots produtivos versionados do PDE
+
+O Marketing Hub deve permitir múltiplas URLs produtivas de PDE para o mesmo produto quando houver hipóteses, criativos ou primeiras dobras concorrentes em tráfego pago.
+
+O modelo canônico é um **slot produtivo PDE** persistido no backend principal com:
+
+- `slotCode`, como `v1`, `v2` ou código comercial equivalente;
+- `productSlug`;
+- `domain`, como `v1.clubemusa.com.br`;
+- `publicUrl` usada no anúncio;
+- `experienceVersion` servida naquele endereço;
+- `targetEnvironment` esperado pelo pipeline;
+- `status` operacional;
+- experimento de origem quando existir.
+
+Slots produtivos existem para separar aprendizado comercial e reduzir risco operacional. Um teste novo não deve obrigar a troca global de `clubemusa.com.br` quando for possível publicar uma variação em subdomínio próprio, mantendo eventos por `experienceVersion`, URL de anúncio explícita e histórico de campanha rastreável.
+
+O Marketing Hub pode cadastrar e acompanhar slots antes da automação completa de infraestrutura. A publicação real continua proibida por SSH manual: o deploy deve ser feito por workflow, Compose, Dockerfile ou pipeline versionados do repositório.
+
 ## Contrato mínimo de produto
 
 Cada produto PDE deve ter, no mínimo:
@@ -326,7 +345,7 @@ Um produto PDE só pode ser considerado pronto para tráfego quando:
 4. experiência guiada estiver carregando;
 5. materiais de apoio estiverem disponíveis;
 6. progresso estiver persistindo ou registrado de forma auditável;
-7. o anúncio apontar para a entrada/login do PDE em `https://clubemusa.com.br`, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
+7. o anúncio apontar para a entrada/login do PDE em `https://clubemusa.com.br` ou em slot produtivo versionado aprovado, como `https://v1.clubemusa.com.br`, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
 8. produto da cliente não expuser termos técnicos internos.
 9. funil e analytics do PED estiverem registrando eventos próprios de entrada, sessão, UTM, paywall, checkout, compra, liberação e ativação.
 10. health check público comercial estiver publicado e passando com os textos críticos do PDE.

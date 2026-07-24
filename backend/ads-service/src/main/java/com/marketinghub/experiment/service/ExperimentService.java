@@ -153,7 +153,7 @@ public class ExperimentService {
     }
 
     /**
-     * Obtains a managed reference to {@link MarketNiche} without hitting the database.
+     * Obtém uma referência gerenciada ao nicho sem consultar o banco imediatamente.
      * getReference() avoids {@code detached entity passed to persist} by associating
      * the proxy with the current persistence context.
      *
@@ -844,6 +844,26 @@ public class ExperimentService {
     }
 
     /**
+     * Atualiza apenas a síntese de lições aprendidas do experimento.
+     */
+    @Transactional
+    public Experiment updateLearnedLessons(Long id, String learnedLessons) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setLearnedLessons(normalizeLongText(learnedLessons));
+        return exp;
+    }
+
+    /**
+     * Normaliza texto longo editável preservando quebras de linha relevantes.
+     */
+    private String normalizeLongText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    /**
      * Solicita geração de novos criativos registrando estado operacional da fila.
      */
     @Transactional
@@ -895,7 +915,7 @@ public class ExperimentService {
     }
 
     /**
-     * Requests generation of new emails by setting the pending quantity.
+     * Solicita geração de novos e-mails definindo a quantidade pendente.
      */
     @Transactional
     public Experiment requestEmails(Long id, int quantity) {
@@ -905,7 +925,7 @@ public class ExperimentService {
     }
 
     /**
-     * Requests generation of new sample emails by setting the pending quantity.
+     * Solicita geração de novos e-mails de amostra definindo a quantidade pendente.
      */
     @Transactional
     public Experiment requestSampleEmails(Long id, int quantity) {
@@ -914,7 +934,7 @@ public class ExperimentService {
         return exp;
     }
     /**
-     * Defines which generated sample email should be linked to the experiment.
+     * Define qual e-mail de amostra gerado deve ser vinculado ao experimento.
      */
     @Transactional
     public Experiment updateSelectedSampleEmail(Long id, Long sampleEmailId) {
@@ -938,7 +958,7 @@ public class ExperimentService {
     }
 
     /**
-     * Requests generation of new deliverable definitions by setting the pending quantity.
+     * Solicita geração de novas definições de entregáveis definindo a quantidade pendente.
      */
     @Transactional
     public Experiment requestDeliverables(Long id, int quantity) {
@@ -948,7 +968,7 @@ public class ExperimentService {
     }
 
     /**
-     * Requests generation of new lead portal flows by setting the pending quantity.
+     * Solicita geração de novos fluxos do portal do lead definindo a quantidade pendente.
      */
     @Transactional
     public Experiment requestLeadPortalFlows(Long id, int quantity) {
@@ -1015,7 +1035,7 @@ public class ExperimentService {
         }
     }
 
-    /** Bloqueia funil PDE MUSA quando o destino não aponta para a entrada canônica do Clube MUSA. */
+    /** Bloqueia funil PDE MUSA quando o destino não aponta para entrada canônica ou slot produtivo. */
     private void ensurePdeMembershipDestinationIsCanonical(Experiment experiment) {
         if (experiment == null || experiment.getExperimentType() != ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
             return;
@@ -1023,11 +1043,12 @@ public class ExperimentService {
         String destinationUrl = normalizeUrl(experiment.getFollowUpActionUrl());
         boolean canonicalDestination = StringUtils.hasText(destinationUrl)
                 && (destinationUrl.equals("https://" + MUSA_PDE_CANONICAL_HOST)
-                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/"));
+                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/")
+                || destinationUrl.matches("^https://[a-z0-9-]+\\.clubemusa\\.com\\.br($|/.*)"));
         if (!canonicalDestination) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br, com login gratuito e paywall interno.");
+                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br ou slot produtivo aprovado, com login gratuito e paywall interno.");
         }
     }
 

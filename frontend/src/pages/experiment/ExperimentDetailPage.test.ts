@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildExperimentTestUrl } from "./ExperimentDetailPage";
+import {
+  buildExperimentTestUrl,
+  buildLearnedLessonsPayload,
+} from "./ExperimentDetailPage";
 
 describe("buildExperimentTestUrl", () => {
   it("adiciona o parametro de teste em URL sem query string", () => {
@@ -18,5 +21,22 @@ describe("buildExperimentTestUrl", () => {
 
   it("retorna nulo quando nao existe URL publicada", () => {
     expect(buildExperimentTestUrl(" ")).toBeNull();
+  });
+});
+
+describe("buildLearnedLessonsPayload", () => {
+  it("normaliza espacos antes de salvar licoes aprendidas", () => {
+    expect(
+      buildLearnedLessonsPayload(
+        "  CTR alto, mas sem avanço para diagnóstico.\nPróximo teste precisa reduzir fricção.  ",
+      ),
+    ).toEqual({
+      learnedLessons:
+        "CTR alto, mas sem avanço para diagnóstico.\nPróximo teste precisa reduzir fricção.",
+    });
+  });
+
+  it("envia nulo quando o usuario limpa as licoes aprendidas", () => {
+    expect(buildLearnedLessonsPayload("  ")).toEqual({ learnedLessons: null });
   });
 });

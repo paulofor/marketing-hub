@@ -8,6 +8,7 @@ import com.marketinghub.experiment.dto.ExperimentSessionDurationVariantDto;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentLearnedLessonsRequest;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
@@ -165,6 +166,14 @@ public class ExperimentController {
         return mapper.toDto(service.update(id, request));
     }
 
+    /** Atualiza somente as lições aprendidas do experimento. */
+    @PatchMapping("/{id}/learned-lessons")
+    public ExperimentDto updateLearnedLessons(
+            @PathVariable Long id,
+            @RequestBody UpdateExperimentLearnedLessonsRequest request) {
+        return mapper.toDto(service.updateLearnedLessons(id, request.learnedLessons()));
+    }
+
     /** Solicita geração de criativos para o experimento. */
     @PatchMapping("/{id}/creatives-to-generate")
     public ExperimentDto requestCreatives(@PathVariable Long id, @RequestParam("quantity") int quantity) {
@@ -293,7 +302,7 @@ public class ExperimentController {
         if (missing.contains("pdeMembershipDestination")) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br, com login gratuito e paywall interno.");
+                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br ou para slot produtivo aprovado, com login gratuito e paywall interno.");
         }
     }
 

@@ -12,6 +12,8 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployServiceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeExperienceVersionDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployRequestDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployResponseDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdePromotionControlDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeScreenSizeDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSessionJourneyDto;
@@ -24,8 +26,11 @@ import com.marketinghub.experiment.monitoring.pde.PdeDeployStatusClient;
 import com.marketinghub.experiment.monitoring.pde.PdeProductionDeploymentClient;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
+import com.marketinghub.pde.PdeProductionSlot;
+import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -36,8 +41,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Consolida Meta Ads, analytics PDE e logs para decisão pós-deploy do experimento. */
 @Service
@@ -53,6 +60,7 @@ public class PostDeployMonitorService {
     private final PdeAnalyticsClient pdeAnalyticsClient;
     private final PdeDeployStatusClient pdeDeployStatusClient;
     private final PdeProductionDeploymentClient pdeProductionDeploymentClient;
+    private final PdeProductionSlotRepository pdeProductionSlotRepository;
 
     /** Inicializa o agregador com as fontes persistidas do Hub e o cliente do PDE. */
     public PostDeployMonitorService(
@@ -61,13 +69,15 @@ public class PostDeployMonitorService {
             ExperimentFacebookApiLogService apiLogService,
             PdeAnalyticsClient pdeAnalyticsClient,
             PdeDeployStatusClient pdeDeployStatusClient,
-            PdeProductionDeploymentClient pdeProductionDeploymentClient) {
+            PdeProductionDeploymentClient pdeProductionDeploymentClient,
+            PdeProductionSlotRepository pdeProductionSlotRepository) {
         this.experimentRepository = experimentRepository;
         this.campaignMetricRepository = campaignMetricRepository;
         this.apiLogService = apiLogService;
         this.pdeAnalyticsClient = pdeAnalyticsClient;
         this.pdeDeployStatusClient = pdeDeployStatusClient;
         this.pdeProductionDeploymentClient = pdeProductionDeploymentClient;
+        this.pdeProductionSlotRepository = pdeProductionSlotRepository;
     }
 
     /** Monta o painel pós-deploy para o experimento e produto PDE informados. */
@@ -80,6 +90,7 @@ public class PostDeployMonitorService {
         PostDeployPdeSummaryDto pde = fetchPdeSummary(resolvedProductSlug);
         List<PostDeployPdeDeployEnvironmentDto> pdeDeployments = fetchPdeDeployments();
         PostDeployPdePromotionControlDto pdePromotionControl = buildPromotionControl(pdeDeployments);
+        List<PostDeployPdeProductionSlotDto> pdeProductionSlots = listProductionSlotsForProduct(resolvedProductSlug);
         PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
         List<String> alerts = buildAlerts(metaAds, pde, pdeDeployments, pdePromotionControl, logs);
         PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
@@ -93,9 +104,46 @@ public class PostDeployMonitorService {
                 metaAds,
                 pde,
                 pdePromotionControl,
+                pdeProductionSlots,
                 pdeDeployments,
                 logs,
                 alerts);
+    }
+
+    /** Lista os slots produtivos do produto PDE após validar o experimento de origem. */
+    public List<PostDeployPdeProductionSlotDto> listProductionSlots(Long experimentId, String productSlug) {
+        experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
+        return listProductionSlotsForProduct(resolveProductSlug(productSlug));
+    }
+
+    /** Cria ou atualiza um slot produtivo versionado para manter hipóteses PDE em URLs paralelas. */
+    public PostDeployPdeProductionSlotDto saveProductionSlot(
+            Long experimentId,
+            PostDeployPdeProductionSlotRequestDto request) {
+        experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
+        String productSlug = resolveProductSlug(request.productSlug());
+        String slotCode = normalizeRequired(request.slotCode(), "Código do slot PDE obrigatório").toLowerCase(Locale.ROOT);
+        String domain = normalizeDomain(request.domain());
+        String publicUrl = StringUtils.hasText(request.publicUrl())
+                ? request.publicUrl().trim()
+                : "https://" + domain;
+        PdeProductionSlot slot = pdeProductionSlotRepository.findByProductSlugAndSlotCode(productSlug, slotCode)
+                .orElseGet(PdeProductionSlot::new);
+        slot.setSlotCode(slotCode);
+        slot.setProductSlug(productSlug);
+        slot.setDomain(domain);
+        slot.setPublicUrl(publicUrl);
+        slot.setBackendUrl(StringUtils.hasText(request.backendUrl()) ? request.backendUrl().trim() : null);
+        slot.setExperienceVersion(normalizeRequired(request.experienceVersion(), "Versão PDE obrigatória"));
+        slot.setTargetEnvironment(StringUtils.hasText(request.targetEnvironment())
+                ? request.targetEnvironment().trim()
+                : "production-" + slotCode);
+        slot.setStatus(request.status() != null ? request.status() : PdeProductionSlotStatus.PLANNED);
+        slot.setSourceExperimentId(request.sourceExperimentId() != null ? request.sourceExperimentId() : experimentId);
+        slot.setNotes(StringUtils.hasText(request.notes()) ? request.notes().trim() : null);
+        return toProductionSlotDto(pdeProductionSlotRepository.save(slot));
     }
 
     /** Solicita produção apenas quando homologação está saudável e produção está defasada. */
@@ -140,6 +188,52 @@ public class PostDeployMonitorService {
     /** Resolve o produto PDE padrão quando a tela não informa um slug específico. */
     private String resolveProductSlug(String productSlug) {
         return StringUtils.hasText(productSlug) ? productSlug.trim() : DEFAULT_PDE_PRODUCT_SLUG;
+    }
+
+    /** Lista os slots produtivos persistidos para o produto PDE informado. */
+    private List<PostDeployPdeProductionSlotDto> listProductionSlotsForProduct(String productSlug) {
+        return pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(productSlug).stream()
+                .map(this::toProductionSlotDto)
+                .toList();
+    }
+
+    /** Converte o slot persistido em contrato administrativo do painel. */
+    private PostDeployPdeProductionSlotDto toProductionSlotDto(PdeProductionSlot slot) {
+        return new PostDeployPdeProductionSlotDto(
+                slot.getId(),
+                slot.getSlotCode(),
+                slot.getProductSlug(),
+                slot.getDomain(),
+                slot.getPublicUrl(),
+                slot.getBackendUrl(),
+                slot.getExperienceVersion(),
+                slot.getTargetEnvironment(),
+                slot.getStatus(),
+                slot.getSourceExperimentId(),
+                slot.getNotes(),
+                slot.getCreatedAt(),
+                slot.getUpdatedAt());
+    }
+
+    /** Normaliza um campo obrigatório textual antes de persistir contrato de publicação. */
+    private String normalizeRequired(String value, String message) {
+        if (!StringUtils.hasText(value)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+        }
+        return value.trim();
+    }
+
+    /** Normaliza domínio removendo protocolo e barra final para evitar duplicidade operacional. */
+    private String normalizeDomain(String value) {
+        String domain = normalizeRequired(value, "Domínio do slot PDE obrigatório")
+                .replaceFirst("^https?://", "")
+                .replaceAll("/+$", "")
+                .toLowerCase(Locale.ROOT);
+        if (!domain.endsWith("clubemusa.com.br")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Slot PDE MUSA deve usar subdomínio de clubemusa.com.br");
+        }
+        return domain;
     }
 
     /** Converte a métrica persistida da campanha em resumo do painel. */

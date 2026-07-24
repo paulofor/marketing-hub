@@ -93,15 +93,13 @@ public class ExperimentCampaignDestinationPolicy {
                 && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL;
     }
 
-    /** Confirma que o anúncio leva para a entrada/login do Clube MUSA, não para checkout direto. */
+    /** Confirma que o anúncio leva para a entrada/login do Clube MUSA ou slot produtivo aprovado. */
     public boolean hasPdeMembershipDestination(Experiment experiment) {
         if (experiment == null) {
             return false;
         }
         String destinationUrl = normalizeUrl(experiment.getFollowUpActionUrl());
-        return StringUtils.hasText(destinationUrl)
-                && (destinationUrl.equals("https://" + MUSA_PDE_CANONICAL_HOST)
-                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/"));
+        return isMusaPdePublicEntry(destinationUrl);
     }
 
     /** Busca a página de venda publicada mais recente do experimento. */
@@ -170,5 +168,13 @@ public class ExperimentCampaignDestinationPolicy {
             normalized = normalized.substring(0, normalized.length() - 1);
         }
         return normalized;
+    }
+
+    /** Verifica se a URL pertence ao domínio canônico ou a subdomínio produtivo do Clube MUSA. */
+    private boolean isMusaPdePublicEntry(String destinationUrl) {
+        return StringUtils.hasText(destinationUrl)
+                && (destinationUrl.equals("https://" + MUSA_PDE_CANONICAL_HOST)
+                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/")
+                || destinationUrl.matches("^https://[a-z0-9-]+\\.clubemusa\\.com\\.br($|/.*)"));
     }
 }

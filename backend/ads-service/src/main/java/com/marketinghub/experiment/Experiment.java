@@ -301,6 +301,10 @@ public class Experiment {
     @Column(name = "landing_page_html", columnDefinition = "LONGTEXT")
     private String landingPageHtml;
 
+    /** Síntese comercial do que o experimento ensinou para próximos testes. */
+    @Column(name = "learned_lessons", columnDefinition = "LONGTEXT")
+    private String learnedLessons;
+
     /** Quantidade de criativos a serem gerados pelo worker. */
     @Column(name = "creatives_to_generate")
     private Integer creativesToGenerate;

@@ -50,6 +50,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PostDeployPdeProductionDeployResponse"
+  /api/experiments/{experimentId}/post-deploy-monitor/pde/production-slots:
+    get:
+      summary: Lista slots produtivos versionados do PDE
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: productSlug
+          in: query
+          required: false
+          schema:
+            type: string
+            default: metodo-musa-7-dias
+      responses:
+        "200":
+          description: Slots produtivos cadastrados para o produto PDE.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostDeployPdeProductionSlot"
+    post:
+      summary: Cria ou atualiza um slot produtivo versionado do PDE
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDeployPdeProductionSlotRequest"
+      responses:
+        "200":
+          description: Slot salvo para uso operacional em campanha.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDeployPdeProductionSlot"
 components:
   schemas:
     PostDeployMonitorResponse:
@@ -78,6 +125,10 @@ components:
           type: string
         pdePromotionControl:
           $ref: "#/components/schemas/PostDeployPdePromotionControl"
+        pdeProductionSlots:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostDeployPdeProductionSlot"
         pdeDeployments:
           type: array
           items:
@@ -186,3 +237,95 @@ components:
         requestedAt:
           type: string
           format: date-time
+    PostDeployPdeProductionSlot:
+      type: object
+      required:
+        - id
+        - slotCode
+        - productSlug
+        - domain
+        - publicUrl
+        - experienceVersion
+        - targetEnvironment
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+        slotCode:
+          type: string
+          example: v2
+        productSlug:
+          type: string
+          example: metodo-musa-7-dias
+        domain:
+          type: string
+          example: v2.clubemusa.com.br
+        publicUrl:
+          type: string
+          example: https://v2.clubemusa.com.br
+        backendUrl:
+          type: string
+          nullable: true
+        experienceVersion:
+          type: string
+          example: musa-pde-entry-v5-estrada-desejo
+        targetEnvironment:
+          type: string
+          example: production-v2
+        status:
+          type: string
+          enum:
+            - PLANNED
+            - READY
+            - ACTIVE
+            - PAUSED
+            - RETIRED
+        sourceExperimentId:
+          type: integer
+          format: int64
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PostDeployPdeProductionSlotRequest:
+      type: object
+      required:
+        - slotCode
+        - productSlug
+        - domain
+        - experienceVersion
+      properties:
+        slotCode:
+          type: string
+        productSlug:
+          type: string
+        domain:
+          type: string
+        publicUrl:
+          type: string
+        backendUrl:
+          type: string
+        experienceVersion:
+          type: string
+        targetEnvironment:
+          type: string
+        status:
+          type: string
+          enum:
+            - PLANNED
+            - READY
+            - ACTIVE
+            - PAUSED
+            - RETIRED
+        sourceExperimentId:
+          type: integer
+          format: int64
+        notes:
+          type: string

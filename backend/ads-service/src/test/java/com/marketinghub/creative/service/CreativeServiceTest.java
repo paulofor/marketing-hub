@@ -154,6 +154,56 @@ class CreativeServiceTest {
         assertThat(afterApproval.isCreativeApproved()).isTrue();
     }
 
+    /** Garante que criativo de vídeo aprovado por status libera o experimento para campanha. */
+    @Test
+    void approvingVideoCreativeByStatusMarksExperimentAsReady() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+
+        CreateCreativeRequest createRequest = new CreateCreativeRequest();
+        createRequest.setFormat("VIDEO");
+        createRequest.setHeadline("Video");
+        createRequest.setPrimaryText("Primary");
+        createRequest.setVideoUrl("https://cdn.test/video.mp4");
+        createRequest.setStatus(CreativeStatus.DRAFT);
+        Creative creative = service.create(exp.getId(), createRequest);
+
+        service.updateStatus(creative.getId(), CreativeStatus.READY);
+
+        Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
+        assertThat(afterApproval.isCreativeApproved()).isTrue();
+    }
+
+    /** Garante que a fila de revisão traga apenas criativos de vídeo com mídia publicável. */
+    @Test
+    void listVideoReviewQueueReturnsVideoCreativesWithCommercialContext() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+
+        CreateCreativeRequest videoRequest = new CreateCreativeRequest();
+        videoRequest.setFormat("VIDEO");
+        videoRequest.setHeadline("Video");
+        videoRequest.setPrimaryText("Primary");
+        videoRequest.setVideoUrl("https://cdn.test/video.mp4");
+        videoRequest.setStatus(CreativeStatus.DRAFT);
+        Creative videoCreative = service.create(exp.getId(), videoRequest);
+
+        CreateCreativeRequest imageRequest = new CreateCreativeRequest();
+        imageRequest.setFormat("IMAGE");
+        imageRequest.setHeadline("Image");
+        imageRequest.setPrimaryText("Primary");
+        imageRequest.setImageUrl("https://cdn.test/image.png");
+        imageRequest.setStatus(CreativeStatus.DRAFT);
+        service.create(exp.getId(), imageRequest);
+
+        var queue = service.listVideoReviewQueue(CreativeStatus.DRAFT);
+
+        assertThat(queue).hasSize(1);
+        assertThat(queue.get(0).id()).isEqualTo(videoCreative.getId());
+        assertThat(queue.get(0).experimentId()).isEqualTo(exp.getId());
+        assertThat(queue.get(0).nicheName()).isEqualTo(niche.getName());
+    }
+
     /** Garante que criativo de imagem não possa ser aprovado sem imagem gerada. */
     @Test
     void shouldRejectReadyImageCreativeWithoutImageUrl() {

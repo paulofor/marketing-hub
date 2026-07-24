@@ -1,5 +1,9 @@
 package com.marketinghub.salesvideo.service;
 
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoCommercialPlaybookRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoConversionEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
@@ -37,6 +41,8 @@ class SalesVideoCommercialInsightsServiceTest {
     private SalesVideoCommercialPlaybookRepository playbookRepository;
     @Mock
     private SalesVideoConversionEventRepository conversionEventRepository;
+    @Mock
+    private ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
     private SalesVideoCommercialInsightsService service;
 
@@ -47,7 +53,8 @@ class SalesVideoCommercialInsightsServiceTest {
                 jobRepository,
                 scriptRepository,
                 playbookRepository,
-                conversionEventRepository
+                conversionEventRepository,
+                experimentVideoAssetRepository
         );
     }
 
@@ -126,6 +133,14 @@ class SalesVideoCommercialInsightsServiceTest {
                 .willReturn(List.of(purchase, lead));
         given(playbookRepository.findByProfileIdAndTenantIdOrderByCreatedAtDesc(7L, "tenant-a"))
                 .willReturn(List.of());
+        given(jobRepository.findByProfileIdOrderByRequestedAtDesc(7L)).willReturn(List.of(job));
+        given(experimentVideoAssetRepository.findBySalesVideoProfileIdOrderByCreatedAtDesc(7L)).willReturn(List.of(
+                ExperimentVideoAsset.builder()
+                        .provider("provider-real")
+                        .status(ExperimentVideoStatus.READY)
+                        .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+                        .build()
+        ));
 
         SalesVideoPerformanceSummaryDto response = service.summarizePerformance(7L, null, null);
 
@@ -136,6 +151,45 @@ class SalesVideoCommercialInsightsServiceTest {
         assertThat(response.getVariants()).hasSize(1);
         assertThat(response.getVariants().get(0).getScriptId()).isEqualTo(3L);
         assertThat(response.getVariants().get(0).getProviderName()).isEqualTo("provider-real");
+        assertThat(response.getProviderScores()).hasSize(1);
+        assertThat(response.getProviderScores().get(0).getProviderName()).isEqualTo("provider-real");
+        assertThat(response.getProviderScores().get(0).getScore()).isEqualTo(100);
+        assertThat(response.getProviderScores().get(0).getRecommendation()).isEqualTo("priorizar");
+    }
+
+    @Test
+    void shouldPenalizeRejectedProviderAssets() {
+        SalesVideoProfile profile = profile();
+        SalesVideoJob failedJob = SalesVideoJob.builder()
+                .id(22L)
+                .profile(profile)
+                .providerName("LUMA_RAY_3_2")
+                .tenantId("tenant-a")
+                .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                .jobType(SalesVideoJobType.RENDER)
+                .status(SalesVideoStatus.VIDEO_FAILED)
+                .build();
+
+        given(profileRepository.findById(7L)).willReturn(Optional.of(profile));
+        given(conversionEventRepository.findByProfileIdAndTenantIdOrderByOccurredAtDesc(7L, "tenant-a"))
+                .willReturn(List.of());
+        given(playbookRepository.findByProfileIdAndTenantIdOrderByCreatedAtDesc(7L, "tenant-a"))
+                .willReturn(List.of());
+        given(jobRepository.findByProfileIdOrderByRequestedAtDesc(7L)).willReturn(List.of(failedJob));
+        given(experimentVideoAssetRepository.findBySalesVideoProfileIdOrderByCreatedAtDesc(7L)).willReturn(List.of(
+                ExperimentVideoAsset.builder()
+                        .provider("LUMA_RAY_3_2")
+                        .status(ExperimentVideoStatus.READY)
+                        .reviewStatus(ExperimentVideoReviewStatus.REJECTED)
+                        .build()
+        ));
+
+        SalesVideoPerformanceSummaryDto response = service.summarizePerformance(7L, null, null);
+
+        assertThat(response.getProviderScores()).hasSize(1);
+        assertThat(response.getProviderScores().get(0).getScore()).isEqualTo(13);
+        assertThat(response.getProviderScores().get(0).getRejectedAssets()).isEqualTo(1);
+        assertThat(response.getProviderScores().get(0).getRecommendation()).isEqualTo("bloquear_ou_regenerar");
     }
 
     private static SalesVideoProfile profile() {

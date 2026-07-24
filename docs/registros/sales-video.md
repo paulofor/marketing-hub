@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-24 — Pontuação comercial de providers de vídeo
+
+- Decisão de produto: o Marketing Hub deve pontuar providers de vídeo por evidência comercial e qualidade real, não apenas por catálogo ou preferência manual.
+- Causa-raiz tratada: vídeos ruins ou bloqueados podiam ficar apenas como eventos isolados de QA, sem reduzir a chance de o mesmo provider/configuração ser escolhido novamente.
+- Correção preparada: o resumo comercial de Sales Video passa a expor `providerScores`, combinando jobs prontos/falhos, assets aprovados/rejeitados e eventos de funil como lead, lead qualificado, checkout e compra.
+- Regra operacional: vídeo de sucesso aumenta reputação do provider; vídeo bloqueado, falha técnica ou rejeição visual reduz reputação e deve orientar regeneração, troca de provider ou uso controlado.
+
 ## 2026-07-24 — Bloqueio visual não pode virar criativo
 
 - Problema observado: o vídeo MUSA do experimento 71/job `20454` foi gerado pela Luma e ficou tecnicamente `VIDEO_READY`, mas a checagem visual comercial da tela marcou `Bloqueado: luz oscilando`.

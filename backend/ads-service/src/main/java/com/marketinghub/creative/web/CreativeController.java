@@ -3,6 +3,9 @@ package com.marketinghub.creative.web;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeDto;
+import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.dto.CreativeVideoReviewDto;
+import com.marketinghub.creative.dto.UpdateCreativeStatusRequest;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
@@ -26,7 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * REST controller for creatives.
+ * Responsabilidade: expor endpoints REST para criação, revisão e publicação de criativos.
  */
 @RestController
 public class CreativeController {
@@ -40,11 +43,17 @@ public class CreativeController {
         this.assetRepository = assetRepository;
     }
 
+    /**
+     * Cria um criativo vinculado ao experimento informado.
+     */
     @PostMapping("/api/experiments/{id}/creatives")
     public CreativeDto create(@PathVariable Long id, @RequestBody CreateCreativeRequest request) {
         return mapper.toDto(service.create(id, request));
     }
 
+    /**
+     * Lista os criativos de um experimento.
+     */
     @GetMapping("/api/experiments/{id}/creatives")
     public List<CreativeDto> list(@PathVariable Long id) {
         List<CreativeDto> dtos = StreamSupport.stream(service.listByExperiment(id).spliterator(), false)
@@ -79,16 +88,42 @@ public class CreativeController {
         return dtos;
     }
 
+    /**
+     * Lista os criativos de vídeo que precisam de revisão comercial.
+     */
+    @GetMapping("/api/creatives/video-review")
+    public List<CreativeVideoReviewDto> listVideoReview(@RequestParam(value = "status", required = false)
+                                                        CreativeStatus status) {
+        return service.listVideoReviewQueue(status);
+    }
+
+    /**
+     * Atualiza todos os dados de um criativo existente.
+     */
     @PutMapping("/api/creatives/{id}")
     public CreativeDto update(@PathVariable Long id, @RequestBody CreateCreativeRequest request) {
         return mapper.toDto(service.update(id, request));
     }
 
+    /**
+     * Atualiza somente o status de aprovação de um criativo.
+     */
+    @PatchMapping("/api/creatives/{id}/status")
+    public CreativeDto updateStatus(@PathVariable Long id, @RequestBody UpdateCreativeStatusRequest request) {
+        return mapper.toDto(service.updateStatus(id, request.status()));
+    }
+
+    /**
+     * Remove um criativo existente.
+     */
     @DeleteMapping("/api/creatives/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
 
+    /**
+     * Atualiza os rótulos comerciais de um criativo.
+     */
     @PatchMapping("/api/creatives/{id}/labels")
     public CreativeDto patchLabels(@PathVariable Long id,
                                    @RequestBody UpdateCreativeLabelsRequest request) {
@@ -96,6 +131,9 @@ public class CreativeController {
                 request.getAngleId(), request.getVisualProofId(), request.getEmotionalTriggerId()));
     }
 
+    /**
+     * Salva um asset enviado manualmente para uso em criativos.
+     */
     @PostMapping("/api/assets")
     public ResponseEntity<AssetUploadResponse> upload(@RequestParam("file") MultipartFile file,
                                                       @RequestParam(value = "prompt", required = false) String prompt,
@@ -117,6 +155,9 @@ public class CreativeController {
         return ResponseEntity.ok().headers(headers).body(response);
     }
 
+    /**
+     * Retorna o HTML de prévia do criativo publicado na Meta quando disponível.
+     */
     @GetMapping("/api/creatives/{id}/preview")
     public String preview(@PathVariable Long id) throws Exception {
         return service.preview(id);

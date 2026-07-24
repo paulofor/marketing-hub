@@ -1,0 +1,222 @@
+.creative-video-review-page {
+  color: #111827;
+}
+
+.creative-video-review-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.creative-video-review-page__subtitle {
+  max-width: 780px;
+  margin: 0;
+  color: #475569;
+}
+
+.creative-video-review-page__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.creative-video-review-page__metric {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.85rem;
+}
+
+.creative-video-review-page__metric span {
+  display: block;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.creative-video-review-page__metric strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1.45rem;
+}
+
+.creative-video-review-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.creative-video-review-page__filters,
+.creative-video-review-page__refresh {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.creative-video-review-page__filter {
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #fff;
+  color: #1d4ed8;
+  padding: 0.38rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.creative-video-review-page__filter--active {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.creative-video-review-page__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+
+.creative-video-review-page__card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.creative-video-review-page__preview {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  background: #111827;
+}
+
+.creative-video-review-page__preview video {
+  display: block;
+  width: 100%;
+  height: 360px;
+  background: #111827;
+  object-fit: contain;
+}
+
+.creative-video-review-page__empty-preview {
+  display: grid;
+  place-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: #f8fafc;
+  text-align: center;
+}
+
+.creative-video-review-page__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+}
+
+.creative-video-review-page__topline,
+.creative-video-review-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.creative-video-review-page__topline {
+  justify-content: space-between;
+}
+
+.creative-video-review-page__status {
+  border-radius: 999px;
+  padding: 0.24rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.creative-video-review-page__status--draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.creative-video-review-page__status--ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.creative-video-review-page__context {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.creative-video-review-page__context dt {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.creative-video-review-page__context dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+
+.creative-video-review-page__copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.creative-video-review-page__copy h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.creative-video-review-page__copy p {
+  margin: 0;
+  color: #475569;
+}
+
+.creative-video-review-page__actions {
+  margin-top: auto;
+}
+
+.creative-video-review-page__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.creative-video-review-page__empty-state {
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 1.2rem;
+  color: #64748b;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .creative-video-review-page__header {
+    display: grid;
+  }
+
+  .creative-video-review-page__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .creative-video-review-page__list {
+    grid-template-columns: 1fr;
+  }
+
+  .creative-video-review-page__context {
+    grid-template-columns: 1fr;
+  }
+}

@@ -6,11 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.*;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
+import com.marketinghub.creative.dto.CreativeVideoReviewDto;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
@@ -39,6 +42,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -130,6 +134,46 @@ public class CreativeService {
     }
 
     /**
+     * Lista criativos de vídeo publicáveis para aprovação operacional.
+     */
+    public List<CreativeVideoReviewDto> listVideoReviewQueue(CreativeStatus status) {
+        List<Creative> creatives = status == null
+                ? repository.findVideoCreativesForReview()
+                : repository.findVideoCreativesForReviewByStatus(status);
+        return creatives.stream()
+                .map(this::toVideoReviewDto)
+                .toList();
+    }
+
+    /**
+     * Atualiza somente o status de aprovação do criativo.
+     */
+    @Transactional
+    public Creative updateStatus(Long id, CreativeStatus status) {
+        try {
+            if (status == null) {
+                throw new IllegalArgumentException("Status do criativo é obrigatório.");
+            }
+            Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
+            validateReadyCreativeHasMedia(creative, status);
+            creative.setStatus(status);
+            Creative saved = repository.save(creative);
+            refreshExperimentApproval(saved.getExperiment());
+            return saved;
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Falha ao atualizar status do criativo no backend. classe={} operacao=updateCreativeStatus "
+                            + "creativeId={} status={} erro='{}'",
+                    getClass().getSimpleName(),
+                    id,
+                    status,
+                    ex.getMessage(),
+                    ex);
+            throw ex;
+        }
+    }
+
+    /**
      * Mantem o CTA compatível com a coluna e com o tipo canônico aceito pela Meta.
      */
     private String normalizeMetaCallToAction(String value) {
@@ -207,6 +251,54 @@ public class CreativeService {
                 && !StringUtils.hasText(request.getVideoUrl())) {
             throw new IllegalArgumentException("Criativo de vídeo aprovado precisa ter videoId da Meta ou videoUrl público.");
         }
+    }
+
+    /**
+     * Impede aprovação por status quando a mídia do criativo ainda não é publicável.
+     */
+    private void validateReadyCreativeHasMedia(Creative creative, CreativeStatus status) {
+        if (status != CreativeStatus.READY) {
+            return;
+        }
+        String format = StringUtils.hasText(creative.getFormat()) ? creative.getFormat().trim() : "IMAGE";
+        if ("IMAGE".equalsIgnoreCase(format) && !StringUtils.hasText(creative.getImageUrl())) {
+            throw new IllegalArgumentException("Criativo de imagem aprovado precisa ter imagem gerada.");
+        }
+        if ("VIDEO".equalsIgnoreCase(format)
+                && !StringUtils.hasText(creative.getVideoId())
+                && !StringUtils.hasText(creative.getVideoUrl())) {
+            throw new IllegalArgumentException("Criativo de vídeo aprovado precisa ter videoId da Meta ou videoUrl público.");
+        }
+    }
+
+    /**
+     * Converte o criativo de vídeo em contrato de revisão com hipótese e nicho.
+     */
+    private CreativeVideoReviewDto toVideoReviewDto(Creative creative) {
+        Experiment experiment = creative.getExperiment();
+        Hypothesis hypothesis = experiment != null ? experiment.getHypothesisRef() : null;
+        MarketNiche niche = hypothesis != null && hypothesis.getMarketNiche() != null
+                ? hypothesis.getMarketNiche()
+                : experiment != null ? experiment.getNiche() : null;
+        return new CreativeVideoReviewDto(
+                creative.getId(),
+                experiment != null ? experiment.getId() : null,
+                experiment != null ? experiment.getName() : null,
+                experiment != null ? experiment.getStatus() : null,
+                hypothesis != null ? hypothesis.getId() : null,
+                hypothesis != null ? hypothesis.getTitle() : null,
+                hypothesis != null ? hypothesis.getStatus() : null,
+                niche != null ? niche.getId() : null,
+                niche != null ? niche.getName() : null,
+                creative.getFormat(),
+                creative.getHeadline(),
+                creative.getPrimaryText(),
+                creative.getVideoId(),
+                creative.getVideoUrl(),
+                creative.getDescription(),
+                creative.getCta(),
+                creative.getDestinationUrl(),
+                creative.getStatus());
     }
 
     /**

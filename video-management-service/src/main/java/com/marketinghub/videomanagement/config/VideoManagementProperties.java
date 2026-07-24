@@ -68,6 +68,9 @@ public class VideoManagementProperties {
         private Luma luma = new Luma();
 
         @NotNull
+        private Kling kling = new Kling();
+
+        @NotNull
         private Veo veo = new Veo();
 
         @NotNull
@@ -114,6 +117,48 @@ public class VideoManagementProperties {
         private int maxPollAttempts = 120;
 
         private String ffmpegPath = "ffmpeg";
+    }
+
+    @Getter
+    @Setter
+    public static class Kling {
+        private boolean enabled = false;
+
+        /**
+         * Nomes que identificam jobs destinados ao adapter direto do Kling.
+         */
+        @NotNull
+        private List<String> acceptedNames = new ArrayList<>(List.of("KLING_3_0", "KLING", "KLING_OMNI"));
+
+        /**
+         * Base URL oficial da API Kling.
+         */
+        @NotNull
+        private URI baseUrl = URI.create("https://api.klingai.com");
+
+        /**
+         * Chave Kling usada apenas pelo módulo executor de vídeo.
+         */
+        private String apiKey;
+
+        /**
+         * Caminho opcional para a chave Kling montada como secret em arquivo.
+         */
+        private String apiKeyFile;
+
+        private String model = "kling-v3";
+        private String createPath = "/v1/videos/text2video";
+        private String statusPathTemplate = "/v1/videos/text2video/{taskId}";
+        private String aspectRatio = "9:16";
+        private String mode = "std";
+        private String duration = "5";
+        private String negativePrompt = "sensualized woman, seductive pose, body focus, exposed body, luxury ostentation, dark haze, blur, distorted hands, embedded text, logo";
+
+        @NotNull
+        private Duration pollInterval = Duration.ofSeconds(10);
+
+        @Min(1)
+        private int maxPollAttempts = 120;
     }
 
     @Getter

@@ -31,6 +31,24 @@ video:
       poll-interval: PT10S
       max-poll-attempts: 120
       ffmpeg-path: ffmpeg
+    kling:
+      enabled: false
+      accepted-names:
+        - KLING_3_0
+        - KLING
+        - KLING_OMNI
+      base-url: https://api.klingai.com
+      api-key: ${KLING_API_KEY:${VIDEO_PROVIDERS_KLING_API_KEY:}}
+      api-key-file: ${KLING_API_KEY_FILE:}
+      model: ${VIDEO_PROVIDERS_KLING_MODEL:kling-v3}
+      create-path: /v1/videos/text2video
+      status-path-template: /v1/videos/text2video/{taskId}
+      aspect-ratio: "9:16"
+      mode: ${VIDEO_PROVIDERS_KLING_MODE:std}
+      duration: ${VIDEO_PROVIDERS_KLING_DURATION:5}
+      negative-prompt: "sensualized woman, seductive pose, body focus, exposed body, luxury ostentation, dark haze, blur, distorted hands, embedded text, logo"
+      poll-interval: PT10S
+      max-poll-attempts: 120
     real:
       enabled: false
       accepted-names:

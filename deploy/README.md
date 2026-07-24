@@ -24,6 +24,9 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 | `VIDEO_PROVIDERS_VEO_ENABLED` | Habilita o adapter direto VEO/Gemini no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_VEO_API_KEY` | Chave Gemini usada pelo adapter VEO; pode vir de `GEMINI_API_KEY` | vazio |
 | `VIDEO_PROVIDERS_VEO_MODEL` | Modelo VEO usado no render | `veo-3.1-generate-preview` |
+| `VIDEO_PROVIDERS_KLING_ENABLED` | Habilita o adapter direto Kling no módulo de vídeo | `true` |
+| `VIDEO_PROVIDERS_KLING_API_KEY` | Chave Kling usada pelo adapter direto; pode vir de `KLING_API_KEY` | vazio |
+| `VIDEO_PROVIDERS_KLING_MODEL` | Modelo Kling usado no render text-to-video | `kling-v3` |
 | `GEMINI_API_KEY_HOST_FILE` | Arquivo físico no host de vídeo com o token Gemini/VEO | `/root/infra/gemini-token/gemini_api_key` |
 | `LUMA_API_KEY_HOST_FILE` | Arquivo físico no host de vídeo com o token Luma/Ray | `/root/infra/luma-token/luma_api_key` |
 | `KLING_API_KEY_HOST_FILE` | Arquivo físico no host de vídeo com o token Kling | `/root/infra/kling-token/kling_api_key` |

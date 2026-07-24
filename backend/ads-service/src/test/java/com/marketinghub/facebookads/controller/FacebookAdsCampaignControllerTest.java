@@ -170,7 +170,20 @@ class FacebookAdsCampaignControllerTest {
                 .headline("Rascunho")
                 .status(CreativeStatus.DRAFT)
                 .build();
-        when(creativeRepository.findByExperimentId(1L)).thenReturn(List.of(draftCreative, readyCreative));
+        var readyVideoCreative = Creative.builder()
+                .id(103L)
+                .experiment(experiment)
+                .format("VIDEO")
+                .headline("Headline video")
+                .primaryText("Texto video")
+                .videoId("vid-123")
+                .videoUrl("https://cdn.example/video.mp4")
+                .description("Descrição video")
+                .cta("LEARN_MORE")
+                .destinationUrl("https://example.com/video")
+                .status(CreativeStatus.READY)
+                .build();
+        when(creativeRepository.findByExperimentId(1L)).thenReturn(List.of(draftCreative, readyVideoCreative, readyCreative));
 
         mockMvc.perform(get("/api/facebook-campaigns/experiments/1/creatives-ready"))
                 .andExpect(status().isOk())
@@ -186,7 +199,11 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].leadGenFormId").value("321"))
                 .andExpect(jsonPath("$[0].instagramUserId").value("987"))
                 .andExpect(jsonPath("$[0].status").value("READY"))
-                .andExpect(jsonPath("$[1]").doesNotExist());
+                .andExpect(jsonPath("$[1].id").value(103))
+                .andExpect(jsonPath("$[1].format").value("VIDEO"))
+                .andExpect(jsonPath("$[1].videoId").value("vid-123"))
+                .andExpect(jsonPath("$[1].videoUrl").value("https://cdn.example/video.mp4"))
+                .andExpect(jsonPath("$[2]").doesNotExist());
     }
 
     @Test
@@ -890,6 +907,8 @@ class FacebookAdsCampaignControllerTest {
                   "instagramActorId": "IG-222",
                   "websiteUrl": "https://example.com/a",
                   "message": "Mensagem A",
+                  "videoId": "vid-a",
+                  "videoUrl": "https://cdn.example/video-a.mp4",
                   "callToActionType": "LEARN_MORE",
                   "headline": "Headline A",
                   "description": "Desc A"
@@ -932,6 +951,11 @@ class FacebookAdsCampaignControllerTest {
         assertThat(creativeCaptor.getAllValues())
                 .extracting(FacebookAdsAdCreative::getId)
                 .containsExactly("creativeA", "creativeB");
+        assertThat(creativeCaptor.getAllValues())
+                .extracting(creative -> creative.getKind().name())
+                .containsExactly("VIDEO", "LINK");
+        assertThat(creativeCaptor.getAllValues().get(0).getVideoDataJson())
+                .contains("\"video_id\":\"vid-a\"");
 
         ArgumentCaptor<FacebookAdsAd> adCaptor = ArgumentCaptor.forClass(FacebookAdsAd.class);
         verify(adRepository, times(2)).save(adCaptor.capture());

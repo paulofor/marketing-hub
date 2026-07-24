@@ -7,6 +7,8 @@ export interface CreateCreative {
   headline: string;
   primaryText: string;
   imageUrl: string;
+  videoId?: string;
+  videoUrl?: string;
   description: string;
   cta: string;
   destinationUrl: string;

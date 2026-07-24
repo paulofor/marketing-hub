@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-24-creative-video-url
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: creative
+        - not:
+            - columnExists:
+                tableName: creative
+                columnName: video_url
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                ADD COLUMN video_url VARCHAR(1024) NULL AFTER video_id;

@@ -2092,6 +2092,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     public record FacebookInterest(String id, String name) {}
     private record FacebookTargetingCategory(String id, String name) {}
 
+    /** Cria um criativo na Meta usando link_data para imagem ou video_data para vídeo. */
     public String createAdCreative(String adAccountId, AdCreativeRequest request) {
         Objects.requireNonNull(request, "request");
 
@@ -2104,21 +2105,23 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         }
         boolean hasWebsiteUrl = hasText(resolvedLink);
 
-        Map<String, Object> linkData = new HashMap<>();
+        Map<String, Object> storyData = new HashMap<>();
         if (hasWebsiteUrl) {
-            linkData.put("link", resolvedLink);
+            storyData.put("link", resolvedLink);
         }
-        linkData.put("message", request.message());
+        storyData.put("message", request.message());
         if (request.headline() != null && !request.headline().isBlank()) {
-            linkData.put("name", request.headline());
+            storyData.put(hasText(request.videoId()) ? "title" : "name", request.headline());
         }
         if (request.description() != null && !request.description().isBlank()) {
-            linkData.put("description", request.description());
+            storyData.put(hasText(request.videoId()) ? "link_description" : "description", request.description());
         }
-        if (hasText(request.imageHash())) {
-            linkData.put("image_hash", request.imageHash());
+        if (hasText(request.videoId())) {
+            storyData.put("video_id", request.videoId());
+        } else if (hasText(request.imageHash())) {
+            storyData.put("image_hash", request.imageHash());
         } else if (hasText(request.imageUrl())) {
-            linkData.put("picture", request.imageUrl());
+            storyData.put("picture", request.imageUrl());
         }
         if (request.callToActionType() != null && !request.callToActionType().isBlank()) {
             Map<String, Object> callToAction = new HashMap<>();
@@ -2133,7 +2136,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             if (!value.isEmpty()) {
                 callToAction.put("value", value);
             }
-            linkData.put("call_to_action", callToAction);
+            storyData.put("call_to_action", callToAction);
         }
 
         Map<String, Object> objectStorySpec = new HashMap<>();
@@ -2141,7 +2144,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         if (request.instagramActorId() != null && !request.instagramActorId().isBlank()) {
             objectStorySpec.put("instagram_user_id", request.instagramActorId());
         }
-        objectStorySpec.put("link_data", linkData);
+        objectStorySpec.put(hasText(request.videoId()) ? "video_data" : "link_data", storyData);
 
         Map<String, Object> body = new HashMap<>();
         body.put("name", request.name());
@@ -2199,6 +2202,38 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String path = buildVersionedPath("/act_" + adAccountId + "/adimages");
         JsonNode response = executeMultipartPost(path, builder.build(), debugBody);
         return extractAdImageHash(response);
+    }
+
+    /** Envia bytes de um vídeo para a biblioteca de vídeos da conta Meta e retorna o video_id. */
+    public String uploadAdVideoFromBytes(String adAccountId,
+                                         byte[] videoBytes,
+                                         String fileName,
+                                         String contentType) {
+        Objects.requireNonNull(adAccountId, "adAccountId");
+        if (videoBytes == null || videoBytes.length == 0) {
+            throw new IllegalArgumentException("videoBytes must not be empty");
+        }
+        String resolvedFileName = hasText(fileName) ? fileName.trim() : "creative-" + UUID.randomUUID() + ".mp4";
+        String resolvedContentType = hasText(contentType)
+                ? contentType.trim()
+                : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("access_token", requireAccessToken());
+        builder.part("source", new ByteArrayResource(videoBytes) {
+            @Override
+            public String getFilename() {
+                return resolvedFileName;
+            }
+        }).header(HttpHeaders.CONTENT_TYPE, resolvedContentType);
+
+        Map<String, Object> debugBody = new HashMap<>();
+        debugBody.put("filename", resolvedFileName);
+        debugBody.put("parts", List.of("source(bytes)", "access_token"));
+
+        String path = buildVersionedPath("/act_" + adAccountId + "/advideos");
+        JsonNode response = executeMultipartPost(path, builder.build(), debugBody);
+        return response.path("id").asText();
     }
 
     public String createAd(String adAccountId, AdRequest request) {
@@ -3207,6 +3242,8 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String message,
         String imageHash,
         String imageUrl,
+        String videoId,
+        String videoUrl,
         String callToActionType,
         String headline,
         String description

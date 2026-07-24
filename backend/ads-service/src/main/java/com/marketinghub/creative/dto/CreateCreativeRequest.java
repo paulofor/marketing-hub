@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 /**
- * Request body to create or update a creative.
+ * Corpo da requisição para criar ou atualizar um criativo.
  */
 @Data
 public class CreateCreativeRequest {
@@ -13,6 +13,8 @@ public class CreateCreativeRequest {
     private String headline;
     private String primaryText;
     private String imageUrl;
+    private String videoId;
+    private String videoUrl;
     private String description;
     private String cta;
     private String destinationUrl;

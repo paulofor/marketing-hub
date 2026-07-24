@@ -1,5 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-24-creative-video-url.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-07-24-experiment-audience-tests.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-23-sales-video-stream-playback-url.yaml
       relativeToChangelogFile: true
   - include:

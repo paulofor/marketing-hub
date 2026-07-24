@@ -19,14 +19,36 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
     /** Verifica se existe criativo do experimento no status informado. */
     boolean existsByExperimentIdAndStatus(Long experimentId, CreativeStatus status);
 
-    /** Verifica se existe criativo aprovado com imagem publicável no experimento. */
+    /** Verifica se existe criativo aprovado com mídia publicável no experimento. */
     @Query("""
             select case when count(c) > 0 then true else false end
               from Creative c
              where c.experiment.id = :experimentId
                and c.status = :status
-               and c.imageUrl is not null
-               and trim(c.imageUrl) <> ''
+               and (
+                    (upper(coalesce(c.format, 'IMAGE')) = 'IMAGE' and c.imageUrl is not null and trim(c.imageUrl) <> '')
+                 or (upper(c.format) = 'VIDEO' and (
+                        (c.videoId is not null and trim(c.videoId) <> '')
+                     or (c.videoUrl is not null and trim(c.videoUrl) <> '')
+                    ))
+               )
+            """)
+    boolean existsByExperimentIdAndStatusAndUsableMedia(@Param("experimentId") Long experimentId,
+                                                        @Param("status") CreativeStatus status);
+
+    /** Mantém compatibilidade com chamadas antigas, agora considerando imagem ou vídeo publicável. */
+    @Query("""
+            select case when count(c) > 0 then true else false end
+              from Creative c
+             where c.experiment.id = :experimentId
+               and c.status = :status
+               and (
+                    (upper(coalesce(c.format, 'IMAGE')) = 'IMAGE' and c.imageUrl is not null and trim(c.imageUrl) <> '')
+                 or (upper(c.format) = 'VIDEO' and (
+                        (c.videoId is not null and trim(c.videoId) <> '')
+                     or (c.videoUrl is not null and trim(c.videoUrl) <> '')
+                    ))
+               )
             """)
     boolean existsByExperimentIdAndStatusAndUsableImage(@Param("experimentId") Long experimentId,
                                                         @Param("status") CreativeStatus status);
@@ -41,14 +63,36 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
     /** Conta os criativos do experimento que estão no status informado. */
     long countByExperimentIdAndStatus(Long experimentId, CreativeStatus status);
 
-    /** Conta criativos aprovados com imagem publicável no experimento informado. */
+    /** Conta criativos aprovados com mídia publicável no experimento informado. */
     @Query("""
             select count(c)
               from Creative c
              where c.experiment.id = :experimentId
                and c.status = :status
-               and c.imageUrl is not null
-               and trim(c.imageUrl) <> ''
+               and (
+                    (upper(coalesce(c.format, 'IMAGE')) = 'IMAGE' and c.imageUrl is not null and trim(c.imageUrl) <> '')
+                 or (upper(c.format) = 'VIDEO' and (
+                        (c.videoId is not null and trim(c.videoId) <> '')
+                     or (c.videoUrl is not null and trim(c.videoUrl) <> '')
+                    ))
+               )
+            """)
+    long countByExperimentIdAndStatusAndUsableMedia(@Param("experimentId") Long experimentId,
+                                                    @Param("status") CreativeStatus status);
+
+    /** Mantém compatibilidade com chamadas antigas, agora contando imagem ou vídeo publicável. */
+    @Query("""
+            select count(c)
+              from Creative c
+             where c.experiment.id = :experimentId
+               and c.status = :status
+               and (
+                    (upper(coalesce(c.format, 'IMAGE')) = 'IMAGE' and c.imageUrl is not null and trim(c.imageUrl) <> '')
+                 or (upper(c.format) = 'VIDEO' and (
+                        (c.videoId is not null and trim(c.videoId) <> '')
+                     or (c.videoUrl is not null and trim(c.videoUrl) <> '')
+                    ))
+               )
             """)
     long countByExperimentIdAndStatusAndUsableImage(@Param("experimentId") Long experimentId,
                                                     @Param("status") CreativeStatus status);

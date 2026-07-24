@@ -589,6 +589,8 @@ public class FacebookAdsCampaignController {
                 creative.getHeadline(),
                 creative.getPrimaryText(),
                 creative.getImageUrl(),
+                creative.getVideoId(),
+                creative.getVideoUrl(),
                 creative.getDescription(),
                 creative.getCta(),
                 creative.getDestinationUrl(),
@@ -629,8 +631,13 @@ public class FacebookAdsCampaignController {
         creative.setId(creativeReq.id());
         creative.setPageId(creativeReq.pageId());
         creative.setInstagramUserId(creativeReq.instagramActorId());
-        creative.setKind(AdCreativeKind.LINK);
-        creative.setLinkDataJson(buildLinkDataJson(creativeReq));
+        if (StringUtils.hasText(creativeReq.videoId())) {
+            creative.setKind(AdCreativeKind.VIDEO);
+            creative.setVideoDataJson(buildVideoDataJson(creativeReq));
+        } else {
+            creative.setKind(AdCreativeKind.LINK);
+            creative.setLinkDataJson(buildLinkDataJson(creativeReq));
+        }
         return creative;
     }
 
@@ -796,6 +803,34 @@ public class FacebookAdsCampaignController {
             }
         }
         return linkData.toString();
+    }
+
+    // Executa a operação buildVideoDataJson da integração Facebook Ads.
+    private String buildVideoDataJson(CreateCampaignRequest.AdCreative creativeReq) {
+        ObjectNode videoData = objectMapper.createObjectNode();
+        videoData.put("video_id", creativeReq.videoId());
+        videoData.put("message", creativeReq.message());
+        if (StringUtils.hasText(creativeReq.headline())) {
+            videoData.put("title", creativeReq.headline());
+        }
+        if (StringUtils.hasText(creativeReq.description())) {
+            videoData.put("link_description", creativeReq.description());
+        }
+        if (StringUtils.hasText(creativeReq.callToActionType())) {
+            ObjectNode callToAction = videoData.putObject("call_to_action");
+            callToAction.put("type", creativeReq.callToActionType());
+            ObjectNode value = callToAction.putObject("value");
+            if (StringUtils.hasText(creativeReq.websiteUrl())) {
+                value.put("link", creativeReq.websiteUrl());
+            }
+            if (StringUtils.hasText(creativeReq.leadGenFormId())) {
+                value.put("lead_gen_form_id", creativeReq.leadGenFormId());
+            }
+            if (value.isEmpty()) {
+                callToAction.remove("value");
+            }
+        }
+        return videoData.toString();
     }
 
     // Executa a operação toSummary da integração Facebook Ads.
@@ -1166,6 +1201,8 @@ public class FacebookAdsCampaignController {
             String headline,
             String primaryText,
             String imageUrl,
+            String videoId,
+            String videoUrl,
             String description,
             String cta,
             String destinationUrl,
@@ -1217,6 +1254,8 @@ public class FacebookAdsCampaignController {
                 String websiteUrl,
                 String leadGenFormId,
                 String message,
+                String videoId,
+                String videoUrl,
                 String callToActionType,
                 String headline,
                 String description) {}

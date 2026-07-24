@@ -4,7 +4,7 @@ import com.marketinghub.creative.CreativeStatus;
 import lombok.Data;
 
 /**
- * Data transfer object for Creative.
+ * Representação de leitura de um criativo.
  */
 @Data
 public class CreativeDto {
@@ -14,6 +14,8 @@ public class CreativeDto {
     private String headline;
     private String primaryText;
     private String imageUrl;
+    private String videoId;
+    private String videoUrl;
     private String description;
     private String cta;
     private String destinationUrl;

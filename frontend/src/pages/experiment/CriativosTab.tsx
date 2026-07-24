@@ -485,6 +485,8 @@ export default function CriativosTab({
         headline: c.headline,
         primaryText: c.primaryText,
         imageUrl: c.imageUrl,
+        videoId: c.videoId || "",
+        videoUrl: c.videoUrl || "",
         description: c.description || "",
         cta: c.cta || "LEARN_MORE",
         destinationUrl: c.destinationUrl || "",
@@ -539,6 +541,8 @@ export default function CriativosTab({
 
   const renderCreativeCard = (c: Creative) => {
     const imageUrl = c.imageUrl ? resolveAssetUrl(c.imageUrl) : undefined;
+    const videoUrl = c.videoUrl ? resolveAssetUrl(c.videoUrl) : undefined;
+    const isVideo = c.format?.toUpperCase() === "VIDEO";
     const isProcessing = processingCreativeId === c.id;
     const hasImagePrompt = Boolean(c.imagePrompt?.trim());
     const isPromptExpanded = Boolean(expandedPromptByCreativeId[c.id]);
@@ -588,7 +592,15 @@ export default function CriativosTab({
             </div>
           </div>
         )}
-        {imageUrl ? (
+        {isVideo && videoUrl ? (
+          <video
+            src={videoUrl}
+            className="creative-card-img"
+            controls
+            muted
+            playsInline
+          />
+        ) : imageUrl ? (
           <img
             src={imageUrl}
             alt={c.headline || "Criativo"}
@@ -596,7 +608,9 @@ export default function CriativosTab({
           />
         ) : (
           <div className="creative-card-placeholder">
-            <span className="text-muted">Imagem não disponível</span>
+            <span className="text-muted">
+              {isVideo ? "Vídeo não disponível" : "Imagem não disponível"}
+            </span>
           </div>
         )}
         <div className="creative-card-body">
@@ -632,6 +646,20 @@ export default function CriativosTab({
                 <span className="d-block mt-1">
                   Formulário: {c.leadGenFormId}
                 </span>
+              )}
+              {c.videoId && (
+                <span className="d-block mt-1">Vídeo Meta: {c.videoId}</span>
+              )}
+              {c.videoUrl && (
+                <a
+                  href={c.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-decoration-none text-muted text-truncate d-block"
+                  title={c.videoUrl}
+                >
+                  {c.videoUrl}
+                </a>
               )}
             </div>
           )}

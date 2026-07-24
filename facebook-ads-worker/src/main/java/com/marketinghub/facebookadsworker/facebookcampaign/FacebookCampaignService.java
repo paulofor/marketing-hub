@@ -123,6 +123,8 @@ public class FacebookCampaignService {
 
     private static final Duration CREATIVE_IMAGE_DOWNLOAD_TIMEOUT = Duration.ofSeconds(20);
     private static final long CREATIVE_IMAGE_MAX_BYTES = 10 * 1024 * 1024L;
+    private static final Duration CREATIVE_VIDEO_DOWNLOAD_TIMEOUT = Duration.ofSeconds(60);
+    private static final long CREATIVE_VIDEO_MAX_BYTES = 200 * 1024 * 1024L;
 
     private final FacebookAdsService facebookAdsService;
     private final WebClient backendClient;
@@ -452,6 +454,7 @@ public class FacebookCampaignService {
                 resolvedTargeting.targetingJson(),
                 FacebookAdsService.BRAZIL_COUNTRY_CODE
             );
+            creativePayloads = preloadCreativeVideosForExperiment(exp.publicationJobId(), exp.id(), config.adAccountId(), creativePayloads);
             creativePayloads = preloadCreativeImagesForExperiment(exp.publicationJobId(), exp.id(), config.adAccountId(), creativePayloads);
             validateCreativePayloadsHaveImageHashes(exp, creativePayloads);
             try {
@@ -506,7 +509,9 @@ public class FacebookCampaignService {
                     payload.headline(),
                     payload.description(),
                     payload.imageHash(),
-                    payload.imageUrl()
+                    payload.imageUrl(),
+                    payload.videoId(),
+                    payload.videoUrl()
                 );
                 FacebookAdsService.AdCreativeRequest adCreativeRequest = adCreativeCreation.request();
                 String creativeId = adCreativeCreation.id();
@@ -534,6 +539,8 @@ public class FacebookCampaignService {
                     adCreativeRequest.message(),
                     adCreativeRequest.imageHash(),
                     adCreativeRequest.imageUrl(),
+                    adCreativeRequest.videoId(),
+                    adCreativeRequest.videoUrl(),
                     adCreativeRequest.callToActionType(),
                     adCreativeRequest.headline(),
                     adCreativeRequest.description()
@@ -1236,6 +1243,8 @@ public class FacebookCampaignService {
             String message,
             String imageHash,
             String imageUrl,
+            String videoId,
+            String videoUrl,
             String callToActionType,
             String headline,
             String description
@@ -1260,6 +1269,8 @@ public class FacebookCampaignService {
         String description,
         String imageHash,
         String imageUrl,
+        String videoId,
+        String videoUrl,
         String instagramActorId,
         String adNameSuffix
     ) {
@@ -1274,6 +1285,26 @@ public class FacebookCampaignService {
                 description,
                 value,
                 imageUrl,
+                videoId,
+                videoUrl,
+                instagramActorId,
+                adNameSuffix
+            );
+        }
+
+        private CreativePublicationPayload withVideoId(String value) {
+            return new CreativePublicationPayload(
+                creative,
+                websiteUrl,
+                leadGenFormId,
+                message,
+                callToAction,
+                headline,
+                description,
+                imageHash,
+                imageUrl,
+                value,
+                videoUrl,
                 instagramActorId,
                 adNameSuffix
             );
@@ -1546,6 +1577,106 @@ public class FacebookCampaignService {
     }
 
     private record DownloadedImage(byte[] bytes, String contentType) {}
+    private record DownloadedVideo(byte[] bytes, String contentType) {}
+
+    /** Baixa um vídeo público para upload controlado na biblioteca da Meta. */
+    private DownloadedVideo downloadCreativeVideo(String videoUrl) {
+        if (!StringUtils.hasText(videoUrl)) {
+            throw new IllegalArgumentException("videoUrl must not be blank");
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(videoUrl))
+                .GET()
+                .timeout(CREATIVE_VIDEO_DOWNLOAD_TIMEOUT)
+                .header(HttpHeaders.USER_AGENT, "MarketingHubFacebookAdsWorker/1.0")
+                .build();
+            HttpResponse<byte[]> response = assetDownloadClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            int status = response.statusCode();
+            if (status < 200 || status >= 300) {
+                throw new IllegalStateException("Creative video download failed with status " + status);
+            }
+            byte[] body = response.body();
+            if (body == null || body.length == 0) {
+                throw new IllegalStateException("Creative video download returned an empty body");
+            }
+            if (body.length > CREATIVE_VIDEO_MAX_BYTES) {
+                throw new IllegalStateException("Creative video exceeds max allowed size");
+            }
+            String contentType = response.headers().firstValue(HttpHeaders.CONTENT_TYPE).orElse(null);
+            return new DownloadedVideo(body, contentType);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Creative video download interrupted", ex);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to download creative video: " + ex.getMessage(), ex);
+        }
+    }
+
+    /** Resolve o nome de arquivo usado no upload multipart de vídeo. */
+    private String resolveVideoFileName(String videoUrl) {
+        if (!StringUtils.hasText(videoUrl)) {
+            return "creative-" + UUID.randomUUID() + ".mp4";
+        }
+        try {
+            String path = URI.create(videoUrl).getPath();
+            if (StringUtils.hasText(path)) {
+                int idx = path.lastIndexOf('/');
+                if (idx >= 0 && idx + 1 < path.length()) {
+                    String candidate = path.substring(idx + 1);
+                    if (StringUtils.hasText(candidate)) {
+                        return candidate;
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            LOGGER.debug("Failed to extract filename from video URL {}: {}", videoUrl, ex.getMessage());
+        }
+        return "creative-" + UUID.randomUUID() + ".mp4";
+    }
+
+    /**
+     * Envia vídeos públicos para a biblioteca da Meta quando o criativo ainda não possui video_id.
+     */
+    private List<CreativePublicationPayload> preloadCreativeVideosForExperiment(
+        String publicationJobId,
+        long experimentId,
+        String adAccountId,
+        List<CreativePublicationPayload> creativePayloads
+    ) {
+        List<CreativePublicationPayload> resolvedPayloads = new ArrayList<>(creativePayloads.size());
+        for (CreativePublicationPayload payload : creativePayloads) {
+            if (!isVideoCreative(payload) || StringUtils.hasText(payload.videoId())) {
+                resolvedPayloads.add(payload);
+                continue;
+            }
+            if (!StringUtils.hasText(payload.videoUrl())) {
+                throw new IllegalStateException(
+                    "Campanha bloqueada: criativo de vídeo sem video_id e sem video_url no experimento " + experimentId
+                );
+            }
+            DownloadedVideo downloadedVideo = downloadCreativeVideo(payload.videoUrl());
+            String uploadedVideoId = executeFacebookCallWithLogging(
+                publicationJobId,
+                experimentId,
+                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                () -> facebookAdsService.uploadAdVideoFromBytes(
+                    adAccountId,
+                    downloadedVideo.bytes(),
+                    resolveVideoFileName(payload.videoUrl()),
+                    downloadedVideo.contentType())
+            );
+            LOGGER.info(
+                "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}",
+                experimentId,
+                payload.creative().id(),
+                uploadedVideoId
+            );
+            resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
+        }
+        return resolvedPayloads;
+    }
+
     private record CanonicalImageHashUpsertRequest(
         String platform,
         String adAccountId,
@@ -1618,14 +1749,17 @@ public class FacebookCampaignService {
             creative.description(),
             null,
             resolveCreativeImageUrl(creative.imageUrl()),
+            resolveCreativeVideoId(creative.videoId()),
+            resolveCreativeVideoUrl(creative.videoUrl()),
             coalesce(creative.instagramUserId(), fallbackInstagramActorId),
             adNameSuffix
         );
     }
 
-    /** Bloqueia publicação de anúncio antes de criar objetos na Meta quando o criativo não tem imagem de origem. */
+    /** Bloqueia publicação de anúncio antes de criar objetos na Meta quando o criativo não tem mídia de origem. */
     private void validateCreativePayloadsHaveImageUrls(Experiment exp, List<CreativePublicationPayload> creativePayloads) {
         List<Long> creativeIdsWithoutImage = creativePayloads.stream()
+            .filter(payload -> !isVideoCreative(payload))
             .filter(payload -> !StringUtils.hasText(payload.imageUrl()))
             .map(payload -> payload.creative().id())
             .toList();
@@ -1646,6 +1780,7 @@ public class FacebookCampaignService {
     /** Bloqueia publicação quando o upload/canonização da imagem não gerou image_hash utilizável pela Meta. */
     private void validateCreativePayloadsHaveImageHashes(Experiment exp, List<CreativePublicationPayload> creativePayloads) {
         List<Long> creativeIdsWithoutImageHash = creativePayloads.stream()
+            .filter(payload -> !isVideoCreative(payload))
             .filter(payload -> !StringUtils.hasText(payload.imageHash()))
             .map(payload -> payload.creative().id())
             .toList();
@@ -1661,6 +1796,14 @@ public class FacebookCampaignService {
             reason
         );
         throw new IllegalStateException(reason);
+    }
+
+    /** Identifica criativos que devem ser publicados pela Meta como vídeo. */
+    private boolean isVideoCreative(CreativePublicationPayload payload) {
+        return payload != null
+            && payload.creative() != null
+            && StringUtils.hasText(payload.creative().format())
+            && "VIDEO".equalsIgnoreCase(payload.creative().format().trim());
     }
 
     /** Retorna somente variantes A/B aptas a receber trafego pago pela campanha. */
@@ -1797,9 +1940,17 @@ public class FacebookCampaignService {
         String headline,
         String description,
         String imageHash,
-        String imageUrl
+        String imageUrl,
+        String videoId,
+        String videoUrl
     ) {
-        if (StringUtils.hasText(imageHash)) {
+        if (StringUtils.hasText(videoId)) {
+            LOGGER.info(
+                "Using video_id as primary asset for creative publication: experimentId={}, videoId={}",
+                experiment.id(),
+                videoId
+            );
+        } else if (StringUtils.hasText(imageHash)) {
             LOGGER.info(
                 "Using image_hash as primary asset for creative publication: experimentId={}, hash={}",
                 experiment.id(),
@@ -1825,6 +1976,8 @@ public class FacebookCampaignService {
             message,
             imageHash,
             imageUrl,
+            videoId,
+            videoUrl,
             callToAction,
             headline,
             description
@@ -1855,6 +2008,8 @@ public class FacebookCampaignService {
                 message,
                 imageHash,
                 imageUrl,
+                videoId,
+                videoUrl,
                 callToAction,
                 headline,
                 description
@@ -1882,6 +2037,10 @@ public class FacebookCampaignService {
         List<CreativePublicationPayload> resolvedPayloads = new ArrayList<>(creativePayloads.size());
         Map<String, String> localHashCache = new java.util.HashMap<>();
         for (CreativePublicationPayload payload : creativePayloads) {
+            if (isVideoCreative(payload)) {
+                resolvedPayloads.add(payload);
+                continue;
+            }
             if (!StringUtils.hasText(payload.imageUrl())) {
                 LOGGER.warn(
                     "Creative image preload skipped because image URL is empty: experimentId={}, creativeId={}",
@@ -2161,6 +2320,8 @@ public class FacebookCampaignService {
             request.message(),
             imageHash,
             null,
+            request.videoId(),
+            request.videoUrl(),
             request.callToActionType(),
             request.headline(),
             request.description()
@@ -2459,6 +2620,25 @@ public class FacebookCampaignService {
         return base + path;
     }
 
+    /** Normaliza o video_id já existente na biblioteca da Meta. */
+    private String resolveCreativeVideoId(String videoId) {
+        return StringUtils.hasText(videoId) ? videoId.trim() : null;
+    }
+
+    /** Normaliza a URL pública do vídeo antes de baixar e enviar para a Meta. */
+    private String resolveCreativeVideoUrl(String videoUrl) {
+        if (!StringUtils.hasText(videoUrl)) {
+            return null;
+        }
+        String trimmed = videoUrl.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+        String base = backendBaseUrl.endsWith("/") ? backendBaseUrl.substring(0, backendBaseUrl.length() - 1) : backendBaseUrl;
+        String path = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+        return base + path;
+    }
+
     private String appendCampaignTrackingParameter(String baseUrl, Experiment experiment) {
         if (!StringUtils.hasText(baseUrl) || experiment == null) {
             return baseUrl;
@@ -2561,6 +2741,8 @@ public class FacebookCampaignService {
         String headline,
         String primaryText,
         String imageUrl,
+        String videoId,
+        String videoUrl,
         String description,
         String cta,
         String destinationUrl,

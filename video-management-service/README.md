@@ -52,6 +52,7 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.providers.luma.duration` | Duração por cena enviada à Luma Agents API. | `10s` |
 | `LUMA_API_KEY_FILE` | Arquivo montado com a chave Luma usada por integrações Ray/Agents. | `/run/secrets/luma_api_key` |
 | `KLING_API_KEY_FILE` | Arquivo montado com a chave Kling usada pelo fallback de vídeo. | `/run/secrets/kling_api_key` |
+| `HEYGEN_API_KEY_FILE` | Arquivo montado com a chave HeyGen para o adapter HeyGen/futuro provider direto. | `/run/secrets/heygen_api_key` |
 
 ### Nota operacional sobre VEO
 
@@ -69,6 +70,10 @@ O compose monta por padrao os arquivos criados no host de video:
 - `/root/infra/kling-token/kling_api_key` em `/run/secrets/kling_api_key:ro`
 
 O entrypoint carrega esses arquivos sem imprimir os valores. A chave Luma fica disponivel como `LUMA_API_KEY`, `LUMA_AGENTS_API_KEY` e `VIDEO_PROVIDERS_LUMA_API_KEY`, cobrindo o contrato novo da Luma Agents usado por Ray 3.2. A chave Kling fica disponivel como `KLING_API_KEY` e `VIDEO_PROVIDERS_KLING_API_KEY`.
+
+### Nota operacional sobre HeyGen
+
+O compose monta por padrao `/root/infra/heygen-token/heygen_api_key` em `/run/secrets/heygen_api_key:ro`. O entrypoint carrega esse arquivo sem imprimir o valor e deixa a chave disponivel como `HEYGEN_API_KEY` e `VIDEO_PROVIDERS_HEYGEN_API_KEY`, seguindo o mesmo padrao de Luma/Kling/VEO.
 
 ## Observabilidade (Sprint V3)
 

@@ -20,6 +20,7 @@ public record FunnelAnalyticsSummaryResponse(
         long firstUse,
         long checkoutStarted,
         long totalVisibleMs,
+        String lastEventAt,
         List<FunnelAnalyticsEventMetricDto> events,
         List<FunnelAnalyticsExperienceVersionMetricDto> experienceVersions,
         List<FunnelAnalyticsTrafficSourceMetricDto> trafficSources,

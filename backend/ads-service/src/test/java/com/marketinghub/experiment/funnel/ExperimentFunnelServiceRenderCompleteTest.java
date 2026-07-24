@@ -763,6 +763,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 0,
                 0,
                 3765490,
+                "2026-07-21T02:00:00Z",
                 List.of(),
                 List.of(),
                 List.of(
@@ -837,6 +838,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 0,
                 0,
                 120000,
+                "2026-07-21T02:00:00Z",
                 List.of(),
                 List.of(),
                 List.of(

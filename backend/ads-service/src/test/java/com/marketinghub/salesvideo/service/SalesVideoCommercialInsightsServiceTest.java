@@ -1,8 +1,6 @@
 package com.marketinghub.salesvideo.service;
 
-import com.marketinghub.experiment.video.ExperimentVideoAsset;
-import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
-import com.marketinghub.experiment.video.ExperimentVideoStatus;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetProviderReviewProjection;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoCommercialPlaybookRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoConversionEventRepository;
@@ -28,6 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+/**
+ * Valida os aprendizados comerciais e a pontuação de providers do módulo SalesVideo.
+ */
 @ExtendWith(MockitoExtension.class)
 class SalesVideoCommercialInsightsServiceTest {
 
@@ -46,6 +47,7 @@ class SalesVideoCommercialInsightsServiceTest {
 
     private SalesVideoCommercialInsightsService service;
 
+    /** Inicializa o service com repositórios simulados para cada cenário de teste. */
     @BeforeEach
     void setUp() {
         service = new SalesVideoCommercialInsightsService(
@@ -58,6 +60,7 @@ class SalesVideoCommercialInsightsServiceTest {
         );
     }
 
+    /** Deve consolidar conversão usando o script associado ao job informado. */
     @Test
     void shouldCreateConversionEventBindingScriptFromJob() {
         SalesVideoProfile profile = profile();
@@ -94,6 +97,7 @@ class SalesVideoCommercialInsightsServiceTest {
         assertThat(response.getEventValue()).isEqualByComparingTo("197.90");
     }
 
+    /** Deve resumir receita, conversões e reputação do provider por script. */
     @Test
     void shouldSummarizePerformanceByScriptAndProvider() {
         SalesVideoProfile profile = profile();
@@ -134,13 +138,8 @@ class SalesVideoCommercialInsightsServiceTest {
         given(playbookRepository.findByProfileIdAndTenantIdOrderByCreatedAtDesc(7L, "tenant-a"))
                 .willReturn(List.of());
         given(jobRepository.findByProfileIdOrderByRequestedAtDesc(7L)).willReturn(List.of(job));
-        given(experimentVideoAssetRepository.findBySalesVideoProfileIdOrderByCreatedAtDesc(7L)).willReturn(List.of(
-                ExperimentVideoAsset.builder()
-                        .provider("provider-real")
-                        .status(ExperimentVideoStatus.READY)
-                        .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
-                        .build()
-        ));
+        given(experimentVideoAssetRepository.findProviderReviewsBySalesVideoProfileId(7L))
+                .willReturn(List.of(providerReview("provider-real", "READY", "APPROVED")));
 
         SalesVideoPerformanceSummaryDto response = service.summarizePerformance(7L, null, null);
 
@@ -157,6 +156,7 @@ class SalesVideoCommercialInsightsServiceTest {
         assertThat(response.getProviderScores().get(0).getRecommendation()).isEqualTo("priorizar");
     }
 
+    /** Deve reduzir a pontuação de provider com falha técnica e ativo rejeitado. */
     @Test
     void shouldPenalizeRejectedProviderAssets() {
         SalesVideoProfile profile = profile();
@@ -176,13 +176,8 @@ class SalesVideoCommercialInsightsServiceTest {
         given(playbookRepository.findByProfileIdAndTenantIdOrderByCreatedAtDesc(7L, "tenant-a"))
                 .willReturn(List.of());
         given(jobRepository.findByProfileIdOrderByRequestedAtDesc(7L)).willReturn(List.of(failedJob));
-        given(experimentVideoAssetRepository.findBySalesVideoProfileIdOrderByCreatedAtDesc(7L)).willReturn(List.of(
-                ExperimentVideoAsset.builder()
-                        .provider("LUMA_RAY_3_2")
-                        .status(ExperimentVideoStatus.READY)
-                        .reviewStatus(ExperimentVideoReviewStatus.REJECTED)
-                        .build()
-        ));
+        given(experimentVideoAssetRepository.findProviderReviewsBySalesVideoProfileId(7L))
+                .willReturn(List.of(providerReview("LUMA_RAY_3_2", "READY", "REJECTED")));
 
         SalesVideoPerformanceSummaryDto response = service.summarizePerformance(7L, null, null);
 
@@ -192,6 +187,12 @@ class SalesVideoCommercialInsightsServiceTest {
         assertThat(response.getProviderScores().get(0).getRecommendation()).isEqualTo("bloquear_ou_regenerar");
     }
 
+    /** Cria uma projeção mínima de avaliação de provider para os testes de reputação. */
+    private static ProviderReview providerReview(String provider, String status, String reviewStatus) {
+        return new ProviderReview(provider, status, reviewStatus);
+    }
+
+    /** Cria um perfil base de SalesVideo para os testes comerciais. */
     private static SalesVideoProfile profile() {
         return SalesVideoProfile.builder()
                 .id(7L)
@@ -201,5 +202,29 @@ class SalesVideoCommercialInsightsServiceTest {
                 .status(SalesVideoStatus.SCRIPT_READY)
                 .product(Product.builder().id(99L).build())
                 .build();
+    }
+
+    /**
+     * Implementa a projeção mínima retornada pelo repositório de vídeos de experimento.
+     */
+    private record ProviderReview(String provider, String status, String reviewStatus)
+            implements ExperimentVideoAssetProviderReviewProjection {
+        /** Retorna o provider projetado para o teste. */
+        @Override
+        public String getProvider() {
+            return provider;
+        }
+
+        /** Retorna o status funcional projetado para o teste. */
+        @Override
+        public String getStatus() {
+            return status;
+        }
+
+        /** Retorna o status de revisão projetado para o teste. */
+        @Override
+        public String getReviewStatus() {
+            return reviewStatus;
+        }
     }
 }

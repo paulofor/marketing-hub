@@ -403,7 +403,7 @@ public class PostDeployMonitorService {
                 summary.subscriptionApproved(),
                 summary.totalVisibleMs(),
                 calculateAverageVisibleMsPerSession(summary),
-                null,
+                parseInstant(summary.lastEventAt()),
                 events,
                 toExperienceVersionDtos(summary),
                 toTrafficSourceDtos(summary),
@@ -530,6 +530,14 @@ public class PostDeployMonitorService {
                 .filter(entry -> normalized.equals(entry.getKey().toLowerCase(Locale.ROOT)))
                 .mapToLong(Map.Entry::getValue)
                 .sum();
+    }
+
+    /** Converte um instante textual opcional do PDE para o contrato do painel. */
+    private Instant parseInstant(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return Instant.parse(value);
     }
 
     /** Resume os logs recentes da API Meta vinculados ao experimento. */

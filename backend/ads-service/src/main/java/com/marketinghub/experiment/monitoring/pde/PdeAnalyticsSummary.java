@@ -20,6 +20,7 @@ public record PdeAnalyticsSummary(
         long firstUse,
         long checkoutStarted,
         long totalVisibleMs,
+        String lastEventAt,
         List<PdeEventMetric> events,
         List<PdeExperienceVersionMetric> experienceVersions,
         List<PdeTrafficSourceMetric> trafficSources,

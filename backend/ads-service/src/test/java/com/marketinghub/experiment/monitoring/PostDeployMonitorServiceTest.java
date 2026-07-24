@@ -93,6 +93,7 @@ class PostDeployMonitorServiceTest {
                 0,
                 0,
                 2000,
+                "2026-07-21T02:00:00Z",
                 List.of(),
                 List.of(new PdeAnalyticsSummary.PdeExperienceVersionMetric(
                         "musa-pde-entry-v3", 80, 15, 15, 0, 0, 0, 0, 0, 0, 0)),
@@ -141,6 +142,7 @@ class PostDeployMonitorServiceTest {
         assertThat(response.metaAds().ctrPercent()).isEqualByComparingTo("5.00");
         assertThat(response.pde().currentExperienceVersion()).isEqualTo("musa-pde-entry-v3");
         assertThat(response.pde().averageVisibleMsPerSession()).isEqualTo(133);
+        assertThat(response.pde().lastEventAt()).isEqualTo(Instant.parse("2026-07-21T02:00:00Z"));
         assertThat(response.pde().experienceVersions())
                 .extracting("experienceVersion")
                 .contains("musa-pde-entry-v3");
@@ -229,6 +231,7 @@ class PostDeployMonitorServiceTest {
                 1,
                 1,
                 9000,
+                "2026-07-21T02:00:00Z",
                 List.of(new PdeAnalyticsSummary.PdeEventMetric("PRESENCE_MAP_CHOICE_SELECTED", 6)),
                 List.of(new PdeAnalyticsSummary.PdeExperienceVersionMetric(
                         "musa-pde-entry-v3", 120, 20, 20, 6, 0, 5, 2, 2, 1, 1)),
@@ -392,6 +395,7 @@ class PostDeployMonitorServiceTest {
                 0,
                 0,
                 0,
+                null,
                 List.of(),
                 List.of(),
                 List.of(),

@@ -356,7 +356,8 @@ public class AccessService {
                   SUM(CASE WHEN event_type = 'ACCESS_RELEASED' THEN 1 ELSE 0 END) AS access_released,
                   SUM(CASE WHEN event_type = 'FIRST_USE' THEN 1 ELSE 0 END) AS first_use,
                   SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
-                  COALESCE(SUM(visible_ms), 0) AS total_visible_ms
+                  COALESCE(SUM(visible_ms), 0) AS total_visible_ms,
+                  MAX(occurred_at) AS last_event_at
                 FROM pde_funnel_event
                 WHERE product_slug = ?
                 """;
@@ -382,6 +383,7 @@ public class AccessService {
                             resultSet.getLong("first_use"),
                             resultSet.getLong("checkout_started"),
                             resultSet.getLong("total_visible_ms"),
+                            timestampAsOperationalText(resultSet, "last_event_at"),
                             loadFunnelEventMetrics(connection, productSlug),
                             loadExperienceVersionMetrics(connection, productSlug),
                             loadTrafficSourceMetrics(connection, productSlug),
@@ -753,7 +755,7 @@ public class AccessService {
     private FunnelAnalyticsSummaryResponse emptyFunnelAnalytics(String productSlug) {
         return new FunnelAnalyticsSummaryResponse(
                 productSlug, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+                null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     /** Converte uma linha JDBC em evento normalizado de jornada. */
@@ -778,6 +780,12 @@ public class AccessService {
     /** Interpreta DATETIME do MySQL como horário operacional de Brasília antes de serializar para APIs. */
     static Instant toOperationalInstant(Timestamp timestamp) {
         return timestamp.toLocalDateTime().atZone(OPERATIONAL_TIME_ZONE).toInstant();
+    }
+
+    /** Serializa um DATETIME opcional como instante operacional ou null. */
+    private String timestampAsOperationalText(ResultSet resultSet, String columnName) throws SQLException {
+        Timestamp timestamp = resultSet.getTimestamp(columnName);
+        return timestamp == null ? null : toOperationalInstant(timestamp).toString();
     }
 
     /** Lê o JSON de metadados salvo no evento para detalhar tela, campo e clique. */

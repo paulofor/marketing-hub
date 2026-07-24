@@ -61,6 +61,19 @@ import org.springframework.web.server.ResponseStatusException;
 public class ExperimentVideoAssetService {
     private static final int LANDING_HERO_LUMA_TARGET_SECONDS = 30;
     private static final String POST_PRODUCTION_PROVIDER = "MUSA_POST_PRODUCTION";
+    private static final String MUSA_STABLE_VISUAL_DIRECTIVES = """
+            Vertical 9:16 realistic mobile video for Metodo MUSA. Brazilian urban adult woman, real and relatable,
+            elegant but accessible, in a bright everyday wardrobe environment. Sharp image, crisp focus on face and
+            hands, stable exposure, locked white balance, constant soft natural daylight, no haze, no blur, no dreamy
+            filter, no flickering, no exposure shift, no lighting oscillation, no distorted hands, no embedded text,
+            no logo, no luxury ostentation and no sensualized pose.
+            """;
+    private static final String MUSA_REFERENCE_IMAGE_PROMPT = """
+            Quadro-base MUSA anti-oscilacao: mulher brasileira adulta em quarto claro, organizando roupa diante de
+            guarda-roupa realista com luz natural constante, exposicao travada, foco nitido, pele real, postura
+            respeitosa, peca-sinal discreta e presenca elegante acessivel. Sem haze, sem filtro leitoso, sem blur,
+            sem texto embutido, sem logo e sem sensualizacao.
+            """;
 
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
             .findAndAddModules()
@@ -607,6 +620,7 @@ public class ExperimentVideoAssetService {
         metadata.put("prompt", trimToNull(videoAsset.getPrompt()));
         metadata.put("scriptText", trimToNull(videoAsset.getScript()));
         metadata.put("requestedBy", request.requestedBy().trim());
+        enrichPlannedRenderPromptSafety(metadata, videoAsset, targetDurationSeconds);
         try {
             return OBJECT_MAPPER.writeValueAsString(metadata);
         } catch (JsonProcessingException ex) {
@@ -615,6 +629,63 @@ public class ExperimentVideoAssetService {
                     "planned video metadata serialization failed",
                     ex);
         }
+    }
+
+    /** Adiciona recursos preventivos de prompt para reduzir flicker, haze e asset inutilizavel no funil. */
+    private void enrichPlannedRenderPromptSafety(Map<String, Object> metadata,
+                                                 ExperimentVideoAsset videoAsset,
+                                                 Integer targetDurationSeconds) {
+        boolean luma = isLumaProvider(videoAsset.getProvider());
+        boolean commercialVideo = videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO
+                || videoAsset.getSlot() == ExperimentVideoSlot.AD;
+        metadata.put("visual_provider_directives", MUSA_STABLE_VISUAL_DIRECTIVES.trim());
+        metadata.put("quality_gate", Map.of(
+                "reject_if", List.of(
+                        "flickering",
+                        "lighting oscillation",
+                        "exposure shift",
+                        "haze",
+                        "milky filter",
+                        "blur",
+                        "low contrast",
+                        "distorted hands",
+                        "embedded text",
+                        "sensualized pose"),
+                "commercial_block_rule",
+                "Se houver luz oscilando, mudanca forte de exposicao, haze ou baixa nitidez, o asset deve ser rejeitado e nao pode ser usado como hero, criativo, retargeting ou referencia final."));
+        if (luma && commercialVideo) {
+            metadata.put("generation_strategy", "OPENAI_IMAGE_TO_LUMA_VIDEO");
+            metadata.put("image_to_video", Map.of(
+                    "enabled", true,
+                    "source_image_provider", "OPENAI",
+                    "animation_provider", "LUMA_RAY_3_2",
+                    "reference_image_count", resolveReferenceImageCount(targetDurationSeconds),
+                    "image_prompt", buildReferenceImagePrompt(videoAsset),
+                    "expected_benefit",
+                    "Travar composicao, postura e luz antes da animacao para reduzir flicker, haze e drift visual."));
+        } else {
+            metadata.put("generation_strategy", "TEXT_TO_VIDEO");
+            Map<String, Object> imageToVideo = new LinkedHashMap<>();
+            imageToVideo.put("enabled", false);
+            imageToVideo.put("source_image_provider", null);
+            imageToVideo.put("animation_provider", trimToNull(videoAsset.getProvider()));
+            imageToVideo.put("reference_image_count", 0);
+            metadata.put("image_to_video", imageToVideo);
+        }
+    }
+
+    /** Define quantas imagens-base usar para controlar inicio e fim da cena comercial. */
+    private int resolveReferenceImageCount(Integer targetDurationSeconds) {
+        return targetDurationSeconds != null && targetDurationSeconds >= 20 ? 2 : 1;
+    }
+
+    /** Combina prompt planejado com diretrizes visuais estaveis para gerar a imagem-base. */
+    private String buildReferenceImagePrompt(ExperimentVideoAsset videoAsset) {
+        String plannedPrompt = trimToNull(videoAsset.getPrompt());
+        if (plannedPrompt == null) {
+            return MUSA_REFERENCE_IMAGE_PROMPT.trim();
+        }
+        return plannedPrompt + "\n\n" + MUSA_REFERENCE_IMAGE_PROMPT.trim();
     }
 
     /** Descreve nos metadados como o ativo deve ser usado para maximizar venda no funil. */

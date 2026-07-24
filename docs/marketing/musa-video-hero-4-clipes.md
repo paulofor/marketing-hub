@@ -8,9 +8,12 @@ Criar um vídeo vertical para o topo do diagnóstico MUSA que complete a cadeia 
 
 - **Luma Ray 3.2:** provider principal recomendado para vídeo hero premium do PDE, por permitir cena mais longa e estética editorial.
 - **Kling 3.0:** provider alternativo de teste para comparar retenção, qualidade visual e clique no diagnóstico.
+- **Runway:** adicionar ao acervo de ferramentas de vídeo para geração, edição e variações de criativos, especialmente quando for útil testar text-to-video, image-to-video, video-to-video, upscale, dublagem, TTS ou edição de vídeo existente por prompt. Deve entrar como alternativa auditável de produção/variação, não como troca automática do hero principal sem teste visual e métrica de funil.
 - **Veo:** manter para teaser curto ou cenas isoladas; não usar sozinho como vídeo de venda de 30 segundos.
 
 O Marketing Hub deve registrar `providerName`, duração alvo, duração real auditada, plano de cenas, URL de streaming publicável (`streamPlaybackUrl`) e MP4 bruto como fallback/auditoria.
+
+Para Runway, registrar também o modelo usado, endpoint/modalidade (`text_to_video`, `image_to_video`, `video_to_video`, upscale, avatar, TTS ou dublagem), créditos/custo retornado quando disponível, assets de entrada e motivo comercial do uso: hero, variação de anúncio, retargeting, pós-produção ou teste comparativo.
 
 ## Fonte de verdade
 

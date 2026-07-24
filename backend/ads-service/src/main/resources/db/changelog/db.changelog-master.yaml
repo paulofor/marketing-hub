@@ -3,6 +3,9 @@ databaseChangeLog:
       file: changesets/2026-07-23-sales-video-stream-playback-url.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-24-sales-video-post-production-job-type.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-22-experiment-reactivation-audit.yaml
       relativeToChangelogFile: true
   - include:

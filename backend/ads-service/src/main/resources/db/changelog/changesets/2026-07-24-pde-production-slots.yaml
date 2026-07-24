@@ -1,0 +1,103 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-24-pde-production-slots.yaml
+  - changeSet:
+      id: 2026-07-24-pde-production-slots-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: pde_production_slot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE pde_production_slot (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                slot_code VARCHAR(64) NOT NULL,
+                product_slug VARCHAR(191) NOT NULL,
+                domain VARCHAR(191) NOT NULL,
+                public_url VARCHAR(512) NOT NULL,
+                backend_url VARCHAR(512) NULL,
+                experience_version VARCHAR(120) NOT NULL,
+                target_environment VARCHAR(64) NOT NULL DEFAULT 'production',
+                status VARCHAR(32) NOT NULL DEFAULT 'PLANNED',
+                source_experiment_id BIGINT NULL,
+                notes LONGTEXT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_pde_production_slot_product_code (product_slug, slot_code),
+                UNIQUE KEY uk_pde_production_slot_domain (domain),
+                KEY idx_pde_production_slot_product_status (product_slug, status),
+                KEY idx_pde_production_slot_experiment (source_experiment_id),
+                CONSTRAINT fk_pde_production_slot_experiment
+                  FOREIGN KEY (source_experiment_id) REFERENCES experiment (id)
+                  ON DELETE SET NULL
+              );
+  - changeSet:
+      id: 2026-07-24-pde-production-slots-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT IGNORE INTO pde_production_slot (
+                slot_code,
+                product_slug,
+                domain,
+                public_url,
+                backend_url,
+                experience_version,
+                target_environment,
+                status,
+                source_experiment_id,
+                notes
+              ) VALUES (
+                'v1',
+                'metodo-musa-7-dias',
+                'v1.clubemusa.com.br',
+                'https://v1.clubemusa.com.br',
+                NULL,
+                'musa-pde-entry-v4-video-hero',
+                'production-v1',
+                'READY',
+                NULL,
+                'Slot produtivo planejado para Hipotese 1 / E008 com entrada PDE em video.'
+              );
+
+              INSERT IGNORE INTO pde_production_slot (
+                slot_code,
+                product_slug,
+                domain,
+                public_url,
+                backend_url,
+                experience_version,
+                target_environment,
+                status,
+                source_experiment_id,
+                notes
+              ) VALUES (
+                'v2',
+                'metodo-musa-7-dias',
+                'v2.clubemusa.com.br',
+                'https://v2.clubemusa.com.br',
+                NULL,
+                'musa-pde-entry-v5-estrada-desejo',
+                'production-v2',
+                'PLANNED',
+                NULL,
+                'Slot produtivo planejado para Hipotese 2 com promessa de peca-sinal.'
+              );

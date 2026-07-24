@@ -163,6 +163,7 @@ describe("ExperimentLandingAnalyticsTab", () => {
               targetEnvironment: "production",
               workflowFile: "pde-platform-deploy.yml",
             },
+            pdeProductionSlots: [],
             pdeDeployments: [],
             logs: {
               totalLogs: 0,

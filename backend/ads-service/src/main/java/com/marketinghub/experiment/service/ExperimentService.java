@@ -1015,7 +1015,7 @@ public class ExperimentService {
         }
     }
 
-    /** Bloqueia funil PDE MUSA quando o destino não aponta para a entrada canônica do Clube MUSA. */
+    /** Bloqueia funil PDE MUSA quando o destino não aponta para entrada canônica ou slot produtivo. */
     private void ensurePdeMembershipDestinationIsCanonical(Experiment experiment) {
         if (experiment == null || experiment.getExperimentType() != ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
             return;
@@ -1023,11 +1023,12 @@ public class ExperimentService {
         String destinationUrl = normalizeUrl(experiment.getFollowUpActionUrl());
         boolean canonicalDestination = StringUtils.hasText(destinationUrl)
                 && (destinationUrl.equals("https://" + MUSA_PDE_CANONICAL_HOST)
-                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/"));
+                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/")
+                || destinationUrl.matches("^https://[a-z0-9-]+\\.clubemusa\\.com\\.br($|/.*)"));
         if (!canonicalDestination) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br, com login gratuito e paywall interno.");
+                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br ou slot produtivo aprovado, com login gratuito e paywall interno.");
         }
     }
 

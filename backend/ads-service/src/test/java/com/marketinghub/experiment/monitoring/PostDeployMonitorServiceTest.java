@@ -2,14 +2,16 @@ package com.marketinghub.experiment.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployRequestDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployResponseDto;
-import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeDeployStatus;
@@ -18,8 +20,11 @@ import com.marketinghub.experiment.monitoring.pde.PdeProductionDeploymentClient;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
+import com.marketinghub.pde.PdeProductionSlot;
+import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -53,6 +58,9 @@ class PostDeployMonitorServiceTest {
     @Mock
     private PdeProductionDeploymentClient pdeProductionDeploymentClient;
 
+    @Mock
+    private PdeProductionSlotRepository pdeProductionSlotRepository;
+
     private PostDeployMonitorService service;
 
     /** Monta o serviço com dependências controladas para cenários comerciais. */
@@ -64,9 +72,12 @@ class PostDeployMonitorServiceTest {
                 apiLogService,
                 pdeAnalyticsClient,
                 pdeDeployStatusClient,
-                pdeProductionDeploymentClient);
-        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(availableDeployStatus()));
-        when(pdeProductionDeploymentClient.isConfigured()).thenReturn(false);
+                pdeProductionDeploymentClient,
+                pdeProductionSlotRepository);
+        lenient().when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(availableDeployStatus()));
+        lenient().when(pdeProductionDeploymentClient.isConfigured()).thenReturn(false);
+        lenient().when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc("metodo-musa-7-dias"))
+                .thenReturn(List.of(productionSlot("v1", "musa-pde-entry-v4-video-hero")));
     }
 
     /** Recomenda pausa quando há gasto relevante sem primeira interação no PDE. */
@@ -158,6 +169,9 @@ class PostDeployMonitorServiceTest {
         assertThat(response.pdeDeployments())
                 .extracting("environment")
                 .contains("homolog");
+        assertThat(response.pdeProductionSlots())
+                .extracting("slotCode")
+                .contains("v1");
     }
 
     /** Recomenda corrigir medição quando o PDE não responde ao Hub. */
@@ -313,6 +327,43 @@ class PostDeployMonitorServiceTest {
         assertThat(response.message()).contains("Valide homologação");
     }
 
+    /** Cria slot produtivo com domínio normalizado para permitir URLs paralelas de hipótese PDE. */
+    @Test
+    void savesPdeProductionSlotForParallelHypothesisUrl() {
+        Experiment experiment = Experiment.builder().id(71L).build();
+        when(experimentRepository.findById(71L)).thenReturn(Optional.of(experiment));
+        when(pdeProductionSlotRepository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v2"))
+                .thenReturn(Optional.empty());
+        when(pdeProductionSlotRepository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+                .thenAnswer(invocation -> {
+                    PdeProductionSlot slot = invocation.getArgument(0);
+                    slot.setId(2L);
+                    slot.setCreatedAt(Instant.parse("2026-07-24T10:00:00Z"));
+                    slot.setUpdatedAt(Instant.parse("2026-07-24T10:00:00Z"));
+                    return slot;
+                });
+
+        var response = service.saveProductionSlot(
+                71L,
+                new PostDeployPdeProductionSlotRequestDto(
+                        "v2",
+                        "metodo-musa-7-dias",
+                        "https://v2.clubemusa.com.br/",
+                        null,
+                        null,
+                        "musa-pde-entry-v5-estrada-desejo",
+                        null,
+                        PdeProductionSlotStatus.PLANNED,
+                        null,
+                        "Hipotese 2"));
+
+        assertThat(response.id()).isEqualTo(2L);
+        assertThat(response.domain()).isEqualTo("v2.clubemusa.com.br");
+        assertThat(response.publicUrl()).isEqualTo("https://v2.clubemusa.com.br");
+        assertThat(response.targetEnvironment()).isEqualTo("production-v2");
+        assertThat(response.sourceExperimentId()).isEqualTo(71L);
+    }
+
     /** Cria uma métrica Meta Ads mínima para os cenários do painel. */
     private ExperimentCampaignMetric metric(String spend, String lastError) {
         Experiment experiment = Experiment.builder().id(67L).build();
@@ -355,6 +406,23 @@ class PostDeployMonitorServiceTest {
                         5177,
                         80,
                         "frontend")));
+    }
+
+    /** Cria um slot produtivo persistido para validar a resposta do painel. */
+    private PdeProductionSlot productionSlot(String slotCode, String experienceVersion) {
+        return PdeProductionSlot.builder()
+                .id(1L)
+                .slotCode(slotCode)
+                .productSlug("metodo-musa-7-dias")
+                .domain(slotCode + ".clubemusa.com.br")
+                .publicUrl("https://" + slotCode + ".clubemusa.com.br")
+                .experienceVersion(experienceVersion)
+                .targetEnvironment("production-" + slotCode)
+                .status(PdeProductionSlotStatus.READY)
+                .sourceExperimentId(70L)
+                .createdAt(Instant.parse("2026-07-24T10:00:00Z"))
+                .updatedAt(Instant.parse("2026-07-24T10:00:00Z"))
+                .build();
     }
 
     /** Cria status de deploy parametrizado para comparar homologação e produção. */

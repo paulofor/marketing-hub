@@ -222,7 +222,7 @@ public class ExperimentReadinessService {
                     ExperimentReadinessIssueType.GERA_SALES_PAGE,
                     "Destino PDE MUSA inválido",
                     "O anúncio do funil PDE MUSA deve apontar para a entrada do Clube MUSA, onde a lead faz login, experimenta a parte gratuita e encontra o paywall interno.",
-                    "Atualize a URL do anúncio para https://clubemusa.com.br.",
+                    "Atualize a URL do anúncio para https://clubemusa.com.br ou para um slot produtivo aprovado, como https://v1.clubemusa.com.br.",
                     List.of()
             ));
         }

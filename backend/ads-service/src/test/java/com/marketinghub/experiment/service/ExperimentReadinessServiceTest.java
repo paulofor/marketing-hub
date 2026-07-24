@@ -372,6 +372,22 @@ class ExperimentReadinessServiceTest {
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
+    /** Garante que o funil PDE MUSA aceita subdomínio de slot produtivo versionado. */
+    @Test
+    void shouldAllowPdeMembershipCampaignWithVersionedMusaSlotDestination() {
+        Experiment experiment = buildExperiment(71L, 77L);
+        experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+        experiment.setFollowUpActionUrl("https://v2.clubemusa.com.br");
+        completeCommercialContract(experiment);
+
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(71L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(71L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
     /** Garante que o funil PDE MUSA bloqueia destino que nao seja a entrada do Clube MUSA. */
     @Test
     void shouldBlockPdeMembershipCampaignWhenDestinationDoesNotPointToMusaLogin() {

@@ -1,0 +1,276 @@
+package com.marketinghub.videomanagement.service.provider;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.videomanagement.client.dto.AssetType;
+import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
+import com.marketinghub.videomanagement.client.dto.SalesVideoJobType;
+import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
+import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
+import com.marketinghub.videomanagement.config.VideoManagementProperties;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
+
+/** Monta múltiplos clipes prontos em um único vídeo vertical para teste comercial. */
+@Component
+@ConditionalOnProperty(prefix = "video.providers.post-production", name = "enabled", havingValue = "true")
+public class VideoMontageProvider implements VideoProvider {
+    private static final MediaType VIDEO_MP4 = MediaType.valueOf("video/mp4");
+    private static final int MAX_VIDEO_DOWNLOAD_BYTES = 150 * 1024 * 1024;
+    private static final String PROVIDER_NAME = "MUSA_VIDEO_MONTAGE";
+    private static final Logger log = LoggerFactory.getLogger(VideoMontageProvider.class);
+
+    private final VideoManagementProperties properties;
+    private final ObjectMapper objectMapper;
+    private final WebClient downloadWebClient;
+
+    /** Inicializa o provider de montagem com configuração e cliente de download. */
+    public VideoMontageProvider(VideoManagementProperties properties,
+                                ObjectMapper objectMapper,
+                                WebClient.Builder webClientBuilder) {
+        this.properties = properties;
+        this.objectMapper = objectMapper;
+        this.downloadWebClient = webClientBuilder.clone()
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
+                .exchangeStrategies(ExchangeStrategies.builder()
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
+                        .build())
+                .build();
+    }
+
+    /** Verifica se o job representa montagem local de múltiplos vídeos. */
+    @Override
+    public boolean supports(SalesVideoJob job) {
+        if (job.jobType() != SalesVideoJobType.POST_PRODUCTION) {
+            return false;
+        }
+        return PROVIDER_NAME.equals(normalize(job.providerName()));
+    }
+
+    /** Baixa os clipes, normaliza cada fonte e concatena tudo em um MP4 único. */
+    @Override
+    public ProviderArtifacts render(SalesVideoJob job,
+                                    SalesVideoProfile profile,
+                                    ProgressCallback progressCallback) {
+        JsonNode metadata = readMetadata(job);
+        List<SourceVideo> sources = readSources(metadata);
+        List<Path> temporaryFiles = new ArrayList<>();
+        try {
+            progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING,
+                    "Baixando clipes para montagem");
+            List<Path> normalizedClips = new ArrayList<>();
+            for (int index = 0; index < sources.size(); index++) {
+                SourceVideo sourceVideo = sources.get(index);
+                Path source = downloadSourceVideo(job, sourceVideo.url(), index + 1);
+                Path normalized = Files.createTempFile("sales-video-" + job.id() + "-clip-" + (index + 1), ".mp4");
+                temporaryFiles.add(source);
+                temporaryFiles.add(normalized);
+                int progress = 20 + Math.min(40, (index + 1) * 40 / sources.size());
+                progressCallback.onProgress(progress, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Normalizando clipe " + (index + 1) + " de " + sources.size());
+                normalizeClip(source, normalized);
+                normalizedClips.add(normalized);
+            }
+            Path concatList = Files.createTempFile("sales-video-" + job.id() + "-concat", ".txt");
+            Path output = Files.createTempFile("sales-video-" + job.id() + "-montage", ".mp4");
+            temporaryFiles.add(concatList);
+            temporaryFiles.add(output);
+            Files.writeString(concatList, concatFile(normalizedClips), StandardCharsets.UTF_8);
+            progressCallback.onProgress(75, SalesVideoStatus.VIDEO_PROCESSING, "Unindo clipes aprovados");
+            concatClips(concatList, output);
+            ProviderFile video = new ProviderFile(
+                    "sales-video-" + job.id() + "-musa-montage.mp4",
+                    VIDEO_MP4,
+                    AssetType.VIDEO,
+                    ProviderAssetRole.VIDEO,
+                    Files.readAllBytes(output));
+            progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING,
+                    "Montagem finalizada para revisão");
+            return new ProviderArtifacts("montage-" + job.id(), video, null, null,
+                    resultMetadata(job, sources));
+        } catch (IOException ex) {
+            log.error("Falha de arquivo na montagem de vídeo do job {}", job.id(), ex);
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED", "Falha de arquivo na montagem de vídeo", ex);
+        } finally {
+            temporaryFiles.forEach(this::deleteIfExists);
+        }
+    }
+
+    /** Baixa um clipe fonte preservando URLs absolutas e relativas ao backend. */
+    private Path downloadSourceVideo(SalesVideoJob job, String sourceVideoUrl, int index) throws IOException {
+        URI sourceUri = resolveSourceUri(sourceVideoUrl);
+        ResponseEntity<byte[]> response = downloadWebClient.get()
+                .uri(sourceUri)
+                .retrieve()
+                .toEntity(byte[].class)
+                .block();
+        byte[] content = response == null ? null : response.getBody();
+        if (content == null || content.length == 0) {
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
+                    "Download vazio do clipe fonte " + index);
+        }
+        Path source = Files.createTempFile("sales-video-" + job.id() + "-source-" + index, ".mp4");
+        Files.write(source, content);
+        return source;
+    }
+
+    /** Normaliza o clipe para vertical 9:16 com codec estável antes da concatenação. */
+    private void normalizeClip(Path source, Path output) {
+        VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        runProcess(List.of(
+                config.getFfmpegPath(),
+                "-y",
+                "-i", source.toAbsolutePath().toString(),
+                "-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,fps=30,setsar=1",
+                "-an",
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-r", "30",
+                output.toAbsolutePath().toString()),
+                "ffmpeg falhou ao normalizar clipe para montagem");
+    }
+
+    /** Concatena os clipes normalizados em um MP4 único. */
+    private void concatClips(Path concatList, Path output) {
+        VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        runProcess(List.of(
+                config.getFfmpegPath(),
+                "-y",
+                "-f", "concat",
+                "-safe", "0",
+                "-i", concatList.toAbsolutePath().toString(),
+                "-c", "copy",
+                output.toAbsolutePath().toString()),
+                "ffmpeg falhou ao concatenar clipes da montagem");
+    }
+
+    /** Executa um processo externo e converte falhas em erro operacional claro. */
+    private void runProcess(List<String> command, String failureMessage) {
+        try {
+            Process process = new ProcessBuilder(command)
+                    .redirectErrorStream(true)
+                    .start();
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
+                        failureMessage + "; exitCode=" + exitCode + "; output=" + output);
+            }
+        } catch (IOException ex) {
+            log.error("Falha ao executar processo externo da montagem: {}", failureMessage, ex);
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED", failureMessage, ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            log.error("Processo externo da montagem interrompido: {}", failureMessage, ex);
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED", failureMessage, ex);
+        }
+    }
+
+    /** Lê os metadados do job como JSON. */
+    private JsonNode readMetadata(SalesVideoJob job) {
+        if (!StringUtils.hasText(job.metadataJson())) {
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED", "Metadata de montagem ausente");
+        }
+        try {
+            return objectMapper.readTree(job.metadataJson());
+        } catch (IOException ex) {
+            log.error("Metadata de montagem inválida no job {}", job.id(), ex);
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED", "Metadata de montagem inválida", ex);
+        }
+    }
+
+    /** Extrai os clipes fonte do metadata persistido pelo backend. */
+    private List<SourceVideo> readSources(JsonNode metadata) {
+        JsonNode sources = metadata.path("sourceVideos");
+        if (!sources.isArray() || sources.size() < 2) {
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
+                    "Montagem exige pelo menos dois clipes fonte");
+        }
+        List<SourceVideo> result = new ArrayList<>();
+        for (JsonNode source : sources) {
+            long sourceJobId = source.path("sourceJobId").asLong();
+            String sourceVideoUrl = source.path("sourceVideoUrl").asText(null);
+            if (!StringUtils.hasText(sourceVideoUrl)) {
+                throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
+                        "Clipe fonte sem URL de vídeo");
+            }
+            result.add(new SourceVideo(sourceJobId, sourceVideoUrl.trim()));
+        }
+        return result;
+    }
+
+    /** Resolve uma URL fonte absoluta ou relativa ao backend. */
+    private URI resolveSourceUri(String sourceVideoUrl) {
+        URI uri = URI.create(sourceVideoUrl);
+        if (uri.isAbsolute()) {
+            return uri;
+        }
+        return properties.getBackendBaseUrl().resolve(sourceVideoUrl);
+    }
+
+    /** Gera arquivo de concatenação compatível com o demuxer do ffmpeg. */
+    private String concatFile(List<Path> clips) {
+        StringBuilder builder = new StringBuilder();
+        for (Path clip : clips) {
+            builder.append("file '")
+                    .append(clip.toAbsolutePath().toString().replace("'", "'\\''"))
+                    .append("'\n");
+        }
+        return builder.toString();
+    }
+
+    /** Consolida metadados de saída da montagem. */
+    private Map<String, Object> resultMetadata(SalesVideoJob job, List<SourceVideo> sources) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("provider", PROVIDER_NAME);
+        metadata.put("provider_job_id", "montage-" + job.id());
+        metadata.put("source_job_ids", sources.stream().map(SourceVideo::jobId).toList());
+        metadata.put("source_count", sources.size());
+        metadata.put("resolution", "720x1280");
+        metadata.put("audio", Map.of("preserved", false, "reason", "montagem preparada para voz off final"));
+        metadata.put("finished_at", Instant.now().toString());
+        return metadata;
+    }
+
+    /** Normaliza nome de provider para comparação estável. */
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    /** Remove arquivo temporário se ele tiver sido criado. */
+    private void deleteIfExists(Path path) {
+        if (path == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException ignored) {
+            log.debug("Arquivo temporário de montagem não pôde ser removido: {}", path, ignored);
+            // Arquivo temporário residual não deve mascarar o resultado do job.
+        }
+    }
+
+    /** Representa um clipe fonte selecionado para montagem. */
+    private record SourceVideo(long jobId, String url) {
+    }
+}

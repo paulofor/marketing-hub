@@ -36,7 +36,30 @@ public class StatusController {
                                 "enabled", properties.getProviders().getVeo().isEnabled(),
                                 "acceptedNames", properties.getProviders().getVeo().getAcceptedNames(),
                                 "apiKeyConfigured", hasText(properties.getProviders().getVeo().getApiKey()),
-                                "model", properties.getProviders().getVeo().getModel()))
+                                "model", properties.getProviders().getVeo().getModel()),
+                        "postProduction", Map.of(
+                                "enabled", properties.getProviders().getPostProduction().isEnabled(),
+                                "openAiTtsEnabled",
+                                properties.getProviders().getPostProduction().isOpenAiTtsEnabled(),
+                                "openAiApiKeyConfigured",
+                                hasText(properties.getProviders().getPostProduction().getOpenAiApiKey())
+                                        || hasText(properties.getProviders().getPostProduction().getOpenAiApiKeyFile()),
+                                "openAiTtsModel",
+                                properties.getProviders().getPostProduction().getOpenAiTtsModel(),
+                                "openAiTtsVoice",
+                                properties.getProviders().getPostProduction().getOpenAiTtsVoice()),
+                        "luma", Map.of(
+                                "enabled", properties.getProviders().getLuma().isEnabled(),
+                                "acceptedNames", properties.getProviders().getLuma().getAcceptedNames(),
+                                "openAiReferenceImageEnabled",
+                                properties.getProviders().getLuma().isOpenAiReferenceImageEnabled(),
+                                "openAiApiKeyConfigured",
+                                hasText(properties.getProviders().getLuma().getOpenAiApiKey())
+                                        || hasText(properties.getProviders().getLuma().getOpenAiApiKeyFile()),
+                                "openAiImageModel",
+                                properties.getProviders().getLuma().getOpenAiImageModel(),
+                                "openAiImageToolModel",
+                                properties.getProviders().getLuma().getOpenAiImageToolModel()))
         );
     }
 

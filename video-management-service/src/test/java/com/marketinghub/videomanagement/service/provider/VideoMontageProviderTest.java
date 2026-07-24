@@ -24,11 +24,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
-/** Responsabilidade: validar a pós-produção local de vídeos de venda. */
-class PostProductionVideoProviderTest {
+/** Responsabilidade: validar a montagem local de múltiplos clipes de venda. */
+class VideoMontageProviderTest {
     private MockWebServer server;
 
-    /** Inicializa o servidor HTTP usado para entregar o MP4 fonte. */
+    /** Inicializa o servidor HTTP usado para entregar clipes fonte. */
     @BeforeEach
     void setUp() throws Exception {
         server = new MockWebServer();
@@ -41,58 +41,28 @@ class PostProductionVideoProviderTest {
         server.shutdown();
     }
 
-    /** Deve baixar o vídeo bruto e devolver MP4 final com legenda VTT e metadados comerciais. */
+    /** Deve baixar dois clipes e devolver MP4 único com metadata de montagem. */
     @Test
-    void shouldPostProduceVideoWithVoiceCaptionsAndMusicMetadata() throws Exception {
+    void shouldCreateMontageFromMultipleSourceVideos() throws Exception {
+        server.enqueue(mp4Response());
         server.enqueue(mp4Response());
         VideoManagementProperties properties = properties();
-        PostProductionVideoProvider provider =
-                new PostProductionVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+        VideoMontageProvider provider =
+                new VideoMontageProvider(properties, new ObjectMapper(), WebClient.builder());
 
         ProviderArtifacts artifacts = provider.render(job(), profile(), (percent, status, message) -> { });
 
         assertThat(provider.supports(job())).isTrue();
-        assertThat(artifacts.providerJobId()).isEqualTo("post-production-55");
+        assertThat(artifacts.providerJobId()).isEqualTo("montage-77");
         assertThat(artifacts.videoFile().assetType()).isEqualTo(AssetType.VIDEO);
-        assertThat(artifacts.videoFile().fileName()).isEqualTo("sales-video-55-musa-final.mp4");
-        assertThat(artifacts.captionFile().assetType()).isEqualTo(AssetType.CAPTION);
-        assertThat(new String(artifacts.captionFile().content())).contains("WEBVTT", "Pare de se sentir comum");
+        assertThat(artifacts.videoFile().fileName()).isEqualTo("sales-video-77-musa-montage.mp4");
         assertThat(artifacts.metadata())
-                .containsEntry("provider", "MUSA_POST_PRODUCTION")
-                .containsEntry("duration_seconds", 30)
-                .containsKey("audio")
-                .containsKey("captions");
-        assertThat(artifacts.metadata().get("audio").toString())
-                .contains("BLOCKED_FOR_CAMPAIGN", "synthetic_local");
-        assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
-    }
-
-    /** Deve priorizar OpenAI TTS para evitar voz robótica quando a chave estiver configurada. */
-    @Test
-    void shouldUseOpenAiTtsWhenConfigured() throws Exception {
-        server.enqueue(mp4Response());
-        server.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "audio/mpeg")
-                .setBody(new Buffer().write(new byte[] {1, 2, 3, 4})));
-        VideoManagementProperties properties = properties();
-        properties.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
-        properties.getProviders().getPostProduction().setOpenAiApiKey("test-key");
-        properties.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(server.url("/").toString()));
-        PostProductionVideoProvider provider =
-                new PostProductionVideoProvider(properties, new ObjectMapper(), WebClient.builder());
-
-        ProviderArtifacts artifacts = provider.render(job(), profile(), (percent, status, message) -> { });
-
-        assertThat(artifacts.metadata().get("audio").toString())
-                .contains("OPENAI_TTS", "natural_tts_candidate")
-                .doesNotContain("synthetic_local");
-        assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
-        var openAiRequest = server.takeRequest();
-        assertThat(openAiRequest.getPath()).isEqualTo("/audio/speech");
-        assertThat(openAiRequest.getHeader("Authorization")).isEqualTo("Bearer test-key");
-        assertThat(openAiRequest.getBody().readUtf8())
-                .contains("gpt-4o-mini-tts", "nova", "Você se arruma");
+                .containsEntry("provider", "MUSA_VIDEO_MONTAGE")
+                .containsEntry("source_count", 2)
+                .containsEntry("resolution", "720x1280")
+                .containsKey("audio");
+        assertThat(server.takeRequest().getPath()).isEqualTo("/source/scene-1.mp4");
+        assertThat(server.takeRequest().getPath()).isEqualTo("/source/scene-2.mp4");
     }
 
     /** Cria uma resposta MP4 mínima para o download fonte. */
@@ -105,49 +75,24 @@ class PostProductionVideoProviderTest {
                 }));
     }
 
-    /** Configura o provider com binários fake para manter o teste determinístico. */
+    /** Configura o provider com ffmpeg fake para manter o teste determinístico. */
     private VideoManagementProperties properties() throws Exception {
         VideoManagementProperties properties = new VideoManagementProperties();
         properties.setBackendBaseUrl(URI.create(server.url("/").toString()));
         properties.getProviders().getPostProduction().setEnabled(true);
-        properties.getProviders().getPostProduction().setEspeakPath(fakeEspeak().toString());
         properties.getProviders().getPostProduction().setFfmpegPath(fakeFfmpeg().toString());
-        properties.getProviders().getPostProduction().setFontFile("/tmp/fake-font.ttf");
         return properties;
     }
 
-    /** Cria um script executável que simula voz off em WAV. */
-    private Path fakeEspeak() throws Exception {
-        Path script = Files.createTempFile("fake-espeak", ".sh");
-        Files.writeString(script, """
-                #!/bin/sh
-                output=""
-                previous=""
-                for arg in "$@"; do
-                  if [ "$previous" = "-w" ]; then output="$arg"; fi
-                  previous="$arg"
-                done
-                printf 'RIFF....WAVEfmt ' > "$output"
-                exit 0
-                """);
-        script.toFile().setExecutable(true);
-        return script;
-    }
-
-    /** Cria um script executável que simula ffmpeg escrevendo MP4 final. */
+    /** Cria um script executável que simula normalização e concatenação por ffmpeg. */
     private Path fakeFfmpeg() throws Exception {
-        Path script = Files.createTempFile("fake-ffmpeg-post", ".sh");
+        Path script = Files.createTempFile("fake-ffmpeg-montage", ".sh");
         Files.writeString(script, """
                 #!/bin/sh
                 output=""
                 for arg in "$@"; do
                   output="$arg"
                 done
-                if [ "$output" = "-" ]; then
-                  echo '    I:         -26.3 LUFS'
-                  echo '    Peak:       -7.6 dBFS'
-                  exit 0
-                fi
                 printf '\\000\\000\\000\\040ftypisom\\000\\000\\002\\000' > "$output"
                 exit 0
                 """);
@@ -155,15 +100,15 @@ class PostProductionVideoProviderTest {
         return script;
     }
 
-    /** Cria um job de pós-produção com vídeo fonte e textos comerciais. */
+    /** Cria um job de montagem com dois clipes fonte. */
     private SalesVideoJob job() {
         return new SalesVideoJob(
-                55L,
+                77L,
                 2L,
                 3L,
                 "tenant-a",
                 SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
-                "MUSA_POST_PRODUCTION",
+                "MUSA_VIDEO_MONTAGE",
                 null,
                 SalesVideoJobType.POST_PRODUCTION,
                 SalesVideoStatus.VIDEO_REQUESTED,
@@ -184,11 +129,11 @@ class PostProductionVideoProviderTest {
                 null,
                 """
                         {
-                          "artifactType": "experiment.videoPostProductionRequest.v1",
-                          "experimentVideoAssetId": 5,
-                          "sourceVideoUrl": "/source/musa.mp4",
-                          "voiceOverScript": "Você se arruma e sente que falta presença. Veja seu plano MUSA.",
-                          "captionText": "Pare de se sentir comum no espelho. Veja seu plano MUSA de 7 dias."
+                          "sourceJobIds": [10, 11],
+                          "sourceVideos": [
+                            {"sourceJobId": 10, "sourceVideoUrl": "/source/scene-1.mp4"},
+                            {"sourceJobId": 11, "sourceVideoUrl": "/source/scene-2.mp4"}
+                          ]
                         }
                         """,
                 Instant.now(),

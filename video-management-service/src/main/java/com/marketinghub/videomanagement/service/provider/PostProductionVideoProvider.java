@@ -9,6 +9,7 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.springframework.http.HttpHeaders;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +41,7 @@ public class PostProductionVideoProvider implements VideoProvider {
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
     private final WebClient downloadWebClient;
+    private final WebClient openAiWebClient;
 
     /** Inicializa o provider de pós-produção com configuração e cliente de download. */
     public PostProductionVideoProvider(VideoManagementProperties properties,
@@ -48,6 +51,12 @@ public class PostProductionVideoProvider implements VideoProvider {
         this.objectMapper = objectMapper;
         this.downloadWebClient = webClientBuilder.clone()
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
+                .exchangeStrategies(ExchangeStrategies.builder()
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
+                        .build())
+                .build();
+        this.openAiWebClient = webClientBuilder.clone()
+                .baseUrl(properties.getProviders().getPostProduction().getOpenAiBaseUrl().toString())
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
@@ -82,14 +91,16 @@ public class PostProductionVideoProvider implements VideoProvider {
         try {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
-            voice = Files.createTempFile("sales-video-" + job.id() + "-voiceover", ".wav");
+            VoiceOverAudio voiceOverAudio = generateVoiceOver(voiceOverScript, job.id());
+            voice = voiceOverAudio.file();
             caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".txt");
             output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
             Files.writeString(caption, wrapCaption(captionText), StandardCharsets.UTF_8);
-            progressCallback.onProgress(35, SalesVideoStatus.VIDEO_PROCESSING, "Gerando voz off em português");
-            runEspeak(voiceOverScript, voice);
+            progressCallback.onProgress(35, SalesVideoStatus.VIDEO_PROCESSING, "Voz off em português gerada por "
+                    + voiceOverAudio.providerLabel());
             progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda e trilha leve");
             runFfmpeg(source, voice, caption, output);
+            Map<String, Object> audioReview = reviewAudio(output, voiceOverScript, voiceOverAudio);
             ProviderFile video = new ProviderFile(
                     "sales-video-" + job.id() + "-musa-final.mp4",
                     VIDEO_MP4,
@@ -102,7 +113,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                     AssetType.CAPTION,
                     ProviderAssetRole.CAPTION,
                     buildVtt(captionText));
-            Map<String, Object> resultMetadata = resultMetadata(job, metadata, captionText, voiceOverScript);
+            Map<String, Object> resultMetadata = resultMetadata(job, metadata, captionText, voiceOverScript, audioReview);
             progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Vídeo finalizado para venda");
             return new ProviderArtifacts("post-production-" + job.id(), video, null, captions, resultMetadata);
         } catch (IOException ex) {
@@ -130,6 +141,47 @@ public class PostProductionVideoProvider implements VideoProvider {
         Path source = Files.createTempFile("sales-video-" + job.id() + "-source", ".mp4");
         Files.write(source, content);
         return source;
+    }
+
+    /** Gera a voz off usando OpenAI TTS quando configurado, com fallback local explícito. */
+    private VoiceOverAudio generateVoiceOver(String voiceOverScript, Long jobId) throws IOException {
+        VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        if (config.isOpenAiTtsEnabled() && StringUtils.hasText(resolveOpenAiApiKey())) {
+            Path voice = Files.createTempFile("sales-video-" + jobId + "-voiceover-openai", "."
+                    + config.getOpenAiTtsResponseFormat());
+            runOpenAiTts(voiceOverScript, voice);
+            return new VoiceOverAudio(voice, "OPENAI_TTS", config.getOpenAiTtsModel(), config.getOpenAiTtsVoice());
+        }
+        Path voice = Files.createTempFile("sales-video-" + jobId + "-voiceover-espeak", ".wav");
+        runEspeak(voiceOverScript, voice);
+        return new VoiceOverAudio(voice, "ESPEAK_NG", "espeak-ng", config.getEspeakVoice());
+    }
+
+    /** Gera o áudio de voz off usando a API de Speech da OpenAI. */
+    private void runOpenAiTts(String voiceOverScript, Path voiceFile) throws IOException {
+        VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", config.getOpenAiTtsModel());
+        payload.put("voice", config.getOpenAiTtsVoice());
+        payload.put("input", voiceOverScript);
+        payload.put("response_format", config.getOpenAiTtsResponseFormat());
+        if (StringUtils.hasText(config.getOpenAiTtsInstructions())) {
+            payload.put("instructions", config.getOpenAiTtsInstructions());
+        }
+        ResponseEntity<byte[]> response = openAiWebClient.post()
+                .uri("/audio/speech")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + resolveOpenAiApiKey())
+                .accept(MediaType.APPLICATION_OCTET_STREAM)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(payload)
+                .retrieve()
+                .toEntity(byte[].class)
+                .block();
+        byte[] content = response == null ? null : response.getBody();
+        if (content == null || content.length == 0) {
+            throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", "OpenAI TTS retornou áudio vazio");
+        }
+        Files.write(voiceFile, content);
     }
 
     /** Gera o áudio de voz off usando binário versionado na imagem do worker. */
@@ -175,7 +227,7 @@ public class PostProductionVideoProvider implements VideoProvider {
     }
 
     /** Executa um processo externo e converte falhas em erro operacional claro. */
-    private void runProcess(List<String> command, String failureMessage) {
+    private String runProcess(List<String> command, String failureMessage) {
         try {
             Process process = new ProcessBuilder(command)
                     .redirectErrorStream(true)
@@ -186,6 +238,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED",
                         failureMessage + "; exitCode=" + exitCode + "; output=" + output);
             }
+            return output;
         } catch (IOException ex) {
             throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", failureMessage, ex);
         } catch (InterruptedException ex) {
@@ -260,16 +313,146 @@ public class PostProductionVideoProvider implements VideoProvider {
         return vtt.getBytes(StandardCharsets.UTF_8);
     }
 
+    /** Revisa o áudio final com métricas objetivas e decisão comercial para mobile. */
+    private Map<String, Object> reviewAudio(Path output, String voiceOverScript, VoiceOverAudio voiceOverAudio) {
+        try {
+            VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+            String outputText = runProcess(List.of(
+                    config.getFfmpegPath(),
+                    "-hide_banner",
+                    "-nostats",
+                    "-i", output.toAbsolutePath().toString(),
+                    "-filter_complex", "ebur128=peak=true",
+                    "-f", "null",
+                    "-"),
+                    "ffmpeg falhou ao revisar áudio final");
+            return buildAudioReview(outputText, voiceOverScript, voiceOverAudio);
+        } catch (RuntimeException ex) {
+            Map<String, Object> review = new LinkedHashMap<>();
+            review.put("status", "REVIEW_UNAVAILABLE");
+            review.put("label", "Revisão de áudio indisponível");
+            review.put("recommendation",
+                    "Ouvir manualmente antes de campanha; a análise automática não conseguiu ler o áudio final.");
+            review.put("error", ex.getMessage());
+            return review;
+        }
+    }
+
+    /** Monta o parecer de áudio a partir da saída do filtro ebur128 do ffmpeg. */
+    private Map<String, Object> buildAudioReview(String ffmpegOutput,
+                                                 String voiceOverScript,
+                                                 VoiceOverAudio voiceOverAudio) {
+        Double integratedLufs = parseLastMetric(ffmpegOutput, "I:\\s*([-+]?\\d+(?:\\.\\d+)?)\\s+LUFS");
+        Double truePeakDbfs = parseLastMetric(ffmpegOutput, "Peak:\\s*([-+]?\\d+(?:\\.\\d+)?)\\s+dBFS");
+        boolean syntheticVoice = voiceOverAudio.isSyntheticLocal();
+        String status = resolveAudioReviewStatus(integratedLufs, truePeakDbfs, syntheticVoice);
+        Map<String, Object> metrics = new LinkedHashMap<>();
+        metrics.put("integrated_lufs", integratedLufs);
+        metrics.put("true_peak_dbfs", truePeakDbfs);
+        metrics.put("target_lufs_min", -18);
+        metrics.put("target_lufs_max", -16);
+        Map<String, Object> review = new LinkedHashMap<>();
+        review.put("status", status);
+        review.put("label", audioReviewLabel(status));
+        review.put("provider", voiceOverAudio.provider());
+        review.put("model", voiceOverAudio.model());
+        review.put("voice", voiceOverAudio.voice());
+        review.put("voice_quality", syntheticVoice ? "synthetic_local" : "natural_tts_candidate");
+        review.put("metrics", metrics);
+        review.put("script_character_count", voiceOverScript == null ? 0 : voiceOverScript.length());
+        review.put("issues", audioReviewIssues(integratedLufs, truePeakDbfs, syntheticVoice));
+        review.put("recommendation", audioReviewRecommendation(status, syntheticVoice));
+        return review;
+    }
+
+    /** Decide o status comercial do áudio para anúncio mobile. */
+    private String resolveAudioReviewStatus(Double integratedLufs, Double truePeakDbfs, boolean syntheticVoice) {
+        if (syntheticVoice) {
+            return "BLOCKED_FOR_CAMPAIGN";
+        }
+        if (integratedLufs == null || truePeakDbfs == null) {
+            return "NEEDS_HUMAN_REVIEW";
+        }
+        if (integratedLufs < -20 || integratedLufs > -12 || truePeakDbfs > -1) {
+            return "NEEDS_ADJUSTMENT";
+        }
+        return "APPROVED_FOR_TEST";
+    }
+
+    /** Nomeia o status para leitura direta na tela. */
+    private String audioReviewLabel(String status) {
+        return switch (status) {
+            case "BLOCKED_FOR_CAMPAIGN" -> "Bloqueado: voz robótica";
+            case "NEEDS_ADJUSTMENT" -> "Ajustar volume";
+            case "APPROVED_FOR_TEST" -> "Apto para teste";
+            case "REVIEW_UNAVAILABLE" -> "Revisão indisponível";
+            default -> "Revisão humana necessária";
+        };
+    }
+
+    /** Lista os problemas encontrados na avaliação automática de áudio. */
+    private List<String> audioReviewIssues(Double integratedLufs, Double truePeakDbfs, boolean syntheticVoice) {
+        java.util.ArrayList<String> issues = new java.util.ArrayList<>();
+        if (syntheticVoice) {
+            issues.add("Voz gerada por síntese local simples; tende a soar robótica em anúncio mobile.");
+        }
+        if (integratedLufs != null && integratedLufs < -20) {
+            issues.add("Volume médio abaixo do recomendado para feed e reels.");
+        }
+        if (integratedLufs != null && integratedLufs > -12) {
+            issues.add("Volume médio alto demais; pode soar agressivo ou distorcido.");
+        }
+        if (truePeakDbfs != null && truePeakDbfs > -1) {
+            issues.add("Pico muito próximo de clipping; precisa normalização com margem de segurança.");
+        }
+        if (issues.isEmpty()) {
+            issues.add("Métricas técnicas dentro de faixa aceitável; ainda exige escuta humana do tom da voz.");
+        }
+        return issues;
+    }
+
+    /** Define a recomendação comercial do áudio final. */
+    private String audioReviewRecommendation(String status, boolean syntheticVoice) {
+        if (syntheticVoice) {
+            return "Não usar como versão final de campanha. Trocar para provedor de voz natural e manter este render apenas como protótipo.";
+        }
+        if ("NEEDS_ADJUSTMENT".equals(status)) {
+            return "Normalizar o áudio antes de publicar, mirando -16 a -18 LUFS e pico seguro próximo de -1 dBFS.";
+        }
+        if ("APPROVED_FOR_TEST".equals(status)) {
+            return "Pode entrar em teste controlado, com revisão humana final de emoção, ritmo e CTA.";
+        }
+        return "Ouvir manualmente e, se a narração parecer artificial, refazer a voz antes do experimento.";
+    }
+
+    /** Extrai a última ocorrência numérica de uma métrica no log do ffmpeg. */
+    private Double parseLastMetric(String output, String regex) {
+        if (output == null) {
+            return null;
+        }
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(regex).matcher(output);
+        Double value = null;
+        while (matcher.find()) {
+            value = Double.valueOf(matcher.group(1));
+        }
+        return value;
+    }
+
     /** Consolida metadados de saída da pós-produção. */
     private Map<String, Object> resultMetadata(SalesVideoJob job,
                                                JsonNode sourceMetadata,
                                                String captionText,
-                                               String voiceOverScript) {
+                                               String voiceOverScript,
+                                               Map<String, Object> audioReview) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "MUSA_POST_PRODUCTION");
         metadata.put("provider_job_id", "post-production-" + job.id());
         metadata.put("duration_seconds", 30);
-        metadata.put("audio", Map.of("voice_over", true, "language", "pt-BR", "music", "synthetic_light_bed"));
+        metadata.put("audio", Map.of(
+                "voice_over", true,
+                "language", "pt-BR",
+                "music", "synthetic_light_bed",
+                "review", audioReview));
         metadata.put("captions", Map.of("burned_in", true, "vtt_asset", true, "text", captionText));
         metadata.put("voice_over_script", voiceOverScript);
         metadata.put("source_experiment_video_asset_id", sourceMetadata.path("experimentVideoAssetId").asLong());
@@ -296,6 +479,39 @@ public class PostProductionVideoProvider implements VideoProvider {
             Files.deleteIfExists(path);
         } catch (IOException ignored) {
             // Arquivo temporário residual não deve mascarar o resultado do job.
+        }
+    }
+
+    /** Resolve a chave OpenAI por valor direto ou arquivo de secret montado no container. */
+    private String resolveOpenAiApiKey() {
+        VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        if (StringUtils.hasText(config.getOpenAiApiKey())) {
+            return config.getOpenAiApiKey().trim();
+        }
+        if (!StringUtils.hasText(config.getOpenAiApiKeyFile())) {
+            return "";
+        }
+        try {
+            Path path = Path.of(config.getOpenAiApiKeyFile().trim());
+            if (!Files.isReadable(path)) {
+                return "";
+            }
+            return Files.readString(path).trim();
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Não foi possível ler OPENAI_API_KEY_FILE para TTS", ex);
+        }
+    }
+
+    /** Descreve o arquivo de voz off gerado para auditoria da pós-produção. */
+    private record VoiceOverAudio(Path file, String provider, String model, String voice) {
+        /** Retorna o rótulo operacional do provedor de voz. */
+        String providerLabel() {
+            return provider + "/" + voice;
+        }
+
+        /** Indica se a voz veio do fallback local robótico. */
+        boolean isSyntheticLocal() {
+            return "ESPEAK_NG".equals(provider);
         }
     }
 }

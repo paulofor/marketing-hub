@@ -5,12 +5,14 @@ import {
   BadgeDollarSign,
   Clapperboard,
   FileText,
+  Layers,
   PlayCircle,
   RefreshCcw,
   Save,
   ShieldCheck,
   Sparkles,
   Video,
+  Volume2,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
@@ -22,6 +24,7 @@ import { useCreateSalesVideoProfile } from "../../api/salesVideo/useCreateSalesV
 import { useProductSalesVideoJobs } from "../../api/salesVideo/useProductSalesVideoJobs";
 import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSalesVideoScript";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
+import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
 import { useRequestSalesVideoPostProduction } from "../../api/salesVideo/useRequestSalesVideoPostProduction";
 import { useTenantContext } from "../../utils/tenantContext";
 import {
@@ -59,6 +62,9 @@ const DEFAULT_POST_PRODUCTION_VOICE = [
 
 const DEFAULT_POST_PRODUCTION_CAPTION =
   "Presença elegante começa com pequenos sinais. Veja seu Plano MUSA de 7 dias.";
+
+const DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT =
+  "Imagem-base MUSA anti-sensualizacao: mulher brasileira adulta em um ambiente claro e cotidiano, organizando roupa e anotacoes do plano, postura natural, expressao de alivio e clareza, elegancia acessivel, sem pose sedutora, sem foco corporal, sem luxo ostensivo.";
 
 type ProfileFormState = {
   videoKind: SalesVideoKind;
@@ -100,12 +106,19 @@ export default function ProductSalesVideoPage() {
   const [visualProviderDirectives, setVisualProviderDirectives] = useState(
     DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
   );
+  const [openAiReferenceImageEnabled, setOpenAiReferenceImageEnabled] =
+    useState(false);
+  const [openAiReferenceImagePrompt, setOpenAiReferenceImagePrompt] = useState(
+    DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT,
+  );
+  const [referenceImageCount, setReferenceImageCount] = useState("1");
   const [postProductionVoiceOver, setPostProductionVoiceOver] = useState(
     DEFAULT_POST_PRODUCTION_VOICE,
   );
   const [postProductionCaption, setPostProductionCaption] = useState(
     DEFAULT_POST_PRODUCTION_CAPTION,
   );
+  const [montageJobIds, setMontageJobIds] = useState<string[]>([]);
   const [profileForm, setProfileForm] =
     useState<ProfileFormState>(emptyProfileForm);
   const [scriptText, setScriptText] = useState(DEFAULT_SCRIPT);
@@ -114,6 +127,7 @@ export default function ProductSalesVideoPage() {
     selectedProfileId || undefined,
   );
   const requestRender = useRequestVideoRender(selectedProfileId || undefined);
+  const requestMontage = useRequestSalesVideoMontage(productId);
 
   const profileList = useMemo(() => profiles ?? [], [profiles]);
   const jobList = useMemo(() => jobs ?? [], [jobs]);
@@ -162,6 +176,9 @@ export default function ProductSalesVideoPage() {
   const selectedVisualQuality = selectedVideoJob
     ? assessVideoVisualQuality(selectedProfile, selectedVideoJob)
     : undefined;
+  const selectedAudioQuality = selectedVideoJob
+    ? assessVideoAudioQuality(selectedVideoJob)
+    : undefined;
   const productCost = useMemo(
     () => summarizeProductVideoCost(jobList),
     [jobList],
@@ -184,6 +201,14 @@ export default function ProductSalesVideoPage() {
       );
     }
   }, [existingVideoJobs, selectedJobId]);
+
+  useEffect(() => {
+    setMontageJobIds((current) =>
+      current.filter((jobId) =>
+        existingVideoJobs.some((job) => String(job.id) === jobId),
+      ),
+    );
+  }, [existingVideoJobs]);
 
   if (!productId) {
     return (
@@ -262,7 +287,12 @@ export default function ProductSalesVideoPage() {
         executionMode: "TEST",
         metadataJson: buildSalesVideoRenderMetadata(
           selectedProvider,
-          visualProviderDirectives,
+          {
+            visualProviderDirectives,
+            openAiReferenceImageEnabled,
+            openAiReferenceImagePrompt,
+            referenceImageCount: Number(referenceImageCount),
+          },
         ),
       });
       toast.success("Geração de vídeo solicitada");
@@ -295,6 +325,33 @@ export default function ProductSalesVideoPage() {
         error instanceof Error
           ? error.message
           : "Falha ao solicitar pós-produção",
+      );
+    }
+  };
+
+  const handleToggleMontageJob = (jobId: number) => {
+    const key = String(jobId);
+    setMontageJobIds((current) =>
+      current.includes(key)
+        ? current.filter((selectedId) => selectedId !== key)
+        : [...current, key],
+    );
+  };
+
+  const handleRequestMontage = async () => {
+    if (montageJobIds.length < 2) {
+      toast.error("Selecione pelo menos dois vídeos prontos para montar");
+      return;
+    }
+    try {
+      await requestMontage.mutateAsync({
+        requestedBy: tenantContext.userEmail,
+        sourceJobIds: montageJobIds.map(Number),
+      });
+      toast.success("Montagem de clipes solicitada");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Falha ao solicitar montagem",
       );
     }
   };
@@ -581,6 +638,40 @@ export default function ProductSalesVideoPage() {
                   </ul>
                 </div>
               ) : null}
+              {selectedAudioQuality ? (
+                <div
+                  className={`product-video-page__quality product-video-page__quality--${selectedAudioQuality.status}`}
+                >
+                  <div className="product-video-page__quality-header">
+                    {selectedAudioQuality.status === "approved" ? (
+                      <Volume2 size={18} aria-hidden="true" />
+                    ) : (
+                      <AlertTriangle size={18} aria-hidden="true" />
+                    )}
+                    <div>
+                      <span>Revisão de áudio</span>
+                      <strong>{selectedAudioQuality.label}</strong>
+                    </div>
+                  </div>
+                  <p>{selectedAudioQuality.recommendation}</p>
+                  <div className="product-video-page__audio-metrics">
+                    <span>
+                      LUFS:{" "}
+                      {formatAudioMetric(selectedAudioQuality.integratedLufs)}
+                    </span>
+                    <span>
+                      Pico:{" "}
+                      {formatAudioMetric(selectedAudioQuality.truePeakDbfs)}
+                    </span>
+                    <span>Voz: {selectedAudioQuality.voiceQuality}</span>
+                  </div>
+                  <ul>
+                    {selectedAudioQuality.issues.map((issue) => (
+                      <li key={issue}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <div className="product-video-page__hero-actions">
                 {selectedProfile ? (
                   <Link
@@ -655,6 +746,58 @@ export default function ProductSalesVideoPage() {
                 <strong>{selectedProvider.label}</strong>
                 <span>{selectedProvider.recommendedUse}</span>
               </div>
+              {selectedProvider.supportsOpenAiReferenceImage ? (
+                <div className="product-video-page__reference-image-box">
+                  <label className="product-video-page__toggle">
+                    <input
+                      type="checkbox"
+                      checked={openAiReferenceImageEnabled}
+                      onChange={(event) =>
+                        setOpenAiReferenceImageEnabled(event.target.checked)
+                      }
+                    />
+                    <span>Gerar imagem-base com OpenAI antes da Luma</span>
+                  </label>
+                  <div className="product-video-page__inline-fields">
+                    <div>
+                      <label
+                        className="form-label"
+                        htmlFor="reference-image-count"
+                      >
+                        Imagens base
+                      </label>
+                      <select
+                        id="reference-image-count"
+                        className="form-select"
+                        value={referenceImageCount}
+                        onChange={(event) =>
+                          setReferenceImageCount(event.target.value)
+                        }
+                        disabled={!openAiReferenceImageEnabled}
+                      >
+                        <option value="1">1 imagem inicial</option>
+                        <option value="2">2 imagens: início e fim</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label
+                    className="form-label"
+                    htmlFor="openai-reference-image-prompt"
+                  >
+                    Prompt da imagem-base
+                  </label>
+                  <textarea
+                    id="openai-reference-image-prompt"
+                    className="form-control"
+                    rows={5}
+                    value={openAiReferenceImagePrompt}
+                    onChange={(event) =>
+                      setOpenAiReferenceImagePrompt(event.target.value)
+                    }
+                    disabled={!openAiReferenceImageEnabled}
+                  />
+                </div>
+              ) : null}
               <label
                 className="form-label"
                 htmlFor="visual-provider-directives"
@@ -687,6 +830,46 @@ export default function ProductSalesVideoPage() {
               <div className="product-video-page__panel-heading">
                 <Sparkles size={18} aria-hidden="true" />
                 <strong>Pós-produção</strong>
+              </div>
+              <div className="product-video-page__montage-box">
+                <div className="product-video-page__panel-heading">
+                  <Layers size={17} aria-hidden="true" />
+                  <strong>Montagem de clipes</strong>
+                </div>
+                <span>
+                  {montageJobIds.length} vídeo(s) selecionado(s) para sequência.
+                </span>
+                <div className="product-video-page__montage-list">
+                  {existingVideoJobs.map((job) => (
+                    <label
+                      key={job.id}
+                      className="product-video-page__montage-checkbox"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={montageJobIds.includes(String(job.id))}
+                        onChange={() => handleToggleMontageJob(job.id)}
+                      />
+                      <span>
+                        Job #{job.id} ·{" "}
+                        {profileTitle(profileList, job.profileId)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={handleRequestMontage}
+                  disabled={
+                    montageJobIds.length < 2 || requestMontage.isPending
+                  }
+                >
+                  <Layers size={16} aria-hidden="true" />
+                  {requestMontage.isPending
+                    ? "Solicitando..."
+                    : "Montar clipes"}
+                </button>
               </div>
               <label className="form-label" htmlFor="post-production-voice">
                 Voz off
@@ -1119,12 +1302,23 @@ function containsAny(value: string, needles: string[]) {
 }
 
 type VideoVisualQualityStatus = "approved" | "warning" | "blocked";
+type VideoAudioQualityStatus = "approved" | "warning" | "blocked";
 
 type VideoVisualQualityAssessment = {
   status: VideoVisualQualityStatus;
   label: string;
   issues: string[];
   recommendation: string;
+};
+
+type VideoAudioQualityAssessment = {
+  status: VideoAudioQualityStatus;
+  label: string;
+  issues: string[];
+  recommendation: string;
+  integratedLufs?: number | null;
+  truePeakDbfs?: number | null;
+  voiceQuality: string;
 };
 
 function assessVideoVisualQuality(
@@ -1300,6 +1494,142 @@ function assessKnownMusaVisualIssue(
   return null;
 }
 
+function assessVideoAudioQuality(
+  job: SalesVideoJob,
+): VideoAudioQualityAssessment | null {
+  const metadata = parseJsonObject(job.metadataJson);
+  const audio = readJsonObject(metadata?.audio);
+  const review = readJsonObject(audio?.review);
+  const statusText = String(review?.status ?? "").toUpperCase();
+  const providerText = [job.providerName, job.providerJobId, job.metadataJson]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (review) {
+    return {
+      status: mapAudioReviewStatus(statusText),
+      label: String(review.label ?? audioReviewFallbackLabel(statusText)),
+      issues: readStringArray(review.issues),
+      recommendation: String(
+        review.recommendation ??
+          "Ouvir manualmente antes de liberar o vídeo para campanha.",
+      ),
+      integratedLufs: readNestedNumber(review, ["metrics", "integrated_lufs"]),
+      truePeakDbfs: readNestedNumber(review, ["metrics", "true_peak_dbfs"]),
+      voiceQuality: describeVoiceQuality(String(review.voice_quality ?? "")),
+    };
+  }
+
+  if (
+    providerText.includes("post-production") ||
+    providerText.includes("musa_post_production")
+  ) {
+    return {
+      status: "blocked",
+      label: "Áudio sem revisão nova",
+      issues: [
+        "Este vídeo foi finalizado antes da revisão automática de áudio.",
+        "O fluxo atual usa voz sintética local, que tende a soar robótica.",
+      ],
+      recommendation:
+        "Não liberar como peça final. Reprocessar após plugar voz natural ou ouvir manualmente antes do experimento.",
+      integratedLufs: null,
+      truePeakDbfs: null,
+      voiceQuality: "sintética/local provável",
+    };
+  }
+
+  if (isLumaJob(job)) {
+    return {
+      status: "warning",
+      label: "Sem áudio nativo",
+      issues: [
+        "Luma gera vídeo bruto; áudio precisa vir da pós-produção ou de provedor de voz.",
+      ],
+      recommendation:
+        "Usar Luma apenas como base visual e finalizar com voz natural antes de campanha.",
+      integratedLufs: null,
+      truePeakDbfs: null,
+      voiceQuality: "ausente no render bruto",
+    };
+  }
+
+  return null;
+}
+
+function mapAudioReviewStatus(status: string): VideoAudioQualityStatus {
+  if (status === "APPROVED_FOR_TEST") {
+    return "approved";
+  }
+  if (status === "BLOCKED_FOR_CAMPAIGN") {
+    return "blocked";
+  }
+  return "warning";
+}
+
+function audioReviewFallbackLabel(status: string) {
+  if (status === "APPROVED_FOR_TEST") {
+    return "Apto para teste";
+  }
+  if (status === "BLOCKED_FOR_CAMPAIGN") {
+    return "Bloqueado para campanha";
+  }
+  return "Revisão humana necessária";
+}
+
+function describeVoiceQuality(value: string) {
+  if (value === "synthetic_local") {
+    return "sintética/local";
+  }
+  return value || "não informada";
+}
+
+function parseJsonObject(json: string | null | undefined) {
+  if (!json) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    return readJsonObject(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function readJsonObject(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function readStringArray(value: unknown) {
+  if (!Array.isArray(value)) {
+    return ["Ouvir manualmente antes de liberar para campanha."];
+  }
+  return value
+    .map((item) => String(item))
+    .filter((item) => item.trim().length > 0);
+}
+
+function readNestedNumber(
+  object: Record<string, unknown>,
+  path: string[],
+): number | null {
+  let current: unknown = object;
+  for (const field of path) {
+    const currentObject = readJsonObject(current);
+    if (!currentObject) {
+      return null;
+    }
+    current = currentObject[field];
+  }
+  return typeof current === "number" && Number.isFinite(current)
+    ? current
+    : null;
+}
+
 function isLumaJob(job: SalesVideoJob) {
   return [job.providerName, job.providerJobId, job.metadataJson]
     .filter(Boolean)
@@ -1355,6 +1685,13 @@ function formatBrl(value: number) {
     currency: "BRL",
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatAudioMetric(value?: number | null) {
+  if (value == null) {
+    return "—";
+  }
+  return value.toFixed(1);
 }
 
 function formatDate(value?: string | null) {

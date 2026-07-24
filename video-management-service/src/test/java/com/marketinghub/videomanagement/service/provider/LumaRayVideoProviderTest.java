@@ -2,8 +2,13 @@ package com.marketinghub.videomanagement.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.videomanagement.client.VideoAssetClient;
+import com.marketinghub.videomanagement.client.dto.AssetResponse;
 import com.marketinghub.videomanagement.client.dto.AssetType;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJobType;
@@ -59,7 +64,11 @@ class LumaRayVideoProviderTest {
                     """.formatted(i, server.url("/").toString().replaceAll("/$", ""), i, i)));
             server.enqueue(mp4Response());
         }
-        LumaRayVideoProvider provider = new LumaRayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        LumaRayVideoProvider provider = new LumaRayVideoProvider(
+                properties(),
+                new ObjectMapper(),
+                mock(VideoAssetClient.class),
+                WebClient.builder());
 
         ProviderArtifacts artifacts = provider.render(job(), profile(), (percent, status, message) -> { });
 
@@ -94,11 +103,75 @@ class LumaRayVideoProviderTest {
     void shouldRejectMissingLumaApiKey() throws Exception {
         VideoManagementProperties properties = properties();
         properties.getProviders().getLuma().setApiKey("");
-        LumaRayVideoProvider provider = new LumaRayVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+        LumaRayVideoProvider provider = new LumaRayVideoProvider(
+                properties,
+                new ObjectMapper(),
+                mock(VideoAssetClient.class),
+                WebClient.builder());
 
         assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> { }))
                 .isInstanceOf(VideoProviderException.class)
                 .hasMessageContaining("LUMA_AGENTS_API_KEY");
+    }
+
+    /** Deve gerar imagem OpenAI, publicar asset e enviar frame inicial para Luma. */
+    @Test
+    void shouldUseOpenAiReferenceImageAsLumaStartFrame() throws Exception {
+        server.enqueue(json("""
+                {
+                  "output": [
+                    {"type": "image_generation_call", "result": "iVBORw0KGgo="}
+                  ]
+                }
+                """));
+        server.enqueue(json("{\"id\":\"generation-1\",\"state\":\"queued\"}"));
+        server.enqueue(json("""
+                {
+                  "id": "generation-1",
+                  "state": "completed",
+                  "output": [{"url": "%s/download/scene-1.mp4"}],
+                  "model": "ray-3.2"
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getLuma().setOpenAiReferenceImageEnabled(true);
+        properties.getProviders().getLuma().setOpenAiApiKey("openai-test-key");
+        properties.getProviders().getLuma().setOpenAiBaseUrl(URI.create(server.url("/").toString()));
+        properties.getProviders().getLuma().setSceneCount(1);
+        VideoAssetClient assetClient = mock(VideoAssetClient.class);
+        when(assetClient.uploadAsset(any(ProviderFile.class), any(String.class)))
+                .thenReturn(new AssetResponse(
+                        99L,
+                        AssetType.IMAGE,
+                        "https://cdn.example.com/reference.png",
+                        null,
+                        null,
+                        Instant.now(),
+                        Instant.now()));
+        LumaRayVideoProvider provider = new LumaRayVideoProvider(
+                properties,
+                new ObjectMapper(),
+                assetClient,
+                WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(imageToVideoJob(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.metadata())
+                .containsEntry("image_to_video_enabled", true);
+        RecordedRequest openAiRequest = server.takeRequest();
+        assertThat(openAiRequest.getPath()).isEqualTo("/responses");
+        assertThat(openAiRequest.getHeader("Authorization")).isEqualTo("Bearer openai-test-key");
+        assertThat(openAiRequest.getBody().readUtf8())
+                .contains("\"service_tier\":\"flex\"")
+                .contains("\"model\":\"gpt-image-2\"")
+                .contains("anti-sensualizacao");
+        RecordedRequest lumaCreate = server.takeRequest();
+        assertThat(lumaCreate.getPath()).isEqualTo("/v1/generations");
+        assertThat(lumaCreate.getBody().readUtf8())
+                .contains("\"keyframes\"")
+                .contains("\"frame0\"")
+                .contains("https://cdn.example.com/reference.png");
     }
 
     /** Mantem o host oficial da Luma Agents como padrao para evitar chamadas ao contrato legado. */
@@ -193,6 +266,53 @@ class LumaRayVideoProviderTest {
                             ]
                           },
                           "visual_provider_directives": "Very sharp image, crisp focus and constant soft natural daylight"
+                        }
+                        """,
+                Instant.now(),
+                Instant.now());
+    }
+
+    /** Cria um job Luma que pede imagem OpenAI antes da animação. */
+    private SalesVideoJob imageToVideoJob() {
+        return new SalesVideoJob(
+                1L,
+                2L,
+                3L,
+                "tenant-a",
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                "LUMA_RAY_3_2",
+                null,
+                SalesVideoJobType.RENDER,
+                SalesVideoStatus.VIDEO_REQUESTED,
+                1,
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                Instant.now(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                """
+                        {
+                          "generation_strategy": "OPENAI_IMAGE_TO_LUMA_VIDEO",
+                          "image_to_video": {
+                            "enabled": true,
+                            "reference_image_count": 1,
+                            "image_prompt": "Quadro MUSA funcional anti-sensualizacao."
+                          },
+                          "assembly_plan": {
+                            "scenes": [
+                              {"role":"DOR","title":"Dor funcional","message":"Ela organiza as roupas sem pose sedutora."}
+                            ]
+                          },
+                          "visual_provider_directives": "Imagem clara, postura natural e luz constante."
                         }
                         """,
                 Instant.now(),

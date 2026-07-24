@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-24 — Token HeyGen via arquivo no container de video
+
+- Problema observado: HeyGen ja aparecia no catalogo de fornecedores do Marketing Hub, mas o container de video ainda nao recebia o token pelo mesmo padrao operacional de Luma/Kling/VEO.
+- Causa-raiz tratada: a operacao criou o arquivo seguro no host, mas o compose e o entrypoint nao montavam nem carregavam automaticamente `HEYGEN_API_KEY`.
+- Correção preparada: compose local e compose de deploy montam `/root/infra/heygen-token/heygen_api_key` como secret somente leitura; o entrypoint carrega HeyGen em `HEYGEN_API_KEY` e `VIDEO_PROVIDERS_HEYGEN_API_KEY`.
+- Regra operacional: token HeyGen deve seguir o mesmo padrao de segredo por arquivo, sem valor real em compose, Markdown, `.env`, logs ou resposta.
+
 ## 2026-07-23 — Tokens Luma e Kling via arquivo no container de video
 
 - Problema observado: os arquivos de token Luma e Kling foram criados no host de video, mas o container ainda so montava e carregava automaticamente o arquivo do Gemini.

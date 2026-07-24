@@ -5,6 +5,7 @@ package com.marketinghub.videomanagement.service.provider;
  */
 public enum ProviderAssetRole {
     VIDEO,
+    IMAGE,
     POSTER,
     CAPTION
 }

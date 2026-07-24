@@ -275,6 +275,29 @@ paths:
         '404':
           description: Job fonte não encontrado
 
+  /api/sales-videos/jobs/request-montage:
+    post:
+      tags: [PublicVideoProfiles]
+      summary: Solicita montagem de múltiplos vídeos prontos
+      description: Cria um job `POST_PRODUCTION` com provider `MUSA_VIDEO_MONTAGE` para o `video-management-service` unir clipes curtos prontos em um MP4 vertical único, preservando a ordem dos jobs fonte no metadata/auditoria.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestSalesVideoMontageRequest'
+      responses:
+        '200':
+          description: Job de montagem criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+        '400':
+          description: Menos de dois jobs fonte, job fonte não pronto ou sem URL/asset de vídeo
+        '404':
+          description: Algum job fonte não foi encontrado
+
   /api/sales-videos/profiles/{profileId}:
     get:
       tags: [PublicVideoProfiles]
@@ -617,6 +640,20 @@ components:
         captionText:
           type: string
           description: Legenda principal queimada no vídeo final.
+
+    RequestSalesVideoMontageRequest:
+      type: object
+      required: [requestedBy, sourceJobIds]
+      properties:
+        requestedBy:
+          type: string
+        sourceJobIds:
+          type: array
+          minItems: 2
+          items:
+            type: integer
+            format: int64
+          description: Jobs `VIDEO_READY` que serão baixados e unidos na ordem informada.
 
     JobHeartbeatRequest:
       type: object

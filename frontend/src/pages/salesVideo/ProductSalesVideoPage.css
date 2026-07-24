@@ -48,7 +48,8 @@
 .product-video-page__objective span,
 .product-video-page__quality span,
 .product-video-page__provider-note span,
-.product-video-page__strategy span {
+.product-video-page__strategy span,
+.product-video-page__toggle span {
   color: #64748b;
   font-size: 0.84rem;
 }
@@ -128,8 +129,31 @@
 .product-video-page__provider-note strong,
 .product-video-page__provider-note span,
 .product-video-page__strategy strong,
-.product-video-page__strategy span {
+.product-video-page__strategy span,
+.product-video-page__toggle span {
   display: block;
+}
+
+.product-video-page__reference-image-box {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid #d9e3f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.85rem;
+}
+
+.product-video-page__toggle {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  margin: 0;
+  font-weight: 700;
+}
+
+.product-video-page__toggle input {
+  width: 1rem;
+  height: 1rem;
 }
 
 .product-video-page__profile span {
@@ -298,11 +322,39 @@
 .product-video-page__provider-note,
 .product-video-page__objective,
 .product-video-page__quality,
-.product-video-page__strategy {
+.product-video-page__strategy,
+.product-video-page__montage-box {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
   padding: 0.75rem;
+}
+
+.product-video-page__montage-box {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.product-video-page__montage-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 170px;
+  overflow: auto;
+}
+
+.product-video-page__montage-checkbox {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0;
+  color: #334155;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.product-video-page__montage-checkbox input {
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
 }
 
 .product-video-page__objective {
@@ -369,7 +421,8 @@
 }
 
 .product-video-page__quality p,
-.product-video-page__quality ul {
+.product-video-page__quality ul,
+.product-video-page__audio-metrics {
   margin: 0;
 }
 
@@ -380,6 +433,22 @@
 .product-video-page__quality ul {
   padding-left: 1.1rem;
   color: #475569;
+}
+
+.product-video-page__audio-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.product-video-page__audio-metrics span {
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 0.2rem 0.5rem;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .product-video-page__strategy {

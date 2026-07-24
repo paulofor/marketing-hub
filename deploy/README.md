@@ -24,11 +24,16 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 | `VIDEO_PROVIDERS_VEO_ENABLED` | Habilita o adapter direto VEO/Gemini no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_VEO_API_KEY` | Chave Gemini usada pelo adapter VEO; pode vir de `GEMINI_API_KEY` | vazio |
 | `VIDEO_PROVIDERS_VEO_MODEL` | Modelo VEO usado no render | `veo-3.1-generate-preview` |
+| `VIDEO_PROVIDERS_KLING_ENABLED` | Habilita o adapter direto Kling no módulo de vídeo | `true` |
+| `VIDEO_PROVIDERS_KLING_API_KEY` | Chave Kling usada pelo adapter direto; pode vir de `KLING_API_KEY` | vazio |
+| `VIDEO_PROVIDERS_KLING_MODEL` | Modelo Kling usado no render text-to-video | `kling-v3` |
 | `GEMINI_API_KEY_HOST_FILE` | Arquivo físico no host de vídeo com o token Gemini/VEO | `/root/infra/gemini-token/gemini_api_key` |
 | `LUMA_API_KEY_HOST_FILE` | Arquivo físico no host de vídeo com o token Luma/Ray | `/root/infra/luma-token/luma_api_key` |
 | `KLING_API_KEY_HOST_FILE` | Arquivo físico no host de vídeo com o token Kling | `/root/infra/kling-token/kling_api_key` |
+| `HEYGEN_API_KEY_HOST_FILE` | Arquivo físico no host de vídeo com o token HeyGen | `/root/infra/heygen-token/heygen_api_key` |
 | `LUMA_API_KEY_FILE` | Caminho interno lido pelo entrypoint para exportar `LUMA_API_KEY` e `LUMA_AGENTS_API_KEY` | `/run/secrets/luma_api_key` |
 | `KLING_API_KEY_FILE` | Caminho interno lido pelo entrypoint para exportar `KLING_API_KEY` | `/run/secrets/kling_api_key` |
+| `HEYGEN_API_KEY_FILE` | Caminho interno lido pelo entrypoint para exportar `HEYGEN_API_KEY` | `/run/secrets/heygen_api_key` |
 | `VIDEO_MANAGEMENT_PORT` | Porta exposta externamente | `8095` |
 | `OPENAI_API_KEY_HOST_FILE` | Arquivo físico no host backend/frontend com o token OpenAI que será montado como segredo somente leitura no backend | `/root/infra/openai-token/openai_api_key` |
 | `OPENAI_API_KEY_FILE` | Caminho interno lido pelo backend para chamadas OpenAI, incluindo a busca oficial de modelos | `/run/secrets/openai_api_key` |

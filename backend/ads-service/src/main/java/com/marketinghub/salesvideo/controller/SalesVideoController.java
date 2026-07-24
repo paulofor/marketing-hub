@@ -23,6 +23,7 @@ import com.marketinghub.salesvideo.dto.JobProgressRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotHistoryDto;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoMontageRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RetrySalesVideoJobRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
@@ -168,6 +169,12 @@ public class SalesVideoController {
     public SalesVideoJobDto requestPostProduction(@PathVariable Long jobId,
                                                   @Valid @RequestBody RequestSalesVideoPostProductionRequest request) {
         return salesVideoService.requestPostProduction(jobId, request);
+    }
+
+    /** Solicita montagem de múltiplos vídeos prontos em um único vídeo. */
+    @PostMapping("/api/sales-videos/jobs/request-montage")
+    public SalesVideoJobDto requestMontage(@Valid @RequestBody RequestSalesVideoMontageRequest request) {
+        return salesVideoService.requestMontage(request);
     }
 
     /** Lista jobs OpenAI para consumo interno do ai-worker. */

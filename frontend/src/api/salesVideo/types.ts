@@ -176,6 +176,11 @@ export interface RequestSalesVideoPostProductionPayload {
   captionText: string;
 }
 
+export interface RequestSalesVideoMontagePayload {
+  requestedBy: string;
+  sourceJobIds: number[];
+}
+
 export interface UpdateSalesVideoCompliancePayload {
   requiresConsent?: boolean;
   consentRecordedBy?: string;

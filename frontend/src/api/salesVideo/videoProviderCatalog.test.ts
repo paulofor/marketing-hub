@@ -41,4 +41,38 @@ describe("videoProviderCatalog", () => {
       "Imagem muito nítida e luz constante.",
     );
   });
+
+  it("inclui HeyGen como fornecedor de avatar e narracao sincronizada", () => {
+    const provider = findSalesVideoProviderOption("HEYGEN");
+
+    expect(provider).toBeDefined();
+    expect(provider?.supportsHeroVideo).toBe(true);
+    expect(provider?.supportsSceneAssembly).toBe(false);
+    expect(provider?.supportsOpenAiReferenceImage).toBe(false);
+    expect(provider?.recommendedUse).toContain("HEYGEN_API_KEY");
+
+    const metadata = JSON.parse(buildSalesVideoRenderMetadata(provider!));
+
+    expect(metadata.provider_strategy.provider_name).toBe("HEYGEN");
+    expect(metadata.provider_strategy.supports_scene_assembly).toBe(false);
+  });
+
+  it("habilita estrategia OpenAI imagem para Luma quando solicitada", () => {
+    const metadata = JSON.parse(
+      buildSalesVideoRenderMetadata(DEFAULT_SALES_VIDEO_PROVIDER, {
+        visualProviderDirectives: "Luz natural constante.",
+        openAiReferenceImageEnabled: true,
+        openAiReferenceImagePrompt: "Mulher organizada com blazer e caderno.",
+        referenceImageCount: 2,
+      }),
+    );
+
+    expect(metadata.generation_strategy).toBe("OPENAI_IMAGE_TO_LUMA_VIDEO");
+    expect(metadata.image_to_video.enabled).toBe(true);
+    expect(metadata.image_to_video.source_image_provider).toBe("OPENAI");
+    expect(metadata.image_to_video.reference_image_count).toBe(2);
+    expect(metadata.image_to_video.image_prompt).toBe(
+      "Mulher organizada com blazer e caderno.",
+    );
+  });
 });

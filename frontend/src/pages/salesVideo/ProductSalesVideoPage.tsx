@@ -694,19 +694,27 @@ function LatestVideoPreview({ job }: { job?: SalesVideoJob }) {
 
   return (
     <div className="product-video-page__preview">
-      {playbackUrl ? (
-        <AdaptiveVideoPlayer
-          src={playbackUrl}
-          fallbackSrc={assetUrl}
-          controls
-        />
-      ) : (
-        <div className="product-video-page__preview-empty">
-          <PlayCircle size={44} aria-hidden="true" />
-          <strong>Sem vídeo pronto</strong>
-          <span>Gere um vídeo para preencher o preview do produto.</span>
+      <div
+        className="product-video-page__phone-frame"
+        aria-label="Preview mobile do video"
+      >
+        <div className="product-video-page__phone-speaker" aria-hidden="true" />
+        <div className="product-video-page__phone-screen">
+          {playbackUrl ? (
+            <AdaptiveVideoPlayer
+              src={playbackUrl}
+              fallbackSrc={assetUrl}
+              controls
+            />
+          ) : (
+            <div className="product-video-page__preview-empty">
+              <PlayCircle size={44} aria-hidden="true" />
+              <strong>Sem vídeo pronto</strong>
+              <span>Gere um vídeo para preencher o preview do produto.</span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

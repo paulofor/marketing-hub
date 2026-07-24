@@ -54,7 +54,7 @@ class ProductControllerTest {
         CreateProductRequest request = new CreateProductRequest();
         request.setName("Método MUSA - Presença Elegante em 7 Dias");
         request.setMarketNicheId(10L);
-        request.setCurrentPriceBrl(new BigDecimal("47.00"));
+        request.setCurrentPriceBrl(new BigDecimal("67.00"));
 
         Product product = Product.builder().id(1L).name(request.getName()).build();
         ProductDto response = new ProductDto();
@@ -73,7 +73,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value(request.getName()))
                 .andExpect(jsonPath("$.logoUrl").value("https://clubemusa.com.br/assets/logo-musa.svg"))
-                .andExpect(jsonPath("$.currentPriceBrl").value(47.00));
+                .andExpect(jsonPath("$.currentPriceBrl").value(67.00));
     }
 
     /** Deve expor a definição pública de mercado do produto como Markdown. */

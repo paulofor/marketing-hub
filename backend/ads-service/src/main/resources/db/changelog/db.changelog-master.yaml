@@ -51,6 +51,9 @@ databaseChangeLog:
       file: changesets/2026-07-24-product-musa-current-price-47.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-24-product-musa-current-price-67-final.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-19-product-musa-logo-and-ai-positioning.yaml
       relativeToChangelogFile: true
   - include:

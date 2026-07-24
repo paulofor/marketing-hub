@@ -36,7 +36,7 @@ class ProductServiceTest {
         request.setSlug("metodo-musa-7-dias");
         request.setLogoUrl("https://clubemusa.com.br/assets/logo-musa.svg");
         request.setMarketNicheId(10L);
-        request.setCurrentPriceBrl(new BigDecimal("47.00"));
+        request.setCurrentPriceBrl(new BigDecimal("67.00"));
         request.setTargetAudience("Mulheres urbanas");
         request.setScientificEvidencePack("Evidence Pack MUSA v1");
         request.setPdeExperienceJson("{\"slug\":\"metodo-musa-7-dias\",\"missions\":[]}");
@@ -53,7 +53,7 @@ class ProductServiceTest {
         assertThat(updated.getName()).isEqualTo(request.getName());
         assertThat(updated.getSlug()).isEqualTo(request.getSlug());
         assertThat(updated.getLogoUrl()).isEqualTo("https://clubemusa.com.br/assets/logo-musa.svg");
-        assertThat(updated.getCurrentPriceBrl()).isEqualByComparingTo("47.00");
+        assertThat(updated.getCurrentPriceBrl()).isEqualByComparingTo("67.00");
         assertThat(updated.getTargetAudience()).isEqualTo(request.getTargetAudience());
         assertThat(updated.getScientificEvidencePack()).isEqualTo("Evidence Pack MUSA v1");
         assertThat(updated.getPdeExperienceJson()).contains("\"metodo-musa-7-dias\"");
@@ -78,7 +78,7 @@ class ProductServiceTest {
                 .logoUrl("https://clubemusa.com.br/assets/logo-musa.svg")
                 .productType("PDE")
                 .commercialStatus("validação comercial")
-                .currentPriceBrl(new BigDecimal("47.00"))
+                .currentPriceBrl(new BigDecimal("67.00"))
                 .marketNiche(niche)
                 .targetAudience("Mulheres que querem parecer elegantes sem trocar o guarda-roupa inteiro")
                 .primaryHypothesis("Mulheres desejam presença elegante com baixo esforço e baixo gasto.")

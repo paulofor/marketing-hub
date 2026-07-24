@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
   Video,
+  Volume2,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
@@ -165,6 +166,9 @@ export default function ProductSalesVideoPage() {
     : undefined;
   const selectedVisualQuality = selectedVideoJob
     ? assessVideoVisualQuality(selectedProfile, selectedVideoJob)
+    : undefined;
+  const selectedAudioQuality = selectedVideoJob
+    ? assessVideoAudioQuality(selectedVideoJob)
     : undefined;
   const productCost = useMemo(
     () => summarizeProductVideoCost(jobList),
@@ -620,6 +624,40 @@ export default function ProductSalesVideoPage() {
                   </ul>
                 </div>
               ) : null}
+              {selectedAudioQuality ? (
+                <div
+                  className={`product-video-page__quality product-video-page__quality--${selectedAudioQuality.status}`}
+                >
+                  <div className="product-video-page__quality-header">
+                    {selectedAudioQuality.status === "approved" ? (
+                      <Volume2 size={18} aria-hidden="true" />
+                    ) : (
+                      <AlertTriangle size={18} aria-hidden="true" />
+                    )}
+                    <div>
+                      <span>Revisão de áudio</span>
+                      <strong>{selectedAudioQuality.label}</strong>
+                    </div>
+                  </div>
+                  <p>{selectedAudioQuality.recommendation}</p>
+                  <div className="product-video-page__audio-metrics">
+                    <span>
+                      LUFS:{" "}
+                      {formatAudioMetric(selectedAudioQuality.integratedLufs)}
+                    </span>
+                    <span>
+                      Pico:{" "}
+                      {formatAudioMetric(selectedAudioQuality.truePeakDbfs)}
+                    </span>
+                    <span>Voz: {selectedAudioQuality.voiceQuality}</span>
+                  </div>
+                  <ul>
+                    {selectedAudioQuality.issues.map((issue) => (
+                      <li key={issue}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <div className="product-video-page__hero-actions">
                 {selectedProfile ? (
                   <Link
@@ -747,7 +785,8 @@ export default function ProductSalesVideoPage() {
                         onChange={() => handleToggleMontageJob(job.id)}
                       />
                       <span>
-                        Job #{job.id} · {profileTitle(profileList, job.profileId)}
+                        Job #{job.id} ·{" "}
+                        {profileTitle(profileList, job.profileId)}
                       </span>
                     </label>
                   ))}
@@ -756,7 +795,9 @@ export default function ProductSalesVideoPage() {
                   type="button"
                   className="btn btn-outline-primary"
                   onClick={handleRequestMontage}
-                  disabled={montageJobIds.length < 2 || requestMontage.isPending}
+                  disabled={
+                    montageJobIds.length < 2 || requestMontage.isPending
+                  }
                 >
                   <Layers size={16} aria-hidden="true" />
                   {requestMontage.isPending
@@ -1195,12 +1236,23 @@ function containsAny(value: string, needles: string[]) {
 }
 
 type VideoVisualQualityStatus = "approved" | "warning" | "blocked";
+type VideoAudioQualityStatus = "approved" | "warning" | "blocked";
 
 type VideoVisualQualityAssessment = {
   status: VideoVisualQualityStatus;
   label: string;
   issues: string[];
   recommendation: string;
+};
+
+type VideoAudioQualityAssessment = {
+  status: VideoAudioQualityStatus;
+  label: string;
+  issues: string[];
+  recommendation: string;
+  integratedLufs?: number | null;
+  truePeakDbfs?: number | null;
+  voiceQuality: string;
 };
 
 function assessVideoVisualQuality(
@@ -1376,6 +1428,142 @@ function assessKnownMusaVisualIssue(
   return null;
 }
 
+function assessVideoAudioQuality(
+  job: SalesVideoJob,
+): VideoAudioQualityAssessment | null {
+  const metadata = parseJsonObject(job.metadataJson);
+  const audio = readJsonObject(metadata?.audio);
+  const review = readJsonObject(audio?.review);
+  const statusText = String(review?.status ?? "").toUpperCase();
+  const providerText = [job.providerName, job.providerJobId, job.metadataJson]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (review) {
+    return {
+      status: mapAudioReviewStatus(statusText),
+      label: String(review.label ?? audioReviewFallbackLabel(statusText)),
+      issues: readStringArray(review.issues),
+      recommendation: String(
+        review.recommendation ??
+          "Ouvir manualmente antes de liberar o vídeo para campanha.",
+      ),
+      integratedLufs: readNestedNumber(review, ["metrics", "integrated_lufs"]),
+      truePeakDbfs: readNestedNumber(review, ["metrics", "true_peak_dbfs"]),
+      voiceQuality: describeVoiceQuality(String(review.voice_quality ?? "")),
+    };
+  }
+
+  if (
+    providerText.includes("post-production") ||
+    providerText.includes("musa_post_production")
+  ) {
+    return {
+      status: "blocked",
+      label: "Áudio sem revisão nova",
+      issues: [
+        "Este vídeo foi finalizado antes da revisão automática de áudio.",
+        "O fluxo atual usa voz sintética local, que tende a soar robótica.",
+      ],
+      recommendation:
+        "Não liberar como peça final. Reprocessar após plugar voz natural ou ouvir manualmente antes do experimento.",
+      integratedLufs: null,
+      truePeakDbfs: null,
+      voiceQuality: "sintética/local provável",
+    };
+  }
+
+  if (isLumaJob(job)) {
+    return {
+      status: "warning",
+      label: "Sem áudio nativo",
+      issues: [
+        "Luma gera vídeo bruto; áudio precisa vir da pós-produção ou de provedor de voz.",
+      ],
+      recommendation:
+        "Usar Luma apenas como base visual e finalizar com voz natural antes de campanha.",
+      integratedLufs: null,
+      truePeakDbfs: null,
+      voiceQuality: "ausente no render bruto",
+    };
+  }
+
+  return null;
+}
+
+function mapAudioReviewStatus(status: string): VideoAudioQualityStatus {
+  if (status === "APPROVED_FOR_TEST") {
+    return "approved";
+  }
+  if (status === "BLOCKED_FOR_CAMPAIGN") {
+    return "blocked";
+  }
+  return "warning";
+}
+
+function audioReviewFallbackLabel(status: string) {
+  if (status === "APPROVED_FOR_TEST") {
+    return "Apto para teste";
+  }
+  if (status === "BLOCKED_FOR_CAMPAIGN") {
+    return "Bloqueado para campanha";
+  }
+  return "Revisão humana necessária";
+}
+
+function describeVoiceQuality(value: string) {
+  if (value === "synthetic_local") {
+    return "sintética/local";
+  }
+  return value || "não informada";
+}
+
+function parseJsonObject(json: string | null | undefined) {
+  if (!json) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    return readJsonObject(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function readJsonObject(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function readStringArray(value: unknown) {
+  if (!Array.isArray(value)) {
+    return ["Ouvir manualmente antes de liberar para campanha."];
+  }
+  return value
+    .map((item) => String(item))
+    .filter((item) => item.trim().length > 0);
+}
+
+function readNestedNumber(
+  object: Record<string, unknown>,
+  path: string[],
+): number | null {
+  let current: unknown = object;
+  for (const field of path) {
+    const currentObject = readJsonObject(current);
+    if (!currentObject) {
+      return null;
+    }
+    current = currentObject[field];
+  }
+  return typeof current === "number" && Number.isFinite(current)
+    ? current
+    : null;
+}
+
 function isLumaJob(job: SalesVideoJob) {
   return [job.providerName, job.providerJobId, job.metadataJson]
     .filter(Boolean)
@@ -1431,6 +1619,13 @@ function formatBrl(value: number) {
     currency: "BRL",
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatAudioMetric(value?: number | null) {
+  if (value == null) {
+    return "—";
+  }
+  return value.toFixed(1);
 }
 
 function formatDate(value?: string | null) {

@@ -62,6 +62,8 @@ class PostProductionVideoProviderTest {
                 .containsEntry("duration_seconds", 30)
                 .containsKey("audio")
                 .containsKey("captions");
+        assertThat(artifacts.metadata().get("audio").toString())
+                .contains("BLOCKED_FOR_CAMPAIGN", "synthetic_local");
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
     }
 
@@ -113,6 +115,11 @@ class PostProductionVideoProviderTest {
                 for arg in "$@"; do
                   output="$arg"
                 done
+                if [ "$output" = "-" ]; then
+                  echo '    I:         -26.3 LUFS'
+                  echo '    Peak:       -7.6 dBFS'
+                  exit 0
+                fi
                 printf '\\000\\000\\000\\040ftypisom\\000\\000\\002\\000' > "$output"
                 exit 0
                 """);

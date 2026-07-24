@@ -397,7 +397,8 @@
 }
 
 .product-video-page__quality p,
-.product-video-page__quality ul {
+.product-video-page__quality ul,
+.product-video-page__audio-metrics {
   margin: 0;
 }
 
@@ -408,6 +409,22 @@
 .product-video-page__quality ul {
   padding-left: 1.1rem;
   color: #475569;
+}
+
+.product-video-page__audio-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.product-video-page__audio-metrics span {
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 0.2rem 0.5rem;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .product-video-page__strategy {

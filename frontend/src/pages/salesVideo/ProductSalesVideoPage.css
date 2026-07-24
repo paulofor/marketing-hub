@@ -45,6 +45,7 @@
 .product-video-page__metric span,
 .product-video-page__table-heading span,
 .product-video-page__hero-copy span,
+.product-video-page__objective span,
 .product-video-page__provider-note span,
 .product-video-page__strategy span {
   color: #64748b;
@@ -116,6 +117,10 @@
 
 .product-video-page__profile strong,
 .product-video-page__profile span,
+.product-video-page__profile em,
+.product-video-page__objective strong,
+.product-video-page__objective span,
+.product-video-page__objective small,
 .product-video-page__provider-note strong,
 .product-video-page__provider-note span,
 .product-video-page__strategy strong,
@@ -127,6 +132,14 @@
   color: #64748b;
   font-size: 0.86rem;
   margin-top: 0.2rem;
+}
+
+.product-video-page__profile em {
+  margin-top: 0.45rem;
+  color: #7a2444;
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 700;
 }
 
 .product-video-page__profile--active {
@@ -202,11 +215,31 @@
 }
 
 .product-video-page__provider-note,
+.product-video-page__objective,
 .product-video-page__strategy {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
   padding: 0.75rem;
+}
+
+.product-video-page__objective {
+  margin-bottom: 1rem;
+  background: #fff8f3;
+}
+
+.product-video-page__objective strong {
+  margin-top: 0.2rem;
+  color: #7a2444;
+}
+
+.product-video-page__objective p {
+  margin: 0.35rem 0;
+  color: #334155;
+}
+
+.product-video-page__objective small {
+  color: #64748b;
 }
 
 .product-video-page__strategy {

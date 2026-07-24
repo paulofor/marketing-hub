@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   BadgeDollarSign,
@@ -35,6 +35,7 @@ import {
 import "./ProductSalesVideoPage.css";
 
 const VIDEO_KIND_OPTIONS: SalesVideoKind[] = ["HERO", "OBJECTION", "PROOF"];
+const USD_TO_BRL_RATE = 5;
 
 const DEFAULT_SCRIPT = [
   "Hook: voce sente que sua imagem ainda nao comunica a presenca que voce quer?",
@@ -77,6 +78,7 @@ export default function ProductSalesVideoPage() {
   const { data: jobs, isLoading: jobsLoading } =
     useProductSalesVideoJobs(productId);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [selectedProviderName, setSelectedProviderName] = useState(
     DEFAULT_SALES_VIDEO_PROVIDER.providerName,
   );
@@ -91,27 +93,36 @@ export default function ProductSalesVideoPage() {
 
   const profileList = useMemo(() => profiles ?? [], [profiles]);
   const jobList = useMemo(() => jobs ?? [], [jobs]);
+  const existingVideoJobs = useMemo(
+    () => jobList.filter(isExistingVideoJob),
+    [jobList],
+  );
+  const selectedVideoJob = useMemo(() => {
+    if (selectedJobId) {
+      return existingVideoJobs.find((job) => String(job.id) === selectedJobId);
+    }
+    return existingVideoJobs[0];
+  }, [existingVideoJobs, selectedJobId]);
   const selectedProfile = useMemo(() => {
     if (selectedProfileId) {
       return profileList.find(
         (profile) => String(profile.id) === selectedProfileId,
       );
     }
+    if (selectedVideoJob) {
+      return profileList.find(
+        (profile) => profile.id === selectedVideoJob.profileId,
+      );
+    }
     return profileList[0];
-  }, [profileList, selectedProfileId]);
+  }, [profileList, selectedProfileId, selectedVideoJob]);
   const effectiveProfileId = selectedProfile ? String(selectedProfile.id) : "";
   const selectedProvider =
     findSalesVideoProviderOption(selectedProviderName) ??
     DEFAULT_SALES_VIDEO_PROVIDER;
-  const latestReadyJob = useMemo(
-    () =>
-      jobList.find(
-        (job) =>
-          job.status === "VIDEO_READY" &&
-          (Boolean(job.streamPlaybackUrl) || Boolean(job.assetId)),
-      ),
-    [jobList],
-  );
+  const selectedVideoObjective = selectedVideoJob
+    ? describeVideoObjective(selectedProfile, selectedVideoJob)
+    : undefined;
   const productCost = useMemo(
     () => summarizeProductVideoCost(jobList),
     [jobList],
@@ -120,6 +131,20 @@ export default function ProductSalesVideoPage() {
     () => summarizeFunnel(profileList, jobList),
     [profileList, jobList],
   );
+
+  useEffect(() => {
+    if (!selectedJobId && existingVideoJobs.length > 0) {
+      setSelectedJobId(String(existingVideoJobs[0].id));
+    }
+    if (
+      selectedJobId &&
+      !existingVideoJobs.some((job) => String(job.id) === selectedJobId)
+    ) {
+      setSelectedJobId(
+        existingVideoJobs[0] ? String(existingVideoJobs[0].id) : "",
+      );
+    }
+  }, [existingVideoJobs, selectedJobId]);
 
   if (!productId) {
     return (
@@ -253,7 +278,10 @@ export default function ProductSalesVideoPage() {
         <Metric label="Vídeos prontos" value={String(funnelMetrics.ready)} />
         <Metric label="Em produção" value={String(funnelMetrics.running)} />
         <Metric label="Falhas" value={String(funnelMetrics.failed)} />
-        <Metric label="Custo total" value={formatUsd(productCost.total)} />
+        <Metric
+          label="Custo total"
+          value={formatUsdWithBrl(productCost.total)}
+        />
       </section>
 
       <section className="product-video-page__layout">
@@ -264,28 +292,39 @@ export default function ProductSalesVideoPage() {
               <strong>Vídeos cadastrados</strong>
             </div>
             <div className="product-video-page__profile-list">
-              {profileList.length === 0 ? (
+              {existingVideoJobs.length === 0 ? (
                 <p className="product-video-page__empty">
-                  Nenhum vídeo criado para este produto.
+                  Nenhum vídeo pronto encontrado para este produto.
                 </p>
               ) : (
-                profileList.map((profile) => (
-                  <button
-                    key={profile.id}
-                    type="button"
-                    className={
-                      String(profile.id) === effectiveProfileId
-                        ? "product-video-page__profile product-video-page__profile--active"
-                        : "product-video-page__profile"
-                    }
-                    onClick={() => setSelectedProfileId(String(profile.id))}
-                  >
-                    <strong>{profile.title}</strong>
-                    <span>
-                      {profile.videoKind} · {profile.status}
-                    </span>
-                  </button>
-                ))
+                existingVideoJobs.map((job) => {
+                  const profile = findProfile(profileList, job.profileId);
+                  const objective = describeVideoObjective(profile, job);
+                  return (
+                    <button
+                      key={job.id}
+                      type="button"
+                      className={
+                        String(job.id) === String(selectedVideoJob?.id)
+                          ? "product-video-page__profile product-video-page__profile--active"
+                          : "product-video-page__profile"
+                      }
+                      onClick={() => {
+                        setSelectedJobId(String(job.id));
+                        setSelectedProfileId(String(job.profileId));
+                      }}
+                    >
+                      <strong>
+                        {profileTitle(profileList, job.profileId)}
+                      </strong>
+                      <span>
+                        Job #{job.id} · {job.providerName ?? job.providerFamily}
+                      </span>
+                      <span>{formatUsdWithBrl(readJobCost(job))}</span>
+                      <em>{objective.stage}</em>
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -428,13 +467,21 @@ export default function ProductSalesVideoPage() {
         <main className="product-video-page__main">
           <section className="product-video-page__hero-panel">
             <div className="product-video-page__hero-copy">
-              <span>Produção selecionada</span>
+              <span>Vídeo selecionado</span>
               <h2>{selectedProfile?.title ?? "Nenhum vídeo selecionado"}</h2>
               <p>
                 Use esta área para roteiro, geração e acompanhamento.
                 Experimentos devem consumir vídeos aprovados daqui, sem criar
                 vídeos próprios.
               </p>
+              {selectedVideoObjective ? (
+                <div className="product-video-page__objective">
+                  <span>Objetivo do vídeo na estrada de compra</span>
+                  <strong>{selectedVideoObjective.stage}</strong>
+                  <p>{selectedVideoObjective.goal}</p>
+                  <small>{selectedVideoObjective.evidence}</small>
+                </div>
+              ) : null}
               <div className="product-video-page__hero-actions">
                 {selectedProfile ? (
                   <Link
@@ -455,7 +502,7 @@ export default function ProductSalesVideoPage() {
                 </button>
               </div>
             </div>
-            <LatestVideoPreview job={latestReadyJob} />
+            <LatestVideoPreview job={selectedVideoJob} />
           </section>
 
           <section className="product-video-page__workflow">
@@ -565,7 +612,7 @@ export default function ProductSalesVideoPage() {
                           </span>
                         </td>
                         <td>{job.providerName ?? job.providerFamily}</td>
-                        <td>{formatUsd(readJobCost(job))}</td>
+                        <td>{formatUsdWithBrl(readJobCost(job))}</td>
                         <td>{job.assetId ? `#${job.assetId}` : "—"}</td>
                         <td>
                           {formatDate(
@@ -620,7 +667,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function summarizeFunnel(profiles: SalesVideoProfile[], jobs: SalesVideoJob[]) {
   return {
-    ready: jobs.filter((job) => job.status === "VIDEO_READY").length,
+    ready: jobs.filter(isExistingVideoJob).length,
     running: jobs.filter((job) =>
       [
         "VIDEO_REQUESTED",
@@ -634,6 +681,13 @@ function summarizeFunnel(profiles: SalesVideoProfile[], jobs: SalesVideoJob[]) {
       (profile) => profile.latestScript?.status === "APPROVED",
     ).length,
   };
+}
+
+function isExistingVideoJob(job: SalesVideoJob) {
+  return (
+    job.status === "VIDEO_READY" &&
+    (Boolean(job.streamPlaybackUrl?.trim()) || Boolean(job.assetId))
+  );
 }
 
 function summarizeProductVideoCost(jobs: SalesVideoJob[]) {
@@ -691,10 +745,177 @@ function readNumericJsonField(
 }
 
 function profileTitle(profiles: SalesVideoProfile[], profileId: number) {
-  return (
-    profiles.find((profile) => profile.id === profileId)?.title ??
-    `Profile #${profileId}`
-  );
+  return findProfile(profiles, profileId)?.title ?? `Profile #${profileId}`;
+}
+
+function findProfile(profiles: SalesVideoProfile[], profileId: number) {
+  return profiles.find((profile) => profile.id === profileId);
+}
+
+function describeVideoObjective(
+  profile: SalesVideoProfile | undefined,
+  job: SalesVideoJob,
+) {
+  const profileTitleText = profile?.title?.toLowerCase() ?? "";
+  const plannedObjective = describeKnownMusaPlannedVideo(profileTitleText);
+  if (plannedObjective) {
+    return plannedObjective;
+  }
+
+  const searchableText = [
+    profile?.title,
+    profile?.videoKind,
+    profile?.personaStyle,
+    profile?.voiceStyle,
+    job.providerName,
+    job.metadataJson,
+    job.auditSnapshotJson,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    containsAny(searchableText, ["espelho", "dor", "hook", "apagada", "#5"])
+  ) {
+    return {
+      stage: "Desconhecimento -> relevancia",
+      goal: "Abrir com uma cena reconhecivel para a visitante pensar: isso acontece comigo.",
+      evidence:
+        "Criterio da estrada: situacao reconhecivel antes de explicar o produto.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, [
+      "microacoes",
+      "microações",
+      "mecanismo",
+      "7 dias",
+      "#7",
+    ])
+  ) {
+    return {
+      stage: "Curiosidade -> mecanismo plausivel",
+      goal: "Mostrar como pequenas decisoes guiadas produzem uma presenca mais intencional.",
+      evidence:
+        "Criterio da estrada: entrada da cliente, mecanismo simples e resultado imaginavel.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, [
+      "plano",
+      "personalizado",
+      "diagnostico",
+      "diagnóstico",
+      "cta",
+      "#8",
+    ])
+  ) {
+    return {
+      stage: "Desejo -> compra",
+      goal: "Conectar o valor percebido ao proximo passo: ver e continuar o plano MUSA.",
+      evidence:
+        "Criterio da estrada: oferta como continuidade do resultado, nao como compra fria.",
+    };
+  }
+
+  if (
+    containsAny(searchableText, [
+      "presenca",
+      "presença",
+      "luxo",
+      "sofisticacao",
+      "sofisticação",
+      "#6",
+    ])
+  ) {
+    return {
+      stage: "Confianca -> desejo",
+      goal: "Ajudar a cliente a se imaginar com mais elegancia sem depender de luxo caro.",
+      evidence:
+        "Criterio da estrada: simular a transformacao futura em uma trajetoria possivel.",
+    };
+  }
+
+  if (profile?.videoKind === "PROOF") {
+    return {
+      stage: "Valor pessoal -> confianca",
+      goal: "Reforcar prova de produto, mecanismo e casos semelhantes antes da decisao.",
+      evidence:
+        "Criterio da estrada: transformar interesse inicial em confianca no produto.",
+    };
+  }
+
+  if (profile?.videoKind === "OBJECTION") {
+    return {
+      stage: "Reducao de risco",
+      goal: "Diminuir incerteza, risco e esforco percebido antes do checkout.",
+      evidence:
+        "Criterio da estrada: remover resistencias de uso, valor, risco, tradicao e imagem.",
+    };
+  }
+
+  return {
+    stage: "Relevancia -> compreensao",
+    goal: "Conectar a dor de imagem ao Metodo MUSA com clareza suficiente para continuar.",
+    evidence:
+      "Criterio da estrada: aumentar relevancia, valor, adequacao pessoal e confianca.",
+  };
+}
+
+function describeKnownMusaPlannedVideo(profileTitleText: string) {
+  if (profileTitleText.includes("#5")) {
+    return {
+      stage: "Desconhecimento -> relevancia",
+      goal: "Abrir com a dor do espelho para a visitante reconhecer a propria inseguranca visual.",
+      evidence:
+        "Criterio da estrada: comecar por situacao reconhecivel, problema percebido e atencao.",
+    };
+  }
+
+  if (profileTitleText.includes("#6")) {
+    return {
+      stage: "Confianca -> desejo",
+      goal: "Mostrar a presenca elegante acessivel como transformacao desejavel sem luxo caro.",
+      evidence:
+        "Criterio da estrada: ajudar a cliente a simular uma nova situacao futura.",
+    };
+  }
+
+  if (profileTitleText.includes("#7")) {
+    return {
+      stage: "Curiosidade -> mecanismo plausivel",
+      goal: "Explicar as microacoes de 7 dias para reduzir esforco e tornar o resultado possivel.",
+      evidence:
+        "Criterio da estrada: entrada da cliente, mecanismo simples e resultado imaginavel.",
+    };
+  }
+
+  if (profileTitleText.includes("#8")) {
+    return {
+      stage: "Desejo -> compra",
+      goal: "Levar a visitante do desejo ao plano MUSA personalizado como proximo passo natural.",
+      evidence:
+        "Criterio da estrada: oferta como continuidade do resultado, nao como compra fria.",
+    };
+  }
+
+  if (profileTitleText.includes("#9")) {
+    return {
+      stage: "Desconhecimento -> relevancia",
+      goal: "Usar fala curta para capturar atencao e fazer a cliente reconhecer rapidamente a dor.",
+      evidence:
+        "Criterio da estrada: situacao reconhecivel antes de pedir acao comercial.",
+    };
+  }
+
+  return null;
+}
+
+function containsAny(value: string, needles: string[]) {
+  return needles.some((needle) => value.includes(needle));
 }
 
 function parseOptionalNumber(value: string) {
@@ -720,6 +941,21 @@ function formatUsd(value?: number | null) {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 4,
+  }).format(value);
+}
+
+function formatUsdWithBrl(value?: number | null) {
+  if (value == null) {
+    return "—";
+  }
+  return `${formatUsd(value)} · ${formatBrl(value * USD_TO_BRL_RATE)}`;
+}
+
+function formatBrl(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 2,
   }).format(value);
 }
 

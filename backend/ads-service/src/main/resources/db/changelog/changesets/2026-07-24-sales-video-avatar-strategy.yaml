@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-24-sales-video-avatar-strategy
+      author: marketinghub-ai
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: sales_video_profile
+                columnName: avatar_strategy
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_profile
+                  ADD COLUMN avatar_strategy VARCHAR(64) NOT NULL DEFAULT 'PLATFORM_TEST_AVATAR' AFTER title;

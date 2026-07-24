@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-24 — Estratégia de avatar no perfil de vídeo
+
+- Decisão de produto: manter o vídeo HeyGen atual como teste de mercado e preparar o Marketing Hub para planejar avatares proprietários no futuro.
+- Causa-raiz tratada: a escolha entre avatar pronto e criação de avatar proprietário ficava fora do perfil canônico de vídeo, dependendo de conversa ou documentação solta.
+- Correção preparada: `sales_video_profile` passa a registrar `avatar_strategy`, com opção para testar avatar pronto, planejar avatar proprietário ou usar avatar proprietário aprovado; a criação de vídeo no frontend expõe essa escolha.
+- Regra operacional: usar avatar pronto para medir dor, promessa e clique com baixo custo; só investir em avatar proprietário depois de sinal positivo de atenção/conversão.
+
 ## 2026-07-24 — Adapter direto HeyGen para avatar com voz sincronizada
 
 - Problema observado: HeyGen aparecia na combo do Marketing Hub, mas ainda dependia de implementação futura no executor para criar asset real.

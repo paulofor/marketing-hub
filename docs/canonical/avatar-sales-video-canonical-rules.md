@@ -37,6 +37,10 @@ Toda decisão deve respeitar o eixo do Marketing Hub:
 - Todo avatar deve declarar explicitamente o `niche_key` e `audience_stage`.
 - Perfil de personagem deve ser escolhido por compatibilidade com contexto real do público.
 - O tom pode variar, mas o conteúdo factual da oferta deve permanecer consistente.
+- Todo perfil de vídeo deve registrar a estratégia de avatar: avatar pronto para teste de mercado,
+  avatar proprietário planejado ou avatar proprietário aprovado. O avatar pronto é recomendado para
+  validação inicial de promessa e criativo; avatar proprietário deve ser priorizado quando houver sinal
+  comercial positivo e necessidade de diferenciação de marca.
 
 ## 2.3 IA com base científica e ética
 

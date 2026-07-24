@@ -1,6 +1,7 @@
 package com.marketinghub.salesvideo.dto;
 
 import com.marketinghub.salesvideo.SalesVideoKind;
+import com.marketinghub.salesvideo.SalesVideoAvatarStrategy;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import lombok.Data;
 
@@ -18,6 +19,7 @@ public class SalesVideoProfileDto {
     private String createdBy;
     private SalesVideoKind videoKind;
     private String title;
+    private SalesVideoAvatarStrategy avatarStrategy;
     private String personaName;
     private String personaStyle;
     private String voiceStyle;

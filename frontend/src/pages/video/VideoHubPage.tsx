@@ -233,6 +233,7 @@ export default function VideoHubPage() {
     try {
       const profile = await createProfile.mutateAsync({
         videoKind: "HERO",
+        avatarStrategy: "PLATFORM_TEST_AVATAR",
         title: `PDE entrada explicativa - ${CURRENT_PDE_VERSION}`,
         personaName: "Visitante MUSA",
         personaStyle: "mulher buscando presença visual, elegância e segurança",

@@ -29,6 +29,7 @@ import { useRequestSalesVideoPostProduction } from "../../api/salesVideo/useRequ
 import { useTenantContext } from "../../utils/tenantContext";
 import {
   SalesVideoJob,
+  SalesVideoAvatarStrategy,
   SalesVideoKind,
   SalesVideoProfile,
 } from "../../api/salesVideo/types";
@@ -42,6 +43,13 @@ import {
 import "./ProductSalesVideoPage.css";
 
 const VIDEO_KIND_OPTIONS: SalesVideoKind[] = ["HERO", "OBJECTION", "PROOF"];
+const AVATAR_STRATEGY_LABELS: Record<SalesVideoAvatarStrategy, string> = {
+  PLATFORM_TEST_AVATAR: "Testar avatar pronto",
+  PROPRIETARY_AVATAR_PLANNED: "Planejar avatar proprietario",
+  PROPRIETARY_AVATAR_READY: "Usar avatar proprietario aprovado",
+};
+const AVATAR_STRATEGY_OPTIONS = Object.keys(AVATAR_STRATEGY_LABELS) as SalesVideoAvatarStrategy[];
+const DEFAULT_AVATAR_STRATEGY: SalesVideoAvatarStrategy = "PLATFORM_TEST_AVATAR";
 const USD_TO_BRL_RATE = 5;
 
 const DEFAULT_SCRIPT = [
@@ -68,6 +76,7 @@ const DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT =
 
 type ProfileFormState = {
   videoKind: SalesVideoKind;
+  avatarStrategy: SalesVideoAvatarStrategy;
   title: string;
   personaName: string;
   personaStyle: string;
@@ -80,6 +89,7 @@ type ProfileFormState = {
 function emptyProfileForm(): ProfileFormState {
   return {
     videoKind: "HERO",
+    avatarStrategy: DEFAULT_AVATAR_STRATEGY,
     title: "",
     personaName: "",
     personaStyle: "",
@@ -230,6 +240,7 @@ export default function ProductSalesVideoPage() {
     try {
       const created = await createProfile.mutateAsync({
         videoKind: profileForm.videoKind,
+        avatarStrategy: profileForm.avatarStrategy,
         title: profileForm.title.trim(),
         personaName: profileForm.personaName.trim() || undefined,
         personaStyle: profileForm.personaStyle.trim() || undefined,
@@ -490,6 +501,30 @@ export default function ProductSalesVideoPage() {
                 </option>
               ))}
             </select>
+            <label className="form-label" htmlFor="video-avatar-strategy">
+              Estrategia de avatar
+            </label>
+            <select
+              id="video-avatar-strategy"
+              className="form-select"
+              value={profileForm.avatarStrategy}
+              onChange={(event) =>
+                setProfileForm((prev) => ({
+                  ...prev,
+                  avatarStrategy: event.target.value as SalesVideoAvatarStrategy,
+                }))
+              }
+            >
+              {AVATAR_STRATEGY_OPTIONS.map((strategy) => (
+                <option key={strategy} value={strategy}>
+                  {AVATAR_STRATEGY_LABELS[strategy]}
+                </option>
+              ))}
+            </select>
+            <small className="text-muted">
+              Use avatar pronto para validar mercado agora. Planeje avatar proprietario quando o criativo
+              provar atencao, clique e conversao.
+            </small>
             <label className="form-label" htmlFor="video-title">
               Título interno
             </label>
@@ -613,6 +648,18 @@ export default function ProductSalesVideoPage() {
                   <strong>{selectedVideoObjective.stage}</strong>
                   <p>{selectedVideoObjective.goal}</p>
                   <small>{selectedVideoObjective.evidence}</small>
+                </div>
+              ) : null}
+              {selectedProfile ? (
+                <div className="product-video-page__objective">
+                  <span>Estrategia de avatar</span>
+                  <strong>
+                    {AVATAR_STRATEGY_LABELS[selectedProfile.avatarStrategy ?? DEFAULT_AVATAR_STRATEGY]}
+                  </strong>
+                  <p>
+                    Avatar pronto reduz tempo e custo de teste. Avatar proprietario deve entrar depois
+                    de sinal positivo de mercado para aumentar diferenciacao e consistencia da marca.
+                  </p>
                 </div>
               ) : null}
               {selectedVisualQuality ? (

@@ -1,6 +1,7 @@
 package com.marketinghub.salesvideo.dto;
 
 import com.marketinghub.salesvideo.SalesVideoKind;
+import com.marketinghub.salesvideo.SalesVideoAvatarStrategy;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -17,6 +18,8 @@ public class CreateSalesVideoProfileRequest {
     @NotBlank
     @Size(max = 255)
     private String title;
+
+    private SalesVideoAvatarStrategy avatarStrategy;
 
     @Size(max = 255)
     private String personaName;

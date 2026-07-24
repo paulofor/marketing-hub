@@ -16,6 +16,8 @@ import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -31,6 +33,8 @@ import java.util.Optional;
  */
 @Component
 public class SalesVideoProfileService {
+    private static final Logger log = LoggerFactory.getLogger(SalesVideoProfileService.class);
+
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
             .findAndAddModules()
             .build();
@@ -59,6 +63,7 @@ public class SalesVideoProfileService {
         this.rolloutService = rolloutService;
     }
 
+    /** Cria o perfil canônico de vídeo do produto com a estratégia comercial de avatar. */
     @Transactional
     public SalesVideoProfileDto createProfile(Long productId, CreateSalesVideoProfileRequest request) {
         Product product = productRepository.findById(productId)
@@ -79,6 +84,8 @@ public class SalesVideoProfileService {
                 .createdBy(createdBy)
                 .videoKind(request.getVideoKind())
                 .title(request.getTitle())
+                .avatarStrategy(Optional.ofNullable(request.getAvatarStrategy())
+                        .orElse(SalesVideoAvatarStrategy.PLATFORM_TEST_AVATAR))
                 .personaName(request.getPersonaName())
                 .personaStyle(request.getPersonaStyle())
                 .voiceStyle(request.getVoiceStyle())
@@ -294,6 +301,8 @@ public class SalesVideoProfileService {
         try {
             return OBJECT_MAPPER.writeValueAsString(snapshot);
         } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar snapshot de auditoria do render. profileId={}, scriptId={}, jobId={}",
+                    profile.getId(), script.getId(), job.getId(), ex);
             throw VideoModuleException.internal(VideoModuleErrorCode.INTERNAL_ERROR,
                     "Falha ao serializar snapshot de auditoria do render.");
         }

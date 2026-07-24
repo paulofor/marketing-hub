@@ -49,6 +49,11 @@ public class SalesVideoProfile {
     @Column(nullable = false)
     private String title;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "avatar_strategy", nullable = false, length = 64)
+    private SalesVideoAvatarStrategy avatarStrategy = SalesVideoAvatarStrategy.PLATFORM_TEST_AVATAR;
+
     private String personaName;
     private String personaStyle;
     private String voiceStyle;

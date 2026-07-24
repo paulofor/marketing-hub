@@ -6,6 +6,9 @@ databaseChangeLog:
       file: changesets/2026-07-24-sales-video-post-production-job-type.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-24-sales-video-avatar-strategy.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-22-experiment-reactivation-audit.yaml
       relativeToChangelogFile: true
   - include:

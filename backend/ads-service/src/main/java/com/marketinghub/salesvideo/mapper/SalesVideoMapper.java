@@ -25,6 +25,7 @@ public final class SalesVideoMapper {
         dto.setCreatedBy(profile.getCreatedBy());
         dto.setVideoKind(profile.getVideoKind());
         dto.setTitle(profile.getTitle());
+        dto.setAvatarStrategy(profile.getAvatarStrategy());
         dto.setPersonaName(profile.getPersonaName());
         dto.setPersonaStyle(profile.getPersonaStyle());
         dto.setVoiceStyle(profile.getVoiceStyle());

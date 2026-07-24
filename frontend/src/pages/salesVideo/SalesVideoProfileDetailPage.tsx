@@ -41,6 +41,12 @@ import {
 
 const PROVIDER_FAMILIES: SalesVideoProviderFamily[] = ["EXTERNAL_VIDEO_MODULE", "OPENAI"];
 const EXECUTION_MODES: SalesVideoExecutionMode[] = ["TEST", "PRODUCTION"];
+const AVATAR_STRATEGY_LABELS: Record<string, string> = {
+  PLATFORM_TEST_AVATAR: "Testar avatar pronto",
+  PROPRIETARY_AVATAR_PLANNED: "Planejar avatar proprietario",
+  PROPRIETARY_AVATAR_READY: "Avatar proprietario aprovado",
+};
+const DEFAULT_AVATAR_STRATEGY = "PLATFORM_TEST_AVATAR";
 
 export default function SalesVideoProfileDetailPage() {
   const { profileId } = useParams();
@@ -422,6 +428,11 @@ export default function SalesVideoProfileDetailPage() {
               <strong>Persona:</strong> {profile.personaName ?? "—"}
             </div>
             <div className="col-md-3">
+              <strong>Avatar:</strong>{" "}
+              {AVATAR_STRATEGY_LABELS[profile.avatarStrategy ?? DEFAULT_AVATAR_STRATEGY] ??
+                profile.avatarStrategy}
+            </div>
+            <div className="col-md-3 mt-2">
               <strong>Landing:</strong> {profile.landingPageId ?? "—"}
             </div>
           </div>

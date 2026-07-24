@@ -1,4 +1,8 @@
 export type SalesVideoKind = "HERO" | "OBJECTION" | "PROOF";
+export type SalesVideoAvatarStrategy =
+  | "PLATFORM_TEST_AVATAR"
+  | "PROPRIETARY_AVATAR_PLANNED"
+  | "PROPRIETARY_AVATAR_READY";
 export type SalesVideoStatus =
   | "DRAFT"
   | "SCRIPT_PENDING"
@@ -85,6 +89,7 @@ export interface SalesVideoProfile {
   createdBy?: string | null;
   videoKind: SalesVideoKind;
   title: string;
+  avatarStrategy: SalesVideoAvatarStrategy;
   personaName?: string | null;
   personaStyle?: string | null;
   voiceStyle?: string | null;
@@ -140,6 +145,7 @@ export interface LandingVideoSlot {
 export interface CreateSalesVideoProfilePayload {
   videoKind: SalesVideoKind;
   title: string;
+  avatarStrategy?: SalesVideoAvatarStrategy;
   personaName?: string;
   personaStyle?: string;
   voiceStyle?: string;

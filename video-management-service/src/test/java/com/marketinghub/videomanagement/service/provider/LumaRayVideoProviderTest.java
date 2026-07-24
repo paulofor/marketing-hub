@@ -78,7 +78,8 @@ class LumaRayVideoProviderTest {
                 .contains("\"model\":\"ray-3.2\"")
                 .contains("\"type\":\"video\"")
                 .contains("\"aspect_ratio\":\"9:16\"")
-                .contains("Método MUSA");
+                .contains("Método MUSA")
+                .contains("Very sharp image, crisp focus and constant soft natural daylight");
         RecordedRequest firstPoll = server.takeRequest();
         assertThat(firstPoll.getPath()).isEqualTo("/v1/generations/generation-1");
         assertThat(firstPoll.getHeader("Authorization")).isEqualTo("Bearer luma-test-key");
@@ -190,7 +191,8 @@ class LumaRayVideoProviderTest {
                               {"role":"MECANISMO","title":"Mecanismo MUSA","message":"Ruído visual, peça-sinal, cor e acabamento."},
                               {"role":"CTA","title":"Diagnóstico gratuito","message":"Faça o diagnóstico e veja seu plano."}
                             ]
-                          }
+                          },
+                          "visual_provider_directives": "Very sharp image, crisp focus and constant soft natural daylight"
                         }
                         """,
                 Instant.now(),

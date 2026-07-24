@@ -31,6 +31,7 @@ import {
 import {
   buildSalesVideoRenderMetadata,
   DEFAULT_SALES_VIDEO_PROVIDER,
+  DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
   findSalesVideoProviderOption,
   SALES_VIDEO_PROVIDER_OPTIONS,
 } from "../../api/salesVideo/videoProviderCatalog";
@@ -83,6 +84,9 @@ export default function ProductSalesVideoPage() {
   const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [selectedProviderName, setSelectedProviderName] = useState(
     DEFAULT_SALES_VIDEO_PROVIDER.providerName,
+  );
+  const [visualProviderDirectives, setVisualProviderDirectives] = useState(
+    DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
   );
   const [profileForm, setProfileForm] =
     useState<ProfileFormState>(emptyProfileForm);
@@ -226,7 +230,10 @@ export default function ProductSalesVideoPage() {
         providerFamily: selectedProvider.providerFamily,
         providerName: selectedProvider.providerName,
         executionMode: "TEST",
-        metadataJson: buildSalesVideoRenderMetadata(selectedProvider),
+        metadataJson: buildSalesVideoRenderMetadata(
+          selectedProvider,
+          visualProviderDirectives,
+        ),
       });
       toast.success("Geração de vídeo solicitada");
     } catch (error) {
@@ -594,6 +601,22 @@ export default function ProductSalesVideoPage() {
                 <strong>{selectedProvider.label}</strong>
                 <span>{selectedProvider.recommendedUse}</span>
               </div>
+              <label
+                className="form-label"
+                htmlFor="visual-provider-directives"
+              >
+                Diretivas visuais do provider
+              </label>
+              <textarea
+                id="visual-provider-directives"
+                className="form-control product-video-page__visual-directives"
+                rows={7}
+                value={visualProviderDirectives}
+                onChange={(event) =>
+                  setVisualProviderDirectives(event.target.value)
+                }
+                placeholder="Nitidez, foco, luz constante, câmera direta..."
+              />
               <div className="product-video-page__strategy">
                 <strong>Direção comercial</strong>
                 <span>VEO para blocos curtos falados e anúncios.</span>

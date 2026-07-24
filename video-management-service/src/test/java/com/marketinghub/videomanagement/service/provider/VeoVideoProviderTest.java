@@ -83,7 +83,8 @@ class VeoVideoProviderTest {
         assertThat(renderRequest.getPath()).isEqualTo("/models/veo-3.1-generate-preview:predictLongRunning");
         assertThat(renderRequest.getBody().readUtf8())
                 .contains("mulher brasileira elegante")
-                .contains("https://assets.example/musa-character.png");
+                .contains("https://assets.example/musa-character.png")
+                .contains("Very sharp image, crisp focus and constant soft natural daylight");
         assertThat(server.takeRequest().getPath()).isEqualTo("/operations/video-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/video-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/video-123-final");
@@ -217,7 +218,8 @@ class VeoVideoProviderTest {
                 """
                         {
                           "characterImagePrompt": "mulher brasileira elegante, mentora do Metodo MUSA",
-                          "characterImageReferenceUrl": "https://assets.example/musa-character.png"
+                          "characterImageReferenceUrl": "https://assets.example/musa-character.png",
+                          "visual_provider_directives": "Very sharp image, crisp focus and constant soft natural daylight"
                         }
                         """,
                 Instant.now(),

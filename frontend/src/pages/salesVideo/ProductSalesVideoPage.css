@@ -283,6 +283,11 @@
   resize: vertical;
 }
 
+.product-video-page__visual-directives {
+  min-height: 150px;
+  resize: vertical;
+}
+
 .product-video-page__provider-note,
 .product-video-page__objective,
 .product-video-page__quality,

@@ -267,12 +267,14 @@ public class LumaRayVideoProvider implements VideoProvider {
         JsonNode metadata = readMetadata(job);
         JsonNode scenes = metadata.path("assembly_plan").path("scenes");
         String sceneBrief = sceneBrief(scenes, sceneIndex, sceneCount);
+        String visualDirectives = visualProviderDirectives(metadata);
         return """
                 Vertical 9:16 commercial video scene for Método MUSA - Presença Elegante em 7 Dias.
                 Scene %d of %d. Scene brief: %s.
                 Product promise: presence that feels more elegant, intentional and coherent in 7 days, using accessible micro-actions and what the woman already owns.
                 Audience: Brazilian urban women who want sophistication without luxury pressure or excessive effort.
                 Visual style: realistic editorial, warm natural light, vinho #7A2444, creme #FFF8F3, blush #F3C9C1, subtle gold #D6A75C, urban feminine, intimate, premium but accessible.
+                Provider-specific visual directives: %s.
                 Avoid embedded text, logos, distorted phone UI, luxury ostentation, shame, guaranteed transformation or universal approval claims.
                 Approved hook: %s.
                 Approved CTA: %s.
@@ -282,9 +284,19 @@ public class LumaRayVideoProvider implements VideoProvider {
                 sceneIndex,
                 sceneCount,
                 sceneBrief,
+                visualDirectives,
                 nullToDefault(script.hookText(), ""),
                 nullToDefault(script.ctaText(), ""),
                 script.scriptText());
+    }
+
+    /** Extrai diretivas visuais do metadata para orientar nitidez, luz e composição no provider. */
+    private String visualProviderDirectives(JsonNode metadata) {
+        String directives = metadata.path("visual_provider_directives").asText("");
+        if (StringUtils.hasText(directives)) {
+            return directives.trim();
+        }
+        return "Sharp image, crisp focus, stable exposure, constant natural light, no haze, no blur and no flickering.";
     }
 
     /** Resume as cenas do plano de montagem em blocos compatíveis com 3 gerações de 10s. */

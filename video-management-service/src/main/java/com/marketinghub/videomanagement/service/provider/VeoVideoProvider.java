@@ -205,6 +205,7 @@ public class VeoVideoProvider implements VideoProvider {
         JsonNode metadata = readMetadata(job);
         String characterPrompt = metadata.path("characterImagePrompt").asText("");
         String characterReferenceUrl = metadata.path("characterImageReferenceUrl").asText("");
+        String visualDirectives = visualProviderDirectives(metadata);
         return """
                 Vertical short-form sales video for a digital product.
                 Language: %s.
@@ -218,6 +219,7 @@ public class VeoVideoProvider implements VideoProvider {
                 CTA: %s.
                 Storyboard JSON: %s.
                 Visual direction: cinematic but direct-response oriented, keep the same character identity and style across scenes, clear product promise, human emotion, readable pacing, native audio, no fake UI claims, no impossible guarantees.
+                Provider-specific visual directives: %s.
                 """.formatted(
                 nullToDefault(profile.language(), "pt-BR"),
                 nullToDefault(profile.title(), "Sales video"),
@@ -228,7 +230,17 @@ public class VeoVideoProvider implements VideoProvider {
                 nullToDefault(script.hookText(), ""),
                 script.scriptText(),
                 nullToDefault(script.ctaText(), ""),
-                storyboard);
+                storyboard,
+                visualDirectives);
+    }
+
+    /** Extrai diretivas visuais do metadata para orientar nitidez, luz e composição no provider. */
+    private String visualProviderDirectives(JsonNode metadata) {
+        String directives = metadata.path("visual_provider_directives").asText("");
+        if (StringUtils.hasText(directives)) {
+            return directives.trim();
+        }
+        return "Sharp image, crisp focus, stable exposure, constant natural light, no haze, no blur and no flickering.";
     }
 
     /** Calcula o custo oficial aproximado do VEO em USD por segundo gerado. */

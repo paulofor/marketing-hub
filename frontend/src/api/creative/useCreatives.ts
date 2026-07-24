@@ -7,6 +7,8 @@ export interface Creative {
   headline: string;
   primaryText: string;
   imageUrl: string;
+  videoId?: string | null;
+  videoUrl?: string | null;
   status: string;
   format?: string;
   description?: string;

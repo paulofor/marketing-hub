@@ -76,6 +76,8 @@ public class CreativeService {
                     .headline(request.getHeadline())
                     .primaryText(request.getPrimaryText())
                     .imageUrl(request.getImageUrl())
+                    .videoId(request.getVideoId())
+                    .videoUrl(request.getVideoUrl())
                     .description(request.getDescription())
                     .cta(normalizeMetaCallToAction(request.getCta()))
                     .destinationUrl(request.getDestinationUrl())
@@ -114,6 +116,8 @@ public class CreativeService {
         creative.setHeadline(request.getHeadline());
         creative.setPrimaryText(request.getPrimaryText());
         creative.setImageUrl(request.getImageUrl());
+        creative.setVideoId(request.getVideoId());
+        creative.setVideoUrl(request.getVideoUrl());
         creative.setDescription(request.getDescription());
         creative.setCta(normalizeMetaCallToAction(request.getCta()));
         creative.setDestinationUrl(request.getDestinationUrl());
@@ -181,14 +185,14 @@ public class CreativeService {
      * Recalcula se o experimento possui criativos aprovados.
      */
     private void refreshExperimentApproval(Experiment experiment) {
-        boolean hasApprovedCreatives = repository.existsByExperimentIdAndStatusAndUsableImage(
+        boolean hasApprovedCreatives = repository.existsByExperimentIdAndStatusAndUsableMedia(
                 experiment.getId(), CreativeStatus.READY);
         experiment.setCreativeApproved(hasApprovedCreatives);
         experimentRepository.save(experiment);
     }
 
     /**
-     * Impede que criativo de imagem seja aprovado sem asset visual publicável.
+     * Impede que criativo aprovado siga sem mídia compatível com o formato escolhido.
      */
     private void validateReadyCreativeHasImage(CreateCreativeRequest request) {
         if (request == null || request.getStatus() != CreativeStatus.READY) {
@@ -197,6 +201,11 @@ public class CreativeService {
         String format = StringUtils.hasText(request.getFormat()) ? request.getFormat().trim() : "IMAGE";
         if ("IMAGE".equalsIgnoreCase(format) && !StringUtils.hasText(request.getImageUrl())) {
             throw new IllegalArgumentException("Criativo de imagem aprovado precisa ter imagem gerada.");
+        }
+        if ("VIDEO".equalsIgnoreCase(format)
+                && !StringUtils.hasText(request.getVideoId())
+                && !StringUtils.hasText(request.getVideoUrl())) {
+            throw new IllegalArgumentException("Criativo de vídeo aprovado precisa ter videoId da Meta ou videoUrl público.");
         }
     }
 

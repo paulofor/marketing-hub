@@ -7,6 +7,10 @@ interface Props {
 
 export default function InstagramAdPreview({ creative }: Props) {
   const cta = creative.cta?.replace(/_/g, " ") || "SAIBA MAIS";
+  const isVideo = creative.format?.toUpperCase() === "VIDEO";
+  const videoUrl = creative.videoUrl
+    ? resolveAssetUrl(creative.videoUrl)
+    : undefined;
   return (
     <div
       style={{
@@ -39,11 +43,21 @@ export default function InstagramAdPreview({ creative }: Props) {
           <div style={{ fontSize: 12, color: "#8e8e8e" }}>Patrocinado</div>
         </div>
       </div>
-      <img
-        src={resolveAssetUrl(creative.imageUrl)}
-        alt="creative"
-        style={{ width: "100%", display: "block" }}
-      />
+      {isVideo && videoUrl ? (
+        <video
+          src={videoUrl}
+          controls
+          muted
+          playsInline
+          style={{ width: "100%", display: "block" }}
+        />
+      ) : (
+        <img
+          src={resolveAssetUrl(creative.imageUrl)}
+          alt="creative"
+          style={{ width: "100%", display: "block" }}
+        />
+      )}
       <div style={{ padding: 8 }}>
         <p style={{ marginBottom: 8 }}>
           <strong>{creative.headline}</strong> {creative.primaryText}

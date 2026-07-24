@@ -41,6 +41,10 @@ public class Creative {
     @Column(name = "video_id")
     private String videoId;
 
+    /** URL pública do vídeo que será enviado para a Meta pelo worker. */
+    @Column(name = "video_url")
+    private String videoUrl;
+
     @Column(name = "ad_format")
     private String format;
 

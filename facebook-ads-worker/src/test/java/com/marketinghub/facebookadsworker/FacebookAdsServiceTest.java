@@ -608,6 +608,8 @@ class FacebookAdsServiceTest {
             "Mensagem",
             "hash-123",
             "https://cdn.example/img.jpg",
+            null,
+            null,
             "LEARN_MORE",
             "Headline",
             "Descrição"
@@ -641,6 +643,8 @@ class FacebookAdsServiceTest {
             null,
             "123456789012345",
             "Mensagem",
+            null,
+            null,
             null,
             null,
             "SIGN_UP",
@@ -704,6 +708,8 @@ class FacebookAdsServiceTest {
             "Mensagem",
             null,
             null,
+            null,
+            null,
             "SIGN_UP",
             null,
             null
@@ -734,6 +740,8 @@ class FacebookAdsServiceTest {
             "Mensagem",
             null,
             "https://cdn.example/img.jpg",
+            null,
+            null,
             "LEARN_MORE",
             null,
             null
@@ -747,6 +755,43 @@ class FacebookAdsServiceTest {
             .get("object_story_spec")
             .get("link_data");
         assertEquals("https://cdn.example/img.jpg", linkData.get("picture").asText());
+    }
+
+    @Test
+    void createAdCreativeUsesVideoDataWhenVideoIdIsPresent() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"778\"}")
+            .addHeader("Content-Type", "application/json"));
+        FacebookAdsService.AdCreativeRequest request = new FacebookAdsService.AdCreativeRequest(
+            "Camp - Video",
+            "42",
+            "11",
+            "https://example.com",
+            null,
+            "Mensagem",
+            null,
+            null,
+            "vid-123",
+            "https://cdn.example/video.mp4",
+            "LEARN_MORE",
+            "Headline",
+            "Descrição"
+        );
+
+        String id = service.createAdCreative("1", request);
+
+        RecordedRequest recorded = takeRequest("request");
+        JsonNode storySpec = objectMapper
+            .readTree(recorded.getBody().inputStream())
+            .get("object_story_spec");
+        assertFalse(storySpec.has("link_data"));
+        JsonNode videoData = storySpec.get("video_data");
+        assertEquals("vid-123", videoData.get("video_id").asText());
+        assertEquals("Mensagem", videoData.get("message").asText());
+        assertEquals("Headline", videoData.get("title").asText());
+        assertEquals("Descrição", videoData.get("link_description").asText());
+        assertEquals("LEARN_MORE", videoData.get("call_to_action").get("type").asText());
+        assertEquals("https://example.com", videoData.get("call_to_action").get("value").get("link").asText());
+        assertEquals("778", id);
     }
 
     @Test

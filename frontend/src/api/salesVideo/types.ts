@@ -310,6 +310,21 @@ export interface SalesVideoVariantPerformance {
   conversionRatePercent: number;
 }
 
+export interface SalesVideoProviderScore {
+  providerName: string;
+  score: number;
+  readyJobs: number;
+  failedJobs: number;
+  approvedAssets: number;
+  rejectedAssets: number;
+  leads: number;
+  qualifiedLeads: number;
+  checkoutStarts: number;
+  purchases: number;
+  revenue: number;
+  recommendation: string;
+}
+
 export interface SalesVideoPerformanceSummary {
   profileId: number;
   from?: string | null;
@@ -321,4 +336,5 @@ export interface SalesVideoPerformanceSummary {
   totalPurchases: number;
   totalRevenue: number;
   variants: SalesVideoVariantPerformance[];
+  providerScores: SalesVideoProviderScore[];
 }

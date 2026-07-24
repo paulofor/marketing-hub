@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-24 — Pontuação comercial de providers de vídeo
+
+- Decisão de produto: o Marketing Hub deve pontuar providers de vídeo por evidência comercial e qualidade real, não apenas por catálogo ou preferência manual.
+- Causa-raiz tratada: vídeos ruins ou bloqueados podiam ficar apenas como eventos isolados de QA, sem reduzir a chance de o mesmo provider/configuração ser escolhido novamente.
+- Correção preparada: o resumo comercial de Sales Video passa a expor `providerScores`, combinando jobs prontos/falhos, assets aprovados/rejeitados e eventos de funil como lead, lead qualificado, checkout e compra.
+- Regra operacional: vídeo de sucesso aumenta reputação do provider; vídeo bloqueado, falha técnica ou rejeição visual reduz reputação e deve orientar regeneração, troca de provider ou uso controlado.
+
 ## 2026-07-24 — Bloqueio visual não pode virar criativo
 
 - Problema observado: o vídeo MUSA do experimento 71/job `20454` foi gerado pela Luma e ficou tecnicamente `VIDEO_READY`, mas a checagem visual comercial da tela marcou `Bloqueado: luz oscilando`.
@@ -34,6 +41,13 @@
 - Causa-raiz tratada: a operacao criou o arquivo seguro no host, mas o compose e o entrypoint nao montavam nem carregavam automaticamente `HEYGEN_API_KEY`.
 - Correção preparada: compose local e compose de deploy montam `/root/infra/heygen-token/heygen_api_key` como secret somente leitura; o entrypoint carrega HeyGen em `HEYGEN_API_KEY` e `VIDEO_PROVIDERS_HEYGEN_API_KEY`.
 - Regra operacional: token HeyGen deve seguir o mesmo padrao de segredo por arquivo, sem valor real em compose, Markdown, `.env`, logs ou resposta.
+
+## 2026-07-24 — Token Runway via arquivo no container de video
+
+- Problema observado: o token Runway foi disponibilizado no host de video, mas o container ainda nao o recebia pelo mesmo padrao operacional de Luma/Kling/VEO/HeyGen.
+- Causa-raiz tratada: a configuracao versionada do modulo de video ainda nao montava nem carregava automaticamente `RUNWAY_API_KEY`.
+- Correção preparada: compose local e compose de deploy montam `/root/infra/runaway-token/runaway_api_key` como secret somente leitura; o entrypoint carrega Runway em `RUNWAY_API_KEY` e `VIDEO_PROVIDERS_RUNWAY_API_KEY`.
+- Regra operacional: token Runway deve seguir o mesmo padrao de segredo por arquivo, sem valor real em compose, Markdown, `.env`, logs ou resposta.
 
 ## 2026-07-23 — Tokens Luma e Kling via arquivo no container de video
 

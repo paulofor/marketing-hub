@@ -1,5 +1,9 @@
 package com.marketinghub.salesvideo.service;
 
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoCommercialPlaybookRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoConversionEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
@@ -18,6 +22,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
+/**
+ * Consolida aprendizados comerciais dos vídeos a partir de eventos, jobs e revisão visual.
+ */
 @Component
 public class SalesVideoCommercialInsightsService {
     private final SalesVideoProfileRepository profileRepository;
@@ -25,17 +32,20 @@ public class SalesVideoCommercialInsightsService {
     private final SalesVideoScriptRepository scriptRepository;
     private final SalesVideoCommercialPlaybookRepository playbookRepository;
     private final SalesVideoConversionEventRepository conversionEventRepository;
+    private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
     public SalesVideoCommercialInsightsService(SalesVideoProfileRepository profileRepository,
                                                SalesVideoJobRepository jobRepository,
                                                SalesVideoScriptRepository scriptRepository,
                                                SalesVideoCommercialPlaybookRepository playbookRepository,
-                                               SalesVideoConversionEventRepository conversionEventRepository) {
+                                               SalesVideoConversionEventRepository conversionEventRepository,
+                                               ExperimentVideoAssetRepository experimentVideoAssetRepository) {
         this.profileRepository = profileRepository;
         this.jobRepository = jobRepository;
         this.scriptRepository = scriptRepository;
         this.playbookRepository = playbookRepository;
         this.conversionEventRepository = conversionEventRepository;
+        this.experimentVideoAssetRepository = experimentVideoAssetRepository;
     }
 
     @Transactional
@@ -104,6 +114,7 @@ public class SalesVideoCommercialInsightsService {
         return toDto(conversionEventRepository.save(event));
     }
 
+    /** Resume a performance comercial e a reputação dos providers do perfil. */
     @Transactional(readOnly = true)
     public SalesVideoPerformanceSummaryDto summarizePerformance(Long profileId, Instant from, Instant to) {
         SalesVideoProfile profile = loadProfile(profileId);
@@ -160,6 +171,7 @@ public class SalesVideoCommercialInsightsService {
                 .stream()
                 .map(VariantAccumulator::toDto)
                 .toList();
+        List<SalesVideoProviderScoreDto> providerScores = summarizeProviderScores(profileId, profile.getTenantId(), events);
 
         return SalesVideoPerformanceSummaryDto.builder()
                 .profileId(profileId)
@@ -169,7 +181,70 @@ public class SalesVideoCommercialInsightsService {
                 .totalPurchases(totalPurchases)
                 .totalRevenue(totalRevenue)
                 .variants(variants)
+                .providerScores(providerScores)
                 .build();
+    }
+
+    /** Calcula a reputação dos providers com base em qualidade, falha técnica e conversão. */
+    private List<SalesVideoProviderScoreDto> summarizeProviderScores(Long profileId, String tenantId,
+                                                                     List<SalesVideoConversionEvent> events) {
+        Map<String, ProviderScoreAccumulator> providers = new LinkedHashMap<>();
+        List<SalesVideoJob> jobs = jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)
+                .stream()
+                .filter(job -> Objects.equals(job.getTenantId(), tenantId))
+                .toList();
+        for (SalesVideoJob job : jobs) {
+            ProviderScoreAccumulator accumulator = providers.computeIfAbsent(normalizeProvider(job.getProviderName()),
+                    ProviderScoreAccumulator::new);
+            if (job.getStatus() == SalesVideoStatus.VIDEO_READY || job.getStatus() == SalesVideoStatus.PUBLISHED) {
+                accumulator.readyJobs++;
+            }
+            if (job.getStatus() == SalesVideoStatus.VIDEO_FAILED) {
+                accumulator.failedJobs++;
+            }
+        }
+        for (ExperimentVideoAsset asset : experimentVideoAssetRepository.findBySalesVideoProfileIdOrderByCreatedAtDesc(profileId)) {
+            ProviderScoreAccumulator accumulator = providers.computeIfAbsent(normalizeProvider(asset.getProvider()),
+                    ProviderScoreAccumulator::new);
+            if (asset.getStatus() == ExperimentVideoStatus.READY
+                    && asset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED) {
+                accumulator.approvedAssets++;
+            }
+            if (asset.getReviewStatus() == ExperimentVideoReviewStatus.REJECTED) {
+                accumulator.rejectedAssets++;
+            }
+        }
+        for (SalesVideoConversionEvent event : events) {
+            String providerName = event.getJob() != null ? event.getJob().getProviderName() : null;
+            ProviderScoreAccumulator accumulator = providers.computeIfAbsent(normalizeProvider(providerName),
+                    ProviderScoreAccumulator::new);
+            if (event.getEventType() == SalesVideoConversionEventType.LEAD) {
+                accumulator.leads++;
+            }
+            if (event.getEventType() == SalesVideoConversionEventType.QUALIFIED_LEAD) {
+                accumulator.qualifiedLeads++;
+            }
+            if (event.getEventType() == SalesVideoConversionEventType.CHECKOUT_STARTED) {
+                accumulator.checkoutStarts++;
+            }
+            if (event.getEventType() == SalesVideoConversionEventType.PURCHASE) {
+                accumulator.purchases++;
+            }
+            if (event.getEventValue() != null) {
+                accumulator.revenue = accumulator.revenue.add(event.getEventValue());
+            }
+        }
+        return providers.values()
+                .stream()
+                .map(ProviderScoreAccumulator::toDto)
+                .sorted(Comparator.comparing(SalesVideoProviderScoreDto::getScore).reversed()
+                        .thenComparing(SalesVideoProviderScoreDto::getProviderName))
+                .toList();
+    }
+
+    /** Normaliza providers ausentes para não perder fatos comerciais no resumo. */
+    private static String normalizeProvider(String providerName) {
+        return StringUtils.hasText(providerName) ? providerName.trim() : "unknown";
     }
 
     private SalesVideoProfile loadProfile(Long profileId) {
@@ -242,6 +317,67 @@ public class SalesVideoCommercialInsightsService {
                     .purchases(purchases)
                     .revenue(revenue)
                     .build();
+        }
+    }
+
+    /**
+     * Acumula sinais comerciais e técnicos para calcular a reputação de um provider.
+     */
+    private static final class ProviderScoreAccumulator {
+        private final String providerName;
+        private long readyJobs;
+        private long failedJobs;
+        private long approvedAssets;
+        private long rejectedAssets;
+        private long leads;
+        private long qualifiedLeads;
+        private long checkoutStarts;
+        private long purchases;
+        private BigDecimal revenue = BigDecimal.ZERO;
+
+        private ProviderScoreAccumulator(String providerName) {
+            this.providerName = providerName;
+        }
+
+        /** Converte os sinais acumulados em DTO de pontuação comercial. */
+        private SalesVideoProviderScoreDto toDto() {
+            int score = Math.max(0, Math.min(100, 50
+                    + (int) readyJobs * 8
+                    + (int) approvedAssets * 10
+                    + (int) leads * 4
+                    + (int) qualifiedLeads * 8
+                    + (int) checkoutStarts * 18
+                    + (int) purchases * 30
+                    - (int) failedJobs * 12
+                    - (int) rejectedAssets * 25));
+            return SalesVideoProviderScoreDto.builder()
+                    .providerName(providerName)
+                    .score(score)
+                    .readyJobs(readyJobs)
+                    .failedJobs(failedJobs)
+                    .approvedAssets(approvedAssets)
+                    .rejectedAssets(rejectedAssets)
+                    .leads(leads)
+                    .qualifiedLeads(qualifiedLeads)
+                    .checkoutStarts(checkoutStarts)
+                    .purchases(purchases)
+                    .revenue(revenue)
+                    .recommendation(recommendation(score, rejectedAssets, failedJobs, purchases))
+                    .build();
+        }
+
+        /** Define recomendação operacional para o provider conforme score e falhas críticas. */
+        private String recommendation(int score, long rejectedAssets, long failedJobs, long purchases) {
+            if (rejectedAssets > 0 || score < 40) {
+                return "bloquear_ou_regenerar";
+            }
+            if (purchases > 0 || score >= 75) {
+                return "priorizar";
+            }
+            if (failedJobs > 0 || score < 60) {
+                return "usar_com_cautela";
+            }
+            return "testar_controlado";
         }
     }
 }

@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-24-sales-video-post-production-job-type
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: sales_video_job
+        - columnExists:
+            tableName: sales_video_job
+            columnName: job_type
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_job
+                  MODIFY COLUMN job_type ENUM(
+                      'SCRIPT',
+                      'STORYBOARD',
+                      'RENDER',
+                      'POST_PRODUCTION',
+                      'PUBLISH',
+                      'RETRY'
+                  ) NOT NULL;

@@ -46,6 +46,7 @@
 .product-video-page__table-heading span,
 .product-video-page__hero-copy span,
 .product-video-page__objective span,
+.product-video-page__quality span,
 .product-video-page__provider-note span,
 .product-video-page__strategy span {
   color: #64748b;
@@ -142,6 +143,39 @@
   font-weight: 700;
 }
 
+.product-video-page__quality-pill,
+.product-video-page__table-quality {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 0.5rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.product-video-page__table-quality {
+  margin-top: 0;
+}
+
+.product-video-page__quality-pill--approved,
+.product-video-page__table-quality--approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.product-video-page__quality-pill--warning,
+.product-video-page__table-quality--warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.product-video-page__quality-pill--blocked,
+.product-video-page__table-quality--blocked {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .product-video-page__profile--active {
   border-color: #2563eb;
   background: #eff6ff;
@@ -216,6 +250,7 @@
 
 .product-video-page__provider-note,
 .product-video-page__objective,
+.product-video-page__quality,
 .product-video-page__strategy {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -240,6 +275,64 @@
 
 .product-video-page__objective small {
   color: #64748b;
+}
+
+.product-video-page__quality {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.product-video-page__quality--approved {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.product-video-page__quality--warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.product-video-page__quality--blocked {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.product-video-page__quality-header {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.product-video-page__quality-header strong,
+.product-video-page__quality-header span {
+  display: block;
+}
+
+.product-video-page__quality--approved .product-video-page__quality-header {
+  color: #166534;
+}
+
+.product-video-page__quality--warning .product-video-page__quality-header {
+  color: #92400e;
+}
+
+.product-video-page__quality--blocked .product-video-page__quality-header {
+  color: #991b1b;
+}
+
+.product-video-page__quality p,
+.product-video-page__quality ul {
+  margin: 0;
+}
+
+.product-video-page__quality p {
+  color: #334155;
+}
+
+.product-video-page__quality ul {
+  padding-left: 1.1rem;
+  color: #475569;
 }
 
 .product-video-page__strategy {

@@ -6055,3 +6055,10 @@
 - foi feito: os metadados do render planejado passaram a registrar `commercialStrategy`, com papel no funil, uso recomendado, duração hero e derivados curtos recomendados.
 - foi feito: a aba Vídeo passou a mostrar um painel de estratégia com contagem de hero pronto, hero aprovado e cortes curtos, além de classificar cada asset por papel no funil e uso recomendado.
 - impacto comercial esperado: aprovar um hero principal para conversão na landing e usar os demais vídeos como variações/retargeting/base de cortes, aumentando clareza de decisão e evitando otimização apenas por clipe curto.
+
+## 2026-07-24 — Marketing Hub: URL do frontend administrativo para Codex
+
+- causa-raiz operacional: sem URL administrativa declarada no ambiente, fluxos comerciais podem ser executados por endpoints diretos mesmo quando já existe tela, reduzindo validação visual da experiência real do usuário.
+- foi feito: `AGENTS.md` passou a exigir que o ambiente exponha claramente a URL pública do frontend administrativo do Marketing Hub para o Codex.
+- foi feito: `docs/canonical/system-governance-canon.v2.md` passou a registrar que fluxos comerciais, experimentos, PDEs, campanhas, vídeos e validações pós-deploy devem preferir execução/validação pela tela quando a funcionalidade existir.
+- impacto esperado: reduzir decisões baseadas apenas em API e aumentar a qualidade da validação comercial antes de liberar tráfego, vídeo ou experimento.

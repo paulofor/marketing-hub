@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-24 — TTS OpenAI obrigatório para pós-produção comercial
+
+- Problema observado: vídeos comerciais do MUSA podiam ficar tecnicamente renderizados, mas sem voz/legenda/trilha quando a pós-produção falhava por ausência de `OPENAI_API_KEY_FILE` no runtime do `video-management-service`.
+- Causa-raiz tratada: o risco estava descrito apenas como limitação operacional, sem regra clara impedindo que MP4 bruto silencioso virasse peça comercial final por conveniência.
+- Regra aplicada: `AGENTS.md` e o cânone de Sales Video agora exigem corrigir o secret `OPENAI_API_KEY_FILE` e reexecutar a pós-produção antes da aprovação comercial quando o roteiro depender de TTS/legenda/trilha.
+- Impacto comercial esperado: preservar força persuasiva dos vídeos de PDE e evitar testes contaminados por asset silencioso incompleto, salvo aprovação humana explícita para teste limitado.
+
 ## 2026-07-24 — Estratégia de avatar no perfil de vídeo
 
 - Decisão de produto: manter o vídeo HeyGen atual como teste de mercado e preparar o Marketing Hub para planejar avatares proprietários no futuro.

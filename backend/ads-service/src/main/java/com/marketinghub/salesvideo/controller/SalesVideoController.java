@@ -23,6 +23,7 @@ import com.marketinghub.salesvideo.dto.JobProgressRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotHistoryDto;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RetrySalesVideoJobRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoConversionEventDto;
@@ -160,6 +161,13 @@ public class SalesVideoController {
     public SalesVideoJobDto retryJob(@PathVariable Long jobId,
                                      @Valid @RequestBody RetrySalesVideoJobRequest request) {
         return salesVideoService.retry(jobId, request);
+    }
+
+    /** Solicita pós-produção de um vídeo bruto já renderizado. */
+    @PostMapping("/api/sales-videos/jobs/{jobId}/request-post-production")
+    public SalesVideoJobDto requestPostProduction(@PathVariable Long jobId,
+                                                  @Valid @RequestBody RequestSalesVideoPostProductionRequest request) {
+        return salesVideoService.requestPostProduction(jobId, request);
     }
 
     /** Lista jobs OpenAI para consumo interno do ai-worker. */

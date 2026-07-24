@@ -249,6 +249,32 @@ paths:
                 $ref: '#/components/schemas/SalesVideoRolloutStatusDto'
         '404':
           description: Perfil não encontrado
+
+  /api/sales-videos/jobs/{jobId}/request-post-production:
+    post:
+      tags: [PublicVideoProfiles]
+      summary: Solicita pós-produção de um vídeo bruto já renderizado
+      description: Cria um job `POST_PRODUCTION` para o `video-management-service` finalizar um vídeo pronto com voz off, legenda e trilha, preservando o job fonte no metadata/auditoria.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestSalesVideoPostProductionRequest'
+      responses:
+        '200':
+          description: Job de pós-produção criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+        '400':
+          description: Job fonte não está pronto ou não possui URL/asset de vídeo
+        '404':
+          description: Job fonte não encontrado
+
   /api/sales-videos/profiles/{profileId}:
     get:
       tags: [PublicVideoProfiles]
@@ -575,6 +601,22 @@ components:
         metadataJson:
           type: string
           description: Plano comercial/operacional do render. Para hero PDE deve registrar estratégia de provider, montagem Dor -> Resultado -> Mecanismo -> CTA, duração mínima aceita e exigência de `streamPlaybackUrl` HLS.
+
+    RequestSalesVideoPostProductionRequest:
+      type: object
+      required: [requestedBy, voiceOverScript, captionText]
+      properties:
+        requestedBy:
+          type: string
+        sourceVideoUrl:
+          type: string
+          description: URL opcional do vídeo bruto. Quando omitida, o backend usa `streamPlaybackUrl` ou URL do asset do job fonte.
+        voiceOverScript:
+          type: string
+          description: Narração que será sintetizada em português para conduzir dor, mecanismo, desejo e CTA.
+        captionText:
+          type: string
+          description: Legenda principal queimada no vídeo final.
 
     JobHeartbeatRequest:
       type: object

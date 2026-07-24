@@ -169,6 +169,13 @@ export interface RequestVideoRenderPayload {
   metadataJson?: string;
 }
 
+export interface RequestSalesVideoPostProductionPayload {
+  requestedBy: string;
+  sourceVideoUrl?: string;
+  voiceOverScript: string;
+  captionText: string;
+}
+
 export interface UpdateSalesVideoCompliancePayload {
   requiresConsent?: boolean;
   consentRecordedBy?: string;

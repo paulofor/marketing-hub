@@ -1,5 +1,6 @@
 package com.marketinghub.salesvideo.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.media.Asset;
@@ -24,7 +25,9 @@ import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -276,6 +279,35 @@ public class SalesVideoJobService {
         return SalesVideoMapper.toDto(newJob);
     }
 
+    /** Cria um job de pós-produção a partir de um vídeo bruto já aprovado para visualização. */
+    @Transactional
+    public SalesVideoJobDto requestPostProduction(Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
+        SalesVideoJob sourceJob = loadJob(sourceJobId);
+        if (sourceJob.getStatus() != SalesVideoStatus.VIDEO_READY) {
+            throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST,
+                    "Pós-produção exige um vídeo com status VIDEO_READY.");
+        }
+        String sourceVideoUrl = resolveSourceVideoUrl(sourceJob, request.getSourceVideoUrl());
+        String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
+        SalesVideoJob postProductionJob = createJob(
+                sourceJob.getProfile(),
+                sourceJob.getScript(),
+                SalesVideoJobType.POST_PRODUCTION,
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                "MUSA_POST_PRODUCTION",
+                requestedBy,
+                sourceJob.getExecutionMode());
+        postProductionJob.setRetryOfJob(sourceJob);
+        postProductionJob.setRetryAttempt(sourceJob.getRetryAttempt() + 1);
+        postProductionJob.setMetadataJson(buildPostProductionMetadata(sourceJob, sourceVideoUrl, request));
+        postProductionJob.setAuditSnapshotJson(buildPostProductionAuditSnapshot(sourceJob, postProductionJob, requestedBy));
+        jobRepository.save(postProductionJob);
+        registerEvent(sourceJob, SalesVideoJobEventType.RETRIED, sourceJob.getStatus(), sourceJob.getStatus(),
+                "Pós-produção solicitada por " + requestedBy,
+                "Job de pós-produção #" + postProductionJob.getId());
+        return SalesVideoMapper.toDto(postProductionJob);
+    }
+
     private SalesVideoScript maybePersistScriptResult(SalesVideoJob job,
                                                           GeneratedScriptResultPayload payload) {
         if (job.getJobType() != SalesVideoJobType.SCRIPT || payload == null) {
@@ -308,6 +340,64 @@ public class SalesVideoJobService {
             job.getProfile().getScripts().add(saved);
         }
         return saved;
+    }
+
+    /** Resolve a URL fonte da pós-produção a partir do payload, streaming ou asset persistido. */
+    private String resolveSourceVideoUrl(SalesVideoJob sourceJob, String requestedSourceVideoUrl) {
+        if (StringUtils.hasText(requestedSourceVideoUrl)) {
+            return requestedSourceVideoUrl.trim();
+        }
+        if (StringUtils.hasText(sourceJob.getStreamPlaybackUrl())) {
+            return sourceJob.getStreamPlaybackUrl().trim();
+        }
+        if (sourceJob.getAsset() != null && StringUtils.hasText(sourceJob.getAsset().getUrl())) {
+            return sourceJob.getAsset().getUrl().trim();
+        }
+        throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST,
+                "Informe uma URL fonte ou selecione um vídeo com asset disponível.");
+    }
+
+    /** Monta o metadata operacional consumido pelo provider local de pós-produção. */
+    private String buildPostProductionMetadata(SalesVideoJob sourceJob,
+                                               String sourceVideoUrl,
+                                               RequestSalesVideoPostProductionRequest request) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("sourceJobId", sourceJob.getId());
+        metadata.put("sourceVideoUrl", sourceVideoUrl);
+        metadata.put("voiceOverScript", request.getVoiceOverScript());
+        metadata.put("captionText", request.getCaptionText());
+        metadata.put("sourceAssetId", sourceJob.getAsset() != null ? sourceJob.getAsset().getId() : null);
+        metadata.put("sourceProviderName", sourceJob.getProviderName());
+        metadata.put("commercialIntent", "Finalizar video bruto com audio, legenda e trilha para experimento de venda.");
+        return writeJson(metadata, "Falha ao serializar metadata de pós-produção.");
+    }
+
+    /** Monta snapshot de auditoria para rastrear a origem do vídeo finalizado. */
+    private String buildPostProductionAuditSnapshot(SalesVideoJob sourceJob,
+                                                    SalesVideoJob postProductionJob,
+                                                    String requestedBy) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("capturedAt", Instant.now().toString());
+        snapshot.put("requestedBy", requestedBy);
+        snapshot.put("sourceJobId", sourceJob.getId());
+        snapshot.put("sourceProviderName", sourceJob.getProviderName());
+        snapshot.put("sourceAssetId", sourceJob.getAsset() != null ? sourceJob.getAsset().getId() : null);
+        snapshot.put("profileId", sourceJob.getProfile() != null ? sourceJob.getProfile().getId() : null);
+        snapshot.put("scriptId", sourceJob.getScript() != null ? sourceJob.getScript().getId() : null);
+        snapshot.put("providerFamily", postProductionJob.getProviderFamily());
+        snapshot.put("providerName", postProductionJob.getProviderName());
+        snapshot.put("executionMode", postProductionJob.getExecutionMode());
+        snapshot.put("postProductionMetadataJson", postProductionJob.getMetadataJson());
+        return writeJson(snapshot, "Falha ao serializar snapshot de auditoria da pós-produção.");
+    }
+
+    /** Serializa objetos simples para JSON de job com erro operacional padronizado. */
+    private String writeJson(Map<String, Object> payload, String failureMessage) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            throw VideoModuleException.internal(VideoModuleErrorCode.INTERNAL_ERROR, failureMessage);
+        }
     }
 
     /** Notifica a porta de sincronizacao de ativos quando um render valido e concluido. */

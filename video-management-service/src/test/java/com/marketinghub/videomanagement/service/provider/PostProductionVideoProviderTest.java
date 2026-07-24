@@ -67,6 +67,34 @@ class PostProductionVideoProviderTest {
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
     }
 
+    /** Deve priorizar OpenAI TTS para evitar voz robótica quando a chave estiver configurada. */
+    @Test
+    void shouldUseOpenAiTtsWhenConfigured() throws Exception {
+        server.enqueue(mp4Response());
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "audio/mpeg")
+                .setBody(new Buffer().write(new byte[] {1, 2, 3, 4})));
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
+        properties.getProviders().getPostProduction().setOpenAiApiKey("test-key");
+        properties.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(server.url("/").toString()));
+        PostProductionVideoProvider provider =
+                new PostProductionVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(job(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.metadata().get("audio").toString())
+                .contains("OPENAI_TTS", "natural_tts_candidate")
+                .doesNotContain("synthetic_local");
+        assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
+        var openAiRequest = server.takeRequest();
+        assertThat(openAiRequest.getPath()).isEqualTo("/audio/speech");
+        assertThat(openAiRequest.getHeader("Authorization")).isEqualTo("Bearer test-key");
+        assertThat(openAiRequest.getBody().readUtf8())
+                .contains("gpt-4o-mini-tts", "nova", "Você se arruma");
+    }
+
     /** Cria uma resposta MP4 mínima para o download fonte. */
     private MockResponse mp4Response() {
         return new MockResponse()

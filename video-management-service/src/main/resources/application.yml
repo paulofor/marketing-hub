@@ -70,6 +70,14 @@ video:
       espeak-path: espeak-ng
       espeak-voice: pt-br
       font-file: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+      open-ai-tts-enabled: ${VIDEO_PROVIDERS_POST_PRODUCTION_OPENAI_TTS_ENABLED:false}
+      open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      open-ai-api-key: ${OPENAI_API_KEY:}
+      open-ai-api-key-file: ${OPENAI_API_KEY_FILE:}
+      open-ai-tts-model: ${OPENAI_TTS_MODEL:gpt-4o-mini-tts}
+      open-ai-tts-voice: ${OPENAI_TTS_VOICE:nova}
+      open-ai-tts-response-format: ${OPENAI_TTS_RESPONSE_FORMAT:mp3}
+      open-ai-tts-instructions: ${OPENAI_TTS_INSTRUCTIONS:Fale em português do Brasil com voz feminina natural, elegante, acolhedora e confiante. Ritmo de anúncio mobile, sem soar robótica, sem dramatização exagerada e com CTA claro.}
 
 management:
   endpoints:

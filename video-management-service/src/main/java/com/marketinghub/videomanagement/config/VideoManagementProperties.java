@@ -202,5 +202,13 @@ public class VideoManagementProperties {
         private String espeakPath = "espeak-ng";
         private String espeakVoice = "pt-br";
         private String fontFile = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
+        private boolean openAiTtsEnabled = false;
+        private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
+        private String openAiApiKey;
+        private String openAiApiKeyFile;
+        private String openAiTtsModel = "gpt-4o-mini-tts";
+        private String openAiTtsVoice = "nova";
+        private String openAiTtsResponseFormat = "mp3";
+        private String openAiTtsInstructions = "Fale em português do Brasil com voz feminina natural, elegante, acolhedora e confiante. Ritmo de anúncio mobile, sem soar robótica, sem dramatização exagerada e com CTA claro.";
     }
 }

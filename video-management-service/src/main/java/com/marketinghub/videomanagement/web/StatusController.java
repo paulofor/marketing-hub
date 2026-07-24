@@ -36,7 +36,18 @@ public class StatusController {
                                 "enabled", properties.getProviders().getVeo().isEnabled(),
                                 "acceptedNames", properties.getProviders().getVeo().getAcceptedNames(),
                                 "apiKeyConfigured", hasText(properties.getProviders().getVeo().getApiKey()),
-                                "model", properties.getProviders().getVeo().getModel()))
+                                "model", properties.getProviders().getVeo().getModel()),
+                        "postProduction", Map.of(
+                                "enabled", properties.getProviders().getPostProduction().isEnabled(),
+                                "openAiTtsEnabled",
+                                properties.getProviders().getPostProduction().isOpenAiTtsEnabled(),
+                                "openAiApiKeyConfigured",
+                                hasText(properties.getProviders().getPostProduction().getOpenAiApiKey())
+                                        || hasText(properties.getProviders().getPostProduction().getOpenAiApiKeyFile()),
+                                "openAiTtsModel",
+                                properties.getProviders().getPostProduction().getOpenAiTtsModel(),
+                                "openAiTtsVoice",
+                                properties.getProviders().getPostProduction().getOpenAiTtsVoice()))
         );
     }
 

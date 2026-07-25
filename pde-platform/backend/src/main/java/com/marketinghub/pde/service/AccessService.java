@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -761,6 +762,7 @@ public class AccessService {
     /** Converte uma linha JDBC em evento normalizado de jornada. */
     private SessionJourneyEvent toSessionJourneyEvent(ResultSet resultSet) throws SQLException, IOException {
         Map<String, Object> metadata = readMetadata(resultSet.getString("metadata_json"));
+        Timestamp occurredAt = resultSet.getTimestamp("occurred_at");
         return new SessionJourneyEvent(
                 resultSet.getString("visitor_id"),
                 resultSet.getString("client_ip"),
@@ -769,7 +771,8 @@ public class AccessService {
                 nullableLong(resultSet, "visible_ms"),
                 resultSet.getString("section_id"),
                 resultSet.getString("action_name"),
-                toOperationalInstant(resultSet.getTimestamp("occurred_at")),
+                toOperationalInstant(occurredAt),
+                timestampAsOperationalText(occurredAt),
                 metadataString(metadata, "screenName"),
                 metadataLong(metadata, "scrollDepthPercent"),
                 metadataLong(metadata, "maxScrollDepthPercent"),
@@ -782,10 +785,19 @@ public class AccessService {
         return timestamp.toLocalDateTime().atZone(OPERATIONAL_TIME_ZONE).toInstant();
     }
 
-    /** Serializa um DATETIME opcional como instante operacional ou null. */
+    /** Serializa um DATETIME opcional com offset operacional explícito ou null. */
     private String timestampAsOperationalText(ResultSet resultSet, String columnName) throws SQLException {
         Timestamp timestamp = resultSet.getTimestamp(columnName);
-        return timestamp == null ? null : toOperationalInstant(timestamp).toString();
+        return timestampAsOperationalText(timestamp);
+    }
+
+    /** Serializa um DATETIME já lido do JDBC com offset operacional explícito ou null. */
+    private static String timestampAsOperationalText(Timestamp timestamp) {
+        if (timestamp == null) {
+            return null;
+        }
+        ZonedDateTime operationalDateTime = timestamp.toLocalDateTime().atZone(OPERATIONAL_TIME_ZONE);
+        return operationalDateTime.toOffsetDateTime().toString();
     }
 
     /** Lê o JSON de metadados salvo no evento para detalhar tela, campo e clique. */
@@ -1339,6 +1351,7 @@ public class AccessService {
             String sectionId,
             String actionName,
             Instant occurredAt,
+            String occurredAtText,
             String screenName,
             Long scrollDepthPercent,
             Long maxScrollDepthPercent,
@@ -1407,7 +1420,7 @@ public class AccessService {
             lastEventType = event.eventType();
             lastActionName = event.actionName();
             steps.add(new FunnelAnalyticsSessionStepDto(
-                    event.occurredAt().toString(),
+                    event.occurredAtText(),
                     event.eventType(),
                     event.screenName(),
                     event.sectionId(),
@@ -1425,8 +1438,8 @@ public class AccessService {
                     sessionId,
                     visitorId,
                     clientIp,
-                    firstEventAt == null ? null : firstEventAt.toString(),
-                    lastEventAt == null ? null : lastEventAt.toString(),
+                    steps.isEmpty() ? null : steps.get(0).occurredAt(),
+                    steps.isEmpty() ? null : steps.get(steps.size() - 1).occurredAt(),
                     totalVisibleMs,
                     maxScrollDepthPercent,
                     List.copyOf(screenNames),

@@ -482,6 +482,52 @@ class AccessServiceTest {
         assertThat(journeys.sessions()).isEmpty();
     }
 
+    /** Confirma que jornadas recentes expõem DATETIME do MySQL com offset explícito de Brasília. */
+    @Test
+    void summarizesSessionJourneysWithBrazilOperationalOffset() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_session_journey_time;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT INTO pde_funnel_event (
+                      event_id, product_slug, event_type, source, page_url, session_id, visitor_id,
+                      visible_ms, action_name, metadata_json, occurred_at
+                    )
+                    VALUES (
+                      'event-session-time-1', 'metodo-musa-7-dias', 'PAGE_VISIBLE_TIME', 'test',
+                      'https://clubemusa.com.br/acesso', 'session-time-1', 'visitor-time-1',
+                      1200, 'page_visibility_flush', '{"screenName":"login_first_access"}',
+                      TIMESTAMP '2026-07-24 21:07:16'
+                    )
+                    """);
+        }
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        var journeys = accessService.summarizeSessionJourneys("metodo-musa-7-dias", 20);
+
+        assertThat(journeys.sessions())
+                .singleElement()
+                .satisfies(journey -> {
+                    assertThat(journey.lastEventAt()).isEqualTo("2026-07-24T21:07:16-03:00");
+                    assertThat(journey.steps())
+                            .singleElement()
+                            .satisfies(step -> assertThat(step.occurredAt())
+                                    .isEqualTo("2026-07-24T21:07:16-03:00"));
+                });
+    }
+
     /** Confirma que ambiente comercial não inicia sem persistência JDBC obrigatória. */
     @Test
     void rejectsStartupWhenJdbcStorageIsRequiredWithoutJdbcUrl() {

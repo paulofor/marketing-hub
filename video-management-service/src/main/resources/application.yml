@@ -55,6 +55,23 @@ video:
       negative-prompt: "sensualized woman, seductive pose, body focus, exposed body, luxury ostentation, dark haze, blur, distorted hands, embedded text, logo"
       poll-interval: PT10S
       max-poll-attempts: 120
+    runway:
+      enabled: false
+      accepted-names:
+        - RUNWAY
+        - RUNWAY_GEN_4_5
+        - RUNAWAY
+      base-url: https://api.dev.runwayml.com
+      api-key: ${RUNWAY_API_KEY:${VIDEO_PROVIDERS_RUNWAY_API_KEY:}}
+      api-key-file: ${RUNWAY_API_KEY_FILE:}
+      api-version: ${VIDEO_PROVIDERS_RUNWAY_API_VERSION:2024-11-06}
+      model: ${VIDEO_PROVIDERS_RUNWAY_MODEL:gen4.5}
+      create-path: /v1/image_to_video
+      status-path-template: /v1/tasks/{taskId}
+      ratio: "720:1280"
+      duration-seconds: ${VIDEO_PROVIDERS_RUNWAY_DURATION_SECONDS:10}
+      poll-interval: PT10S
+      max-poll-attempts: 120
     heygen:
       enabled: false
       accepted-names:

@@ -287,6 +287,42 @@ class ExperimentVideoAssetServiceTest {
         assertThat(ex.getReason()).contains("Kling aceita no máximo 10 segundos");
     }
 
+    /** Bloqueia ativo planejado Runway quando a duração excede o limite direto do provider. */
+    @Test
+    void shouldRejectPlannedRunwayVideoAssetAboveProviderLimit() {
+        Experiment experiment = Experiment.builder().id(39L).build();
+        given(experimentRepository.findById(39L)).willReturn(Optional.of(experiment));
+        CreateExperimentVideoAssetRequest request = new CreateExperimentVideoAssetRequest(
+                ExperimentVideoSlot.AD,
+                "Aumentar cliques",
+                "ctr",
+                "Roteiro curto",
+                "Prompt curto",
+                "RUNWAY",
+                "gen4.5",
+                null,
+                null,
+                null,
+                15,
+                null,
+                "9:16",
+                null,
+                null,
+                null,
+                null,
+                true,
+                null,
+                null,
+                null,
+                null);
+
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
+                () -> service.create(39L, request));
+
+        assertThat(ex.getReason()).contains("Runway aceita no máximo 10 segundos");
+    }
+
     /** Garante que ativos planejados viram jobs de render sem criar ativos duplicados. */
     @Test
     void shouldRequestRenderForExistingPlannedVideoAssets() {

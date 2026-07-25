@@ -1,10 +1,16 @@
 package com.marketinghub.product.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.media.Asset;
+import com.marketinghub.media.AssetStatus;
+import com.marketinghub.media.AssetType;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
+import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import org.junit.jupiter.api.Test;
@@ -28,7 +34,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, mock(AssetRepository.class), objectMapper);
         Product product = Product.builder().id(1L).name("Nome antigo").build();
         MarketNiche niche = new MarketNiche();
         CreateProductRequest request = new CreateProductRequest();
@@ -63,13 +69,72 @@ class ProductServiceTest {
         assertThat(updated.getMarketNiche()).isSameAs(niche);
     }
 
+    /** Deve aprovar a imagem semente de vídeo do produto com nome de personagem. */
+    @Test
+    void updateVideoSeedImageApprovesReadyImageAsset() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        AssetRepository assetRepository = mock(AssetRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, assetRepository, objectMapper);
+        Product product = Product.builder().id(1L).name("Método MUSA").build();
+        Asset asset = Asset.builder()
+                .id(99L)
+                .type(AssetType.IMAGE)
+                .status(AssetStatus.READY)
+                .url("/uploads/musa-seed.png")
+                .build();
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(assetRepository.findById(99L)).thenReturn(Optional.of(asset));
+        when(productRepository.save(product)).thenReturn(product);
+
+        Product updated = service.updateVideoSeedImage(1L, new UpdateProductVideoSeedImageRequest(
+                99L,
+                "Sofia MUSA",
+                ProductVideoSeedImageReviewStatus.APPROVED,
+                "Aprovada como imagem-mestre.",
+                "marketing@hub.local"));
+
+        assertThat(updated.getVideoSeedImageAsset()).isSameAs(asset);
+        assertThat(updated.getVideoSeedCharacterName()).isEqualTo("Sofia MUSA");
+        assertThat(updated.getVideoSeedReviewStatus()).isEqualTo(ProductVideoSeedImageReviewStatus.APPROVED);
+        assertThat(updated.getVideoSeedReviewNotes()).isEqualTo("Aprovada como imagem-mestre.");
+        assertThat(updated.getVideoSeedReviewedBy()).isEqualTo("marketing@hub.local");
+        assertThat(updated.getVideoSeedReviewedAt()).isNotNull();
+    }
+
+    /** Deve bloquear asset que não é imagem para impedir semente inválida de vídeo. */
+    @Test
+    void updateVideoSeedImageRejectsNonImageAsset() {
+        ProductRepository productRepository = mock(ProductRepository.class);
+        InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
+        MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+        AssetRepository assetRepository = mock(AssetRepository.class);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, assetRepository, objectMapper);
+        Product product = Product.builder().id(1L).build();
+        Asset asset = Asset.builder().id(99L).type(AssetType.VIDEO).status(AssetStatus.READY).build();
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(assetRepository.findById(99L)).thenReturn(Optional.of(asset));
+
+        assertThatThrownBy(() -> service.updateVideoSeedImage(1L, new UpdateProductVideoSeedImageRequest(
+                99L,
+                "Sofia MUSA",
+                ProductVideoSeedImageReviewStatus.APPROVED,
+                null,
+                null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("asset do tipo IMAGE");
+    }
+
     /** Deve montar uma definição pública em Markdown com foco comercial e sem detalhes técnicos. */
     @Test
     void buildPublicMarketingDefinitionMarkdown() {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, mock(AssetRepository.class), objectMapper);
         MarketNiche niche = MarketNiche.builder().name("Elegância feminina prática").build();
         Product product = Product.builder()
                 .id(1L)
@@ -136,7 +201,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, mock(AssetRepository.class), objectMapper);
         Product product = Product.builder().id(7L).name("Produto 7").build();
 
         when(productRepository.findBySlug("7")).thenReturn(Optional.empty());
@@ -153,7 +218,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, mock(AssetRepository.class), objectMapper);
 
         when(productRepository.findBySlug("inexistente")).thenReturn(Optional.empty());
 
@@ -168,7 +233,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, mock(AssetRepository.class), objectMapper);
         Product product = Product.builder()
                 .slug("metodo-musa-7-dias")
                 .pdeExperienceJson("{\"slug\":\"metodo-musa-7-dias\"}")
@@ -187,7 +252,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, mock(AssetRepository.class), objectMapper);
         Product product = Product.builder()
                 .id(1L)
                 .slug("metodo-musa-7-dias")
@@ -215,7 +280,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, mock(AssetRepository.class), objectMapper);
         Product product = Product.builder()
                 .slug("metodo-musa-7-dias")
                 .pdeExperienceJson("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\",\"steps\":[]}}")
@@ -235,7 +300,7 @@ class ProductServiceTest {
         ProductRepository productRepository = mock(ProductRepository.class);
         InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
         MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, objectMapper);
+        ProductService service = new ProductService(productRepository, accountRepository, marketNicheRepository, mock(AssetRepository.class), objectMapper);
         Product product = Product.builder().id(1L).build();
         MarketNiche niche = new MarketNiche();
         CreateProductRequest request = new CreateProductRequest();

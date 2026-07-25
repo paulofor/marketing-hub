@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-25-product-video-seed-image.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-25-creative-status-varchar.yaml
       relativeToChangelogFile: true
   - include:

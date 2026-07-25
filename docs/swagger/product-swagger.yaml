@@ -4,6 +4,37 @@ info:
   version: 1.0.0
   description: Endpoints públicos e administrativos do cadastro comercial de produtos.
 paths:
+  /api/products/{id}/video-seed-image:
+    patch:
+      tags:
+        - Products
+      summary: Aprova, reprova ou deixa pendente a imagem semente usada na produção de vídeos do produto.
+      operationId: updateProductVideoSeedImage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductVideoSeedImageRequest"
+      responses:
+        "200":
+          description: Produto atualizado com a revisão da imagem semente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Asset ausente, asset que não é imagem ou imagem ainda não pronta.
+        "404":
+          description: Produto ou asset não encontrado.
   /api/products/{id}/pde-persuasive-journey/default:
     post:
       tags:
@@ -107,6 +138,47 @@ components:
           type: string
         pdeExperienceJson:
           type: string
+        videoSeedImageAssetId:
+          type: integer
+          format: int64
+        videoSeedCharacterName:
+          type: string
+          example: Sofia MUSA
+        videoSeedReviewStatus:
+          $ref: "#/components/schemas/ProductVideoSeedImageReviewStatus"
+        videoSeedReviewNotes:
+          type: string
+        videoSeedReviewedBy:
+          type: string
+        videoSeedReviewedAt:
+          type: string
+          format: date-time
+    UpdateProductVideoSeedImageRequest:
+      type: object
+      required:
+        - assetId
+      properties:
+        assetId:
+          type: integer
+          format: int64
+          example: 99
+        characterName:
+          type: string
+          example: Sofia MUSA
+        reviewStatus:
+          $ref: "#/components/schemas/ProductVideoSeedImageReviewStatus"
+        reviewNotes:
+          type: string
+          example: Aprovada como imagem-mestre da Consultora MUSA.
+        reviewedBy:
+          type: string
+          example: marketing@hub.local
+    ProductVideoSeedImageReviewStatus:
+      type: string
+      enum:
+        - PENDING
+        - APPROVED
+        - REJECTED
     PdePersuasiveJourney:
       type: object
       properties:

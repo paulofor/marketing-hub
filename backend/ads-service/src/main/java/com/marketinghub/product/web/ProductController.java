@@ -9,6 +9,7 @@ import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
+import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import java.util.List;
 import java.util.stream.StreamSupport;
 import org.springframework.http.HttpHeaders;
@@ -56,6 +57,14 @@ public class ProductController {
     @PostMapping("/{id}/pde-persuasive-journey/default")
     public ProductDto applyDefaultPdePersuasiveJourney(@PathVariable Long id) {
         return mapper.toDto(service.applyDefaultPdePersuasiveJourney(id));
+    }
+
+    /** Aprova, reprova ou deixa pendente a imagem semente usada na produção de vídeos do produto. */
+    @PatchMapping("/{id}/video-seed-image")
+    public ProductDto updateVideoSeedImage(
+            @PathVariable Long id,
+            @RequestBody UpdateProductVideoSeedImageRequest request) {
+        return mapper.toDto(service.updateVideoSeedImage(id, request));
     }
 
     /** Lista as versões produtivas PDE gerenciadas pelo cadastro do produto. */

@@ -23,6 +23,12 @@ export interface Product {
   primaryCta?: string;
   niche: string;
   avatar: string;
+  videoSeedImageAssetId?: number | null;
+  videoSeedCharacterName?: string | null;
+  videoSeedReviewStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
+  videoSeedReviewNotes?: string | null;
+  videoSeedReviewedBy?: string | null;
+  videoSeedReviewedAt?: string | null;
   marketNicheId?: number;
   instagramAccountId?: number;
   explicitPain: string;

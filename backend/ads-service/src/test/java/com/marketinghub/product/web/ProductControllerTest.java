@@ -5,6 +5,7 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.mapper.ProductMapper;
@@ -146,6 +147,38 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.pdeExperienceJson").value("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\"}}"));
+    }
+
+    /** Deve aprovar a imagem semente de vídeo do produto pelo endpoint canônico. */
+    @Test
+    void updateVideoSeedImage() throws Exception {
+        Product product = Product.builder().id(1L).name("Método MUSA").build();
+        ProductDto response = new ProductDto();
+        response.setId(1L);
+        response.setName("Método MUSA");
+        response.setVideoSeedImageAssetId(99L);
+        response.setVideoSeedCharacterName("Sofia MUSA");
+        response.setVideoSeedReviewStatus(ProductVideoSeedImageReviewStatus.APPROVED);
+
+        when(service.updateVideoSeedImage(eq(1L), any())).thenReturn(product);
+        when(mapper.toDto(product)).thenReturn(response);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(
+                                "/api/products/{id}/video-seed-image", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "assetId": 99,
+                                  "characterName": "Sofia MUSA",
+                                  "reviewStatus": "APPROVED",
+                                  "reviewNotes": "Aprovada como imagem-mestre",
+                                  "reviewedBy": "marketing@hub.local"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.videoSeedImageAssetId").value(99L))
+                .andExpect(jsonPath("$.videoSeedCharacterName").value("Sofia MUSA"))
+                .andExpect(jsonPath("$.videoSeedReviewStatus").value("APPROVED"));
     }
 
     /** Deve listar versões produtivas PDE pelo endpoint canônico do produto. */

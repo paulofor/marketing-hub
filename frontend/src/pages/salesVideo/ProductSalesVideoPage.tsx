@@ -3,8 +3,10 @@ import { Link, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   BadgeDollarSign,
+  CheckCircle2,
   Clapperboard,
   FileText,
+  Image as ImageIcon,
   Layers,
   PlayCircle,
   RefreshCcw,
@@ -13,12 +15,15 @@ import {
   Sparkles,
   Video,
   Volume2,
+  XCircle,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import { useAsset } from "../../api/media/useAsset";
+import { useAssets } from "../../api/media/useAssets";
 import { useProduct } from "../../api/product/useProduct";
+import { useUpdateProductVideoSeedImage } from "../../api/product/useUpdateProductVideoSeedImage";
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
 import { useCreateSalesVideoProfile } from "../../api/salesVideo/useCreateSalesVideoProfile";
 import { useProductSalesVideoJobs } from "../../api/salesVideo/useProductSalesVideoJobs";
@@ -104,6 +109,7 @@ export default function ProductSalesVideoPage() {
   const { productId } = useParams();
   const tenantContext = useTenantContext();
   const { data: product, isLoading: productLoading } = useProduct(productId);
+  const { data: readyAssets, isLoading: assetsLoading } = useAssets("READY");
   const { data: profiles, isLoading: profilesLoading } =
     useSalesVideoProfiles(productId);
   const { data: jobs, isLoading: jobsLoading } =
@@ -122,6 +128,9 @@ export default function ProductSalesVideoPage() {
     DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT,
   );
   const [referenceImageCount, setReferenceImageCount] = useState("1");
+  const [seedImageAssetId, setSeedImageAssetId] = useState("");
+  const [seedCharacterName, setSeedCharacterName] = useState("Sofia MUSA");
+  const [seedReviewNotes, setSeedReviewNotes] = useState("");
   const [postProductionVoiceOver, setPostProductionVoiceOver] = useState(
     DEFAULT_POST_PRODUCTION_VOICE,
   );
@@ -133,6 +142,7 @@ export default function ProductSalesVideoPage() {
     useState<ProfileFormState>(emptyProfileForm);
   const [scriptText, setScriptText] = useState(DEFAULT_SCRIPT);
   const createProfile = useCreateSalesVideoProfile(productId);
+  const updateVideoSeedImage = useUpdateProductVideoSeedImage();
   const approveScript = useApproveSalesVideoScript(
     selectedProfileId || undefined,
   );
@@ -141,6 +151,10 @@ export default function ProductSalesVideoPage() {
 
   const profileList = useMemo(() => profiles ?? [], [profiles]);
   const jobList = useMemo(() => jobs ?? [], [jobs]);
+  const readyImageAssets = useMemo(
+    () => (readyAssets ?? []).filter((asset) => asset.type === "IMAGE"),
+    [readyAssets],
+  );
   const existingVideoJobs = useMemo(
     () => jobList.filter(isExistingVideoJob),
     [jobList],
@@ -153,6 +167,11 @@ export default function ProductSalesVideoPage() {
   }, [existingVideoJobs, selectedJobId]);
   const { data: selectedVideoAsset } = useAsset(
     selectedVideoJob?.assetId ?? undefined,
+  );
+  const selectedSeedAssetId = parseOptionalNumber(seedImageAssetId);
+  const selectedSeedImageAsset = useMemo(
+    () => readyImageAssets.find((asset) => asset.id === selectedSeedAssetId),
+    [readyImageAssets, selectedSeedAssetId],
   );
   const requestPostProduction = useRequestSalesVideoPostProduction(
     selectedVideoJob?.id,
@@ -219,6 +238,22 @@ export default function ProductSalesVideoPage() {
       ),
     );
   }, [existingVideoJobs]);
+
+  useEffect(() => {
+    if (product?.videoSeedImageAssetId) {
+      setSeedImageAssetId(String(product.videoSeedImageAssetId));
+    }
+    if (product?.videoSeedCharacterName) {
+      setSeedCharacterName(product.videoSeedCharacterName);
+    }
+    if (product?.videoSeedReviewNotes) {
+      setSeedReviewNotes(product.videoSeedReviewNotes);
+    }
+  }, [
+    product?.videoSeedImageAssetId,
+    product?.videoSeedCharacterName,
+    product?.videoSeedReviewNotes,
+  ]);
 
   if (!productId) {
     return (
@@ -367,7 +402,43 @@ export default function ProductSalesVideoPage() {
     }
   };
 
-  if (productLoading || profilesLoading || jobsLoading) {
+  const handleSeedImageReview = async (
+    reviewStatus: "APPROVED" | "REJECTED",
+  ) => {
+    const assetId = parseOptionalNumber(seedImageAssetId);
+    const parsedProductId = parseOptionalNumber(productId);
+    if (!parsedProductId || !assetId) {
+      toast.error("Informe o asset da imagem semente");
+      return;
+    }
+    if (!seedCharacterName.trim()) {
+      toast.error("Informe o nome da personagem");
+      return;
+    }
+    try {
+      await updateVideoSeedImage.mutateAsync({
+        productId: parsedProductId,
+        assetId,
+        characterName: seedCharacterName.trim(),
+        reviewStatus,
+        reviewNotes: seedReviewNotes.trim() || undefined,
+        reviewedBy: tenantContext.userEmail || undefined,
+      });
+      toast.success(
+        reviewStatus === "APPROVED"
+          ? "Imagem semente aprovada"
+          : "Imagem semente reprovada",
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Falha ao revisar imagem semente",
+      );
+    }
+  };
+
+  if (productLoading || profilesLoading || jobsLoading || assetsLoading) {
     return (
       <div>
         <PageTitle>Vídeos do Produto #{productId}</PageTitle>
@@ -424,6 +495,98 @@ export default function ProductSalesVideoPage() {
 
       <section className="product-video-page__layout">
         <aside className="product-video-page__sidebar">
+          <div className="product-video-page__panel product-video-page__seed-image-panel">
+            <div className="product-video-page__panel-heading">
+              <ImageIcon size={18} aria-hidden="true" />
+              <strong>Imagem semente</strong>
+            </div>
+            <div
+              className={`product-video-page__seed-status product-video-page__seed-status--${(product?.videoSeedReviewStatus ?? "PENDING").toLowerCase()}`}
+            >
+              {product?.videoSeedReviewStatus === "APPROVED"
+                ? "Aprovada para avatar e vídeos"
+                : product?.videoSeedReviewStatus === "REJECTED"
+                  ? "Reprovada para vídeo"
+                  : "Pendente de aprovação"}
+            </div>
+            {selectedSeedImageAsset?.publicUrl ? (
+              <img
+                className="product-video-page__seed-preview"
+                src={selectedSeedImageAsset.publicUrl}
+                alt={`Imagem semente de ${seedCharacterName || "personagem"}`}
+              />
+            ) : (
+              <div className="product-video-page__seed-empty">
+                Selecione um asset IMAGE pronto para visualizar.
+              </div>
+            )}
+            <label className="form-label" htmlFor="seed-image-asset">
+              Asset de imagem *
+            </label>
+            <select
+              id="seed-image-asset"
+              className="form-select"
+              value={seedImageAssetId}
+              onChange={(event) => setSeedImageAssetId(event.target.value)}
+            >
+              <option value="">Selecionar asset pronto</option>
+              {readyImageAssets.map((asset) => (
+                <option key={asset.id} value={asset.id}>
+                  #{asset.id} · {asset.provider || "provider"} ·{" "}
+                  {asset.model || "sem modelo"}
+                </option>
+              ))}
+            </select>
+            <input
+              className="form-control"
+              inputMode="numeric"
+              value={seedImageAssetId}
+              onChange={(event) => setSeedImageAssetId(event.target.value)}
+              placeholder="Ou informe o ID do asset"
+            />
+            <label className="form-label" htmlFor="seed-character-name">
+              Nome da personagem *
+            </label>
+            <input
+              id="seed-character-name"
+              className="form-control"
+              value={seedCharacterName}
+              onChange={(event) => setSeedCharacterName(event.target.value)}
+              placeholder="Sofia MUSA"
+            />
+            <label className="form-label" htmlFor="seed-review-notes">
+              Observações da revisão
+            </label>
+            <textarea
+              id="seed-review-notes"
+              className="form-control"
+              rows={3}
+              value={seedReviewNotes}
+              onChange={(event) => setSeedReviewNotes(event.target.value)}
+              placeholder="Ex.: rosto aprovado, gerar variações 3/4 e corpo inteiro."
+            />
+            <div className="product-video-page__seed-actions">
+              <button
+                type="button"
+                className="btn btn-outline-danger"
+                onClick={() => handleSeedImageReview("REJECTED")}
+                disabled={updateVideoSeedImage.isPending}
+              >
+                <XCircle size={16} aria-hidden="true" />
+                {updateVideoSeedImage.isPending ? "Salvando..." : "Reprovar"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-success"
+                onClick={() => handleSeedImageReview("APPROVED")}
+                disabled={updateVideoSeedImage.isPending}
+              >
+                <CheckCircle2 size={16} aria-hidden="true" />
+                {updateVideoSeedImage.isPending ? "Salvando..." : "Aprovar"}
+              </button>
+            </div>
+          </div>
+
           <div className="product-video-page__panel">
             <div className="product-video-page__panel-heading">
               <Video size={18} aria-hidden="true" />
@@ -1693,8 +1856,8 @@ function isVeoJob(job: SalesVideoJob) {
     .includes("veo");
 }
 
-function parseOptionalNumber(value: string) {
-  if (!value.trim()) {
+function parseOptionalNumber(value?: string) {
+  if (!value?.trim()) {
     return undefined;
   }
   const parsed = Number(value);

@@ -8,6 +8,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.memberarea.MemberArea;
+import com.marketinghub.media.Asset;
 import com.marketinghub.niche.MarketNiche;
 
 import java.time.Instant;
@@ -110,6 +111,35 @@ public class Product {
 
     private String niche;
     private String avatar;
+
+    /** Asset aprovado ou em revisão para ser a imagem semente canônica dos vídeos do produto. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "video_seed_image_asset_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Asset videoSeedImageAsset;
+
+    /** Nome comercial da personagem usada como rosto recorrente do produto. */
+    @Column(name = "video_seed_character_name", length = 191)
+    private String videoSeedCharacterName;
+
+    /** Status de aprovação humana da imagem semente antes de virar avatar ou vídeo. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "video_seed_review_status", length = 32)
+    private ProductVideoSeedImageReviewStatus videoSeedReviewStatus;
+
+    /** Observações comerciais da aprovação ou reprovação da imagem semente. */
+    @Lob
+    @Column(name = "video_seed_review_notes", columnDefinition = "LONGTEXT")
+    private String videoSeedReviewNotes;
+
+    /** Pessoa que registrou a última revisão da imagem semente. */
+    @Column(name = "video_seed_reviewed_by", length = 255)
+    private String videoSeedReviewedBy;
+
+    /** Data da última revisão humana da imagem semente. */
+    @Column(name = "video_seed_reviewed_at")
+    private Instant videoSeedReviewedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instagram_account_id")

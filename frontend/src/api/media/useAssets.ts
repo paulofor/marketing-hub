@@ -11,6 +11,7 @@ export interface Asset {
   url?: string | null;
   payload?: string | null;
   campaignId?: number | null;
+  model?: string | null;
   publicUrl?: string | null;
 }
 

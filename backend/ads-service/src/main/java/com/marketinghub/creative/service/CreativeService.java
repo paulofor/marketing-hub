@@ -32,9 +32,11 @@ import com.marketinghub.storage.StorageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -245,6 +247,11 @@ public class CreativeService {
         ExperimentVideoAsset videoAsset = experimentVideoAssetRepository.findById(id).orElseThrow();
         if (status == CreativeStatus.READY && !hasPublicExperimentVideoUrl(videoAsset)) {
             throw new IllegalArgumentException("Vídeo de experimento aprovado precisa ter URL pública.");
+        }
+        if (status == CreativeStatus.READY && !Boolean.TRUE.equals(videoAsset.getHasAudio())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Vídeo de experimento aprovado precisa ter áudio validado.");
         }
         ExperimentVideoReviewStatus reviewStatus = toExperimentVideoReviewStatus(status);
         if (reviewStatus == ExperimentVideoReviewStatus.REJECTED && !StringUtils.hasText(rejectionReason)) {

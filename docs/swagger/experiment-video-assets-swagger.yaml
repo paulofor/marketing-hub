@@ -136,6 +136,9 @@ components:
           type: string
         durationSeconds:
           type: integer
+        hasAudio:
+          type: boolean
+          description: Indica se a análise de qualidade confirmou faixa de áudio no vídeo final.
         aspectRatio:
           type: string
           example: "9:16"

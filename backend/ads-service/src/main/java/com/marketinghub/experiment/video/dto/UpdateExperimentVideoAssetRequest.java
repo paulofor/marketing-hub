@@ -20,6 +20,7 @@ public record UpdateExperimentVideoAssetRequest(
         String assetUrl,
         String thumbnailUrl,
         Integer durationSeconds,
+        Boolean hasAudio,
         String aspectRatio,
         String requestJson,
         String responseJson,

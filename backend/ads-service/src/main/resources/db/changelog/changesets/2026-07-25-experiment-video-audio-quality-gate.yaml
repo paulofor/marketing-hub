@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-25-experiment-video-audio-quality-gate
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_video_asset
+        - not:
+            - columnExists:
+                tableName: experiment_video_asset
+                columnName: has_audio
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_video_asset
+                ADD COLUMN has_audio BIT(1) NULL AFTER duration_seconds;

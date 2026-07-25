@@ -1,9 +1,11 @@
 package com.marketinghub.experiment.video.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
@@ -12,6 +14,7 @@ import com.marketinghub.salesvideo.dto.JobFailureRequest;
 import com.marketinghub.salesvideo.service.SalesVideoCompletedRenderAssetSync;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRenderAssetSync {
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().build();
+    private static final String NO_AUDIO_REJECTION_REASON =
+            "Reprovado na qualidade: vídeo final não possui faixa de áudio. Gerar novamente com voz, mixagem ou trilha audível antes da aprovação humana.";
 
     private final ExperimentVideoAssetRepository repository;
     private final SalesVideoProductionCostCalculator costCalculator;
@@ -90,11 +95,74 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
         if (durationSeconds != null) {
             videoAsset.setDurationSeconds(durationSeconds);
         }
+        Boolean hasAudio = resolveHasAudio(request);
+        if (hasAudio != null) {
+            videoAsset.setHasAudio(hasAudio);
+        }
         if (costUsd != null) {
             videoAsset.setCost(costUsd);
         }
         videoAsset.setResponseJson(request.getMetadataJson());
         videoAsset.setStatus(ExperimentVideoStatus.READY);
+        if (Boolean.FALSE.equals(hasAudio)) {
+            rejectWithoutAudio(videoAsset);
+        }
+    }
+
+    /** Bloqueia uso comercial quando a qualidade confirma ausência de áudio. */
+    private void rejectWithoutAudio(ExperimentVideoAsset videoAsset) {
+        videoAsset.setReviewStatus(ExperimentVideoReviewStatus.REJECTED);
+        videoAsset.setRejectionReason(NO_AUDIO_REJECTION_REASON);
+        videoAsset.setReviewedBy("Marketing Hub Quality Gate");
+        videoAsset.setReviewedAt(Instant.now());
+    }
+
+    /** Extrai do metadata auditável se o arquivo final possui faixa de áudio. */
+    private Boolean resolveHasAudio(JobCompletionRequest request) {
+        if (request == null || request.getMetadataJson() == null || request.getMetadataJson().isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode metadata = OBJECT_MAPPER.readTree(request.getMetadataJson());
+            return firstBoolean(metadata, "hasAudio", "has_audio", "audioPresent", "audio_present")
+                    .or(() -> audioStreamCount(metadata))
+                    .orElse(null);
+        } catch (JsonProcessingException ex) {
+            return null;
+        }
+    }
+
+    /** Lê flags booleanas aceitas para compatibilidade com workers diferentes. */
+    private Optional<Boolean> firstBoolean(JsonNode metadata, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode value = metadata.get(fieldName);
+            if (value != null && value.isBoolean()) {
+                return Optional.of(value.asBoolean());
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Interpreta contagens de streams de áudio vindas de ffprobe ou metadata normalizado. */
+    private Optional<Boolean> audioStreamCount(JsonNode metadata) {
+        JsonNode audioStreams = metadata.get("audio_streams");
+        if (audioStreams == null) {
+            audioStreams = metadata.get("audioStreams");
+        }
+        if (audioStreams != null && audioStreams.isNumber()) {
+            return Optional.of(audioStreams.asInt() > 0);
+        }
+        JsonNode streams = metadata.get("streams");
+        if (streams != null && streams.isArray()) {
+            for (JsonNode stream : streams) {
+                JsonNode codecType = stream.get("codec_type");
+                if (codecType != null && "audio".equalsIgnoreCase(codecType.asText())) {
+                    return Optional.of(true);
+                }
+            }
+            return Optional.of(false);
+        }
+        return Optional.empty();
     }
 
     /** Registra a causa da falha no ativo para a tela não permanecer como gerando. */

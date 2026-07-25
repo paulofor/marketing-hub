@@ -6063,3 +6063,10 @@
 - correção preparada: criado changelog incremental para normalizar `creative.status` como `VARCHAR(20) NULL`, alinhando o banco real ao contrato extensível da entidade e evitando novas quebras por status operacional.
 - prevenção: adicionado teste de contrato do changelog e validação de include relativo no master Liquibase.
 - impacto comercial esperado: destravar a fila de revisão humana para reprovar vídeos com aprendizado acionável antes de liberar campanha paga.
+
+## 2026-07-25 — Criativos de vídeo: resumo da fila de revisão
+
+- causa-raiz confirmada via API e MCP: os criativos de vídeo `243` e `242` estavam gravados como `REJECTED`, mas o card da tela calculava os totais usando apenas a lista do filtro ativo; quando o filtro estava em `Pendentes`, o resumo mostrava `Reprovados 0`.
+- foi feito: a tela `/creative-video-review` passou a carregar a fila geral para os cards de resumo, mantendo a lista de vídeos filtrada pela aba selecionada.
+- prevenção: adicionado teste de frontend garantindo que o resumo mostre dois reprovados mesmo quando o filtro de pendentes está vazio.
+- impacto comercial esperado: deixar reprovações humanas visíveis como aprendizado operacional antes de pedir novos vídeos ou liberar criativos para campanha.

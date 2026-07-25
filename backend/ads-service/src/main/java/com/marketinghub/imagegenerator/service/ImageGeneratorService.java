@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.imagegenerator.ImageGenerationRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse;
+import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorFailure;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorResult;
 import com.marketinghub.openai.OpenAiProperties;
 import com.marketinghub.repository.jpa.imagegenerator.ImageGenerationRequestRepository;
@@ -12,11 +13,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -76,28 +77,52 @@ public class ImageGeneratorService {
         CompletableFuture<ImageGeneratorResult> comparisonModelGeneration = CompletableFuture.supplyAsync(
                 () -> generateSingleImage(request.prompt(), finalPrompt, comparisonImageModel, comparisonImageModel));
 
-        waitForBothGenerations(defaultModelGeneration, comparisonModelGeneration);
-        List<ImageGeneratorResult> images = List.of(defaultModelGeneration.join(), comparisonModelGeneration.join());
+        ImageGenerationBatchResult batchResult = collectGenerationResults(List.of(
+                new NamedGeneration(model, defaultModelGeneration),
+                new NamedGeneration(comparisonImageModel, comparisonModelGeneration)));
 
-        return new ImageGeneratorResponse(batchJobId, images);
+        if (batchResult.images().isEmpty()) {
+            ImageGeneratorFailure firstFailure = batchResult.failures().isEmpty()
+                    ? new ImageGeneratorFailure("desconhecido", "Não foi possível gerar as imagens.", Instant.now())
+                    : batchResult.failures().get(0);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, firstFailure.message());
+        }
+
+        return new ImageGeneratorResponse(batchJobId, batchResult.images(), batchResult.failures());
     }
 
-    /** Aguarda as duas gerações paralelas e preserva a mensagem de erro funcional quando uma delas falhar. */
-    private void waitForBothGenerations(
-            CompletableFuture<ImageGeneratorResult> defaultModelGeneration,
-            CompletableFuture<ImageGeneratorResult> comparisonModelGeneration) {
-        try {
-            CompletableFuture.allOf(defaultModelGeneration, comparisonModelGeneration).join();
-        } catch (CompletionException ex) {
-            Throwable cause = ex.getCause();
-            if (cause instanceof ResponseStatusException responseStatusException) {
-                throw responseStatusException;
+    /** Coleta sucessos e falhas individuais do lote para permitir exibir resultados parciais na tela. */
+    ImageGenerationBatchResult collectGenerationResults(List<NamedGeneration> generations) {
+        List<ImageGeneratorResult> images = new ArrayList<>();
+        List<ImageGeneratorFailure> failures = new ArrayList<>();
+
+        for (NamedGeneration generation : generations) {
+            try {
+                images.add(generation.future().join());
+            } catch (RuntimeException ex) {
+                failures.add(new ImageGeneratorFailure(
+                        generation.model(),
+                        extractGenerationErrorMessage(ex),
+                        Instant.now()));
             }
-            if (cause instanceof RuntimeException runtimeException) {
-                throw runtimeException;
-            }
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Não foi possível gerar as imagens.", ex);
         }
+
+        return new ImageGenerationBatchResult(List.copyOf(images), List.copyOf(failures));
+    }
+
+    /** Extrai a mensagem funcional da falha de uma geração individual. */
+    private String extractGenerationErrorMessage(RuntimeException ex) {
+        Throwable cause = ex.getCause();
+        if (cause instanceof ResponseStatusException responseStatusException) {
+            return responseStatusException.getReason();
+        }
+        if (ex instanceof ResponseStatusException responseStatusException) {
+            return responseStatusException.getReason();
+        }
+        if (StringUtils.hasText(ex.getMessage())) {
+            return ex.getMessage();
+        }
+        return "Não foi possível gerar esta imagem.";
     }
 
     /** Gera uma variação individual da imagem e registra auditoria da chamada OpenAI. */
@@ -243,4 +268,10 @@ public class ImageGeneratorService {
             return null;
         }
     }
+
+    /** Responsabilidade: associar o modelo solicitado ao futuro de geração correspondente. */
+    record NamedGeneration(String model, CompletableFuture<ImageGeneratorResult> future) {}
+
+    /** Responsabilidade: transportar sucessos e falhas de um lote comparativo de imagens. */
+    record ImageGenerationBatchResult(List<ImageGeneratorResult> images, List<ImageGeneratorFailure> failures) {}
 }

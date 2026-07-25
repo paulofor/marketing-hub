@@ -1,6 +1,7 @@
 package com.marketinghub.product.dto;
 
 import java.time.Instant;
+import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import lombok.Data;
 
 /**
@@ -29,6 +30,12 @@ public class ProductDto {
     private String primaryCta;
     private String niche;
     private String avatar;
+    private Long videoSeedImageAssetId;
+    private String videoSeedCharacterName;
+    private ProductVideoSeedImageReviewStatus videoSeedReviewStatus;
+    private String videoSeedReviewNotes;
+    private String videoSeedReviewedBy;
+    private Instant videoSeedReviewedAt;
     private Long instagramAccountId;
     private Long marketNicheId;
     private String explicitPain;

@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-25-product-video-seed-image
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - tableExists:
+            tableName: asset
+        - not:
+            - columnExists:
+                tableName: product
+                columnName: video_seed_image_asset_id
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN video_seed_image_asset_id BIGINT NULL AFTER avatar,
+                ADD COLUMN video_seed_character_name VARCHAR(191) NULL AFTER video_seed_image_asset_id,
+                ADD COLUMN video_seed_review_status VARCHAR(32) NULL AFTER video_seed_character_name,
+                ADD COLUMN video_seed_review_notes LONGTEXT NULL AFTER video_seed_review_status,
+                ADD COLUMN video_seed_reviewed_by VARCHAR(255) NULL AFTER video_seed_review_notes,
+                ADD COLUMN video_seed_reviewed_at DATETIME NULL AFTER video_seed_reviewed_by,
+                ADD CONSTRAINT fk_product_video_seed_image_asset
+                  FOREIGN KEY (video_seed_image_asset_id) REFERENCES asset (id);
+              CREATE INDEX idx_product_video_seed_review_status
+                ON product (video_seed_review_status);

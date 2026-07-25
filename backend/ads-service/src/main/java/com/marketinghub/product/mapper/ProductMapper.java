@@ -13,5 +13,6 @@ public interface ProductMapper {
     /** Converte a entidade de produto para o contrato de leitura da API. */
     @Mapping(target = "instagramAccountId", source = "instagramAccount.id")
     @Mapping(target = "marketNicheId", source = "marketNiche.id")
+    @Mapping(target = "videoSeedImageAssetId", source = "videoSeedImageAsset.id")
     ProductDto toDto(Product product);
 }

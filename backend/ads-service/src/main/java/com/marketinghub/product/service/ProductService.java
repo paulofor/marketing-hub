@@ -6,12 +6,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.media.Asset;
+import com.marketinghub.media.AssetStatus;
+import com.marketinghub.media.AssetType;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
+import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import java.time.Instant;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -31,6 +38,7 @@ public class ProductService {
     private final ProductRepository repository;
     private final InstagramAccountRepository accountRepository;
     private final MarketNicheRepository marketNicheRepository;
+    private final AssetRepository assetRepository;
     private final ObjectMapper objectMapper;
 
     /** Inicializa o serviço com os repositórios necessários para cadastro de produtos. */
@@ -38,10 +46,12 @@ public class ProductService {
             ProductRepository repository,
             InstagramAccountRepository accountRepository,
             MarketNicheRepository marketNicheRepository,
+            AssetRepository assetRepository,
             ObjectMapper objectMapper) {
         this.repository = repository;
         this.accountRepository = accountRepository;
         this.marketNicheRepository = marketNicheRepository;
+        this.assetRepository = assetRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -76,6 +86,32 @@ public class ProductService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Não foi possível atualizar a jornada persuasiva PDE", ex);
         }
+        return repository.save(product);
+    }
+
+    /** Atualiza a imagem semente oficial usada para gerar avatares e vídeos do produto. */
+    @Transactional
+    public Product updateVideoSeedImage(Long id, UpdateProductVideoSeedImageRequest request) {
+        Product product = getProduct(id);
+        if (request.assetId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o asset da imagem semente.");
+        }
+        Asset asset = assetRepository.findById(request.assetId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset não encontrado."));
+        if (asset.getType() != AssetType.IMAGE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A imagem semente deve usar um asset do tipo IMAGE.");
+        }
+        if (asset.getStatus() != AssetStatus.READY) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A imagem semente precisa estar pronta antes da revisão.");
+        }
+        ProductVideoSeedImageReviewStatus reviewStatus =
+                request.reviewStatus() != null ? request.reviewStatus() : ProductVideoSeedImageReviewStatus.PENDING;
+        product.setVideoSeedImageAsset(asset);
+        product.setVideoSeedCharacterName(normalizeOptional(request.characterName()));
+        product.setVideoSeedReviewStatus(reviewStatus);
+        product.setVideoSeedReviewNotes(normalizeOptional(request.reviewNotes()));
+        product.setVideoSeedReviewedBy(normalizeOptional(request.reviewedBy()));
+        product.setVideoSeedReviewedAt(Instant.now());
         return repository.save(product);
     }
 
@@ -116,6 +152,14 @@ public class ProductService {
         product.setCreativeVolume(request.getCreativeVolume());
         product.setStorytelling(request.getStorytelling());
         product.setAiCost(request.getAiCost());
+    }
+
+    /** Normaliza campos opcionais removendo espaços inúteis antes de persistir. */
+    private String normalizeOptional(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     /** Resolve a conta do Instagram quando ela for informada no cadastro. */

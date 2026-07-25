@@ -795,6 +795,41 @@ class FacebookAdsServiceTest {
     }
 
     @Test
+    void uploadVideoAdFromBytesUsesOfficialVideoAdsFlow() throws Exception {
+        String uploadPath = "/video-ads-upload/v23.0/video-123";
+        server.enqueueResponse(new MockResponse()
+            .setBody("{\"video_id\":\"video-123\",\"upload_url\":\"" + server.url(uploadPath) + "\"}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueueResponse(new MockResponse()
+            .setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+        server.enqueueResponse(new MockResponse()
+            .setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+
+        String videoId = service.uploadVideoAdFromBytes("1", new byte[] {1, 2, 3}, "creative.mp4", "video/mp4");
+
+        RecordedRequest start = takeRequest("start");
+        assertEquals("/v23.0/act_1/video_ads", start.getPath());
+        JsonNode startBody = objectMapper.readTree(start.getBody().inputStream());
+        assertEquals("start", startBody.get("upload_phase").asText());
+
+        RecordedRequest upload = takeRequest("upload");
+        assertEquals(uploadPath, upload.getPath());
+        assertEquals("OAuth token", upload.getHeader("Authorization"));
+        assertEquals("0", upload.getHeader("offset"));
+        assertEquals("3", upload.getHeader("file_size"));
+        assertEquals(3, upload.getBodySize());
+
+        RecordedRequest finish = takeRequest("finish");
+        assertEquals("/v23.0/act_1/video_ads", finish.getPath());
+        JsonNode finishBody = objectMapper.readTree(finish.getBody().inputStream());
+        assertEquals("finish", finishBody.get("upload_phase").asText());
+        assertEquals("video-123", finishBody.get("video_id").asText());
+        assertEquals("video-123", videoId);
+    }
+
+    @Test
     void uploadAdImageReturnsFirstHash() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"images\":{\"image1\":{\"hash\":\"abc\"}}}")
             .addHeader("Content-Type", "application/json"));

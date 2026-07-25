@@ -2204,7 +2204,60 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         return extractAdImageHash(response);
     }
 
-    /** Envia bytes de um vídeo para a biblioteca de vídeos da conta Meta e retorna o video_id. */
+    /** Envia bytes de um vídeo para a biblioteca de anúncios da Meta e retorna o video_id. */
+    public String uploadVideoAdFromBytes(String adAccountId,
+                                         byte[] videoBytes,
+                                         String fileName,
+                                         String contentType) {
+        Objects.requireNonNull(adAccountId, "adAccountId");
+        if (videoBytes == null || videoBytes.length == 0) {
+            throw new IllegalArgumentException("videoBytes must not be empty");
+        }
+        String resolvedFileName = hasText(fileName) ? fileName.trim() : "creative-" + UUID.randomUUID() + ".mp4";
+
+        Map<String, Object> startBody = new HashMap<>();
+        startBody.put("upload_phase", "start");
+        startBody.put("access_token", requireAccessToken());
+        String videoAdsPath = buildVersionedPath("/act_" + adAccountId + "/video_ads");
+        JsonNode startResponse = executePost(videoAdsPath, startBody);
+        String videoId = firstText(startResponse, "video_id", "id");
+        String uploadUrl = startResponse.path("upload_url").asText(null);
+        if (!hasText(videoId) || !hasText(uploadUrl)) {
+            throw new IllegalStateException("Facebook video_ads start response did not contain video_id and upload_url");
+        }
+
+        JsonNode uploadResponse = executeVideoAdsBinaryUpload(uploadUrl, videoBytes, resolvedFileName, contentType);
+
+        Map<String, Object> finishBody = new HashMap<>();
+        finishBody.put("upload_phase", "finish");
+        finishBody.put("video_id", videoId);
+        finishBody.put("access_token", requireAccessToken());
+        JsonNode finishResponse = executePost(videoAdsPath, finishBody);
+
+        Map<String, Object> auditRequest = new HashMap<>();
+        auditRequest.put("upload_phase", "start,upload,finish");
+        auditRequest.put("filename", resolvedFileName);
+        auditRequest.put("file_size", videoBytes.length);
+        auditRequest.put("content_type", contentType);
+        auditRequest.put("video_id", videoId);
+        Map<String, Object> auditResponse = new HashMap<>();
+        auditResponse.put("start", startResponse);
+        auditResponse.put("upload", uploadResponse);
+        auditResponse.put("finish", finishResponse);
+        recordApiCallDebugInfo(
+            "POST",
+            videoAdsPath,
+            toJsonString(auditRequest),
+            toJsonString(auditResponse),
+            null,
+            null,
+            null,
+            Instant.now()
+        );
+        return videoId;
+    }
+
+    /** Envia bytes de um vídeo pelo endpoint legado advideos e retorna o video_id. */
     public String uploadAdVideoFromBytes(String adAccountId,
                                          byte[] videoBytes,
                                          String fileName,
@@ -2234,6 +2287,113 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String path = buildVersionedPath("/act_" + adAccountId + "/advideos");
         JsonNode response = executeMultipartPost(path, builder.build(), debugBody);
         return response.path("id").asText();
+    }
+
+    /** Envia o binário do vídeo para a URL resumable retornada pela Meta. */
+    private JsonNode executeVideoAdsBinaryUpload(String uploadUrl,
+                                                 byte[] videoBytes,
+                                                 String fileName,
+                                                 String contentType) {
+        Instant startedAt = Instant.now();
+        if (!hasText(uploadUrl)) {
+            throw new IllegalArgumentException("uploadUrl must not be blank");
+        }
+        Map<String, Object> debugBody = new HashMap<>();
+        debugBody.put("filename", fileName);
+        debugBody.put("file_size", videoBytes.length);
+        debugBody.put("content_type", contentType);
+        debugBody.put("body", "video(bytes)");
+        LOGGER.info(
+            "Sending binary POST request to Facebook video upload API: url==>{}, body={}",
+            uploadUrl,
+            JsonLogFormatter.wrap(objectMapper, debugBody)
+        );
+        try {
+            FacebookApiResponse apiResponse = webClient
+                .post()
+                .uri(URI.create(uploadUrl))
+                .header(HttpHeaders.AUTHORIZATION, "OAuth " + requireAccessToken())
+                .header("offset", "0")
+                .header("file_size", String.valueOf(videoBytes.length))
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .bodyValue(videoBytes)
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException().flatMap(Mono::error);
+                    }
+                    return response.bodyToMono(JsonNode.class)
+                        .defaultIfEmpty(objectMapper.nullNode())
+                        .map(bodyNode -> new FacebookApiResponse(
+                            response.statusCode(),
+                            response.headers().asHttpHeaders(),
+                            bodyNode
+                        ));
+                })
+                .block();
+            FacebookApiResponse nonNullResponse = apiResponse != null
+                ? apiResponse
+                : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
+            logSuccessfulResponse("POST", uploadUrl, nonNullResponse);
+            recordApiCallDebugInfo(
+                "POST",
+                uploadUrl,
+                toJsonString(debugBody),
+                toJsonString(nonNullResponse.body()),
+                nonNullResponse.statusCode() != null ? nonNullResponse.statusCode().value() : null,
+                null,
+                startedAt,
+                Instant.now()
+            );
+            return nonNullResponse.body();
+        } catch (WebClientResponseException ex) {
+            String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetails = extractErrorDetails(responseBody);
+            LOGGER.error(
+                "Facebook video upload API request failed: url<=={}, status={}, responseBody={}, errorDetails={}, headers={}",
+                uploadUrl,
+                ex.getRawStatusCode(),
+                maskAccessToken(responseBody),
+                errorDetails,
+                JsonLogFormatter.wrap(objectMapper, sanitizeHeaders(ex.getHeaders())),
+                ex
+            );
+            recordApiCallDebugInfo(
+                "POST",
+                uploadUrl,
+                toJsonString(debugBody),
+                responseBody,
+                ex.getRawStatusCode(),
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
+            if (isAccessTokenExpired(errorDetails)) {
+                throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
+            }
+            if (isPermissionError(errorDetails)) {
+                throw new FacebookPermissionException(resolvePermissionMessage(errorDetails), errorDetails, ex);
+            }
+            throw ex;
+        } catch (WebClientRequestException ex) {
+            LOGGER.error(
+                "Facebook video upload API request could not be completed: url<=={}, message={}, request={}",
+                uploadUrl,
+                ex.getMessage(),
+                JsonLogFormatter.wrap(objectMapper, debugBody),
+                ex
+            );
+            recordApiCallDebugInfo(
+                "POST",
+                uploadUrl,
+                toJsonString(debugBody),
+                null,
+                null,
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
+            throw ex;
+        }
     }
 
     public String createAd(String adAccountId, AdRequest request) {
@@ -3008,6 +3168,20 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             }
         }
         throw new IllegalStateException("Facebook image upload response did not contain a hash");
+    }
+
+    /** Retorna o primeiro campo textual preenchido em uma resposta JSON da Meta. */
+    private String firstText(JsonNode response, String... fieldNames) {
+        if (response == null || fieldNames == null) {
+            return null;
+        }
+        for (String fieldName : fieldNames) {
+            String value = response.path(fieldName).asText(null);
+            if (hasText(value)) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     private String maskAccessTokenInPath(String path) {

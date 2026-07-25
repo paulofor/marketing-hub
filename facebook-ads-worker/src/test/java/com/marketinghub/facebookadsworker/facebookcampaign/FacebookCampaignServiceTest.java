@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -57,6 +58,7 @@ class FacebookCampaignServiceTest {
     private WebClient.Builder webClientBuilder;
     private ExperimentFacebookApiLogClient apiLogClient;
     private String imageUrl;
+    private String videoUrl;
     private String manualTargetingPackageOverride;
     private String reachEstimateResponseBody;
 
@@ -72,6 +74,7 @@ class FacebookCampaignServiceTest {
 
         String facebookUrl = facebook.url("/").toString();
         imageUrl = facebook.url("/creative-image.jpg").toString();
+        videoUrl = facebook.url("/creative-video.mp4").toString();
 
         objectMapper = new ObjectMapper();
         reachEstimateResponseBody = defaultReachEstimateResponse();
@@ -122,7 +125,8 @@ class FacebookCampaignServiceTest {
             backend.url("/").toString(),
             "/api",
             objectMapper,
-            apiLogClient
+            apiLogClient,
+            new MetaVideoNormalizer(false, "ffmpeg", Duration.ofSeconds(1))
         );
         backend.enqueuePriorityConditionalResponse(
             request -> "/api/experiments/1/facebook-api-logs".equals(request.getPath()) && "POST".equals(request.getMethod()),
@@ -288,13 +292,16 @@ class FacebookCampaignServiceTest {
             String path = request.getPath();
             boolean isAdImageRequest = path != null && path.contains("/adimages");
             boolean isImageAssetRequest = "/creative-image.jpg".equals(path) && "GET".equals(request.getMethod());
+            boolean isVideoAssetRequest = "/creative-video.mp4".equals(path) && "GET".equals(request.getMethod());
             boolean isReachEstimateRequest = path != null && path.contains("/reachestimate?");
             String normalizedDescription = description.toLowerCase();
             boolean expectsAdImage = normalizedDescription.contains("ad image");
             boolean expectsImageAsset = normalizedDescription.contains("image asset");
+            boolean expectsVideoAsset = normalizedDescription.contains("video asset");
             boolean expectsReachEstimate = normalizedDescription.contains("reach");
             if ((isAdImageRequest && !expectsAdImage)
                 || (isImageAssetRequest && !expectsImageAsset)
+                || (isVideoAssetRequest && !expectsVideoAsset)
                 || (isReachEstimateRequest && !expectsReachEstimate)) {
                 continue;
             }
@@ -1395,7 +1402,8 @@ class FacebookCampaignServiceTest {
             backend.url("/").toString(),
             "/api",
             objectMapper,
-            apiLogClient
+            apiLogClient,
+            new MetaVideoNormalizer(false, "ffmpeg", Duration.ofSeconds(1))
         );
 
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
@@ -1493,7 +1501,8 @@ class FacebookCampaignServiceTest {
             backend.url("/").toString(),
             "/api",
             objectMapper,
-            apiLogClient
+            apiLogClient,
+            new MetaVideoNormalizer(false, "ffmpeg", Duration.ofSeconds(1))
         );
 
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
@@ -1820,6 +1829,88 @@ class FacebookCampaignServiceTest {
         assertEquals(1, interests.size());
         assertEquals("6003139266461", interests.get(0).get("id").asText());
         assertEquals("Manicure (cosmetics)", interests.get(0).get("name").asText());
+    }
+
+    /**
+     * Garante que vídeos de criativo são normalizados antes do upload para a Meta.
+     */
+    @Test
+    void normalizesVideoCreativeBeforeUploadingToMeta() throws Exception {
+        byte[] normalizedBytes = new byte[] {9, 8, 7, 6};
+        MetaVideoNormalizer normalizer = new MetaVideoNormalizer(true, "ffmpeg", Duration.ofSeconds(1)) {
+            @Override
+            public NormalizedVideo normalize(byte[] sourceBytes, String sourceFileName) {
+                assertArrayEquals(new byte[] {1, 2, 3, 4}, sourceBytes);
+                return new NormalizedVideo(normalizedBytes, "creative-video-meta.mp4", "video/mp4", true);
+            }
+        };
+        service = new FacebookCampaignService(
+            adsService,
+            new StubFacebookAccessTokenManager(adsService, configurationClient),
+            webClientBuilder,
+            configurationClient,
+            backend.url("/").toString(),
+            "/api",
+            objectMapper,
+            apiLogClient,
+            normalizer
+        );
+        facebook.enqueuePriorityConditionalResponse(
+            request -> "/creative-video.mp4".equals(request.getPath()) && "GET".equals(request.getMethod()),
+            () -> new MockResponse()
+                .setBody(new okio.Buffer().write(new byte[] {1, 2, 3, 4}))
+                .addHeader("Content-Type", "video/mp4")
+        );
+        String uploadPath = "/video-ads-upload/v23.0/video-123";
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"video_id\":\"video-123\",\"upload_url\":\"" + facebook.url(uploadPath) + "\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
+
+        backend.enqueueResponse(new MockResponse().setBody("""
+            [{"id":1,"name":"Exp","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"}}]
+            """).addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("""
+            [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","format":"VIDEO","videoUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY"}]
+            """.formatted(videoUrl)).addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("backend request"); // experiments-ready
+        takeBackendRequest("backend request"); // creatives fetch
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+
+        RecordedRequest start = takeFacebookRequest("video start");
+        assertEquals("/v23.0/act_1/video_ads", start.getPath());
+        RecordedRequest upload = takeFacebookRequest("video upload");
+        assertEquals(uploadPath, upload.getPath());
+        assertEquals(normalizedBytes.length, upload.getBodySize());
+        assertArrayEquals(normalizedBytes, upload.getBody().readByteArray());
+        RecordedRequest finish = takeFacebookRequest("video finish");
+        assertEquals("/v23.0/act_1/video_ads", finish.getPath());
+        takeFacebookRequest("facebook request"); // campaign
+        takeFacebookRequest("facebook request"); // ad set
+        RecordedRequest creative = takeFacebookRequest("facebook request");
+        JsonNode storySpec = objectMapper.readTree(creative.getBody().inputStream()).get("object_story_spec");
+        assertEquals("video-123", storySpec.get("video_data").get("video_id").asText());
     }
 
     /**

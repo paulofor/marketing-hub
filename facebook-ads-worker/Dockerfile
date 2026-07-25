@@ -23,6 +23,10 @@ RUN mvn -s settings.xml -B package -DskipTests
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /workspace/target/app.jar ./app.jar
 
 EXPOSE 8080

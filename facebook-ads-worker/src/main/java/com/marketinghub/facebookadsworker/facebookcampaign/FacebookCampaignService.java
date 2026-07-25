@@ -141,9 +141,10 @@ public class FacebookCampaignService {
     private final ExperimentFacebookApiLogClient experimentFacebookApiLogClient;
     private final HttpClient assetDownloadClient;
     private final PipelineWorker<CampaignPublicationInput, CampaignPublicationOutput> campaignPublicationWorker;
+    private final MetaVideoNormalizer metaVideoNormalizer;
 
     /**
-     * Creates the campaign service and wires campaign publication through the generic stage worker.
+     * Cria o serviço de campanha e conecta a publicação ao worker genérico de etapas.
      */
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    FacebookAccessTokenManager accessTokenManager,
@@ -152,7 +153,8 @@ public class FacebookCampaignService {
                                    @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                    @Value("${backend.api-prefix:/api}") String apiPrefix,
                                    ObjectMapper objectMapper,
-                                   ExperimentFacebookApiLogClient experimentFacebookApiLogClient) {
+                                   ExperimentFacebookApiLogClient experimentFacebookApiLogClient,
+                                   MetaVideoNormalizer metaVideoNormalizer) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.backendClient = builder.build();
@@ -166,6 +168,7 @@ public class FacebookCampaignService {
         this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
         this.objectMapper = objectMapper;
         this.experimentFacebookApiLogClient = experimentFacebookApiLogClient;
+        this.metaVideoNormalizer = metaVideoNormalizer;
         this.assetDownloadClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .followRedirects(HttpClient.Redirect.NORMAL)
@@ -1656,21 +1659,27 @@ public class FacebookCampaignService {
                 );
             }
             DownloadedVideo downloadedVideo = downloadCreativeVideo(payload.videoUrl());
+            String sourceFileName = resolveVideoFileName(payload.videoUrl());
+            MetaVideoNormalizer.NormalizedVideo normalizedVideo = metaVideoNormalizer.normalize(
+                downloadedVideo.bytes(),
+                sourceFileName
+            );
             String uploadedVideoId = executeFacebookCallWithLogging(
                 publicationJobId,
                 experimentId,
                 ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
                 () -> uploadVideoWithOfficialFlowOrLegacyFallback(
                     adAccountId,
-                    downloadedVideo.bytes(),
-                    resolveVideoFileName(payload.videoUrl()),
-                    downloadedVideo.contentType())
+                    normalizedVideo.bytes(),
+                    normalizedVideo.fileName(),
+                    normalizedVideo.contentType())
             );
             LOGGER.info(
-                "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}",
+                "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}, normalized={}",
                 experimentId,
                 payload.creative().id(),
-                uploadedVideoId
+                uploadedVideoId,
+                normalizedVideo.normalized()
             );
             resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
         }

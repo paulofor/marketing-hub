@@ -1,10 +1,14 @@
 package com.marketinghub.product.web;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
+import com.marketinghub.pde.service.PdeProductionSlotService;
+import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.stream.StreamSupport;
 import org.springframework.http.HttpHeaders;
@@ -20,12 +24,14 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
     private final ProductService service;
     private final ProductMapper mapper;
+    private final PdeProductionSlotService pdeProductionSlotService;
     private final ProductMarketingDefinitionHtmlRenderer htmlRenderer = new ProductMarketingDefinitionHtmlRenderer();
 
     /** Inicializa o controller com serviço de produto e mapper de resposta. */
-    public ProductController(ProductService service, ProductMapper mapper) {
+    public ProductController(ProductService service, ProductMapper mapper, PdeProductionSlotService pdeProductionSlotService) {
         this.service = service;
         this.mapper = mapper;
+        this.pdeProductionSlotService = pdeProductionSlotService;
     }
 
     /** Cadastra um novo produto comercial no Marketing Hub. */
@@ -50,6 +56,22 @@ public class ProductController {
     @PostMapping("/{id}/pde-persuasive-journey/default")
     public ProductDto applyDefaultPdePersuasiveJourney(@PathVariable Long id) {
         return mapper.toDto(service.applyDefaultPdePersuasiveJourney(id));
+    }
+
+    /** Lista as versões produtivas PDE gerenciadas pelo cadastro do produto. */
+    @GetMapping("/{id}/pde-production-slots")
+    public List<PostDeployPdeProductionSlotDto> listPdeProductionSlots(@PathVariable Long id) {
+        Product product = service.getProduct(id);
+        return pdeProductionSlotService.listProductionSlotsForProduct(product.getSlug());
+    }
+
+    /** Cria ou atualiza uma versão produtiva PDE a partir do cadastro do produto. */
+    @PostMapping("/{id}/pde-production-slots")
+    public PostDeployPdeProductionSlotDto savePdeProductionSlot(
+            @PathVariable Long id,
+            @RequestBody PostDeployPdeProductionSlotRequestDto request) {
+        Product product = service.getProduct(id);
+        return pdeProductionSlotService.saveProductionSlot(product.getSlug(), request.sourceExperimentId(), request);
     }
 
     /** Lista os produtos comerciais cadastrados no Marketing Hub. */

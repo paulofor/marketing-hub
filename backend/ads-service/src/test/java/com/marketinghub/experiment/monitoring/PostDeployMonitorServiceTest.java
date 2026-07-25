@@ -22,9 +22,9 @@ import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -59,7 +59,7 @@ class PostDeployMonitorServiceTest {
     private PdeProductionDeploymentClient pdeProductionDeploymentClient;
 
     @Mock
-    private PdeProductionSlotRepository pdeProductionSlotRepository;
+    private PdeProductionSlotService pdeProductionSlotService;
 
     private PostDeployMonitorService service;
 
@@ -73,11 +73,14 @@ class PostDeployMonitorServiceTest {
                 pdeAnalyticsClient,
                 pdeDeployStatusClient,
                 pdeProductionDeploymentClient,
-                pdeProductionSlotRepository);
+                pdeProductionSlotService);
         lenient().when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(availableDeployStatus()));
         lenient().when(pdeProductionDeploymentClient.isConfigured()).thenReturn(false);
-        lenient().when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc("metodo-musa-7-dias"))
-                .thenReturn(List.of(productionSlot("v1", "musa-pde-entry-v4-video-hero")));
+        lenient().when(pdeProductionSlotService.resolveProductSlug(null)).thenReturn("metodo-musa-7-dias");
+        lenient().when(pdeProductionSlotService.resolveProductSlug("metodo-musa-7-dias"))
+                .thenReturn("metodo-musa-7-dias");
+        lenient().when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
+                .thenReturn(List.of(productionSlotDto("v1", "musa-pde-entry-v4-video-hero")));
     }
 
     /** Recomenda pausa quando há gasto relevante sem primeira interação no PDE. */
@@ -332,16 +335,12 @@ class PostDeployMonitorServiceTest {
     void savesPdeProductionSlotForParallelHypothesisUrl() {
         Experiment experiment = Experiment.builder().id(71L).build();
         when(experimentRepository.findById(71L)).thenReturn(Optional.of(experiment));
-        when(pdeProductionSlotRepository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v2"))
-                .thenReturn(Optional.empty());
-        when(pdeProductionSlotRepository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
-                .thenAnswer(invocation -> {
-                    PdeProductionSlot slot = invocation.getArgument(0);
-                    slot.setId(2L);
-                    slot.setCreatedAt(Instant.parse("2026-07-24T10:00:00Z"));
-                    slot.setUpdatedAt(Instant.parse("2026-07-24T10:00:00Z"));
-                    return slot;
-                });
+        var savedSlot = productionSlotDto("v2", "musa-pde-entry-v5-estrada-desejo");
+        when(pdeProductionSlotService.saveProductionSlot(
+                eq("metodo-musa-7-dias"),
+                eq(71L),
+                org.mockito.ArgumentMatchers.any(PostDeployPdeProductionSlotRequestDto.class)))
+                .thenReturn(savedSlot);
 
         var response = service.saveProductionSlot(
                 71L,
@@ -357,11 +356,11 @@ class PostDeployMonitorServiceTest {
                         null,
                         "Hipotese 2"));
 
-        assertThat(response.id()).isEqualTo(2L);
+        assertThat(response.id()).isEqualTo(1L);
         assertThat(response.domain()).isEqualTo("v2.clubemusa.com.br");
         assertThat(response.publicUrl()).isEqualTo("https://v2.clubemusa.com.br");
         assertThat(response.targetEnvironment()).isEqualTo("production-v2");
-        assertThat(response.sourceExperimentId()).isEqualTo(71L);
+        assertThat(response.sourceExperimentId()).isEqualTo(70L);
     }
 
     /** Cria uma métrica Meta Ads mínima para os cenários do painel. */
@@ -423,6 +422,27 @@ class PostDeployMonitorServiceTest {
                 .createdAt(Instant.parse("2026-07-24T10:00:00Z"))
                 .updatedAt(Instant.parse("2026-07-24T10:00:00Z"))
                 .build();
+    }
+
+    /** Cria um DTO de slot produtivo para validar a resposta do painel. */
+    private com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto productionSlotDto(
+            String slotCode,
+            String experienceVersion) {
+        PdeProductionSlot slot = productionSlot(slotCode, experienceVersion);
+        return new com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto(
+                slot.getId(),
+                slot.getSlotCode(),
+                slot.getProductSlug(),
+                slot.getDomain(),
+                slot.getPublicUrl(),
+                slot.getBackendUrl(),
+                slot.getExperienceVersion(),
+                slot.getTargetEnvironment(),
+                slot.getStatus(),
+                slot.getSourceExperimentId(),
+                slot.getNotes(),
+                slot.getCreatedAt(),
+                slot.getUpdatedAt());
     }
 
     /** Cria status de deploy parametrizado para comparar homologação e produção. */

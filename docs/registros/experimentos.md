@@ -6062,3 +6062,10 @@
 - foi feito: `AGENTS.md` passou a exigir que o ambiente exponha claramente a URL pública do frontend administrativo do Marketing Hub para o Codex.
 - foi feito: `docs/canonical/system-governance-canon.v2.md` passou a registrar que fluxos comerciais, experimentos, PDEs, campanhas, vídeos e validações pós-deploy devem preferir execução/validação pela tela quando a funcionalidade existir.
 - impacto esperado: reduzir decisões baseadas apenas em API e aumentar a qualidade da validação comercial antes de liberar tráfego, vídeo ou experimento.
+
+## 2026-07-25 — Criativos de vídeo: reprovação humana
+
+- causa-raiz confirmada via MCP: a tela enviava `REJECTED`, mas a coluna real `creative.status` estava como `enum('DRAFT','READY')`, bloqueando a gravação do motivo de reprovação com erro 500.
+- correção preparada: criado changelog incremental para normalizar `creative.status` como `VARCHAR(20) NULL`, alinhando o banco real ao contrato extensível da entidade e evitando novas quebras por status operacional.
+- prevenção: adicionado teste de contrato do changelog e validação de include relativo no master Liquibase.
+- impacto comercial esperado: destravar a fila de revisão humana para reprovar vídeos com aprendizado acionável antes de liberar campanha paga.

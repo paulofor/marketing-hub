@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-25-creative-status-varchar
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: creative
+        - columnExists:
+            tableName: creative
+            columnName: status
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT CASE
+                       WHEN DATA_TYPE <> 'varchar'
+                         OR CHARACTER_MAXIMUM_LENGTH < 20
+                       THEN 1
+                       ELSE 0
+                     END
+                FROM INFORMATION_SCHEMA.COLUMNS
+               WHERE TABLE_SCHEMA = DATABASE()
+                 AND TABLE_NAME = 'creative'
+                 AND COLUMN_NAME = 'status'
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                MODIFY COLUMN status VARCHAR(20) NULL;

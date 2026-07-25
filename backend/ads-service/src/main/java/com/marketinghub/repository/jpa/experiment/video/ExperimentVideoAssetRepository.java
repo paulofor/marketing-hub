@@ -45,6 +45,20 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
     List<ExperimentVideoAssetProviderReviewProjection> findProviderReviewsBySalesVideoProfileId(
             @Param("salesVideoProfileId") Long salesVideoProfileId);
 
+    /** Lista dados mínimos de reputação de provider para todos os vídeos do tenant informado. */
+    @Query(value = """
+            select v.provider as provider,
+                   v.status as status,
+                   v.review_status as reviewStatus
+            from experiment_video_asset v
+            left join sales_video_profile p on p.id = v.sales_video_profile_id
+            left join sales_video_job j on j.id = v.sales_video_job_id
+            where coalesce(p.tenant_id, j.tenant_id, 'default') = :tenantId
+            order by v.created_at desc
+            """, nativeQuery = true)
+    List<ExperimentVideoAssetProviderReviewProjection> findProviderReviewsByTenantId(
+            @Param("tenantId") String tenantId);
+
     /** Verifica se existem vídeos obrigatórios que ainda bloqueiam a publicação. */
     @Query("""
             select case when count(v) > 0 then true else false end

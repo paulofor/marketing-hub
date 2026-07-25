@@ -29,6 +29,7 @@ import com.marketinghub.salesvideo.dto.SalesVideoConversionEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
@@ -233,5 +234,10 @@ public class SalesVideoService {
     /** Resume a performance comercial do perfil em uma janela de tempo. */
     public SalesVideoPerformanceSummaryDto summarizePerformance(Long profileId, Instant from, Instant to) {
         return commercialInsightsService.summarizePerformance(profileId, from, to);
+    }
+
+    /** Resume a pontuação global dos provedores de vídeo do tenant atual. */
+    public List<SalesVideoProviderScoreDto> summarizeProviderScores() {
+        return commercialInsightsService.summarizeProviderScores();
     }
 }

@@ -169,7 +169,13 @@ public class SalesVideoCommercialInsightsService {
                 .stream()
                 .map(VariantAccumulator::toDto)
                 .toList();
-        List<SalesVideoProviderScoreDto> providerScores = summarizeProviderScores(profileId, profile.getTenantId(), events);
+        List<SalesVideoJob> jobs = jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)
+                .stream()
+                .filter(job -> Objects.equals(job.getTenantId(), profile.getTenantId()))
+                .toList();
+        List<ExperimentVideoAssetProviderReviewProjection> providerReviews =
+                experimentVideoAssetRepository.findProviderReviewsBySalesVideoProfileId(profileId);
+        List<SalesVideoProviderScoreDto> providerScores = summarizeProviderScores(jobs, providerReviews, events);
 
         return SalesVideoPerformanceSummaryDto.builder()
                 .profileId(profileId)
@@ -183,14 +189,22 @@ public class SalesVideoCommercialInsightsService {
                 .build();
     }
 
+    /** Resume a reputação global dos providers de vídeo no tenant atual. */
+    @Transactional(readOnly = true)
+    public List<SalesVideoProviderScoreDto> summarizeProviderScores() {
+        String tenantId = TenantContextHolder.requireTenant();
+        List<SalesVideoJob> jobs = jobRepository.findByTenantIdOrderByRequestedAtDesc(tenantId);
+        List<ExperimentVideoAssetProviderReviewProjection> providerReviews =
+                experimentVideoAssetRepository.findProviderReviewsByTenantId(tenantId);
+        List<SalesVideoConversionEvent> events = conversionEventRepository.findByTenantIdOrderByOccurredAtDesc(tenantId);
+        return summarizeProviderScores(jobs, providerReviews, events);
+    }
+
     /** Calcula a reputação dos providers com base em qualidade, falha técnica e conversão. */
-    private List<SalesVideoProviderScoreDto> summarizeProviderScores(Long profileId, String tenantId,
+    private List<SalesVideoProviderScoreDto> summarizeProviderScores(List<SalesVideoJob> jobs,
+                                                                     List<ExperimentVideoAssetProviderReviewProjection> providerReviews,
                                                                      List<SalesVideoConversionEvent> events) {
         Map<String, ProviderScoreAccumulator> providers = new LinkedHashMap<>();
-        List<SalesVideoJob> jobs = jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)
-                .stream()
-                .filter(job -> Objects.equals(job.getTenantId(), tenantId))
-                .toList();
         for (SalesVideoJob job : jobs) {
             ProviderScoreAccumulator accumulator = providers.computeIfAbsent(normalizeProvider(job.getProviderName()),
                     ProviderScoreAccumulator::new);
@@ -201,8 +215,7 @@ public class SalesVideoCommercialInsightsService {
                 accumulator.failedJobs++;
             }
         }
-        for (ExperimentVideoAssetProviderReviewProjection asset
-                : experimentVideoAssetRepository.findProviderReviewsBySalesVideoProfileId(profileId)) {
+        for (ExperimentVideoAssetProviderReviewProjection asset : providerReviews) {
             ProviderScoreAccumulator accumulator = providers.computeIfAbsent(normalizeProvider(asset.getProvider()),
                     ProviderScoreAccumulator::new);
             if ("READY".equals(asset.getStatus()) && "APPROVED".equals(asset.getReviewStatus())) {

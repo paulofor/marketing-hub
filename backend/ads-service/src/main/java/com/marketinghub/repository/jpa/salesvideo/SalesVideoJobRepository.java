@@ -23,6 +23,9 @@ public interface SalesVideoJobRepository extends JpaRepository<SalesVideoJob, Lo
     /** Lista jobs de todos os perfis de vídeo de um produto do mais recente para o mais antigo. */
     List<SalesVideoJob> findByProfileProductIdAndTenantIdOrderByRequestedAtDesc(Long productId, String tenantId);
 
+    /** Lista todos os jobs de vídeo de um tenant do mais recente para o mais antigo. */
+    List<SalesVideoJob> findByTenantIdOrderByRequestedAtDesc(String tenantId);
+
     /** Busca o job mais recente de um perfil de vídeo. */
     Optional<SalesVideoJob> findFirstByProfileIdOrderByRequestedAtDesc(Long profileId);
 

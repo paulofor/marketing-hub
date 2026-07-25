@@ -31,6 +31,7 @@ import com.marketinghub.salesvideo.dto.SalesVideoConversionEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
@@ -125,6 +126,12 @@ public class SalesVideoController {
     @GetMapping("/api/sales-videos/rollout/status")
     public SalesVideoRolloutStatusDto getTenantRolloutStatus() {
         return salesVideoService.getTenantRolloutStatus();
+    }
+
+    /** Consulta reputação global dos provedores de vídeo do tenant. */
+    @GetMapping("/api/sales-videos/provider-scores")
+    public List<SalesVideoProviderScoreDto> listProviderScores() {
+        return salesVideoService.summarizeProviderScores();
     }
 
     /** Consulta status de rollout de um perfil. */

@@ -6099,3 +6099,15 @@
 - validação operacional: após a troca, o Facebook Ads Worker consumiu o experimento e publicou campanha, adset e anúncio ativos para `69 - MUSA-H001-E007`.
 - causa-raiz técnica observada: o PATCH parcial de vídeo revalida duração do provider VEO mesmo quando a alteração solicitada é apenas `requiredForRelease`; para concluir a ação pelo endpoint oficial, foi necessário enviar `durationSeconds=8` no vídeo falho substituído.
 - impacto comercial esperado: destravar a publicação paga do teste de vídeo hero sem remover o ativo aprovado que mede a hipótese principal do PDE MUSA.
+
+## 2026-07-25 — Experimento 72: criativo estatico pronto e tentativa de publicacao
+
+- foi feito: criado o vídeo planejado `experiment_video_asset.id=33` com promessa corrigida para o anúncio do experimento 72, mantendo `required_for_release=false` para não bloquear tráfego enquanto o ativo passa por geração/revisão.
+- bloqueio de vídeo confirmado: a tentativa de render produtivo pelo endpoint oficial retornou `ROLLOUT_NOT_ALLOWED`, indicando que o tenant/perfil ainda não está habilitado para render produtivo no módulo de Sales Video.
+- foi feito: o vídeo rejeitado `experiment_video_asset.id=16` deixou de ser obrigatório para liberação.
+- foi feito: criado o criativo estático `creative.id=247`, `READY`, com imagem pública, destino `https://clubemusa.com.br`, CTA `LEARN_MORE` e copy corrigida: "Sua imagem pode ficar mais coerente em 7 dias".
+- foi feito: o experimento 72 recebeu `metric_preset_id=LEAN_100` e página Facebook `Clube MUSA` (`fb_page.id=2`) para corrigir o contrato de publicação que chegava ao worker com `pageId=null`.
+- validação operacional: o Facebook Ads Worker consumiu o experimento, criou campanha externa `120250585076910326` e ad set externo `120250585077040326`, mas falhou na criação do ad creative com erro Meta 400 em `/adcreatives`, `Service temporarily unavailable`, subcode `3858799`.
+- estado final validado via MCP: experimento 72 ficou `FAILED`, sem campanha persistida em `facebook_ads_campaign`.
+- risco operacional: a Meta ainda reconhece os IDs externos criados na tentativa; é necessário verificar/pausar ou remover esses objetos no Gerenciador antes de novo retry.
+- impacto comercial esperado: o gargalo de readiness do 72 foi removido, mas a validação de mercado ainda não começou porque a publicação voltou a falhar na etapa de criativo da Meta.

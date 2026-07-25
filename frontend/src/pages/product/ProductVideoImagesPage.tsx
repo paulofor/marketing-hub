@@ -221,6 +221,7 @@ export default function ProductVideoImagesPage() {
                 const isSeed =
                   product?.videoSeedImageAssetId != null &&
                   product.videoSeedImageAssetId === image.assetId;
+                const isApproved = image.reviewStatus === "APPROVED";
                 return (
                   <article
                     className="product-video-image-gallery__item"
@@ -248,9 +249,13 @@ export default function ProductVideoImagesPage() {
                           </div>
                         </div>
                         <span
-                          className={`badge ${isSeed ? "text-bg-success" : "text-bg-light border"}`}
+                          className={`badge ${isSeed || isApproved ? "text-bg-success" : "text-bg-light border"}`}
                         >
-                          {isSeed ? "Imagem semente" : image.reviewStatus}
+                          {isSeed
+                            ? "Imagem semente"
+                            : isApproved
+                              ? "Aprovada"
+                              : image.reviewStatus}
                         </span>
                       </div>
                       <p className="product-video-image-gallery__prompt">
@@ -263,7 +268,9 @@ export default function ProductVideoImagesPage() {
                         onClick={() => approveAsSeedImage(image)}
                       >
                         <CheckCircle2 size={16} aria-hidden="true" />
-                        Aprovar como imagem semente
+                        {isApproved
+                          ? "Definir como imagem semente"
+                          : "Aprovar como imagem semente"}
                       </button>
                     </div>
                   </article>

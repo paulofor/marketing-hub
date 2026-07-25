@@ -148,6 +148,7 @@ public class ProductService {
     product.setVideoSeedReviewNotes(normalizeOptional(request.reviewNotes()));
     product.setVideoSeedReviewedBy(normalizeOptional(request.reviewedBy()));
     product.setVideoSeedReviewedAt(Instant.now());
+    markGalleryImageReviewed(product.getId(), asset.getId(), reviewStatus, request.reviewNotes());
     return repository.save(product);
   }
 
@@ -230,6 +231,22 @@ public class ProductService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o prompt da imagem.");
     }
     return prompt.trim();
+  }
+
+  /** Atualiza o status da imagem na galeria para permitir múltiplas aprovadas por produto. */
+  private void markGalleryImageReviewed(
+      Long productId,
+      Long assetId,
+      ProductVideoSeedImageReviewStatus reviewStatus,
+      String reviewNotes) {
+    productVideoImageRepository
+        .findFirstByProductIdAndAssetId(productId, assetId)
+        .ifPresent(
+            image -> {
+              image.setReviewStatus(reviewStatus);
+              image.setReviewNotes(normalizeOptional(reviewNotes));
+              productVideoImageRepository.save(image);
+            });
   }
 
   /** Persiste a imagem gerada no storage, cria o asset e vincula ao produto. */
@@ -496,7 +513,8 @@ public class ProductService {
     journey.put("name", "Jornada Persuasiva Interativa do PDE");
     journey.put(
         "objective",
-        "Medir em qual estágio comercial a pessoa ganha ou perde confiança, desejo e disposição de pagar.");
+        "Medir em qual estágio comercial a pessoa ganha ou perde confiança, desejo e disposição de"
+            + " pagar.");
     journey.put("productSlug", valueOrFallback(product.getSlug()));
     journey.put("commercialPromise", valueOrFallback(product.getPromise()));
     ArrayNode steps = journey.putArray("steps");
@@ -511,7 +529,8 @@ public class ProductService {
         new String[] {"login_hero"},
         new String[] {"PAGE_VIEW", "PAGE_VISIBLE_TIME"},
         "impressões, CTR, CPC, page_view e tempo visível na primeira dobra",
-        "Se quebra aqui, revisar promessa, criativo, público, carregamento e clareza do primeiro CTA.");
+        "Se quebra aqui, revisar promessa, criativo, público, carregamento e clareza do primeiro"
+            + " CTA.");
     addPersuasiveJourneyStep(
         steps,
         2,
@@ -519,23 +538,27 @@ public class ProductService {
         "Envolvimento diagnóstico",
         "Interesse + Desejo",
         "Questionário e plano de 7 dias transformam curiosidade em valor percebido personalizado.",
-        "A pessoa troca passividade por microcompromisso e recebe um plano aplicável à própria rotina.",
+        "A pessoa troca passividade por microcompromisso e recebe um plano aplicável à própria"
+            + " rotina.",
         new String[] {"interactive_diagnostic", "free_diagnostic_preview"},
         new String[] {"PRESENCE_MAP_CHOICE_SELECTED", "DIAGNOSTIC_CHOICE_SELECTED", "SECTION_VIEW"},
         "início/conclusão do questionário, visualização do plano e tempo no diagnóstico",
-        "Se quebra aqui, reduzir fricção das perguntas e tornar a recompensa do plano mais concreta.");
+        "Se quebra aqui, reduzir fricção das perguntas e tornar a recompensa do plano mais"
+            + " concreta.");
     addPersuasiveJourneyStep(
         steps,
         3,
         "continuity_commitment",
         "Compromisso de continuidade",
         "Desejo + Ação",
-        "Login, cadastro, salvar plano ou iniciar missão transformam valor percebido em intenção real.",
+        "Login, cadastro, salvar plano ou iniciar missão transformam valor percebido em intenção"
+            + " real.",
         "A pessoa aceita deixar um sinal de identidade para continuar a jornada.",
         new String[] {"login_panel", "guided_journey"},
         new String[] {"LOGIN_STARTED", "LOGIN_COMPLETED", "FIRST_USE", "MISSION_OPEN"},
         "login iniciado/concluído, plano salvo, primeira missão aberta e primeiro uso",
-        "Se quebra aqui, simplificar cadastro, reforçar continuidade do plano e explicar por que salvar a jornada.");
+        "Se quebra aqui, simplificar cadastro, reforçar continuidade do plano e explicar por que"
+            + " salvar a jornada.");
     addPersuasiveJourneyStep(
         steps,
         4,
@@ -549,19 +572,22 @@ public class ProductService {
           "PAYWALL_VIEWED", "SUBSCRIPTION_CLICKED", "CHECKOUT_STARTED", "SUBSCRIPTION_APPROVED"
         },
         "paywall visto, clique de assinatura, checkout iniciado e compra aprovada",
-        "Se quebra aqui, revisar preço, oferta, garantia, prova, checkout e transição entre plano gratuito e acesso pago.");
+        "Se quebra aqui, revisar preço, oferta, garantia, prova, checkout e transição entre plano"
+            + " gratuito e acesso pago.");
     addPersuasiveJourneyStep(
         steps,
         5,
         "post_purchase_validation",
         "Validação pós-compra",
         "Retenção",
-        "Acesso liberado, uso inicial e missões concluídas confirmam que a promessa vendida está sendo aplicada.",
+        "Acesso liberado, uso inicial e missões concluídas confirmam que a promessa vendida está"
+            + " sendo aplicada.",
         "A pessoa percebe progresso prático e reduz risco de arrependimento ou abandono.",
         new String[] {"member_journey", "materials_library"},
         new String[] {"ACCESS_RELEASED", "FIRST_USE", "MISSION_COMPLETED", "MATERIAL_OPEN"},
         "acesso liberado, primeiro uso, missão concluída e abertura de materiais",
-        "Se quebra aqui, melhorar onboarding, missão do Dia 1, clareza dos materiais e acompanhamento inicial.");
+        "Se quebra aqui, melhorar onboarding, missão do Dia 1, clareza dos materiais e"
+            + " acompanhamento inicial.");
     return journey;
   }
 
@@ -623,7 +649,8 @@ public class ProductService {
         .append(valueOrFallback(product.getName()))
         .append("\n\n");
     markdown.append(
-        "> Documento público de posicionamento comercial do produto. Não inclui detalhes técnicos de implementação.\n\n");
+        "> Documento público de posicionamento comercial do produto. Não inclui detalhes técnicos"
+            + " de implementação.\n\n");
   }
 
   /** Adiciona uma seção com linhas ou parágrafos já formatados. */

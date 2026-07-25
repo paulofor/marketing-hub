@@ -1,3 +1,10 @@
+## 2026-07-25 — Experimento 68: fallback minimo para criativo Meta
+
+- causa-raiz operacional confirmada pelo histórico: os objetos órfãos antigos da Meta já estavam removidos, mas a republicação do experimento 68 voltou a falhar no mesmo ponto, `POST /adcreatives`, depois de campanha e ad set criados com sucesso.
+- decisão aplicada: não reativar novamente antes de fortalecer o `facebook-ads-worker`; o publicador agora registra diagnóstico do payload e tenta um fallback mínimo de link quando a Meta rejeita o criativo principal de imagem com `page_id`, `instagram_user_id`, `image_hash`, URL final e CTA técnico já resolvidos.
+- prevenção de recorrência: teste de regressão simula a falha genérica de `/adcreatives` e valida que o worker remove campos opcionais como headline/description apenas na segunda tentativa, preservando mídia, oferta, público e destino.
+- impacto esperado: reduzir falhas sem aprendizado comercial, evitar novas tentativas idênticas e aumentar a chance de colocar o experimento em validação real sem contaminar a hipótese de campanha.
+
 ## 2026-07-25 — VEO direto bloqueado acima de 8s
 
 - aprendizado dos experimentos 68, 69 e 70: solicitar VEO com duração comercial de 30s como render direto cria expectativa incompatível com o limite real do provider.
@@ -6038,6 +6045,14 @@
 
 - causa-raiz: com múltiplas versões produtivas do PDE, o quadro de deploy por ambiente na tela de experimento confundia decisão comercial com publicação técnica.
 - foi feito: a tela de experimento ficou focada em métricas, jornada, criativos, dispositivo e escolha da versão medida; criação/manutenção de URLs produtivas fica no card do produto.
+
+## 2026-07-25 — Experimento 71: fallback para upload de vídeo na Meta
+
+- Contexto: o experimento `71 - Metodo MUSA - Presenca Elegante em 7 Dias-E001` foi reativado para nova tentativa de publicação no Facebook Ads.
+- Evidência operacional: o backend recolocou o experimento em `PLANNED`, mas o worker voltou a marcar `FAILED` após a Meta retornar `403` no fluxo oficial `video_ads` e `500 OAuthException code 1` no fallback legado `/advideos`.
+- Causa-raiz tratada no repositório: a publicação dependia de upload de vídeo mesmo quando a Meta rejeitava tanto o fluxo oficial quanto o legado.
+- Correção preparada: o `facebook-ads-worker` passa a extrair um frame JPEG do próprio vídeo normalizado via FFmpeg, subir esse frame por `/adimages` e publicar o criativo com `image_hash` quando todos os uploads de vídeo falharem.
+- Impacto comercial esperado: recolocar o experimento em validação comercial sem trocar oferta, público, copy ou destino, aceitando que a leitura do primeiro ciclo passa a ser de contorno estático derivado do vídeo e não validação pura do formato vídeo.
 - foi feito: removidos o compose paralelo antigo, o job correspondente no workflow e os contratos de backend que sustentavam o quadro obsoleto.
 - impacto comercial esperado: reduzir erro operacional na escolha de versão, acelerar leitura por hipótese e manter o experimento focado em conversão real.
 
@@ -6091,3 +6106,15 @@
 - validação operacional: após a troca, o Facebook Ads Worker consumiu o experimento e publicou campanha, adset e anúncio ativos para `69 - MUSA-H001-E007`.
 - causa-raiz técnica observada: o PATCH parcial de vídeo revalida duração do provider VEO mesmo quando a alteração solicitada é apenas `requiredForRelease`; para concluir a ação pelo endpoint oficial, foi necessário enviar `durationSeconds=8` no vídeo falho substituído.
 - impacto comercial esperado: destravar a publicação paga do teste de vídeo hero sem remover o ativo aprovado que mede a hipótese principal do PDE MUSA.
+
+## 2026-07-25 — Experimento 72: criativo estatico pronto e tentativa de publicacao
+
+- foi feito: criado o vídeo planejado `experiment_video_asset.id=33` com promessa corrigida para o anúncio do experimento 72, mantendo `required_for_release=false` para não bloquear tráfego enquanto o ativo passa por geração/revisão.
+- bloqueio de vídeo confirmado: a tentativa de render produtivo pelo endpoint oficial retornou `ROLLOUT_NOT_ALLOWED`, indicando que o tenant/perfil ainda não está habilitado para render produtivo no módulo de Sales Video.
+- foi feito: o vídeo rejeitado `experiment_video_asset.id=16` deixou de ser obrigatório para liberação.
+- foi feito: criado o criativo estático `creative.id=247`, `READY`, com imagem pública, destino `https://clubemusa.com.br`, CTA `LEARN_MORE` e copy corrigida: "Sua imagem pode ficar mais coerente em 7 dias".
+- foi feito: o experimento 72 recebeu `metric_preset_id=LEAN_100` e página Facebook `Clube MUSA` (`fb_page.id=2`) para corrigir o contrato de publicação que chegava ao worker com `pageId=null`.
+- validação operacional: o Facebook Ads Worker consumiu o experimento, criou campanha externa `120250585076910326` e ad set externo `120250585077040326`, mas falhou na criação do ad creative com erro Meta 400 em `/adcreatives`, `Service temporarily unavailable`, subcode `3858799`.
+- estado final validado via MCP: experimento 72 ficou `FAILED`, sem campanha persistida em `facebook_ads_campaign`.
+- risco operacional: a Meta ainda reconhece os IDs externos criados na tentativa; é necessário verificar/pausar ou remover esses objetos no Gerenciador antes de novo retry.
+- impacto comercial esperado: o gargalo de readiness do 72 foi removido, mas a validação de mercado ainda não começou porque a publicação voltou a falhar na etapa de criativo da Meta.

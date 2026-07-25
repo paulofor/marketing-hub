@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.107" tests="2" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsServiceTest" time="0.1" tests="6" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -54,32 +54,13 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="validatePendingInterestsResolvesMatch" classname="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.013">
-    <system-out><![CDATA[23:15:07.078 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Configured Facebook Graph API version: v23.0
-23:15:07.078 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook access token updated: previousToken=null, newToken=***
-23:15:07.079 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Requesting pending Facebook interests for validation: url==>http://localhost:55927/api/facebook-interests/pending, params={}
-23:15:07.083 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Received pending Facebook interests from backend: url<==http://localhost:55927/api/facebook-interests/pending, response=[{"id":1,"name":"Pilates"}]
-23:15:07.084 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/act_1234567890/targetingsearch?type=adinterest&q=Pilates&limit=1&fields=id,name&access_***=***&locale=pt_BR
-23:15:07.086 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/act_1234567890/targetingsearch?type=adinterest&q=Pilates&limit=1&fields=id,name&access_***=***&locale=pt_BR, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[{"id":"6003139266461","name":"Pilates Training"}]}
-23:15:07.086 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Resolved Facebook interest id=1 to Graph API code 6003139266461 (name=Pilates Training)
-23:15:07.086 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Reporting Facebook interest validation result: url==>http://localhost:55927/api/facebook-interests/1, payload={"status":"VALID","facebookInterestId":"6003139266461","name":"Pilates Training"}
-23:15:07.089 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Backend acknowledged Facebook interest validation result: url<==http://localhost:55927/api/facebook-interests/1
+  <testcase name="buildInsightsQueryIncludesReach" classname="com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsServiceTest" time="0.088"/>
+  <testcase name="shouldEmergencyPauseWaitsForMinimumSpend" classname="com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsServiceTest" time="0.002"/>
+  <testcase name="isValidSyncTargetRejectsBlankCampaignId" classname="com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsServiceTest" time="0.0"/>
+  <testcase name="mapStatusSnapshotCopiesCampaignChildrenStatus" classname="com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsServiceTest" time="0.002"/>
+  <testcase name="pauseCampaignIfNoLeadsAfterMinimumSpendPausesMetaCampaign" classname="com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsServiceTest" time="0.002">
+    <system-out><![CDATA[23:15:07.054 [main] WARN com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsService -- Emergency pause applied to Facebook campaign cmp-1 after spend 50.23 with zero leads
 ]]></system-out>
   </testcase>
-  <testcase name="validatePendingInterestsMarksInvalidWhenNotFound" classname="com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationServiceTest" time="0.092">
-    <system-out><![CDATA[23:15:07.091 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Configured Facebook Graph API version: v23.0
-23:15:07.091 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook access token updated: previousToken=null, newToken=***
-23:15:07.092 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Requesting pending Facebook interests for validation: url==>http://localhost:39193/api/facebook-interests/pending, params={}
-23:15:07.093 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Received pending Facebook interests from backend: url<==http://localhost:39193/api/facebook-interests/pending, response=[{"id":2,"name":"Unknown Interest"}]
-23:15:07.094 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/act_1234567890/targetingsearch?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***&locale=pt_BR
-23:15:07.096 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/act_1234567890/targetingsearch?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***&locale=pt_BR, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[]}
-23:15:07.096 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/act_1234567890/targetingsearch?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***&locale=en_US
-23:15:07.138 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/act_1234567890/targetingsearch?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***&locale=en_US, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[]}
-23:15:07.138 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Sending GET request to Facebook API: path==>/v23.0/act_1234567890/targetingsearch?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***
-23:15:07.180 [main] INFO com.marketinghub.facebookadsworker.FacebookAdsService -- Facebook API response received: method=GET, path<==/v23.0/act_1234567890/targetingsearch?type=adinterest&q=Unknown Interest&limit=1&fields=id,name&access_***=***, status=200 200 OK, headers={"Content-Length":["***"],"Content-Type":["app...son"]}, body={"data":[]}
-23:15:07.180 [main] WARN com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationService -- Marking Facebook interest id=2 as INVALID because no match was found
-23:15:07.180 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Reporting Facebook interest validation result: url==>http://localhost:39193/api/facebook-interests/2, payload={"status":"INVALID","facebookInterestId":null,"name":null}
-23:15:07.182 [main] INFO com.marketinghub.facebookadsworker.facebookinterest.FacebookInterestValidationClient -- Backend acknowledged Facebook interest validation result: url<==http://localhost:39193/api/facebook-interests/2
-]]></system-out>
-  </testcase>
+  <testcase name="mapToPayloadCopiesReachFromInsights" classname="com.marketinghub.facebookadsworker.facebookcampaign.FacebookCampaignMetricsServiceTest" time="0.003"/>
 </testsuite>

@@ -1312,6 +1312,25 @@ public class FacebookCampaignService {
                 adNameSuffix
             );
         }
+
+        /** Substitui o vídeo por um frame estático quando a Meta rejeita todos os uploads de vídeo. */
+        private CreativePublicationPayload withVideoFrameFallbackImageHash(String value) {
+            return new CreativePublicationPayload(
+                creative,
+                websiteUrl,
+                leadGenFormId,
+                message,
+                callToAction,
+                headline,
+                description,
+                value,
+                null,
+                null,
+                null,
+                instagramActorId,
+                adNameSuffix
+            );
+        }
     }
 
     private List<Creative> resolveCreatives(long experimentId) {
@@ -1664,24 +1683,56 @@ public class FacebookCampaignService {
                 downloadedVideo.bytes(),
                 sourceFileName
             );
-            String uploadedVideoId = executeFacebookCallWithLogging(
-                publicationJobId,
-                experimentId,
-                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                () -> uploadVideoWithOfficialFlowOrLegacyFallback(
-                    adAccountId,
-                    normalizedVideo.bytes(),
+            try {
+                String uploadedVideoId = executeFacebookCallWithLogging(
+                    publicationJobId,
+                    experimentId,
+                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                    () -> uploadVideoWithOfficialFlowOrLegacyFallback(
+                        adAccountId,
+                        normalizedVideo.bytes(),
+                        normalizedVideo.fileName(),
+                        normalizedVideo.contentType())
+                );
+                LOGGER.info(
+                    "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}, normalized={}",
+                    experimentId,
+                    payload.creative().id(),
+                    uploadedVideoId,
+                    normalizedVideo.normalized()
+                );
+                resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
+            } catch (RuntimeException ex) {
+                LOGGER.warn(
+                    "Creative video upload failed after official and legacy Meta flows; using extracted frame fallback: experimentId={}, creativeId={}, filename={}, message={}",
+                    experimentId,
+                    payload.creative().id(),
                     normalizedVideo.fileName(),
-                    normalizedVideo.contentType())
-            );
-            LOGGER.info(
-                "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}, normalized={}",
-                experimentId,
-                payload.creative().id(),
-                uploadedVideoId,
-                normalizedVideo.normalized()
-            );
-            resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
+                    ex.getMessage(),
+                    ex
+                );
+                MetaVideoNormalizer.NormalizedImage fallbackFrame = metaVideoNormalizer.extractFallbackFrame(
+                    normalizedVideo.bytes(),
+                    normalizedVideo.fileName()
+                );
+                String uploadedImageHash = executeFacebookCallWithLogging(
+                    publicationJobId,
+                    experimentId,
+                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                    () -> facebookAdsService.uploadAdImageFromBytes(
+                        adAccountId,
+                        fallbackFrame.bytes(),
+                        fallbackFrame.fileName(),
+                        fallbackFrame.contentType())
+                );
+                LOGGER.info(
+                    "Creative video fallback frame uploaded to Meta as image_hash: experimentId={}, creativeId={}, imageHash={}",
+                    experimentId,
+                    payload.creative().id(),
+                    uploadedImageHash
+                );
+                resolvedPayloads.add(payload.withVideoFrameFallbackImageHash(uploadedImageHash));
+            }
         }
         return resolvedPayloads;
     }
@@ -1955,7 +2006,7 @@ public class FacebookCampaignService {
     }
 
     /**
-     * Cria o criativo com a CTA tecnica ja normalizada e aplica fallback sem Instagram quando necessario.
+     * Cria o criativo com a CTA tecnica ja normalizada e aplica fallback progressivo quando a Meta rejeita o payload.
      */
     private AdCreativeCreation createAdCreativeWithFallback(
         String adAccountId,
@@ -2015,6 +2066,38 @@ public class FacebookCampaignService {
         try {
             String creativeId = createAdCreativeWithImageDownloadRetry(adAccountId, experiment.publicationJobId(), experiment.id(), primaryRequest);
             return new AdCreativeCreation(creativeId, primaryRequest);
+        } catch (WebClientResponseException ex) {
+            if (!canUseSimpleLinkCreativeFallback(primaryRequest)) {
+                throw ex;
+            }
+
+            LOGGER.warn(
+                "Retrying Facebook ad creative creation with minimal link payload after Meta rejected the primary payload: experimentId={}, status={}, pageId={}, instagramActorIdPresent={}, imageHashPresent={}, websiteUrlPresent={}, callToAction={}, message={}",
+                experiment.id(),
+                ex.getRawStatusCode(),
+                StringUtils.hasText(primaryRequest.pageId()) ? primaryRequest.pageId() : "missing",
+                StringUtils.hasText(primaryRequest.instagramActorId()),
+                StringUtils.hasText(primaryRequest.imageHash()),
+                StringUtils.hasText(primaryRequest.websiteUrl()),
+                primaryRequest.callToActionType(),
+                ex.getMessage(),
+                ex
+            );
+            logSimpleLinkFallbackDiagnostic(experiment, primaryRequest, ex);
+
+            FacebookAdsService.AdCreativeRequest fallbackRequest = buildSimpleLinkCreativeFallbackRequest(primaryRequest);
+            String creativeId = createAdCreativeWithImageDownloadRetry(
+                adAccountId,
+                experiment.publicationJobId(),
+                experiment.id(),
+                fallbackRequest
+            );
+            LOGGER.info(
+                "Created Facebook ad creative with minimal link fallback: experimentId={}, creativeId={}",
+                experiment.id(),
+                creativeId
+            );
+            return new AdCreativeCreation(creativeId, fallbackRequest);
         } catch (FacebookPermissionException ex) {
             if (!StringUtils.hasText(instagramActorId) || !isInstagramPermissionError(ex)) {
                 throw ex;
@@ -2052,6 +2135,64 @@ public class FacebookCampaignService {
             );
             return new AdCreativeCreation(creativeId, fallbackRequest);
         }
+    }
+
+    /** Verifica se existe base segura para criar um criativo minimo de link com imagem ja canonizada. */
+    private boolean canUseSimpleLinkCreativeFallback(FacebookAdsService.AdCreativeRequest request) {
+        return request != null
+            && StringUtils.hasText(request.pageId())
+            && StringUtils.hasText(request.websiteUrl())
+            && StringUtils.hasText(request.imageHash())
+            && !StringUtils.hasText(request.videoId())
+            && !StringUtils.hasText(request.leadGenFormId());
+    }
+
+    /** Monta um payload minimo de link para isolar rejeicoes da Meta ligadas a campos opcionais do criativo. */
+    private FacebookAdsService.AdCreativeRequest buildSimpleLinkCreativeFallbackRequest(
+        FacebookAdsService.AdCreativeRequest request
+    ) {
+        return new FacebookAdsService.AdCreativeRequest(
+            request.name() + " - Link Fallback",
+            request.pageId(),
+            request.instagramActorId(),
+            request.websiteUrl(),
+            null,
+            request.message(),
+            request.imageHash(),
+            null,
+            null,
+            null,
+            request.callToActionType(),
+            null,
+            null
+        );
+    }
+
+    /** Registra o diagnostico comercial/operacional que motivou o fallback minimo de criativo. */
+    private void logSimpleLinkFallbackDiagnostic(
+        Experiment experiment,
+        FacebookAdsService.AdCreativeRequest request,
+        WebClientResponseException ex
+    ) {
+        if (experiment == null || request == null) {
+            return;
+        }
+        String reason = "Meta rejeitou o payload principal de /adcreatives; tentando fallback minimo de link com page_id=%s, instagram_user_id=%s, image_hash=%s, url_final=%s e cta=%s. status=%s, erro=%s"
+            .formatted(
+                StringUtils.hasText(request.pageId()) ? "presente" : "ausente",
+                StringUtils.hasText(request.instagramActorId()) ? "presente" : "ausente",
+                StringUtils.hasText(request.imageHash()) ? "presente" : "ausente",
+                StringUtils.hasText(request.websiteUrl()) ? "presente" : "ausente",
+                StringUtils.hasText(request.callToActionType()) ? request.callToActionType() : "ausente",
+                ex.getRawStatusCode(),
+                ex.getMessage()
+            );
+        experimentFacebookApiLogClient.logPublicationJobFailureStep(
+            experiment.publicationJobId(),
+            experiment.id(),
+            "CAMPAIGN_AD_CREATIVE_SIMPLE_LINK_FALLBACK",
+            reason
+        );
     }
 
     /**

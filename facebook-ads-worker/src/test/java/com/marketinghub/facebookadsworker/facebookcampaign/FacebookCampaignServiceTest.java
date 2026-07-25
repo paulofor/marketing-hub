@@ -481,6 +481,93 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Garante fallback minimo quando a Meta rejeita o payload completo de adcreative.
+    void retriesWithSimpleLinkCreativeWhenFacebookRejectsPrimaryAdCreativePayload() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-adcreative-fallback\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
+        facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("experiments ready");
+        takeBackendRequest("creatives ready");
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeFacebookRequest("facebook ad image upload");
+        takeFacebookRequest("facebook campaign");
+        takeFacebookRequest("facebook ad set");
+
+        RecordedRequest primaryCreative = takeFacebookRequest("facebook creative primary");
+        JsonNode primaryPayload = objectMapper.readTree(primaryCreative.getBody().inputStream());
+        JsonNode primaryLinkData = primaryPayload.get("object_story_spec").get("link_data");
+        assertEquals("HL", primaryLinkData.get("name").asText());
+        assertEquals("Desc", primaryLinkData.get("description").asText());
+
+        RecordedRequest fallbackCreative = takeFacebookRequest("facebook creative fallback");
+        JsonNode fallbackPayload = objectMapper.readTree(fallbackCreative.getBody().inputStream());
+        assertEquals("Exp - Creative - Link Fallback", fallbackPayload.get("name").asText());
+        JsonNode storySpec = fallbackPayload.get("object_story_spec");
+        assertEquals("42", storySpec.get("page_id").asText());
+        assertEquals("21", storySpec.get("instagram_user_id").asText());
+        JsonNode fallbackLinkData = storySpec.get("link_data");
+        assertEquals("Texto Criativo", fallbackLinkData.get("message").asText());
+        assertEquals("https://exp.example/landing", fallbackLinkData.get("link").asText());
+        assertEquals("hash-preloaded", fallbackLinkData.get("image_hash").asText());
+        assertEquals("SHOP_NOW", fallbackLinkData.get("call_to_action").get("type").asText());
+        assertFalse(fallbackLinkData.has("name"));
+        assertFalse(fallbackLinkData.has("description"));
+
+        RecordedRequest adRequest = takeFacebookRequest("facebook ad");
+        JsonNode adPayload = objectMapper.readTree(adRequest.getBody().inputStream());
+        assertEquals("30", adPayload.get("creative").get("creative_id").asText());
+
+        RecordedRequest diagnosticStep = takeBackendRequestMatching(
+            "simple link fallback diagnostic",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+                && request.getBody().clone().readUtf8().contains("CAMPAIGN_AD_CREATIVE_SIMPLE_LINK_FALLBACK")
+        );
+        JsonNode diagnosticPayload = objectMapper.readTree(diagnosticStep.getBody().inputStream());
+        assertEquals("job-adcreative-fallback", diagnosticPayload.get("jobId").asText());
+        assertTrue(diagnosticPayload.get("errorMessage").asText().contains("fallback minimo"));
+
+        RecordedRequest backendReport = takeBackendRequestMatching(
+            "campaign report",
+            request -> "/api/facebook-campaigns".equals(request.getPath()) && "POST".equals(request.getMethod())
+        );
+        JsonNode reportPayload = objectMapper.readTree(backendReport.getBody().inputStream());
+        assertEquals("30", reportPayload.get("adCreative").get("id").asText());
+        assertFalse(reportPayload.get("adCreative").hasNonNull("headline"));
+        assertFalse(reportPayload.get("adCreative").hasNonNull("description"));
+    }
+
+    @Test
     // Garante que a ausência de limites da Meta gera aviso, mas não bloqueia teste controlado.
     void continuesCampaignCreationWhenReachBoundsAreUnavailable() throws Exception {
         reachEstimateResponseBody = "{\"data\":[{\"users\":1234}]}";
@@ -1911,6 +1998,100 @@ class FacebookCampaignServiceTest {
         RecordedRequest creative = takeFacebookRequest("facebook request");
         JsonNode storySpec = objectMapper.readTree(creative.getBody().inputStream()).get("object_story_spec");
         assertEquals("video-123", storySpec.get("video_data").get("video_id").asText());
+    }
+
+    /**
+     * Garante fallback para frame estático quando todos os uploads de vídeo falham na Meta.
+     */
+    @Test
+    void usesExtractedFrameFallbackWhenVideoUploadsFail() throws Exception {
+        byte[] normalizedBytes = new byte[] {9, 8, 7, 6};
+        byte[] fallbackImageBytes = new byte[] {5, 4, 3, 2};
+        MetaVideoNormalizer normalizer = new MetaVideoNormalizer(true, "ffmpeg", Duration.ofSeconds(1)) {
+            @Override
+            public NormalizedVideo normalize(byte[] sourceBytes, String sourceFileName) {
+                assertArrayEquals(new byte[] {1, 2, 3, 4}, sourceBytes);
+                return new NormalizedVideo(normalizedBytes, "creative-video-meta.mp4", "video/mp4", true);
+            }
+
+            @Override
+            public NormalizedImage extractFallbackFrame(byte[] sourceBytes, String sourceFileName) {
+                assertArrayEquals(normalizedBytes, sourceBytes);
+                assertEquals("creative-video-meta.mp4", sourceFileName);
+                return new NormalizedImage(fallbackImageBytes, "creative-video-meta-fallback.jpg", "image/jpeg");
+            }
+        };
+        service = new FacebookCampaignService(
+            adsService,
+            new StubFacebookAccessTokenManager(adsService, configurationClient),
+            webClientBuilder,
+            configurationClient,
+            backend.url("/").toString(),
+            "/api",
+            objectMapper,
+            apiLogClient,
+            normalizer
+        );
+        facebook.enqueuePriorityConditionalResponse(
+            request -> "/creative-video.mp4".equals(request.getPath()) && "GET".equals(request.getMethod()),
+            () -> new MockResponse()
+                .setBody(new okio.Buffer().write(new byte[] {1, 2, 3, 4}))
+                .addHeader("Content-Type", "video/mp4")
+        );
+        String uploadPath = "/video-ads-upload/v23.0/video-123";
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"video_id\":\"video-123\",\"upload_url\":\"" + facebook.url(uploadPath) + "\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(403)
+            .setBody("{\"error\":{\"message\":\"Forbidden\",\"type\":\"OAuthException\",\"code\":200}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(500)
+            .setBody("{\"error\":{\"message\":\"An unknown error has occurred.\",\"type\":\"OAuthException\",\"code\":1}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-frame-fallback\"}}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
+
+        backend.enqueueResponse(new MockResponse().setBody("""
+            [{"id":1,"name":"Exp","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"}}]
+            """).addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("""
+            [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","format":"VIDEO","videoUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY"}]
+            """.formatted(videoUrl)).addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("backend request"); // experiments-ready
+        takeBackendRequest("backend request"); // creatives fetch
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+
+        RecordedRequest start = takeFacebookRequest("video start");
+        assertEquals("/v23.0/act_1/video_ads", start.getPath());
+        RecordedRequest upload = takeFacebookRequest("video upload");
+        assertEquals(uploadPath, upload.getPath());
+        RecordedRequest legacyVideoUpload = takeFacebookRequest("legacy video upload");
+        assertEquals("/v23.0/act_1/advideos", legacyVideoUpload.getPath());
+        takeFacebookRequest("facebook request"); // campaign
+        takeFacebookRequest("facebook request"); // ad set
+        RecordedRequest creative = takeFacebookRequest("facebook request");
+        JsonNode storySpec = objectMapper.readTree(creative.getBody().inputStream()).get("object_story_spec");
+        assertFalse(storySpec.has("video_data"));
+        assertEquals("hash-frame-fallback", storySpec.get("link_data").get("image_hash").asText());
     }
 
     /**

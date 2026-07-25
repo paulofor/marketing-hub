@@ -213,12 +213,23 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `call_to_action.type` deve receber somente enum técnico aceito pela Meta
    (por exemplo, `LEARN_MORE`, `SIGN_UP` ou `SHOP_NOW`); textos comerciais de
    botão vindos do criativo são normalizados antes do envio e nunca devem ser
-   enviados como tipo da CTA. Criativos em vídeo sem `video_id` são baixados
+   enviados como tipo da CTA. Se a Meta rejeitar o payload principal de
+   `/adcreatives` para um criativo de imagem com `image_hash`, URL final e CTA
+   válidos, o worker registra um passo de diagnóstico no job de publicação e
+   tenta uma única vez um criativo mínimo de link, preservando `page_id`,
+   `instagram_user_id` quando existir, `image_hash`, mensagem, URL e CTA, mas
+   removendo campos opcionais como headline e description. Esse fallback não é
+   aplicado a vídeo nem a lead form para não alterar a hipótese comercial desses
+   fluxos. Criativos em vídeo sem `video_id` são baixados
    pelo worker e reexportados via FFmpeg para MP4 H.264/AAC com `yuv420p`,
    `faststart`, áudio AAC 44.1 kHz e frame rate de 30 fps antes do upload em
    `video_ads`; o endpoint legado `/advideos` fica apenas como fallback quando o
    fluxo oficial falhar. Essa normalização reduz falhas genéricas de upload da
-   Meta causadas por variações de container/encoding em vídeos externos.
+   Meta causadas por variações de container/encoding em vídeos externos. Quando
+   o upload oficial e o fallback legado de vídeo falharem, o worker extrai um
+   frame JPEG do próprio vídeo normalizado, envia esse frame em `/adimages` e
+   publica o anúncio como imagem para preservar o teste comercial sem depender
+   de ativo manual fora do repositório.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, já em `ACTIVE`, permitindo que o experimento comece a rodar sem
    ativação manual no Gerenciador de Anúncios.
@@ -708,7 +719,7 @@ When an experiment has no ready ad set playbook spec, the campaign publication f
 Campaign publication is now routed through the generic stage pattern described in `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`: `facebookadsworker.pipeline` contains the generic contracts and `facebookcampaign.publication` contains the concrete publication stage. This keeps Meta Ads publication as a plug-in stage inside the Facebook Ads Worker while preserving the existing backend/Graph API side effects.
 
 - Na publicação canônica de campanhas, imagens de criativos devem ser baixadas pelo worker e enviadas à Meta por bytes/multipart em `/adimages` para obter `image_hash`; não use fallback por `url` externa em `/adimages` nem `picture` no criativo quando houver imagem aprovada. Se o download/upload por bytes falhar, falhe a publicação e corrija a causa-raiz.
-- Na publicação canônica de campanhas, vídeos de criativos sem `video_id` devem ser baixados pelo worker, normalizados por FFmpeg para MP4 H.264/AAC compatível com Meta e enviados por bytes no fluxo oficial `video_ads`, usando `/advideos` apenas como fallback legado.
+- Na publicação canônica de campanhas, vídeos de criativos sem `video_id` devem ser baixados pelo worker, normalizados por FFmpeg para MP4 H.264/AAC compatível com Meta e enviados por bytes no fluxo oficial `video_ads`, usando `/advideos` apenas como fallback legado. Se ambos os uploads de vídeo falharem, o worker deve extrair um frame JPEG do vídeo normalizado e publicar com `image_hash` para manter a campanha publicável.
 
 ### Destino standalone de landing em campanhas
 

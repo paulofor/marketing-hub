@@ -128,6 +128,73 @@ public class MetaVideoNormalizer {
     }
 
     /**
+     * Extrai um frame JPEG do vídeo normalizado para fallback de publicação quando a Meta rejeita upload de vídeo.
+     */
+    public NormalizedImage extractFallbackFrame(byte[] sourceBytes, String sourceFileName) {
+        if (sourceBytes == null || sourceBytes.length == 0) {
+            throw new IllegalArgumentException("sourceBytes must not be empty");
+        }
+
+        Path input = null;
+        Path output = null;
+        Path log = null;
+        try {
+            input = Files.createTempFile("marketinghub-meta-video-frame-in-", ".mp4");
+            output = Files.createTempFile("marketinghub-meta-video-frame-out-", ".jpg");
+            log = Files.createTempFile("marketinghub-meta-video-frame-", ".log");
+            Files.write(input, sourceBytes);
+
+            Process process = new ProcessBuilder(List.of(
+                ffmpegPath,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-ss",
+                "00:00:01",
+                "-i",
+                input.toString(),
+                "-frames:v",
+                "1",
+                "-q:v",
+                "2",
+                output.toString()
+            ))
+                .redirectErrorStream(true)
+                .redirectOutput(log.toFile())
+                .start();
+
+            boolean finished = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                throw new IllegalStateException("FFmpeg video frame extraction timed out after " + timeout);
+            }
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException("FFmpeg video frame extraction failed: " + readLog(log));
+            }
+            byte[] imageBytes = Files.readAllBytes(output);
+            if (imageBytes.length == 0) {
+                throw new IllegalStateException("FFmpeg video frame extraction returned an empty file");
+            }
+            LOGGER.info(
+                "Creative video fallback frame extracted for Meta image upload: sourceFileName={}, imageBytes={}",
+                sourceFileName,
+                imageBytes.length
+            );
+            return new NormalizedImage(imageBytes, resolveFrameFileName(sourceFileName), "image/jpeg");
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Creative video frame extraction interrupted", ex);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Creative video frame extraction failed: " + ex.getMessage(), ex);
+        } finally {
+            deleteQuietly(input);
+            deleteQuietly(output);
+            deleteQuietly(log);
+        }
+    }
+
+    /**
      * Resolve um nome de saída sempre terminado em .mp4 para o upload normalizado.
      */
     private String resolveOutputFileName(String sourceFileName) {
@@ -144,6 +211,18 @@ public class MetaVideoNormalizer {
             baseName = "creative-" + UUID.randomUUID();
         }
         return baseName + "-meta.mp4";
+    }
+
+    /**
+     * Resolve o nome do JPEG derivado do vídeo para upload de fallback em imagem.
+     */
+    private String resolveFrameFileName(String sourceFileName) {
+        String baseName = resolveOutputFileName(sourceFileName);
+        int extensionIndex = baseName.lastIndexOf('.');
+        if (extensionIndex > 0) {
+            baseName = baseName.substring(0, extensionIndex);
+        }
+        return baseName + "-fallback.jpg";
     }
 
     /**
@@ -179,4 +258,9 @@ public class MetaVideoNormalizer {
      * Representa o vídeo pronto para upload na Meta após normalização.
      */
     public record NormalizedVideo(byte[] bytes, String fileName, String contentType, boolean normalized) {}
+
+    /**
+     * Representa o frame estático pronto para fallback de upload como imagem na Meta.
+     */
+    public record NormalizedImage(byte[] bytes, String fileName, String contentType) {}
 }

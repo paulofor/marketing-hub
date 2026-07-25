@@ -35,6 +35,8 @@ class SalesVideoPromptBuilderTest {
         assertThat(prompt).contains("triplicar o faturamento");
         assertThat(prompt).contains("Garantia total de 30 dias");
         assertThat(prompt).contains("storyboard");
+        assertThat(prompt).contains("conversa natural com o consumidor");
+        assertThat(prompt).contains("parar de sentir que falta algo no look");
         assertThat(prompt).contains("JSON valido");
     }
 }

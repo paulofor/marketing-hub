@@ -47,7 +47,7 @@ public class SalesVideoOpenAiClient {
                                   AiGenerationRecorder generationRecorder,
                                   @Value("${openai.api-key:}") String apiKey,
                                   @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                  @Value("${openai.model:o3}") String model,
+                                  @Value("${sales-video.script.model:${openai.model:gpt-5.5}}") String model,
                                   @Value("${sales-video.script.max-output-tokens:1200}") int maxOutputTokens) {
         this.objectMapper = objectMapper;
         this.generationRecorder = generationRecorder;

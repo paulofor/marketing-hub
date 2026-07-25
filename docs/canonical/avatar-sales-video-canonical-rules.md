@@ -67,6 +67,18 @@ Todo vídeo/roteiro de avatar deve conter, no mínimo:
 
 Se qualquer um dos 5 blocos estiver ausente, o material deve ficar com status `DRAFT` e não pode ser publicado.
 
+## 3.1 Qualidade comercial do script
+
+O roteiro de Sales Video deve ser escrito como conversa natural com o consumidor, não como texto institucional, aula ou copy abstrata. A geração automática deve conduzir a pessoa pela estrada mental:
+
+```text
+situação reconhecível -> dor percebida -> mecanismo plausível -> microexperiência de valor -> redução de risco/esforço -> CTA
+```
+
+O script deve começar por uma situação concreta da rotina do público, fazer a pessoa pensar "isso acontece comigo" e só depois apresentar o produto. Termos vagos como "imagem coerente", "transformador", "potencializar", "autêntico" ou "elevar" só podem ser usados quando acompanhados de exemplo observável. Para MUSA, priorizar linguagem de efeito percebido, como "parar de sentir que falta algo no look", "descobrir o detalhe que muda a leitura do visual", "peça-sinal" e "sem comprar roupa nova".
+
+O AI Worker deve usar prompt versionado para roteiro de vídeo em `src/main/resources/prompts/salesvideo/`, com modelo próprio configurável por `SALES_VIDEO_SCRIPT_MODEL`. O default operacional do roteiro de Sales Video é `gpt-5.5`; ele não deve depender apenas do modelo genérico `OPENAI_MODEL`, para preservar qualidade comercial em scripts mesmo quando outros fluxos otimizarem custo.
+
 ---
 
 ## 4. Regras de evidência (MDS)

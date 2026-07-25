@@ -67,6 +67,27 @@ Todo vídeo/roteiro de avatar deve conter, no mínimo:
 
 Se qualquer um dos 5 blocos estiver ausente, o material deve ficar com status `DRAFT` e não pode ser publicado.
 
+## 3.1 Qualidade comercial do script
+
+O roteiro de Sales Video deve ser escrito como conversa natural com o consumidor, não como texto institucional, aula ou copy abstrata. A geração automática deve conduzir a pessoa pela estrada mental:
+
+```text
+situação reconhecível -> dor percebida -> mecanismo plausível -> microexperiência de valor -> redução de risco/esforço -> CTA
+```
+
+O script deve começar por uma situação concreta da rotina do público, fazer a pessoa pensar "isso acontece comigo" e só depois apresentar o produto. Termos vagos como "imagem coerente", "transformador", "potencializar", "autêntico" ou "elevar" só podem ser usados quando acompanhados de exemplo observável.
+
+O prompt global de roteiro deve ser reutilizável para qualquer produto digital. Exemplos, objetos, dores, analogias e vocabulário específico de um produto ou nicho não devem ficar hardcoded no template global. O AI Worker deve montar o prompt por blocos concatenados de contexto, usando no mínimo quando disponíveis:
+
+1. nicho, público-alvo, avatar e estilo de linguagem;
+2. hipótese principal, dor explícita, promessa, storytelling e mecanismo único;
+3. oferta, tripwire, funil, preço, checkout e CTA primário;
+4. evidência científica, prova social, jornada de valor, experiência PDE, risco reverso e observações comerciais.
+
+Quando o produto for MUSA, o vocabulário de efeito percebido, como "parar de sentir que falta algo no look", "descobrir o detalhe que muda a leitura do visual", "peça-sinal" e "sem comprar roupa nova", deve vir do contexto comercial do produto ou de seus registros operacionais, não do prompt base genérico.
+
+O AI Worker deve usar prompt versionado para roteiro de vídeo em `src/main/resources/prompts/salesvideo/`, com modelo próprio configurável por `SALES_VIDEO_SCRIPT_MODEL`. O default operacional do roteiro de Sales Video é `gpt-5.5`; ele não deve depender apenas do modelo genérico `OPENAI_MODEL`, para preservar qualidade comercial em scripts mesmo quando outros fluxos otimizarem custo.
+
 ---
 
 ## 4. Regras de evidência (MDS)

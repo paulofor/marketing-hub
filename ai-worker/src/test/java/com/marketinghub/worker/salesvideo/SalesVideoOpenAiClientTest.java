@@ -57,7 +57,7 @@ class SalesVideoOpenAiClientTest {
                 recorder,
                 "test-key",
                 server.url("/v1").toString(),
-                "gpt-5.2",
+                "gpt-5.5",
                 1200);
 
         SalesVideoOpenAiClient.GeneratedScriptResult result = client.generateScript(77L, "Prompt comercial");
@@ -70,7 +70,7 @@ class SalesVideoOpenAiClientTest {
         assertThat(body.path("text").path("format").path("name").asText()).isEqualTo("sales_video_script");
         assertThat(body.path("text").path("format").path("strict").asBoolean()).isTrue();
         assertThat(body.path("service_tier").asText()).isEqualTo("flex");
-        assertThat(result.payload()).containsEntry("model", "gpt-5.2");
-        verify(recorder).record(eq("SALES_VIDEO_SCRIPT"), eq("77"), eq("Prompt comercial"), startsWith("{"), eq("gpt-5.2"), isNull());
+        assertThat(result.payload()).containsEntry("model", "gpt-5.5");
+        verify(recorder).record(eq("SALES_VIDEO_SCRIPT"), eq("77"), eq("Prompt comercial"), startsWith("{"), eq("gpt-5.5"), isNull());
     }
 }

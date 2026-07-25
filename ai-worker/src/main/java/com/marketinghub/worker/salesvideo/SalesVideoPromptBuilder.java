@@ -35,8 +35,34 @@ public class SalesVideoPromptBuilder {
         }
         return loadTemplate()
                 .replace("{{context}}", context.toString().trim())
+                .replace("{{commercial_context_section}}", commercialContextSection(product))
                 .replace("{{product_section}}", section("Resumo do produto", productFields(product)))
                 .replace("{{profile_section}}", section("Perfil do vídeo", profileFields(profile)));
+    }
+
+    /** Monta blocos comerciais reutilizáveis para adaptar o roteiro ao produto atual. */
+    private String commercialContextSection(ProductDto product) {
+        if (product == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        appendSection(sb, "Nicho e consumidor", nicheFields(product));
+        appendSection(sb, "Hipótese e promessa", hypothesisFields(product));
+        appendSection(sb, "Oferta, funil e conversão", offerFields(product));
+        appendSection(sb, "Prova e experiência de valor", proofFields(product));
+        return sb.toString().trim();
+    }
+
+    /** Adiciona uma seção comercial quando houver campos preenchidos. */
+    private void appendSection(StringBuilder sb, String title, Map<String, String> fields) {
+        String rendered = section(title, fields);
+        if (!StringUtils.hasText(rendered)) {
+            return;
+        }
+        if (!sb.isEmpty()) {
+            sb.append("\n\n");
+        }
+        sb.append(rendered);
     }
 
     /** Renderiza uma seção do prompt com os campos disponíveis. */
@@ -56,6 +82,8 @@ public class SalesVideoPromptBuilder {
         if (product == null) {
             return fields;
         }
+        putIfNotBlank(fields, "Nome", product.getName());
+        putIfNotBlank(fields, "Tipo", product.getProductType());
         putIfNotBlank(fields, "Promessa", product.getPromise());
         putIfNotBlank(fields, "Dor principal", product.getExplicitPain());
         putIfNotBlank(fields, "Mecanismo único", product.getUniqueMechanism());
@@ -63,6 +91,52 @@ public class SalesVideoPromptBuilder {
         putIfNotBlank(fields, "Risco reverso", product.getRiskReversal());
         putIfNotBlank(fields, "Tripwire", product.getTripwire());
         putIfNotBlank(fields, "Checkout", product.getCheckoutMonetization());
+        return fields;
+    }
+
+    /** Extrai informações de nicho e público para evitar roteiro genérico. */
+    private Map<String, String> nicheFields(ProductDto product) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        putIfNotBlank(fields, "Nicho", product.getNiche());
+        putIfNotBlank(fields, "Público-alvo", product.getTargetAudience());
+        putIfNotBlank(fields, "Avatar", product.getAvatar());
+        putIfNotBlank(fields, "Estilo de linguagem", product.getLanguageStyle());
+        return fields;
+    }
+
+    /** Extrai hipótese e cadeia de persuasão do produto para orientar a fala. */
+    private Map<String, String> hypothesisFields(ProductDto product) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        putIfNotBlank(fields, "Hipótese principal", product.getPrimaryHypothesis());
+        putIfNotBlank(fields, "Dor explícita", product.getExplicitPain());
+        putIfNotBlank(fields, "Promessa", product.getPromise());
+        putIfNotBlank(fields, "Mecanismo único", product.getUniqueMechanism());
+        putIfNotBlank(fields, "Storytelling", product.getStorytelling());
+        return fields;
+    }
+
+    /** Extrai dados de oferta e funil para tornar o CTA específico. */
+    private Map<String, String> offerFields(ProductDto product) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        putIfNotBlank(fields, "CTA primário", product.getPrimaryCta());
+        putIfNotBlank(fields, "Tripwire", product.getTripwire());
+        putIfNotBlank(fields, "Funil", product.getFunnel());
+        putIfNotBlank(fields, "Monetização no checkout", product.getCheckoutMonetization());
+        putIfNotBlank(fields, "Preço atual", product.getCurrentPriceBrl() == null
+                ? null
+                : "R$ " + product.getCurrentPriceBrl());
+        return fields;
+    }
+
+    /** Extrai prova, reversão de risco e experiência do produto para reduzir incerteza. */
+    private Map<String, String> proofFields(ProductDto product) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        putIfNotBlank(fields, "Prova social", product.getSocialProof());
+        putIfNotBlank(fields, "Evidências científicas", product.getScientificEvidencePack());
+        putIfNotBlank(fields, "Jornada de 7 dias", product.getSevenDayJourney());
+        putIfNotBlank(fields, "Experiência PDE", product.getPdeExperienceJson());
+        putIfNotBlank(fields, "Risco reverso", product.getRiskReversal());
+        putIfNotBlank(fields, "Observações comerciais", product.getCommercialNotes());
         return fields;
     }
 

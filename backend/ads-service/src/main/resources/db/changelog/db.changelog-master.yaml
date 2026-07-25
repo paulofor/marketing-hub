@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-25-product-video-provider-avatar.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-25-experiment-video-audio-quality-gate.yaml
       relativeToChangelogFile: true
   - include:

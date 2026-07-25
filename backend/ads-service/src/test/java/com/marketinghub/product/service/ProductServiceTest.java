@@ -14,14 +14,17 @@ import com.marketinghub.media.AssetType;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductVideoImage;
+import com.marketinghub.product.ProductVideoProviderAvatar;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
+import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoImageRepository;
+import com.marketinghub.repository.jpa.product.ProductVideoProviderAvatarRepository;
 import com.marketinghub.storage.AssetStorageService;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -43,7 +46,8 @@ class ProductServiceTest {
         accountRepository,
         marketNicheRepository,
         assetRepository,
-        mock(ProductVideoImageRepository.class));
+        mock(ProductVideoImageRepository.class),
+        mock(ProductVideoProviderAvatarRepository.class));
   }
 
   /** Cria o serviço com repositório de galeria informado para validar revisão de imagem. */
@@ -53,12 +57,30 @@ class ProductServiceTest {
       MarketNicheRepository marketNicheRepository,
       AssetRepository assetRepository,
       ProductVideoImageRepository productVideoImageRepository) {
+    return newService(
+        productRepository,
+        accountRepository,
+        marketNicheRepository,
+        assetRepository,
+        productVideoImageRepository,
+        mock(ProductVideoProviderAvatarRepository.class));
+  }
+
+  /** Cria o serviço com repositórios de vídeo informados para validar avatar por provider. */
+  private ProductService newService(
+      ProductRepository productRepository,
+      InstagramAccountRepository accountRepository,
+      MarketNicheRepository marketNicheRepository,
+      AssetRepository assetRepository,
+      ProductVideoImageRepository productVideoImageRepository,
+      ProductVideoProviderAvatarRepository productVideoProviderAvatarRepository) {
     return new ProductService(
         productRepository,
         accountRepository,
         marketNicheRepository,
         assetRepository,
         productVideoImageRepository,
+        productVideoProviderAvatarRepository,
         mock(ImageGeneratorService.class),
         mock(AssetStorageService.class),
         objectMapper);
@@ -196,6 +218,61 @@ class ProductServiceTest {
                         99L, "Sofia MUSA", ProductVideoSeedImageReviewStatus.APPROVED, null, null)))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("asset do tipo IMAGE");
+  }
+
+  /** Deve registrar avatar HeyGen reutilizável a partir da imagem aprovada do produto. */
+  @Test
+  void registerVideoProviderAvatarStoresReusableProviderIds() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    AssetRepository assetRepository = mock(AssetRepository.class);
+    ProductVideoProviderAvatarRepository avatarRepository =
+        mock(ProductVideoProviderAvatarRepository.class);
+    ProductService service =
+        newService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            assetRepository,
+            mock(ProductVideoImageRepository.class),
+            avatarRepository);
+    Product product = Product.builder().id(4L).name("Método MUSA").build();
+    Asset asset =
+        Asset.builder()
+            .id(1927L)
+            .type(AssetType.IMAGE)
+            .status(AssetStatus.READY)
+            .url("https://cdn.example/musa.png")
+            .build();
+
+    when(productRepository.findById(4L)).thenReturn(Optional.of(product));
+    when(assetRepository.findById(1927L)).thenReturn(Optional.of(asset));
+    when(avatarRepository.findFirstByProductIdAndProviderIgnoreCaseAndSourceAssetId(
+            4L, "HEYGEN", 1927L))
+        .thenReturn(Optional.empty());
+    when(avatarRepository.save(org.mockito.ArgumentMatchers.any(ProductVideoProviderAvatar.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response =
+        service.registerVideoProviderAvatar(
+            4L,
+            new RegisterProductVideoProviderAvatarRequest(
+                1927L,
+                "HEYGEN",
+                "Sofia MUSA",
+                "281a1e5b526841b0865ea466dfb33ab9",
+                "3952e73a14d94871b8130274e27287ee",
+                "processing",
+                null,
+                true,
+                "Avatar criado por API HeyGen."));
+
+    assertThat(response.productId()).isEqualTo(4L);
+    assertThat(response.sourceAssetId()).isEqualTo(1927L);
+    assertThat(response.provider()).isEqualTo("HEYGEN");
+    assertThat(response.providerAvatarId()).isEqualTo("281a1e5b526841b0865ea466dfb33ab9");
+    assertThat(response.providerAvatarGroupId()).isEqualTo("3952e73a14d94871b8130274e27287ee");
+    assertThat(response.sourceImageUrl()).isEqualTo("https://cdn.example/musa.png");
+    assertThat(response.supportsReusableAvatar()).isTrue();
   }
 
   /** Deve montar uma definição pública em Markdown com foco comercial e sem detalhes técnicos. */

@@ -1,0 +1,109 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-25-product-video-provider-avatar
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - tableExists:
+            tableName: asset
+        - not:
+            - tableExists:
+                tableName: product_video_provider_avatar
+      changes:
+        - createTable:
+            tableName: product_video_provider_avatar
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_product_video_provider_avatar
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_asset_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: character_name
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider_avatar_id
+                  type: VARCHAR(255)
+              - column:
+                  name: provider_avatar_group_id
+                  type: VARCHAR(255)
+              - column:
+                  name: provider_status
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_image_url
+                  type: VARCHAR(1024)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: supports_reusable_avatar
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: product_video_provider_avatar
+            baseColumnNames: product_id
+            constraintName: fk_product_video_provider_avatar_product
+            referencedTableName: product
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: product_video_provider_avatar
+            baseColumnNames: source_asset_id
+            constraintName: fk_product_video_provider_avatar_asset
+            referencedTableName: asset
+            referencedColumnNames: id
+        - createIndex:
+            tableName: product_video_provider_avatar
+            indexName: idx_product_video_provider_avatar_product
+            columns:
+              - column:
+                  name: product_id
+              - column:
+                  name: provider
+        - addUniqueConstraint:
+            tableName: product_video_provider_avatar
+            columnNames: product_id, provider, source_asset_id
+            constraintName: uq_product_video_provider_avatar_source

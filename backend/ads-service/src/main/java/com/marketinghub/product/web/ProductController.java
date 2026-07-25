@@ -6,7 +6,9 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotReq
 import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
+import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.ProductDto;
+import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
@@ -75,6 +77,19 @@ public class ProductController {
   @GetMapping("/{id}/video-images")
   public List<ProductVideoImageDto> listVideoImages(@PathVariable Long id) {
     return service.listVideoImages(id);
+  }
+
+  /** Lista personagens/avatars de vídeo do produto cadastrados por provider. */
+  @GetMapping("/{id}/video-provider-avatars")
+  public List<ProductVideoProviderAvatarDto> listVideoProviderAvatars(@PathVariable Long id) {
+    return service.listVideoProviderAvatars(id);
+  }
+
+  /** Registra ou atualiza um personagem/avatar de vídeo retornado pelo provider. */
+  @PostMapping("/{id}/video-provider-avatars")
+  public ProductVideoProviderAvatarDto registerVideoProviderAvatar(
+      @PathVariable Long id, @RequestBody RegisterProductVideoProviderAvatarRequest request) {
+    return service.registerVideoProviderAvatar(id, request);
   }
 
   /** Gera novas imagens por prompt e vincula à galeria de vídeos do produto. */

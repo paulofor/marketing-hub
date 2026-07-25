@@ -36,7 +36,8 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     providerFamily: "EXTERNAL_VIDEO_MODULE",
     recommendedUse:
       "Hero premium do PDE, com cena mais longa e visual editorial.",
-    clipDurationSeconds: 20,
+    clipDurationSeconds: 10,
+    maxDirectDurationSeconds: 30,
     supportsHeroVideo: true,
     supportsSceneAssembly: true,
     supportsOpenAiReferenceImage: true,
@@ -48,7 +49,8 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     providerFamily: "EXTERNAL_VIDEO_MODULE",
     recommendedUse:
       "Teste alternativo para cenas cinematográficas curtas e variações criativas.",
-    clipDurationSeconds: 15,
+    clipDurationSeconds: 10,
+    maxDirectDurationSeconds: 10,
     supportsHeroVideo: true,
     supportsSceneAssembly: true,
     supportsOpenAiReferenceImage: false,
@@ -74,6 +76,7 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     recommendedUse:
       "Teste de avatar e narração sincronizada para ofertas educativas; requer HEYGEN_API_KEY no executor.",
     clipDurationSeconds: 30,
+    maxDirectDurationSeconds: 600,
     supportsHeroVideo: true,
     supportsSceneAssembly: false,
     supportsOpenAiReferenceImage: false,

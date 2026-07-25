@@ -120,7 +120,7 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
-                15,
+                8,
                 null,
                 "9:16",
                 null,
@@ -249,6 +249,42 @@ class ExperimentVideoAssetServiceTest {
                 () -> service.requestVeoRender(61L, request));
 
         assertThat(ex.getReason()).contains("VEO aceita no máximo 8 segundos");
+    }
+
+    /** Bloqueia criação de ativo planejado quando a duração excede o limite do provider. */
+    @Test
+    void shouldRejectPlannedVideoAssetAboveProviderLimit() {
+        Experiment experiment = Experiment.builder().id(39L).build();
+        given(experimentRepository.findById(39L)).willReturn(Optional.of(experiment));
+        CreateExperimentVideoAssetRequest request = new CreateExperimentVideoAssetRequest(
+                ExperimentVideoSlot.AD,
+                "Aumentar cliques",
+                "ctr",
+                "Roteiro curto",
+                "Prompt curto",
+                "KLING_3_0",
+                "kling-v3",
+                null,
+                null,
+                null,
+                15,
+                null,
+                "9:16",
+                null,
+                null,
+                null,
+                null,
+                true,
+                null,
+                null,
+                null,
+                null);
+
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
+                () -> service.create(39L, request));
+
+        assertThat(ex.getReason()).contains("Kling aceita no máximo 10 segundos");
     }
 
     /** Garante que ativos planejados viram jobs de render sem criar ativos duplicados. */
@@ -505,7 +541,7 @@ class ExperimentVideoAssetServiceTest {
                 ExperimentVideoStatus.READY,
                 "https://cdn.test/video.mp4",
                 null,
-                15,
+                8,
                 true,
                 "9:16",
                 null,

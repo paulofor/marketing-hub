@@ -34,7 +34,6 @@ import java.util.Optional;
 @Component
 public class SalesVideoProfileService {
     private static final Logger log = LoggerFactory.getLogger(SalesVideoProfileService.class);
-    private static final int VEO_MAX_DIRECT_RENDER_SECONDS = 8;
 
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
             .findAndAddModules()
@@ -165,7 +164,7 @@ public class SalesVideoProfileService {
                 .findFirstByProfileIdAndStatusOrderByVersionDesc(profileId, SalesVideoScriptStatus.APPROVED)
                 .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.SCRIPT_NOT_FOUND,
                         "É necessário ter um script aprovado antes da renderização"));
-        validateVeoDirectRenderDuration(request.getProviderName(), profile.getTargetDurationSeconds());
+        validateProviderDuration(request.getProviderName(), profile.getTargetDurationSeconds());
         SalesVideoExecutionMode executionMode = rolloutService.normalizeExecutionMode(request.getExecutionMode());
         if (executionMode == null) {
             executionMode = Optional.ofNullable(request.getExecutionMode()).orElse(SalesVideoExecutionMode.TEST);
@@ -192,27 +191,12 @@ public class SalesVideoProfileService {
         return SalesVideoMapper.toDto(job);
     }
 
-    /** Bloqueia render direto do VEO quando o perfil pede duração maior que o limite nativo. */
-    private void validateVeoDirectRenderDuration(String providerName, Integer targetDurationSeconds) {
-        if (isVeoProvider(providerName)
-                && targetDurationSeconds != null
-                && targetDurationSeconds > VEO_MAX_DIRECT_RENDER_SECONDS) {
-            throw VideoModuleException.badRequest(
-                    VideoModuleErrorCode.BAD_REQUEST,
-                    "VEO aceita no máximo 8 segundos por render direto; use montagem por cenas ou outro provider para vídeos maiores");
-        }
-    }
-
-    /** Identifica nomes de provider que acionam o adapter direto do VEO. */
-    private boolean isVeoProvider(String providerName) {
-        String normalizedProviderName = Optional.ofNullable(providerName)
-                .map(String::trim)
-                .orElse("")
-                .toUpperCase();
-        return normalizedProviderName.equals("VEO")
-                || normalizedProviderName.contains("VEO-")
-                || normalizedProviderName.contains("VEO_")
-                || normalizedProviderName.contains("VEO ");
+    /** Bloqueia render quando o perfil pede duração maior que o limite operacional do provider. */
+    private void validateProviderDuration(String providerName, Integer targetDurationSeconds) {
+        SalesVideoProviderDurationPolicy.validate(providerName, targetDurationSeconds)
+                .ifPresent(message -> {
+                    throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST, message);
+                });
     }
 
     @Transactional

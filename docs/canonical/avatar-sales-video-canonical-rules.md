@@ -1,7 +1,7 @@
 # Regras Canônicas — Avatar Sales Video (Personagem por Nicho, Ciência e Ética)
 
 - **Versão:** v1.0.0
-- **Data de revisão:** 2026-04-23
+- **Data de revisão:** 2026-07-25
 - **Status:** approved
 - **Escopo:** Marketing Hub (`backend`, `ai-worker`, `video-management-service`, `frontend`) para o módulo de vídeo com avatar.
 
@@ -156,6 +156,7 @@ Um vídeo só pode ir para `PUBLISHED` se:
 - Quando o perfil pedir duração alvo maior que a duração nativa do provider, o fluxo deve gerar cenas/montagem suficiente para completar **Dor -> Resultado -> Mecanismo -> CTA**.
 - Para o Método MUSA, o provider recomendado para hero premium é `LUMA_RAY_3_2`; `KLING_3_0` deve ser usado como alternativa de teste; `VEO` deve ficar restrito a teaser curto ou cena isolada dentro de montagem.
 - Pedido direto de render com `VEO` não pode ter duração alvo maior que 8 segundos. Vídeos comerciais de 30s que usem VEO devem nascer como múltiplas cenas curtas com montagem explícita, ou usar outro provider compatível com a duração comercial desejada.
+- Todo pedido de render deve respeitar o limite operacional do provider integrado antes de criar job: `VEO` até 8s, `KLING_3_0` até 10s, `LUMA_RAY_3_2` até 30s no adapter atual com 3 cenas de 10s e `HEYGEN` até 600s para avatar/script no contrato operacional. Pedido acima desse limite deve ser recusado no backend e sinalizado na tela de solicitação, direcionando o operador para montagem por cenas ou troca de provider.
 - `RUNWAY` faz parte do acervo canônico de ferramentas de vídeo do Marketing Hub e pode ser usado para geração, edição e variações de vídeos comerciais quando houver integração auditável por job. O registro deve preservar modelo, modalidade usada, assets de entrada, duração planejada, duração real, custo/créditos quando disponíveis, response bruto, URL/endpoint acionado, status técnico e avaliação visual/comercial.
 - O uso de `RUNWAY` deve ser classificado por finalidade comercial: hero principal, variação de anúncio, retargeting, edição/pós-produção, upscale, avatar/TTS/dublagem ou teste comparativo de provider. Nenhum render do Runway pode ser promovido a hero principal apenas por estar tecnicamente pronto; ele deve passar pela mesma checagem visual, completude Dor -> Resultado -> Mecanismo -> CTA e aprovação comercial aplicada aos demais providers.
 - O Marketing Hub deve manter pontuação comercial por provider de vídeo. A pontuação começa neutra e deve subir com sinais reais de sucesso: job concluído, asset aprovado, lead, lead qualificado, início de checkout, compra e receita vinculada ao job/provider. A pontuação deve cair com falha técnica, asset rejeitado, bloqueio visual, ausência de completude comercial ou regeneração causada por problema evitável de prompt/provider.

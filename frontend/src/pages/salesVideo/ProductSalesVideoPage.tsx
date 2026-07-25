@@ -208,6 +208,10 @@ export default function ProductSalesVideoPage() {
     selectedProfile.targetDurationSeconds >
       selectedProvider.maxDirectDurationSeconds,
   );
+  const providerDurationLimitMessage =
+    providerDurationLimitExceeded && selectedProvider.maxDirectDurationSeconds
+      ? `${selectedProvider.label} aceita no máximo ${selectedProvider.maxDirectDurationSeconds}s por solicitação. Use montagem por cenas ou outro provider para vídeos maiores.`
+      : "";
   const selectedVideoObjective = selectedVideoJob
     ? describeVideoObjective(selectedProfile, selectedVideoJob)
     : undefined;
@@ -335,7 +339,7 @@ export default function ProductSalesVideoPage() {
       return;
     }
     if (providerDurationLimitExceeded) {
-      toast.error("Veo aceita no máximo 8 segundos por render direto.");
+      toast.error(providerDurationLimitMessage);
       return;
     }
     try {
@@ -979,10 +983,22 @@ export default function ProductSalesVideoPage() {
                 <span>
                   {selectedProvider.recommendedUse}
                   {selectedProvider.maxDirectDurationSeconds
-                    ? ` Limite direto: ${selectedProvider.maxDirectDurationSeconds}s.`
+                    ? ` Limite por solicitação: ${selectedProvider.maxDirectDurationSeconds}s.`
                     : ""}
                 </span>
               </div>
+              {providerDurationLimitMessage ? (
+                <div className="product-video-page__quality product-video-page__quality--blocked">
+                  <div className="product-video-page__quality-header">
+                    <AlertTriangle size={18} aria-hidden="true" />
+                    <div>
+                      <span>Pedido bloqueado pelo provider</span>
+                      <strong>Duração acima do limite</strong>
+                    </div>
+                  </div>
+                  <p>{providerDurationLimitMessage}</p>
+                </div>
+              ) : null}
               {selectedProvider.supportsOpenAiReferenceImage ? (
                 <div className="product-video-page__reference-image-box">
                   <label className="product-video-page__toggle">

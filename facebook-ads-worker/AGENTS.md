@@ -71,6 +71,10 @@
 - Na criação de criativos (`POST /adcreatives`), `call_to_action.type` deve ser sempre um enum técnico aceito pela Meta
   (ex.: `LEARN_MORE`, `SIGN_UP`, `SHOP_NOW`) e nunca o texto comercial do botão. Labels comerciais vindos do criativo
   devem ser normalizados antes do envio, usando fallback seguro (`LEARN_MORE` para destino web e `SIGN_UP` para lead form).
+- Na criação de criativos (`POST /adcreatives`), quando a Meta rejeitar o payload principal de link com imagem já enviada por
+  `image_hash`, URL final e CTA técnico, o worker deve registrar o diagnóstico do payload e tentar uma única vez um criativo
+  mínimo de link, preservando `page_id`, `instagram_user_id` quando existir, `image_hash`, URL final, mensagem e CTA, mas
+  removendo campos opcionais como headline/description para isolar a causa-raiz sem repetir a mesma falha.
 - Em testes com `MockWebServer`, utilize `takeRequest` com timeout e valide o retorno para evitar
   travamentos silenciosos no pipeline. Enfileire respostas para cada chamada esperada para
   não bloquear o `WebClient`.

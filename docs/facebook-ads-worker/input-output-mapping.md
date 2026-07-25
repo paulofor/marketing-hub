@@ -119,6 +119,13 @@ flowchart TD
 | `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
 * **Resposta tratada:** o `id` do criativo abastece a criação do anúncio.
+* **Fallback controlado:** se a Meta rejeitar o payload principal de link para
+  um criativo de imagem que já possui `page_id`, `image_hash`, URL final e CTA
+  técnico, o worker registra um passo `CAMPAIGN_AD_CREATIVE_SIMPLE_LINK_FALLBACK`
+  no job de publicação e tenta uma única vez um payload mínimo. Esse payload
+  mantém página, Instagram quando existir, mensagem, URL, CTA e `image_hash`,
+  removendo campos opcionais como headline e description para isolar falhas
+  genéricas de `/adcreatives` sem trocar mídia, público ou oferta.
 
 ## 6. Criação do anúncio
 

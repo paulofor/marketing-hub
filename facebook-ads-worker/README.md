@@ -213,7 +213,14 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `call_to_action.type` deve receber somente enum técnico aceito pela Meta
    (por exemplo, `LEARN_MORE`, `SIGN_UP` ou `SHOP_NOW`); textos comerciais de
    botão vindos do criativo são normalizados antes do envio e nunca devem ser
-   enviados como tipo da CTA. Criativos em vídeo sem `video_id` são baixados
+   enviados como tipo da CTA. Se a Meta rejeitar o payload principal de
+   `/adcreatives` para um criativo de imagem com `image_hash`, URL final e CTA
+   válidos, o worker registra um passo de diagnóstico no job de publicação e
+   tenta uma única vez um criativo mínimo de link, preservando `page_id`,
+   `instagram_user_id` quando existir, `image_hash`, mensagem, URL e CTA, mas
+   removendo campos opcionais como headline e description. Esse fallback não é
+   aplicado a vídeo nem a lead form para não alterar a hipótese comercial desses
+   fluxos. Criativos em vídeo sem `video_id` são baixados
    pelo worker e reexportados via FFmpeg para MP4 H.264/AAC com `yuv420p`,
    `faststart`, áudio AAC 44.1 kHz e frame rate de 30 fps antes do upload em
    `video_ads`; o endpoint legado `/advideos` fica apenas como fallback quando o

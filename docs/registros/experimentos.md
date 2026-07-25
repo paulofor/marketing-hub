@@ -1,3 +1,10 @@
+## 2026-07-25 — Experimento 68: fallback minimo para criativo Meta
+
+- causa-raiz operacional confirmada pelo histórico: os objetos órfãos antigos da Meta já estavam removidos, mas a republicação do experimento 68 voltou a falhar no mesmo ponto, `POST /adcreatives`, depois de campanha e ad set criados com sucesso.
+- decisão aplicada: não reativar novamente antes de fortalecer o `facebook-ads-worker`; o publicador agora registra diagnóstico do payload e tenta um fallback mínimo de link quando a Meta rejeita o criativo principal de imagem com `page_id`, `instagram_user_id`, `image_hash`, URL final e CTA técnico já resolvidos.
+- prevenção de recorrência: teste de regressão simula a falha genérica de `/adcreatives` e valida que o worker remove campos opcionais como headline/description apenas na segunda tentativa, preservando mídia, oferta, público e destino.
+- impacto esperado: reduzir falhas sem aprendizado comercial, evitar novas tentativas idênticas e aumentar a chance de colocar o experimento em validação real sem contaminar a hipótese de campanha.
+
 ## 2026-07-25 — VEO direto bloqueado acima de 8s
 
 - aprendizado dos experimentos 68, 69 e 70: solicitar VEO com duração comercial de 30s como render direto cria expectativa incompatível com o limite real do provider.

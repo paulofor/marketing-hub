@@ -210,6 +210,7 @@ sequenceDiagram
 - Para publicação de campanhas, **não enviar `image_url` diretamente no payload do criativo** quando a imagem precisar ser materializada na conta de anúncio.
 - O fluxo recomendado é: fazer upload da imagem em `POST /act_<adAccountId>/adimages`, capturar o `image_hash` retornado e então enviar esse `image_hash` no `POST /adcreatives`.
 - A Meta documenta que o envio e gerenciamento de imagens pode ocorrer de forma independente do anúncio/criativo, por isso o worker deve priorizar esse fluxo baseado em biblioteca de imagens da conta.
+- Quando o payload principal de `/adcreatives` falhar para criativo de imagem com `image_hash`, URL final e CTA técnico, o worker registra o diagnóstico no job de publicação e faz uma tentativa controlada com payload mínimo de link. O fallback mantém `page_id`, `instagram_user_id` quando disponível, `image_hash`, mensagem, URL e CTA, removendo campos opcionais como headline/description para isolar rejeições genéricas da Meta.
 
 ## Referências adicionais
 

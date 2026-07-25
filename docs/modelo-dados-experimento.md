@@ -48,12 +48,14 @@ Regra de prontidão comercial:
 - qualquer seleção ativa `HUMAN_VIDEO_SALES_PAGE` exige vídeo do experimento em `experiment_video_asset` com `status=READY` e `review_status=APPROVED` antes da liberação de campanha;
 - qualquer variante A/B `HUMAN_VIDEO` também precisa de `experiment_video_asset_id` vinculado a vídeo `READY + APPROVED` para o teste ser considerado pronto para tráfego.
 
-Fluxo obrigatório de aprovação de vídeos gerados:
+Fluxo obrigatório de aprovação e portfólio de vídeos:
 
-- todo vídeo gerado para experimento deve ser persistido em `experiment_video_asset` e, quando chegar a `status=READY`, aparecer na tela `/creative-video-review` como item `EXPERIMENT_VIDEO_ASSET`;
-- a tela `/creative-video-review` é a fila única de aprovação comercial de vídeos, incluindo criativos de vídeo e vídeos gerados diretamente para experimentos;
-- pode existir mais de um vídeo `APPROVED` para o mesmo experimento, pois eles podem cumprir papéis diferentes no funil ou servir como variações/cortes de campanha;
-- vídeo reprovado deve manter `review_status=REJECTED` e `rejection_reason` preenchido;
+- todo vídeo com objetivo de campanha, PDE ou página de venda deve ser gerado a partir da tela de vídeos do produto, mantendo o produto como fonte do portfólio reutilizável;
+- após a geração, o vídeo deve passar por análise de qualidade visual, áudio, clareza da mensagem e aderência ao papel no funil;
+- quando o vídeo estiver com `status=READY` e URL pública, deve aparecer na tela `/creative-video-review` para aprovação humana;
+- a tela `/creative-video-review` é a fila humana final: aprovação muda `review_status` para `APPROVED` e libera o vídeo para o portfólio do produto;
+- pode existir mais de um vídeo `APPROVED` no mesmo produto/experimento, pois eles podem cumprir papéis diferentes no funil, PDE, landing, anúncios ou cortes de campanha;
+- vídeo reprovado deve manter `review_status=REJECTED` e `rejection_reason` preenchido, sem uso em campanha, PDE, página de venda ou liberação para `RUNNING`;
 - a próxima geração, refação ou pós-produção do vídeo deve considerar o `rejection_reason` anterior como restrição criativa para evitar repetição do mesmo problema percebido.
 
 Atualização incremental — vínculo do wireframe com execução Gera Landing (07/05/2026):

@@ -801,9 +801,10 @@ export default function ProductSalesVideoPage() {
               <span>Vídeo selecionado</span>
               <h2>{selectedProfile?.title ?? "Nenhum vídeo selecionado"}</h2>
               <p>
-                Use esta área para roteiro, geração e acompanhamento.
-                Experimentos devem consumir vídeos aprovados daqui, sem criar
-                vídeos próprios.
+                Use esta área para roteiro, geração e acompanhamento. Todo vídeo
+                precisa nascer no produto, passar pela qualidade, seguir para
+                aprovação humana e só então entrar no portfólio para campanhas
+                ou PDEs.
               </p>
               {selectedVideoObjective ? (
                 <div className="product-video-page__objective">

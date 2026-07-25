@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Representa um criativo de vídeo com contexto comercial suficiente para aprovação.
+ * Representa um criativo de vídeo com contexto comercial suficiente para aprovação e apuração de custo.
  */
 public record CreativeVideoReviewDto(
         Long id,
@@ -36,6 +36,7 @@ public record CreativeVideoReviewDto(
         CreativeStatus status,
         String rejectionReason,
         Instant reviewedAt,
+        Instant createdAt,
         BigDecimal videoCostUsd,
         BigDecimal audioCostUsd,
         BigDecimal totalProductionCostUsd,

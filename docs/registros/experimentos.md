@@ -6076,3 +6076,10 @@
 - foi feito: a tela `/creative-video-review` passou a carregar a fila geral para os cards de resumo, mantendo a lista de vídeos filtrada pela aba selecionada.
 - prevenção: adicionado teste de frontend garantindo que o resumo mostre dois reprovados mesmo quando o filtro de pendentes está vazio.
 - impacto comercial esperado: deixar reprovações humanas visíveis como aprendizado operacional antes de pedir novos vídeos ou liberar criativos para campanha.
+
+## 2026-07-25 — Criativos de vídeo: custo mensal e anual em USD/BRL
+
+- foi feito: a tela `/creative-video-review` passou a mostrar custo total, custo do mês, custo do ano e custo reprovado em USD e BRL.
+- foi feito: o contrato de revisão de vídeo passou a expor `createdAt` para apurar mês/ano pela data do ativo produzido, com fallback visual para `reviewedAt` em criativos legados.
+- regra usada: conversão fixa de `1 USD = 5 BRL`, alinhada à regra canônica vigente para custos técnicos de IA.
+- impacto comercial esperado: dar visão rápida do investimento de produção em vídeo e do desperdício por reprovação, facilitando controle de orçamento antes de novas campanhas.

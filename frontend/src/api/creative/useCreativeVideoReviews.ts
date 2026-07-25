@@ -27,6 +27,7 @@ export interface CreativeVideoReview {
   status: CreativeVideoReviewStatus;
   rejectionReason?: string | null;
   reviewedAt?: string | null;
+  createdAt?: string | null;
   videoCostUsd?: number | string | null;
   audioCostUsd?: number | string | null;
   totalProductionCostUsd?: number | string | null;

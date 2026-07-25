@@ -1,11 +1,7 @@
 package com.marketinghub.salesvideo.service;
 
 import com.marketinghub.experiment.LandingPage;
-import com.marketinghub.experiment.video.ExperimentVideoAsset;
-import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
-import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
-import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.*;
@@ -37,20 +33,21 @@ public class LandingVideoSlotService {
     private final SalesVideoProfileRepository profileRepository;
     private final AssetRepository assetRepository;
     private final LandingVideoSlotHistoryRepository historyRepository;
-    private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
+    private final SalesVideoExperimentAssetApprovalChecker experimentAssetApprovalChecker;
 
+    /** Inicializa o serviço com os repositórios canônicos e contratos externos de compliance. */
     public LandingVideoSlotService(LandingVideoSlotRepository slotRepository,
                                    LandingPageRepository landingPageRepository,
                                    SalesVideoProfileRepository profileRepository,
                                    AssetRepository assetRepository,
                                    LandingVideoSlotHistoryRepository historyRepository,
-                                   ExperimentVideoAssetRepository experimentVideoAssetRepository) {
+                                   SalesVideoExperimentAssetApprovalChecker experimentAssetApprovalChecker) {
         this.slotRepository = slotRepository;
         this.landingPageRepository = landingPageRepository;
         this.profileRepository = profileRepository;
         this.assetRepository = assetRepository;
         this.historyRepository = historyRepository;
-        this.experimentVideoAssetRepository = experimentVideoAssetRepository;
+        this.experimentAssetApprovalChecker = experimentAssetApprovalChecker;
     }
 
     @Transactional
@@ -270,11 +267,7 @@ public class LandingVideoSlotService {
         if (asset == null || asset.getId() == null) {
             return;
         }
-        List<ExperimentVideoAsset> videoAssets = experimentVideoAssetRepository.findByAssetId(asset.getId());
-        boolean blocked = videoAssets.stream()
-                .anyMatch(videoAsset -> videoAsset.getStatus() != ExperimentVideoStatus.READY
-                        || videoAsset.getReviewStatus() != ExperimentVideoReviewStatus.APPROVED);
-        if (blocked) {
+        if (!experimentAssetApprovalChecker.isApprovedForPublication(asset.getId())) {
             throw VideoModuleException.conflict(VideoModuleErrorCode.COMPLIANCE_HUMAN_REVIEW_REQUIRED,
                     "Publicação bloqueada: vídeo precisa estar pronto e aprovado na fila de aprovação.");
         }

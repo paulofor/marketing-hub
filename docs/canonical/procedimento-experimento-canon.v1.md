@@ -113,10 +113,12 @@ Regras obrigatórias:
 Quando o experimento escolher uma página de venda que dependa de vídeo humano/avatar, a campanha não pode ser considerada pronta enquanto não existir vídeo vinculado, tecnicamente `READY` e com revisão humana `APPROVED`.
 
 Regras obrigatórias:
+- vídeos com objetivo de campanha, PDE ou página de venda devem nascer no fluxo de vídeos do produto, passar por análise de qualidade, seguir para aprovação humana e só então entrar no portfólio utilizável do produto;
 - variante A/B `HUMAN_VIDEO` só pode participar de teste pronto para tráfego quando tiver vídeo associado em estado `READY + APPROVED`;
 - seleção de tipo `HUMAN_VIDEO_SALES_PAGE` bloqueia a liberação de campanha se o experimento não possuir ao menos um `experiment_video_asset` pronto e aprovado;
 - o bloqueio deve acontecer no readiness do backend, antes de o experimento entrar na fila de publicação de mídia paga;
 - a ausência de vídeo não deve ser interpretada como desempenho ruim da variante, pois contamina o aprendizado comercial.
+- vídeo reprovado deve preservar o motivo de reprovação e esse texto deve orientar a próxima geração, refação ou pós-produção para impedir repetição do mesmo erro.
 
 ### 4.1.3.1.1 Regra mandatória — teste A/B de página de venda com no máximo duas variantes
 

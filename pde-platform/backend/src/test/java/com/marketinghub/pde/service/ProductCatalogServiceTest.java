@@ -77,7 +77,7 @@ class ProductCatalogServiceTest {
         server.verify();
     }
 
-    /** Confirma que homologação pode publicar uma versão de experiência sem trocar o contrato base. */
+    /** Confirma que o deploy pode publicar uma versão de experiência sem trocar o contrato base. */
     @Test
     void appliesExperienceVersionOverrideWhenConfigured() {
         ProductCatalogService service = new ProductCatalogService(

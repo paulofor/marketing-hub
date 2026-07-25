@@ -67,3 +67,10 @@
 - Problema observado: a tela `/ops-monitor` marcava `mois-sales-library-worker` e `email-service` como fora do ar porque os health checks estavam cadastrados em `http://191.252.181.168:8097` e `http://191.252.181.168:8086`.
 - Causa-raiz confirmada pelo workflow de deploy e pelo banco via MCP: os dois módulos são publicados pelo GitHub Actions no host operacional `191.252.120.96`, enquanto o cadastro canônico do Ops Monitor ainda apontava para o host antigo/incorreto `191.252.181.168`.
 - Correção aplicada: novo changeset ajusta o cadastro canônico para `http://191.252.120.96:8097/actuator/health` e `http://191.252.120.96:8086/ops-email-gateway-7xk9/health`.
+
+## 2026-07-25 — Filtro de erro 500 por endpoint/requestId no MCP
+
+- Problema observado: investigações de erro 500 no backend dependiam de busca textual ampla nas últimas linhas do log, dificultando localizar a causa quando o erro saía da janela recente.
+- Causa-raiz tratada: a tool `java_module_logs` do MCP aceitava apenas filtro literal, e o backend não tinha resposta/log global padronizado para exceção 500 não tratada com `requestId`, `status` e `endpoint`.
+- Correção aplicada: o MCP passou a aceitar filtros estruturados `httpStatus`, `endpoint` e `requestId`; o backend passou a registrar erro 500 não tratado com esses campos e retornar `requestId` no corpo da resposta.
+- Prevenção de recorrência: testes de contrato cobrem o filtro estruturado do MCP e a resposta 500 rastreável do backend.

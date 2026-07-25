@@ -7,30 +7,20 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployMetaAdsSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorResponseDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeviceDto;
-import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployEnvironmentDto;
-import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeployServiceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeExperienceVersionDto;
-import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployRequestDto;
-import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployResponseDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
-import com.marketinghub.experiment.monitoring.dto.PostDeployPdePromotionControlDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeScreenSizeDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSessionJourneyDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
-import com.marketinghub.experiment.monitoring.pde.PdeDeployStatus;
-import com.marketinghub.experiment.monitoring.pde.PdeDeployStatusClient;
-import com.marketinghub.experiment.monitoring.pde.PdeProductionDeploymentClient;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
-import com.marketinghub.pde.PdeProductionSlot;
-import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -41,26 +31,21 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 /** Consolida Meta Ads, analytics PDE e logs para decisão pós-deploy do experimento. */
 @Service
 @Slf4j
 public class PostDeployMonitorService {
 
-    private static final String DEFAULT_PDE_PRODUCT_SLUG = "metodo-musa-7-dias";
     private static final BigDecimal ZERO_INTERACTION_SPEND_THRESHOLD = BigDecimal.valueOf(25);
 
     private final ExperimentRepository experimentRepository;
     private final ExperimentCampaignMetricRepository campaignMetricRepository;
     private final ExperimentFacebookApiLogService apiLogService;
     private final PdeAnalyticsClient pdeAnalyticsClient;
-    private final PdeDeployStatusClient pdeDeployStatusClient;
-    private final PdeProductionDeploymentClient pdeProductionDeploymentClient;
-    private final PdeProductionSlotRepository pdeProductionSlotRepository;
+    private final PdeProductionSlotService pdeProductionSlotService;
 
     /** Inicializa o agregador com as fontes persistidas do Hub e o cliente do PDE. */
     public PostDeployMonitorService(
@@ -68,31 +53,26 @@ public class PostDeployMonitorService {
             ExperimentCampaignMetricRepository campaignMetricRepository,
             ExperimentFacebookApiLogService apiLogService,
             PdeAnalyticsClient pdeAnalyticsClient,
-            PdeDeployStatusClient pdeDeployStatusClient,
-            PdeProductionDeploymentClient pdeProductionDeploymentClient,
-            PdeProductionSlotRepository pdeProductionSlotRepository) {
+            PdeProductionSlotService pdeProductionSlotService) {
         this.experimentRepository = experimentRepository;
         this.campaignMetricRepository = campaignMetricRepository;
         this.apiLogService = apiLogService;
         this.pdeAnalyticsClient = pdeAnalyticsClient;
-        this.pdeDeployStatusClient = pdeDeployStatusClient;
-        this.pdeProductionDeploymentClient = pdeProductionDeploymentClient;
-        this.pdeProductionSlotRepository = pdeProductionSlotRepository;
+        this.pdeProductionSlotService = pdeProductionSlotService;
     }
 
     /** Monta o painel pós-deploy para o experimento e produto PDE informados. */
     public PostDeployMonitorResponseDto summarize(Long experimentId, String productSlug) {
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
-        String resolvedProductSlug = resolveProductSlug(productSlug);
+        String resolvedProductSlug = pdeProductionSlotService.resolveProductSlug(productSlug);
         ExperimentCampaignMetric metric = campaignMetricRepository.findByExperiment(experiment).orElse(null);
         PostDeployMetaAdsSummaryDto metaAds = toMetaAdsSummary(metric);
         PostDeployPdeSummaryDto pde = fetchPdeSummary(resolvedProductSlug);
-        List<PostDeployPdeDeployEnvironmentDto> pdeDeployments = fetchPdeDeployments();
-        PostDeployPdePromotionControlDto pdePromotionControl = buildPromotionControl(pdeDeployments);
-        List<PostDeployPdeProductionSlotDto> pdeProductionSlots = listProductionSlotsForProduct(resolvedProductSlug);
+        List<PostDeployPdeProductionSlotDto> pdeProductionSlots =
+                pdeProductionSlotService.listProductionSlotsForProduct(resolvedProductSlug);
         PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
-        List<String> alerts = buildAlerts(metaAds, pde, pdeDeployments, pdePromotionControl, logs);
+        List<String> alerts = buildAlerts(metaAds, pde, logs);
         PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
         return new PostDeployMonitorResponseDto(
                 experimentId,
@@ -103,9 +83,7 @@ public class PostDeployMonitorService {
                 recommendation(decision, pde),
                 metaAds,
                 pde,
-                pdePromotionControl,
                 pdeProductionSlots,
-                pdeDeployments,
                 logs,
                 alerts);
     }
@@ -114,7 +92,7 @@ public class PostDeployMonitorService {
     public List<PostDeployPdeProductionSlotDto> listProductionSlots(Long experimentId, String productSlug) {
         experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
-        return listProductionSlotsForProduct(resolveProductSlug(productSlug));
+        return pdeProductionSlotService.listProductionSlotsForProduct(productSlug);
     }
 
     /** Cria ou atualiza um slot produtivo versionado para manter hipóteses PDE em URLs paralelas. */
@@ -123,117 +101,7 @@ public class PostDeployMonitorService {
             PostDeployPdeProductionSlotRequestDto request) {
         experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
-        String productSlug = resolveProductSlug(request.productSlug());
-        String slotCode = normalizeRequired(request.slotCode(), "Código do slot PDE obrigatório").toLowerCase(Locale.ROOT);
-        String domain = normalizeDomain(request.domain());
-        String publicUrl = StringUtils.hasText(request.publicUrl())
-                ? request.publicUrl().trim()
-                : "https://" + domain;
-        PdeProductionSlot slot = pdeProductionSlotRepository.findByProductSlugAndSlotCode(productSlug, slotCode)
-                .orElseGet(PdeProductionSlot::new);
-        slot.setSlotCode(slotCode);
-        slot.setProductSlug(productSlug);
-        slot.setDomain(domain);
-        slot.setPublicUrl(publicUrl);
-        slot.setBackendUrl(StringUtils.hasText(request.backendUrl()) ? request.backendUrl().trim() : null);
-        slot.setExperienceVersion(normalizeRequired(request.experienceVersion(), "Versão PDE obrigatória"));
-        slot.setTargetEnvironment(StringUtils.hasText(request.targetEnvironment())
-                ? request.targetEnvironment().trim()
-                : "production-" + slotCode);
-        slot.setStatus(request.status() != null ? request.status() : PdeProductionSlotStatus.PLANNED);
-        slot.setSourceExperimentId(request.sourceExperimentId() != null ? request.sourceExperimentId() : experimentId);
-        slot.setNotes(StringUtils.hasText(request.notes()) ? request.notes().trim() : null);
-        return toProductionSlotDto(pdeProductionSlotRepository.save(slot));
-    }
-
-    /** Solicita produção apenas quando homologação está saudável e produção está defasada. */
-    public PostDeployPdeProductionDeployResponseDto requestProductionDeploy(
-            Long experimentId,
-            PostDeployPdeProductionDeployRequestDto request) {
-        experimentRepository.findById(experimentId)
-                .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
-        List<PostDeployPdeDeployEnvironmentDto> pdeDeployments = fetchPdeDeployments();
-        PostDeployPdePromotionControlDto control = buildPromotionControl(pdeDeployments);
-        if (!control.productionDeployAvailable()) {
-            return new PostDeployPdeProductionDeployResponseDto(
-                    false,
-                    "BLOCKED",
-                    control.recommendation(),
-                    control.targetEnvironment(),
-                    control.workflowFile(),
-                    control.sourceCommitSha(),
-                    Instant.now());
-        }
-        String requestedBy = request != null && StringUtils.hasText(request.requestedBy())
-                ? request.requestedBy().trim()
-                : "marketing-hub";
-        String requestedCommit = request != null && StringUtils.hasText(request.sourceCommitSha())
-                ? request.sourceCommitSha().trim()
-                : control.sourceCommitSha();
-        if (StringUtils.hasText(control.sourceCommitSha())
-                && StringUtils.hasText(requestedCommit)
-                && !control.sourceCommitSha().equals(requestedCommit)) {
-            return new PostDeployPdeProductionDeployResponseDto(
-                    false,
-                    "BLOCKED",
-                    "A homologação mudou desde que a tela foi carregada. Atualize o painel antes de publicar produção.",
-                    control.targetEnvironment(),
-                    control.workflowFile(),
-                    control.sourceCommitSha(),
-                    Instant.now());
-        }
-        return pdeProductionDeploymentClient.dispatchProductionDeploy(experimentId, requestedBy, control.sourceCommitSha());
-    }
-
-    /** Resolve o produto PDE padrão quando a tela não informa um slug específico. */
-    private String resolveProductSlug(String productSlug) {
-        return StringUtils.hasText(productSlug) ? productSlug.trim() : DEFAULT_PDE_PRODUCT_SLUG;
-    }
-
-    /** Lista os slots produtivos persistidos para o produto PDE informado. */
-    private List<PostDeployPdeProductionSlotDto> listProductionSlotsForProduct(String productSlug) {
-        return pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(productSlug).stream()
-                .map(this::toProductionSlotDto)
-                .toList();
-    }
-
-    /** Converte o slot persistido em contrato administrativo do painel. */
-    private PostDeployPdeProductionSlotDto toProductionSlotDto(PdeProductionSlot slot) {
-        return new PostDeployPdeProductionSlotDto(
-                slot.getId(),
-                slot.getSlotCode(),
-                slot.getProductSlug(),
-                slot.getDomain(),
-                slot.getPublicUrl(),
-                slot.getBackendUrl(),
-                slot.getExperienceVersion(),
-                slot.getTargetEnvironment(),
-                slot.getStatus(),
-                slot.getSourceExperimentId(),
-                slot.getNotes(),
-                slot.getCreatedAt(),
-                slot.getUpdatedAt());
-    }
-
-    /** Normaliza um campo obrigatório textual antes de persistir contrato de publicação. */
-    private String normalizeRequired(String value, String message) {
-        if (!StringUtils.hasText(value)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
-        }
-        return value.trim();
-    }
-
-    /** Normaliza domínio removendo protocolo e barra final para evitar duplicidade operacional. */
-    private String normalizeDomain(String value) {
-        String domain = normalizeRequired(value, "Domínio do slot PDE obrigatório")
-                .replaceFirst("^https?://", "")
-                .replaceAll("/+$", "")
-                .toLowerCase(Locale.ROOT);
-        if (!domain.endsWith("clubemusa.com.br")) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Slot PDE MUSA deve usar subdomínio de clubemusa.com.br");
-        }
-        return domain;
+        return pdeProductionSlotService.saveProductionSlot(request.productSlug(), experimentId, request);
     }
 
     /** Converte a métrica persistida da campanha em resumo do painel. */
@@ -302,172 +170,6 @@ public class PostDeployMonitorService {
                     List.of(),
                     List.of());
         }
-    }
-
-    /** Consulta os ambientes PDE publicados para controlar versão, compose e portas por deploy. */
-    private List<PostDeployPdeDeployEnvironmentDto> fetchPdeDeployments() {
-        try {
-            return pdeDeployStatusClient.fetchStatuses().stream()
-                    .map(this::toPdeDeployEnvironmentDto)
-                    .toList();
-        } catch (Exception ex) {
-            log.error("Falha ao consultar status de deploy dos ambientes PDE", ex);
-            return List.of(new PostDeployPdeDeployEnvironmentDto(
-                    "unknown",
-                    false,
-                    "UNAVAILABLE",
-                    ex.getMessage(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    false,
-                    false,
-                    null,
-                    List.of()));
-        }
-    }
-
-    /** Converte o status técnico do deploy para o contrato administrativo do monitor. */
-    private PostDeployPdeDeployEnvironmentDto toPdeDeployEnvironmentDto(PdeDeployStatus status) {
-        return new PostDeployPdeDeployEnvironmentDto(
-                status.environment(),
-                status.available(),
-                status.status(),
-                status.errorMessage(),
-                status.composeFile(),
-                status.commitSha(),
-                status.imageTag(),
-                status.experienceVersion(),
-                status.frontendUrl(),
-                status.backendUrl(),
-                status.frontendReachable(),
-                status.backendReachable(),
-                status.deployedAt(),
-                toPdeDeployServiceDtos(status.services()));
-    }
-
-    /** Converte os containers declarados pelo deploy PDE para exibição no painel. */
-    private List<PostDeployPdeDeployServiceDto> toPdeDeployServiceDtos(
-            List<PdeDeployStatus.PdeDeployServiceStatus> services) {
-        if (services == null) {
-            return List.of();
-        }
-        return services.stream()
-                .map(service -> new PostDeployPdeDeployServiceDto(
-                        service.name(),
-                        service.containerName(),
-                        service.image(),
-                        service.publicPort(),
-                        service.targetPort(),
-                        service.role()))
-                .toList();
-    }
-
-    /** Calcula o estado de promoção homologação-produção a partir dos deploys reais. */
-    private PostDeployPdePromotionControlDto buildPromotionControl(
-            List<PostDeployPdeDeployEnvironmentDto> pdeDeployments) {
-        PostDeployPdeDeployEnvironmentDto homolog = findDeployment(pdeDeployments, "homolog");
-        PostDeployPdeDeployEnvironmentDto production = findDeployment(pdeDeployments, "production");
-        boolean homologAvailable = isDeploymentHealthy(homolog);
-        boolean productionAvailable = isDeploymentHealthy(production);
-        String homologCommit = homolog != null ? homolog.commitSha() : null;
-        String productionCommit = production != null ? production.commitSha() : null;
-        boolean hasComparableCommits = isKnownCommit(homologCommit) && isKnownCommit(productionCommit);
-        boolean productionBehind = homologAvailable
-                && hasComparableCommits
-                && !homologCommit.equals(productionCommit);
-        boolean productionUpToDate = homologAvailable
-                && productionAvailable
-                && hasComparableCommits
-                && homologCommit.equals(productionCommit);
-        boolean githubConfigured = pdeProductionDeploymentClient.isConfigured();
-        boolean deployAvailable = productionBehind && githubConfigured;
-        boolean deployBlocked = !deployAvailable;
-        String workflowFile = "pde-platform-metodo-musa-ci.yml";
-        return new PostDeployPdePromotionControlDto(
-                homologAvailable,
-                productionAvailable,
-                productionBehind,
-                productionUpToDate,
-                deployAvailable,
-                deployBlocked,
-                promotionStatusLabel(homologAvailable, productionBehind, productionUpToDate, githubConfigured),
-                promotionRecommendation(homologAvailable, productionBehind, productionUpToDate, githubConfigured),
-                homologCommit,
-                productionCommit,
-                "production",
-                workflowFile);
-    }
-
-    /** Busca um deploy por nome de ambiente sem depender de caixa alta/baixa. */
-    private PostDeployPdeDeployEnvironmentDto findDeployment(
-            List<PostDeployPdeDeployEnvironmentDto> deployments,
-            String environment) {
-        if (deployments == null) {
-            return null;
-        }
-        return deployments.stream()
-                .filter(deployment -> environment.equalsIgnoreCase(deployment.environment()))
-                .findFirst()
-                .orElse(null);
-    }
-
-    /** Confirma que backend e frontend públicos do ambiente estão respondendo. */
-    private boolean isDeploymentHealthy(PostDeployPdeDeployEnvironmentDto deployment) {
-        return deployment != null
-                && deployment.available()
-                && deployment.backendReachable()
-                && deployment.frontendReachable();
-    }
-
-    /** Verifica se o commit pode ser usado para comparar homologação e produção. */
-    private boolean isKnownCommit(String commitSha) {
-        return StringUtils.hasText(commitSha) && !"unknown".equalsIgnoreCase(commitSha);
-    }
-
-    /** Define o rótulo executivo do controle de promoção do PDE. */
-    private String promotionStatusLabel(
-            boolean homologAvailable,
-            boolean productionBehind,
-            boolean productionUpToDate,
-            boolean githubConfigured) {
-        if (!homologAvailable) {
-            return "Homologação não validada";
-        }
-        if (productionUpToDate) {
-            return "Produção atualizada";
-        }
-        if (productionBehind && githubConfigured) {
-            return "Produção pronta para publicar";
-        }
-        if (productionBehind) {
-            return "Produção pendente sem token";
-        }
-        return "Aguardando comparação";
-    }
-
-    /** Define a recomendação operacional para publicar ou bloquear produção. */
-    private String promotionRecommendation(
-            boolean homologAvailable,
-            boolean productionBehind,
-            boolean productionUpToDate,
-            boolean githubConfigured) {
-        if (!homologAvailable) {
-            return "Valide homologação com backend e frontend online antes de liberar produção.";
-        }
-        if (productionUpToDate) {
-            return "Produção já está no mesmo commit da homologação. Não há deploy pendente.";
-        }
-        if (productionBehind && githubConfigured) {
-            return "Homologação está saudável e produção está defasada. Pode solicitar deploy produtivo pelo Marketing Hub.";
-        }
-        if (productionBehind) {
-            return "Produção está defasada, mas o backend não possui token do GitHub Actions para acionar o workflow.";
-        }
-        return "Não há evidência suficiente para liberar produção. Atualize o painel e confirme os commits dos ambientes.";
     }
 
     /** Converte o contrato do PDE em métricas comerciais específicas do painel. */
@@ -679,41 +381,21 @@ public class PostDeployMonitorService {
     /** Monta alertas objetivos para separar falha técnica de leitura comercial. */
     private List<String> buildAlerts(PostDeployMetaAdsSummaryDto metaAds,
                                      PostDeployPdeSummaryDto pde,
-                                     List<PostDeployPdeDeployEnvironmentDto> pdeDeployments,
-                                     PostDeployPdePromotionControlDto promotionControl,
                                      PostDeployFacebookLogSummaryDto logs) {
         List<String> alerts = new ArrayList<>();
         if (!pde.available()) {
             alerts.add("Analytics PDE indisponível; validar saúde do pde-platform antes de concluir resultado comercial.");
         }
-        pdeDeployments.stream()
-                .filter(deployment -> !deployment.available() || !deployment.backendReachable() || !deployment.frontendReachable())
-                .map(this::deployAlert)
-                .forEach(alerts::add);
         if (StringUtils.hasText(metaAds.lastSyncError())) {
             alerts.add("Sincronização de métricas Meta Ads possui erro recente.");
         }
         if (logs.errorLogs() > 0) {
             alerts.add("Há erros recentes nos logs da API Meta Ads.");
         }
-        if (promotionControl.productionBehind()) {
-            alerts.add("Homologação e produção estão em commits diferentes; não liberar tráfego sem publicar ou decidir manter produção antiga.");
-        }
         if (spendAtLeast(metaAds, ZERO_INTERACTION_SPEND_THRESHOLD) && pde.available() && firstInteractionCount(pde) == 0) {
             alerts.add("Gasto atingiu o limite de atenção sem clique no Mapa/Diagnóstico.");
         }
         return alerts;
-    }
-
-    /** Descreve o problema de deploy em linguagem operacional para decisão comercial. */
-    private String deployAlert(PostDeployPdeDeployEnvironmentDto deployment) {
-        if (!deployment.available()) {
-            return "Deploy PDE " + deployment.environment() + " indisponível; o backend do ambiente não respondeu.";
-        }
-        if (!deployment.frontendReachable()) {
-            return "Deploy PDE " + deployment.environment() + " com backend ativo, mas frontend público sem resposta.";
-        }
-        return "Deploy PDE " + deployment.environment() + " possui status incompleto.";
     }
 
     /** Decide a ação operacional recomendada com base em gasto, interação e saúde técnica. */

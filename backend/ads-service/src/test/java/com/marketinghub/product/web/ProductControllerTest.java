@@ -1,6 +1,9 @@
 package com.marketinghub.product.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
+import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductDto;
@@ -16,6 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,10 +47,13 @@ class ProductControllerTest {
     @Mock
     private ProductMapper mapper;
 
+    @Mock
+    private PdeProductionSlotService pdeProductionSlotService;
+
     /** Monta o controller isolado para validar o contrato HTTP de produto. */
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new ProductController(service, mapper)).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(new ProductController(service, mapper, pdeProductionSlotService)).build();
     }
 
     /** Deve aceitar atualização de dados comerciais pelo endpoint canônico de produto. */
@@ -138,6 +146,33 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.pdeExperienceJson").value("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\"}}"));
+    }
+
+    /** Deve listar versões produtivas PDE pelo endpoint canônico do produto. */
+    @Test
+    void listPdeProductionSlots() throws Exception {
+        Product product = Product.builder().id(1L).slug("metodo-musa-7-dias").build();
+        when(service.getProduct(1L)).thenReturn(product);
+        when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
+                .thenReturn(List.of(new PostDeployPdeProductionSlotDto(
+                        2L,
+                        "v2",
+                        "metodo-musa-7-dias",
+                        "v2.clubemusa.com.br",
+                        "https://v2.clubemusa.com.br",
+                        null,
+                        "musa-pde-entry-v5-estrada-desejo",
+                        "production-v2",
+                        PdeProductionSlotStatus.PLANNED,
+                        71L,
+                        "Hipotese 2",
+                        Instant.parse("2026-07-24T10:00:00Z"),
+                        Instant.parse("2026-07-24T10:00:00Z"))));
+
+        mockMvc.perform(get("/api/products/{id}/pde-production-slots", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].slotCode").value("v2"))
+                .andExpect(jsonPath("$[0].experienceVersion").value("musa-pde-entry-v5-estrada-desejo"));
     }
 
     /** Deve expor a jornada persuasiva PDE como contrato JSON público. */

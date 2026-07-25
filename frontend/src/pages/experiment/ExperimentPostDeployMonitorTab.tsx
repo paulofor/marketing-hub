@@ -1,9 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   usePostDeployMonitor,
-  useRequestPdeProductionDeploy,
-  useSavePdeProductionSlot,
-  type PdeProductionSlotStatus,
   type PostDeployMonitorDecision,
 } from "../../api/experiment/usePostDeployMonitor";
 
@@ -21,9 +19,15 @@ const numberFormatter = new Intl.NumberFormat("pt-BR");
 
 const BRAZIL_OPERATIONAL_TIME_ZONE = "America/Sao_Paulo";
 
+function hasExplicitTimeZone(value: string) {
+  return /(?:z|[+-]\d{2}:?\d{2})$/i.test(value.trim());
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "—";
-  const date = new Date(value);
+  const date = new Date(
+    hasExplicitTimeZone(value) ? value : `${value.replace(" ", "T")}-03:00`,
+  );
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("pt-BR", {
     day: "2-digit",
@@ -90,68 +94,12 @@ function decisionBadgeClass(decision: PostDeployMonitorDecision) {
   }
 }
 
-function shortCommit(value?: string | null) {
-  if (!value || value === "unknown") return "—";
-  return value.length > 12 ? value.slice(0, 12) : value;
-}
-
-function deployHealthLabel(deployment: {
-  available: boolean;
-  frontendReachable: boolean;
-  backendReachable: boolean;
-}) {
-  if (!deployment.available || !deployment.backendReachable) {
-    return "Backend fora";
-  }
-  if (!deployment.frontendReachable) {
-    return "Frontend fora";
-  }
-  return "Online";
-}
-
-function slotStatusLabel(status: PdeProductionSlotStatus) {
-  const labels: Record<PdeProductionSlotStatus, string> = {
-    PLANNED: "Planejado",
-    READY: "Pronto",
-    ACTIVE: "Ativo",
-    PAUSED: "Pausado",
-    RETIRED: "Encerrado",
-  };
-  return labels[status] ?? status;
-}
-
-function slotStatusBadgeClass(status: PdeProductionSlotStatus) {
-  switch (status) {
-    case "ACTIVE":
-      return "text-bg-success";
-    case "READY":
-      return "text-bg-primary";
-    case "PAUSED":
-      return "text-bg-warning";
-    case "RETIRED":
-      return "text-bg-secondary";
-    default:
-      return "text-bg-light text-dark border";
-  }
-}
-
 export default function ExperimentPostDeployMonitorTab({
   experimentId,
 }: ExperimentPostDeployMonitorTabProps) {
   const monitorQuery = usePostDeployMonitor(experimentId);
-  const requestProductionDeploy = useRequestPdeProductionDeploy(experimentId);
-  const saveProductionSlot = useSavePdeProductionSlot(experimentId);
-  const [slotForm, setSlotForm] = useState({
-    slotCode: "v2",
-    domain: "v2.clubemusa.com.br",
-    experienceVersion: "musa-pde-entry-v5-estrada-desejo",
-    status: "PLANNED" as PdeProductionSlotStatus,
-    notes: "Hipotese 2 - peca-sinal",
-  });
   const monitor = monitorQuery.data;
-  const pdeDeployments = monitor?.pdeDeployments ?? [];
   const pdeProductionSlots = monitor?.pdeProductionSlots ?? [];
-  const promotionControl = monitor?.pdePromotionControl;
   const trafficSources = monitor?.pde.trafficSources ?? [];
   const recentJourneys = monitor?.pde.recentJourneys ?? [];
 
@@ -346,346 +294,81 @@ export default function ExperimentPostDeployMonitorTab({
 
       <div className="card">
         <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
-            <div>
-              <h6 className="card-title mb-1">Slots produtivos PDE</h6>
-              <p className="text-muted small mb-0">
-                URLs paralelas para rodar hipóteses e criativos sem trocar a
-                produção inteira do Clube MUSA.
-              </p>
-            </div>
-          </div>
-          <form
-            className="row g-2 align-items-end mb-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              saveProductionSlot.mutate({
-                productSlug: monitor.productSlug,
-                slotCode: slotForm.slotCode,
-                domain: slotForm.domain,
-                experienceVersion: slotForm.experienceVersion,
-                status: slotForm.status,
-                sourceExperimentId: Number(experimentId),
-                notes: slotForm.notes,
-              });
-            }}
-          >
-            <div className="col-12 col-md-2">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-code">
-                Slot *
-              </label>
-              <input
-                id="pde-slot-code"
-                className="form-control form-control-sm"
-                value={slotForm.slotCode}
-                onChange={(event) =>
-                  setSlotForm((current) => ({
-                    ...current,
-                    slotCode: event.target.value,
-                  }))
-                }
-                required
-              />
-            </div>
-            <div className="col-12 col-md-3">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-domain">
-                Domínio *
-              </label>
-              <input
-                id="pde-slot-domain"
-                className="form-control form-control-sm"
-                value={slotForm.domain}
-                onChange={(event) =>
-                  setSlotForm((current) => ({
-                    ...current,
-                    domain: event.target.value,
-                  }))
-                }
-                required
-              />
-            </div>
-            <div className="col-12 col-md-3">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-version">
-                Versão PDE *
-              </label>
-              <input
-                id="pde-slot-version"
-                className="form-control form-control-sm"
-                value={slotForm.experienceVersion}
-                onChange={(event) =>
-                  setSlotForm((current) => ({
-                    ...current,
-                    experienceVersion: event.target.value,
-                  }))
-                }
-                required
-              />
-            </div>
-            <div className="col-12 col-md-2">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-status">
-                Status
-              </label>
-              <select
-                id="pde-slot-status"
-                className="form-select form-select-sm"
-                value={slotForm.status}
-                onChange={(event) =>
-                  setSlotForm((current) => ({
-                    ...current,
-                    status: event.target.value as PdeProductionSlotStatus,
-                  }))
-                }
-              >
-                <option value="PLANNED">Planejado</option>
-                <option value="READY">Pronto</option>
-                <option value="ACTIVE">Ativo</option>
-                <option value="PAUSED">Pausado</option>
-                <option value="RETIRED">Encerrado</option>
-              </select>
-            </div>
-            <div className="col-12 col-md-2">
-              <button
-                type="submit"
-                className="btn btn-outline-primary btn-sm w-100"
-                disabled={saveProductionSlot.isPending}
-              >
-                {saveProductionSlot.isPending ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    />
-                    Salvando...
-                  </>
-                ) : (
-                  "Salvar slot"
-                )}
-              </button>
-            </div>
-            <div className="col-12">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-notes">
-                Observação
-              </label>
-              <input
-                id="pde-slot-notes"
-                className="form-control form-control-sm"
-                value={slotForm.notes}
-                onChange={(event) =>
-                  setSlotForm((current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-              />
-            </div>
-          </form>
-          <div className="table-responsive">
-            <table className="table table-sm align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Slot</th>
-                  <th>Status</th>
-                  <th>Versão PDE</th>
-                  <th>URL pública</th>
-                  <th>Ambiente alvo</th>
-                  <th>Experimento</th>
-                  <th className="text-end">Atualizado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pdeProductionSlots.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-muted">
-                      Nenhum slot produtivo cadastrado para este produto.
-                    </td>
-                  </tr>
-                ) : (
-                  pdeProductionSlots.map((slot) => (
-                    <tr key={slot.id}>
-                      <td className="fw-semibold">{slot.slotCode}</td>
-                      <td>
-                        <span className={`badge ${slotStatusBadgeClass(slot.status)}`}>
-                          {slotStatusLabel(slot.status)}
-                        </span>
-                      </td>
-                      <td className="font-monospace small">{slot.experienceVersion}</td>
-                      <td>
-                        <a href={slot.publicUrl} target="_blank" rel="noreferrer">
-                          {slot.publicUrl}
-                        </a>
-                        <div className="small text-muted">{slot.domain}</div>
-                      </td>
-                      <td>{slot.targetEnvironment}</td>
-                      <td>{slot.sourceExperimentId ?? "—"}</td>
-                      <td className="text-end">{formatDate(slot.updatedAt)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {pdeDeployments.length > 0 ? (
-        <div className="card">
-          <div className="card-body">
-            <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2">
-              <div>
-                <h6 className="card-title mb-1">Deploys PDE por ambiente</h6>
-                <p className="text-muted small mb-0">
-                  Confirma compose, commit, versão publicada, containers e
-                  portas antes de liberar homologação ou produção.
-                </p>
-              </div>
-            </div>
-            {promotionControl ? (
-              <div className="alert alert-light border d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3 mb-3">
-                <div>
-                  <div className="fw-semibold">
-                    Controle homologação → produção:{" "}
-                    {promotionControl.statusLabel}
-                  </div>
-                  <div className="small text-muted">
-                    {promotionControl.recommendation}
-                  </div>
-                  <div className="small mt-1">
-                    Homolog:{" "}
-                    <span className="font-monospace">
-                      {shortCommit(promotionControl.sourceCommitSha)}
-                    </span>{" "}
-                    · Produção:{" "}
-                    <span className="font-monospace">
-                      {shortCommit(promotionControl.productionCommitSha)}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={
-                    !promotionControl.productionDeployAvailable ||
-                    requestProductionDeploy.isPending
-                  }
-                  onClick={() =>
-                    requestProductionDeploy.mutate({
-                      requestedBy: "Marketing Hub",
-                      sourceCommitSha: promotionControl.sourceCommitSha,
-                    })
-                  }
-                >
-                  {requestProductionDeploy.isPending ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                      Solicitando produção...
-                    </>
-                  ) : (
-                    "Publicar produção"
-                  )}
-                </button>
-              </div>
-            ) : null}
+          <h6 className="card-title mb-1">Métricas por dispositivo</h6>
+          <p className="text-muted small mb-3">
+            Distribuição das sessões PDE por tipo de aparelho capturado no
+            navegador.
+          </p>
+          {monitor.pde.deviceBreakdown.length === 0 ? (
+            <p className="text-muted small mb-0">
+              Sem sessões suficientes para quebrar por dispositivo.
+            </p>
+          ) : (
             <div className="table-responsive">
               <table className="table table-sm align-middle mb-0">
                 <thead>
                   <tr>
-                    <th>Ambiente</th>
-                    <th>Saúde</th>
-                    <th>Versão PDE</th>
-                    <th>Commit</th>
-                    <th>Compose</th>
-                    <th>URLs</th>
-                    <th>Containers/portas</th>
-                    <th className="text-end">Publicado</th>
+                    <th>Dispositivo</th>
+                    <th className="text-end">Sessões</th>
+                    <th className="text-end">Participação</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pdeDeployments.map((deployment) => (
-                    <tr key={deployment.environment}>
-                      <td className="fw-semibold">{deployment.environment}</td>
-                      <td>
-                        <span
-                          className={`badge ${deployment.available && deployment.frontendReachable ? "text-bg-success" : "text-bg-warning"}`}
-                        >
-                          {deployHealthLabel(deployment)}
-                        </span>
-                        {deployment.errorMessage ? (
-                          <div className="small text-muted mt-1">
-                            {deployment.errorMessage}
-                          </div>
-                        ) : null}
+                  {monitor.pde.deviceBreakdown.map((device) => (
+                    <tr key={device.deviceType}>
+                      <td>{device.label || device.deviceType}</td>
+                      <td className="text-end fw-semibold">
+                        {formatNumber(device.sessions)}
                       </td>
-                      <td>{deployment.experienceVersion ?? "—"}</td>
-                      <td className="font-monospace small">
-                        {shortCommit(deployment.commitSha)}
+                      <td className="text-end">
+                        {formatPercent(device.percentage)}
                       </td>
-                      <td>{deployment.composeFile ?? "—"}</td>
-                      <td className="small">
-                        <div>
-                          Front:{" "}
-                          {deployment.frontendUrl ? (
-                            <a
-                              href={deployment.frontendUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {deployment.frontendUrl}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </div>
-                        <div>
-                          Back:{" "}
-                          {deployment.backendUrl ? (
-                            <a
-                              href={deployment.backendUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {deployment.backendUrl}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </div>
-                      </td>
-                      <td className="small">
-                        {deployment.services.length > 0
-                          ? deployment.services.map((service) => (
-                              <div key={`${deployment.environment}-${service.containerName}`}>
-                                <span className="fw-semibold">
-                                  {service.containerName}
-                                </span>
-                                {service.publicPort ? (
-                                  <span className="text-muted">
-                                    {" "}
-                                    :{service.publicPort}
-                                    {service.targetPort
-                                      ? ` -> ${service.targetPort}`
-                                      : ""}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted"> sem porta</span>
-                                )}
-                              </div>
-                            ))
-                          : "—"}
-                      </td>
-                      <td className="text-end">{formatDate(deployment.deployedAt)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          )}
         </div>
-      ) : null}
+      </div>
+
+      <div className="card">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+            <div>
+              <h6 className="card-title mb-1">Versão PDE do experimento</h6>
+              <p className="text-muted small mb-0">
+                O experimento mede uma versão já cadastrada no produto. A
+                criação e manutenção das URLs produtivas ficam no card do
+                produto.
+              </p>
+            </div>
+            <Link
+              className="btn btn-outline-primary btn-sm"
+              to="/products"
+            >
+              Gerenciar no produto
+            </Link>
+          </div>
+          <select
+            className="form-select form-select-sm"
+            aria-label="Versão PDE medida pelo experimento"
+            defaultValue={monitor.pde.currentExperienceVersion ?? ""}
+          >
+            <option value="">
+              {monitor.pde.currentExperienceVersion ?? "Sem versão medida"}
+            </option>
+            {pdeProductionSlots.map((slot) => (
+              <option key={slot.id} value={slot.experienceVersion}>
+                {slot.slotCode} · {slot.experienceVersion}
+              </option>
+            ))}
+          </select>
+          <p className="text-muted small mb-0 mt-2">
+            Produto medido: <span className="font-monospace">{monitor.productSlug}</span>.
+          </p>
+        </div>
+      </div>
 
       {monitor.pde.experienceVersions.length > 0 ? (
         <div className="card">

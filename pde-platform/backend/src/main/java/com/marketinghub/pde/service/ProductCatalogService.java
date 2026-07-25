@@ -59,7 +59,7 @@ public class ProductCatalogService {
         return applyExperienceVersionOverride(product);
     }
 
-    /** Aplica override operacional de versão para publicar homologações sem alterar o contrato base. */
+    /** Aplica override operacional para publicar uma versão específica sem alterar o contrato base. */
     private ProductExperienceResponse applyExperienceVersionOverride(ProductExperienceResponse product) {
         if (!StringUtils.hasText(experienceVersionOverride)) {
             return product;

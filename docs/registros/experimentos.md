@@ -6006,10 +6006,6 @@
 - foi feito: o resumo de analytics do PDE passou a devolver desempenho por origem/campanha/criativo via UTM, além das jornadas recentes por sessão.
 - foi feito: o monitor pós-deploy do experimento passou a exibir blocos de `Criativos e UTMs` e `Jornadas recentes por sessão`, cruzando Meta Ads, eventos PDE, tempo visível, scroll, última ação e ponto de abandono.
 - impacto comercial esperado: acelerar a decisão sobre qual criativo atrai visita útil, onde cada sessão abandona e se o gargalo está no anúncio, primeira dobra, e-mail, paywall ou checkout.
-- 2026-07-21: criado ambiente versionado de homologação para PDEs no mesmo host da Área MUSA, com `pde-platform/docker-compose.homolog.yml`, portas padrão `5177` para frontend e `8097` para backend, containers/volume isolados e override `musa-pde-entry-v4-video-hero` para publicar primeiro a versão do PDE MUSA com hero de vídeo antes da promoção para produção.
-- 2026-07-21: causa-raiz confirmada no host `191.252.102.54`: o GitHub Actions publicava apenas `docker-compose.deploy.yml`, subindo a stack produtiva em `5176/8096`; o arquivo `docker-compose.homolog.yml` não era sincronizado nem executado no servidor, por isso a URL `5177` retornava conexão recusada mesmo com workflow verde.
-- 2026-07-21: prevenção aplicada no workflow do PDE MUSA: pushes na `main` passam a publicar e validar homologação em `5177/8097`; produção fica separada em `workflow_dispatch` com `target_environment=production`, evitando promoção automática antes da validação visual/comercial da homologação.
-- 2026-07-21: prevenção ampliada para controle de versões/deploy PDE: o backend PDE passou a expor `GET /api/pde/deploy/status` com ambiente, compose, commit, tag de imagem, versão PDE, URLs, portas e containers declarados; o painel pós-deploy do Marketing Hub passou a exibir homologação e produção no mesmo lugar das métricas comerciais, separando GitHub verde de ambiente realmente publicado.
 - 2026-07-21: causa-raiz confirmada no host principal `191.252.181.168`: o backend Marketing Hub ficou indisponível porque o Liquibase bloqueou o startup por checksum alterado do changeset histórico `2026-07-16-pde-funnel-events-001`; correção operacional aplicada no `DATABASECHANGELOG` e prevenção registrada no changelog com checksums válidos conhecidos, evitando nova queda em ambientes que já tinham aplicado a versão anterior.
 
 ## 2026-07-22 — PED/MUSA: captura de e-mail após plano por IA
@@ -6018,19 +6014,11 @@
 - motivo comercial: a visitante agora tem um motivo concreto para deixar o e-mail: salvar o diagnóstico e receber o caminho para executar o roteiro detalhado dos 7 dias na Área MUSA.
 - impacto esperado: reduzir fricção antes do diagnóstico, aumentar microcompromisso após percepção de valor e melhorar conversão de visitante em lead identificada.
 
-## 2026-07-22 — PED/MUSA: correção de tela branca em produção
-
-- causa-raiz confirmada: produção e homologação do PDE estavam na mesma rede Docker externa com o mesmo alias de serviço `pde-platform-frontend`; o proxy do domínio `clubemusa.com.br` resolvia esse nome via DNS interno com alternância entre os dois containers.
-- efeito observado: algumas visitas recebiam o HTML da homologação e tentavam carregar assets inexistentes na produção, causando erro de módulo JavaScript/MIME e tela branca.
-- correção operacional aplicada no host: o frontend de produção recebeu alias exclusivo `pde-platform-frontend-production` e a homologação ficou isolada no alias `pde-platform-frontend-homolog`.
-- prevenção versionada: o compose de homologação passou a usar nomes de serviço exclusivos, evitando recriar o alias compartilhado em deploys futuros.
-- impacto comercial esperado: estabilizar a primeira dobra do Clube MUSA para tráfego pago e impedir perda de cliques por tela branca intermitente.
-
 ## 2026-07-22 — PED/MUSA: health check público contra tela branca
 
 - foi feito: o frontend PDE passou a expor `GET /healthz` como sinal público simples do container.
 - foi feito: criado smoke test público com Playwright para abrir a URL publicada, confirmar JavaScript carregado, headline comercial visível e bloco `Diagnóstico de Presença` renderizado.
-- foi feito: o workflow de homologação e produção do PDE passou a executar essa validação depois do deploy, além do health HTTP do backend.
+- foi feito: o workflow de produção do PDE passou a executar essa validação depois do deploy, além do health HTTP do backend.
 - impacto comercial esperado: evitar liberar tráfego pago para página que responde `200`, mas está branca, com asset JavaScript quebrado ou sem a primeira dobra comercial visível.
 
 ## 2026-07-22 — PED/MUSA: jornada persuasiva interativa no Marketing Hub
@@ -6040,13 +6028,12 @@
 - foi feito: a aba de analytics do experimento passou a cruzar a jornada cadastrada com seções rastreadas do PDE, mostrando sessões, tempo visível, métrica primária e regra de otimização por etapa.
 - impacto comercial esperado: identificar se o gargalo está em atenção, interesse, desejo ou ação, orientando ajustes de promessa, pergunta inicial, diagnóstico parcial, login, paywall e checkout com base em evidência comportamental.
 
-## 2026-07-22 — PED/MUSA: controle de produção pelo Marketing Hub
+## 2026-07-25 — PED/MUSA: remoção do quadro operacional obsoleto
 
-- causa-raiz operacional: o GitHub Actions publicava homologação no fluxo normal e produção apenas por execução manual, mas a decisão ficava fora do Marketing Hub; isso gerou confusão entre workflow verde, homologação publicada e produção ainda antiga.
-- foi feito: o painel pós-deploy passou a comparar homologação e produção por saúde pública, commit, compose, URLs e containers, destacando quando produção está defasada em relação à homologação.
-- foi feito: adicionada ação administrativa no Marketing Hub para solicitar deploy produtivo pelo workflow canônico do PDE com `target_environment=production`, sem SSH direto no servidor.
-- bloqueio seguro: se homologação não estiver saudável, se os commits mudarem entre leitura e clique ou se o backend não tiver token/configuração do GitHub Actions, o Hub bloqueia a promoção e mostra a causa.
-- impacto comercial esperado: reduzir atraso entre correção homologada e funil real corrigido, evitando perda de leads por versão antiga em produção.
+- causa-raiz: com múltiplas versões produtivas do PDE, o quadro de deploy por ambiente na tela de experimento confundia decisão comercial com publicação técnica.
+- foi feito: a tela de experimento ficou focada em métricas, jornada, criativos, dispositivo e escolha da versão medida; criação/manutenção de URLs produtivas fica no card do produto.
+- foi feito: removidos o compose paralelo antigo, o job correspondente no workflow e os contratos de backend que sustentavam o quadro obsoleto.
+- impacto comercial esperado: reduzir erro operacional na escolha de versão, acelerar leitura por hipótese e manter o experimento focado em conversão real.
 
 ## 2026-07-23 — PED/MUSA: vídeos planejados viram jobs de render
 

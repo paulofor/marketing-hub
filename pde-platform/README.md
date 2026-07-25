@@ -20,7 +20,7 @@ cd pde-platform/frontend
 npm install
 npm run build
 npm run test:visual
-PDE_PUBLIC_HEALTH_URL=http://191.252.102.54:5177 npm run test:public-health
+PDE_PUBLIC_HEALTH_URL=https://clubemusa.com.br npm run test:public-health
 npm run dev
 ```
 
@@ -56,35 +56,10 @@ Docker:
 docker compose -f pde-platform/docker-compose.yml up --build
 ```
 
-Homologação no mesmo host da produção:
-
-- Frontend: `http://191.252.102.54:5177`
-- Backend: `http://191.252.102.54:8097`
-- Compose: `pde-platform/docker-compose.homolog.yml`
-- Versão padrão publicada em homologação: `musa-pde-entry-v4-video-hero`
-- A stack usa containers e volume próprios: `pde-platform-frontend-homolog`, `pde-platform-backend-homolog`, `pde-ai-worker-homolog` e `pde-platform-homolog-data`.
-- O vídeo hero publicável deve ser informado primeiro por `PDE_PLATFORM_HOMOLOG_HERO_STREAM_URL` quando houver HLS adaptativo. `PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL` fica como fallback MP4 para revisão/contingência. Enquanto nenhuma URL estiver disponível, o frontend exibe fallback visual e mantém os eventos rastreados na versão `musa-pde-entry-v4-video-hero`.
-- Por padrão, a homologação não exige JDBC e expõe magic link na resposta para teste funcional. Para homologar analytics persistido em banco, configure `PDE_PLATFORM_HOMOLOG_ACCESS_REQUIRE_JDBC=true` e as variáveis `PDE_PLATFORM_HOMOLOG_ACCESS_JDBC_*`, preferencialmente apontando para base/tabelas de homologação.
-- O status do deploy fica disponível em `GET /api/pde/deploy/status` no backend de cada ambiente. O painel pós-deploy do Marketing Hub usa esse endpoint para mostrar ambiente, compose executado, commit, tag de imagem, versão PDE, containers declarados, URLs e portas expostas.
-
-Exemplo operacional:
-
-```bash
-export PDE_PLATFORM_BACKEND_IMAGE=ghcr.io/<owner>/pde-platform-backend:<tag>
-export PDE_PLATFORM_FRONTEND_IMAGE=ghcr.io/<owner>/pde-platform-frontend:<tag>
-export PDE_AI_WORKER_IMAGE=ghcr.io/<owner>/pde-ai-worker:<tag>
-export PDE_PLATFORM_HOMOLOG_HERO_STREAM_URL=https://<url-hls-publicavel>/master.m3u8
-export PDE_PLATFORM_HOMOLOG_HERO_VIDEO_URL=https://<url-mp4-fallback>.mp4
-export PDE_DEPLOY_COMMIT_SHA=<commit>
-export PDE_DEPLOY_IMAGE_TAG=<tag>
-export PDE_DEPLOY_DEPLOYED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-docker compose -f pde-platform/docker-compose.homolog.yml up -d
-```
-
 Deploy de produção:
 
 - Defina `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` apontando para o MySQL do Marketing Hub antes de subir o backend PDE.
-- A produção publica por padrão a mesma entrada homologada do experimento MUSA com vídeo: `musa-pde-entry-v4-video-hero`. Para rollback ou novo experimento, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE` e `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE` no ambiente de deploy.
+- Para rollback ou novo experimento, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE` e `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE` no ambiente de deploy.
 - Defina `PDE_PEPPER_API_TOKEN` em produção para reconciliar compras pagas quando o postback da Pepper não for entregue.
 - Mantenha `PDE_PEPPER_OFFER_HASHES=owm6x,c8mnn` durante a transição: `owm6x` é a oferta atual e `c8mnn` cobre compras reais antigas.
 - `PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS=6700` bloqueia liberação de acesso se a oferta antiga aparecer com valor zerado.

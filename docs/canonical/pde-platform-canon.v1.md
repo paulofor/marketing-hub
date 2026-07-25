@@ -246,23 +246,20 @@ O pipeline de deploy deve executar o smoke test público depois da publicação 
 
 Um PDE não pode ser considerado pronto para tráfego se o smoke test público falhar, mesmo quando o status HTTP estiver 200. O objetivo é bloquear recorrência de tela branca, assets misturados entre ambientes, bundle JavaScript quebrado ou primeira dobra errada antes de gastar mídia.
 
-### Controle de homologação e produção pelo Marketing Hub
+### Controle de versões produtivas pelo Marketing Hub
 
-O Marketing Hub deve ser o painel operacional de decisão para promover um PDE de homologação para produção.
+O Marketing Hub deve ser o painel operacional para decidir qual versão PDE recebe tráfego e qual versão cada experimento mede.
 
-GitHub Actions verde não é prova suficiente de publicação produtiva. Antes de liberar tráfego pago ou considerar uma correção publicada, o painel pós-deploy do Marketing Hub deve confirmar:
+GitHub Actions verde não é prova suficiente de publicação produtiva. Antes de liberar tráfego pago ou considerar uma correção publicada, o Marketing Hub deve confirmar:
 
-- homologação com backend e frontend públicos respondendo;
-- produção com backend e frontend públicos respondendo;
-- commit/tag de imagem da homologação;
-- commit/tag de imagem da produção;
-- compose usado por ambiente;
-- URLs e portas declaradas;
-- versão comercial da experiência PDE publicada.
+- URL pública produtiva respondendo;
+- versão comercial da experiência PDE publicada;
+- slot produtivo correto no card do produto;
+- experimento vinculado à versão que será medida;
+- jornada principal validada em desktop e mobile;
+- eventos aparecendo no painel pós-deploy depois do tráfego real.
 
-Quando a homologação estiver saudável e produção estiver em commit diferente, o Marketing Hub deve exibir produção como defasada e liberar uma ação administrativa explícita para solicitar o workflow produtivo canônico com `target_environment=production`. Essa ação não pode usar SSH direto no servidor; deve acionar o pipeline versionado do repositório.
-
-Se o backend do Marketing Hub não possuir token/configuração para acionar o GitHub Actions, o painel deve mostrar a produção como pendente sem token e orientar configuração operacional, sem fingir que a publicação foi solicitada.
+Quando houver hipóteses, criativos ou primeiras dobras concorrentes, a operação deve criar slots produtivos paralelos em vez de depender de ambiente intermediário. A tela de experimento apenas escolhe a versão medida; criação, manutenção e publicação das URLs ficam no fluxo do produto e no pipeline versionado do repositório.
 
 ### Slots produtivos versionados do PDE
 

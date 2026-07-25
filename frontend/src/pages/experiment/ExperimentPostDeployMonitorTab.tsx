@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   usePostDeployMonitor,
-  useRequestPdeProductionDeploy,
   type PostDeployMonitorDecision,
 } from "../../api/experiment/usePostDeployMonitor";
 
@@ -95,34 +94,12 @@ function decisionBadgeClass(decision: PostDeployMonitorDecision) {
   }
 }
 
-function shortCommit(value?: string | null) {
-  if (!value || value === "unknown") return "—";
-  return value.length > 12 ? value.slice(0, 12) : value;
-}
-
-function deployHealthLabel(deployment: {
-  available: boolean;
-  frontendReachable: boolean;
-  backendReachable: boolean;
-}) {
-  if (!deployment.available || !deployment.backendReachable) {
-    return "Backend fora";
-  }
-  if (!deployment.frontendReachable) {
-    return "Frontend fora";
-  }
-  return "Online";
-}
-
 export default function ExperimentPostDeployMonitorTab({
   experimentId,
 }: ExperimentPostDeployMonitorTabProps) {
   const monitorQuery = usePostDeployMonitor(experimentId);
-  const requestProductionDeploy = useRequestPdeProductionDeploy(experimentId);
   const monitor = monitorQuery.data;
-  const pdeDeployments = monitor?.pdeDeployments ?? [];
   const pdeProductionSlots = monitor?.pdeProductionSlots ?? [];
-  const promotionControl = monitor?.pdePromotionControl;
   const trafficSources = monitor?.pde.trafficSources ?? [];
   const recentJourneys = monitor?.pde.recentJourneys ?? [];
 
@@ -392,165 +369,6 @@ export default function ExperimentPostDeployMonitorTab({
           </p>
         </div>
       </div>
-
-      {pdeDeployments.length > 0 ? (
-        <div className="card">
-          <div className="card-body">
-            <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2">
-              <div>
-                <h6 className="card-title mb-1">Deploys PDE por ambiente</h6>
-                <p className="text-muted small mb-0">
-                  Confirma compose, commit, versão publicada, containers e
-                  portas antes de liberar homologação ou produção.
-                </p>
-              </div>
-            </div>
-            {promotionControl ? (
-              <div className="alert alert-light border d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3 mb-3">
-                <div>
-                  <div className="fw-semibold">
-                    Controle homologação → produção:{" "}
-                    {promotionControl.statusLabel}
-                  </div>
-                  <div className="small text-muted">
-                    {promotionControl.recommendation}
-                  </div>
-                  <div className="small mt-1">
-                    Homolog:{" "}
-                    <span className="font-monospace">
-                      {shortCommit(promotionControl.sourceCommitSha)}
-                    </span>{" "}
-                    · Produção:{" "}
-                    <span className="font-monospace">
-                      {shortCommit(promotionControl.productionCommitSha)}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={
-                    !promotionControl.productionDeployAvailable ||
-                    requestProductionDeploy.isPending
-                  }
-                  onClick={() =>
-                    requestProductionDeploy.mutate({
-                      requestedBy: "Marketing Hub",
-                      sourceCommitSha: promotionControl.sourceCommitSha,
-                    })
-                  }
-                >
-                  {requestProductionDeploy.isPending ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                      Solicitando produção...
-                    </>
-                  ) : (
-                    "Publicar produção"
-                  )}
-                </button>
-              </div>
-            ) : null}
-            <div className="table-responsive">
-              <table className="table table-sm align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Ambiente</th>
-                    <th>Saúde</th>
-                    <th>Versão PDE</th>
-                    <th>Commit</th>
-                    <th>Compose</th>
-                    <th>URLs</th>
-                    <th>Containers/portas</th>
-                    <th className="text-end">Publicado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pdeDeployments.map((deployment) => (
-                    <tr key={deployment.environment}>
-                      <td className="fw-semibold">{deployment.environment}</td>
-                      <td>
-                        <span
-                          className={`badge ${deployment.available && deployment.frontendReachable ? "text-bg-success" : "text-bg-warning"}`}
-                        >
-                          {deployHealthLabel(deployment)}
-                        </span>
-                        {deployment.errorMessage ? (
-                          <div className="small text-muted mt-1">
-                            {deployment.errorMessage}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td>{deployment.experienceVersion ?? "—"}</td>
-                      <td className="font-monospace small">
-                        {shortCommit(deployment.commitSha)}
-                      </td>
-                      <td>{deployment.composeFile ?? "—"}</td>
-                      <td className="small">
-                        <div>
-                          Front:{" "}
-                          {deployment.frontendUrl ? (
-                            <a
-                              href={deployment.frontendUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {deployment.frontendUrl}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </div>
-                        <div>
-                          Back:{" "}
-                          {deployment.backendUrl ? (
-                            <a
-                              href={deployment.backendUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {deployment.backendUrl}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </div>
-                      </td>
-                      <td className="small">
-                        {deployment.services.length > 0
-                          ? deployment.services.map((service) => (
-                              <div key={`${deployment.environment}-${service.containerName}`}>
-                                <span className="fw-semibold">
-                                  {service.containerName}
-                                </span>
-                                {service.publicPort ? (
-                                  <span className="text-muted">
-                                    {" "}
-                                    :{service.publicPort}
-                                    {service.targetPort
-                                      ? ` -> ${service.targetPort}`
-                                      : ""}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted"> sem porta</span>
-                                )}
-                              </div>
-                            ))
-                          : "—"}
-                      </td>
-                      <td className="text-end">{formatDate(deployment.deployedAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {monitor.pde.experienceVersions.length > 0 ? (
         <div className="card">

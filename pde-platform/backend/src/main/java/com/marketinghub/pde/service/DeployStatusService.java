@@ -80,25 +80,24 @@ public class DeployStatusService {
 
     /** Lista os containers esperados pela stack publicada do PDE. */
     private List<DeployServiceStatusResponse> services() {
-        String suffix = "homolog".equalsIgnoreCase(environment) ? "-homolog" : "";
         return List.of(
                 new DeployServiceStatusResponse(
                         "pde-platform-backend",
-                        "pde-platform-backend" + suffix,
+                        "pde-platform-backend",
                         backendImage,
                         backendPublicPort,
                         8096,
                         "backend"),
                 new DeployServiceStatusResponse(
                         "pde-platform-frontend",
-                        "pde-platform-frontend" + suffix,
+                        "pde-platform-frontend",
                         frontendImage,
                         frontendPublicPort,
                         80,
                         "frontend"),
                 new DeployServiceStatusResponse(
                         "pde-ai-worker",
-                        "pde-ai-worker" + suffix,
+                        "pde-ai-worker",
                         aiWorkerImage,
                         null,
                         null,

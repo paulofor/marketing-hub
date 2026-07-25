@@ -121,48 +121,6 @@ export interface PostDeployPdeSessionJourney {
   lastActionName?: string | null;
 }
 
-export interface PostDeployPdeDeployEnvironment {
-  environment: string;
-  available: boolean;
-  status: string;
-  errorMessage?: string | null;
-  composeFile?: string | null;
-  commitSha?: string | null;
-  imageTag?: string | null;
-  experienceVersion?: string | null;
-  frontendUrl?: string | null;
-  backendUrl?: string | null;
-  frontendReachable: boolean;
-  backendReachable: boolean;
-  deployedAt?: string | null;
-  services: PostDeployPdeDeployService[];
-}
-
-export interface PostDeployPdePromotionControl {
-  homologAvailable: boolean;
-  productionAvailable: boolean;
-  productionBehind: boolean;
-  productionUpToDate: boolean;
-  productionDeployAvailable: boolean;
-  productionDeployBlocked: boolean;
-  statusLabel: string;
-  recommendation: string;
-  sourceCommitSha?: string | null;
-  productionCommitSha?: string | null;
-  targetEnvironment: string;
-  workflowFile: string;
-}
-
-export interface PostDeployPdeProductionDeployResponse {
-  accepted: boolean;
-  status: string;
-  message: string;
-  targetEnvironment: string;
-  workflowFile: string;
-  sourceCommitSha?: string | null;
-  requestedAt: string;
-}
-
 export type PdeProductionSlotStatus =
   | "PLANNED"
   | "READY"
@@ -199,15 +157,6 @@ export interface SavePdeProductionSlotRequest {
   notes?: string;
 }
 
-export interface PostDeployPdeDeployService {
-  name: string;
-  containerName: string;
-  image?: string | null;
-  publicPort?: number | null;
-  targetPort?: number | null;
-  role: string;
-}
-
 export interface PostDeployFacebookLogSummary {
   totalLogs: number;
   errorLogs: number;
@@ -224,9 +173,7 @@ export interface PostDeployMonitorResponse {
   recommendation: string;
   metaAds: PostDeployMetaAdsSummary;
   pde: PostDeployPdeSummary;
-  pdePromotionControl: PostDeployPdePromotionControl;
   pdeProductionSlots: PostDeployPdeProductionSlot[];
-  pdeDeployments: PostDeployPdeDeployEnvironment[];
   logs: PostDeployFacebookLogSummary;
   alerts: string[];
 }
@@ -245,32 +192,6 @@ export function usePostDeployMonitor(
         { params: { productSlug } },
       );
       return data;
-    },
-  });
-}
-
-export function useRequestPdeProductionDeploy(experimentId?: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (variables: { requestedBy?: string; sourceCommitSha?: string | null }) => {
-      const { data } = await axios.post<PostDeployPdeProductionDeployResponse>(
-        `/api/experiments/${experimentId}/post-deploy-monitor/pde/production-deploy`,
-        variables,
-      );
-      return data;
-    },
-    onSuccess: (response) => {
-      if (response.accepted) {
-        toast.success(response.message);
-      } else {
-        toast.warn(response.message);
-      }
-      queryClient.invalidateQueries({
-        queryKey: ["experiment", experimentId, "post-deploy-monitor"],
-      });
-    },
-    onError: () => {
-      toast.error("Não foi possível solicitar o deploy de produção agora.");
     },
   });
 }

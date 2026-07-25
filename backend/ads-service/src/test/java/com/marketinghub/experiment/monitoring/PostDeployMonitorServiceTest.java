@@ -3,20 +3,14 @@ package com.marketinghub.experiment.monitoring;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
-import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployRequestDto;
-import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionDeployResponseDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
-import com.marketinghub.experiment.monitoring.pde.PdeDeployStatus;
-import com.marketinghub.experiment.monitoring.pde.PdeDeployStatusClient;
-import com.marketinghub.experiment.monitoring.pde.PdeProductionDeploymentClient;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
@@ -53,12 +47,6 @@ class PostDeployMonitorServiceTest {
     private PdeAnalyticsClient pdeAnalyticsClient;
 
     @Mock
-    private PdeDeployStatusClient pdeDeployStatusClient;
-
-    @Mock
-    private PdeProductionDeploymentClient pdeProductionDeploymentClient;
-
-    @Mock
     private PdeProductionSlotService pdeProductionSlotService;
 
     private PostDeployMonitorService service;
@@ -71,11 +59,7 @@ class PostDeployMonitorServiceTest {
                 campaignMetricRepository,
                 apiLogService,
                 pdeAnalyticsClient,
-                pdeDeployStatusClient,
-                pdeProductionDeploymentClient,
                 pdeProductionSlotService);
-        lenient().when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(availableDeployStatus()));
-        lenient().when(pdeProductionDeploymentClient.isConfigured()).thenReturn(false);
         lenient().when(pdeProductionSlotService.resolveProductSlug(null)).thenReturn("metodo-musa-7-dias");
         lenient().when(pdeProductionSlotService.resolveProductSlug("metodo-musa-7-dias"))
                 .thenReturn("metodo-musa-7-dias");
@@ -169,9 +153,6 @@ class PostDeployMonitorServiceTest {
         assertThat(response.pde().recentJourneys())
                 .extracting("clientIp")
                 .contains("203.0.113.10");
-        assertThat(response.pdeDeployments())
-                .extracting("environment")
-                .contains("homolog");
         assertThat(response.pdeProductionSlots())
                 .extracting("slotCode")
                 .contains("v1");
@@ -191,37 +172,6 @@ class PostDeployMonitorServiceTest {
         assertThat(response.decision()).isEqualTo(PostDeployMonitorDecision.TECHNICAL_ATTENTION);
         assertThat(response.pde().available()).isFalse();
         assertThat(response.alerts()).anyMatch(alert -> alert.contains("Analytics PDE indisponível"));
-    }
-
-    /** Alerta quando a homologação está publicada no backend, mas o frontend não responde. */
-    @Test
-    void alertsWhenPdeDeploymentFrontendIsNotReachable() {
-        Experiment experiment = Experiment.builder().id(67L).build();
-        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
-        when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric("8.00", null)));
-        when(apiLogService.findLogs(67L, 50)).thenReturn(List.of());
-        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(new PdeDeployStatus(
-                "homolog",
-                true,
-                "AVAILABLE",
-                null,
-                "docker-compose.homolog.yml",
-                "abc123",
-                "abc123",
-                "musa-pde-entry-v4-video-hero",
-                "http://191.252.102.54:5177",
-                "http://191.252.102.54:8097",
-                false,
-                true,
-                Instant.parse("2026-07-21T02:00:00Z"),
-                List.of())));
-        when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(emptyPdeSummary());
-
-        var response = service.summarize(67L, null);
-
-        assertThat(response.alerts()).anyMatch(alert -> alert.contains("frontend público sem resposta"));
-        assertThat(response.pdeDeployments().get(0).composeFile()).isEqualTo("docker-compose.homolog.yml");
-        assertThat(response.pdeDeployments().get(0).experienceVersion()).isEqualTo("musa-pde-entry-v4-video-hero");
     }
 
     /** Recomenda escala gradual quando há compra aprovada no PDE. */
@@ -262,72 +212,6 @@ class PostDeployMonitorServiceTest {
         assertThat(response.decision()).isEqualTo(PostDeployMonitorDecision.SCALE_GRADUALLY);
         assertThat(response.pde().presenceMapClicks()).isEqualTo(6);
         assertThat(response.logs().totalLogs()).isEqualTo(1);
-    }
-
-    /** Libera o comando de produção quando homologação está saudável e produção está defasada. */
-    @Test
-    void exposesProductionDeployActionWhenHomologIsAhead() {
-        Experiment experiment = Experiment.builder().id(67L).build();
-        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
-        when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric("8.00", null)));
-        when(apiLogService.findLogs(67L, 50)).thenReturn(List.of());
-        when(pdeProductionDeploymentClient.isConfigured()).thenReturn(true);
-        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(
-                deployStatus("homolog", "commit-homolog", true, true),
-                deployStatus("production", "commit-production", true, true)));
-        when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias")).thenReturn(emptyPdeSummary());
-
-        var response = service.summarize(67L, null);
-
-        assertThat(response.pdePromotionControl().productionBehind()).isTrue();
-        assertThat(response.pdePromotionControl().productionDeployAvailable()).isTrue();
-        assertThat(response.alerts()).anyMatch(alert -> alert.contains("commits diferentes"));
-    }
-
-    /** Dispara o workflow produtivo quando o controle de promoção está liberado. */
-    @Test
-    void dispatchesProductionDeployWhenPromotionIsAvailable() {
-        Experiment experiment = Experiment.builder().id(67L).build();
-        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
-        when(pdeProductionDeploymentClient.isConfigured()).thenReturn(true);
-        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(
-                deployStatus("homolog", "commit-homolog", true, true),
-                deployStatus("production", "commit-production", true, true)));
-        when(pdeProductionDeploymentClient.dispatchProductionDeploy(eq(67L), eq("Paulo"), eq("commit-homolog")))
-                .thenReturn(new PostDeployPdeProductionDeployResponseDto(
-                        true,
-                        "DISPATCHED",
-                        "ok",
-                        "production",
-                        "pde-platform-metodo-musa-ci.yml",
-                        "commit-homolog",
-                        Instant.parse("2026-07-21T02:10:00Z")));
-
-        var response = service.requestProductionDeploy(
-                67L,
-                new PostDeployPdeProductionDeployRequestDto("Paulo", "commit-homolog"));
-
-        assertThat(response.accepted()).isTrue();
-        assertThat(response.status()).isEqualTo("DISPATCHED");
-        verify(pdeProductionDeploymentClient).dispatchProductionDeploy(67L, "Paulo", "commit-homolog");
-    }
-
-    /** Bloqueia produção quando a homologação não está saudável. */
-    @Test
-    void blocksProductionDeployWhenHomologIsNotHealthy() {
-        Experiment experiment = Experiment.builder().id(67L).build();
-        when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
-        when(pdeDeployStatusClient.fetchStatuses()).thenReturn(List.of(
-                deployStatus("homolog", "commit-homolog", false, true),
-                deployStatus("production", "commit-production", true, true)));
-
-        var response = service.requestProductionDeploy(
-                67L,
-                new PostDeployPdeProductionDeployRequestDto("Paulo", "commit-homolog"));
-
-        assertThat(response.accepted()).isFalse();
-        assertThat(response.status()).isEqualTo("BLOCKED");
-        assertThat(response.message()).contains("Valide homologação");
     }
 
     /** Cria slot produtivo com domínio normalizado para permitir URLs paralelas de hipótese PDE. */
@@ -382,31 +266,6 @@ class PostDeployMonitorServiceTest {
                 .build();
     }
 
-    /** Cria um status de deploy ativo para não acionar alertas técnicos nos cenários base. */
-    private PdeDeployStatus availableDeployStatus() {
-        return new PdeDeployStatus(
-                "homolog",
-                true,
-                "AVAILABLE",
-                null,
-                "docker-compose.homolog.yml",
-                "abc123",
-                "abc123",
-                "musa-pde-entry-v4-video-hero",
-                "http://191.252.102.54:5177",
-                "http://191.252.102.54:8097",
-                true,
-                true,
-                Instant.parse("2026-07-21T02:00:00Z"),
-                List.of(new PdeDeployStatus.PdeDeployServiceStatus(
-                        "pde-platform-frontend",
-                        "pde-platform-frontend-homolog",
-                        "ghcr.io/demo/pde-platform-frontend:abc123",
-                        5177,
-                        80,
-                        "frontend")));
-    }
-
     /** Cria um slot produtivo persistido para validar a resposta do painel. */
     private PdeProductionSlot productionSlot(String slotCode, String experienceVersion) {
         return PdeProductionSlot.builder()
@@ -443,53 +302,6 @@ class PostDeployMonitorServiceTest {
                 slot.getNotes(),
                 slot.getCreatedAt(),
                 slot.getUpdatedAt());
-    }
-
-    /** Cria status de deploy parametrizado para comparar homologação e produção. */
-    private PdeDeployStatus deployStatus(String environment, String commitSha, boolean frontendReachable, boolean backendReachable) {
-        return new PdeDeployStatus(
-                environment,
-                backendReachable,
-                backendReachable ? "AVAILABLE" : "UNAVAILABLE",
-                null,
-                "production".equals(environment) ? "docker-compose.deploy.yml" : "docker-compose.homolog.yml",
-                commitSha,
-                commitSha,
-                "musa-pde-entry-v4-video-hero",
-                "production".equals(environment) ? "https://clubemusa.com.br" : "http://191.252.102.54:5177",
-                "production".equals(environment) ? "http://191.252.102.54:8096" : "http://191.252.102.54:8097",
-                frontendReachable,
-                backendReachable,
-                Instant.parse("2026-07-21T02:00:00Z"),
-                List.of());
-    }
-
-    /** Cria um resumo PDE sem conversão para cenários focados no status de deploy. */
-    private PdeAnalyticsSummary emptyPdeSummary() {
-        return new PdeAnalyticsSummary(
-                "metodo-musa-7-dias",
-                "musa-pde-entry-v4-video-hero",
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                null,
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of());
     }
 
     /** Cria um log de integração sem falha para validar o resumo de logs. */

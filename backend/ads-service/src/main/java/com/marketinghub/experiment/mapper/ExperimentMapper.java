@@ -44,6 +44,7 @@ public interface ExperimentMapper {
     @org.mapstruct.Mapping(target = "auditableTotalCost", ignore = true)
     @org.mapstruct.Mapping(target = "legacyTotalCost", ignore = true)
     @org.mapstruct.Mapping(target = "unreconciledLegacyCost", ignore = true)
+    @org.mapstruct.Mapping(target = "revenue", ignore = true)
     @org.mapstruct.Mapping(target = "sessionDurationSummary", ignore = true)
     @org.mapstruct.Mapping(target = "unitPrice", expression = "java(experiment.getUnitPrice())")
     @org.mapstruct.Mapping(target = "campaignMetric", expression = "java(toCampaignMetricDto(experiment.getCampaignMetric()))")

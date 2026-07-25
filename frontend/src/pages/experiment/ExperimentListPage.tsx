@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 const PAGE_SIZE = 25;
+const BRL_PER_USD = 5;
 const REACTIVATABLE_STATUSES = new Set([
   "PAUSED",
   "STANDBY",
@@ -38,13 +39,21 @@ function formatDate(value?: string | null) {
   }).format(date);
 }
 
-function formatCurrency(value?: number | null) {
+function formatCurrency(
+  value?: number | null,
+  currency: "BRL" | "USD" = "BRL",
+) {
   if (value === null || value === undefined) return "—";
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL",
+    currency,
     minimumFractionDigits: 2,
   }).format(value);
+}
+
+function formatCurrencyPair(valueBrl?: number | null) {
+  if (valueBrl === null || valueBrl === undefined) return "—";
+  return `${formatCurrency(valueBrl, "BRL")} / ${formatCurrency(valueBrl / BRL_PER_USD, "USD")}`;
 }
 
 function formatDurationMs(value?: number | null) {
@@ -68,6 +77,34 @@ function resolveExperimentCost(experiment: {
     experiment.cost ??
     experiment.expense ??
     null
+  );
+}
+
+function resolveExperimentRevenue(experiment: {
+  revenue?: number | null;
+  totalRevenue?: number | null;
+  campaignMetric?: { revenue?: number | null } | null;
+}) {
+  return (
+    experiment.revenue ??
+    experiment.totalRevenue ??
+    experiment.campaignMetric?.revenue ??
+    null
+  );
+}
+
+function isCommercialValidationExperiment(experiment: {
+  status?: string | null;
+}) {
+  const normalizedStatus = experiment.status
+    ?.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+  return Boolean(
+    normalizedStatus === "RUNNING" ||
+    normalizedStatus === "VALIDACAO_COMERCIAL" ||
+    normalizedStatus === "COMMERCIAL_VALIDATION" ||
+    normalizedStatus === "COMMERCIAL_VALIDATING",
   );
 }
 
@@ -143,6 +180,11 @@ export default function ExperimentListPage() {
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
+      const commercialValidationComparison =
+        Number(isCommercialValidationExperiment(b)) -
+        Number(isCommercialValidationExperiment(a));
+      if (commercialValidationComparison !== 0)
+        return commercialValidationComparison;
       const bDate = parseDate(b.startDate ?? b.createdAt);
       const aDate = parseDate(a.startDate ?? a.createdAt);
       const dateComparison = bDate - aDate;
@@ -305,7 +347,7 @@ export default function ExperimentListPage() {
           com {PAGE_SIZE} por página.
         </span>
         <span className="badge text-bg-light align-self-start align-self-md-center">
-          Mais recentes primeiro
+          Validação comercial no topo · depois mais recentes
         </span>
       </div>
       <div className="table-responsive">
@@ -318,8 +360,8 @@ export default function ExperimentListPage() {
               <th>Nicho</th>
               <th>Hipótese</th>
               <th>Tempo médio sessão</th>
-              <th>Custo</th>
               <th>Status</th>
+              <th className="text-end">Custo e receita</th>
               <th>Botões/Ações</th>
             </tr>
           </thead>
@@ -327,10 +369,17 @@ export default function ExperimentListPage() {
             {paginated.map((e) => {
               const canStop = e.status === "RUNNING";
               const canReactivate = REACTIVATABLE_STATUSES.has(e.status);
+              const isCommercialValidation =
+                isCommercialValidationExperiment(e);
               const isStopping = stoppingExperimentId === String(e.id);
               const isRetrying = retryingExperimentId === String(e.id);
               return (
-                <tr key={e.id}>
+                <tr
+                  key={e.id}
+                  className={
+                    isCommercialValidation ? "table-success" : undefined
+                  }
+                >
                   <td className="text-nowrap">{e.id}</td>
                   <td>
                     <div className="d-flex flex-column gap-1">
@@ -338,6 +387,11 @@ export default function ExperimentListPage() {
                       {e.creationSource === "MANUAL_FLOW" ? (
                         <span className="badge text-bg-warning align-self-start">
                           Fluxo manual
+                        </span>
+                      ) : null}
+                      {isCommercialValidation ? (
+                        <span className="badge text-bg-success align-self-start">
+                          Validação comercial
                         </span>
                       ) : null}
                     </div>
@@ -351,8 +405,7 @@ export default function ExperimentListPage() {
                     <div className="d-flex flex-column gap-1 text-nowrap">
                       <span>
                         {formatDurationMs(
-                          e.sessionDurationSummary
-                            ?.averageVisibleMsPerSession,
+                          e.sessionDurationSummary?.averageVisibleMsPerSession,
                         )}
                       </span>
                       {e.sessionDurationSummary?.variants?.length ? (
@@ -373,8 +426,18 @@ export default function ExperimentListPage() {
                       ) : null}
                     </div>
                   </td>
-                  <td>{formatCurrency(resolveExperimentCost(e))}</td>
                   <td>{e.status}</td>
+                  <td className="text-end">
+                    <div className="d-flex flex-column gap-1">
+                      <span className="fw-semibold">
+                        Custo: {formatCurrencyPair(resolveExperimentCost(e))}
+                      </span>
+                      <span className="text-success fw-semibold">
+                        Receita:{" "}
+                        {formatCurrencyPair(resolveExperimentRevenue(e))}
+                      </span>
+                    </div>
+                  </td>
                   <td>
                     <Link
                       className="btn btn-sm btn-outline-primary"
@@ -449,7 +512,9 @@ export default function ExperimentListPage() {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h2 className="modal-title h5">Retornar experimento à atividade</h2>
+                <h2 className="modal-title h5">
+                  Retornar experimento à atividade
+                </h2>
                 <button
                   type="button"
                   className="btn-close"
@@ -470,7 +535,9 @@ export default function ExperimentListPage() {
                   rows={4}
                   maxLength={1024}
                   value={reactivationReason}
-                  onChange={(event) => setReactivationReason(event.target.value)}
+                  onChange={(event) =>
+                    setReactivationReason(event.target.value)
+                  }
                 />
                 <div className="form-text">
                   Esse motivo fica registrado no histórico do experimento.

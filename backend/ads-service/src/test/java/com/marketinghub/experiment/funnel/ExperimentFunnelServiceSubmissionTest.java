@@ -7,6 +7,7 @@ import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +22,9 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -135,6 +138,32 @@ class ExperimentFunnelServiceSubmissionTest {
                 eq(ExperimentFunnelEventRepository.SUBMISSION_SOURCE),
                 eq(null),
                 eq(null));
+    }
+
+    /**
+     * Valida que a receita aprovada usa somente compras atribuídas ao escopo canônico do funil.
+     */
+    @Test
+    void approvedRevenueSumsApprovedPurchasesWithinFunnelScope() {
+        Experiment experiment = Experiment.builder().id(68L).build();
+        when(experimentRepository.findById(68L)).thenReturn(Optional.of(experiment));
+        when(jdbcTemplate.queryForObject(anyString(), eq(BigDecimal.class), eq(68L), eq(68L), eq(null), eq(null)))
+                .thenReturn(new BigDecimal("97.50"));
+
+        BigDecimal revenue = service.approvedRevenue(68L);
+
+        assertEquals(new BigDecimal("97.50"), revenue);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForObject(
+                sqlCaptor.capture(),
+                eq(BigDecimal.class),
+                eq(68L),
+                eq(68L),
+                eq(null),
+                eq(null));
+        String sql = sqlCaptor.getValue();
+        assertTrue(sql.contains("SUM(p.amount)"));
+        assertTrue(sql.contains("p.payment_approved_at IS NOT NULL OR p.mp_status = 'approved'"));
     }
 
     /**

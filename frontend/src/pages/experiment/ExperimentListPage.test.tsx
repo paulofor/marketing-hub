@@ -104,8 +104,10 @@ describe("ExperimentListPage", () => {
     expect(
       screen.getByRole("columnheader", { name: "Tempo médio sessão" }),
     ).toBeTruthy();
-    expect(screen.getByRole("columnheader", { name: "Custo" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Status" })).toBeTruthy();
+    expect(
+      screen.getByRole("columnheader", { name: "Custo e receita" }),
+    ).toBeTruthy();
     expect(
       screen.getByRole("columnheader", { name: "Botões/Ações" }),
     ).toBeTruthy();
@@ -133,11 +135,9 @@ describe("ExperimentListPage", () => {
       within(row as HTMLTableRowElement).getByText("Nicho Principal"),
     ).toBeTruthy();
     expect(
-      within(row as HTMLTableRowElement).getByText("R$ 1,00"),
+      within(row as HTMLTableRowElement).getByText("Custo: R$ 1,00 / US$ 0,20"),
     ).toBeTruthy();
-    expect(
-      within(row as HTMLTableRowElement).getByText("1m 34s"),
-    ).toBeTruthy();
+    expect(within(row as HTMLTableRowElement).getByText("1m 34s")).toBeTruthy();
   });
 
   it("shows session duration split by A/B variant when available", async () => {
@@ -207,11 +207,11 @@ describe("ExperimentListPage", () => {
     const row = (await screen.findByText("MPAE-H001-E001")).closest("tr");
 
     expect(row).not.toBeNull();
+    expect(within(row as HTMLTableRowElement).getByText("2m 00s")).toBeTruthy();
     expect(
-      within(row as HTMLTableRowElement).getByText("2m 00s"),
-    ).toBeTruthy();
-    expect(
-      within(row as HTMLTableRowElement).getByText("A:", { exact: false }),
+      within(row as HTMLTableRowElement).getByText(
+        (_, node) => node?.textContent === "A: 1m 30s",
+      ),
     ).toBeTruthy();
     expect(
       within(row as HTMLTableRowElement).getByText("1m 30s", {
@@ -219,7 +219,9 @@ describe("ExperimentListPage", () => {
       }),
     ).toBeTruthy();
     expect(
-      within(row as HTMLTableRowElement).getByText("B:", { exact: false }),
+      within(row as HTMLTableRowElement).getByText(
+        (_, node) => node?.textContent === "B: 2m 30s",
+      ),
     ).toBeTruthy();
     expect(
       within(row as HTMLTableRowElement).getByText("2m 30s", {
@@ -296,10 +298,14 @@ describe("ExperimentListPage", () => {
     expect(row2).not.toBeNull();
     expect(row1).not.toBeNull();
     expect(
-      within(row2 as HTMLTableRowElement).getByText("R$ 33,18"),
+      within(row2 as HTMLTableRowElement).getByText(
+        "Custo: R$ 33,18 / US$ 6,64",
+      ),
     ).toBeTruthy();
     expect(
-      within(row1 as HTMLTableRowElement).getByText("R$ 66,63"),
+      within(row1 as HTMLTableRowElement).getByText(
+        "Custo: R$ 66,63 / US$ 13,33",
+      ),
     ).toBeTruthy();
     expect(screen.queryByText("R$ 99,81")).toBeNull();
   });
@@ -356,11 +362,87 @@ describe("ExperimentListPage", () => {
 
     expect(row).not.toBeNull();
     expect(
-      within(row as HTMLTableRowElement).getByText("R$ 0,08"),
+      within(row as HTMLTableRowElement).getByText("Custo: R$ 0,08 / US$ 0,02"),
     ).toBeTruthy();
     expect(
       within(row as HTMLTableRowElement).queryByText("R$ 0,00"),
     ).toBeNull();
+  });
+
+  it("prioritizes experiments in commercial validation and highlights cost and revenue in BRL and USD", async () => {
+    const experiments = [
+      {
+        id: "80",
+        nicheId: 10,
+        hypothesisId: "hypothesis-80",
+        name: "Experimento recente planejado",
+        hypothesis: "Hipótese planejada",
+        cost: 10,
+        revenue: 0,
+        startDate: "2026-07-24",
+        endDate: null,
+        creativeApproved: false,
+        status: "PLANNED",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-24T00:00:00Z",
+        updatedAt: "2026-07-24T00:00:00Z",
+      },
+      {
+        id: "70",
+        nicheId: 10,
+        hypothesisId: "hypothesis-70",
+        name: "Experimento em validação",
+        hypothesis: "Hipótese em execução",
+        cost: 25,
+        revenue: 100,
+        startDate: "2026-07-20",
+        endDate: null,
+        creativeApproved: true,
+        status: "RUNNING",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-20T00:00:00Z",
+        updatedAt: "2026-07-20T00:00:00Z",
+      },
+    ];
+
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments")
+        return Promise.resolve({ data: experiments });
+      if (url === "/api/niches") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 10,
+              name: "Nicho Principal",
+              description: "",
+              demandVolume: "",
+              promises: "",
+              offers: "",
+              baseSegmentation: "",
+              interests: "",
+              demographicFilters: "",
+              extraTips: "",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+
+    const table = await screen.findByRole("table");
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(within(rows[0]).getByText("Experimento em validação")).toBeTruthy();
+    expect(within(rows[0]).getByText("Validação comercial")).toBeTruthy();
+    expect(
+      within(rows[0]).getByText("Custo: R$ 25,00 / US$ 5,00"),
+    ).toBeTruthy();
+    expect(
+      within(rows[0]).getByText("Receita: R$ 100,00 / US$ 20,00"),
+    ).toBeTruthy();
   });
 
   it("reactivates a stopped experiment with a registered reason", async () => {
@@ -420,13 +502,9 @@ describe("ExperimentListPage", () => {
     ).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Reativar" }));
 
-    expect(axios.post).toHaveBeenCalledWith(
-      "/api/experiments/67/reactivate",
-      {
-        reason:
-          "Retomar o Experimento 67 para medir a versão atual do PDE Musa em produção como novo ciclo dentro do mesmo aprendizado.",
-      },
-    );
+    expect(axios.post).toHaveBeenCalledWith("/api/experiments/67/reactivate", {
+      reason:
+        "Retomar o Experimento 67 para medir a versão atual do PDE Musa em produção como novo ciclo dentro do mesmo aprendizado.",
+    });
   });
-
 });

@@ -17,9 +17,7 @@ export interface InstagramAccountSummary {
 
 export type ExperimentStage = "AD" | "LANDING" | "SAMPLE" | "SALES";
 export type ExperimentType =
-  | "NICHE_TEST"
-  | "LOW_TICKET_PRODUCT"
-  | "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  "NICHE_TEST" | "LOW_TICKET_PRODUCT" | "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
 export type ExperimentCreationSource = "SYSTEM_FLOW" | "MANUAL_FLOW";
 export type ProductAiSubtype =
   | "AI_VISUAL_PREVIEW"
@@ -61,6 +59,7 @@ export interface ExperimentCampaignMetric {
   clicks?: number | null;
   leads?: number | null;
   spend?: number | null;
+  revenue?: number | null;
   cpc?: number | null;
   cpl?: number | null;
   lastSyncedAt?: string | null;
@@ -134,6 +133,7 @@ export interface Experiment {
   unitPrice?: number | null;
   cost?: number | null;
   totalCost?: number | null;
+  revenue?: number | null;
   auditableTotalCost?: number | null;
   legacyTotalCost?: number | null;
   unreconciledLegacyCost?: number | null;

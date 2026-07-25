@@ -86,6 +86,11 @@ describe("ProductListPage", () => {
       name: /Imagens Para Vídeos/i,
     });
     expect(videoImagesLink).toHaveAttribute("href", "/products/1/video-images");
+
+    const financialLink = screen.getByRole("link", {
+      name: /Financeiro/i,
+    });
+    expect(financialLink).toHaveAttribute("href", "/products/1/financial");
   });
 
   it("shows empty state when there are no products", async () => {

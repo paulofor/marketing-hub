@@ -18,7 +18,7 @@
 
 .creative-video-review-page__summary {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -40,7 +40,8 @@
 .creative-video-review-page__metric strong {
   display: block;
   margin-top: 0.25rem;
-  font-size: 1.45rem;
+  overflow-wrap: anywhere;
+  font-size: 1.2rem;
 }
 
 .creative-video-review-page__toolbar {

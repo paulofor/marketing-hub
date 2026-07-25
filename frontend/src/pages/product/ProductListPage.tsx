@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
 import {
   GitBranch,
+  CircleDollarSign,
   Eye,
   Image as ImageIcon,
   Loader2,
@@ -351,6 +352,13 @@ export default function ProductListPage() {
                       >
                         <ImageIcon size={16} aria-hidden="true" />
                         Imagens Para Vídeos
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/products/${product.id}/financial`}
+                      >
+                        <CircleDollarSign size={16} aria-hidden="true" />
+                        Financeiro
                       </Link>
                       {showPdeJourneyAction && (
                         <Link

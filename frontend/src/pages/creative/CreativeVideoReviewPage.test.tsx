@@ -33,6 +33,7 @@ afterEach(() => {
 
 describe("CreativeVideoReviewPage", () => {
   it("mostra totais gerais da fila mesmo quando o filtro pendente esta vazio", async () => {
+    const createdAt = new Date().toISOString();
     mockedAxiosGet.mockImplementation(async (_url: string, config?: AxiosRequestConfig) => {
       const status = config?.params?.status;
       if (status === "DRAFT") {
@@ -56,6 +57,7 @@ describe("CreativeVideoReviewPage", () => {
             status: "REJECTED",
             rejectionReason: "A legenda ta ruim",
             reviewedAt: "2026-07-25T15:10:00Z",
+            createdAt,
             videoCostUsd: 0.08,
             audioCostUsd: 0.02,
             totalProductionCostUsd: 0.1,
@@ -76,6 +78,7 @@ describe("CreativeVideoReviewPage", () => {
             status: "REJECTED",
             rejectionReason: "O audio esta em ingles",
             reviewedAt: "2026-07-25T15:20:00Z",
+            createdAt,
             videoCostUsd: 0.05,
             totalProductionCostUsd: 0.05,
           },
@@ -88,7 +91,10 @@ describe("CreativeVideoReviewPage", () => {
     const summary = await screen.findByLabelText("Resumo da fila");
     await waitFor(() => {
       expect(within(summary).getByText("Reprovados").nextElementSibling).toHaveTextContent("2");
-      expect(within(summary).getByText("Custo reprovado").nextElementSibling).toHaveTextContent(/US\$\s*0,1500/);
+      expect(within(summary).getByText("Custo total").nextElementSibling).toHaveTextContent(/US\$\s*0,1500.*R\$\s*0,75/);
+      expect(within(summary).getByText("Custo mês").nextElementSibling).toHaveTextContent(/US\$\s*0,1500.*R\$\s*0,75/);
+      expect(within(summary).getByText("Custo ano").nextElementSibling).toHaveTextContent(/US\$\s*0,1500.*R\$\s*0,75/);
+      expect(within(summary).getByText("Custo reprovado").nextElementSibling).toHaveTextContent(/US\$\s*0,1500.*R\$\s*0,75/);
     });
     expect(screen.getByText("Nenhum vídeo encontrado para este filtro.")).toBeInTheDocument();
   });

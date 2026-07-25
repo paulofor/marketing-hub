@@ -31,6 +31,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
@@ -95,6 +96,26 @@ public class ExperimentFunnelService {
                 .filter(stage -> shouldExposeStage(experiment, stage.getStage()))
                 .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
                 .toList();
+    }
+
+    /**
+     * Soma a receita aprovada atribuida ao experimento dentro do escopo canônico do funil.
+     */
+    public BigDecimal approvedRevenue(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+        Instant baseline = resolveBaseline(experiment);
+        BigDecimal revenue = jdbcTemplate.queryForObject("""
+                SELECT COALESCE(SUM(p.amount), 0)
+                FROM lead_portal_purchase p
+                JOIN flow_submissions s ON s.id = p.submission_id
+                JOIN lead_portal_flow f ON f.slug = s.flow_slug
+                WHERE %s
+                  AND (p.payment_approved_at IS NOT NULL OR p.mp_status = 'approved')
+                  AND (? IS NULL OR COALESCE(p.payment_approved_at, p.updated_at) > ?)
+                """.formatted(FLOW_SCOPE_CONDITION),
+                BigDecimal.class,
+                experimentId, experimentId, baseline, baseline);
+        return revenue != null ? revenue : BigDecimal.ZERO;
     }
 
     /**

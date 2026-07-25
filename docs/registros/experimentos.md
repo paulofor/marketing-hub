@@ -6076,3 +6076,18 @@
 - foi feito: a tela `/creative-video-review` passou a carregar a fila geral para os cards de resumo, mantendo a lista de vídeos filtrada pela aba selecionada.
 - prevenção: adicionado teste de frontend garantindo que o resumo mostre dois reprovados mesmo quando o filtro de pendentes está vazio.
 - impacto comercial esperado: deixar reprovações humanas visíveis como aprendizado operacional antes de pedir novos vídeos ou liberar criativos para campanha.
+
+## 2026-07-25 — Criativos de vídeo: custo mensal e anual em USD/BRL
+
+- foi feito: a tela `/creative-video-review` passou a mostrar custo total, custo do mês, custo do ano e custo reprovado em USD e BRL.
+- foi feito: o contrato de revisão de vídeo passou a expor `createdAt` para apurar mês/ano pela data do ativo produzido, com fallback visual para `reviewedAt` em criativos legados.
+- regra usada: conversão fixa de `1 USD = 5 BRL`, alinhada à regra canônica vigente para custos técnicos de IA.
+- impacto comercial esperado: dar visão rápida do investimento de produção em vídeo e do desperdício por reprovação, facilitando controle de orçamento antes de novas campanhas.
+
+## 2026-07-25 — Experimento 69: substituição do vídeo obrigatório
+
+- foi feito: o vídeo `experiment_video_asset.id=18` do experimento 69 deixou de ser obrigatório para liberação, mantendo o vídeo `id=22` como obrigatório, `READY`, `APPROVED`, com áudio e URL pública.
+- foi feito: a variante B do teste A/B (`HUMAN_VIDEO`) foi vinculada ao vídeo `id=22`, substituindo o vínculo anterior com o vídeo `id=11` reprovado.
+- validação operacional: após a troca, o Facebook Ads Worker consumiu o experimento e publicou campanha, adset e anúncio ativos para `69 - MUSA-H001-E007`.
+- causa-raiz técnica observada: o PATCH parcial de vídeo revalida duração do provider VEO mesmo quando a alteração solicitada é apenas `requiredForRelease`; para concluir a ação pelo endpoint oficial, foi necessário enviar `durationSeconds=8` no vídeo falho substituído.
+- impacto comercial esperado: destravar a publicação paga do teste de vídeo hero sem remover o ativo aprovado que mede a hipótese principal do PDE MUSA.

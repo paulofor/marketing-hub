@@ -21,6 +21,9 @@ import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
+import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
@@ -36,8 +39,13 @@ import com.marketinghub.storage.AssetUploadContext;
 import com.marketinghub.storage.StorageException;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.text.NumberFormat;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +53,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -64,6 +73,8 @@ public class ProductService {
   private final ImageGeneratorService imageGeneratorService;
   private final AssetStorageService assetStorageService;
   private final ObjectMapper objectMapper;
+  private final JdbcTemplate jdbcTemplate;
+  private static final BigDecimal BRL_PER_USD = new BigDecimal("5.00");
 
   /** Inicializa o serviço com os repositórios necessários para cadastro de produtos. */
   public ProductService(
@@ -75,7 +86,8 @@ public class ProductService {
       ProductVideoProviderAvatarRepository productVideoProviderAvatarRepository,
       ImageGeneratorService imageGeneratorService,
       AssetStorageService assetStorageService,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      JdbcTemplate jdbcTemplate) {
     this.repository = repository;
     this.accountRepository = accountRepository;
     this.marketNicheRepository = marketNicheRepository;
@@ -85,12 +97,15 @@ public class ProductService {
     this.imageGeneratorService = imageGeneratorService;
     this.assetStorageService = assetStorageService;
     this.objectMapper = objectMapper;
+    this.jdbcTemplate = jdbcTemplate;
   }
 
   /** Lista personagens de vídeo cadastrados por provider para um produto. */
   @Transactional(readOnly = true)
   public List<ProductVideoProviderAvatarDto> listVideoProviderAvatars(Long productId) {
-    return productVideoProviderAvatarRepository.findByProductIdOrderByCreatedAtDesc(productId).stream()
+    return productVideoProviderAvatarRepository
+        .findByProductIdOrderByCreatedAtDesc(productId)
+        .stream()
         .map(this::toProductVideoProviderAvatarDto)
         .toList();
   }
@@ -105,19 +120,24 @@ public class ProductService {
         assetRepository
             .findById(sourceAssetId)
             .orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset fonte não encontrado."));
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Asset fonte não encontrado."));
     if (sourceAsset.getType() != AssetType.IMAGE || sourceAsset.getStatus() != AssetStatus.READY) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Avatar de vídeo exige asset IMAGE em status READY.");
     }
     String provider = normalizeRequired(request.provider(), "Informe o provider do avatar.");
-    String characterName = normalizeRequired(request.characterName(), "Informe o nome da personagem.");
-    String sourceImageUrl = normalizeRequired(
-        Optional.ofNullable(request.sourceImageUrl()).orElse(sourceAsset.getUrl()),
-        "Informe a URL pública da imagem fonte.");
+    String characterName =
+        normalizeRequired(request.characterName(), "Informe o nome da personagem.");
+    String sourceImageUrl =
+        normalizeRequired(
+            Optional.ofNullable(request.sourceImageUrl()).orElse(sourceAsset.getUrl()),
+            "Informe a URL pública da imagem fonte.");
     ProductVideoProviderAvatar avatar =
         productVideoProviderAvatarRepository
-            .findFirstByProductIdAndProviderIgnoreCaseAndSourceAssetId(productId, provider, sourceAssetId)
+            .findFirstByProductIdAndProviderIgnoreCaseAndSourceAssetId(
+                productId, provider, sourceAssetId)
             .orElseGet(ProductVideoProviderAvatar::new);
     avatar.setProduct(product);
     avatar.setSourceAsset(sourceAsset);
@@ -229,6 +249,221 @@ public class ProductService {
         .map(image -> saveGeneratedVideoImage(product, prompt, image))
         .map(this::toProductVideoImageDto)
         .toList();
+  }
+
+  /** Consolida custos, receitas e lucro do produto para a tela financeira. */
+  @Transactional(readOnly = true)
+  public ProductFinancialSummaryResponse getFinancialSummary(Long productId) {
+    Product product = getProduct(productId);
+    Instant now = Instant.now();
+    Instant monthStart =
+        LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+    Instant yearStart =
+        LocalDate.now(ZoneOffset.UTC).withDayOfYear(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+    Long marketNicheId = product.getMarketNiche() != null ? product.getMarketNiche().getId() : null;
+
+    ProductFinancialLineResponse videoProduction =
+        costLine(
+            "VIDEO_PRODUCTION",
+            "Produção de vídeo",
+            videoCostUsd(marketNicheId, monthStart, now),
+            videoCostUsd(marketNicheId, yearStart, now),
+            "Soma de cost + audio_cost dos vídeos de experimentos do mesmo nicho do produto.");
+    ProductFinancialLineResponse media =
+        brlCostLine(
+            "MEDIA",
+            "Mídia paga",
+            mediaCostBrl(marketNicheId, monthStart, now),
+            mediaCostBrl(marketNicheId, yearStart, now),
+            "Soma de spend em experiment_campaign_metric para experimentos do mesmo nicho do produto.");
+    ProductFinancialLineResponse pdeProduction =
+        brlCostLine(
+            "PDE_PRODUCTION",
+            "Produção do próprio PDE",
+            productLevelPdeCost(product),
+            productLevelPdeCost(product),
+            "Valor ai_cost registrado no cadastro do produto.");
+    ProductFinancialLineResponse otherCosts =
+        brlCostLine(
+            "OTHER",
+            "Outros custos",
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            "Nenhum custo adicional categorizado foi localizado no contrato atual.");
+
+    ProductFinancialLineResponse revenue =
+        brlRevenueLine(
+            revenueBrl(marketNicheId, monthStart, now), revenueBrl(marketNicheId, yearStart, now));
+    ProductFinancialAmountResponse monthlyProfit =
+        subtract(
+            revenue.monthly(),
+            sumAmounts(
+                videoProduction.monthly(),
+                media.monthly(),
+                pdeProduction.monthly(),
+                otherCosts.monthly()));
+    ProductFinancialAmountResponse annualProfit =
+        subtract(
+            revenue.annual(),
+            sumAmounts(
+                videoProduction.annual(),
+                media.annual(),
+                pdeProduction.annual(),
+                otherCosts.annual()));
+    ProductFinancialLineResponse profit =
+        new ProductFinancialLineResponse(
+            "PROFIT",
+            "Lucro",
+            monthlyProfit,
+            annualProfit,
+            "Receitas aprovadas menos custos categorizados.");
+
+    return new ProductFinancialSummaryResponse(
+        product.getId(),
+        product.getName(),
+        product.getSlug(),
+        BRL_PER_USD,
+        monthStart,
+        yearStart,
+        List.of(videoProduction, media, pdeProduction, otherCosts),
+        revenue,
+        profit);
+  }
+
+  /** Monta uma linha de custo informada originalmente em dólares. */
+  private ProductFinancialLineResponse costLine(
+      String type, String label, BigDecimal monthlyUsd, BigDecimal annualUsd, String source) {
+    return new ProductFinancialLineResponse(
+        type, label, amountFromUsd(monthlyUsd), amountFromUsd(annualUsd), source);
+  }
+
+  /** Monta uma linha de custo informada originalmente em reais. */
+  private ProductFinancialLineResponse brlCostLine(
+      String type, String label, BigDecimal monthlyBrl, BigDecimal annualBrl, String source) {
+    return new ProductFinancialLineResponse(
+        type, label, amountFromBrl(monthlyBrl), amountFromBrl(annualBrl), source);
+  }
+
+  /** Monta a linha de receita do produto a partir das vendas aprovadas. */
+  private ProductFinancialLineResponse brlRevenueLine(BigDecimal monthlyBrl, BigDecimal annualBrl) {
+    return new ProductFinancialLineResponse(
+        "SALES",
+        "Receitas de vendas",
+        amountFromBrl(monthlyBrl),
+        amountFromBrl(annualBrl),
+        "Soma de lead_portal_purchase aprovado para experimentos do mesmo nicho do produto.");
+  }
+
+  /** Converte um valor em dólares para o par BRL/USD usado pela tela. */
+  private ProductFinancialAmountResponse amountFromUsd(BigDecimal usd) {
+    BigDecimal normalizedUsd = normalizeMoney(usd);
+    return new ProductFinancialAmountResponse(
+        normalizeMoney(normalizedUsd.multiply(BRL_PER_USD)), normalizedUsd);
+  }
+
+  /** Converte um valor em reais para o par BRL/USD usado pela tela. */
+  private ProductFinancialAmountResponse amountFromBrl(BigDecimal brl) {
+    BigDecimal normalizedBrl = normalizeMoney(brl);
+    return new ProductFinancialAmountResponse(
+        normalizedBrl, normalizeMoney(normalizedBrl.divide(BRL_PER_USD, 2, RoundingMode.HALF_UP)));
+  }
+
+  /** Soma valores financeiros já normalizados em reais e dólares. */
+  private ProductFinancialAmountResponse sumAmounts(ProductFinancialAmountResponse... amounts) {
+    BigDecimal brl = BigDecimal.ZERO;
+    BigDecimal usd = BigDecimal.ZERO;
+    for (ProductFinancialAmountResponse amount : amounts) {
+      brl = brl.add(Optional.ofNullable(amount.brl()).orElse(BigDecimal.ZERO));
+      usd = usd.add(Optional.ofNullable(amount.usd()).orElse(BigDecimal.ZERO));
+    }
+    return new ProductFinancialAmountResponse(normalizeMoney(brl), normalizeMoney(usd));
+  }
+
+  /** Subtrai custos da receita para obter lucro. */
+  private ProductFinancialAmountResponse subtract(
+      ProductFinancialAmountResponse revenue, ProductFinancialAmountResponse costs) {
+    return new ProductFinancialAmountResponse(
+        normalizeMoney(revenue.brl().subtract(costs.brl())),
+        normalizeMoney(revenue.usd().subtract(costs.usd())));
+  }
+
+  /** Normaliza valores monetários para duas casas decimais. */
+  private BigDecimal normalizeMoney(BigDecimal amount) {
+    return Optional.ofNullable(amount).orElse(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+  }
+
+  /** Soma custos de vídeo em dólares por período para o nicho do produto. */
+  private BigDecimal videoCostUsd(Long marketNicheId, Instant start, Instant end) {
+    if (marketNicheId == null) {
+      return BigDecimal.ZERO;
+    }
+    return queryBigDecimal(
+        """
+        SELECT COALESCE(SUM(COALESCE(v.cost, 0) + COALESCE(v.audio_cost, 0)), 0)
+        FROM experiment_video_asset v
+        JOIN experiment e ON e.id = v.experiment_id
+        WHERE e.niche_id = ?
+          AND v.created_at >= ?
+          AND v.created_at < ?
+        """,
+        marketNicheId,
+        Timestamp.from(start),
+        Timestamp.from(end));
+  }
+
+  /** Soma custos de mídia em reais por período para o nicho do produto. */
+  private BigDecimal mediaCostBrl(Long marketNicheId, Instant start, Instant end) {
+    if (marketNicheId == null) {
+      return BigDecimal.ZERO;
+    }
+    return queryBigDecimal(
+        """
+        SELECT COALESCE(SUM(COALESCE(m.spend, 0)), 0)
+        FROM experiment_campaign_metric m
+        JOIN experiment e ON e.id = m.experiment_id
+        WHERE e.niche_id = ?
+          AND (m.date_stop IS NULL OR m.date_stop >= ?)
+          AND (m.date_start IS NULL OR m.date_start <= ?)
+        """,
+        marketNicheId,
+        Date.valueOf(LocalDate.ofInstant(start, ZoneOffset.UTC)),
+        Date.valueOf(LocalDate.ofInstant(end, ZoneOffset.UTC)));
+  }
+
+  /** Retorna o custo de produção PDE registrado diretamente no produto. */
+  private BigDecimal productLevelPdeCost(Product product) {
+    return Optional.ofNullable(product.getAiCost()).orElse(BigDecimal.ZERO);
+  }
+
+  /** Soma receitas aprovadas em reais por período para o nicho do produto. */
+  private BigDecimal revenueBrl(Long marketNicheId, Instant start, Instant end) {
+    if (marketNicheId == null) {
+      return BigDecimal.ZERO;
+    }
+    return queryBigDecimal(
+        """
+        SELECT COALESCE(SUM(purchase.amount), 0)
+        FROM (
+            SELECT DISTINCT p.id, p.amount
+            FROM lead_portal_purchase p
+            JOIN flow_submissions s ON s.id = p.submission_id
+            JOIN lead_portal_flow f ON f.slug = s.flow_slug
+            JOIN experiment e ON (e.lead_portal_flow_id = f.id OR f.experiment_id = e.id)
+            WHERE e.niche_id = ?
+              AND (p.payment_approved_at IS NOT NULL OR p.mp_status = 'approved')
+              AND COALESCE(p.payment_approved_at, p.updated_at) >= ?
+              AND COALESCE(p.payment_approved_at, p.updated_at) < ?
+        ) purchase
+        """,
+        marketNicheId,
+        Timestamp.from(start),
+        Timestamp.from(end));
+  }
+
+  /** Executa consulta agregada e garante zero quando o banco não retorna valor. */
+  private BigDecimal queryBigDecimal(String sql, Object... args) {
+    BigDecimal value = jdbcTemplate.queryForObject(sql, BigDecimal.class, args);
+    return Optional.ofNullable(value).orElse(BigDecimal.ZERO);
   }
 
   /** Aplica os campos editáveis do cadastro comercial ao produto informado. */

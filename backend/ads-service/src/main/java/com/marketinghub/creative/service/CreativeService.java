@@ -424,7 +424,7 @@ public class CreativeService {
     }
 
     /**
-     * Converte o criativo de vídeo em contrato de revisão com hipótese e nicho.
+     * Converte o criativo de vídeo em contrato de revisão com hipótese, nicho e dados de custo.
      */
     private CreativeVideoReviewDto toVideoReviewDto(Creative creative) {
         Experiment experiment = creative.getExperiment();
@@ -455,6 +455,7 @@ public class CreativeService {
                 creative.getStatus(),
                 creative.getRejectionReason(),
                 creative.getReviewedAt(),
+                null,
                 creative.getCostUsd(),
                 null,
                 creative.getCostUsd(),
@@ -465,7 +466,7 @@ public class CreativeService {
     }
 
     /**
-     * Converte vídeo de experimento em item da fila única de aprovação comercial.
+     * Converte vídeo de experimento em item da fila única de aprovação comercial com data de criação.
      */
     private CreativeVideoReviewDto toVideoReviewDto(ExperimentVideoAsset videoAsset) {
         Experiment experiment = videoAsset.getExperiment();
@@ -496,6 +497,7 @@ public class CreativeService {
                 toCreativeStatus(videoAsset.getReviewStatus()),
                 videoAsset.getRejectionReason(),
                 videoAsset.getReviewedAt(),
+                videoAsset.getCreatedAt(),
                 videoAsset.getCost(),
                 videoAsset.getAudioCost(),
                 totalProductionCost(videoAsset.getCost(), videoAsset.getAudioCost()),

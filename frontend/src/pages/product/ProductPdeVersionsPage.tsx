@@ -1,11 +1,18 @@
 import { useState } from "react";
+import { useQueries } from "@tanstack/react-query";
+import axios from "axios";
 import { Link, useParams } from "react-router-dom";
 import {
   useProductPdeProductionSlots,
   useSaveProductPdeProductionSlot,
 } from "../../api/product/usePdeProductionSlots";
 import { useProduct } from "../../api/product/useProduct";
-import type { PdeProductionSlotStatus } from "../../api/experiment/usePostDeployMonitor";
+import type {
+  PdeProductionSlotStatus,
+  PostDeployMonitorResponse,
+  PostDeployPdeExperienceVersion,
+  PostDeployPdeProductionSlot,
+} from "../../api/experiment/usePostDeployMonitor";
 import PageTitle from "../../components/PageTitle";
 
 const statusLabels: Record<PdeProductionSlotStatus, string> = {
@@ -36,6 +43,114 @@ function formatDate(value?: string | null) {
   });
 }
 
+function formatInteger(value?: number | null) {
+  return (value ?? 0).toLocaleString("pt-BR");
+}
+
+function formatPercent(value: number) {
+  return `${value.toLocaleString("pt-BR", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+  })}%`;
+}
+
+function formatDuration(milliseconds?: number | null) {
+  const totalSeconds = Math.round((milliseconds ?? 0) / 1000);
+  if (totalSeconds <= 0) return "0s";
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+}
+
+function dividePercent(value: number, total: number) {
+  return total > 0 ? (value / total) * 100 : 0;
+}
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+function findVersionMetrics(
+  monitor: PostDeployMonitorResponse | undefined,
+  slot: PostDeployPdeProductionSlot,
+) {
+  if (!monitor?.pde) return undefined;
+  return monitor.pde.experienceVersions.find(
+    (version) => version.experienceVersion === slot.experienceVersion,
+  );
+}
+
+function versionHasCommercialValidation(
+  slot: PostDeployPdeProductionSlot,
+  monitor: PostDeployMonitorResponse | undefined,
+) {
+  if (slot.status === "ACTIVE") return true;
+  if (!monitor) return false;
+  return (
+    (monitor.metaAds.impressions ?? 0) > 0 ||
+    (monitor.metaAds.clicks ?? 0) > 0 ||
+    monitor.pde.sessions > 0 ||
+    monitor.pde.pdeEntries > 0
+  );
+}
+
+function getMetricSessions(
+  metrics: PostDeployPdeExperienceVersion | undefined,
+  monitor: PostDeployMonitorResponse | undefined,
+) {
+  return metrics?.sessions ?? monitor?.pde.sessions ?? 0;
+}
+
+function getMetricEntries(
+  metrics: PostDeployPdeExperienceVersion | undefined,
+  monitor: PostDeployMonitorResponse | undefined,
+) {
+  return metrics?.pdeEntries ?? monitor?.pde.pdeEntries ?? 0;
+}
+
+function calculatePotentialScore(
+  metrics: PostDeployPdeExperienceVersion | undefined,
+  monitor: PostDeployMonitorResponse | undefined,
+) {
+  const sessions = getMetricSessions(metrics, monitor);
+  const entries = getMetricEntries(metrics, monitor);
+  const firstInteractionClicks =
+    metrics?.firstInteractionClicks ??
+    (monitor?.pde.presenceMapClicks ?? 0) + (monitor?.pde.diagnosticClicks ?? 0);
+  const loginStarted = metrics?.loginStarted ?? monitor?.pde.loginStarted ?? 0;
+  const paywallViewed = metrics?.paywallViewed ?? monitor?.pde.paywallViewed ?? 0;
+  const checkoutIntent = metrics?.checkoutIntent ?? monitor?.pde.checkoutStarted ?? 0;
+  const subscriptionApproved =
+    metrics?.subscriptionApproved ?? monitor?.pde.subscriptionApproved ?? 0;
+  const averageVisibleMs = monitor?.pde.averageVisibleMsPerSession ?? 0;
+
+  const volumeScore = clamp(sessions / 50, 0, 1) * 15;
+  const engagementScore = clamp(averageVisibleMs / 60_000, 0, 1) * 20;
+  const interactionScore = clamp(dividePercent(firstInteractionClicks, entries) / 35, 0, 1) * 20;
+  const loginScore = clamp(dividePercent(loginStarted, entries) / 15, 0, 1) * 15;
+  const paywallScore = clamp(dividePercent(paywallViewed, entries) / 8, 0, 1) * 15;
+  const checkoutScore = clamp(dividePercent(checkoutIntent, entries) / 3, 0, 1) * 10;
+  const purchaseScore = subscriptionApproved > 0 ? 5 : 0;
+
+  return Math.round(
+    volumeScore +
+      engagementScore +
+      interactionScore +
+      loginScore +
+      paywallScore +
+      checkoutScore +
+      purchaseScore,
+  );
+}
+
+function describePotential(score: number, sessions: number) {
+  if (sessions === 0) return "Sem tráfego";
+  if (score >= 70) return "Forte";
+  if (score >= 45) return "Promissor";
+  if (score >= 25) return "Fraco";
+  return "Baixo sinal";
+}
+
 export default function ProductPdeVersionsPage() {
   const { productId } = useParams();
   const productQuery = useProduct(productId);
@@ -43,6 +158,44 @@ export default function ProductPdeVersionsPage() {
   const saveSlot = useSaveProductPdeProductionSlot(productId);
   const product = productQuery.data;
   const slots = slotsQuery.data ?? [];
+  const sourceExperimentIds = Array.from(
+    new Set(slots.map((slot) => slot.sourceExperimentId).filter(Boolean)),
+  ) as number[];
+  const monitorQueries = useQueries({
+    queries: sourceExperimentIds.map((experimentId) => ({
+      queryKey: ["experiment", String(experimentId), "post-deploy-monitor", product?.slug],
+      enabled: Boolean(product?.slug),
+      refetchInterval: 60_000,
+      queryFn: async () => {
+        const { data } = await axios.get<PostDeployMonitorResponse>(
+          `/api/experiments/${experimentId}/post-deploy-monitor`,
+          { params: { productSlug: product?.slug } },
+        );
+        return data;
+      },
+    })),
+  });
+  const monitorsByExperimentId = new Map<number, PostDeployMonitorResponse>();
+  sourceExperimentIds.forEach((experimentId, index) => {
+    const monitor = monitorQueries[index]?.data;
+    if (monitor) {
+      monitorsByExperimentId.set(experimentId, monitor);
+    }
+  });
+  const sortedSlots = [...slots].sort((current, next) => {
+    const currentMonitor = current.sourceExperimentId
+      ? monitorsByExperimentId.get(current.sourceExperimentId)
+      : undefined;
+    const nextMonitor = next.sourceExperimentId
+      ? monitorsByExperimentId.get(next.sourceExperimentId)
+      : undefined;
+    const currentValidating = versionHasCommercialValidation(current, currentMonitor);
+    const nextValidating = versionHasCommercialValidation(next, nextMonitor);
+    if (currentValidating !== nextValidating) {
+      return currentValidating ? -1 : 1;
+    }
+    return current.slotCode.localeCompare(next.slotCode, "pt-BR", { numeric: true });
+  });
   const [form, setForm] = useState({
     slotCode: "v2",
     domain: "v2.clubemusa.com.br",
@@ -187,6 +340,11 @@ export default function ProductPdeVersionsPage() {
       <div className="card">
         <div className="card-body">
           <h2 className="h6 mb-3">Versões cadastradas</h2>
+          <p className="text-muted small mb-3">
+            Métricas priorizam sinais de potencial comercial: acesso e permanência
+            indicam atenção, mas interação, login, paywall, checkout e venda mostram
+            avanço real do desconhecimento para desejo de compra.
+          </p>
           <div className="table-responsive">
             <table className="table table-sm align-middle mb-0">
               <thead>
@@ -195,6 +353,11 @@ export default function ProductPdeVersionsPage() {
                   <th>Status</th>
                   <th>Versão PDE</th>
                   <th>URL pública</th>
+                  <th>Validação</th>
+                  <th>Acesso</th>
+                  <th>Permanência</th>
+                  <th>Avanço no funil</th>
+                  <th>Score</th>
                   <th>Ambiente alvo</th>
                   <th>Experimento origem</th>
                   <th className="text-end">Atualizado</th>
@@ -203,27 +366,94 @@ export default function ProductPdeVersionsPage() {
               <tbody>
                 {slots.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-muted">
+                    <td colSpan={12} className="text-muted">
                       Nenhuma versão PDE cadastrada para este produto.
                     </td>
                   </tr>
                 ) : (
-                  slots.map((slot) => (
-                    <tr key={slot.id}>
-                      <td className="fw-semibold">{slot.slotCode}</td>
-                      <td>{statusLabels[slot.status] ?? slot.status}</td>
-                      <td className="font-monospace small">{slot.experienceVersion}</td>
-                      <td>
-                        <a href={slot.publicUrl} target="_blank" rel="noreferrer">
-                          {slot.publicUrl}
-                        </a>
-                        <div className="small text-muted">{slot.domain}</div>
-                      </td>
-                      <td>{slot.targetEnvironment}</td>
-                      <td>{slot.sourceExperimentId ?? "—"}</td>
-                      <td className="text-end">{formatDate(slot.updatedAt)}</td>
-                    </tr>
-                  ))
+                  sortedSlots.map((slot) => {
+                    const monitor = slot.sourceExperimentId
+                      ? monitorsByExperimentId.get(slot.sourceExperimentId)
+                      : undefined;
+                    const metrics = findVersionMetrics(monitor, slot);
+                    const sessions = getMetricSessions(metrics, monitor);
+                    const entries = getMetricEntries(metrics, monitor);
+                    const firstInteractionClicks =
+                      metrics?.firstInteractionClicks ??
+                      (monitor?.pde.presenceMapClicks ?? 0) +
+                        (monitor?.pde.diagnosticClicks ?? 0);
+                    const loginStarted = metrics?.loginStarted ?? monitor?.pde.loginStarted ?? 0;
+                    const paywallViewed = metrics?.paywallViewed ?? monitor?.pde.paywallViewed ?? 0;
+                    const checkoutIntent =
+                      metrics?.checkoutIntent ?? monitor?.pde.checkoutStarted ?? 0;
+                    const subscriptionApproved =
+                      metrics?.subscriptionApproved ??
+                      monitor?.pde.subscriptionApproved ??
+                      0;
+                    const score = calculatePotentialScore(metrics, monitor);
+                    const validating = versionHasCommercialValidation(slot, monitor);
+
+                    return (
+                      <tr key={slot.id} className={validating ? "table-primary" : undefined}>
+                        <td className="fw-semibold">{slot.slotCode}</td>
+                        <td>{statusLabels[slot.status] ?? slot.status}</td>
+                        <td className="font-monospace small">{slot.experienceVersion}</td>
+                        <td>
+                          <a href={slot.publicUrl} target="_blank" rel="noreferrer">
+                            {slot.publicUrl}
+                          </a>
+                          <div className="small text-muted">{slot.domain}</div>
+                        </td>
+                        <td>
+                          {validating ? (
+                            <span className="badge text-bg-primary">Em validação</span>
+                          ) : slot.sourceExperimentId ? (
+                            <span className="badge text-bg-light">Sem tráfego</span>
+                          ) : (
+                            <span className="badge text-bg-secondary">Sem experimento</span>
+                          )}
+                        </td>
+                        <td>
+                          <div>{formatInteger(entries)} acessos</div>
+                          <div className="small text-muted">
+                            {formatInteger(sessions)} sessões
+                            {monitor?.pde.uniqueVisitors != null
+                              ? ` · ${formatInteger(monitor.pde.uniqueVisitors)} visitantes`
+                              : ""}
+                          </div>
+                        </td>
+                        <td>
+                          <div>{formatDuration(monitor?.pde.averageVisibleMsPerSession)}</div>
+                          <div className="small text-muted">
+                            Último evento {formatDate(monitor?.pde.lastEventAt)}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="small">
+                            Interação: {formatInteger(firstInteractionClicks)} (
+                            {formatPercent(dividePercent(firstInteractionClicks, entries))})
+                          </div>
+                          <div className="small">
+                            Login: {formatInteger(loginStarted)} · Paywall:{" "}
+                            {formatInteger(paywallViewed)}
+                          </div>
+                          <div className="small">
+                            Checkout: {formatInteger(checkoutIntent)} · Vendas:{" "}
+                            {formatInteger(subscriptionApproved)}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="fw-semibold">{score}/100</div>
+                          <div className="small text-muted">
+                            {describePotential(score, sessions)}
+                          </div>
+                        </td>
+                        <td>{slot.targetEnvironment}</td>
+                        <td>{slot.sourceExperimentId ?? "—"}</td>
+                        <td className="text-end">{formatDate(slot.updatedAt)}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

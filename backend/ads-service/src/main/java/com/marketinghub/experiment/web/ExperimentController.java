@@ -123,6 +123,7 @@ public class ExperimentController {
     private ExperimentDto toListDto(com.marketinghub.experiment.Experiment experiment) {
         ExperimentDto dto = mapper.toDto(experiment);
         dto.setSessionDurationSummary(buildSessionDurationSummary(experiment.getId()));
+        dto.setRevenue(funnelService.approvedRevenue(experiment.getId()));
         return dto;
     }
 

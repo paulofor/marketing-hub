@@ -181,6 +181,65 @@
   color: #172033;
 }
 
+.product-financial-summary {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.product-financial-summary__tile {
+  background: #ffffff;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+}
+
+.product-financial-summary__tile span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.product-financial-summary__tile strong {
+  color: #172033;
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.product-financial-summary__tile small {
+  color: #475569;
+}
+
+.product-financial-summary__tile--profit {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.product-financial-table th {
+  color: #64748b;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.product-financial-table td strong,
+.product-financial-table td small {
+  display: block;
+}
+
+.product-financial-table td small {
+  color: #64748b;
+}
+
+.product-financial-table__type {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.45rem;
+  font-weight: 700;
+}
+
 .product-video-image-gallery {
   display: grid;
   gap: 1rem;
@@ -490,6 +549,10 @@
   }
 
   .product-video-image-gallery__item {
+    grid-template-columns: 1fr;
+  }
+
+  .product-financial-summary {
     grid-template-columns: 1fr;
   }
 

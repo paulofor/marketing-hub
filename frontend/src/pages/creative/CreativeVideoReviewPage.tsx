@@ -38,6 +38,8 @@ const SOURCE_LABELS: Record<CreativeVideoReview["sourceType"], string> = {
   EXPERIMENT_VIDEO_ASSET: "Vídeo produzido",
 };
 
+const USD_TO_BRL_RATE = 5;
+
 const FUNNEL_SLOT_LABELS: Record<
   NonNullable<CreativeVideoReview["funnelSlot"]>,
   string
@@ -88,14 +90,26 @@ const usdFormatter = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 4,
 });
 
+const brlFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
 });
 
-function formatUsd(value: number | string | null | undefined) {
+function formatUsdWithBrl(value: number | string | null | undefined) {
   const numeric = toNumber(value);
-  return numeric == null ? "Não registrado" : usdFormatter.format(numeric);
+  if (numeric == null) {
+    return "Não registrado";
+  }
+  return `${usdFormatter.format(numeric)} · ${brlFormatter.format(
+    numeric * USD_TO_BRL_RATE,
+  )}`;
 }
 
 function formatDateTime(value: string | null | undefined) {
@@ -106,6 +120,36 @@ function formatDateTime(value: string | null | undefined) {
   return Number.isNaN(date.getTime())
     ? "Data inválida"
     : dateTimeFormatter.format(date);
+}
+
+function isInCurrentMonth(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+  const now = new Date();
+  return (
+    date.getUTCFullYear() === now.getUTCFullYear() &&
+    date.getUTCMonth() === now.getUTCMonth()
+  );
+}
+
+function isInCurrentYear(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+  return date.getUTCFullYear() === new Date().getUTCFullYear();
+}
+
+function costReferenceDate(video: CreativeVideoReview) {
+  return video.createdAt ?? video.reviewedAt;
 }
 
 export default function CreativeVideoReviewPage() {
@@ -134,6 +178,18 @@ export default function CreativeVideoReviewPage() {
     (sum, video) => sum + (toNumber(video.totalProductionCostUsd) ?? 0),
     0,
   );
+  const monthlyProductionCost = summaryVideos
+    .filter((video) => isInCurrentMonth(costReferenceDate(video)))
+    .reduce(
+      (sum, video) => sum + (toNumber(video.totalProductionCostUsd) ?? 0),
+      0,
+    );
+  const yearlyProductionCost = summaryVideos
+    .filter((video) => isInCurrentYear(costReferenceDate(video)))
+    .reduce(
+      (sum, video) => sum + (toNumber(video.totalProductionCostUsd) ?? 0),
+      0,
+    );
   const rejectedProductionCost = summaryVideos
     .filter((video) => video.status === "REJECTED")
     .reduce(
@@ -206,11 +262,19 @@ export default function CreativeVideoReviewPage() {
         </div>
         <div className="creative-video-review-page__metric">
           <span>Custo total</span>
-          <strong>{formatUsd(totalProductionCost)}</strong>
+          <strong>{formatUsdWithBrl(totalProductionCost)}</strong>
+        </div>
+        <div className="creative-video-review-page__metric">
+          <span>Custo mês</span>
+          <strong>{formatUsdWithBrl(monthlyProductionCost)}</strong>
+        </div>
+        <div className="creative-video-review-page__metric">
+          <span>Custo ano</span>
+          <strong>{formatUsdWithBrl(yearlyProductionCost)}</strong>
         </div>
         <div className="creative-video-review-page__metric">
           <span>Custo reprovado</span>
-          <strong>{formatUsd(rejectedProductionCost)}</strong>
+          <strong>{formatUsdWithBrl(rejectedProductionCost)}</strong>
         </div>
       </section>
 
@@ -358,15 +422,15 @@ export default function CreativeVideoReviewPage() {
                   <dl className="creative-video-review-page__costs">
                     <div>
                       <dt>Vídeo</dt>
-                      <dd>{formatUsd(video.videoCostUsd)}</dd>
+                      <dd>{formatUsdWithBrl(video.videoCostUsd)}</dd>
                     </div>
                     <div>
                       <dt>Áudio separado</dt>
-                      <dd>{formatUsd(video.audioCostUsd)}</dd>
+                      <dd>{formatUsdWithBrl(video.audioCostUsd)}</dd>
                     </div>
                     <div>
                       <dt>Total produção</dt>
-                      <dd>{formatUsd(video.totalProductionCostUsd)}</dd>
+                      <dd>{formatUsdWithBrl(video.totalProductionCostUsd)}</dd>
                     </div>
                   </dl>
 

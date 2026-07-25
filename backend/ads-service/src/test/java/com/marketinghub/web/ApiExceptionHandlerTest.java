@@ -47,4 +47,21 @@ class ApiExceptionHandlerTest {
             )
             .containsEntry("path", "/api/assets");
     }
+
+    @Test
+    void shouldReturnRequestIdWhenUnexpectedExceptionBecomesInternalServerError() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("POST");
+        request.setRequestURI("/api/creatives/10/reject");
+        request.addHeader("X-Request-Id", "req-500-creative");
+
+        var response = handler.handleUnexpectedException(new RuntimeException("Falha inesperada"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getBody())
+            .containsEntry("status", HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .containsEntry("message", "Erro interno ao processar a solicitação.")
+            .containsEntry("path", "/api/creatives/10/reject")
+            .containsEntry("requestId", "req-500-creative");
+    }
 }

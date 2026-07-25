@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,11 +18,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Responsabilidade: converter exceções HTTP globais em respostas consistentes e logs rastreáveis.
+ */
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+    /**
+     * Converte falhas conhecidas do módulo de vídeo em resposta HTTP padronizada.
+     */
     @ExceptionHandler(VideoModuleException.class)
     public ResponseEntity<Map<String, Object>> handleVideoModuleException(
         VideoModuleException exception,
@@ -31,6 +38,9 @@ public class ApiExceptionHandler {
             exception.getErrorCode().name());
     }
 
+    /**
+     * Converte ResponseStatusException em resposta HTTP preservando método e endpoint no log.
+     */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatusException(
         ResponseStatusException exception,
@@ -47,6 +57,9 @@ public class ApiExceptionHandler {
         return buildResponse(exception.getStatusCode(), exception.getReason(), request, null);
     }
 
+    /**
+     * Converte falhas de upload multipart em mensagem segura para o usuário.
+     */
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<Map<String, Object>> handleMultipartException(
         MultipartException exception,
@@ -66,6 +79,9 @@ public class ApiExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, message, request, null);
     }
 
+    /**
+     * Trata abortos de conexão assíncrona sem transformar desconexão do cliente em erro técnico.
+     */
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public ResponseEntity<Void> handleAsyncRequestNotUsableException(
         AsyncRequestNotUsableException exception,
@@ -91,11 +107,57 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+    /**
+     * Converte exceções não tratadas em HTTP 500 com requestId para rastreio pelo MCP.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleUnexpectedException(
+        Exception exception,
+        HttpServletRequest request
+    ) {
+        String requestId = resolveRequestId(request);
+        LOGGER.error(
+            "Erro HTTP 500 não tratado. requestId={} status=500 method={} endpoint={} uri={} query={} remoteAddr={} forwardedFor={} userAgent={}",
+            requestId,
+            request.getMethod(),
+            request.getRequestURI(),
+            request.getRequestURI(),
+            request.getQueryString(),
+            request.getRemoteAddr(),
+            request.getHeader("X-Forwarded-For"),
+            request.getHeader("User-Agent"),
+            exception
+        );
+        return buildResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "Erro interno ao processar a solicitação.",
+            request,
+            null,
+            requestId
+        );
+    }
+
+    /**
+     * Monta a resposta HTTP padronizada sem requestId explícito.
+     */
     private ResponseEntity<Map<String, Object>> buildResponse(
         HttpStatusCode statusCode,
         String message,
         HttpServletRequest request,
         String errorCode
+    ) {
+        return buildResponse(statusCode, message, request, errorCode, null);
+    }
+
+    /**
+     * Monta a resposta HTTP padronizada incluindo requestId quando disponível.
+     */
+    private ResponseEntity<Map<String, Object>> buildResponse(
+        HttpStatusCode statusCode,
+        String message,
+        HttpServletRequest request,
+        String errorCode,
+        String requestId
     ) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", OffsetDateTime.now());
@@ -109,14 +171,34 @@ public class ApiExceptionHandler {
         if (errorCode != null) {
             body.put("errorCode", errorCode);
         }
+        if (requestId != null) {
+            body.put("requestId", requestId);
+        }
         return ResponseEntity.status(statusCode).body(body);
     }
 
+    /**
+     * Localiza a causa mais específica de uma exceção encadeada.
+     */
     private Throwable getMostSpecificCause(Throwable throwable) {
         Throwable root = throwable;
         while (root != null && root.getCause() != null && root.getCause() != root) {
             root = root.getCause();
         }
         return root;
+    }
+
+    /**
+     * Resolve ou cria o identificador usado para rastrear a requisição nos logs.
+     */
+    private String resolveRequestId(HttpServletRequest request) {
+        String requestId = request.getHeader("X-Request-Id");
+        if (requestId == null || requestId.isBlank()) {
+            requestId = request.getHeader("X-Correlation-Id");
+        }
+        if (requestId == null || requestId.isBlank()) {
+            requestId = UUID.randomUUID().toString();
+        }
+        return requestId;
     }
 }

@@ -199,6 +199,12 @@ public class McpController {
                                                     "maximum", moduleLogService.maxLines(),
                                                     "description", "Quantidade de linhas retornadas por página. Padrão: 200."),
                                             "contains", Map.of("type", "string", "description", "Filtra linhas que contenham este texto literal."),
+                                            "httpStatus", Map.of("type", "integer", "minimum", 100, "maximum", 599,
+                                                    "description", "Filtra linhas de erro HTTP pelo status registrado no log, ex.: 500."),
+                                            "endpoint", Map.of("type", "string",
+                                                    "description", "Filtra linhas pelo endpoint/URI registrado no log, ex.: /api/creatives."),
+                                            "requestId", Map.of("type", "string",
+                                                    "description", "Filtra linhas pelo requestId/correlationId registrado no log."),
                                             "from", Map.of("type", "string", "description", "Data/hora inicial ISO-8601 UTC (ex: 2026-05-21T04:35:00Z)."),
                                             "to", Map.of("type", "string", "description", "Data/hora final ISO-8601 UTC (ex: 2026-05-21T04:40:00Z)."),
                                             "offset", Map.of("type", "integer", "minimum", 0, "description", "Offset para paginação dentro do conjunto filtrado."),
@@ -474,20 +480,24 @@ public class McpController {
         String module = stringArgument(arguments, "module");
         Integer lines = intArgument(arguments, "lines");
         String contains = stringArgument(arguments, "contains");
+        Integer httpStatus = intArgument(arguments, "httpStatus");
+        String endpoint = stringArgument(arguments, "endpoint");
+        String requestId = stringArgument(arguments, "requestId");
         String from = stringArgument(arguments, "from");
         String to = stringArgument(arguments, "to");
         Integer offset = intArgument(arguments, "offset");
         String cursor = stringArgument(arguments, "cursor");
 
         try {
-            Map<String, Object> result = moduleLogService.readModuleLogs(module, lines, contains, from, to, offset, cursor);
+            Map<String, Object> result = moduleLogService.readModuleLogs(
+                    module, lines, contains, httpStatus, endpoint, requestId, from, to, offset, cursor);
             return successToolResult(id, result, buildJavaModuleLogsText(result));
         } catch (IllegalArgumentException ex) {
             logger.warn("MCP java_module_logs inválido: requestId={} module={} motivo={}", id, module, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
-            logger.error("Falha ao executar java_module_logs: requestId={} module={} lines={} contains={} from={} to={}",
-                    id, module, lines, contains, from, to, ex);
+            logger.error("Falha ao executar java_module_logs: requestId={} module={} lines={} contains={} httpStatus={} endpoint={} logRequestId={} from={} to={}",
+                    id, module, lines, contains, httpStatus, endpoint, requestId, from, to, ex);
             return error(id, -32603, "Failed to read module logs: " + ex.getMessage());
         }
     }

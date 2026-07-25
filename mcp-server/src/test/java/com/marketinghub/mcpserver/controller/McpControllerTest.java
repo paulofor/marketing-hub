@@ -112,7 +112,11 @@ class McpControllerTest {
 
         Files.createDirectories(TEST_LOG_DIR);
         Files.writeString(TEST_LOG_DIR.resolve("backend.log"),
-                "line-1\nline-2\nline-3\n",
+                "line-1\n"
+                        + "2026-07-25T21:07:00Z ERROR Erro HTTP 500 não tratado. requestId=req-500-creative status=500 method=POST endpoint=/api/creatives/10/reject uri=/api/creatives/10/reject\n"
+                        + "2026-07-25T21:08:00Z ERROR Erro HTTP 500 não tratado. requestId=req-500-other status=500 method=POST endpoint=/api/other uri=/api/other\n"
+                        + "line-2\n"
+                        + "line-3\n",
                 StandardCharsets.UTF_8);
         Files.writeString(TEST_LOG_DIR.resolve("mois-sales-library-worker.log"),
                 "mois-sales-library-worker-line-1\nmois-sales-library-worker-line-2\n",
@@ -426,6 +430,26 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
                 .andExpect(jsonPath("$.result.structuredContent.lines[0]").value("line-2"));
     }
+
+    /**
+     * Garante que a tool java_module_logs filtra erro HTTP por status, endpoint e requestId.
+     */
+    @Test
+    void shouldFilterJavaModuleLogsByHttpErrorContext() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":22,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"backend","lines":10,"httpStatus":500,"endpoint":"/api/creatives/10/reject","requestId":"req-500-creative"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.httpStatusFilter").value(500))
+                .andExpect(jsonPath("$.result.structuredContent.endpointFilter").value("/api/creatives/10/reject"))
+                .andExpect(jsonPath("$.result.structuredContent.requestIdFilter").value("req-500-creative"))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value(org.hamcrest.Matchers.containsString("requestId=req-500-creative")));
+    }
+
     /**
      * Garante que erros JSON-RPC preservam id nulo quando a requisição não informou id.
      */

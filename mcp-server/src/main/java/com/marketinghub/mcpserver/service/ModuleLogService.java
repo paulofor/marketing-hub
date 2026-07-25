@@ -59,14 +59,36 @@ public class ModuleLogService {
      * Lê os logs do módulo solicitado aplicando filtros de texto, período e paginação.
      */
     public Map<String, Object> readModuleLogs(String module, Integer requestedLines, String contains, String from, String to, Integer offset, String cursor) {
+        return readModuleLogs(module, requestedLines, contains, null, null, null, from, to, offset, cursor);
+    }
+
+    /**
+     * Lê os logs do módulo solicitado aplicando filtros estruturados de erro HTTP e paginação.
+     */
+    public Map<String, Object> readModuleLogs(
+            String module,
+            Integer requestedLines,
+            String contains,
+            Integer httpStatus,
+            String endpoint,
+            String requestId,
+            String from,
+            String to,
+            Integer offset,
+            String cursor) {
         String normalizedModule = normalizeModule(module);
         int lines = sanitizeLines(requestedLines);
+        validateHttpStatus(httpStatus);
         String configuredPath = modulePath(normalizedModule);
         if (!StringUtils.hasText(configuredPath)) throw new IllegalArgumentException("No log path configured for module: " + normalizedModule);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("module", normalizedModule);
-        if (isHttpUrl(configuredPath)) return readLogsFromUrl(configuredPath, lines, contains, from, to, offset, cursor, response);
+        if (isHttpUrl(configuredPath)) {
+            return readLogsFromUrl(
+                    configuredPath, lines, contains, httpStatus, endpoint, requestId, from, to, offset, cursor,
+                    response);
+        }
 
         Path path = Path.of(configuredPath);
         response.put("path", path.toString());
@@ -75,7 +97,9 @@ public class ModuleLogService {
             return response;
         }
         try (Stream<String> stream = Files.lines(path, StandardCharsets.UTF_8)) {
-            return buildFilteredResponse(stream.toList(), lines, contains, from, to, offset, cursor, response, Files.size(path));
+            return buildFilteredResponse(
+                    stream.toList(), lines, contains, httpStatus, endpoint, requestId, from, to, offset, cursor,
+                    response, Files.size(path));
         } catch (IOException ex) {
             logger.error("mcp-server readModuleLogs failed to read local log file for module={} path={}", normalizedModule, path, ex);
             throw new IllegalArgumentException("Failed to read log file: " + ex.getMessage());
@@ -85,7 +109,18 @@ public class ModuleLogService {
     /**
      * Busca logs em uma URL HTTP/HTTPS e monta a resposta filtrada.
      */
-    private Map<String, Object> readLogsFromUrl(String configuredUrl, int lines, String contains, String from, String to, Integer offset, String cursor, Map<String, Object> response) {
+    private Map<String, Object> readLogsFromUrl(
+            String configuredUrl,
+            int lines,
+            String contains,
+            Integer httpStatus,
+            String endpoint,
+            String requestId,
+            String from,
+            String to,
+            Integer offset,
+            String cursor,
+            Map<String, Object> response) {
         response.put("path", configuredUrl); response.put("source", "http");
         HttpRequest request = buildTailRequest(configuredUrl, true);
         List<String> errors = new ArrayList<>();
@@ -98,7 +133,9 @@ public class ModuleLogService {
                 httpResponse = fullResponse;
             }
             if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) throw new IllegalArgumentException("Failed to read log stream URL: HTTP " + httpResponse.statusCode() + " | attempts: " + String.join(" | ", errors));
-            return buildFilteredResponse(httpResponse.body().lines().toList(), lines, contains, from, to, offset, cursor, response, null);
+            return buildFilteredResponse(
+                    httpResponse.body().lines().toList(), lines, contains, httpStatus, endpoint, requestId, from, to,
+                    offset, cursor, response, null);
         } catch (IOException | InterruptedException ex) {
             if (ex instanceof InterruptedException) Thread.currentThread().interrupt();
             logger.error("mcp-server readLogsFromUrl failed to read log stream url={} attempts={}", configuredUrl, errors, ex);
@@ -109,9 +146,28 @@ public class ModuleLogService {
     /**
      * Constrói a resposta final após aplicar filtros e resolver a janela de paginação.
      */
-    private Map<String, Object> buildFilteredResponse(List<String> allLines, int lines, String contains, String from, String to, Integer offset, String cursor, Map<String, Object> response, Long sizeBytes) {
-        List<String> filtered = applyFilters(allLines, contains, from, to);
-        boolean defaultTailMode = !StringUtils.hasText(contains) && !StringUtils.hasText(from) && !StringUtils.hasText(to) && offset == null && !StringUtils.hasText(cursor);
+    private Map<String, Object> buildFilteredResponse(
+            List<String> allLines,
+            int lines,
+            String contains,
+            Integer httpStatus,
+            String endpoint,
+            String requestId,
+            String from,
+            String to,
+            Integer offset,
+            String cursor,
+            Map<String, Object> response,
+            Long sizeBytes) {
+        List<String> filtered = applyFilters(allLines, contains, httpStatus, endpoint, requestId, from, to);
+        boolean defaultTailMode = !StringUtils.hasText(contains)
+                && httpStatus == null
+                && !StringUtils.hasText(endpoint)
+                && !StringUtils.hasText(requestId)
+                && !StringUtils.hasText(from)
+                && !StringUtils.hasText(to)
+                && offset == null
+                && !StringUtils.hasText(cursor);
         int resolvedOffset = defaultTailMode ? Math.max(0, filtered.size() - lines) : resolveOffset(offset, cursor);
         if (resolvedOffset < 0 || resolvedOffset > filtered.size()) throw new IllegalArgumentException("offset must be between 0 and " + filtered.size());
         int end = Math.min(filtered.size(), resolvedOffset + lines);
@@ -120,6 +176,9 @@ public class ModuleLogService {
         if (sizeBytes != null) response.put("sizeBytes", sizeBytes);
         response.put("requestedLines", lines); response.put("returnedLines", page.size()); response.put("totalFilteredLines", filtered.size()); response.put("offset", resolvedOffset);
         response.put("contains", contains == null ? "" : contains); response.put("from", from == null ? "" : from); response.put("to", to == null ? "" : to);
+        response.put("httpStatusFilter", httpStatus == null ? "" : httpStatus);
+        response.put("endpointFilter", endpoint == null ? "" : endpoint);
+        response.put("requestIdFilter", requestId == null ? "" : requestId);
         response.put("lines", page);
         response.put("nextCursor", end < filtered.size() ? Base64.getEncoder().encodeToString(("offset:" + end).getBytes(StandardCharsets.UTF_8)) : "");
         return response;
@@ -128,16 +187,73 @@ public class ModuleLogService {
     /**
      * Aplica filtros opcionais por texto literal e intervalo ISO-8601.
      */
-    private List<String> applyFilters(List<String> lines, String contains, String from, String to) {
+    private List<String> applyFilters(
+            List<String> lines,
+            String contains,
+            Integer httpStatus,
+            String endpoint,
+            String requestId,
+            String from,
+            String to) {
         Instant fromTs = parseInstant(from, "from"); Instant toTs = parseInstant(to, "to");
         return lines.stream().filter(line -> {
             if (StringUtils.hasText(contains) && !line.contains(contains)) return false;
+            if (httpStatus != null && !lineMatchesHttpStatus(line, httpStatus)) return false;
+            if (StringUtils.hasText(endpoint) && !lineMatchesEndpoint(line, endpoint)) return false;
+            if (StringUtils.hasText(requestId) && !lineMatchesRequestId(line, requestId)) return false;
             if (fromTs == null && toTs == null) return true;
             Instant lineTs = extractFirstInstant(line);
             if (lineTs == null) return false;
             if (fromTs != null && lineTs.isBefore(fromTs)) return false;
             return toTs == null || !lineTs.isAfter(toTs);
         }).toList();
+    }
+
+    /**
+     * Valida o filtro de status HTTP informado pelo cliente MCP.
+     */
+    private void validateHttpStatus(Integer httpStatus) {
+        if (httpStatus != null && (httpStatus < 100 || httpStatus > 599)) {
+            throw new IllegalArgumentException("httpStatus must be between 100 and 599");
+        }
+    }
+
+    /**
+     * Verifica se a linha contém o status HTTP no formato padronizado ou em variantes comuns.
+     */
+    private boolean lineMatchesHttpStatus(String line, int httpStatus) {
+        String value = String.valueOf(httpStatus);
+        return line.contains("status=" + value)
+                || line.contains("httpStatus=" + value)
+                || line.contains("statusCode=" + value)
+                || line.contains("\"status\":" + value)
+                || line.contains("\"status\": " + value);
+    }
+
+    /**
+     * Verifica se a linha contém o endpoint em chaves operacionais usuais de log.
+     */
+    private boolean lineMatchesEndpoint(String line, String endpoint) {
+        String trimmed = endpoint.trim();
+        return line.contains("endpoint=" + trimmed)
+                || line.contains("uri=" + trimmed)
+                || line.contains("path=" + trimmed)
+                || line.contains("\"endpoint\":\"" + trimmed + "\"")
+                || line.contains("\"uri\":\"" + trimmed + "\"")
+                || line.contains("\"path\":\"" + trimmed + "\"");
+    }
+
+    /**
+     * Verifica se a linha contém o requestId ou correlationId informado.
+     */
+    private boolean lineMatchesRequestId(String line, String requestId) {
+        String trimmed = requestId.trim();
+        return line.contains("requestId=" + trimmed)
+                || line.contains("correlationId=" + trimmed)
+                || line.contains("traceId=" + trimmed)
+                || line.contains("\"requestId\":\"" + trimmed + "\"")
+                || line.contains("\"correlationId\":\"" + trimmed + "\"")
+                || line.contains("\"traceId\":\"" + trimmed + "\"");
     }
 
     /**

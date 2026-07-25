@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,6 +64,36 @@ class ModuleLogServiceTest {
         assertEquals(3, calls.get());
         assertEquals(2, result.get("returnedLines"));
         assertEquals(List.of("line-2", "line-3"), result.get("lines"));
+    }
+
+    /**
+     * Garante filtro estruturado por erro HTTP, endpoint e requestId.
+     */
+    @Test
+    void shouldFilterByHttpStatusEndpointAndRequestId() throws Exception {
+        Path logPath = Path.of("target/test-logs/backend.log");
+        Files.createDirectories(logPath.getParent());
+        Files.writeString(logPath,
+                "2026-07-25T21:07:00Z ERROR Erro HTTP 500 não tratado. requestId=req-500-creative status=500 method=POST endpoint=/api/creatives/10/reject\n"
+                        + "2026-07-25T21:08:00Z ERROR Erro HTTP 500 não tratado. requestId=req-500-other status=500 method=POST endpoint=/api/other\n",
+                StandardCharsets.UTF_8);
+
+        ModuleLogService service = new ModuleLogService(buildProperties(logPath.toString()));
+
+        Map<String, Object> result = service.readModuleLogs(
+                "backend",
+                10,
+                null,
+                500,
+                "/api/creatives/10/reject",
+                "req-500-creative",
+                null,
+                null,
+                null,
+                null);
+
+        assertEquals(1, result.get("returnedLines"));
+        assertEquals(List.of("2026-07-25T21:07:00Z ERROR Erro HTTP 500 não tratado. requestId=req-500-creative status=500 method=POST endpoint=/api/creatives/10/reject"), result.get("lines"));
     }
 
     /**

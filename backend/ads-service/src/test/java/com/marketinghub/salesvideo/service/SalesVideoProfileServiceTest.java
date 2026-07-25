@@ -196,6 +196,29 @@ class SalesVideoProfileServiceTest {
         assertThat(ex.getMessage()).contains("Kling aceita no máximo 10 segundos");
     }
 
+    /** Bloqueia render do Runway quando o perfil pede mais de 10 segundos. */
+    @Test
+    void shouldRejectRunwayRenderWhenProfileDurationExceedsProviderLimit() {
+        SalesVideoProfile profile = profileWithDefaults();
+        profile.setTargetDurationSeconds(15);
+        SalesVideoScript script = approvedScript(profile);
+        RequestVideoRenderRequest request = new RequestVideoRenderRequest();
+        request.setRequestedBy("owner@tenant.io");
+        request.setExecutionMode(SalesVideoExecutionMode.TEST);
+        request.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+        request.setProviderName("RUNWAY");
+
+        given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+        given(scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(profile.getId(),
+                SalesVideoScriptStatus.APPROVED)).willReturn(Optional.of(script));
+
+        VideoModuleException ex = assertThrows(
+                VideoModuleException.class,
+                () -> service.requestRender(profile.getId(), request));
+
+        assertThat(ex.getMessage()).contains("Runway aceita no máximo 10 segundos");
+    }
+
     /** Bloqueia render da Luma quando o perfil excede o limite do adapter com montagem atual. */
     @Test
     void shouldRejectLumaRenderWhenProfileDurationExceedsProviderLimit() {

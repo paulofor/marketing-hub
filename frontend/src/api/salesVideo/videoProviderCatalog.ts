@@ -56,6 +56,19 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     supportsOpenAiReferenceImage: false,
   },
   {
+    key: "runway-gen-4-5",
+    label: "Runway Gen-4.5",
+    providerName: "RUNWAY",
+    providerFamily: "EXTERNAL_VIDEO_MODULE",
+    recommendedUse:
+      "Cenas curtas e variações criativas com boa consistência visual; para hero de 30s usar montagem por cenas.",
+    clipDurationSeconds: 10,
+    maxDirectDurationSeconds: 10,
+    supportsHeroVideo: false,
+    supportsSceneAssembly: true,
+    supportsOpenAiReferenceImage: false,
+  },
+  {
     key: "veo-teaser",
     label: "Veo",
     providerName: "VEO",

@@ -71,6 +71,9 @@ public class VideoManagementProperties {
         private Kling kling = new Kling();
 
         @NotNull
+        private Runway runway = new Runway();
+
+        @NotNull
         private HeyGen heygen = new HeyGen();
 
         @NotNull
@@ -162,6 +165,47 @@ public class VideoManagementProperties {
         private String mode = "std";
         private String duration = "5";
         private String negativePrompt = "sensualized woman, seductive pose, body focus, exposed body, luxury ostentation, dark haze, blur, distorted hands, embedded text, logo";
+
+        @NotNull
+        private Duration pollInterval = Duration.ofSeconds(10);
+
+        @Min(1)
+        private int maxPollAttempts = 120;
+    }
+
+    @Getter
+    @Setter
+    public static class Runway {
+        private boolean enabled = false;
+
+        /**
+         * Nomes que identificam jobs destinados ao adapter direto da Runway.
+         */
+        @NotNull
+        private List<String> acceptedNames = new ArrayList<>(List.of("RUNWAY", "RUNWAY_GEN_4_5", "RUNAWAY"));
+
+        /**
+         * Base URL oficial da API Runway.
+         */
+        @NotNull
+        private URI baseUrl = URI.create("https://api.dev.runwayml.com");
+
+        /**
+         * Chave Runway usada apenas pelo módulo executor de vídeo.
+         */
+        private String apiKey;
+
+        /**
+         * Caminho opcional para a chave Runway montada como secret em arquivo.
+         */
+        private String apiKeyFile;
+
+        private String apiVersion = "2024-11-06";
+        private String model = "gen4.5";
+        private String createPath = "/v1/image_to_video";
+        private String statusPathTemplate = "/v1/tasks/{taskId}";
+        private String ratio = "720:1280";
+        private int durationSeconds = 10;
 
         @NotNull
         private Duration pollInterval = Duration.ofSeconds(10);

@@ -81,9 +81,20 @@ describe("videoProviderCatalog", () => {
     expect(provider?.supportsHeroVideo).toBe(false);
   });
 
+  it("inclui Runway como provider direto limitado a 10 segundos", () => {
+    const provider = findSalesVideoProviderOption("RUNWAY");
+
+    expect(provider).toBeDefined();
+    expect(provider?.clipDurationSeconds).toBe(10);
+    expect(provider?.maxDirectDurationSeconds).toBe(10);
+    expect(provider?.supportsHeroVideo).toBe(false);
+    expect(provider?.supportsSceneAssembly).toBe(true);
+  });
+
   it("declara limites por solicitacao para os providers integrados", () => {
     expect(findSalesVideoProviderOption("LUMA_RAY_3_2")?.maxDirectDurationSeconds).toBe(30);
     expect(findSalesVideoProviderOption("KLING_3_0")?.maxDirectDurationSeconds).toBe(10);
+    expect(findSalesVideoProviderOption("RUNWAY")?.maxDirectDurationSeconds).toBe(10);
     expect(findSalesVideoProviderOption("VEO")?.maxDirectDurationSeconds).toBe(8);
     expect(findSalesVideoProviderOption("HEYGEN")?.maxDirectDurationSeconds).toBe(600);
   });

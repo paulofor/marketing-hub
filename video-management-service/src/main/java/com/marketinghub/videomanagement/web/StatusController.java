@@ -60,6 +60,14 @@ public class StatusController {
                                 properties.getProviders().getLuma().getOpenAiImageModel(),
                                 "openAiImageToolModel",
                                 properties.getProviders().getLuma().getOpenAiImageToolModel()),
+                        "runway", Map.of(
+                                "enabled", properties.getProviders().getRunway().isEnabled(),
+                                "acceptedNames", properties.getProviders().getRunway().getAcceptedNames(),
+                                "apiKeyConfigured",
+                                hasText(properties.getProviders().getRunway().getApiKey())
+                                        || hasText(properties.getProviders().getRunway().getApiKeyFile()),
+                                "model", properties.getProviders().getRunway().getModel(),
+                                "durationSeconds", properties.getProviders().getRunway().getDurationSeconds()),
                         "heygen", Map.of(
                                 "enabled", properties.getProviders().getHeygen().isEnabled(),
                                 "acceptedNames", properties.getProviders().getHeygen().getAcceptedNames(),

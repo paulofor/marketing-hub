@@ -44,12 +44,14 @@ export default function CreativeVideoReviewPage() {
   const [filter, setFilter] = useState<ReviewFilter>("DRAFT");
   const [rejectionReasons, setRejectionReasons] = useState<Record<number, string>>({});
   const reviewQuery = useCreativeVideoReviews(filter);
+  const summaryQuery = useCreativeVideoReviews("ALL");
   const updateStatus = useUpdateCreativeVideoReviewStatus();
   const videos = useMemo(() => reviewQuery.data ?? [], [reviewQuery.data]);
-  const pendingCount = videos.filter((video) => video.status === "DRAFT").length;
-  const approvedCount = videos.filter((video) => video.status === "READY").length;
-  const rejectedCount = videos.filter((video) => video.status === "REJECTED").length;
-  const musaCount = videos.filter((video) =>
+  const summaryVideos = useMemo(() => summaryQuery.data ?? videos, [summaryQuery.data, videos]);
+  const pendingCount = summaryVideos.filter((video) => video.status === "DRAFT").length;
+  const approvedCount = summaryVideos.filter((video) => video.status === "READY").length;
+  const rejectedCount = summaryVideos.filter((video) => video.status === "REJECTED").length;
+  const musaCount = summaryVideos.filter((video) =>
     `${video.experimentName} ${video.hypothesisTitle ?? ""} ${video.nicheName ?? ""}`
       .toLocaleLowerCase("pt-BR")
       .includes("musa"),
@@ -97,15 +99,15 @@ export default function CreativeVideoReviewPage() {
 
       <section className="creative-video-review-page__summary" aria-label="Resumo da fila">
         <div className="creative-video-review-page__metric">
-          <span>Pendentes no filtro</span>
+          <span>Pendentes</span>
           <strong>{pendingCount}</strong>
         </div>
         <div className="creative-video-review-page__metric">
-          <span>Aprovados no filtro</span>
+          <span>Aprovados</span>
           <strong>{approvedCount}</strong>
         </div>
         <div className="creative-video-review-page__metric">
-          <span>Reprovados no filtro</span>
+          <span>Reprovados</span>
           <strong>{rejectedCount}</strong>
         </div>
         <div className="creative-video-review-page__metric">

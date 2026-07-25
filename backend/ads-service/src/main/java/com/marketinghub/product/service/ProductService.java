@@ -16,8 +16,11 @@ import com.marketinghub.media.MediaProvider;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductVideoImage;
+import com.marketinghub.product.ProductVideoProviderAvatar;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
+import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
+import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
@@ -26,6 +29,7 @@ import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoImageRepository;
+import com.marketinghub.repository.jpa.product.ProductVideoProviderAvatarRepository;
 import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
 import com.marketinghub.storage.AssetUploadContext;
@@ -56,6 +60,7 @@ public class ProductService {
   private final MarketNicheRepository marketNicheRepository;
   private final AssetRepository assetRepository;
   private final ProductVideoImageRepository productVideoImageRepository;
+  private final ProductVideoProviderAvatarRepository productVideoProviderAvatarRepository;
   private final ImageGeneratorService imageGeneratorService;
   private final AssetStorageService assetStorageService;
   private final ObjectMapper objectMapper;
@@ -67,6 +72,7 @@ public class ProductService {
       MarketNicheRepository marketNicheRepository,
       AssetRepository assetRepository,
       ProductVideoImageRepository productVideoImageRepository,
+      ProductVideoProviderAvatarRepository productVideoProviderAvatarRepository,
       ImageGeneratorService imageGeneratorService,
       AssetStorageService assetStorageService,
       ObjectMapper objectMapper) {
@@ -75,9 +81,56 @@ public class ProductService {
     this.marketNicheRepository = marketNicheRepository;
     this.assetRepository = assetRepository;
     this.productVideoImageRepository = productVideoImageRepository;
+    this.productVideoProviderAvatarRepository = productVideoProviderAvatarRepository;
     this.imageGeneratorService = imageGeneratorService;
     this.assetStorageService = assetStorageService;
     this.objectMapper = objectMapper;
+  }
+
+  /** Lista personagens de vídeo cadastrados por provider para um produto. */
+  @Transactional(readOnly = true)
+  public List<ProductVideoProviderAvatarDto> listVideoProviderAvatars(Long productId) {
+    return productVideoProviderAvatarRepository.findByProductIdOrderByCreatedAtDesc(productId).stream()
+        .map(this::toProductVideoProviderAvatarDto)
+        .toList();
+  }
+
+  /** Registra ou atualiza o avatar/personagem retornado por um provider de vídeo. */
+  @Transactional
+  public ProductVideoProviderAvatarDto registerVideoProviderAvatar(
+      Long productId, RegisterProductVideoProviderAvatarRequest request) {
+    Product product = getProduct(productId);
+    Long sourceAssetId = requireSourceAssetId(request.sourceAssetId());
+    Asset sourceAsset =
+        assetRepository
+            .findById(sourceAssetId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset fonte não encontrado."));
+    if (sourceAsset.getType() != AssetType.IMAGE || sourceAsset.getStatus() != AssetStatus.READY) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Avatar de vídeo exige asset IMAGE em status READY.");
+    }
+    String provider = normalizeRequired(request.provider(), "Informe o provider do avatar.");
+    String characterName = normalizeRequired(request.characterName(), "Informe o nome da personagem.");
+    String sourceImageUrl = normalizeRequired(
+        Optional.ofNullable(request.sourceImageUrl()).orElse(sourceAsset.getUrl()),
+        "Informe a URL pública da imagem fonte.");
+    ProductVideoProviderAvatar avatar =
+        productVideoProviderAvatarRepository
+            .findFirstByProductIdAndProviderIgnoreCaseAndSourceAssetId(productId, provider, sourceAssetId)
+            .orElseGet(ProductVideoProviderAvatar::new);
+    avatar.setProduct(product);
+    avatar.setSourceAsset(sourceAsset);
+    avatar.setProvider(provider);
+    avatar.setCharacterName(characterName);
+    avatar.setProviderAvatarId(normalizeOptional(request.providerAvatarId()));
+    avatar.setProviderAvatarGroupId(normalizeOptional(request.providerAvatarGroupId()));
+    avatar.setProviderStatus(
+        Optional.ofNullable(normalizeOptional(request.providerStatus())).orElse("REFERENCE_ONLY"));
+    avatar.setSourceImageUrl(sourceImageUrl);
+    avatar.setSupportsReusableAvatar(Boolean.TRUE.equals(request.supportsReusableAvatar()));
+    avatar.setNotes(normalizeOptional(request.notes()));
+    return toProductVideoProviderAvatarDto(productVideoProviderAvatarRepository.save(avatar));
   }
 
   /** Cria e persiste um produto comercial com seus atributos de venda e entrega. */
@@ -247,6 +300,41 @@ public class ProductService {
               image.setReviewNotes(normalizeOptional(reviewNotes));
               productVideoImageRepository.save(image);
             });
+  }
+
+  /** Converte o cadastro de avatar por provider em DTO de resposta. */
+  private ProductVideoProviderAvatarDto toProductVideoProviderAvatarDto(
+      ProductVideoProviderAvatar avatar) {
+    return new ProductVideoProviderAvatarDto(
+        avatar.getId(),
+        avatar.getProduct().getId(),
+        avatar.getSourceAsset().getId(),
+        avatar.getProvider(),
+        avatar.getCharacterName(),
+        avatar.getProviderAvatarId(),
+        avatar.getProviderAvatarGroupId(),
+        avatar.getProviderStatus(),
+        avatar.getSourceImageUrl(),
+        avatar.isSupportsReusableAvatar(),
+        avatar.getNotes(),
+        avatar.getCreatedAt(),
+        avatar.getUpdatedAt());
+  }
+
+  /** Valida a presença do asset fonte antes de registrar avatar por provider. */
+  private Long requireSourceAssetId(Long sourceAssetId) {
+    if (sourceAssetId == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o asset fonte do avatar.");
+    }
+    return sourceAssetId;
+  }
+
+  /** Normaliza e exige um texto obrigatório para cadastro de avatar por provider. */
+  private String normalizeRequired(String value, String message) {
+    if (!StringUtils.hasText(value)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+    return value.trim();
   }
 
   /** Persiste a imagem gerada no storage, cria o asset e vincula ao produto. */

@@ -7,6 +7,7 @@ import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
+import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
@@ -179,6 +180,71 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.videoSeedImageAssetId").value(99L))
                 .andExpect(jsonPath("$.videoSeedCharacterName").value("Sofia MUSA"))
                 .andExpect(jsonPath("$.videoSeedReviewStatus").value("APPROVED"));
+    }
+
+    /** Deve registrar avatar de vídeo do produto para uso futuro por provider. */
+    @Test
+    void registerVideoProviderAvatar() throws Exception {
+        var response = new ProductVideoProviderAvatarDto(
+                10L,
+                4L,
+                1927L,
+                "HEYGEN",
+                "Sofia MUSA",
+                "281a1e5b526841b0865ea466dfb33ab9",
+                "3952e73a14d94871b8130274e27287ee",
+                "processing",
+                "https://cdn.example/musa.png",
+                true,
+                "Avatar criado por API HeyGen.",
+                Instant.parse("2026-07-25T14:53:43Z"),
+                Instant.parse("2026-07-25T14:53:43Z"));
+
+        when(service.registerVideoProviderAvatar(eq(4L), any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/products/{id}/video-provider-avatars", 4L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "sourceAssetId": 1927,
+                                  "provider": "HEYGEN",
+                                  "characterName": "Sofia MUSA",
+                                  "providerAvatarId": "281a1e5b526841b0865ea466dfb33ab9",
+                                  "providerAvatarGroupId": "3952e73a14d94871b8130274e27287ee",
+                                  "providerStatus": "processing",
+                                  "supportsReusableAvatar": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.provider").value("HEYGEN"))
+                .andExpect(jsonPath("$.characterName").value("Sofia MUSA"))
+                .andExpect(jsonPath("$.providerAvatarId").value("281a1e5b526841b0865ea466dfb33ab9"))
+                .andExpect(jsonPath("$.supportsReusableAvatar").value(true));
+    }
+
+    /** Deve listar avatars de vídeo disponíveis para o produto. */
+    @Test
+    void listVideoProviderAvatars() throws Exception {
+        when(service.listVideoProviderAvatars(4L))
+                .thenReturn(List.of(new ProductVideoProviderAvatarDto(
+                        10L,
+                        4L,
+                        1927L,
+                        "HEYGEN",
+                        "Sofia MUSA",
+                        "281a1e5b526841b0865ea466dfb33ab9",
+                        "3952e73a14d94871b8130274e27287ee",
+                        "processing",
+                        "https://cdn.example/musa.png",
+                        true,
+                        "Avatar criado por API HeyGen.",
+                        Instant.parse("2026-07-25T14:53:43Z"),
+                        Instant.parse("2026-07-25T14:53:43Z"))));
+
+        mockMvc.perform(get("/api/products/{id}/video-provider-avatars", 4L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].provider").value("HEYGEN"))
+                .andExpect(jsonPath("$[0].characterName").value("Sofia MUSA"));
     }
 
     /** Deve listar versões produtivas PDE pelo endpoint canônico do produto. */

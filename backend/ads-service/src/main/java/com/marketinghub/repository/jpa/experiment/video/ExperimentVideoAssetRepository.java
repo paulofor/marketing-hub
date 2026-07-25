@@ -73,6 +73,7 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
                     (v.assetUrl is not null and trim(v.assetUrl) <> '')
                  or v.asset is not null
                )
+               and v.hasAudio = true
              order by v.id desc
             """)
     List<ExperimentVideoAsset> findReadyExperimentVideosForReview(
@@ -90,6 +91,7 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
                     (v.assetUrl is not null and trim(v.assetUrl) <> '')
                  or v.asset is not null
                )
+               and v.hasAudio = true
              order by v.id desc
             """)
     List<ExperimentVideoAsset> findReadyExperimentVideosForReviewByReviewStatus(

@@ -80,6 +80,9 @@ public class ExperimentVideoAsset {
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
 
+    @Column(name = "has_audio")
+    private Boolean hasAudio;
+
     @Column(name = "aspect_ratio", length = 16)
     private String aspectRatio;
 

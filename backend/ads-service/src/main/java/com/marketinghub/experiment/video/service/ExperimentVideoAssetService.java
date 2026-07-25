@@ -151,6 +151,7 @@ public class ExperimentVideoAssetService {
                 .assetUrl(request.assetUrl())
                 .thumbnailUrl(request.thumbnailUrl())
                 .durationSeconds(request.durationSeconds())
+                .hasAudio(request.hasAudio())
                 .aspectRatio(request.aspectRatio())
                 .requestJson(request.requestJson())
                 .responseJson(request.responseJson())
@@ -339,6 +340,9 @@ public class ExperimentVideoAssetService {
         if (request.durationSeconds() != null) {
             videoAsset.setDurationSeconds(request.durationSeconds());
         }
+        if (request.hasAudio() != null) {
+            videoAsset.setHasAudio(request.hasAudio());
+        }
         if (request.aspectRatio() != null) {
             videoAsset.setAspectRatio(request.aspectRatio());
         }
@@ -388,6 +392,11 @@ public class ExperimentVideoAssetService {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "rejectionReason is required when rejecting a video asset");
+        }
+        if (newStatus == ExperimentVideoReviewStatus.APPROVED && !Boolean.TRUE.equals(videoAsset.getHasAudio())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "video asset must pass audio quality check before human approval");
         }
         videoAsset.setReviewStatus(newStatus);
         videoAsset.setReviewedBy(StringUtils.hasText(request.reviewedBy()) ? request.reviewedBy().trim() : null);
@@ -884,6 +893,7 @@ public class ExperimentVideoAssetService {
                 videoAsset.getAssetUrl(),
                 videoAsset.getThumbnailUrl(),
                 videoAsset.getDurationSeconds(),
+                videoAsset.getHasAudio(),
                 videoAsset.getAspectRatio(),
                 videoAsset.getRequestJson(),
                 videoAsset.getResponseJson(),

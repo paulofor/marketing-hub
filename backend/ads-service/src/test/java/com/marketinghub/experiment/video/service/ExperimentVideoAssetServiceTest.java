@@ -121,6 +121,7 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 15,
+                null,
                 "9:16",
                 null,
                 null,
@@ -462,6 +463,7 @@ class ExperimentVideoAssetServiceTest {
                 "https://cdn.test/video.mp4",
                 null,
                 15,
+                true,
                 "9:16",
                 null,
                 null,
@@ -508,6 +510,7 @@ class ExperimentVideoAssetServiceTest {
                 "https://cdn.test/video.mp4",
                 null,
                 null,
+                true,
                 null,
                 null,
                 null,
@@ -526,6 +529,7 @@ class ExperimentVideoAssetServiceTest {
         assertThat(dto.reviewedBy()).isEqualTo("aprovador@marketinghub.local");
         assertThat(dto.reviewedAt()).isNotNull();
         assertThat(dto.assetUrl()).isEqualTo("https://cdn.test/video.mp4");
+        assertThat(dto.hasAudio()).isTrue();
     }
 
     /** Garante que reprovação humana sempre explique a causa para nova criação. */
@@ -549,6 +553,7 @@ class ExperimentVideoAssetServiceTest {
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
                 service.update(39L, 5L, new UpdateExperimentVideoAssetRequest(
+                        null,
                         null,
                         null,
                         null,

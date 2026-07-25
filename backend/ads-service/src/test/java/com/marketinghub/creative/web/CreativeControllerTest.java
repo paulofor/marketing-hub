@@ -142,6 +142,7 @@ class CreativeControllerTest {
                 .model("heygen")
                 .status(ExperimentVideoStatus.READY)
                 .assetUrl("https://cdn.test/e002.mp4")
+                .hasAudio(true)
                 .reviewStatus(ExperimentVideoReviewStatus.PENDING)
                 .requiredForRelease(true)
                 .build());
@@ -196,6 +197,7 @@ class CreativeControllerTest {
                 .model("heygen")
                 .status(ExperimentVideoStatus.READY)
                 .assetUrl("https://cdn.test/e002.mp4")
+                .hasAudio(true)
                 .reviewStatus(ExperimentVideoReviewStatus.PENDING)
                 .requiredForRelease(true)
                 .build());
@@ -209,6 +211,60 @@ class CreativeControllerTest {
 
         ExperimentVideoAsset updated = videoAssetRepository.findById(videoAsset.getId()).orElseThrow();
         assertThat(updated.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.APPROVED);
+    }
+
+    /** Garante que vídeo sem áudio não passe da qualidade para aprovação humana. */
+    @Test
+    void listVideoReviewEndpointDoesNotReturnExperimentVideoAssetWithoutAudio() throws Exception {
+        Experiment experiment = experimentRepository.findById(expId).orElseThrow();
+        videoAssetRepository.save(ExperimentVideoAsset.builder()
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Video sem audio nao deve ir para aprovacao")
+                .primaryMetric("checkout_start_rate")
+                .script("Roteiro aprovado")
+                .prompt("Prompt aprovado")
+                .provider("HEYGEN")
+                .model("heygen")
+                .status(ExperimentVideoStatus.READY)
+                .assetUrl("https://cdn.test/sem-audio.mp4")
+                .hasAudio(false)
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build());
+
+        mockMvc.perform(get("/api/creatives/video-review").param("status", "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    /** Garante que a API também bloqueia aprovação direta de vídeo sem áudio validado. */
+    @Test
+    void videoReviewStatusEndpointRejectsApprovalWithoutAudioQuality() throws Exception {
+        Experiment experiment = experimentRepository.findById(expId).orElseThrow();
+        ExperimentVideoAsset videoAsset = videoAssetRepository.save(ExperimentVideoAsset.builder()
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Video E002")
+                .primaryMetric("checkout_start_rate")
+                .script("Roteiro aprovado")
+                .prompt("Prompt aprovado")
+                .provider("HEYGEN")
+                .model("heygen")
+                .status(ExperimentVideoStatus.READY)
+                .assetUrl("https://cdn.test/e002.mp4")
+                .hasAudio(false)
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build());
+
+        mockMvc.perform(patch("/api/creatives/video-review/EXPERIMENT_VIDEO_ASSET/" + videoAsset.getId() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"READY\"}"))
+                .andExpect(status().isBadRequest());
+
+        ExperimentVideoAsset updated = videoAssetRepository.findById(videoAsset.getId()).orElseThrow();
+        assertThat(updated.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
     }
 
     /** Garante que a reprovação preserve o motivo para orientar a próxima geração. */
@@ -226,6 +282,7 @@ class CreativeControllerTest {
                 .model("heygen")
                 .status(ExperimentVideoStatus.READY)
                 .assetUrl("https://cdn.test/e002.mp4")
+                .hasAudio(true)
                 .reviewStatus(ExperimentVideoReviewStatus.PENDING)
                 .requiredForRelease(true)
                 .build());

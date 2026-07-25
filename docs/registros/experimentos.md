@@ -1,3 +1,10 @@
+## 2026-07-25 — PDE/MUSA: métricas de dispositivo existem no banco, mas não aparecem na tela
+
+- causa-raiz confirmada via endpoint público e MCP: o banco PDE produtivo possui `444` eventos do produto `metodo-musa-7-dias`, todos com `device_type` e viewport preenchidos; a distribuição real é `57` sessões mobile e `1` desktop, mas o endpoint público ainda não serializa `deviceBreakdown` e `screenSizeBreakdown`.
+- decisão operacional: não tratar como falta de captura de tráfego; o dado bruto existe e o gargalo é contrato/versão publicada do backend PDE.
+- foi feito: o status operacional do deploy PDE passou a expor se a tabela `pde_funnel_event` e os campos de analytics de funil/dispositivo/tela estão prontos, criando alerta comercial quando o schema não sustentar a leitura.
+- próximo passo: publicar uma versão do `pde-platform-backend` que contenha o contrato atual de resumo, validando no endpoint `/api/pde/access/analytics/metodo-musa-7-dias/summary` a presença de `deviceBreakdown` e `screenSizeBreakdown`.
+
 ## 2026-07-23 — MUSA: vídeo hero em 4 clipes e bloqueio de render curto
 
 - causa-raiz confirmada via MCP: o job `20430` do perfil `Vídeo hero PDE v4 - Método MUSA` estava `VIDEO_READY`, mas o metadata do render registrava `duration_seconds=8` enquanto o perfil tinha `target_duration_seconds=30`.

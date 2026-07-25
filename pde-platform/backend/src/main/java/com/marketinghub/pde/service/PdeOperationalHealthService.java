@@ -20,22 +20,47 @@ import org.springframework.stereotype.Service;
 public class PdeOperationalHealthService {
 
     private static final int AI_GUIDANCE_ACCESS_TOKEN_MIN_LENGTH = 120;
+    private static final String FUNNEL_EVENT_TABLE = "pde_funnel_event";
     private static final String AI_GUIDANCE_TABLE = "pde_ai_guidance_request";
     private static final String ACCESS_TOKEN_COLUMN = "access_token";
     private static final String FAILURE_TABLE = "pde_operational_endpoint_failure";
+    private static final List<String> FUNNEL_ANALYTICS_COLUMNS = List.of(
+            "session_id",
+            "visitor_id",
+            "utm_source",
+            "utm_medium",
+            "utm_campaign",
+            "utm_content",
+            "utm_term",
+            "device_type",
+            "screen_width",
+            "screen_height",
+            "viewport_width",
+            "viewport_height",
+            "visible_ms",
+            "section_id",
+            "action_name");
 
     private final String jdbcUrl;
     private final String jdbcUsername;
     private final String jdbcPassword;
+    private final JdbcConnectionProvider connectionProvider;
 
     /** Recebe a configuração JDBC usada para persistir e ler saúde operacional. */
     public PdeOperationalHealthService(
             @Value("${pde.access.jdbc-url:}") String jdbcUrl,
             @Value("${pde.access.jdbc-username:}") String jdbcUsername,
             @Value("${pde.access.jdbc-password:}") String jdbcPassword) {
+        this(jdbcUrl, jdbcUsername, jdbcPassword, DriverManager::getConnection);
+    }
+
+    /** Recebe dependências controladas para validar saúde operacional em testes. */
+    PdeOperationalHealthService(
+            String jdbcUrl, String jdbcUsername, String jdbcPassword, JdbcConnectionProvider connectionProvider) {
         this.jdbcUrl = jdbcUrl;
         this.jdbcUsername = jdbcUsername;
         this.jdbcPassword = jdbcPassword;
+        this.connectionProvider = connectionProvider;
     }
 
     /** Registra uma falha HTTP que pode distorcer métricas do funil PDE. */
@@ -70,21 +95,24 @@ public class PdeOperationalHealthService {
     /** Retorna o schema real usado para saber se o diagnóstico público está pronto para tráfego. */
     public DeploySchemaStatusResponse schemaStatus() {
         if (!usesJdbcStorage()) {
-            return new DeploySchemaStatusResponse(false, false, null, false, false);
+            return new DeploySchemaStatusResponse(false, false, false, false, null, false, false);
         }
         try (Connection connection = openConnection()) {
+            boolean funnelEventTableExists = tableExists(connection, FUNNEL_EVENT_TABLE);
             boolean aiGuidanceTableExists = tableExists(connection, AI_GUIDANCE_TABLE);
             Integer accessTokenLength = aiGuidanceTableExists
                     ? columnMaxLength(connection, AI_GUIDANCE_TABLE, ACCESS_TOKEN_COLUMN)
                     : null;
             return new DeploySchemaStatusResponse(
                     true,
+                    funnelEventTableExists,
+                    funnelEventTableExists && columnsExist(connection, FUNNEL_EVENT_TABLE, FUNNEL_ANALYTICS_COLUMNS),
                     aiGuidanceTableExists,
                     accessTokenLength,
                     accessTokenLength != null && accessTokenLength >= AI_GUIDANCE_ACCESS_TOKEN_MIN_LENGTH,
                     tableExists(connection, FAILURE_TABLE));
         } catch (SQLException ex) {
-            return new DeploySchemaStatusResponse(true, false, null, false, false);
+            return new DeploySchemaStatusResponse(true, false, false, false, null, false, false);
         }
     }
 
@@ -104,6 +132,18 @@ public class PdeOperationalHealthService {
                     0,
                     null,
                     "Rodar deploy com migração do backend PDE e validar envio completo do diagnóstico."));
+        }
+        if (schema.jdbcConfigured() && !schema.funnelAnalyticsFieldsReady()) {
+            alerts.add(new DeployOperationalAlertResponse(
+                    "CRITICAL",
+                    "SCHEMA_MISMATCH",
+                    "TRACKING_FUNIL",
+                    "/api/pde/access/analytics/{productSlug}/summary",
+                    "Schema real não confirma todos os campos necessários para métricas de dispositivo e tela.",
+                    "pde_funnel_event.analyticsFieldsReady=" + schema.funnelAnalyticsFieldsReady(),
+                    0,
+                    null,
+                    "Publicar o backend PDE com migração/contrato de analytics e validar deviceBreakdown e screenSizeBreakdown no resumo."));
         }
         if (schema.operationalFailureTableExists()) {
             alerts.addAll(loadRecentFailureAlerts());
@@ -210,6 +250,29 @@ public class PdeOperationalHealthService {
         }
     }
 
+    /** Verifica se todas as colunas exigidas existem no schema real. */
+    private boolean columnsExist(Connection connection, String tableName, List<String> columnNames) throws SQLException {
+        for (String columnName : columnNames) {
+            if (!columnExists(connection, tableName, columnName)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Verifica se uma coluna existe na tabela informada. */
+    private boolean columnExists(Connection connection, String tableName, String columnName) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, tableName);
+            statement.setString(2, columnName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() && resultSet.getLong(1) > 0;
+            }
+        }
+    }
+
     /** Informa se existe banco JDBC configurado para saúde operacional. */
     private boolean usesJdbcStorage() {
         return jdbcUrl != null && !jdbcUrl.isBlank();
@@ -217,7 +280,7 @@ public class PdeOperationalHealthService {
 
     /** Abre conexão JDBC com o banco PDE. */
     private Connection openConnection() throws SQLException {
-        return DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword);
+        return connectionProvider.open(jdbcUrl, jdbcUsername, jdbcPassword);
     }
 
     /** Retorna valor padrão quando a entrada é nula ou vazia. */
@@ -231,5 +294,12 @@ public class PdeOperationalHealthService {
             return value;
         }
         return value.substring(0, maxLength);
+    }
+
+    /** Abre uma conexão JDBC para permitir substituição controlada em testes. */
+    interface JdbcConnectionProvider {
+
+        /** Abre uma conexão JDBC com as credenciais informadas. */
+        Connection open(String url, String username, String password) throws SQLException;
     }
 }

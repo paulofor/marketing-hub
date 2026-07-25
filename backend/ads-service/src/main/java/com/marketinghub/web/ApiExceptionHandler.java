@@ -2,6 +2,7 @@ package com.marketinghub.web;
 
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -12,9 +13,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -77,6 +83,31 @@ public class ApiExceptionHandler {
             message = "O upload do arquivo foi interrompido antes do envio completo. Verifique sua conexão e tente novamente.";
         }
         return buildResponse(HttpStatus.BAD_REQUEST, message, request, null);
+    }
+
+    /**
+     * Converte falhas de validação de entrada em HTTP 400 sem registrar como erro interno.
+     */
+    @ExceptionHandler({
+        MethodArgumentNotValidException.class,
+        HandlerMethodValidationException.class,
+        ConstraintViolationException.class,
+        MethodArgumentTypeMismatchException.class,
+        HttpMessageNotReadableException.class,
+        BindException.class
+    })
+    public ResponseEntity<Map<String, Object>> handleValidationException(
+        Exception exception,
+        HttpServletRequest request
+    ) {
+        LOGGER.warn(
+            "Requisição inválida rejeitada. method={}, uri={}, query={}, reason={}",
+            request.getMethod(),
+            request.getRequestURI(),
+            request.getQueryString(),
+            exception.getMessage()
+        );
+        return buildResponse(HttpStatus.BAD_REQUEST, "Requisição inválida.", request, null);
     }
 
     /**

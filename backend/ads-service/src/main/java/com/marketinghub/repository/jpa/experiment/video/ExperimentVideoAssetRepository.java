@@ -62,6 +62,10 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
                                                          ExperimentVideoStatus status,
                                                          ExperimentVideoReviewStatus reviewStatus);
 
+    /** Lista vídeos do experimento que compartilham a mesma origem visual declarada. */
+    @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
+    List<ExperimentVideoAsset> findByExperimentIdAndVisualSourceKey(Long experimentId, String visualSourceKey);
+
     /** Lista vídeos prontos de experimento com contexto comercial para revisão humana. */
     @EntityGraph(attributePaths = {"experiment", "experiment.niche", "experiment.hypothesisRef",
             "experiment.hypothesisRef.marketNiche", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})

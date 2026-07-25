@@ -86,6 +86,18 @@ public class ExperimentVideoAsset {
     @Column(name = "aspect_ratio", length = 16)
     private String aspectRatio;
 
+    @Column(name = "visual_source_type", length = 64)
+    private String visualSourceType;
+
+    @Column(name = "visual_source_key", length = 191)
+    private String visualSourceKey;
+
+    @Column(name = "visual_source_description", columnDefinition = "LONGTEXT")
+    private String visualSourceDescription;
+
+    @Column(name = "visual_similarity_override_reason", columnDefinition = "LONGTEXT")
+    private String visualSimilarityOverrideReason;
+
     @Column(name = "request_json", columnDefinition = "LONGTEXT")
     private String requestJson;
 

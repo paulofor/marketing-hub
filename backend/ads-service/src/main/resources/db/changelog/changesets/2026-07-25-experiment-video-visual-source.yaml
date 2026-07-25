@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-25-experiment-video-visual-source
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_video_asset
+        - not:
+            - columnExists:
+                tableName: experiment_video_asset
+                columnName: visual_source_key
+      changes:
+        - addColumn:
+            tableName: experiment_video_asset
+            columns:
+              - column:
+                  name: visual_source_type
+                  type: VARCHAR(64)
+              - column:
+                  name: visual_source_key
+                  type: VARCHAR(191)
+              - column:
+                  name: visual_source_description
+                  type: LONGTEXT
+              - column:
+                  name: visual_similarity_override_reason
+                  type: LONGTEXT
+        - createIndex:
+            tableName: experiment_video_asset
+            indexName: idx_experiment_video_asset_visual_source
+            columns:
+              - column:
+                  name: experiment_id
+              - column:
+                  name: visual_source_key

@@ -1660,7 +1660,7 @@ public class FacebookCampaignService {
                 publicationJobId,
                 experimentId,
                 ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                () -> facebookAdsService.uploadAdVideoFromBytes(
+                () -> uploadVideoWithOfficialFlowOrLegacyFallback(
                     adAccountId,
                     downloadedVideo.bytes(),
                     resolveVideoFileName(payload.videoUrl()),
@@ -1675,6 +1675,26 @@ public class FacebookCampaignService {
             resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
         }
         return resolvedPayloads;
+    }
+
+    /** Publica o vídeo pelo fluxo oficial Video Ads e usa advideos apenas como fallback legado. */
+    private String uploadVideoWithOfficialFlowOrLegacyFallback(String adAccountId,
+                                                              byte[] videoBytes,
+                                                              String fileName,
+                                                              String contentType) {
+        try {
+            return facebookAdsService.uploadVideoAdFromBytes(adAccountId, videoBytes, fileName, contentType);
+        } catch (WebClientResponseException ex) {
+            LOGGER.warn(
+                "Official Meta video_ads upload failed; retrying with legacy advideos upload: adAccountId={}, filename={}, status={}, message={}",
+                adAccountId,
+                fileName,
+                ex.getRawStatusCode(),
+                ex.getMessage(),
+                ex
+            );
+            return facebookAdsService.uploadAdVideoFromBytes(adAccountId, videoBytes, fileName, contentType);
+        }
     }
 
     private record CanonicalImageHashUpsertRequest(

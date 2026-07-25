@@ -24,6 +24,10 @@ export interface ExperimentVideoAsset {
   thumbnailUrl?: string | null;
   durationSeconds?: number | null;
   aspectRatio?: string | null;
+  visualSourceType?: string | null;
+  visualSourceKey?: string | null;
+  visualSourceDescription?: string | null;
+  visualSimilarityOverrideReason?: string | null;
   requestJson?: string | null;
   responseJson?: string | null;
   cost?: number | null;

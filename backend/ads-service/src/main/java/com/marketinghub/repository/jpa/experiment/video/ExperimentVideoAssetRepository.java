@@ -61,4 +61,38 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
     boolean existsByExperimentIdAndStatusAndReviewStatus(Long experimentId,
                                                          ExperimentVideoStatus status,
                                                          ExperimentVideoReviewStatus reviewStatus);
+
+    /** Lista vídeos prontos de experimento com contexto comercial para revisão humana. */
+    @EntityGraph(attributePaths = {"experiment", "experiment.niche", "experiment.hypothesisRef",
+            "experiment.hypothesisRef.marketNiche", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
+    @Query("""
+            select v
+              from ExperimentVideoAsset v
+             where v.status = :readyStatus
+               and (
+                    (v.assetUrl is not null and trim(v.assetUrl) <> '')
+                 or v.asset is not null
+               )
+             order by v.id desc
+            """)
+    List<ExperimentVideoAsset> findReadyExperimentVideosForReview(
+            @Param("readyStatus") ExperimentVideoStatus readyStatus);
+
+    /** Lista vídeos prontos de experimento em um status de revisão específico. */
+    @EntityGraph(attributePaths = {"experiment", "experiment.niche", "experiment.hypothesisRef",
+            "experiment.hypothesisRef.marketNiche", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})
+    @Query("""
+            select v
+              from ExperimentVideoAsset v
+             where v.status = :readyStatus
+               and v.reviewStatus = :reviewStatus
+               and (
+                    (v.assetUrl is not null and trim(v.assetUrl) <> '')
+                 or v.asset is not null
+               )
+             order by v.id desc
+            """)
+    List<ExperimentVideoAsset> findReadyExperimentVideosForReviewByReviewStatus(
+            @Param("readyStatus") ExperimentVideoStatus readyStatus,
+            @Param("reviewStatus") ExperimentVideoReviewStatus reviewStatus);
 }

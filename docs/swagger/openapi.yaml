@@ -404,7 +404,7 @@ paths:
   /api/creatives/video-review:
     get:
       tags: [Creatives]
-      summary: Listar criativos de vídeo para aprovação comercial
+      summary: Listar vídeos para aprovação comercial
       parameters:
         - in: query
           name: status
@@ -414,13 +414,43 @@ paths:
             enum: [DRAFT, READY, REJECTED]
       responses:
         '200':
-          description: Fila de criativos de vídeo com contexto de experimento, hipótese e nicho
+          description: Fila única de vídeos de criativos e vídeos de experimento com contexto comercial
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/CreativeVideoReviewDto'
+  /api/creatives/video-review/{sourceType}/{id}/status:
+    patch:
+      tags: [Creatives]
+      summary: Atualizar status de um item da fila única de vídeos
+      parameters:
+        - in: path
+          name: sourceType
+          required: true
+          schema:
+            type: string
+            enum: [CREATIVE, EXPERIMENT_VIDEO_ASSET]
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreativeStatusRequest'
+      responses:
+        '200':
+          description: Item atualizado na fila de aprovação de vídeos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreativeVideoReviewDto'
   /api/creatives/{id}/status:
     patch:
       tags: [Creatives]
@@ -1811,6 +1841,9 @@ components:
         id:
           type: integer
           format: int64
+        sourceType:
+          type: string
+          enum: [CREATIVE, EXPERIMENT_VIDEO_ASSET]
         experimentId:
           type: integer
           format: int64

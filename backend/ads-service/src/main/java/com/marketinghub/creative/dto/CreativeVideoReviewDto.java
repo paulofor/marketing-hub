@@ -1,6 +1,7 @@
 package com.marketinghub.creative.dto;
 
 import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.CreativeVideoReviewSourceType;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.hypothesis.HypothesisStatus;
 
@@ -11,6 +12,7 @@ import java.util.UUID;
  */
 public record CreativeVideoReviewDto(
         Long id,
+        CreativeVideoReviewSourceType sourceType,
         Long experimentId,
         String experimentName,
         ExperimentStatus experimentStatus,

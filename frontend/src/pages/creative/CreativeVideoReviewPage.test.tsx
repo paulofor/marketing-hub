@@ -42,6 +42,7 @@ describe("CreativeVideoReviewPage", () => {
         data: [
           {
             id: 243,
+            sourceType: "EXPERIMENT_VIDEO_ASSET",
             experimentId: 71,
             experimentName: "Metodo MUSA - Presenca Elegante em 7 Dias-E001",
             experimentStatus: "PLANNED",
@@ -56,6 +57,7 @@ describe("CreativeVideoReviewPage", () => {
           },
           {
             id: 242,
+            sourceType: "CREATIVE",
             experimentId: 70,
             experimentName: "MUSA-H001-E008",
             experimentStatus: "PLANNED",

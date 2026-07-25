@@ -26,6 +26,11 @@ const STATUS_LABELS: Record<CreativeVideoReviewStatus, string> = {
   REJECTED: "Reprovado",
 };
 
+const SOURCE_LABELS: Record<CreativeVideoReview["sourceType"], string> = {
+  CREATIVE: "Criativo",
+  EXPERIMENT_VIDEO_ASSET: "Vídeo do experimento",
+};
+
 function statusClassName(status: CreativeVideoReviewStatus) {
   if (status === "READY") {
     return "creative-video-review-page__status creative-video-review-page__status--ready";
@@ -40,9 +45,13 @@ function primaryMediaUrl(video: CreativeVideoReview) {
   return video.videoUrl?.trim() ?? "";
 }
 
+function reviewKey(video: CreativeVideoReview) {
+  return `${video.sourceType}:${video.id}`;
+}
+
 export default function CreativeVideoReviewPage() {
   const [filter, setFilter] = useState<ReviewFilter>("DRAFT");
-  const [rejectionReasons, setRejectionReasons] = useState<Record<number, string>>({});
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
   const reviewQuery = useCreativeVideoReviews(filter);
   const summaryQuery = useCreativeVideoReviews("ALL");
   const updateStatus = useUpdateCreativeVideoReviewStatus();
@@ -63,7 +72,7 @@ export default function CreativeVideoReviewPage() {
     rejectionReason?: string,
   ) => {
     try {
-      await updateStatus.mutateAsync({ id: video.id, status, rejectionReason });
+      await updateStatus.mutateAsync({ id: video.id, sourceType: video.sourceType, status, rejectionReason });
       if (status === "READY") {
         toast.success("Vídeo aprovado para campanha");
       } else if (status === "REJECTED") {
@@ -78,7 +87,7 @@ export default function CreativeVideoReviewPage() {
   };
 
   const handleReject = (video: CreativeVideoReview) => {
-    const reason = rejectionReasons[video.id]?.trim() ?? "";
+    const reason = rejectionReasons[reviewKey(video)]?.trim() ?? "";
     if (!reason) {
       toast.error("Informe o motivo da reprovação.");
       return;
@@ -162,8 +171,9 @@ export default function CreativeVideoReviewPage() {
           {videos.map((video) => {
             const mediaUrl = primaryMediaUrl(video);
             const isPending = updateStatus.isPending;
+            const key = reviewKey(video);
             return (
-              <article className="creative-video-review-page__card" key={video.id}>
+              <article className="creative-video-review-page__card" key={key}>
                 <div className="creative-video-review-page__preview">
                   {mediaUrl ? (
                     <video src={mediaUrl} controls preload="metadata" playsInline />
@@ -179,7 +189,7 @@ export default function CreativeVideoReviewPage() {
                     <span className={statusClassName(video.status)}>
                       {STATUS_LABELS[video.status]}
                     </span>
-                    <span>#{video.id}</span>
+                    <span>{SOURCE_LABELS[video.sourceType]} #{video.id}</span>
                   </div>
 
                   <div className="creative-video-review-page__copy">
@@ -188,6 +198,10 @@ export default function CreativeVideoReviewPage() {
                   </div>
 
                   <dl className="creative-video-review-page__context">
+                    <div>
+                      <dt>Origem</dt>
+                      <dd>{SOURCE_LABELS[video.sourceType]}</dd>
+                    </div>
                     <div>
                       <dt>Experimento</dt>
                       <dd>
@@ -229,11 +243,11 @@ export default function CreativeVideoReviewPage() {
                     <label className="creative-video-review-page__reject-reason">
                       <span>Motivo da reprovação <b aria-hidden="true">*</b></span>
                       <textarea
-                        value={rejectionReasons[video.id] ?? ""}
+                        value={rejectionReasons[key] ?? ""}
                         onChange={(event) =>
                           setRejectionReasons((current) => ({
                             ...current,
-                            [video.id]: event.target.value,
+                            [key]: event.target.value,
                           }))
                         }
                         placeholder="Explique o que precisa ser corrigido antes de liberar para campanha."
@@ -276,7 +290,7 @@ export default function CreativeVideoReviewPage() {
                       <button
                         type="button"
                         className="btn btn-outline-danger btn-sm"
-                        disabled={isPending || !(rejectionReasons[video.id]?.trim())}
+                        disabled={isPending || !(rejectionReasons[key]?.trim())}
                         onClick={() => handleReject(video)}
                       >
                         {isPending ? (

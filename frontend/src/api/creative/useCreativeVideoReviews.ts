@@ -7,6 +7,7 @@ export type CreativeVideoReviewSourceType = "CREATIVE" | "EXPERIMENT_VIDEO_ASSET
 export interface CreativeVideoReview {
   id: number;
   sourceType: CreativeVideoReviewSourceType;
+  funnelSlot?: "AD" | "LANDING_HERO" | "FORM_EXPLAINER" | "PRE_CHECKOUT" | null;
   experimentId: number;
   experimentName: string;
   experimentStatus: string;

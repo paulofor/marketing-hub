@@ -435,6 +435,7 @@ public class CreativeService {
         return new CreativeVideoReviewDto(
                 creative.getId(),
                 CreativeVideoReviewSourceType.CREATIVE,
+                ExperimentVideoSlot.AD,
                 experiment != null ? experiment.getId() : null,
                 experiment != null ? experiment.getName() : null,
                 experiment != null ? experiment.getStatus() : null,
@@ -475,6 +476,7 @@ public class CreativeService {
         return new CreativeVideoReviewDto(
                 videoAsset.getId(),
                 CreativeVideoReviewSourceType.EXPERIMENT_VIDEO_ASSET,
+                videoAsset.getSlot(),
                 experiment != null ? experiment.getId() : null,
                 experiment != null ? experiment.getName() : null,
                 experiment != null ? experiment.getStatus() : null,

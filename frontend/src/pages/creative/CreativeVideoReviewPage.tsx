@@ -34,9 +34,26 @@ const STATUS_LABELS: Record<CreativeVideoReviewStatus, string> = {
 };
 
 const SOURCE_LABELS: Record<CreativeVideoReview["sourceType"], string> = {
-  CREATIVE: "Criativo",
-  EXPERIMENT_VIDEO_ASSET: "Vídeo do experimento",
+  CREATIVE: "Criativo de anúncio",
+  EXPERIMENT_VIDEO_ASSET: "Vídeo produzido",
 };
+
+const FUNNEL_SLOT_LABELS: Record<
+  NonNullable<CreativeVideoReview["funnelSlot"]>,
+  string
+> = {
+  AD: "Anúncio",
+  LANDING_HERO: "PDE / hero da página",
+  FORM_EXPLAINER: "Explicação do diagnóstico",
+  PRE_CHECKOUT: "Pré-checkout",
+};
+
+function funnelSlotLabel(video: CreativeVideoReview) {
+  if (video.funnelSlot && FUNNEL_SLOT_LABELS[video.funnelSlot]) {
+    return FUNNEL_SLOT_LABELS[video.funnelSlot];
+  }
+  return video.sourceType === "CREATIVE" ? FUNNEL_SLOT_LABELS.AD : "Não informado";
+}
 
 function statusClassName(status: CreativeVideoReviewStatus) {
   if (status === "READY") {
@@ -291,6 +308,10 @@ export default function CreativeVideoReviewPage() {
                     <div>
                       <dt>Origem</dt>
                       <dd>{SOURCE_LABELS[video.sourceType]}</dd>
+                    </div>
+                    <div>
+                      <dt>Uso no funil</dt>
+                      <dd>{funnelSlotLabel(video)}</dd>
                     </div>
                     <div>
                       <dt>Experimento</dt>

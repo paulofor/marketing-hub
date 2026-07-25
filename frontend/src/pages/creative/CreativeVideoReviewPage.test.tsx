@@ -43,6 +43,7 @@ describe("CreativeVideoReviewPage", () => {
           {
             id: 243,
             sourceType: "EXPERIMENT_VIDEO_ASSET",
+            funnelSlot: "LANDING_HERO",
             experimentId: 71,
             experimentName: "Metodo MUSA - Presenca Elegante em 7 Dias-E001",
             experimentStatus: "PLANNED",
@@ -62,6 +63,7 @@ describe("CreativeVideoReviewPage", () => {
           {
             id: 242,
             sourceType: "CREATIVE",
+            funnelSlot: "AD",
             experimentId: 70,
             experimentName: "MUSA-H001-E008",
             experimentStatus: "PLANNED",
@@ -89,5 +91,35 @@ describe("CreativeVideoReviewPage", () => {
       expect(within(summary).getByText("Custo reprovado").nextElementSibling).toHaveTextContent(/US\$\s*0,1500/);
     });
     expect(screen.getByText("Nenhum vídeo encontrado para este filtro.")).toBeInTheDocument();
+  });
+
+  it("mostra nomenclatura em portugues para origem e uso no funil", async () => {
+    mockedAxiosGet.mockResolvedValue({
+      data: [
+        {
+          id: 21,
+          sourceType: "EXPERIMENT_VIDEO_ASSET",
+          funnelSlot: "LANDING_HERO",
+          experimentId: 71,
+          experimentName: "Metodo MUSA - Presenca Elegante em 7 Dias-E001",
+          experimentStatus: "PLANNED",
+          hypothesisTitle: "Metodo MUSA - Presenca Elegante em 7 Dias",
+          nicheName: "Mulheres urbanas - sofisticacao acessivel",
+          format: "VIDEO",
+          headline: "Video para continuar a jornada",
+          primaryText: "Texto do video produzido",
+          videoUrl: "https://example.com/video-21.mp4",
+          status: "DRAFT",
+          videoCostUsd: 0.08,
+          totalProductionCostUsd: 0.08,
+        },
+      ],
+    });
+
+    setup();
+
+    expect(await screen.findByText("Vídeo produzido #21")).toBeInTheDocument();
+    expect(screen.getByText("Uso no funil")).toBeInTheDocument();
+    expect(screen.getByText("PDE / hero da página")).toBeInTheDocument();
   });
 });

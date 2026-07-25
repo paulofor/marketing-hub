@@ -3,6 +3,7 @@ package com.marketinghub.creative.dto;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.hypothesis.HypothesisStatus;
 
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ import java.util.UUID;
 public record CreativeVideoReviewDto(
         Long id,
         CreativeVideoReviewSourceType sourceType,
+        ExperimentVideoSlot funnelSlot,
         Long experimentId,
         String experimentName,
         ExperimentStatus experimentStatus,

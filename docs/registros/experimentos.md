@@ -1,3 +1,9 @@
+## 2026-07-25 — VEO direto bloqueado acima de 8s
+
+- aprendizado dos experimentos 68, 69 e 70: solicitar VEO com duração comercial de 30s como render direto cria expectativa incompatível com o limite real do provider.
+- decisão operacional: VEO direto só deve ser usado até 8s; vídeos de 30s precisam usar provider compatível ou montagem explícita de cenas curtas.
+- impacto esperado: reduzir jobs incoerentes, evitar gasto sem asset comercial completo e preservar leitura limpa dos experimentos antes de liberar campanha.
+
 ## 2026-07-25 — PDE/MUSA: métricas de dispositivo existem no banco, mas não aparecem na tela
 
 - causa-raiz confirmada via endpoint público e MCP: o banco PDE produtivo possui `444` eventos do produto `metodo-musa-7-dias`, todos com `device_type` e viewport preenchidos; a distribuição real é `57` sessões mobile e `1` desktop, mas o endpoint público ainda não serializa `deviceBreakdown` e `screenSizeBreakdown`.

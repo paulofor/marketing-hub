@@ -27,6 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+/**
+ * Valida regras administrativas dos perfis de vídeo comercial.
+ */
 @ExtendWith(MockitoExtension.class)
 class SalesVideoProfileServiceTest {
 
@@ -145,6 +148,75 @@ class SalesVideoProfileServiceTest {
         assertThat(persistedJob.getAuditSnapshotJson()).contains("\"executionMode\":\"PRODUCTION\"");
         assertThat(persistedJob.getAuditSnapshotJson()).contains("\"consentEvidenceUrl\":\"https://evidence.local/term-001\"");
         assertThat(persistedJob.getAuditSnapshotJson()).contains("\"humanReviewApprovedBy\":\"reviewer@tenant.io\"");
+    }
+
+    /** Bloqueia render direto do VEO quando o perfil comercial pede mais de 8 segundos. */
+    @Test
+    void shouldRejectDirectVeoRenderWhenProfileDurationExceedsProviderLimit() {
+        SalesVideoProfile profile = profileWithDefaults();
+        profile.setTargetDurationSeconds(30);
+        SalesVideoScript script = approvedScript(profile);
+        RequestVideoRenderRequest request = new RequestVideoRenderRequest();
+        request.setRequestedBy("owner@tenant.io");
+        request.setExecutionMode(SalesVideoExecutionMode.TEST);
+        request.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+        request.setProviderName("VEO");
+
+        given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+        given(scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(profile.getId(),
+                SalesVideoScriptStatus.APPROVED)).willReturn(Optional.of(script));
+
+        VideoModuleException ex = assertThrows(
+                VideoModuleException.class,
+                () -> service.requestRender(profile.getId(), request));
+
+        assertThat(ex.getMessage()).contains("VEO aceita no máximo 8 segundos");
+    }
+
+    /** Bloqueia render do Kling quando o perfil pede mais de 10 segundos. */
+    @Test
+    void shouldRejectKlingRenderWhenProfileDurationExceedsProviderLimit() {
+        SalesVideoProfile profile = profileWithDefaults();
+        profile.setTargetDurationSeconds(15);
+        SalesVideoScript script = approvedScript(profile);
+        RequestVideoRenderRequest request = new RequestVideoRenderRequest();
+        request.setRequestedBy("owner@tenant.io");
+        request.setExecutionMode(SalesVideoExecutionMode.TEST);
+        request.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+        request.setProviderName("KLING_3_0");
+
+        given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+        given(scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(profile.getId(),
+                SalesVideoScriptStatus.APPROVED)).willReturn(Optional.of(script));
+
+        VideoModuleException ex = assertThrows(
+                VideoModuleException.class,
+                () -> service.requestRender(profile.getId(), request));
+
+        assertThat(ex.getMessage()).contains("Kling aceita no máximo 10 segundos");
+    }
+
+    /** Bloqueia render da Luma quando o perfil excede o limite do adapter com montagem atual. */
+    @Test
+    void shouldRejectLumaRenderWhenProfileDurationExceedsProviderLimit() {
+        SalesVideoProfile profile = profileWithDefaults();
+        profile.setTargetDurationSeconds(31);
+        SalesVideoScript script = approvedScript(profile);
+        RequestVideoRenderRequest request = new RequestVideoRenderRequest();
+        request.setRequestedBy("owner@tenant.io");
+        request.setExecutionMode(SalesVideoExecutionMode.TEST);
+        request.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+        request.setProviderName("LUMA_RAY_3_2");
+
+        given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+        given(scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(profile.getId(),
+                SalesVideoScriptStatus.APPROVED)).willReturn(Optional.of(script));
+
+        VideoModuleException ex = assertThrows(
+                VideoModuleException.class,
+                () -> service.requestRender(profile.getId(), request));
+
+        assertThat(ex.getMessage()).contains("Luma Ray 3.2 aceita no máximo 30 segundos");
     }
 
     @Test

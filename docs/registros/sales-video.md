@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-25 — Bloqueio de VEO direto acima de 8 segundos
+
+- Problema observado: pedidos de vídeo VEO podiam ser criados com alvo comercial de 30s, embora o VEO direto entregue clipes curtos de até 8s por render.
+- Causa-raiz tratada: a tela e o backend aceitavam uma duração comercial incompatível com o limite nativo do provider, gerando job tecnicamente incoerente e risco de desperdício operacional.
+- Correção preparada: o backend passa a rejeitar render direto com `providerName=VEO` acima de 8s tanto no fluxo de experimento quanto no fluxo central de Sales Video; o frontend passa a mostrar o limite e bloquear a solicitação incompatível.
+- Regra operacional: VEO direto é teaser/cena curta. Vídeo de venda de 30s deve usar provider compatível ou montagem explícita de múltiplas cenas.
+
 ## 2026-07-24 — Pontuação comercial de providers de vídeo
 
 - Decisão de produto: o Marketing Hub deve pontuar providers de vídeo por evidência comercial e qualidade real, não apenas por catálogo ou preferência manual.

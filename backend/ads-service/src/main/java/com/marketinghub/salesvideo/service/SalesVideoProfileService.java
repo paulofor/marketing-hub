@@ -47,6 +47,7 @@ public class SalesVideoProfileService {
     private final SalesVideoJobService jobService;
     private final SalesVideoRolloutService rolloutService;
 
+    /** Inicializa o serviço com repositórios e componentes de job/rollout do módulo de vídeo. */
     public SalesVideoProfileService(SalesVideoProfileRepository profileRepository,
                                     ProductRepository productRepository,
                                     LandingPageRepository landingPageRepository,
@@ -163,6 +164,7 @@ public class SalesVideoProfileService {
                 .findFirstByProfileIdAndStatusOrderByVersionDesc(profileId, SalesVideoScriptStatus.APPROVED)
                 .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.SCRIPT_NOT_FOUND,
                         "É necessário ter um script aprovado antes da renderização"));
+        validateProviderDuration(request.getProviderName(), profile.getTargetDurationSeconds());
         SalesVideoExecutionMode executionMode = rolloutService.normalizeExecutionMode(request.getExecutionMode());
         if (executionMode == null) {
             executionMode = Optional.ofNullable(request.getExecutionMode()).orElse(SalesVideoExecutionMode.TEST);
@@ -187,6 +189,14 @@ public class SalesVideoProfileService {
         profile.setStatus(SalesVideoStatus.VIDEO_REQUESTED);
         profileRepository.save(profile);
         return SalesVideoMapper.toDto(job);
+    }
+
+    /** Bloqueia render quando o perfil pede duração maior que o limite operacional do provider. */
+    private void validateProviderDuration(String providerName, Integer targetDurationSeconds) {
+        SalesVideoProviderDurationPolicy.validate(providerName, targetDurationSeconds)
+                .ifPresent(message -> {
+                    throw VideoModuleException.badRequest(VideoModuleErrorCode.BAD_REQUEST, message);
+                });
     }
 
     @Transactional

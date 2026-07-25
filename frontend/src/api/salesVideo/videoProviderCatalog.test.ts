@@ -10,6 +10,8 @@ describe("videoProviderCatalog", () => {
   it("mantem Luma Ray 3.2 como provider padrao do hero PDE", () => {
     expect(DEFAULT_SALES_VIDEO_PROVIDER.providerName).toBe("LUMA_RAY_3_2");
     expect(DEFAULT_SALES_VIDEO_PROVIDER.supportsHeroVideo).toBe(true);
+    expect(DEFAULT_SALES_VIDEO_PROVIDER.clipDurationSeconds).toBe(10);
+    expect(DEFAULT_SALES_VIDEO_PROVIDER.maxDirectDurationSeconds).toBe(30);
   });
 
   it("gera metadata com montagem e streaming adaptativo", () => {
@@ -68,6 +70,22 @@ describe("videoProviderCatalog", () => {
 
     expect(metadata.provider_strategy.provider_name).toBe("HEYGEN");
     expect(metadata.provider_strategy.supports_scene_assembly).toBe(false);
+  });
+
+  it("limita VEO a renders diretos de ate 8 segundos", () => {
+    const provider = findSalesVideoProviderOption("VEO");
+
+    expect(provider).toBeDefined();
+    expect(provider?.clipDurationSeconds).toBe(8);
+    expect(provider?.maxDirectDurationSeconds).toBe(8);
+    expect(provider?.supportsHeroVideo).toBe(false);
+  });
+
+  it("declara limites por solicitacao para os providers integrados", () => {
+    expect(findSalesVideoProviderOption("LUMA_RAY_3_2")?.maxDirectDurationSeconds).toBe(30);
+    expect(findSalesVideoProviderOption("KLING_3_0")?.maxDirectDurationSeconds).toBe(10);
+    expect(findSalesVideoProviderOption("VEO")?.maxDirectDurationSeconds).toBe(8);
+    expect(findSalesVideoProviderOption("HEYGEN")?.maxDirectDurationSeconds).toBe(600);
   });
 
   it("habilita estrategia OpenAI imagem para Luma quando solicitada", () => {

@@ -120,7 +120,7 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
-                15,
+                8,
                 null,
                 "9:16",
                 null,
@@ -141,7 +141,7 @@ class ExperimentVideoAssetServiceTest {
         assertThat(dto.requiredForRelease()).isTrue();
     }
 
-    /** Garante que o Hub cria o fluxo VEO completo a partir do experimento. */
+    /** Garante que o Hub cria o fluxo VEO curto completo a partir do experimento. */
     @Test
     void shouldRequestVeoRenderFromExperiment() {
         MarketNiche niche = MarketNiche.builder().id(31L).name("Beleza").build();
@@ -168,7 +168,7 @@ class ExperimentVideoAssetServiceTest {
                 "premium acessivel",
                 "natural",
                 "pt-BR",
-                30,
+                8,
                 "Mostre como pequenos detalhes mudam a percepcao de elegancia.",
                 "Voce parece comum mesmo se arrumando?",
                 "Quero o guia",
@@ -204,8 +204,87 @@ class ExperimentVideoAssetServiceTest {
         assertThat(dto.salesVideoProfileId()).isEqualTo(12L);
         assertThat(dto.salesVideoJobId()).isEqualTo(10108L);
         assertThat(dto.requiredForRelease()).isTrue();
-        assertThat(dto.cost()).isEqualByComparingTo("12.0000");
+        assertThat(dto.cost()).isEqualByComparingTo("3.2000");
         assertThat(dto.prompt()).contains("gpt-image-2", "Retrato vertical de consultora brasileira elegante");
+    }
+
+    /** Bloqueia pedido direto de VEO quando a duração passa do limite nativo do provider. */
+    @Test
+    void shouldRejectVeoRenderAboveEightSecondsFromExperiment() {
+        MarketNiche niche = MarketNiche.builder().id(31L).name("Beleza").build();
+        Experiment experiment = Experiment.builder()
+                .id(61L)
+                .niche(niche)
+                .name("Guia de elegancia")
+                .singlePain("Aparencia comum mesmo gastando")
+                .funnelPromise("Parecer mais elegante sem gastar muito")
+                .build();
+        RequestExperimentVeoVideoRequest request = new RequestExperimentVeoVideoRequest(
+                ExperimentVideoSlot.LANDING_HERO,
+                "Video VEO experimento 61",
+                "Aumentar conversao da pagina",
+                "checkout_start_rate",
+                "Consultora",
+                "premium acessivel",
+                "natural",
+                "pt-BR",
+                30,
+                "Mostre como pequenos detalhes mudam a percepcao de elegancia.",
+                "Voce parece comum mesmo se arrumando?",
+                "Quero o guia",
+                null,
+                "Retrato vertical de consultora brasileira elegante, natural, premium acessivel.",
+                "gpt-image-2",
+                "img-123",
+                7001L,
+                "https://cdn.test/musa-personagem.png",
+                "VEO",
+                SalesVideoExecutionMode.TEST,
+                "time@marketinghub.io",
+                true);
+        given(experimentRepository.findById(61L)).willReturn(Optional.of(experiment));
+
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
+                () -> service.requestVeoRender(61L, request));
+
+        assertThat(ex.getReason()).contains("VEO aceita no máximo 8 segundos");
+    }
+
+    /** Bloqueia criação de ativo planejado quando a duração excede o limite do provider. */
+    @Test
+    void shouldRejectPlannedVideoAssetAboveProviderLimit() {
+        Experiment experiment = Experiment.builder().id(39L).build();
+        given(experimentRepository.findById(39L)).willReturn(Optional.of(experiment));
+        CreateExperimentVideoAssetRequest request = new CreateExperimentVideoAssetRequest(
+                ExperimentVideoSlot.AD,
+                "Aumentar cliques",
+                "ctr",
+                "Roteiro curto",
+                "Prompt curto",
+                "KLING_3_0",
+                "kling-v3",
+                null,
+                null,
+                null,
+                15,
+                null,
+                "9:16",
+                null,
+                null,
+                null,
+                null,
+                true,
+                null,
+                null,
+                null,
+                null);
+
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
+                () -> service.create(39L, request));
+
+        assertThat(ex.getReason()).contains("Kling aceita no máximo 10 segundos");
     }
 
     /** Garante que ativos planejados viram jobs de render sem criar ativos duplicados. */
@@ -462,7 +541,7 @@ class ExperimentVideoAssetServiceTest {
                 ExperimentVideoStatus.READY,
                 "https://cdn.test/video.mp4",
                 null,
-                15,
+                8,
                 true,
                 "9:16",
                 null,

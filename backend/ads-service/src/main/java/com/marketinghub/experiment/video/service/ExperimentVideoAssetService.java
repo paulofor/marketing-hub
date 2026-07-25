@@ -41,6 +41,7 @@ import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.service.SalesVideoJobService;
+import com.marketinghub.salesvideo.service.SalesVideoProviderDurationPolicy;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
@@ -138,6 +139,7 @@ public class ExperimentVideoAssetService {
     @Transactional
     public ExperimentVideoAssetDto create(Long experimentId, CreateExperimentVideoAssetRequest request) {
         Experiment experiment = ensureExperiment(experimentId);
+        validateProviderDuration(request.provider(), request.durationSeconds());
         ExperimentVideoAsset videoAsset = ExperimentVideoAsset.builder()
                 .experiment(experiment)
                 .slot(request.slot())
@@ -170,6 +172,8 @@ public class ExperimentVideoAssetService {
     @Transactional
     public ExperimentVideoAssetDto requestVeoRender(Long experimentId, RequestExperimentVeoVideoRequest request) {
         Experiment experiment = ensureExperiment(experimentId);
+        String providerName = Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO");
+        validateProviderDuration(providerName, request.targetDurationSeconds());
         Product product = resolveOrCreateProduct(experiment);
         Long landingPageId = resolveLandingPageId(experimentId);
 
@@ -195,11 +199,10 @@ public class ExperimentVideoAssetService {
         RequestVideoRenderRequest renderRequest = new RequestVideoRenderRequest();
         renderRequest.setRequestedBy(request.requestedBy().trim());
         renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
-        renderRequest.setProviderName(Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"));
+        renderRequest.setProviderName(providerName);
         renderRequest.setExecutionMode(request.executionMode());
         renderRequest.setMetadataJson(buildVeoRenderMetadata(experimentId, request));
         SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
-        String providerName = Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO");
         BigDecimal estimatedCost = costCalculator.estimateUsd(
                 providerName,
                 providerName,
@@ -224,6 +227,14 @@ public class ExperimentVideoAssetService {
                 .salesVideoJob(resolveJob(job.getId()))
                 .build();
         return toDto(repository.save(videoAsset));
+    }
+
+    /** Bloqueia pedidos acima do limite operacional do provider de vídeo. */
+    private void validateProviderDuration(String providerName, Integer targetDurationSeconds) {
+        SalesVideoProviderDurationPolicy.validate(providerName, targetDurationSeconds)
+                .ifPresent(message -> {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+                });
     }
 
     /** Cria jobs de render para ativos planejados e preserva o vínculo original do experimento. */
@@ -340,6 +351,7 @@ public class ExperimentVideoAssetService {
         if (request.durationSeconds() != null) {
             videoAsset.setDurationSeconds(request.durationSeconds());
         }
+        validateProviderDuration(videoAsset.getProvider(), videoAsset.getDurationSeconds());
         if (request.hasAudio() != null) {
             videoAsset.setHasAudio(request.hasAudio());
         }
@@ -464,6 +476,7 @@ public class ExperimentVideoAssetService {
         }
         String providerName = Optional.ofNullable(trimToNull(videoAsset.getProvider())).orElse("LUMA_RAY_3_2");
         Integer targetDurationSeconds = resolvePlannedRenderTargetDurationSeconds(videoAsset, providerName);
+        validateProviderDuration(providerName, targetDurationSeconds);
         Long experimentId = videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null;
         String title = "Vídeo planejado #%d - experimento %d".formatted(videoAsset.getId(), experimentId);
 

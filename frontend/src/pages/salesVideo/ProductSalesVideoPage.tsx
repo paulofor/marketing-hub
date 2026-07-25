@@ -53,8 +53,11 @@ const AVATAR_STRATEGY_LABELS: Record<SalesVideoAvatarStrategy, string> = {
   PROPRIETARY_AVATAR_PLANNED: "Planejar avatar proprietario",
   PROPRIETARY_AVATAR_READY: "Usar avatar proprietario aprovado",
 };
-const AVATAR_STRATEGY_OPTIONS = Object.keys(AVATAR_STRATEGY_LABELS) as SalesVideoAvatarStrategy[];
-const DEFAULT_AVATAR_STRATEGY: SalesVideoAvatarStrategy = "PLATFORM_TEST_AVATAR";
+const AVATAR_STRATEGY_OPTIONS = Object.keys(
+  AVATAR_STRATEGY_LABELS,
+) as SalesVideoAvatarStrategy[];
+const DEFAULT_AVATAR_STRATEGY: SalesVideoAvatarStrategy =
+  "PLATFORM_TEST_AVATAR";
 const USD_TO_BRL_RATE = 5;
 
 const DEFAULT_SCRIPT = [
@@ -199,6 +202,16 @@ export default function ProductSalesVideoPage() {
   const selectedProvider =
     findSalesVideoProviderOption(selectedProviderName) ??
     DEFAULT_SALES_VIDEO_PROVIDER;
+  const providerDurationLimitExceeded = Boolean(
+    selectedProvider.maxDirectDurationSeconds &&
+    selectedProfile?.targetDurationSeconds &&
+    selectedProfile.targetDurationSeconds >
+      selectedProvider.maxDirectDurationSeconds,
+  );
+  const providerDurationLimitMessage =
+    providerDurationLimitExceeded && selectedProvider.maxDirectDurationSeconds
+      ? `${selectedProvider.label} aceita no máximo ${selectedProvider.maxDirectDurationSeconds}s por solicitação. Use montagem por cenas ou outro provider para vídeos maiores.`
+      : "";
   const selectedVideoObjective = selectedVideoJob
     ? describeVideoObjective(selectedProfile, selectedVideoJob)
     : undefined;
@@ -325,21 +338,22 @@ export default function ProductSalesVideoPage() {
       toast.error("Crie ou selecione um vídeo antes de gerar");
       return;
     }
+    if (providerDurationLimitExceeded) {
+      toast.error(providerDurationLimitMessage);
+      return;
+    }
     try {
       await requestRender.mutateAsync({
         requestedBy: tenantContext.userEmail,
         providerFamily: selectedProvider.providerFamily,
         providerName: selectedProvider.providerName,
         executionMode: "TEST",
-        metadataJson: buildSalesVideoRenderMetadata(
-          selectedProvider,
-          {
-            visualProviderDirectives,
-            openAiReferenceImageEnabled,
-            openAiReferenceImagePrompt,
-            referenceImageCount: Number(referenceImageCount),
-          },
-        ),
+        metadataJson: buildSalesVideoRenderMetadata(selectedProvider, {
+          visualProviderDirectives,
+          openAiReferenceImageEnabled,
+          openAiReferenceImagePrompt,
+          referenceImageCount: Number(referenceImageCount),
+        }),
       });
       toast.success("Geração de vídeo solicitada");
     } catch (error) {
@@ -674,7 +688,8 @@ export default function ProductSalesVideoPage() {
               onChange={(event) =>
                 setProfileForm((prev) => ({
                   ...prev,
-                  avatarStrategy: event.target.value as SalesVideoAvatarStrategy,
+                  avatarStrategy: event.target
+                    .value as SalesVideoAvatarStrategy,
                 }))
               }
             >
@@ -685,8 +700,8 @@ export default function ProductSalesVideoPage() {
               ))}
             </select>
             <small className="text-muted">
-              Use avatar pronto para validar mercado agora. Planeje avatar proprietario quando o criativo
-              provar atencao, clique e conversao.
+              Use avatar pronto para validar mercado agora. Planeje avatar
+              proprietario quando o criativo provar atencao, clique e conversao.
             </small>
             <label className="form-label" htmlFor="video-title">
               Título interno
@@ -818,11 +833,17 @@ export default function ProductSalesVideoPage() {
                 <div className="product-video-page__objective">
                   <span>Estrategia de avatar</span>
                   <strong>
-                    {AVATAR_STRATEGY_LABELS[selectedProfile.avatarStrategy ?? DEFAULT_AVATAR_STRATEGY]}
+                    {
+                      AVATAR_STRATEGY_LABELS[
+                        selectedProfile.avatarStrategy ??
+                          DEFAULT_AVATAR_STRATEGY
+                      ]
+                    }
                   </strong>
                   <p>
-                    Avatar pronto reduz tempo e custo de teste. Avatar proprietario deve entrar depois
-                    de sinal positivo de mercado para aumentar diferenciacao e consistencia da marca.
+                    Avatar pronto reduz tempo e custo de teste. Avatar
+                    proprietario deve entrar depois de sinal positivo de mercado
+                    para aumentar diferenciacao e consistencia da marca.
                   </p>
                 </div>
               ) : null}
@@ -896,7 +917,11 @@ export default function ProductSalesVideoPage() {
                   type="button"
                   className="btn btn-primary"
                   onClick={handleRequestRender}
-                  disabled={!effectiveProfileId || requestRender.isPending}
+                  disabled={
+                    !effectiveProfileId ||
+                    requestRender.isPending ||
+                    providerDurationLimitExceeded
+                  }
                 >
                   <PlayCircle size={16} aria-hidden="true" />
                   {requestRender.isPending ? "Solicitando..." : "Gerar vídeo"}
@@ -955,8 +980,25 @@ export default function ProductSalesVideoPage() {
               </select>
               <div className="product-video-page__provider-note">
                 <strong>{selectedProvider.label}</strong>
-                <span>{selectedProvider.recommendedUse}</span>
+                <span>
+                  {selectedProvider.recommendedUse}
+                  {selectedProvider.maxDirectDurationSeconds
+                    ? ` Limite por solicitação: ${selectedProvider.maxDirectDurationSeconds}s.`
+                    : ""}
+                </span>
               </div>
+              {providerDurationLimitMessage ? (
+                <div className="product-video-page__quality product-video-page__quality--blocked">
+                  <div className="product-video-page__quality-header">
+                    <AlertTriangle size={18} aria-hidden="true" />
+                    <div>
+                      <span>Pedido bloqueado pelo provider</span>
+                      <strong>Duração acima do limite</strong>
+                    </div>
+                  </div>
+                  <p>{providerDurationLimitMessage}</p>
+                </div>
+              ) : null}
               {selectedProvider.supportsOpenAiReferenceImage ? (
                 <div className="product-video-page__reference-image-box">
                   <label className="product-video-page__toggle">

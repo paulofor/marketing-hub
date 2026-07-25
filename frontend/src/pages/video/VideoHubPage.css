@@ -192,6 +192,53 @@
   font-size: 0.9rem;
 }
 
+.video-hub-page__rejection-note {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #7f1d1d;
+  padding: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.video-hub-page__review-box {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.7rem;
+}
+
+.video-hub-page__review-box label {
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.video-hub-page__review-box textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.55rem;
+  font: inherit;
+}
+
+.video-hub-page__review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.video-hub-page__review-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .video-hub-page__empty-state {
   border: 1px dashed #cbd5e1;
   border-radius: 8px;

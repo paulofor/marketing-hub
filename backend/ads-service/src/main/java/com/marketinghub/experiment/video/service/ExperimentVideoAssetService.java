@@ -44,6 +44,7 @@ import com.marketinghub.salesvideo.service.SalesVideoJobService;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -361,7 +362,7 @@ public class ExperimentVideoAssetService {
             }
         }
         if (request.reviewStatus() != null) {
-            videoAsset.setReviewStatus(request.reviewStatus());
+            applyReviewUpdate(videoAsset, request);
         }
         if (request.requiredForRelease() != null) {
             videoAsset.setRequiredForRelease(request.requiredForRelease());
@@ -377,6 +378,28 @@ public class ExperimentVideoAssetService {
         }
         if (request.landingVideoSlotId() != null) {
             videoAsset.setLandingVideoSlot(resolveLandingVideoSlot(experimentId, request.landingVideoSlotId()));
+        }
+    }
+
+    /** Aplica aprovação ou reprovação humana mantendo motivo auditável para nova criação. */
+    private void applyReviewUpdate(ExperimentVideoAsset videoAsset, UpdateExperimentVideoAssetRequest request) {
+        ExperimentVideoReviewStatus newStatus = request.reviewStatus();
+        if (newStatus == ExperimentVideoReviewStatus.REJECTED && !StringUtils.hasText(request.rejectionReason())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "rejectionReason is required when rejecting a video asset");
+        }
+        videoAsset.setReviewStatus(newStatus);
+        videoAsset.setReviewedBy(StringUtils.hasText(request.reviewedBy()) ? request.reviewedBy().trim() : null);
+        videoAsset.setReviewedAt(Instant.now());
+        if (newStatus == ExperimentVideoReviewStatus.REJECTED) {
+            videoAsset.setRejectionReason(request.rejectionReason().trim());
+        } else if (newStatus == ExperimentVideoReviewStatus.APPROVED) {
+            videoAsset.setRejectionReason(null);
+        } else if (request.rejectionReason() != null) {
+            videoAsset.setRejectionReason(StringUtils.hasText(request.rejectionReason())
+                    ? request.rejectionReason().trim()
+                    : null);
         }
     }
 
@@ -866,6 +889,9 @@ public class ExperimentVideoAssetService {
                 videoAsset.getResponseJson(),
                 videoAsset.getCost(),
                 videoAsset.getReviewStatus(),
+                videoAsset.getRejectionReason(),
+                videoAsset.getReviewedBy(),
+                videoAsset.getReviewedAt(),
                 videoAsset.isRequiredForRelease(),
                 videoAsset.getSalesVideoProfile() != null ? videoAsset.getSalesVideoProfile().getId() : null,
                 videoAsset.getSalesVideoJob() != null ? videoAsset.getSalesVideoJob().getId() : null,

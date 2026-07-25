@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-24-experiment-video-approval-gate
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_video_asset
+        - not:
+            - columnExists:
+                tableName: experiment_video_asset
+                columnName: rejection_reason
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_video_asset
+                ADD COLUMN rejection_reason LONGTEXT NULL AFTER review_status,
+                ADD COLUMN reviewed_by VARCHAR(255) NULL AFTER rejection_reason,
+                ADD COLUMN reviewed_at DATETIME NULL AFTER reviewed_by;

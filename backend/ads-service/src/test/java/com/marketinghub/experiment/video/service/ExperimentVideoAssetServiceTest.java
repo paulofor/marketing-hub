@@ -514,6 +514,8 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 ExperimentVideoReviewStatus.APPROVED,
                 null,
+                "aprovador@marketinghub.local",
+                null,
                 null,
                 null,
                 null,
@@ -521,7 +523,57 @@ class ExperimentVideoAssetServiceTest {
 
         assertThat(dto.status()).isEqualTo(ExperimentVideoStatus.READY);
         assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.APPROVED);
+        assertThat(dto.reviewedBy()).isEqualTo("aprovador@marketinghub.local");
+        assertThat(dto.reviewedAt()).isNotNull();
         assertThat(dto.assetUrl()).isEqualTo("https://cdn.test/video.mp4");
+    }
+
+    /** Garante que reprovação humana sempre explique a causa para nova criação. */
+    @Test
+    void shouldRequireReasonWhenRejectingVideoAsset() {
+        Experiment experiment = Experiment.builder().id(39L).build();
+        ExperimentVideoAsset videoAsset = ExperimentVideoAsset.builder()
+                .id(5L)
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.AD)
+                .objective("Validar criativo")
+                .primaryMetric("thumbstop")
+                .provider("LUMA")
+                .model("ray-3.2")
+                .status(ExperimentVideoStatus.READY)
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build();
+        given(experimentRepository.findById(39L)).willReturn(Optional.of(experiment));
+        given(repository.findById(5L)).willReturn(Optional.of(videoAsset));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                service.update(39L, 5L, new UpdateExperimentVideoAssetRequest(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        ExperimentVideoReviewStatus.REJECTED,
+                        " ",
+                        "aprovador@marketinghub.local",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null)));
+
+        assertThat(exception.getStatusCode().value()).isEqualTo(400);
     }
 
     /** Garante que a listagem retorna os vídeos registrados para o experimento. */

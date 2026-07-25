@@ -96,6 +96,15 @@ public class ExperimentVideoAsset {
     @Column(name = "review_status", nullable = false, length = 32)
     private ExperimentVideoReviewStatus reviewStatus;
 
+    @Column(name = "rejection_reason", columnDefinition = "LONGTEXT")
+    private String rejectionReason;
+
+    @Column(name = "reviewed_by", length = 255)
+    private String reviewedBy;
+
+    @Column(name = "reviewed_at")
+    private Instant reviewedAt;
+
     @Column(name = "required_for_release", nullable = false)
     private boolean requiredForRelease;
 

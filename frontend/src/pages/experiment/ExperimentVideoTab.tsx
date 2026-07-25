@@ -1,11 +1,16 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { CheckCircle2, XCircle } from "lucide-react";
+import { toast } from "react-toastify";
 import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
 import type { Experiment } from "../../api/experiment/useExperiments";
 import {
   ExperimentVideoAsset,
+  ExperimentVideoReviewStatus,
   useExperimentVideoAssets,
 } from "../../api/experiment/useExperimentVideoAssets";
+import { useUpdateExperimentVideoAssetReview } from "../../api/experiment/useUpdateExperimentVideoAssetReview";
+import { useTenantContext } from "../../utils/tenantContext";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import "./ExperimentVideoTab.css";
 
@@ -109,6 +114,8 @@ export default function ExperimentVideoTab({
     experiment.id,
   );
   const geraSalesPagePublications = useGeraSalesPagePublications(experiment.id);
+  const tenantContext = useTenantContext();
+  const updateVideoReview = useUpdateExperimentVideoAssetReview();
 
   const sortedAssets = useMemo(() => videoAssets ?? [], [videoAssets]);
   const readyHeroAssets = useMemo(
@@ -177,6 +184,21 @@ export default function ExperimentVideoTab({
     latestSalesPagePublication?.salesPageUrl,
   );
   const productVideoUrl = "/products/4/sales-videos";
+
+  async function handleVideoReview(
+    video: ExperimentVideoAsset,
+    reviewStatus: ExperimentVideoReviewStatus,
+    rejectionReason?: string,
+  ) {
+    await updateVideoReview.mutateAsync({
+      experimentId: video.experimentId,
+      videoAssetId: video.id,
+      reviewStatus,
+      rejectionReason,
+      reviewedBy: tenantContext.userEmail,
+    });
+    toast.success(reviewStatus === "APPROVED" ? "Vídeo aprovado." : "Vídeo reprovado com motivo.");
+  }
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -334,18 +356,19 @@ export default function ExperimentVideoTab({
                   <th>Obrigatório</th>
                   <th>Atualizado</th>
                   <th>Asset</th>
+                  <th>Aprovação</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={12} className="text-muted">
+                    <td colSpan={13} className="text-muted">
                       Carregando vídeos...
                     </td>
                   </tr>
                 ) : sortedAssets.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="text-muted">
+                    <td colSpan={13} className="text-muted">
                       Nenhum vídeo registrado para este experimento.
                     </td>
                   </tr>
@@ -393,6 +416,13 @@ export default function ExperimentVideoTab({
                           "—"
                         )}
                       </td>
+                      <td>
+                        <ExperimentVideoReviewControls
+                          asset={asset}
+                          onReview={handleVideoReview}
+                          pending={updateVideoReview.isPending}
+                        />
+                      </td>
                     </tr>
                   ))
                 )}
@@ -407,6 +437,64 @@ export default function ExperimentVideoTab({
         vídeos, gerar variações, finalizar peças para venda e acompanhar custo,
         use a central única em{" "}
         <Link to={productVideoUrl}>Vídeos do produto</Link>.
+      </div>
+    </div>
+  );
+}
+
+function ExperimentVideoReviewControls({
+  asset,
+  onReview,
+  pending,
+}: {
+  asset: ExperimentVideoAsset;
+  onReview: (
+    video: ExperimentVideoAsset,
+    reviewStatus: ExperimentVideoReviewStatus,
+    rejectionReason?: string,
+  ) => Promise<void>;
+  pending: boolean;
+}) {
+  const [rejectionReason, setRejectionReason] = useState(asset.rejectionReason ?? "");
+  const canApprove = asset.status === "READY" && Boolean(asset.assetUrl);
+  const canReject = asset.status === "READY" && rejectionReason.trim().length > 0;
+
+  useEffect(() => {
+    setRejectionReason(asset.rejectionReason ?? "");
+  }, [asset.id, asset.rejectionReason]);
+
+  return (
+    <div className="experiment-video-review">
+      {asset.reviewStatus === "REJECTED" && asset.rejectionReason ? (
+        <div className="experiment-video-review__reason">
+          {asset.rejectionReason}
+        </div>
+      ) : null}
+      <textarea
+        value={rejectionReason}
+        onChange={(event) => setRejectionReason(event.target.value)}
+        rows={2}
+        placeholder="Motivo da reprovação"
+      />
+      <div className="experiment-video-review__actions">
+        <button
+          className="btn btn-sm btn-success"
+          type="button"
+          disabled={!canApprove || pending}
+          onClick={() => onReview(asset, "APPROVED")}
+        >
+          <CheckCircle2 size={14} aria-hidden="true" />
+          Aprovar
+        </button>
+        <button
+          className="btn btn-sm btn-outline-danger"
+          type="button"
+          disabled={!canReject || pending}
+          onClick={() => onReview(asset, "REJECTED", rejectionReason.trim())}
+        >
+          <XCircle size={14} aria-hidden="true" />
+          Reprovar
+        </button>
       </div>
     </div>
   );

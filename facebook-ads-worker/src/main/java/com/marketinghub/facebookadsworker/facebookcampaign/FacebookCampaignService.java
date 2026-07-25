@@ -1312,6 +1312,25 @@ public class FacebookCampaignService {
                 adNameSuffix
             );
         }
+
+        /** Substitui o vídeo por um frame estático quando a Meta rejeita todos os uploads de vídeo. */
+        private CreativePublicationPayload withVideoFrameFallbackImageHash(String value) {
+            return new CreativePublicationPayload(
+                creative,
+                websiteUrl,
+                leadGenFormId,
+                message,
+                callToAction,
+                headline,
+                description,
+                value,
+                null,
+                null,
+                null,
+                instagramActorId,
+                adNameSuffix
+            );
+        }
     }
 
     private List<Creative> resolveCreatives(long experimentId) {
@@ -1664,24 +1683,56 @@ public class FacebookCampaignService {
                 downloadedVideo.bytes(),
                 sourceFileName
             );
-            String uploadedVideoId = executeFacebookCallWithLogging(
-                publicationJobId,
-                experimentId,
-                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                () -> uploadVideoWithOfficialFlowOrLegacyFallback(
-                    adAccountId,
-                    normalizedVideo.bytes(),
+            try {
+                String uploadedVideoId = executeFacebookCallWithLogging(
+                    publicationJobId,
+                    experimentId,
+                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                    () -> uploadVideoWithOfficialFlowOrLegacyFallback(
+                        adAccountId,
+                        normalizedVideo.bytes(),
+                        normalizedVideo.fileName(),
+                        normalizedVideo.contentType())
+                );
+                LOGGER.info(
+                    "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}, normalized={}",
+                    experimentId,
+                    payload.creative().id(),
+                    uploadedVideoId,
+                    normalizedVideo.normalized()
+                );
+                resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
+            } catch (RuntimeException ex) {
+                LOGGER.warn(
+                    "Creative video upload failed after official and legacy Meta flows; using extracted frame fallback: experimentId={}, creativeId={}, filename={}, message={}",
+                    experimentId,
+                    payload.creative().id(),
                     normalizedVideo.fileName(),
-                    normalizedVideo.contentType())
-            );
-            LOGGER.info(
-                "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}, normalized={}",
-                experimentId,
-                payload.creative().id(),
-                uploadedVideoId,
-                normalizedVideo.normalized()
-            );
-            resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
+                    ex.getMessage(),
+                    ex
+                );
+                MetaVideoNormalizer.NormalizedImage fallbackFrame = metaVideoNormalizer.extractFallbackFrame(
+                    normalizedVideo.bytes(),
+                    normalizedVideo.fileName()
+                );
+                String uploadedImageHash = executeFacebookCallWithLogging(
+                    publicationJobId,
+                    experimentId,
+                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                    () -> facebookAdsService.uploadAdImageFromBytes(
+                        adAccountId,
+                        fallbackFrame.bytes(),
+                        fallbackFrame.fileName(),
+                        fallbackFrame.contentType())
+                );
+                LOGGER.info(
+                    "Creative video fallback frame uploaded to Meta as image_hash: experimentId={}, creativeId={}, imageHash={}",
+                    experimentId,
+                    payload.creative().id(),
+                    uploadedImageHash
+                );
+                resolvedPayloads.add(payload.withVideoFrameFallbackImageHash(uploadedImageHash));
+            }
         }
         return resolvedPayloads;
     }

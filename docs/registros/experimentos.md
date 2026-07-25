@@ -6038,6 +6038,14 @@
 
 - causa-raiz: com múltiplas versões produtivas do PDE, o quadro de deploy por ambiente na tela de experimento confundia decisão comercial com publicação técnica.
 - foi feito: a tela de experimento ficou focada em métricas, jornada, criativos, dispositivo e escolha da versão medida; criação/manutenção de URLs produtivas fica no card do produto.
+
+## 2026-07-25 — Experimento 71: fallback para upload de vídeo na Meta
+
+- Contexto: o experimento `71 - Metodo MUSA - Presenca Elegante em 7 Dias-E001` foi reativado para nova tentativa de publicação no Facebook Ads.
+- Evidência operacional: o backend recolocou o experimento em `PLANNED`, mas o worker voltou a marcar `FAILED` após a Meta retornar `403` no fluxo oficial `video_ads` e `500 OAuthException code 1` no fallback legado `/advideos`.
+- Causa-raiz tratada no repositório: a publicação dependia de upload de vídeo mesmo quando a Meta rejeitava tanto o fluxo oficial quanto o legado.
+- Correção preparada: o `facebook-ads-worker` passa a extrair um frame JPEG do próprio vídeo normalizado via FFmpeg, subir esse frame por `/adimages` e publicar o criativo com `image_hash` quando todos os uploads de vídeo falharem.
+- Impacto comercial esperado: recolocar o experimento em validação comercial sem trocar oferta, público, copy ou destino, aceitando que a leitura do primeiro ciclo passa a ser de contorno estático derivado do vídeo e não validação pura do formato vídeo.
 - foi feito: removidos o compose paralelo antigo, o job correspondente no workflow e os contratos de backend que sustentavam o quadro obsoleto.
 - impacto comercial esperado: reduzir erro operacional na escolha de versão, acelerar leitura por hipótese e manter o experimento focado em conversão real.
 

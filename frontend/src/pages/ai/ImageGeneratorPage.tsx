@@ -63,6 +63,7 @@ export default function ImageGeneratorPage() {
   const generation = useGenerateImage();
   const result = generation.data;
   const generatedImages = useMemo(() => result?.images ?? [], [result]);
+  const generationFailures = useMemo(() => result?.failures ?? [], [result]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -166,6 +167,19 @@ export default function ImageGeneratorPage() {
                 className="bg-body-tertiary border rounded overflow-hidden p-3"
                 style={{ minHeight: "28rem" }}
               >
+                {generationFailures.length > 0 ? (
+                  <div className="alert alert-warning" role="status">
+                    <div className="fw-semibold mb-1">
+                      Parte do lote comparativo falhou.
+                    </div>
+                    {generationFailures.map((failure) => (
+                      <div key={`${failure.model}-${failure.finishedAt}`}>
+                        {failure.model}: {failure.message}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
                 {generatedImages.length > 0 ? (
                   <div className="row g-3">
                     {generatedImages.map((image) => (

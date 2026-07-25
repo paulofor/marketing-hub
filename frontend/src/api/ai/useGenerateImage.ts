@@ -24,6 +24,13 @@ export type GeneratedImageVariant = {
 export type ImageGenerationResponse = {
   jobId: string;
   images: GeneratedImageResult[];
+  failures?: GeneratedImageFailure[];
+};
+
+export type GeneratedImageFailure = {
+  model: string;
+  message: string;
+  finishedAt: string;
 };
 
 type ImageGenerationPayload = {

@@ -4,9 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorResult;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 class ImageGeneratorServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -95,5 +99,32 @@ class ImageGeneratorServiceTest {
                 .containsEntry("action", "generate")
                 .containsEntry("model", "gpt-image-2")
                 .containsEntry("output_format", "png");
+    }
+
+    /** Garante que uma falha individual não descarte a imagem gerada com sucesso no mesmo lote. */
+    @Test
+    void keepsPartialImageWhenComparisonGenerationFails() {
+        ImageGeneratorService service = new ImageGeneratorService(null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+        ImageGeneratorResult generated = new ImageGeneratorResult(
+                "img-ok",
+                "gpt-5.6",
+                "flex",
+                "png",
+                "abc123",
+                List.of(),
+                java.time.Instant.parse("2026-07-25T00:00:00Z"));
+
+        ImageGeneratorService.ImageGenerationBatchResult result = service.collectGenerationResults(List.of(
+                new ImageGeneratorService.NamedGeneration("gpt-5.6", CompletableFuture.completedFuture(generated)),
+                new ImageGeneratorService.NamedGeneration(
+                        "gpt-image-2",
+                        CompletableFuture.failedFuture(new ResponseStatusException(
+                                HttpStatus.BAD_GATEWAY,
+                                "OpenAI recusou a geração da imagem: limite momentâneo.")))));
+
+        assertThat(result.images()).containsExactly(generated);
+        assertThat(result.failures()).hasSize(1);
+        assertThat(result.failures().get(0).model()).isEqualTo("gpt-image-2");
+        assertThat(result.failures().get(0).message()).contains("limite momentâneo");
     }
 }

@@ -4,6 +4,29 @@ info:
   version: 1.0.0
   description: Endpoints públicos e administrativos do cadastro comercial de produtos.
 paths:
+  /api/products/{id}/financial-summary:
+    get:
+      tags:
+        - Products
+      summary: Retorna custos, receitas e lucro do produto em visão mensal e anual.
+      operationId: getProductFinancialSummary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        "200":
+          description: Resumo financeiro do produto com valores em BRL e USD.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductFinancialSummary"
+        "404":
+          description: Produto não encontrado.
   /api/products/{id}/video-seed-image:
     patch:
       tags:
@@ -153,6 +176,60 @@ components:
         videoSeedReviewedAt:
           type: string
           format: date-time
+    ProductFinancialSummary:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        productSlug:
+          type: string
+        exchangeRateBrlPerUsd:
+          type: number
+          format: decimal
+          example: 5.00
+        monthStart:
+          type: string
+          format: date-time
+        yearStart:
+          type: string
+          format: date-time
+        costs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductFinancialLine"
+        revenue:
+          $ref: "#/components/schemas/ProductFinancialLine"
+        profit:
+          $ref: "#/components/schemas/ProductFinancialLine"
+    ProductFinancialLine:
+      type: object
+      properties:
+        type:
+          type: string
+          example: MEDIA
+        label:
+          type: string
+          example: Mídia paga
+        monthly:
+          $ref: "#/components/schemas/ProductFinancialAmount"
+        annual:
+          $ref: "#/components/schemas/ProductFinancialAmount"
+        source:
+          type: string
+    ProductFinancialAmount:
+      type: object
+      properties:
+        brl:
+          type: number
+          format: decimal
+          example: 250.00
+        usd:
+          type: number
+          format: decimal
+          example: 50.00
     UpdateProductVideoSeedImageRequest:
       type: object
       required:

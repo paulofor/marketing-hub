@@ -11,6 +11,9 @@ import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
+import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,6 +87,46 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.name").value(request.getName()))
                 .andExpect(jsonPath("$.logoUrl").value("https://clubemusa.com.br/assets/logo-musa.svg"))
                 .andExpect(jsonPath("$.currentPriceBrl").value(67.00));
+    }
+
+    /** Deve expor o resumo financeiro do produto no contrato canônico. */
+    @Test
+    void getFinancialSummary() throws Exception {
+        var response = new ProductFinancialSummaryResponse(
+                1L,
+                "Método MUSA",
+                "metodo-musa-7-dias",
+                new BigDecimal("5.00"),
+                Instant.parse("2026-07-01T00:00:00Z"),
+                Instant.parse("2026-01-01T00:00:00Z"),
+                List.of(new ProductFinancialLineResponse(
+                        "MEDIA",
+                        "Mídia paga",
+                        new ProductFinancialAmountResponse(new BigDecimal("25.00"), new BigDecimal("5.00")),
+                        new ProductFinancialAmountResponse(new BigDecimal("250.00"), new BigDecimal("50.00")),
+                        "Métricas de campanha")),
+                new ProductFinancialLineResponse(
+                        "SALES",
+                        "Receitas de vendas",
+                        new ProductFinancialAmountResponse(new BigDecimal("67.00"), new BigDecimal("13.40")),
+                        new ProductFinancialAmountResponse(new BigDecimal("670.00"), new BigDecimal("134.00")),
+                        "Vendas aprovadas"),
+                new ProductFinancialLineResponse(
+                        "PROFIT",
+                        "Lucro",
+                        new ProductFinancialAmountResponse(new BigDecimal("42.00"), new BigDecimal("8.40")),
+                        new ProductFinancialAmountResponse(new BigDecimal("420.00"), new BigDecimal("84.00")),
+                        "Receita menos custos"));
+
+        when(service.getFinancialSummary(1L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/products/{id}/financial-summary", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(1L))
+                .andExpect(jsonPath("$.exchangeRateBrlPerUsd").value(5.00))
+                .andExpect(jsonPath("$.costs[0].type").value("MEDIA"))
+                .andExpect(jsonPath("$.revenue.monthly.brl").value(67.00))
+                .andExpect(jsonPath("$.profit.annual.usd").value(84.00));
     }
 
     /** Deve expor a definição pública de mercado do produto como Markdown. */

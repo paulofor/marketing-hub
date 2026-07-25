@@ -6,11 +6,12 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotReq
 import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
-import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.ProductDto;
+import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
+import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
@@ -58,6 +59,12 @@ public class ProductController {
   @PutMapping("/{id}")
   public ProductDto update(@PathVariable Long id, @RequestBody CreateProductRequest request) {
     return mapper.toDto(service.updateProduct(id, request));
+  }
+
+  /** Retorna custos, receitas e lucro do produto para análise financeira. */
+  @GetMapping("/{id}/financial-summary")
+  public ProductFinancialSummaryResponse getFinancialSummary(@PathVariable Long id) {
+    return service.getFinancialSummary(id);
   }
 
   /** Insere a jornada persuasiva interativa padrão no contrato PDE do produto. */

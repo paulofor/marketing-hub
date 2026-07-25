@@ -29,6 +29,7 @@ import com.marketinghub.storage.AssetStorageService;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: validar as regras de cadastro comercial de produtos. */
@@ -83,7 +84,8 @@ class ProductServiceTest {
         productVideoProviderAvatarRepository,
         mock(ImageGeneratorService.class),
         mock(AssetStorageService.class),
-        objectMapper);
+        objectMapper,
+        mock(JdbcTemplate.class));
   }
 
   /** Deve persistir alterações comerciais em um produto já existente. */

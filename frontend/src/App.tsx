@@ -11,6 +11,7 @@ import CoursePlanDetailPage from "./pages/course/CoursePlanDetailPage";
 import ProductListPage from "./pages/product/ProductListPage";
 import NewProductPage from "./pages/product/NewProductPage";
 import EditProductPage from "./pages/product/EditProductPage";
+import ProductFinancialPage from "./pages/product/ProductFinancialPage";
 import ProductVideoImagesPage from "./pages/product/ProductVideoImagesPage";
 import ProductPdeVersionsPage from "./pages/product/ProductPdeVersionsPage";
 import ProductSalesVideoPage from "./pages/salesVideo/ProductSalesVideoPage";
@@ -200,6 +201,10 @@ export default function App() {
               <Route path="/products" element={<ProductListPage />} />
               <Route path="/products/new" element={<NewProductPage />} />
               <Route path="/products/:id/edit" element={<EditProductPage />} />
+              <Route
+                path="/products/:productId/financial"
+                element={<ProductFinancialPage />}
+              />
               <Route
                 path="/products/:productId/video-images"
                 element={<ProductVideoImagesPage />}

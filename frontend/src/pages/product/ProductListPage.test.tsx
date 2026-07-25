@@ -63,6 +63,31 @@ describe("ProductListPage", () => {
     ).toBeTruthy();
   });
 
+  it("shows product video images action for listed product", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          slug: "metodo-musa-7-dias",
+          name: "Método MUSA - Presença Elegante em 7 Dias",
+        },
+      ],
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    const videoImagesLink = await screen.findByRole("link", {
+      name: /Imagens Para Vídeos/i,
+    });
+    expect(videoImagesLink).toHaveAttribute("href", "/products/1/video-images");
+  });
+
   it("shows empty state when there are no products", async () => {
     (axios.get as any).mockResolvedValue({ data: [] });
     const client = new QueryClient();

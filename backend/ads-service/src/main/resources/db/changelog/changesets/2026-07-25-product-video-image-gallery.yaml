@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-25-product-video-image-gallery
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - tableExists:
+            tableName: asset
+        - not:
+            - tableExists:
+                tableName: product_video_image
+      changes:
+        - createTable:
+            tableName: product_video_image
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_product_video_image
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: asset_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: purpose
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prompt
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_status
+                  type: VARCHAR(32)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_notes
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: product_video_image
+            baseColumnNames: product_id
+            constraintName: fk_product_video_image_product
+            referencedTableName: product
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: product_video_image
+            baseColumnNames: asset_id
+            constraintName: fk_product_video_image_asset
+            referencedTableName: asset
+            referencedColumnNames: id
+        - createIndex:
+            tableName: product_video_image
+            indexName: idx_product_video_image_product_created
+            columns:
+              - column:
+                  name: product_id
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: product_video_image
+            indexName: idx_product_video_image_asset
+            columns:
+              - column:
+                  name: asset_id

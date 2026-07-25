@@ -1,6 +1,14 @@
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
-import { GitBranch, Eye, Loader2, Pencil, Video, Workflow } from "lucide-react";
+import {
+  GitBranch,
+  Eye,
+  Image as ImageIcon,
+  Loader2,
+  Pencil,
+  Video,
+  Workflow,
+} from "lucide-react";
 import { parsePdePersuasiveJourney } from "../../api/product/pdePersuasiveJourney";
 import { useApplyDefaultPdePersuasiveJourney } from "../../api/product/useApplyDefaultPdePersuasiveJourney";
 import { useProducts } from "../../api/product/useProducts";
@@ -336,6 +344,13 @@ export default function ProductListPage() {
                       >
                         <Video size={16} aria-hidden="true" />
                         Vídeos de venda
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/products/${product.id}/video-images`}
+                      >
+                        <ImageIcon size={16} aria-hidden="true" />
+                        Imagens Para Vídeos
                       </Link>
                       {showPdeJourneyAction && (
                         <Link

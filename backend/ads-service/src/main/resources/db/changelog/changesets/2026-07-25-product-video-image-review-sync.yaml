@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-25-product-video-image-review-sync
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - tableExists:
+            tableName: product_video_image
+        - columnExists:
+            tableName: product
+            columnName: video_seed_image_asset_id
+        - columnExists:
+            tableName: product
+            columnName: video_seed_review_status
+        - columnExists:
+            tableName: product_video_image
+            columnName: review_status
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product_video_image pvi
+              JOIN product p
+                ON p.id = pvi.product_id
+               AND p.video_seed_image_asset_id = pvi.asset_id
+              SET pvi.review_status = p.video_seed_review_status,
+                  pvi.review_notes = COALESCE(pvi.review_notes, p.video_seed_review_notes)
+              WHERE p.video_seed_review_status IN ('APPROVED', 'REJECTED')
+                AND pvi.review_status <> p.video_seed_review_status;

@@ -3,6 +3,7 @@ package com.marketinghub.product.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.ProductVideoImage;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
@@ -36,12 +38,27 @@ class ProductServiceTest {
       InstagramAccountRepository accountRepository,
       MarketNicheRepository marketNicheRepository,
       AssetRepository assetRepository) {
+    return newService(
+        productRepository,
+        accountRepository,
+        marketNicheRepository,
+        assetRepository,
+        mock(ProductVideoImageRepository.class));
+  }
+
+  /** Cria o serviço com repositório de galeria informado para validar revisão de imagem. */
+  private ProductService newService(
+      ProductRepository productRepository,
+      InstagramAccountRepository accountRepository,
+      MarketNicheRepository marketNicheRepository,
+      AssetRepository assetRepository,
+      ProductVideoImageRepository productVideoImageRepository) {
     return new ProductService(
         productRepository,
         accountRepository,
         marketNicheRepository,
         assetRepository,
-        mock(ProductVideoImageRepository.class),
+        productVideoImageRepository,
         mock(ImageGeneratorService.class),
         mock(AssetStorageService.class),
         objectMapper);
@@ -102,8 +119,15 @@ class ProductServiceTest {
     InstagramAccountRepository accountRepository = mock(InstagramAccountRepository.class);
     MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
     AssetRepository assetRepository = mock(AssetRepository.class);
+    ProductVideoImageRepository productVideoImageRepository =
+        mock(ProductVideoImageRepository.class);
     ProductService service =
-        newService(productRepository, accountRepository, marketNicheRepository, assetRepository);
+        newService(
+            productRepository,
+            accountRepository,
+            marketNicheRepository,
+            assetRepository,
+            productVideoImageRepository);
     Product product = Product.builder().id(1L).name("Método MUSA").build();
     Asset asset =
         Asset.builder()
@@ -112,9 +136,18 @@ class ProductServiceTest {
             .status(AssetStatus.READY)
             .url("/uploads/musa-seed.png")
             .build();
+    ProductVideoImage galleryImage =
+        ProductVideoImage.builder()
+            .id(7L)
+            .product(product)
+            .asset(asset)
+            .reviewStatus(ProductVideoSeedImageReviewStatus.PENDING)
+            .build();
 
     when(productRepository.findById(1L)).thenReturn(Optional.of(product));
     when(assetRepository.findById(99L)).thenReturn(Optional.of(asset));
+    when(productVideoImageRepository.findFirstByProductIdAndAssetId(1L, 99L))
+        .thenReturn(Optional.of(galleryImage));
     when(productRepository.save(product)).thenReturn(product);
 
     Product updated =
@@ -134,6 +167,10 @@ class ProductServiceTest {
     assertThat(updated.getVideoSeedReviewNotes()).isEqualTo("Aprovada como imagem-mestre.");
     assertThat(updated.getVideoSeedReviewedBy()).isEqualTo("marketing@hub.local");
     assertThat(updated.getVideoSeedReviewedAt()).isNotNull();
+    assertThat(galleryImage.getReviewStatus())
+        .isEqualTo(ProductVideoSeedImageReviewStatus.APPROVED);
+    assertThat(galleryImage.getReviewNotes()).isEqualTo("Aprovada como imagem-mestre.");
+    verify(productVideoImageRepository).save(galleryImage);
   }
 
   /** Deve bloquear asset que não é imagem para impedir semente inválida de vídeo. */
@@ -194,18 +231,22 @@ class ProductServiceTest {
                 "Curadoria guiada de presença visual com base em Adam e Galinsky (2012).")
             .languageStyle("Sofisticada, prática e acolhedora.")
             .colorPalette(
-                "1. Vinho MUSA #7A2444; 2. Dourado #D6A75C; 3. Creme #FFF8F3; 4. Grafite #2F2A2C; 5. Blush #F3C9C1; 6. Oliva #6F7A52; 7. Champanhe #F7E4C6.")
+                "1. Vinho MUSA #7A2444; 2. Dourado #D6A75C; 3. Creme #FFF8F3; 4. Grafite #2F2A2C;"
+                    + " 5. Blush #F3C9C1; 6. Oliva #6F7A52; 7. Champanhe #F7E4C6.")
             .tripwire(
                 "Experiência guiada de 7 dias com diagnóstico, missões, checklists e templates.")
             .sevenDayJourney(
                 "- **Dia 1 — Diagnóstico de presença:** identificar ruído visual.\n"
-                    + "- **Dia 2 — Limpeza de ruído visual:** remover excessos sem comprar nada novo.")
+                    + "- **Dia 2 — Limpeza de ruído visual:** remover excessos sem comprar nada"
+                    + " novo.")
             .supportMaterialPositioning(
                 "Material de apoio aparece como reforço secundário da jornada.")
             .primaryCta("Ver meu plano MUSA de 7 dias")
             .socialProof("Prova científica, prova visual e experimento 66.")
             .scientificEvidencePack(
-                "Evidence Pack MUSA v1: uso de IA associado aos artigos científicos citados, princípios permitidos, linguagem permitida, afirmações proibidas e referências científicas.")
+                "Evidence Pack MUSA v1: uso de IA associado aos artigos científicos citados,"
+                    + " princípios permitidos, linguagem permitida, afirmações proibidas e"
+                    + " referências científicas.")
             .funnel("Anúncio → login → experiência gratuita → paywall → compra.")
             .codeModules("pde-platform, backend")
             .aiCost(new BigDecimal("1.20"))

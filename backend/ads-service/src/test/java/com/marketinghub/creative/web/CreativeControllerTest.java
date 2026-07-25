@@ -8,9 +8,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoSlot;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.FixtureUtils;
@@ -53,6 +58,8 @@ class CreativeControllerTest {
     @Autowired
     CreativeRepository repository;
     @Autowired
+    ExperimentVideoAssetRepository videoAssetRepository;
+    @Autowired
     ExperimentRepository experimentRepository;
     @Autowired
     MarketNicheRepository marketNicheRepository;
@@ -73,6 +80,7 @@ class CreativeControllerTest {
 
     @BeforeEach
     void setup() {
+        videoAssetRepository.deleteAll();
         repository.deleteAll();
         experimentRepository.deleteAll();
         leadPortalFlowRepository.deleteAll();
@@ -114,8 +122,36 @@ class CreativeControllerTest {
         mockMvc.perform(get("/api/creatives/video-review").param("status", "DRAFT"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].headline").value("Video"))
+                .andExpect(jsonPath("$[0].sourceType").value("CREATIVE"))
                 .andExpect(jsonPath("$[0].status").value("DRAFT"))
                 .andExpect(jsonPath("$[0].videoUrl").value("https://cdn.test/video.mp4"));
+    }
+
+    /** Garante que vídeos gerados para experimento aparecem na fila comercial de aprovação. */
+    @Test
+    void listVideoReviewEndpointReturnsExperimentVideoAssets() throws Exception {
+        Experiment experiment = experimentRepository.findById(expId).orElseThrow();
+        videoAssetRepository.save(ExperimentVideoAsset.builder()
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Video do E002 para rodar campanha")
+                .primaryMetric("checkout_start_rate")
+                .script("Dor, mecanismo MUSA e chamada para diagnostico.")
+                .prompt("Usar personagem aprovada e manter presença elegante acessível.")
+                .provider("HEYGEN")
+                .model("heygen")
+                .status(ExperimentVideoStatus.READY)
+                .assetUrl("https://cdn.test/e002.mp4")
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build());
+
+        mockMvc.perform(get("/api/creatives/video-review").param("status", "DRAFT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sourceType").value("EXPERIMENT_VIDEO_ASSET"))
+                .andExpect(jsonPath("$[0].headline").value("Video do E002 para rodar campanha"))
+                .andExpect(jsonPath("$[0].status").value("DRAFT"))
+                .andExpect(jsonPath("$[0].videoUrl").value("https://cdn.test/e002.mp4"));
     }
 
     /** Garante que a API permita aprovar somente o status do vídeo. */
@@ -143,6 +179,67 @@ class CreativeControllerTest {
 
         Experiment experiment = experimentRepository.findById(expId).orElseThrow();
         assertThat(experiment.isCreativeApproved()).isTrue();
+    }
+
+    /** Garante que a tela consiga aprovar um vídeo gerado sem converter o ativo em criativo. */
+    @Test
+    void videoReviewStatusEndpointApprovesExperimentVideoAsset() throws Exception {
+        Experiment experiment = experimentRepository.findById(expId).orElseThrow();
+        ExperimentVideoAsset videoAsset = videoAssetRepository.save(ExperimentVideoAsset.builder()
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Video E002")
+                .primaryMetric("checkout_start_rate")
+                .script("Roteiro aprovado")
+                .prompt("Prompt aprovado")
+                .provider("HEYGEN")
+                .model("heygen")
+                .status(ExperimentVideoStatus.READY)
+                .assetUrl("https://cdn.test/e002.mp4")
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build());
+
+        mockMvc.perform(patch("/api/creatives/video-review/EXPERIMENT_VIDEO_ASSET/" + videoAsset.getId() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"READY\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sourceType").value("EXPERIMENT_VIDEO_ASSET"))
+                .andExpect(jsonPath("$.status").value("READY"));
+
+        ExperimentVideoAsset updated = videoAssetRepository.findById(videoAsset.getId()).orElseThrow();
+        assertThat(updated.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.APPROVED);
+    }
+
+    /** Garante que a reprovação preserve o motivo para orientar a próxima geração. */
+    @Test
+    void videoReviewStatusEndpointRejectsExperimentVideoAssetWithReason() throws Exception {
+        Experiment experiment = experimentRepository.findById(expId).orElseThrow();
+        ExperimentVideoAsset videoAsset = videoAssetRepository.save(ExperimentVideoAsset.builder()
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Video E002")
+                .primaryMetric("checkout_start_rate")
+                .script("Roteiro aprovado")
+                .prompt("Prompt aprovado")
+                .provider("HEYGEN")
+                .model("heygen")
+                .status(ExperimentVideoStatus.READY)
+                .assetUrl("https://cdn.test/e002.mp4")
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build());
+
+        mockMvc.perform(patch("/api/creatives/video-review/EXPERIMENT_VIDEO_ASSET/" + videoAsset.getId() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REJECTED\",\"rejectionReason\":\"Personagem oscilou entre cenas.\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJECTED"))
+                .andExpect(jsonPath("$.rejectionReason").value("Personagem oscilou entre cenas."));
+
+        ExperimentVideoAsset updated = videoAssetRepository.findById(videoAsset.getId()).orElseThrow();
+        assertThat(updated.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.REJECTED);
+        assertThat(updated.getRejectionReason()).isEqualTo("Personagem oscilou entre cenas.");
     }
 
     /** Garante que a API registre motivo quando o criativo de vídeo for reprovado. */

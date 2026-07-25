@@ -4,6 +4,7 @@ import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeDto;
 import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.CreativeVideoReviewSourceType;
 import com.marketinghub.creative.dto.CreativeVideoReviewDto;
 import com.marketinghub.creative.dto.UpdateCreativeStatusRequest;
 import com.marketinghub.creative.mapper.CreativeMapper;
@@ -95,6 +96,16 @@ public class CreativeController {
     public List<CreativeVideoReviewDto> listVideoReview(@RequestParam(value = "status", required = false)
                                                         CreativeStatus status) {
         return service.listVideoReviewQueue(status);
+    }
+
+    /**
+     * Atualiza o status de um item da fila única de revisão de vídeos.
+     */
+    @PatchMapping("/api/creatives/video-review/{sourceType}/{id}/status")
+    public CreativeVideoReviewDto updateVideoReviewStatus(@PathVariable CreativeVideoReviewSourceType sourceType,
+                                                          @PathVariable Long id,
+                                                          @RequestBody UpdateCreativeStatusRequest request) {
+        return service.updateVideoReviewStatus(sourceType, id, request.status(), request.rejectionReason());
     }
 
     /**

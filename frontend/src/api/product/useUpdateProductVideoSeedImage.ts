@@ -3,9 +3,7 @@ import axios from "axios";
 import type { Product } from "./useProducts";
 
 export type ProductVideoSeedImageReviewStatus =
-  | "PENDING"
-  | "APPROVED"
-  | "REJECTED";
+  "PENDING" | "APPROVED" | "REJECTED";
 
 export interface UpdateProductVideoSeedImagePayload {
   productId: number;
@@ -42,6 +40,12 @@ export function useUpdateProductVideoSeedImage() {
     },
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["product", product.id, "video-images"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["product", String(product.id), "video-images"],
+      });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
   });

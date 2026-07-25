@@ -7,6 +7,9 @@ import com.marketinghub.creative.*;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeVideoReviewDto;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
@@ -15,6 +18,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
@@ -41,9 +45,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Responsabilidade: centralizar as operações de criativos vinculados a experimentos.
@@ -61,6 +68,7 @@ public class CreativeService {
     private final VisualProofRepository visualProofRepository;
     private final EmotionalTriggerRepository emotionalTriggerRepository;
     private final AssetRepository assetRepository;
+    private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
     private final HttpClient httpClient;
     private final CostAttributionService costAttributionService;
     private final AssetStorageService assetStorageService;
@@ -142,9 +150,35 @@ public class CreativeService {
         List<Creative> creatives = status == null
                 ? repository.findVideoCreativesForReview()
                 : repository.findVideoCreativesForReviewByStatus(status);
-        return creatives.stream()
-                .map(this::toVideoReviewDto)
+        ExperimentVideoReviewStatus reviewStatus = toExperimentVideoReviewStatus(status);
+        List<ExperimentVideoAsset> experimentVideos = reviewStatus == null
+                ? experimentVideoAssetRepository.findReadyExperimentVideosForReview(ExperimentVideoStatus.READY)
+                : experimentVideoAssetRepository.findReadyExperimentVideosForReviewByReviewStatus(
+                        ExperimentVideoStatus.READY,
+                        reviewStatus);
+        return java.util.stream.Stream.concat(
+                        creatives.stream().map(this::toVideoReviewDto),
+                        experimentVideos.stream().map(this::toVideoReviewDto))
+                .sorted(Comparator
+                        .comparing(CreativeVideoReviewDto::experimentId,
+                                Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(CreativeVideoReviewDto::id,
+                                Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
+    }
+
+    /**
+     * Atualiza a revisão de um item da fila única de vídeos pela origem persistida.
+     */
+    @Transactional
+    public CreativeVideoReviewDto updateVideoReviewStatus(CreativeVideoReviewSourceType sourceType,
+                                                          Long id,
+                                                          CreativeStatus status,
+                                                          String rejectionReason) {
+        if (sourceType == null || sourceType == CreativeVideoReviewSourceType.CREATIVE) {
+            return toVideoReviewDto(updateStatus(id, status, rejectionReason));
+        }
+        return updateExperimentVideoReviewStatus(id, status, rejectionReason);
     }
 
     /**
@@ -197,6 +231,34 @@ public class CreativeService {
             throw new IllegalArgumentException("Informe o motivo da reprovação do vídeo.");
         }
         return rejectionReason.trim();
+    }
+
+    /**
+     * Atualiza a revisão humana de um vídeo de experimento e preserva o motivo da reprovação.
+     */
+    private CreativeVideoReviewDto updateExperimentVideoReviewStatus(Long id,
+                                                                     CreativeStatus status,
+                                                                     String rejectionReason) {
+        if (status == null) {
+            throw new IllegalArgumentException("Status do vídeo é obrigatório.");
+        }
+        ExperimentVideoAsset videoAsset = experimentVideoAssetRepository.findById(id).orElseThrow();
+        if (status == CreativeStatus.READY && !hasPublicExperimentVideoUrl(videoAsset)) {
+            throw new IllegalArgumentException("Vídeo de experimento aprovado precisa ter URL pública.");
+        }
+        ExperimentVideoReviewStatus reviewStatus = toExperimentVideoReviewStatus(status);
+        if (reviewStatus == ExperimentVideoReviewStatus.REJECTED && !StringUtils.hasText(rejectionReason)) {
+            throw new IllegalArgumentException("Informe o motivo da reprovação do vídeo.");
+        }
+        videoAsset.setReviewStatus(Objects.requireNonNull(reviewStatus));
+        videoAsset.setReviewedBy("Marketing Hub");
+        videoAsset.setReviewedAt(Instant.now());
+        if (reviewStatus == ExperimentVideoReviewStatus.REJECTED) {
+            videoAsset.setRejectionReason(rejectionReason.trim());
+        } else if (reviewStatus == ExperimentVideoReviewStatus.APPROVED) {
+            videoAsset.setRejectionReason(null);
+        }
+        return toVideoReviewDto(experimentVideoAssetRepository.save(videoAsset));
     }
 
     /**
@@ -308,6 +370,7 @@ public class CreativeService {
                 : experiment != null ? experiment.getNiche() : null;
         return new CreativeVideoReviewDto(
                 creative.getId(),
+                CreativeVideoReviewSourceType.CREATIVE,
                 experiment != null ? experiment.getId() : null,
                 experiment != null ? experiment.getName() : null,
                 experiment != null ? experiment.getStatus() : null,
@@ -326,6 +389,96 @@ public class CreativeService {
                 creative.getDestinationUrl(),
                 creative.getStatus(),
                 creative.getRejectionReason());
+    }
+
+    /**
+     * Converte vídeo de experimento em item da fila única de aprovação comercial.
+     */
+    private CreativeVideoReviewDto toVideoReviewDto(ExperimentVideoAsset videoAsset) {
+        Experiment experiment = videoAsset.getExperiment();
+        Hypothesis hypothesis = experiment != null ? experiment.getHypothesisRef() : null;
+        MarketNiche niche = hypothesis != null && hypothesis.getMarketNiche() != null
+                ? hypothesis.getMarketNiche()
+                : experiment != null ? experiment.getNiche() : null;
+        return new CreativeVideoReviewDto(
+                videoAsset.getId(),
+                CreativeVideoReviewSourceType.EXPERIMENT_VIDEO_ASSET,
+                experiment != null ? experiment.getId() : null,
+                experiment != null ? experiment.getName() : null,
+                experiment != null ? experiment.getStatus() : null,
+                hypothesis != null ? hypothesis.getId() : null,
+                hypothesis != null ? hypothesis.getTitle() : null,
+                hypothesis != null ? hypothesis.getStatus() : null,
+                niche != null ? niche.getId() : null,
+                niche != null ? niche.getName() : null,
+                "VIDEO",
+                resolveExperimentVideoHeadline(videoAsset),
+                videoAsset.getScript(),
+                null,
+                resolveExperimentVideoUrl(videoAsset),
+                videoAsset.getPrompt(),
+                experiment != null ? experiment.getPrimaryCta() : null,
+                null,
+                toCreativeStatus(videoAsset.getReviewStatus()),
+                videoAsset.getRejectionReason());
+    }
+
+    /**
+     * Mapeia o filtro da tela para o status de revisão dos vídeos de experimento.
+     */
+    private ExperimentVideoReviewStatus toExperimentVideoReviewStatus(CreativeStatus status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case DRAFT -> ExperimentVideoReviewStatus.PENDING;
+            case READY -> ExperimentVideoReviewStatus.APPROVED;
+            case REJECTED -> ExperimentVideoReviewStatus.REJECTED;
+        };
+    }
+
+    /**
+     * Mapeia o status de revisão do vídeo de experimento para o contrato visual da fila.
+     */
+    private CreativeStatus toCreativeStatus(ExperimentVideoReviewStatus status) {
+        if (status == ExperimentVideoReviewStatus.APPROVED) {
+            return CreativeStatus.READY;
+        }
+        if (status == ExperimentVideoReviewStatus.REJECTED) {
+            return CreativeStatus.REJECTED;
+        }
+        return CreativeStatus.DRAFT;
+    }
+
+    /**
+     * Resolve o título comercial exibido na revisão do vídeo de experimento.
+     */
+    private String resolveExperimentVideoHeadline(ExperimentVideoAsset videoAsset) {
+        if (StringUtils.hasText(videoAsset.getObjective())) {
+            return videoAsset.getObjective();
+        }
+        if (videoAsset.getExperiment() != null && StringUtils.hasText(videoAsset.getExperiment().getName())) {
+            return videoAsset.getExperiment().getName();
+        }
+        return "Vídeo de experimento";
+    }
+
+    /**
+     * Resolve a URL pública do vídeo de experimento para prévia e aprovação.
+     */
+    private String resolveExperimentVideoUrl(ExperimentVideoAsset videoAsset) {
+        if (StringUtils.hasText(videoAsset.getAssetUrl())) {
+            return videoAsset.getAssetUrl();
+        }
+        Asset asset = videoAsset.getAsset();
+        return asset != null ? asset.getUrl() : null;
+    }
+
+    /**
+     * Verifica se o vídeo de experimento tem mídia pública antes de aprovar.
+     */
+    private boolean hasPublicExperimentVideoUrl(ExperimentVideoAsset videoAsset) {
+        return StringUtils.hasText(resolveExperimentVideoUrl(videoAsset));
     }
 
     /**

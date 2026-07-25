@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 export type CreativeVideoReviewStatus = "DRAFT" | "READY" | "REJECTED";
+export type CreativeVideoReviewSourceType = "CREATIVE" | "EXPERIMENT_VIDEO_ASSET";
 
 export interface CreativeVideoReview {
   id: number;
+  sourceType: CreativeVideoReviewSourceType;
   experimentId: number;
   experimentName: string;
   experimentStatus: string;
@@ -45,14 +47,16 @@ export function useUpdateCreativeVideoReviewStatus() {
   return useMutation({
     mutationFn: async ({
       id,
+      sourceType,
       status,
       rejectionReason,
     }: {
       id: number;
+      sourceType: CreativeVideoReviewSourceType;
       status: CreativeVideoReviewStatus;
       rejectionReason?: string;
     }) => {
-      const { data } = await axios.patch(`/api/creatives/${id}/status`, {
+      const { data } = await axios.patch(`/api/creatives/video-review/${sourceType}/${id}/status`, {
         status,
         rejectionReason,
       });

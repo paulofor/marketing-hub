@@ -48,6 +48,14 @@ Regra de prontidão comercial:
 - qualquer seleção ativa `HUMAN_VIDEO_SALES_PAGE` exige vídeo do experimento em `experiment_video_asset` com `status=READY` e `review_status=APPROVED` antes da liberação de campanha;
 - qualquer variante A/B `HUMAN_VIDEO` também precisa de `experiment_video_asset_id` vinculado a vídeo `READY + APPROVED` para o teste ser considerado pronto para tráfego.
 
+Fluxo obrigatório de aprovação de vídeos gerados:
+
+- todo vídeo gerado para experimento deve ser persistido em `experiment_video_asset` e, quando chegar a `status=READY`, aparecer na tela `/creative-video-review` como item `EXPERIMENT_VIDEO_ASSET`;
+- a tela `/creative-video-review` é a fila única de aprovação comercial de vídeos, incluindo criativos de vídeo e vídeos gerados diretamente para experimentos;
+- pode existir mais de um vídeo `APPROVED` para o mesmo experimento, pois eles podem cumprir papéis diferentes no funil ou servir como variações/cortes de campanha;
+- vídeo reprovado deve manter `review_status=REJECTED` e `rejection_reason` preenchido;
+- a próxima geração, refação ou pós-produção do vídeo deve considerar o `rejection_reason` anterior como restrição criativa para evitar repetição do mesmo problema percebido.
+
 Atualização incremental — vínculo do wireframe com execução Gera Landing (07/05/2026):
 
 - `landing_page_wireframe_job_id` (`BINARY(36)`, FK -> `gera_landing_stage_execution.id_job`)

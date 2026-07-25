@@ -25,6 +25,10 @@ export interface CreativeVideoReview {
   destinationUrl?: string | null;
   status: CreativeVideoReviewStatus;
   rejectionReason?: string | null;
+  visualSourceType?: string | null;
+  visualSourceKey?: string | null;
+  visualSourceDescription?: string | null;
+  visualSimilarityOverrideReason?: string | null;
 }
 
 export function useCreativeVideoReviews(status?: CreativeVideoReviewStatus | "ALL") {

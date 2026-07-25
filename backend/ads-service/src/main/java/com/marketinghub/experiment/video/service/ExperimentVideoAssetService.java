@@ -155,6 +155,10 @@ public class ExperimentVideoAssetService {
                 .durationSeconds(request.durationSeconds())
                 .hasAudio(request.hasAudio())
                 .aspectRatio(request.aspectRatio())
+                .visualSourceType(normalizeOptionalText(request.visualSourceType()))
+                .visualSourceKey(normalizeVisualSourceKey(request.visualSourceKey()))
+                .visualSourceDescription(normalizeOptionalText(request.visualSourceDescription()))
+                .visualSimilarityOverrideReason(normalizeOptionalText(request.visualSimilarityOverrideReason()))
                 .requestJson(request.requestJson())
                 .responseJson(request.responseJson())
                 .cost(resolveCost(request.cost(), request.provider(), request.model(), request.durationSeconds(), null))
@@ -165,6 +169,9 @@ public class ExperimentVideoAssetService {
                 .asset(resolveAsset(request.assetId()))
                 .landingVideoSlot(resolveLandingVideoSlot(experimentId, request.landingVideoSlotId()))
                 .build();
+        if (videoAsset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED) {
+            validateVisualSourceDiversityForApproval(videoAsset);
+        }
         return toDto(repository.save(videoAsset));
     }
 
@@ -358,6 +365,18 @@ public class ExperimentVideoAssetService {
         if (request.aspectRatio() != null) {
             videoAsset.setAspectRatio(request.aspectRatio());
         }
+        if (request.visualSourceType() != null) {
+            videoAsset.setVisualSourceType(normalizeOptionalText(request.visualSourceType()));
+        }
+        if (request.visualSourceKey() != null) {
+            videoAsset.setVisualSourceKey(normalizeVisualSourceKey(request.visualSourceKey()));
+        }
+        if (request.visualSourceDescription() != null) {
+            videoAsset.setVisualSourceDescription(normalizeOptionalText(request.visualSourceDescription()));
+        }
+        if (request.visualSimilarityOverrideReason() != null) {
+            videoAsset.setVisualSimilarityOverrideReason(normalizeOptionalText(request.visualSimilarityOverrideReason()));
+        }
         if (request.requestJson() != null) {
             videoAsset.setRequestJson(request.requestJson());
         }
@@ -410,6 +429,9 @@ public class ExperimentVideoAssetService {
                     HttpStatus.BAD_REQUEST,
                     "video asset must pass audio quality check before human approval");
         }
+        if (newStatus == ExperimentVideoReviewStatus.APPROVED) {
+            validateVisualSourceDiversityForApproval(videoAsset);
+        }
         videoAsset.setReviewStatus(newStatus);
         videoAsset.setReviewedBy(StringUtils.hasText(request.reviewedBy()) ? request.reviewedBy().trim() : null);
         videoAsset.setReviewedAt(Instant.now());
@@ -422,6 +444,41 @@ public class ExperimentVideoAssetService {
                     ? request.rejectionReason().trim()
                     : null);
         }
+    }
+
+    /** Bloqueia aprovação quando anúncio e hero usam a mesma origem visual sem justificativa explícita. */
+    private void validateVisualSourceDiversityForApproval(ExperimentVideoAsset videoAsset) {
+        if (videoAsset.getExperiment() == null || videoAsset.getExperiment().getId() == null) {
+            return;
+        }
+        String visualSourceKey = normalizeVisualSourceKey(videoAsset.getVisualSourceKey());
+        if (visualSourceKey == null || !isAdOrHero(videoAsset.getSlot())) {
+            return;
+        }
+        boolean hasConflictingSlot = repository.findByExperimentIdAndVisualSourceKey(
+                        videoAsset.getExperiment().getId(),
+                        visualSourceKey)
+                .stream()
+                .filter(candidate -> videoAsset.getId() == null || !videoAsset.getId().equals(candidate.getId()))
+                .filter(candidate -> candidate.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
+                .anyMatch(candidate -> isAdHeroPair(videoAsset.getSlot(), candidate.getSlot()));
+        if (hasConflictingSlot && !StringUtils.hasText(videoAsset.getVisualSimilarityOverrideReason())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Aprovacao bloqueada: video de campanha e hero do PDE usam a mesma origem visual. "
+                            + "Informe visualSimilarityOverrideReason ou gere uma variacao visual distinta.");
+        }
+    }
+
+    /** Identifica slots principais que nao devem repetir a mesma origem visual sem controle. */
+    private boolean isAdOrHero(ExperimentVideoSlot slot) {
+        return slot == ExperimentVideoSlot.AD || slot == ExperimentVideoSlot.LANDING_HERO;
+    }
+
+    /** Identifica colisao entre o video de campanha e o video hero da pagina. */
+    private boolean isAdHeroPair(ExperimentVideoSlot currentSlot, ExperimentVideoSlot candidateSlot) {
+        return (currentSlot == ExperimentVideoSlot.AD && candidateSlot == ExperimentVideoSlot.LANDING_HERO)
+                || (currentSlot == ExperimentVideoSlot.LANDING_HERO && candidateSlot == ExperimentVideoSlot.AD);
     }
 
     /** Busca o experimento alvo ou falha com resposta HTTP clara. */
@@ -844,6 +901,17 @@ public class ExperimentVideoAssetService {
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 
+    /** Normaliza texto opcional que vai para campos auditaveis do ativo. */
+    private String normalizeOptionalText(String value) {
+        return trimToNull(value);
+    }
+
+    /** Normaliza a chave de origem visual para comparacao operacional consistente. */
+    private String normalizeVisualSourceKey(String value) {
+        String normalized = trimToNull(value);
+        return normalized == null ? null : normalized.toLowerCase();
+    }
+
     /** Busca o perfil de vídeo quando informado. */
     private SalesVideoProfile resolveProfile(Long profileId) {
         if (profileId == null) {
@@ -908,6 +976,10 @@ public class ExperimentVideoAssetService {
                 videoAsset.getDurationSeconds(),
                 videoAsset.getHasAudio(),
                 videoAsset.getAspectRatio(),
+                videoAsset.getVisualSourceType(),
+                videoAsset.getVisualSourceKey(),
+                videoAsset.getVisualSourceDescription(),
+                videoAsset.getVisualSimilarityOverrideReason(),
                 videoAsset.getRequestJson(),
                 videoAsset.getResponseJson(),
                 videoAsset.getCost(),

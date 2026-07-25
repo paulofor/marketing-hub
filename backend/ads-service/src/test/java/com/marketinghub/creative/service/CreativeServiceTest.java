@@ -3,9 +3,15 @@ package com.marketinghub.creative.service;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.CreativeVideoReviewSourceType;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoSlot;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository;
@@ -61,6 +67,8 @@ class CreativeServiceTest {
     FixtureUtils fixtures;
     @Autowired
     AssetRepository assetRepository;
+    @Autowired
+    ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
     @Autowired
     CreativeService service;
@@ -73,6 +81,7 @@ class CreativeServiceTest {
 
     @BeforeEach
     void setup() {
+        experimentVideoAssetRepository.deleteAll();
         assetRepository.deleteAll();
     }
 
@@ -231,6 +240,52 @@ class CreativeServiceTest {
         assertThat(queue.get(0).id()).isEqualTo(videoCreative.getId());
         assertThat(queue.get(0).experimentId()).isEqualTo(exp.getId());
         assertThat(queue.get(0).nicheName()).isEqualTo(niche.getName());
+    }
+
+    /** Garante que a fila humana bloqueia campanha e hero com a mesma origem visual sem exceção. */
+    @Test
+    void approvingExperimentVideoReviewBlocksRepeatedVisualSourceAcrossAdAndHero() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+        ExperimentVideoAsset heroVideo = experimentVideoAssetRepository.save(ExperimentVideoAsset.builder()
+                .experiment(exp)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Explicar PDE")
+                .primaryMetric("diagnostico_iniciado")
+                .script("Hero explicativo")
+                .provider("HEYGEN")
+                .model("avatar-iv")
+                .status(ExperimentVideoStatus.READY)
+                .assetUrl("https://cdn.test/hero.mp4")
+                .hasAudio(true)
+                .visualSourceKey("sofia-musa")
+                .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+                .requiredForRelease(true)
+                .build());
+        ExperimentVideoAsset adVideo = experimentVideoAssetRepository.save(ExperimentVideoAsset.builder()
+                .experiment(exp)
+                .slot(ExperimentVideoSlot.AD)
+                .objective("Validar criativo")
+                .primaryMetric("ctr")
+                .script("Anuncio curto")
+                .provider("HEYGEN")
+                .model("avatar-iv")
+                .status(ExperimentVideoStatus.READY)
+                .assetUrl("https://cdn.test/ad.mp4")
+                .hasAudio(true)
+                .visualSourceKey("sofia-musa")
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build());
+
+        assertThat(heroVideo.getId()).isNotNull();
+        assertThatThrownBy(() -> service.updateVideoReviewStatus(
+                CreativeVideoReviewSourceType.EXPERIMENT_VIDEO_ASSET,
+                adVideo.getId(),
+                CreativeStatus.READY,
+                null))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("mesma origem visual");
     }
 
     /** Garante que criativo de imagem não possa ser aprovado sem imagem gerada. */

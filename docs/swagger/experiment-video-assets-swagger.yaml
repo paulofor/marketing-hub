@@ -142,6 +142,20 @@ components:
         aspectRatio:
           type: string
           example: "9:16"
+        visualSourceType:
+          type: string
+          example: AVATAR_IMAGE
+          description: Tipo da origem visual usada para gerar o vídeo.
+        visualSourceKey:
+          type: string
+          example: sofia-musa
+          description: Chave normalizada da imagem, avatar ou personagem de origem para controle de repetição visual.
+        visualSourceDescription:
+          type: string
+          description: Descrição auditável da base visual usada no vídeo.
+        visualSimilarityOverrideReason:
+          type: string
+          description: Justificativa comercial quando campanha e hero usam a mesma origem visual de forma intencional.
         requestJson:
           type: string
         responseJson:

@@ -127,6 +127,10 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 true,
                 null,
                 null,
@@ -274,6 +278,10 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 true,
                 null,
                 null,
@@ -306,6 +314,10 @@ class ExperimentVideoAssetServiceTest {
                 15,
                 null,
                 "9:16",
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -583,6 +595,10 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 ExperimentVideoReviewStatus.APPROVED,
                 true,
                 null,
@@ -626,6 +642,10 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 true,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -684,6 +704,10 @@ class ExperimentVideoAssetServiceTest {
                         null,
                         null,
                         null,
+                        null,
+                        null,
+                        null,
+                        null,
                         ExperimentVideoReviewStatus.REJECTED,
                         " ",
                         "aprovador@marketinghub.local",
@@ -694,6 +718,78 @@ class ExperimentVideoAssetServiceTest {
                         null)));
 
         assertThat(exception.getStatusCode().value()).isEqualTo(400);
+    }
+
+    /** Bloqueia aprovação quando anúncio e hero compartilham a mesma origem visual sem exceção. */
+    @Test
+    void shouldBlockApprovalWhenAdAndHeroShareVisualSourceWithoutOverride() {
+        Experiment experiment = Experiment.builder().id(39L).build();
+        ExperimentVideoAsset adVideo = ExperimentVideoAsset.builder()
+                .id(5L)
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.AD)
+                .objective("Validar criativo")
+                .primaryMetric("ctr")
+                .provider("HEYGEN")
+                .model("avatar-iv")
+                .status(ExperimentVideoStatus.READY)
+                .hasAudio(true)
+                .visualSourceKey("sofia-musa")
+                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+                .requiredForRelease(true)
+                .build();
+        ExperimentVideoAsset heroVideo = ExperimentVideoAsset.builder()
+                .id(6L)
+                .experiment(experiment)
+                .slot(ExperimentVideoSlot.LANDING_HERO)
+                .objective("Explicar PDE")
+                .primaryMetric("diagnostico_iniciado")
+                .provider("HEYGEN")
+                .model("avatar-iv")
+                .status(ExperimentVideoStatus.READY)
+                .hasAudio(true)
+                .visualSourceKey("sofia-musa")
+                .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+                .requiredForRelease(true)
+                .build();
+        given(experimentRepository.findById(39L)).willReturn(Optional.of(experiment));
+        given(repository.findById(5L)).willReturn(Optional.of(adVideo));
+        given(repository.findByExperimentIdAndVisualSourceKey(39L, "sofia-musa"))
+                .willReturn(List.of(adVideo, heroVideo));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                service.update(39L, 5L, new UpdateExperimentVideoAssetRequest(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        ExperimentVideoReviewStatus.APPROVED,
+                        null,
+                        "aprovador@marketinghub.local",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null)));
+
+        assertThat(exception.getStatusCode().value()).isEqualTo(400);
+        assertThat(exception.getReason()).contains("mesma origem visual");
     }
 
     /** Garante que a listagem retorna os vídeos registrados para o experimento. */

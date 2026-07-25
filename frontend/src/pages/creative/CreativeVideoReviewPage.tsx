@@ -276,7 +276,29 @@ export default function CreativeVideoReviewPage() {
                       <dt>CTA</dt>
                       <dd>{video.cta ?? "Sem CTA"}</dd>
                     </div>
+                    <div>
+                      <dt>Origem visual</dt>
+                      <dd>{video.visualSourceKey ?? "Não registrada"}</dd>
+                    </div>
+                    <div>
+                      <dt>Tipo da origem</dt>
+                      <dd>{video.visualSourceType ?? "Não informado"}</dd>
+                    </div>
                   </dl>
+
+                  {video.visualSourceDescription ? (
+                    <div className="creative-video-review-page__lineage">
+                      <strong>Base do vídeo</strong>
+                      <p>{video.visualSourceDescription}</p>
+                    </div>
+                  ) : null}
+
+                  {video.visualSimilarityOverrideReason ? (
+                    <div className="creative-video-review-page__lineage">
+                      <strong>Exceção de semelhança visual</strong>
+                      <p>{video.visualSimilarityOverrideReason}</p>
+                    </div>
+                  ) : null}
 
                   {video.status === "REJECTED" && video.rejectionReason ? (
                     <div className="creative-video-review-page__rejection">

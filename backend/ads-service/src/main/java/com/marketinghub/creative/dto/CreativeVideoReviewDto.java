@@ -30,5 +30,9 @@ public record CreativeVideoReviewDto(
         String cta,
         String destinationUrl,
         CreativeStatus status,
-        String rejectionReason) {
+        String rejectionReason,
+        String visualSourceType,
+        String visualSourceKey,
+        String visualSourceDescription,
+        String visualSimilarityOverrideReason) {
 }

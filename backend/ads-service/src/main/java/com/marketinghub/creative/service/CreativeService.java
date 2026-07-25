@@ -9,6 +9,7 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeVideoReviewDto;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
@@ -253,6 +254,9 @@ public class CreativeService {
                     HttpStatus.BAD_REQUEST,
                     "Vídeo de experimento aprovado precisa ter áudio validado.");
         }
+        if (status == CreativeStatus.READY) {
+            validateExperimentVideoVisualSourceDiversity(videoAsset);
+        }
         ExperimentVideoReviewStatus reviewStatus = toExperimentVideoReviewStatus(status);
         if (reviewStatus == ExperimentVideoReviewStatus.REJECTED && !StringUtils.hasText(rejectionReason)) {
             throw new IllegalArgumentException("Informe o motivo da reprovação do vídeo.");
@@ -266,6 +270,45 @@ public class CreativeService {
             videoAsset.setRejectionReason(null);
         }
         return toVideoReviewDto(experimentVideoAssetRepository.save(videoAsset));
+    }
+
+    /**
+     * Bloqueia aprovação de anúncio e hero com a mesma origem visual sem justificativa comercial.
+     */
+    private void validateExperimentVideoVisualSourceDiversity(ExperimentVideoAsset videoAsset) {
+        Experiment experiment = videoAsset.getExperiment();
+        String visualSourceKey = normalizeVisualSourceKey(videoAsset.getVisualSourceKey());
+        if (experiment == null || experiment.getId() == null || visualSourceKey == null || !isAdOrHero(videoAsset.getSlot())) {
+            return;
+        }
+        boolean hasConflictingSlot = experimentVideoAssetRepository.findByExperimentIdAndVisualSourceKey(
+                        experiment.getId(),
+                        visualSourceKey)
+                .stream()
+                .filter(candidate -> videoAsset.getId() == null || !videoAsset.getId().equals(candidate.getId()))
+                .filter(candidate -> candidate.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
+                .anyMatch(candidate -> isAdHeroPair(videoAsset.getSlot(), candidate.getSlot()));
+        if (hasConflictingSlot && !StringUtils.hasText(videoAsset.getVisualSimilarityOverrideReason())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Aprovação bloqueada: vídeo de campanha e hero do PDE usam a mesma origem visual. "
+                            + "Informe uma justificativa de exceção ou gere uma variação visual distinta.");
+        }
+    }
+
+    /**
+     * Identifica slots que exigem diversidade visual entre mídia paga e hero de página.
+     */
+    private boolean isAdOrHero(ExperimentVideoSlot slot) {
+        return slot == ExperimentVideoSlot.AD || slot == ExperimentVideoSlot.LANDING_HERO;
+    }
+
+    /**
+     * Verifica se dois slots formam colisão entre anúncio e hero de landing.
+     */
+    private boolean isAdHeroPair(ExperimentVideoSlot currentSlot, ExperimentVideoSlot candidateSlot) {
+        return (currentSlot == ExperimentVideoSlot.AD && candidateSlot == ExperimentVideoSlot.LANDING_HERO)
+                || (currentSlot == ExperimentVideoSlot.LANDING_HERO && candidateSlot == ExperimentVideoSlot.AD);
     }
 
     /**
@@ -395,7 +438,11 @@ public class CreativeService {
                 creative.getCta(),
                 creative.getDestinationUrl(),
                 creative.getStatus(),
-                creative.getRejectionReason());
+                creative.getRejectionReason(),
+                null,
+                null,
+                null,
+                null);
     }
 
     /**
@@ -427,7 +474,11 @@ public class CreativeService {
                 experiment != null ? experiment.getPrimaryCta() : null,
                 null,
                 toCreativeStatus(videoAsset.getReviewStatus()),
-                videoAsset.getRejectionReason());
+                videoAsset.getRejectionReason(),
+                videoAsset.getVisualSourceType(),
+                videoAsset.getVisualSourceKey(),
+                videoAsset.getVisualSourceDescription(),
+                videoAsset.getVisualSimilarityOverrideReason());
     }
 
     /**
@@ -455,6 +506,13 @@ public class CreativeService {
             return CreativeStatus.REJECTED;
         }
         return CreativeStatus.DRAFT;
+    }
+
+    /**
+     * Normaliza chave visual declarada para comparação consistente na fila humana.
+     */
+    private String normalizeVisualSourceKey(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase() : null;
     }
 
     /**

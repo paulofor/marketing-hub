@@ -131,6 +131,7 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
+                null,
                 true,
                 null,
                 null,
@@ -282,6 +283,7 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
+                null,
                 true,
                 null,
                 null,
@@ -314,6 +316,7 @@ class ExperimentVideoAssetServiceTest {
                 15,
                 null,
                 "9:16",
+                null,
                 null,
                 null,
                 null,
@@ -599,6 +602,7 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
+                null,
                 ExperimentVideoReviewStatus.APPROVED,
                 true,
                 null,
@@ -650,6 +654,7 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
+                null,
                 ExperimentVideoReviewStatus.APPROVED,
                 null,
                 "aprovador@marketinghub.local",
@@ -688,6 +693,7 @@ class ExperimentVideoAssetServiceTest {
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
                 service.update(39L, 5L, new UpdateExperimentVideoAssetRequest(
+                        null,
                         null,
                         null,
                         null,
@@ -759,6 +765,7 @@ class ExperimentVideoAssetServiceTest {
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
                 service.update(39L, 5L, new UpdateExperimentVideoAssetRequest(
+                        null,
                         null,
                         null,
                         null,

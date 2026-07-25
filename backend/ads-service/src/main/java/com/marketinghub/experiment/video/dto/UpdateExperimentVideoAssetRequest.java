@@ -29,6 +29,7 @@ public record UpdateExperimentVideoAssetRequest(
         String requestJson,
         String responseJson,
         BigDecimal cost,
+        BigDecimal audioCost,
         ExperimentVideoReviewStatus reviewStatus,
         String rejectionReason,
         String reviewedBy,

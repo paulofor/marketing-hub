@@ -31,6 +31,7 @@ public record CreateExperimentVideoAssetRequest(
         String requestJson,
         String responseJson,
         BigDecimal cost,
+        BigDecimal audioCost,
         ExperimentVideoReviewStatus reviewStatus,
         boolean requiredForRelease,
         Long salesVideoProfileId,

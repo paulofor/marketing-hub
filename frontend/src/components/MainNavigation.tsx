@@ -116,7 +116,18 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Campanhas",
     items: [
       { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
-      { to: "/videos", label: "Vídeos", icon: Video },
+      {
+        to: "/videos",
+        label: "Vídeos",
+        icon: Video,
+        children: [
+          {
+            to: "/videos/providers",
+            label: "Provedores",
+            icon: ShieldCheck,
+          },
+        ],
+      },
       {
         to: "/creative-video-review",
         label: "Aprovar vídeos",

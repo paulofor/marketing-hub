@@ -10,6 +10,9 @@ import java.util.List;
  * Repositório JPA responsável pela persistência de SalesVideoConversionEvent.
  */
 public interface SalesVideoConversionEventRepository extends JpaRepository<SalesVideoConversionEvent, Long> {
+    /** Lista eventos comerciais de vídeo de um tenant do mais recente para o mais antigo. */
+    List<SalesVideoConversionEvent> findByTenantIdOrderByOccurredAtDesc(String tenantId);
+
     List<SalesVideoConversionEvent> findByProfileIdAndTenantIdOrderByOccurredAtDesc(Long profileId, String tenantId);
 
     List<SalesVideoConversionEvent> findByProfileIdAndTenantIdAndOccurredAtBetweenOrderByOccurredAtDesc(Long profileId,

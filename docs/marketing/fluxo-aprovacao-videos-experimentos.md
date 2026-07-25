@@ -10,7 +10,9 @@ Objetivo comercial: nenhum video gerado deve entrar em campanha, PDE ou pagina d
 4. Quando o video estiver com `status=READY`, URL publica e `has_audio=true`, ele aparece em `/creative-video-review` para aprovacao humana.
 5. A aprovacao humana muda `review_status` para `APPROVED` e libera o video para o portfolio do produto.
 6. A reprovacao exige motivo, muda `review_status` para `REJECTED` e impede uso em campanha, PDE ou pagina.
-7. O motivo de reprovacao deve ser usado como restricao da proxima geracao, refacao ou pos-producao.
+7. Toda aprovacao ou reprovacao deve registrar data/hora da decisao e manter custo auditavel.
+8. Quando o audio for produzido separado, o custo total do video deve somar custo de video e custo de audio.
+9. O motivo de reprovacao deve ser usado como restricao da proxima geracao, refacao ou pos-producao.
 
 ## Decisao de funil
 
@@ -18,6 +20,7 @@ Objetivo comercial: nenhum video gerado deve entrar em campanha, PDE ou pagina d
 - Um video aprovado pode ser usado como hero de landing, criativo principal, variacao curta, retargeting, aula/entrada de PDE ou base para pos-producao.
 - Experimentos devem consumir videos aprovados do portfolio do produto sempre que o objetivo for campanha ou PDE.
 - Um video reprovado nao deve ser reaproveitado em campanha, PDE, pagina de venda nem liberar experimento para `RUNNING`.
+- O custo de video reprovado continua sendo custo comercial real e deve aparecer no controle financeiro da fila.
 
 ## Criterios de aprovacao
 

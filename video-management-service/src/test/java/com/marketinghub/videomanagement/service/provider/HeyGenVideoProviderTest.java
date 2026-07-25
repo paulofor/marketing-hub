@@ -88,10 +88,31 @@ class HeyGenVideoProviderTest {
                 .contains("\"voice_id\":\"voice-ptbr\"")
                 .contains("\"aspect_ratio\":\"9:16\"")
                 .contains("\"output_format\":\"mp4\"")
-                .contains("No sensualized pose")
-                .contains("Natural presenter");
+                .doesNotContain("\"motion_prompt\"");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v3/videos/heygen-video-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/heygen-video-123.mp4");
+    }
+
+    /** Deve enviar motion_prompt quando o engine configurado suporta Avatar V. */
+    @Test
+    void shouldSendMotionPromptForAvatarVEngine() throws Exception {
+        server.enqueue(json("""
+                {"data":{"video_id":"heygen-video-123","status":"pending","output_format":"mp4"}}
+                """));
+        server.enqueue(json("""
+                {"data":{"id":"heygen-video-123","video_url":"%s/download/heygen-video-123.mp4","duration":30.5}}
+                """.formatted(baseUrl())));
+        server.enqueue(mp4Response());
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getHeygen().setEngineType("avatar_v");
+        HeyGenVideoProvider provider = new HeyGenVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+
+        provider.render(job(), profile(), (percent, status, message) -> { });
+
+        assertThat(server.takeRequest().getBody().readUtf8())
+                .contains("\"motion_prompt\"")
+                .contains("No sensualized pose")
+                .contains("Natural presenter");
     }
 
     /** Deve falhar cedo quando a chave HeyGen não estiver configurada. */

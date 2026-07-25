@@ -5,6 +5,8 @@ import com.marketinghub.creative.label.Angle;
 import com.marketinghub.creative.label.VisualProof;
 import com.marketinghub.creative.label.EmotionalTrigger;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.Instant;
 import lombok.*;
 
 /**
@@ -45,6 +47,10 @@ public class Creative {
     @Column(name = "video_url")
     private String videoUrl;
 
+    /** Custo em USD da produção do criativo em vídeo, inclusive quando for reprovado. */
+    @Column(name = "cost_usd", precision = 12, scale = 4)
+    private BigDecimal costUsd;
+
     @Column(name = "ad_format")
     private String format;
 
@@ -70,6 +76,10 @@ public class Creative {
     /** Motivo comercial informado quando o criativo é reprovado na revisão humana. */
     @Column(name = "rejection_reason", columnDefinition = "LONGTEXT")
     private String rejectionReason;
+
+    /** Data e hora da última aprovação ou reprovação humana do criativo. */
+    @Column(name = "reviewed_at")
+    private Instant reviewedAt;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "creative_angle",

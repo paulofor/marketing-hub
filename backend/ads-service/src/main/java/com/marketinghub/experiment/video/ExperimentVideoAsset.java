@@ -107,6 +107,9 @@ public class ExperimentVideoAsset {
     @Column(name = "cost", precision = 12, scale = 4)
     private BigDecimal cost;
 
+    @Column(name = "audio_cost", precision = 12, scale = 4)
+    private BigDecimal audioCost;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "review_status", nullable = false, length = 32)
     private ExperimentVideoReviewStatus reviewStatus;

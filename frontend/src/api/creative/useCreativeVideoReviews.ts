@@ -7,6 +7,7 @@ export type CreativeVideoReviewSourceType = "CREATIVE" | "EXPERIMENT_VIDEO_ASSET
 export interface CreativeVideoReview {
   id: number;
   sourceType: CreativeVideoReviewSourceType;
+  funnelSlot?: "AD" | "LANDING_HERO" | "FORM_EXPLAINER" | "PRE_CHECKOUT" | null;
   experimentId: number;
   experimentName: string;
   experimentStatus: string;
@@ -25,6 +26,10 @@ export interface CreativeVideoReview {
   destinationUrl?: string | null;
   status: CreativeVideoReviewStatus;
   rejectionReason?: string | null;
+  reviewedAt?: string | null;
+  videoCostUsd?: number | string | null;
+  audioCostUsd?: number | string | null;
+  totalProductionCostUsd?: number | string | null;
   visualSourceType?: string | null;
   visualSourceKey?: string | null;
   visualSourceDescription?: string | null;

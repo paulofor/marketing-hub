@@ -11,6 +11,8 @@ import com.marketinghub.product.Product;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
+import com.marketinghub.salesvideo.tenant.TenantContext;
+import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -185,6 +187,50 @@ class SalesVideoCommercialInsightsServiceTest {
         assertThat(response.getProviderScores().get(0).getScore()).isEqualTo(13);
         assertThat(response.getProviderScores().get(0).getRejectedAssets()).isEqualTo(1);
         assertThat(response.getProviderScores().get(0).getRecommendation()).isEqualTo("bloquear_ou_regenerar");
+    }
+
+    /** Deve resumir score global dos providers usando o tenant corrente. */
+    @Test
+    void shouldSummarizeGlobalProviderScoresForTenant() {
+        SalesVideoProfile profile = profile();
+        SalesVideoJob readyJob = SalesVideoJob.builder()
+                .id(31L)
+                .profile(profile)
+                .providerName("HEYGEN")
+                .tenantId("tenant-a")
+                .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                .jobType(SalesVideoJobType.RENDER)
+                .status(SalesVideoStatus.VIDEO_READY)
+                .build();
+        SalesVideoConversionEvent purchase = SalesVideoConversionEvent.builder()
+                .id(40L)
+                .profile(profile)
+                .job(readyJob)
+                .tenantId("tenant-a")
+                .eventType(SalesVideoConversionEventType.PURCHASE)
+                .eventValue(new BigDecimal("67.00"))
+                .occurredAt(Instant.parse("2026-07-25T10:00:00Z"))
+                .build();
+
+        given(jobRepository.findByTenantIdOrderByRequestedAtDesc("tenant-a")).willReturn(List.of(readyJob));
+        given(experimentVideoAssetRepository.findProviderReviewsByTenantId("tenant-a"))
+                .willReturn(List.of(providerReview("HEYGEN", "READY", "APPROVED")));
+        given(conversionEventRepository.findByTenantIdOrderByOccurredAtDesc("tenant-a"))
+                .willReturn(List.of(purchase));
+
+        TenantContextHolder.set(new TenantContext("tenant-a", "seller@example.com", false));
+        try {
+            var response = service.summarizeProviderScores();
+
+            assertThat(response).hasSize(1);
+            assertThat(response.get(0).getProviderName()).isEqualTo("HEYGEN");
+            assertThat(response.get(0).getScore()).isEqualTo(98);
+            assertThat(response.get(0).getPurchases()).isEqualTo(1);
+            assertThat(response.get(0).getRevenue()).isEqualByComparingTo("67.00");
+            assertThat(response.get(0).getRecommendation()).isEqualTo("priorizar");
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 
     /** Cria uma projeção mínima de avaliação de provider para os testes de reputação. */

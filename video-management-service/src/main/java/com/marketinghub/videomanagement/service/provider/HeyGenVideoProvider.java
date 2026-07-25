@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.netty.http.client.HttpClient;
 
 /** Responsabilidade: renderizar vídeos comerciais com avatar e narração sincronizada pela HeyGen. */
@@ -111,14 +113,23 @@ public class HeyGenVideoProvider implements VideoProvider {
     private String submitRender(SalesVideoJob job, Map<String, Object> payload) {
         String path = properties.getProviders().getHeygen().getCreatePath();
         log.info("Chamando HeyGen para criar vídeo; jobId={} url={} request={}", job.id(), resolveBaseUrl() + path, payload);
-        JsonNode response = authorized(webClient.post()
-                        .uri(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Idempotency-Key", "marketing-hub-sales-video-" + job.id())
-                        .bodyValue(payload))
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block();
+        JsonNode response;
+        try {
+            response = authorized(webClient.post()
+                            .uri(path)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header("Idempotency-Key", "marketing-hub-sales-video-" + job.id())
+                            .bodyValue(payload))
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw new VideoProviderException(
+                    "PROVIDER_INVALID_REQUEST",
+                    "HeyGen rejeitou criação do job %d com status %s: %s"
+                            .formatted(job.id(), ex.getStatusCode(), ex.getResponseBodyAsString()),
+                    ex);
+        }
         log.info("Resposta HeyGen create; jobId={} response={}", job.id(), response);
         ensureSuccessfulResponse(response, "criação");
         String videoId = firstText(response, "/data/video_id", "/data/id", "/video_id", "/id");
@@ -174,8 +185,10 @@ public class HeyGenVideoProvider implements VideoProvider {
         payload.put("script", script.scriptText());
         payload.put("voice_id", voiceId);
         payload.put("voice_settings", voiceSettings(config, profile));
-        payload.put("motion_prompt", buildMotionPrompt(job, profile, script, metadata));
         payload.put("engine", Map.of("type", config.getEngineType()));
+        if (shouldSendMotionPrompt(config, metadata)) {
+            payload.put("motion_prompt", buildMotionPrompt(job, profile, script, metadata));
+        }
         if (StringUtils.hasText(config.getBackgroundValue())) {
             payload.put("background", Map.of("value", config.getBackgroundValue()));
         }
@@ -183,6 +196,15 @@ public class HeyGenVideoProvider implements VideoProvider {
             payload.put("caption", Map.of("file_format", "srt", "style", config.getCaptionStyle()));
         }
         return payload;
+    }
+
+    /** Evita enviar motion_prompt para Avatar IV quando a HeyGen não aceita esse campo. */
+    private boolean shouldSendMotionPrompt(VideoManagementProperties.HeyGen config, JsonNode metadata) {
+        if (metadata.path("heygen_motion_prompt_enabled").asBoolean(false)) {
+            return true;
+        }
+        String engineType = Optional.ofNullable(config.getEngineType()).orElse("").toLowerCase(Locale.ROOT);
+        return "avatar_v".equals(engineType);
     }
 
     /** Monta configurações de voz para português brasileiro com ritmo comercial. */

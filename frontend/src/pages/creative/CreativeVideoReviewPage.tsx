@@ -34,9 +34,26 @@ const STATUS_LABELS: Record<CreativeVideoReviewStatus, string> = {
 };
 
 const SOURCE_LABELS: Record<CreativeVideoReview["sourceType"], string> = {
-  CREATIVE: "Criativo",
-  EXPERIMENT_VIDEO_ASSET: "Vídeo do experimento",
+  CREATIVE: "Criativo de anúncio",
+  EXPERIMENT_VIDEO_ASSET: "Vídeo produzido",
 };
+
+const FUNNEL_SLOT_LABELS: Record<
+  NonNullable<CreativeVideoReview["funnelSlot"]>,
+  string
+> = {
+  AD: "Anúncio",
+  LANDING_HERO: "PDE / hero da página",
+  FORM_EXPLAINER: "Explicação do diagnóstico",
+  PRE_CHECKOUT: "Pré-checkout",
+};
+
+function funnelSlotLabel(video: CreativeVideoReview) {
+  if (video.funnelSlot && FUNNEL_SLOT_LABELS[video.funnelSlot]) {
+    return FUNNEL_SLOT_LABELS[video.funnelSlot];
+  }
+  return video.sourceType === "CREATIVE" ? FUNNEL_SLOT_LABELS.AD : "Não informado";
+}
 
 function statusClassName(status: CreativeVideoReviewStatus) {
   if (status === "READY") {
@@ -54,6 +71,41 @@ function primaryMediaUrl(video: CreativeVideoReview) {
 
 function reviewKey(video: CreativeVideoReview) {
   return `${video.sourceType}:${video.id}`;
+}
+
+function toNumber(value: number | string | null | undefined) {
+  if (value == null || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+const usdFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 4,
+  maximumFractionDigits: 4,
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+function formatUsd(value: number | string | null | undefined) {
+  const numeric = toNumber(value);
+  return numeric == null ? "Não registrado" : usdFormatter.format(numeric);
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "Sem decisão";
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Data inválida"
+    : dateTimeFormatter.format(date);
 }
 
 export default function CreativeVideoReviewPage() {
@@ -78,11 +130,16 @@ export default function CreativeVideoReviewPage() {
   const rejectedCount = summaryVideos.filter(
     (video) => video.status === "REJECTED",
   ).length;
-  const musaCount = summaryVideos.filter((video) =>
-    `${video.experimentName} ${video.hypothesisTitle ?? ""} ${video.nicheName ?? ""}`
-      .toLocaleLowerCase("pt-BR")
-      .includes("musa"),
-  ).length;
+  const totalProductionCost = summaryVideos.reduce(
+    (sum, video) => sum + (toNumber(video.totalProductionCostUsd) ?? 0),
+    0,
+  );
+  const rejectedProductionCost = summaryVideos
+    .filter((video) => video.status === "REJECTED")
+    .reduce(
+      (sum, video) => sum + (toNumber(video.totalProductionCostUsd) ?? 0),
+      0,
+    );
 
   const handleStatusChange = async (
     video: CreativeVideoReview,
@@ -148,8 +205,12 @@ export default function CreativeVideoReviewPage() {
           <strong>{rejectedCount}</strong>
         </div>
         <div className="creative-video-review-page__metric">
-          <span>Relacionados a MUSA</span>
-          <strong>{musaCount}</strong>
+          <span>Custo total</span>
+          <strong>{formatUsd(totalProductionCost)}</strong>
+        </div>
+        <div className="creative-video-review-page__metric">
+          <span>Custo reprovado</span>
+          <strong>{formatUsd(rejectedProductionCost)}</strong>
         </div>
       </section>
 
@@ -249,6 +310,10 @@ export default function CreativeVideoReviewPage() {
                       <dd>{SOURCE_LABELS[video.sourceType]}</dd>
                     </div>
                     <div>
+                      <dt>Uso no funil</dt>
+                      <dd>{funnelSlotLabel(video)}</dd>
+                    </div>
+                    <div>
                       <dt>Experimento</dt>
                       <dd>
                         <Link to={`/experiments/${video.experimentId}`}>
@@ -259,6 +324,10 @@ export default function CreativeVideoReviewPage() {
                     <div>
                       <dt>Status do experimento</dt>
                       <dd>{video.experimentStatus}</dd>
+                    </div>
+                    <div>
+                      <dt>Decisão</dt>
+                      <dd>{formatDateTime(video.reviewedAt)}</dd>
                     </div>
                     <div>
                       <dt>Hipótese</dt>
@@ -283,6 +352,21 @@ export default function CreativeVideoReviewPage() {
                     <div>
                       <dt>Tipo da origem</dt>
                       <dd>{video.visualSourceType ?? "Não informado"}</dd>
+                    </div>
+                  </dl>
+
+                  <dl className="creative-video-review-page__costs">
+                    <div>
+                      <dt>Vídeo</dt>
+                      <dd>{formatUsd(video.videoCostUsd)}</dd>
+                    </div>
+                    <div>
+                      <dt>Áudio separado</dt>
+                      <dd>{formatUsd(video.audioCostUsd)}</dd>
+                    </div>
+                    <div>
+                      <dt>Total produção</dt>
+                      <dd>{formatUsd(video.totalProductionCostUsd)}</dd>
                     </div>
                   </dl>
 

@@ -174,6 +174,35 @@ class CreativeServiceTest {
         assertThat(afterApproval.isCreativeApproved()).isTrue();
     }
 
+    /** Garante que reprovação de vídeo exija motivo e mantenha o experimento bloqueado para campanha. */
+    @Test
+    void rejectingVideoCreativeByStatusRequiresReasonAndKeepsExperimentBlocked() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+
+        CreateCreativeRequest createRequest = new CreateCreativeRequest();
+        createRequest.setFormat("VIDEO");
+        createRequest.setHeadline("Video");
+        createRequest.setPrimaryText("Primary");
+        createRequest.setVideoUrl("https://cdn.test/video.mp4");
+        createRequest.setStatus(CreativeStatus.DRAFT);
+        Creative creative = service.create(exp.getId(), createRequest);
+
+        assertThatThrownBy(() -> service.updateStatus(creative.getId(), CreativeStatus.REJECTED, " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("motivo da reprovação");
+
+        Creative rejected = service.updateStatus(
+                creative.getId(),
+                CreativeStatus.REJECTED,
+                "Avatar não comunica sofisticação suficiente.");
+
+        assertThat(rejected.getStatus()).isEqualTo(CreativeStatus.REJECTED);
+        assertThat(rejected.getRejectionReason()).isEqualTo("Avatar não comunica sofisticação suficiente.");
+        Experiment afterRejection = experimentRepository.findById(exp.getId()).orElseThrow();
+        assertThat(afterRejection.isCreativeApproved()).isFalse();
+    }
+
     /** Garante que a fila de revisão traga apenas criativos de vídeo com mídia publicável. */
     @Test
     void listVideoReviewQueueReturnsVideoCreativesWithCommercialContext() {

@@ -25,6 +25,8 @@ public record UpdateExperimentVideoAssetRequest(
         String responseJson,
         BigDecimal cost,
         ExperimentVideoReviewStatus reviewStatus,
+        String rejectionReason,
+        String reviewedBy,
         Boolean requiredForRelease,
         Long salesVideoProfileId,
         Long salesVideoJobId,

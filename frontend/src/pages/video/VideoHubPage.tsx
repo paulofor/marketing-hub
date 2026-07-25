@@ -7,6 +7,7 @@ import {
   PlayCircle,
   RefreshCcw,
   Save,
+  XCircle,
   Video,
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -22,9 +23,11 @@ import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
 import { useAsset } from "../../api/media/useAsset";
 import {
   ExperimentVideoAsset,
+  ExperimentVideoReviewStatus,
   ExperimentVideoStatus,
   useAllExperimentVideoAssets,
 } from "../../api/experiment/useExperimentVideoAssets";
+import { useUpdateExperimentVideoAssetReview } from "../../api/experiment/useUpdateExperimentVideoAssetReview";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import { useTenantContext } from "../../utils/tenantContext";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
@@ -125,6 +128,7 @@ export default function VideoHubPage() {
   const createProfile = useCreateSalesVideoProfile(selectedProductId || undefined);
   const approveScript = useApproveSalesVideoScript(selectedProfileId || undefined);
   const requestRender = useRequestVideoRender(selectedProfileId || undefined);
+  const updateVideoReview = useUpdateExperimentVideoAssetReview();
 
   const productList = useMemo(() => products ?? [], [products]);
   const profileList = useMemo(() => profiles ?? [], [profiles]);
@@ -165,6 +169,21 @@ export default function VideoHubPage() {
   const latestPlaybackUrl = latestStreamPlaybackUrl || latestAssetUrl;
   const selectedProvider =
     findSalesVideoProviderOption(selectedProviderName) ?? DEFAULT_SALES_VIDEO_PROVIDER;
+
+  async function handleVideoReview(
+    video: ExperimentVideoAsset,
+    reviewStatus: ExperimentVideoReviewStatus,
+    rejectionReason?: string,
+  ) {
+    await updateVideoReview.mutateAsync({
+      experimentId: video.experimentId,
+      videoAssetId: video.id,
+      reviewStatus,
+      rejectionReason,
+      reviewedBy: tenantContext.userEmail,
+    });
+    toast.success(reviewStatus === "APPROVED" ? "Vídeo aprovado." : "Vídeo reprovado com motivo.");
+  }
 
   useEffect(() => {
     if (selectedProductId || productList.length === 0) {
@@ -359,6 +378,8 @@ export default function VideoHubPage() {
                 experimentName={
                   experimentById.get(video.experimentId)?.name ?? `Experimento #${video.experimentId}`
                 }
+                onReview={handleVideoReview}
+                reviewPending={updateVideoReview.isPending}
               />
             ))}
           </div>
@@ -593,15 +614,30 @@ function SummaryMetric({ label, value }: { label: string; value: string }) {
 function ExperimentVideoCard({
   video,
   experimentName,
+  onReview,
+  reviewPending,
 }: {
   video: ExperimentVideoAsset;
   experimentName: string;
+  onReview: (
+    video: ExperimentVideoAsset,
+    reviewStatus: ExperimentVideoReviewStatus,
+    rejectionReason?: string,
+  ) => Promise<void>;
+  reviewPending: boolean;
 }) {
+  const [rejectionReason, setRejectionReason] = useState(video.rejectionReason ?? "");
   const playbackUrl = video.assetUrl ? resolveAssetUrl(video.assetUrl) : "";
   const thumbnailUrl = video.thumbnailUrl ? resolveAssetUrl(video.thumbnailUrl) : "";
   const blocksRelease =
     video.requiredForRelease &&
     (video.status !== "READY" || video.reviewStatus !== "APPROVED");
+  const canApprove = video.status === "READY" && Boolean(playbackUrl);
+  const canReject = video.status === "READY" && rejectionReason.trim().length > 0;
+
+  useEffect(() => {
+    setRejectionReason(video.rejectionReason ?? "");
+  }, [video.id, video.rejectionReason]);
 
   return (
     <article className="video-hub-page__video-card">
@@ -641,7 +677,50 @@ function ExperimentVideoCard({
             <dt>Duração</dt>
             <dd>{video.durationSeconds ? `${video.durationSeconds}s` : "Não definida"}</dd>
           </div>
+          <div>
+            <dt>Revisão</dt>
+            <dd>
+              {video.reviewStatus}
+              {video.reviewedBy ? ` · ${video.reviewedBy}` : ""}
+            </dd>
+          </div>
         </dl>
+        {video.reviewStatus === "REJECTED" && video.rejectionReason ? (
+          <div className="video-hub-page__rejection-note">
+            <strong>Motivo da reprovação</strong>
+            <span>{video.rejectionReason}</span>
+          </div>
+        ) : null}
+        <div className="video-hub-page__review-box">
+          <label htmlFor={`video-rejection-${video.id}`}>Motivo para reprovar</label>
+          <textarea
+            id={`video-rejection-${video.id}`}
+            value={rejectionReason}
+            onChange={(event) => setRejectionReason(event.target.value)}
+            rows={3}
+            placeholder="Explique o que precisa mudar no novo vídeo."
+          />
+          <div className="video-hub-page__review-actions">
+            <button
+              className="btn btn-sm btn-success"
+              type="button"
+              disabled={!canApprove || reviewPending}
+              onClick={() => onReview(video, "APPROVED")}
+            >
+              <CheckCircle2 size={15} aria-hidden="true" />
+              Aprovar
+            </button>
+            <button
+              className="btn btn-sm btn-outline-danger"
+              type="button"
+              disabled={!canReject || reviewPending}
+              onClick={() => onReview(video, "REJECTED", rejectionReason.trim())}
+            >
+              <XCircle size={15} aria-hidden="true" />
+              Reprovar
+            </button>
+          </div>
+        </div>
         <div className="video-hub-page__video-actions">
           <Link className="btn btn-sm btn-outline-primary" to={`/experiments/${video.experimentId}`}>
             Abrir experimento

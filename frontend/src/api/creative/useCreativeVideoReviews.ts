@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-export type CreativeVideoReviewStatus = "DRAFT" | "READY";
+export type CreativeVideoReviewStatus = "DRAFT" | "READY" | "REJECTED";
 
 export interface CreativeVideoReview {
   id: number;
@@ -22,6 +22,7 @@ export interface CreativeVideoReview {
   cta?: string | null;
   destinationUrl?: string | null;
   status: CreativeVideoReviewStatus;
+  rejectionReason?: string | null;
 }
 
 export function useCreativeVideoReviews(status?: CreativeVideoReviewStatus | "ALL") {
@@ -45,12 +46,15 @@ export function useUpdateCreativeVideoReviewStatus() {
     mutationFn: async ({
       id,
       status,
+      rejectionReason,
     }: {
       id: number;
       status: CreativeVideoReviewStatus;
+      rejectionReason?: string;
     }) => {
       const { data } = await axios.patch(`/api/creatives/${id}/status`, {
         status,
+        rejectionReason,
       });
       return data;
     },

@@ -1,7 +1,11 @@
 package com.marketinghub.salesvideo.service;
 
 import com.marketinghub.experiment.LandingPage;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.*;
@@ -33,17 +37,20 @@ public class LandingVideoSlotService {
     private final SalesVideoProfileRepository profileRepository;
     private final AssetRepository assetRepository;
     private final LandingVideoSlotHistoryRepository historyRepository;
+    private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
     public LandingVideoSlotService(LandingVideoSlotRepository slotRepository,
                                    LandingPageRepository landingPageRepository,
                                    SalesVideoProfileRepository profileRepository,
                                    AssetRepository assetRepository,
-                                   LandingVideoSlotHistoryRepository historyRepository) {
+                                   LandingVideoSlotHistoryRepository historyRepository,
+                                   ExperimentVideoAssetRepository experimentVideoAssetRepository) {
         this.slotRepository = slotRepository;
         this.landingPageRepository = landingPageRepository;
         this.profileRepository = profileRepository;
         this.assetRepository = assetRepository;
         this.historyRepository = historyRepository;
+        this.experimentVideoAssetRepository = experimentVideoAssetRepository;
     }
 
     @Transactional
@@ -53,13 +60,13 @@ public class LandingVideoSlotService {
                         "Landing page não encontrada: " + landingId));
         SalesVideoProfile profile = loadProfile(request.getProfileId());
         TenantContextHolder.assertTenant(profile.getTenantId());
-        ensurePublicationCompliance(profile);
+        Asset asset = loadAsset(request.getAssetId());
+        ensurePublicationCompliance(profile, asset);
         slotRepository.findByLandingPageIdAndSlotName(landingId, request.getSlotName())
                 .ifPresent(existing -> {
                     throw VideoModuleException.conflict(VideoModuleErrorCode.SLOT_CONFLICT,
                             "Já existe um slot com esse nome na landing");
                 });
-        Asset asset = loadAsset(request.getAssetId());
         Asset poster = loadOptionalAsset(request.getPosterAssetId());
         Asset vtt = loadOptionalAsset(request.getVttAssetId());
         String publishedBy = resolveActor(request.getPublishedBy());
@@ -111,7 +118,6 @@ public class LandingVideoSlotService {
                 || !slot.getProfile().getId().equals(request.getProfileId()))) {
             SalesVideoProfile profile = loadProfile(request.getProfileId());
             TenantContextHolder.assertTenant(profile.getTenantId());
-            ensurePublicationCompliance(profile);
             slot.setProfile(profile);
             slot.setTenantId(profile.getTenantId());
         }
@@ -153,7 +159,7 @@ public class LandingVideoSlotService {
         String actor = resolveActor(null);
         if (request.getPublishedBy() != null) {
             if (StringUtils.hasText(request.getPublishedBy())) {
-                ensurePublicationCompliance(slot.getProfile());
+                ensurePublicationCompliance(slot.getProfile(), slot.getAsset());
                 String publishedBy = resolveActor(request.getPublishedBy());
                 slot.setPublishedBy(publishedBy);
                 slot.setPublishedAt(Instant.now());
@@ -241,7 +247,7 @@ public class LandingVideoSlotService {
         return TenantContextHolder.resolveUserEmail(candidate);
     }
 
-    private void ensurePublicationCompliance(SalesVideoProfile profile) {
+    private void ensurePublicationCompliance(SalesVideoProfile profile, Asset asset) {
         if (profile == null) {
             return;
         }
@@ -255,6 +261,22 @@ public class LandingVideoSlotService {
                 || !StringUtils.hasText(profile.getConsentEvidenceUrl()))) {
             throw VideoModuleException.conflict(VideoModuleErrorCode.COMPLIANCE_CONSENT_REQUIRED,
                     "Publicação bloqueada: consentimento auditável obrigatório para avatar pessoal.");
+        }
+        ensureExperimentAssetApproved(asset);
+    }
+
+    /** Bloqueia publicação de vídeo de experimento que ainda esteja pendente ou reprovado. */
+    private void ensureExperimentAssetApproved(Asset asset) {
+        if (asset == null || asset.getId() == null) {
+            return;
+        }
+        List<ExperimentVideoAsset> videoAssets = experimentVideoAssetRepository.findByAssetId(asset.getId());
+        boolean blocked = videoAssets.stream()
+                .anyMatch(videoAsset -> videoAsset.getStatus() != ExperimentVideoStatus.READY
+                        || videoAsset.getReviewStatus() != ExperimentVideoReviewStatus.APPROVED);
+        if (blocked) {
+            throw VideoModuleException.conflict(VideoModuleErrorCode.COMPLIANCE_HUMAN_REVIEW_REQUIRED,
+                    "Publicação bloqueada: vídeo precisa estar pronto e aprovado na fila de aprovação.");
         }
     }
 }

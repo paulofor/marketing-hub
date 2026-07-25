@@ -28,6 +28,9 @@ export interface ExperimentVideoAsset {
   responseJson?: string | null;
   cost?: number | null;
   reviewStatus: ExperimentVideoReviewStatus;
+  rejectionReason?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
   requiredForRelease: boolean;
   salesVideoProfileId?: number | null;
   salesVideoJobId?: number | null;

@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Integration tests for CreativeController.
+ * Responsabilidade: validar os contratos HTTP de criativos.
  */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
@@ -145,9 +145,38 @@ class CreativeControllerTest {
         assertThat(experiment.isCreativeApproved()).isTrue();
     }
 
+    /** Garante que a API registre motivo quando o criativo de vídeo for reprovado. */
+    @Test
+    void updateStatusEndpointRejectsVideoCreativeWithReason() throws Exception {
+        CreateCreativeRequest req = new CreateCreativeRequest();
+        req.setFormat("VIDEO");
+        req.setHeadline("Video");
+        req.setPrimaryText("P");
+        req.setVideoUrl("https://cdn.test/video.mp4");
+        req.setStatus(CreativeStatus.DRAFT);
+        String resp = mockMvc.perform(post("/api/experiments/" + expId + "/creatives")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        com.marketinghub.creative.dto.CreativeDto created =
+                mapper.readValue(resp, com.marketinghub.creative.dto.CreativeDto.class);
+
+        mockMvc.perform(patch("/api/creatives/" + created.getId() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REJECTED\",\"rejectionReason\":\"Promessa visual fraca.\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJECTED"))
+                .andExpect(jsonPath("$.rejectionReason").value("Promessa visual fraca."));
+
+        mockMvc.perform(get("/api/creatives/video-review").param("status", "REJECTED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("REJECTED"))
+                .andExpect(jsonPath("$[0].rejectionReason").value("Promessa visual fraca."));
+    }
+
     @Test
     void patchLabelsAssignsSingleLabels() throws Exception {
-        // create creative
         CreateCreativeRequest req = new CreateCreativeRequest();
         req.setHeadline("H");
         req.setPrimaryText("P");

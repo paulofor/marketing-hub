@@ -1,5 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-24-experiment-video-approval-gate.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-07-24-creative-rejection-reason.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-24-creative-video-url.yaml
       relativeToChangelogFile: true
   - include:

@@ -106,11 +106,11 @@ public class CreativeController {
     }
 
     /**
-     * Atualiza somente o status de aprovação de um criativo.
+     * Atualiza o status de revisão de um criativo, incluindo motivo quando houver reprovação.
      */
     @PatchMapping("/api/creatives/{id}/status")
     public CreativeDto updateStatus(@PathVariable Long id, @RequestBody UpdateCreativeStatusRequest request) {
-        return mapper.toDto(service.updateStatus(id, request.status()));
+        return mapper.toDto(service.updateStatus(id, request.status(), request.rejectionReason()));
     }
 
     /**

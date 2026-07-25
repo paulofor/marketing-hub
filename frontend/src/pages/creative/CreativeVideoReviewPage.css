@@ -18,7 +18,7 @@
 
 .creative-video-review-page__summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -150,6 +150,11 @@
   color: #166534;
 }
 
+.creative-video-review-page__status--rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .creative-video-review-page__context {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -182,6 +187,56 @@
 .creative-video-review-page__copy p {
   margin: 0;
   color: #475569;
+}
+
+.creative-video-review-page__reject-reason {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.creative-video-review-page__reject-reason span {
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.creative-video-review-page__reject-reason b {
+  color: #dc2626;
+}
+
+.creative-video-review-page__reject-reason textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.65rem;
+  color: #111827;
+  font: inherit;
+}
+
+.creative-video-review-page__reject-reason textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+  outline: none;
+}
+
+.creative-video-review-page__rejection {
+  display: grid;
+  gap: 0.25rem;
+  border-left: 3px solid #dc2626;
+  background: #fef2f2;
+  padding: 0.65rem 0.75rem;
+}
+
+.creative-video-review-page__rejection strong {
+  color: #991b1b;
+  font-size: 0.82rem;
+}
+
+.creative-video-review-page__rejection p {
+  margin: 0;
+  color: #7f1d1d;
 }
 
 .creative-video-review-page__actions {

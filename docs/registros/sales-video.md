@@ -1,5 +1,13 @@
 # Registro operacional — Sales Video
 
+## 2026-07-25 — Prompt de roteiro adaptável por produto
+
+- Problema observado: a melhoria de qualidade do roteiro corrigia o MUSA, mas deixava exemplos específicos de moda no prompt global, criando risco de contaminar scripts de outros produtos.
+- Causa-raiz tratada: o prompt base recebia poucos blocos comerciais estruturados e misturava regra universal de conversa natural com vocabulário específico de um produto.
+- Correção preparada: o `SalesVideoPromptBuilder` passa a concatenar blocos de contexto por nicho/consumidor, hipótese/promessa, oferta/funil/conversão e prova/experiência de valor quando esses dados existirem no produto.
+- Correção preparada: o template de roteiro remove exemplo fixo do MUSA e orienta o modelo a extrair palavras concretas do contexto do produto atual.
+- Regra operacional: vocabulário específico como look, peça-sinal ou roupa nova só deve aparecer quando vier do contexto comercial do produto, não do prompt genérico de Sales Video.
+
 ## 2026-07-25 — Reforço de qualidade para scripts naturais de venda
 
 - Problema observado: scripts aprováveis tecnicamente estavam soando frios e abstratos, com promessa pouco desejável para anúncio, como "imagem coerente".

@@ -5,6 +5,8 @@ import com.marketinghub.creative.CreativeVideoReviewSourceType;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.hypothesis.HypothesisStatus;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -31,6 +33,10 @@ public record CreativeVideoReviewDto(
         String destinationUrl,
         CreativeStatus status,
         String rejectionReason,
+        Instant reviewedAt,
+        BigDecimal videoCostUsd,
+        BigDecimal audioCostUsd,
+        BigDecimal totalProductionCostUsd,
         String visualSourceType,
         String visualSourceKey,
         String visualSourceDescription,

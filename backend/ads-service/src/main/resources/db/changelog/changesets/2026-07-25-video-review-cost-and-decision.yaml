@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-25-01-add-experiment-video-audio-cost
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_video_asset
+        - not:
+            - columnExists:
+                tableName: experiment_video_asset
+                columnName: audio_cost
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_video_asset
+                ADD COLUMN audio_cost DECIMAL(12, 4) NULL AFTER cost;
+  - changeSet:
+      id: 2026-07-25-02-add-creative-video-cost-and-decision
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: creative
+        - not:
+            - columnExists:
+                tableName: creative
+                columnName: cost_usd
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                ADD COLUMN cost_usd DECIMAL(12, 4) NULL AFTER video_url,
+                ADD COLUMN reviewed_at DATETIME NULL AFTER rejection_reason;

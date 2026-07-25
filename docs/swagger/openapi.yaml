@@ -1826,6 +1826,19 @@ components:
           enum: [DRAFT, READY, REJECTED]
         rejectionReason:
           type: string
+        reviewedAt:
+          type: string
+          format: date-time
+          description: Data e hora da última aprovação ou reprovação humana.
+        videoCostUsd:
+          type: number
+          description: Custo em USD da produção do vídeo.
+        audioCostUsd:
+          type: number
+          description: Custo em USD do áudio produzido separadamente, quando existir.
+        totalProductionCostUsd:
+          type: number
+          description: Soma em USD de videoCostUsd e audioCostUsd para controle de custo aprovado ou reprovado.
     UpdateCreativeStatusRequest:
       type: object
       required: [status]

@@ -93,6 +93,7 @@ public class CreativeService {
                     .imageUrl(request.getImageUrl())
                     .videoId(request.getVideoId())
                     .videoUrl(request.getVideoUrl())
+                    .costUsd(request.getCostUsd())
                     .description(request.getDescription())
                     .cta(normalizeMetaCallToAction(request.getCta()))
                     .destinationUrl(request.getDestinationUrl())
@@ -134,6 +135,7 @@ public class CreativeService {
         creative.setImageUrl(request.getImageUrl());
         creative.setVideoId(request.getVideoId());
         creative.setVideoUrl(request.getVideoUrl());
+        creative.setCostUsd(request.getCostUsd());
         creative.setDescription(request.getDescription());
         creative.setCta(normalizeMetaCallToAction(request.getCta()));
         creative.setDestinationUrl(request.getDestinationUrl());
@@ -206,6 +208,7 @@ public class CreativeService {
             String normalizedRejectionReason = normalizeRejectionReason(status, rejectionReason);
             creative.setStatus(status);
             creative.setRejectionReason(normalizedRejectionReason);
+            applyCreativeReviewTimestamp(creative, status);
             Creative saved = repository.save(creative);
             refreshExperimentApproval(saved.getExperiment());
             return saved;
@@ -237,6 +240,17 @@ public class CreativeService {
     }
 
     /**
+     * Carimba a data da decisão humana ou limpa o carimbo quando o item volta para revisão.
+     */
+    private void applyCreativeReviewTimestamp(Creative creative, CreativeStatus status) {
+        if (status == CreativeStatus.READY || status == CreativeStatus.REJECTED) {
+            creative.setReviewedAt(Instant.now());
+            return;
+        }
+        creative.setReviewedAt(null);
+    }
+
+    /**
      * Atualiza a revisão humana de um vídeo de experimento e preserva o motivo da reprovação.
      */
     private CreativeVideoReviewDto updateExperimentVideoReviewStatus(Long id,
@@ -263,7 +277,7 @@ public class CreativeService {
         }
         videoAsset.setReviewStatus(Objects.requireNonNull(reviewStatus));
         videoAsset.setReviewedBy("Marketing Hub");
-        videoAsset.setReviewedAt(Instant.now());
+        videoAsset.setReviewedAt(reviewStatus == ExperimentVideoReviewStatus.PENDING ? null : Instant.now());
         if (reviewStatus == ExperimentVideoReviewStatus.REJECTED) {
             videoAsset.setRejectionReason(rejectionReason.trim());
         } else if (reviewStatus == ExperimentVideoReviewStatus.APPROVED) {
@@ -439,6 +453,10 @@ public class CreativeService {
                 creative.getDestinationUrl(),
                 creative.getStatus(),
                 creative.getRejectionReason(),
+                creative.getReviewedAt(),
+                creative.getCostUsd(),
+                null,
+                creative.getCostUsd(),
                 null,
                 null,
                 null,
@@ -475,6 +493,10 @@ public class CreativeService {
                 null,
                 toCreativeStatus(videoAsset.getReviewStatus()),
                 videoAsset.getRejectionReason(),
+                videoAsset.getReviewedAt(),
+                videoAsset.getCost(),
+                videoAsset.getAudioCost(),
+                totalProductionCost(videoAsset.getCost(), videoAsset.getAudioCost()),
                 videoAsset.getVisualSourceType(),
                 videoAsset.getVisualSourceKey(),
                 videoAsset.getVisualSourceDescription(),
@@ -506,6 +528,18 @@ public class CreativeService {
             return CreativeStatus.REJECTED;
         }
         return CreativeStatus.DRAFT;
+    }
+
+    /**
+     * Soma custo de vídeo e áudio separado preservando nulo quando não há custo registrado.
+     */
+    private BigDecimal totalProductionCost(BigDecimal videoCost, BigDecimal audioCost) {
+        if (videoCost == null && audioCost == null) {
+            return null;
+        }
+        return BigDecimal.ZERO
+                .add(videoCost != null ? videoCost : BigDecimal.ZERO)
+                .add(audioCost != null ? audioCost : BigDecimal.ZERO);
     }
 
     /**

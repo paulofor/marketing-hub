@@ -29,6 +29,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -113,6 +115,7 @@ class CreativeControllerTest {
         req.setHeadline("Video");
         req.setPrimaryText("P");
         req.setVideoUrl("https://cdn.test/video.mp4");
+        req.setCostUsd(new BigDecimal("0.0450"));
         req.setStatus(CreativeStatus.DRAFT);
         mockMvc.perform(post("/api/experiments/" + expId + "/creatives")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -124,6 +127,8 @@ class CreativeControllerTest {
                 .andExpect(jsonPath("$[0].headline").value("Video"))
                 .andExpect(jsonPath("$[0].sourceType").value("CREATIVE"))
                 .andExpect(jsonPath("$[0].status").value("DRAFT"))
+                .andExpect(jsonPath("$[0].videoCostUsd").value(0.0450))
+                .andExpect(jsonPath("$[0].totalProductionCostUsd").value(0.0450))
                 .andExpect(jsonPath("$[0].videoUrl").value("https://cdn.test/video.mp4"));
     }
 
@@ -143,6 +148,8 @@ class CreativeControllerTest {
                 .status(ExperimentVideoStatus.READY)
                 .assetUrl("https://cdn.test/e002.mp4")
                 .hasAudio(true)
+                .cost(new BigDecimal("0.0800"))
+                .audioCost(new BigDecimal("0.0200"))
                 .reviewStatus(ExperimentVideoReviewStatus.PENDING)
                 .requiredForRelease(true)
                 .build());
@@ -152,6 +159,9 @@ class CreativeControllerTest {
                 .andExpect(jsonPath("$[0].sourceType").value("EXPERIMENT_VIDEO_ASSET"))
                 .andExpect(jsonPath("$[0].headline").value("Video do E002 para rodar campanha"))
                 .andExpect(jsonPath("$[0].status").value("DRAFT"))
+                .andExpect(jsonPath("$[0].videoCostUsd").value(0.0800))
+                .andExpect(jsonPath("$[0].audioCostUsd").value(0.0200))
+                .andExpect(jsonPath("$[0].totalProductionCostUsd").value(0.1000))
                 .andExpect(jsonPath("$[0].videoUrl").value("https://cdn.test/e002.mp4"));
     }
 
@@ -207,10 +217,12 @@ class CreativeControllerTest {
                         .content("{\"status\":\"READY\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sourceType").value("EXPERIMENT_VIDEO_ASSET"))
-                .andExpect(jsonPath("$.status").value("READY"));
+                .andExpect(jsonPath("$.status").value("READY"))
+                .andExpect(jsonPath("$.reviewedAt").exists());
 
         ExperimentVideoAsset updated = videoAssetRepository.findById(videoAsset.getId()).orElseThrow();
         assertThat(updated.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.APPROVED);
+        assertThat(updated.getReviewedAt()).isNotNull();
     }
 
     /** Garante que vídeo sem áudio não passe da qualidade para aprovação humana. */
@@ -292,11 +304,13 @@ class CreativeControllerTest {
                         .content("{\"status\":\"REJECTED\",\"rejectionReason\":\"Personagem oscilou entre cenas.\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"))
-                .andExpect(jsonPath("$.rejectionReason").value("Personagem oscilou entre cenas."));
+                .andExpect(jsonPath("$.rejectionReason").value("Personagem oscilou entre cenas."))
+                .andExpect(jsonPath("$.reviewedAt").exists());
 
         ExperimentVideoAsset updated = videoAssetRepository.findById(videoAsset.getId()).orElseThrow();
         assertThat(updated.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.REJECTED);
         assertThat(updated.getRejectionReason()).isEqualTo("Personagem oscilou entre cenas.");
+        assertThat(updated.getReviewedAt()).isNotNull();
     }
 
     /** Garante que a API registre motivo quando o criativo de vídeo for reprovado. */
@@ -307,6 +321,7 @@ class CreativeControllerTest {
         req.setHeadline("Video");
         req.setPrimaryText("P");
         req.setVideoUrl("https://cdn.test/video.mp4");
+        req.setCostUsd(new BigDecimal("0.0330"));
         req.setStatus(CreativeStatus.DRAFT);
         String resp = mockMvc.perform(post("/api/experiments/" + expId + "/creatives")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -321,12 +336,16 @@ class CreativeControllerTest {
                         .content("{\"status\":\"REJECTED\",\"rejectionReason\":\"Promessa visual fraca.\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"))
-                .andExpect(jsonPath("$.rejectionReason").value("Promessa visual fraca."));
+                .andExpect(jsonPath("$.rejectionReason").value("Promessa visual fraca."))
+                .andExpect(jsonPath("$.reviewedAt").exists());
 
         mockMvc.perform(get("/api/creatives/video-review").param("status", "REJECTED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("REJECTED"))
-                .andExpect(jsonPath("$[0].rejectionReason").value("Promessa visual fraca."));
+                .andExpect(jsonPath("$[0].rejectionReason").value("Promessa visual fraca."))
+                .andExpect(jsonPath("$[0].reviewedAt").exists())
+                .andExpect(jsonPath("$[0].videoCostUsd").value(0.0330))
+                .andExpect(jsonPath("$[0].totalProductionCostUsd").value(0.0330));
     }
 
     @Test

@@ -162,6 +162,7 @@ public class ExperimentVideoAssetService {
                 .requestJson(request.requestJson())
                 .responseJson(request.responseJson())
                 .cost(resolveCost(request.cost(), request.provider(), request.model(), request.durationSeconds(), null))
+                .audioCost(request.audioCost())
                 .reviewStatus(request.reviewStatus() == null ? ExperimentVideoReviewStatus.PENDING : request.reviewStatus())
                 .requiredForRelease(request.requiredForRelease())
                 .salesVideoProfile(resolveProfile(request.salesVideoProfileId()))
@@ -395,6 +396,9 @@ public class ExperimentVideoAssetService {
             if (estimatedCost != null) {
                 videoAsset.setCost(estimatedCost);
             }
+        }
+        if (request.audioCost() != null) {
+            videoAsset.setAudioCost(request.audioCost());
         }
         if (request.reviewStatus() != null) {
             applyReviewUpdate(videoAsset, request);
@@ -983,6 +987,7 @@ public class ExperimentVideoAssetService {
                 videoAsset.getRequestJson(),
                 videoAsset.getResponseJson(),
                 videoAsset.getCost(),
+                videoAsset.getAudioCost(),
                 videoAsset.getReviewStatus(),
                 videoAsset.getRejectionReason(),
                 videoAsset.getReviewedBy(),

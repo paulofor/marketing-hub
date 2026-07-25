@@ -17,12 +17,14 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
  * Atualiza ativos de video de experimento a partir do resultado final de um job SalesVideo.
  */
 @Service
+@Slf4j
 public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRenderAssetSync {
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().build();
     private static final String NO_AUDIO_REJECTION_REASON =
@@ -95,18 +97,55 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
         if (durationSeconds != null) {
             videoAsset.setDurationSeconds(durationSeconds);
         }
-        Boolean hasAudio = resolveHasAudio(request);
+        Boolean hasAudio = resolveHasAudio(job, request);
         if (hasAudio != null) {
             videoAsset.setHasAudio(hasAudio);
         }
         if (costUsd != null) {
             videoAsset.setCost(costUsd);
         }
+        resolveAudioCost(job, request).ifPresent(videoAsset::setAudioCost);
         videoAsset.setResponseJson(request.getMetadataJson());
         videoAsset.setStatus(ExperimentVideoStatus.READY);
         if (Boolean.FALSE.equals(hasAudio)) {
             rejectWithoutAudio(videoAsset);
         }
+    }
+
+    /** Extrai custo de áudio separado do metadata enviado pelo worker quando existir. */
+    private Optional<BigDecimal> resolveAudioCost(SalesVideoJob job, JobCompletionRequest request) {
+        if (request == null || request.getMetadataJson() == null || request.getMetadataJson().isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            JsonNode metadata = OBJECT_MAPPER.readTree(request.getMetadataJson());
+            return firstDecimal(metadata, "audioCostUsd", "audio_cost_usd", "audioCost", "audio_cost");
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao extrair custo de audio do metadata do video. classe={} operacao=resolveAudioCost jobId={}",
+                    getClass().getSimpleName(),
+                    job != null ? job.getId() : null,
+                    ex);
+            return Optional.empty();
+        }
+    }
+
+    /** Lê valores decimais aceitos para compatibilidade com workers diferentes. */
+    private Optional<BigDecimal> firstDecimal(JsonNode metadata, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode value = metadata.get(fieldName);
+            if (value != null && value.isNumber()) {
+                return Optional.of(value.decimalValue());
+            }
+            if (value != null && value.isTextual() && isDecimalText(value.asText())) {
+                return Optional.of(new BigDecimal(value.asText()));
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Valida texto decimal simples antes da conversão para evitar exceção em metadata externo. */
+    private boolean isDecimalText(String value) {
+        return value != null && value.trim().matches("-?\\d+(\\.\\d+)?");
     }
 
     /** Bloqueia uso comercial quando a qualidade confirma ausência de áudio. */
@@ -118,7 +157,7 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
     }
 
     /** Extrai do metadata auditável se o arquivo final possui faixa de áudio. */
-    private Boolean resolveHasAudio(JobCompletionRequest request) {
+    private Boolean resolveHasAudio(SalesVideoJob job, JobCompletionRequest request) {
         if (request == null || request.getMetadataJson() == null || request.getMetadataJson().isBlank()) {
             return null;
         }
@@ -128,6 +167,10 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
                     .or(() -> audioStreamCount(metadata))
                     .orElse(null);
         } catch (JsonProcessingException ex) {
+            log.warn("Falha ao extrair qualidade de audio do metadata do video. classe={} operacao=resolveHasAudio jobId={}",
+                    getClass().getSimpleName(),
+                    job != null ? job.getId() : null,
+                    ex);
             return null;
         }
     }
@@ -190,6 +233,10 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
                     message,
                     failureDetail));
         } catch (JsonProcessingException ex) {
+            log.warn("Falha ao montar snapshot de falha do video. classe={} operacao=failureSnapshot jobId={}",
+                    getClass().getSimpleName(),
+                    job != null ? job.getId() : null,
+                    ex);
             return "{\"status\":\"VIDEO_FAILED\",\"jobId\":%d}".formatted(job.getId());
         }
     }

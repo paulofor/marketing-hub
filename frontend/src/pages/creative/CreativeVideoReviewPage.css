@@ -18,7 +18,7 @@
 
 .creative-video-review-page__summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -174,6 +174,33 @@
   font-size: 0.9rem;
 }
 
+.creative-video-review-page__costs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.creative-video-review-page__costs div {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.55rem;
+}
+
+.creative-video-review-page__costs dt {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.creative-video-review-page__costs dd {
+  margin: 0.12rem 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .creative-video-review-page__copy {
   display: grid;
   gap: 0.35rem;
@@ -290,6 +317,10 @@
   }
 
   .creative-video-review-page__context {
+    grid-template-columns: 1fr;
+  }
+
+  .creative-video-review-page__costs {
     grid-template-columns: 1fr;
   }
 }

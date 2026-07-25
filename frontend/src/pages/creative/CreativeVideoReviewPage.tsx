@@ -56,6 +56,41 @@ function reviewKey(video: CreativeVideoReview) {
   return `${video.sourceType}:${video.id}`;
 }
 
+function toNumber(value: number | string | null | undefined) {
+  if (value == null || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+const usdFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 4,
+  maximumFractionDigits: 4,
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+function formatUsd(value: number | string | null | undefined) {
+  const numeric = toNumber(value);
+  return numeric == null ? "Não registrado" : usdFormatter.format(numeric);
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "Sem decisão";
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Data inválida"
+    : dateTimeFormatter.format(date);
+}
+
 export default function CreativeVideoReviewPage() {
   const [filter, setFilter] = useState<ReviewFilter>("DRAFT");
   const [rejectionReasons, setRejectionReasons] = useState<
@@ -78,11 +113,16 @@ export default function CreativeVideoReviewPage() {
   const rejectedCount = summaryVideos.filter(
     (video) => video.status === "REJECTED",
   ).length;
-  const musaCount = summaryVideos.filter((video) =>
-    `${video.experimentName} ${video.hypothesisTitle ?? ""} ${video.nicheName ?? ""}`
-      .toLocaleLowerCase("pt-BR")
-      .includes("musa"),
-  ).length;
+  const totalProductionCost = summaryVideos.reduce(
+    (sum, video) => sum + (toNumber(video.totalProductionCostUsd) ?? 0),
+    0,
+  );
+  const rejectedProductionCost = summaryVideos
+    .filter((video) => video.status === "REJECTED")
+    .reduce(
+      (sum, video) => sum + (toNumber(video.totalProductionCostUsd) ?? 0),
+      0,
+    );
 
   const handleStatusChange = async (
     video: CreativeVideoReview,
@@ -148,8 +188,12 @@ export default function CreativeVideoReviewPage() {
           <strong>{rejectedCount}</strong>
         </div>
         <div className="creative-video-review-page__metric">
-          <span>Relacionados a MUSA</span>
-          <strong>{musaCount}</strong>
+          <span>Custo total</span>
+          <strong>{formatUsd(totalProductionCost)}</strong>
+        </div>
+        <div className="creative-video-review-page__metric">
+          <span>Custo reprovado</span>
+          <strong>{formatUsd(rejectedProductionCost)}</strong>
         </div>
       </section>
 
@@ -261,6 +305,10 @@ export default function CreativeVideoReviewPage() {
                       <dd>{video.experimentStatus}</dd>
                     </div>
                     <div>
+                      <dt>Decisão</dt>
+                      <dd>{formatDateTime(video.reviewedAt)}</dd>
+                    </div>
+                    <div>
                       <dt>Hipótese</dt>
                       <dd>{video.hypothesisTitle ?? "Sem hipótese"}</dd>
                     </div>
@@ -283,6 +331,21 @@ export default function CreativeVideoReviewPage() {
                     <div>
                       <dt>Tipo da origem</dt>
                       <dd>{video.visualSourceType ?? "Não informado"}</dd>
+                    </div>
+                  </dl>
+
+                  <dl className="creative-video-review-page__costs">
+                    <div>
+                      <dt>Vídeo</dt>
+                      <dd>{formatUsd(video.videoCostUsd)}</dd>
+                    </div>
+                    <div>
+                      <dt>Áudio separado</dt>
+                      <dd>{formatUsd(video.audioCostUsd)}</dd>
+                    </div>
+                    <div>
+                      <dt>Total produção</dt>
+                      <dd>{formatUsd(video.totalProductionCostUsd)}</dd>
                     </div>
                   </dl>
 

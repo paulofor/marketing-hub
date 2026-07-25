@@ -54,6 +54,10 @@ describe("CreativeVideoReviewPage", () => {
             videoUrl: "https://example.com/video-243.mp4",
             status: "REJECTED",
             rejectionReason: "A legenda ta ruim",
+            reviewedAt: "2026-07-25T15:10:00Z",
+            videoCostUsd: 0.08,
+            audioCostUsd: 0.02,
+            totalProductionCostUsd: 0.1,
           },
           {
             id: 242,
@@ -69,6 +73,9 @@ describe("CreativeVideoReviewPage", () => {
             videoUrl: "https://example.com/video-242.mp4",
             status: "REJECTED",
             rejectionReason: "O audio esta em ingles",
+            reviewedAt: "2026-07-25T15:20:00Z",
+            videoCostUsd: 0.05,
+            totalProductionCostUsd: 0.05,
           },
         ],
       };
@@ -79,7 +86,7 @@ describe("CreativeVideoReviewPage", () => {
     const summary = await screen.findByLabelText("Resumo da fila");
     await waitFor(() => {
       expect(within(summary).getByText("Reprovados").nextElementSibling).toHaveTextContent("2");
-      expect(within(summary).getByText("Relacionados a MUSA").nextElementSibling).toHaveTextContent("2");
+      expect(within(summary).getByText("Custo reprovado").nextElementSibling).toHaveTextContent(/US\$\s*0,1500/);
     });
     expect(screen.getByText("Nenhum vídeo encontrado para este filtro.")).toBeInTheDocument();
   });

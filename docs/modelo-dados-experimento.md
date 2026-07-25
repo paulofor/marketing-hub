@@ -55,6 +55,7 @@ Fluxo obrigatório de aprovação e portfólio de vídeos:
 - quando o vídeo estiver com `status=READY`, URL pública e `has_audio=true`, deve aparecer na tela `/creative-video-review` para aprovação humana;
 - vídeo sem áudio ou sem confirmação de áudio não pode seguir para aprovação humana nem virar `APPROVED`; quando a análise confirmar `has_audio=false`, o ativo deve ser marcado como reprovado por qualidade com motivo auditável;
 - a tela `/creative-video-review` é a fila humana final: aprovação muda `review_status` para `APPROVED` e libera o vídeo para o portfólio do produto;
+- toda aprovação ou reprovação deve registrar data/hora da decisão; a fila deve exibir custo de produção do vídeo, custo de áudio separado quando existir e custo total para controlar também o desperdício dos reprovados;
 - pode existir mais de um vídeo `APPROVED` no mesmo produto/experimento, pois eles podem cumprir papéis diferentes no funil, PDE, landing, anúncios ou cortes de campanha;
 - vídeo reprovado deve manter `review_status=REJECTED` e `rejection_reason` preenchido, sem uso em campanha, PDE, página de venda ou liberação para `RUNNING`;
 - a próxima geração, refação ou pós-produção do vídeo deve considerar o `rejection_reason` anterior como restrição criativa para evitar repetição do mesmo problema percebido.

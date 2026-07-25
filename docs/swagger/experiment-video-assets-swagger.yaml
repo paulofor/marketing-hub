@@ -162,6 +162,9 @@ components:
           type: string
         cost:
           type: number
+        audioCost:
+          type: number
+          description: Custo em USD do áudio produzido separadamente para o vídeo.
         reviewStatus:
           type: string
           enum: [PENDING, APPROVED, REJECTED]

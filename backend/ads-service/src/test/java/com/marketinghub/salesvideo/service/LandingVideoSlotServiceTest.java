@@ -1,13 +1,7 @@
 package com.marketinghub.salesvideo.service;
 
 import com.marketinghub.experiment.LandingPage;
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.video.ExperimentVideoAsset;
-import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
-import com.marketinghub.experiment.video.ExperimentVideoSlot;
-import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
-import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.LandingVideoSlot;
@@ -34,6 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+/**
+ * Valida os comportamentos principais dos slots de vídeo publicados em landings.
+ */
 @ExtendWith(MockitoExtension.class)
 class LandingVideoSlotServiceTest {
 
@@ -53,10 +50,11 @@ class LandingVideoSlotServiceTest {
     private LandingVideoSlotHistoryRepository historyRepository;
 
     @Mock
-    private ExperimentVideoAssetRepository experimentVideoAssetRepository;
+    private SalesVideoExperimentAssetApprovalChecker experimentAssetApprovalChecker;
 
     private LandingVideoSlotService service;
 
+    /** Configura o serviço com dependências mockadas antes de cada cenário. */
     @BeforeEach
     void setUp() {
         service = new LandingVideoSlotService(slotRepository,
@@ -64,9 +62,10 @@ class LandingVideoSlotServiceTest {
                 profileRepository,
                 assetRepository,
                 historyRepository,
-                experimentVideoAssetRepository);
+                experimentAssetApprovalChecker);
     }
 
+    /** Verifica se a listagem retorna os slots publicados para a landing e tenant atuais. */
     @Test
     void shouldListSlotsForLanding() {
         long landingId = 7L;
@@ -101,6 +100,7 @@ class LandingVideoSlotServiceTest {
         }
     }
 
+    /** Verifica se a listagem falha quando a landing solicitada não existe. */
     @Test
     void shouldFailWhenLandingDoesNotExist() {
         long landingId = 999L;
@@ -114,6 +114,7 @@ class LandingVideoSlotServiceTest {
         }
     }
 
+    /** Verifica se a publicação é bloqueada quando o vídeo de experimento ainda não foi aprovado. */
     @Test
     void shouldBlockPublicationWhenExperimentVideoAssetIsNotApproved() {
         long landingId = 7L;
@@ -127,19 +128,6 @@ class LandingVideoSlotServiceTest {
                 .humanReviewApprovedAt(Instant.now())
                 .build();
         Asset videoAsset = Asset.builder().id(assetId).url("https://cdn.test/video.mp4").build();
-        ExperimentVideoAsset experimentVideoAsset = ExperimentVideoAsset.builder()
-                .id(99L)
-                .experiment(Experiment.builder().id(39L).build())
-                .slot(ExperimentVideoSlot.LANDING_HERO)
-                .objective("Hero PDE")
-                .primaryMetric("click")
-                .provider("LUMA")
-                .model("ray-3.2")
-                .status(ExperimentVideoStatus.READY)
-                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
-                .asset(videoAsset)
-                .requiredForRelease(true)
-                .build();
         CreateLandingVideoSlotRequest request = new CreateLandingVideoSlotRequest();
         request.setProfileId(profileId);
         request.setSlotName("hero");
@@ -148,7 +136,7 @@ class LandingVideoSlotServiceTest {
         given(landingPageRepository.findById(landingId)).willReturn(Optional.of(landingPage));
         given(profileRepository.findById(profileId)).willReturn(Optional.of(profile));
         given(assetRepository.findById(assetId)).willReturn(Optional.of(videoAsset));
-        given(experimentVideoAssetRepository.findByAssetId(assetId)).willReturn(List.of(experimentVideoAsset));
+        given(experimentAssetApprovalChecker.isApprovedForPublication(assetId)).willReturn(false);
         TenantContextHolder.set(new TenantContext("tenant-test", "tester@local", false));
 
         try {

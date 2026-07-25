@@ -61,6 +61,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ExperimentVideoAssetService {
     private static final int LANDING_HERO_LUMA_TARGET_SECONDS = 30;
+    private static final int VEO_MAX_DIRECT_RENDER_SECONDS = 8;
     private static final String POST_PRODUCTION_PROVIDER = "MUSA_POST_PRODUCTION";
     private static final String MUSA_STABLE_VISUAL_DIRECTIVES = """
             Vertical 9:16 realistic mobile video for Metodo MUSA. Brazilian urban adult woman, real and relatable,
@@ -170,6 +171,8 @@ public class ExperimentVideoAssetService {
     @Transactional
     public ExperimentVideoAssetDto requestVeoRender(Long experimentId, RequestExperimentVeoVideoRequest request) {
         Experiment experiment = ensureExperiment(experimentId);
+        String providerName = Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO");
+        validateVeoDirectRenderDuration(providerName, request.targetDurationSeconds());
         Product product = resolveOrCreateProduct(experiment);
         Long landingPageId = resolveLandingPageId(experimentId);
 
@@ -195,11 +198,10 @@ public class ExperimentVideoAssetService {
         RequestVideoRenderRequest renderRequest = new RequestVideoRenderRequest();
         renderRequest.setRequestedBy(request.requestedBy().trim());
         renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
-        renderRequest.setProviderName(Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"));
+        renderRequest.setProviderName(providerName);
         renderRequest.setExecutionMode(request.executionMode());
         renderRequest.setMetadataJson(buildVeoRenderMetadata(experimentId, request));
         SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
-        String providerName = Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO");
         BigDecimal estimatedCost = costCalculator.estimateUsd(
                 providerName,
                 providerName,
@@ -224,6 +226,17 @@ public class ExperimentVideoAssetService {
                 .salesVideoJob(resolveJob(job.getId()))
                 .build();
         return toDto(repository.save(videoAsset));
+    }
+
+    /** Bloqueia pedido direto ao VEO acima do limite nativo do provider. */
+    private void validateVeoDirectRenderDuration(String providerName, Integer targetDurationSeconds) {
+        if (isVeoProvider(providerName)
+                && targetDurationSeconds != null
+                && targetDurationSeconds > VEO_MAX_DIRECT_RENDER_SECONDS) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "VEO aceita no máximo 8 segundos por render direto; use montagem por cenas ou outro provider para vídeos maiores");
+        }
     }
 
     /** Cria jobs de render para ativos planejados e preserva o vínculo original do experimento. */
@@ -528,6 +541,15 @@ public class ExperimentVideoAssetService {
     private boolean isLumaProvider(String providerName) {
         String normalizedProviderName = Optional.ofNullable(trimToNull(providerName)).orElse("").toUpperCase();
         return normalizedProviderName.contains("LUMA") || normalizedProviderName.contains("RAY_3_2");
+    }
+
+    /** Identifica nomes de provider que acionam o adapter direto do VEO. */
+    private boolean isVeoProvider(String providerName) {
+        String normalizedProviderName = Optional.ofNullable(trimToNull(providerName)).orElse("").toUpperCase();
+        return normalizedProviderName.equals("VEO")
+                || normalizedProviderName.contains("VEO-")
+                || normalizedProviderName.contains("VEO_")
+                || normalizedProviderName.contains("VEO ");
     }
 
     /** Identifica ativos planejados ou falhados que podem receber novo job sem duplicar o ativo. */

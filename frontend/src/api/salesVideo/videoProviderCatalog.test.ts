@@ -70,6 +70,15 @@ describe("videoProviderCatalog", () => {
     expect(metadata.provider_strategy.supports_scene_assembly).toBe(false);
   });
 
+  it("limita VEO a renders diretos de ate 8 segundos", () => {
+    const provider = findSalesVideoProviderOption("VEO");
+
+    expect(provider).toBeDefined();
+    expect(provider?.clipDurationSeconds).toBe(8);
+    expect(provider?.maxDirectDurationSeconds).toBe(8);
+    expect(provider?.supportsHeroVideo).toBe(false);
+  });
+
   it("habilita estrategia OpenAI imagem para Luma quando solicitada", () => {
     const metadata = JSON.parse(
       buildSalesVideoRenderMetadata(DEFAULT_SALES_VIDEO_PROVIDER, {

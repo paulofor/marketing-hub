@@ -27,6 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+/**
+ * Valida regras administrativas dos perfis de vídeo comercial.
+ */
 @ExtendWith(MockitoExtension.class)
 class SalesVideoProfileServiceTest {
 
@@ -145,6 +148,29 @@ class SalesVideoProfileServiceTest {
         assertThat(persistedJob.getAuditSnapshotJson()).contains("\"executionMode\":\"PRODUCTION\"");
         assertThat(persistedJob.getAuditSnapshotJson()).contains("\"consentEvidenceUrl\":\"https://evidence.local/term-001\"");
         assertThat(persistedJob.getAuditSnapshotJson()).contains("\"humanReviewApprovedBy\":\"reviewer@tenant.io\"");
+    }
+
+    /** Bloqueia render direto do VEO quando o perfil comercial pede mais de 8 segundos. */
+    @Test
+    void shouldRejectDirectVeoRenderWhenProfileDurationExceedsProviderLimit() {
+        SalesVideoProfile profile = profileWithDefaults();
+        profile.setTargetDurationSeconds(30);
+        SalesVideoScript script = approvedScript(profile);
+        RequestVideoRenderRequest request = new RequestVideoRenderRequest();
+        request.setRequestedBy("owner@tenant.io");
+        request.setExecutionMode(SalesVideoExecutionMode.TEST);
+        request.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+        request.setProviderName("VEO");
+
+        given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+        given(scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(profile.getId(),
+                SalesVideoScriptStatus.APPROVED)).willReturn(Optional.of(script));
+
+        VideoModuleException ex = assertThrows(
+                VideoModuleException.class,
+                () -> service.requestRender(profile.getId(), request));
+
+        assertThat(ex.getMessage()).contains("VEO aceita no máximo 8 segundos");
     }
 
     @Test

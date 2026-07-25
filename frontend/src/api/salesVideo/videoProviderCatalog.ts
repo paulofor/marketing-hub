@@ -7,6 +7,7 @@ export type SalesVideoProviderOption = {
   providerFamily: SalesVideoProviderFamily;
   recommendedUse: string;
   clipDurationSeconds: number;
+  maxDirectDurationSeconds?: number;
   supportsHeroVideo: boolean;
   supportsSceneAssembly: boolean;
   supportsOpenAiReferenceImage: boolean;
@@ -33,7 +34,8 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     label: "Luma Ray 3.2",
     providerName: "LUMA_RAY_3_2",
     providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse: "Hero premium do PDE, com cena mais longa e visual editorial.",
+    recommendedUse:
+      "Hero premium do PDE, com cena mais longa e visual editorial.",
     clipDurationSeconds: 20,
     supportsHeroVideo: true,
     supportsSceneAssembly: true,
@@ -44,7 +46,8 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     label: "Kling 3.0",
     providerName: "KLING_3_0",
     providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse: "Teste alternativo para cenas cinematográficas curtas e variações criativas.",
+    recommendedUse:
+      "Teste alternativo para cenas cinematográficas curtas e variações criativas.",
     clipDurationSeconds: 15,
     supportsHeroVideo: true,
     supportsSceneAssembly: true,
@@ -55,8 +58,10 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     label: "Veo",
     providerName: "VEO",
     providerFamily: "EXTERNAL_VIDEO_MODULE",
-    recommendedUse: "Teasers curtos ou cenas isoladas; não usar sozinho para vídeo de venda de 30s.",
+    recommendedUse:
+      "Teasers curtos ou cenas isoladas; não usar sozinho para vídeo de venda de 30s.",
     clipDurationSeconds: 8,
+    maxDirectDurationSeconds: 8,
     supportsHeroVideo: false,
     supportsSceneAssembly: true,
     supportsOpenAiReferenceImage: false,
@@ -78,7 +83,9 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
 export const DEFAULT_SALES_VIDEO_PROVIDER = SALES_VIDEO_PROVIDER_OPTIONS[0];
 
 export function findSalesVideoProviderOption(providerName: string) {
-  return SALES_VIDEO_PROVIDER_OPTIONS.find((option) => option.providerName === providerName);
+  return SALES_VIDEO_PROVIDER_OPTIONS.find(
+    (option) => option.providerName === providerName,
+  );
 }
 
 export function buildSalesVideoRenderMetadata(
@@ -86,12 +93,16 @@ export function buildSalesVideoRenderMetadata(
   options?: string | SalesVideoRenderMetadataOptions,
 ) {
   const renderOptions =
-    typeof options === "string" ? { visualProviderDirectives: options } : options;
+    typeof options === "string"
+      ? { visualProviderDirectives: options }
+      : options;
   const normalizedVisualProviderDirectives =
-    renderOptions?.visualProviderDirectives?.trim() || DEFAULT_VISUAL_PROVIDER_DIRECTIVES;
+    renderOptions?.visualProviderDirectives?.trim() ||
+    DEFAULT_VISUAL_PROVIDER_DIRECTIVES;
   const openAiReferenceImageEnabled = Boolean(
-    (renderOptions?.openAiReferenceImageEnabled ?? provider.supportsOpenAiReferenceImage)
-      && provider.supportsOpenAiReferenceImage,
+    (renderOptions?.openAiReferenceImageEnabled ??
+      provider.supportsOpenAiReferenceImage) &&
+    provider.supportsOpenAiReferenceImage,
   );
   const referenceImageCount = Math.min(
     2,
@@ -137,7 +148,8 @@ export function buildSalesVideoRenderMetadata(
           order: 2,
           role: "RESULTADO",
           title: "Presença desejada",
-          message: "Pequenos ajustes deixam a imagem mais intencional em 7 dias.",
+          message:
+            "Pequenos ajustes deixam a imagem mais intencional em 7 dias.",
         },
         {
           order: 3,

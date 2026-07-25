@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "prebuild": "node scripts/write-healthz.mjs",
     "typecheck": "tsc --noEmit",
     "dev": "vite",
     "build": "vite build",

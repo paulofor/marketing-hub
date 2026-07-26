@@ -714,6 +714,8 @@ public class AccessService {
                 "SECTION_VIEW",
                 "SCROLL_DEPTH",
                 "CTA_VIEWED",
+                "VIDEO_VIEWED",
+                "VIDEO_CTA_CLICKED",
                 "UI_CLICK",
                 "LINK_CLICK",
                 "FIELD_FOCUS",

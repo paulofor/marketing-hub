@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-26-product-musa-pde-video-explainer-entry.yaml
+  - changeSet:
+      id: 2026-07-26-product-musa-pde-video-explainer-entry-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: slug
+        - columnExists:
+            tableName: product
+            columnName: pde_experience_json
+        - columnExists:
+            tableName: product
+            columnName: updated_at
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET pde_experience_json = JSON_SET(
+                       pde_experience_json,
+                       '$.experienceVersion',
+                       'musa-pde-entry-v5-video-explicativo',
+                       '$.funnelVersion',
+                       'musa-membership-funnel-v1',
+                       '$.diagnostic.intro',
+                       'Assista ao vídeo inicial, reconheça o ruído que aparece no espelho e receba o primeiro ajuste para sua imagem comunicar mais intenção hoje, usando o que você já tem.'
+                     ),
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE slug = 'metodo-musa-7-dias'
+                 AND pde_experience_json IS NOT NULL
+                 AND pde_experience_json <> ''
+                 AND JSON_VALID(pde_experience_json) = 1;

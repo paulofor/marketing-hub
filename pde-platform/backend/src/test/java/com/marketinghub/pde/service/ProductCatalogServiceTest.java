@@ -24,6 +24,7 @@ class ProductCatalogServiceTest {
 
         var product = service.getProduct("metodo-musa-7-dias");
 
+        assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v5-video-explicativo");
         assertThat(product.promise()).contains("7 dias");
         assertThat(product.missions()).hasSize(7);
         assertThat(product.supportMaterials()).hasSize(4);

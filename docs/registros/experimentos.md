@@ -1,3 +1,10 @@
+## 2026-07-26 — Experimento 69: entrada MUSA com vídeo explicativo inicial
+
+- decisão comercial: não criar novo experimento; o experimento 69 continua sendo o teste principal para medir se o vídeo explicativo inicial aumenta avanço real no PDE MUSA.
+- foi feito: o contrato PDE do produto MUSA no Marketing Hub passou para `experienceVersion=musa-pde-entry-v5-video-explicativo`, mantendo `funnelVersion=musa-membership-funnel-v1`.
+- foi feito: o frontend PDE reconhece essa versão como entrada com vídeo antes do diagnóstico e registra `VIDEO_VIEWED` e `VIDEO_CTA_CLICKED` junto dos eventos de diagnóstico, paywall, checkout e compra.
+- prevenção de recorrência: mudanças de primeira dobra com impacto de conversão continuam versionadas no contrato do Hub, separando a nova janela de leitura de tráfego da versão anterior sem vídeo.
+
 ## 2026-07-25 — Experimento 68: fallback minimo para criativo Meta
 
 - causa-raiz operacional confirmada pelo histórico: os objetos órfãos antigos da Meta já estavam removidos, mas a republicação do experimento 68 voltou a falhar no mesmo ponto, `POST /adcreatives`, depois de campanha e ad set criados com sucesso.

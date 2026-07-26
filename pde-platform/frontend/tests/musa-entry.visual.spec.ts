@@ -154,7 +154,12 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
   expect(trackedEvents).toBe(0);
 });
 
-test('exibe video no topo somente na variante B do diagnostico publico', async ({ page }) => {
+test('exibe video no topo na versao publicada e permite controle para QA', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Veja em poucos segundos/i })).toBeVisible();
+
   await page.goto('/?musa_video_variant=video');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();

@@ -173,10 +173,15 @@ declare global {
 const PUBLIC_DIAGNOSTIC_MAX_POLL_ATTEMPTS = 90;
 const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
+const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
+const MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS = new Set([
+  'musa-pde-entry-v5-estrada-desejo',
+  MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+]);
 
 const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
-  experienceVersion: 'musa-pde-entry-v5-estrada-desejo',
+  experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
   funnelVersion: 'musa-membership-funnel-v1',
   name: 'Método MUSA - Experiência Guiada de 7 Dias',
   promise: 'Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.',
@@ -478,18 +483,10 @@ function resolvePublicDiagnosticVideoVariant(): PublicDiagnosticVideoVariant {
   const params = new URLSearchParams(window.location.search);
   const forcedVariant = params.get('musa_video_variant') ?? params.get('musa_ab_video');
   if (forcedVariant === 'control' || forcedVariant === 'video') {
-    window.localStorage.setItem('musaPublicDiagnosticVideoVariant', forcedVariant);
     return forcedVariant;
   }
 
-  const storedVariant = window.localStorage.getItem('musaPublicDiagnosticVideoVariant');
-  if (storedVariant === 'control' || storedVariant === 'video') {
-    return storedVariant;
-  }
-
-  const generatedVariant: PublicDiagnosticVideoVariant = Math.random() < 0.5 ? 'control' : 'video';
-  window.localStorage.setItem('musaPublicDiagnosticVideoVariant', generatedVariant);
-  return generatedVariant;
+  return 'video';
 }
 
 function resolveDeviceType() {
@@ -540,6 +537,14 @@ function applyExperienceOverrides(productExperience: ProductExperience) {
     ...productExperience,
     experienceVersion: experienceVersionOverride,
   };
+}
+
+function isMusaDesireRoadExperience(experienceVersion: string) {
+  return MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS.has(experienceVersion);
+}
+
+function isMusaVideoExplainerExperience(experienceVersion: string) {
+  return experienceVersion === MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
 }
 
 const presenceBlockers: DiagnosticOption[] = [
@@ -648,6 +653,7 @@ function App() {
   const publicJourneyStartedTrackedRef = useRef(false);
   const publicRoadPresentedTrackedRef = useRef(false);
   const paidContinuationTrackedRef = useRef('');
+  const publicVideoHeroTrackedRef = useRef(false);
   const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
@@ -743,14 +749,15 @@ function App() {
   }, [workspace, publicDiagnosticVideoVariant, heroVideoUrl]);
 
   useEffect(() => {
-    if (workspace || publicRoadPresentedTrackedRef.current || resolveExperienceVersion(product) !== 'musa-pde-entry-v5-estrada-desejo') {
+    const experienceVersion = resolveExperienceVersion(product);
+    if (workspace || publicRoadPresentedTrackedRef.current || !isMusaDesireRoadExperience(experienceVersion)) {
       return;
     }
     publicRoadPresentedTrackedRef.current = true;
     trackEvent('CATEGORY_UNDERSTOOD', {
       metadata: {
         actionName: 'musa_desire_road_presented',
-        journeyVersion: 'musa-pde-entry-v5-estrada-desejo',
+        journeyVersion: experienceVersion,
       },
     });
   }, [workspace, product.experienceVersion]);
@@ -1730,6 +1737,7 @@ function App() {
   }
 
   const currentProduct = workspace?.product ?? product;
+  const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
   const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id)) ?? currentProduct.missions[0];
@@ -1744,8 +1752,28 @@ function App() {
   const selectedBlocker = presenceBlockers.find((option) => option.key === presenceBlocker);
   const selectedDesiredPresence = desiredPresenceSignals.find((option) => option.key === desiredPresence);
   const diagnosticReadyForEmail = authMode === 'login' || Boolean(presenceBlocker && desiredPresence);
-  const showVideoHero = resolveExperienceVersion(currentProduct) === 'musa-pde-entry-v4-video-hero';
+  const showVideoHero = currentExperienceVersion === 'musa-pde-entry-v4-video-hero';
+  const showPublishedPublicDiagnosticVideoHero =
+    !workspace
+    && ((isMusaVideoExplainerExperience(currentExperienceVersion) && publicDiagnosticVideoVariant !== 'control')
+      || publicDiagnosticVideoVariant === 'video');
   const canRegisterActiveMission = Boolean(canCompleteActiveMission && (!activeMissionGuidanceConfig || isMissionInteractionSaved(activeMission?.id ?? '')));
+
+  useEffect(() => {
+    if (workspace || !showPublishedPublicDiagnosticVideoHero || publicVideoHeroTrackedRef.current) {
+      return;
+    }
+    publicVideoHeroTrackedRef.current = true;
+    trackEvent('VIDEO_VIEWED', {
+      metadata: {
+        actionName: 'musa_initial_explainer_video_viewed',
+        experimentId: 69,
+        videoPlacement: 'public_diagnostic_initial_explainer',
+        experienceVersion: currentExperienceVersion,
+        hasHeroVideoUrl: Boolean(heroVideoUrl),
+      },
+    });
+  }, [workspace, showPublishedPublicDiagnosticVideoHero, currentExperienceVersion, heroVideoUrl]);
 
   function isMissionInteractionSaved(missionId: string) {
     const config = missionGuidanceConfigs[missionId];
@@ -1812,7 +1840,7 @@ function App() {
     const activePublicDiagnosticAnswer = publicDiagnosticAnswers[activePublicDiagnosticQuestion.key];
     const answeredPublicDiagnosticCount = publicDiagnosticQuestions.filter((question) => publicDiagnosticAnswers[question.key]?.trim()).length;
     const publicDiagnosticProgressPercent = Math.round((answeredPublicDiagnosticCount / publicDiagnosticQuestions.length) * 100);
-    const showPublicDiagnosticVideoHero = publicDiagnosticVideoVariant === 'video';
+    const showPublicDiagnosticVideoHero = showPublishedPublicDiagnosticVideoHero;
 
     return (
       <main className="app-shell public-diagnostic-shell">
@@ -1840,10 +1868,24 @@ function App() {
                 </div>
               </div>
               <div className="public-video-copy">
-                <p className="section-kicker">Teste A/B de pré-venda</p>
+                <p className="section-kicker">Vídeo inicial MUSA</p>
                 <h2>Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.</h2>
                 <p>A promessa continua simples: identificar o ruído visual, escolher um sinal de presença e começar com uma microação usando o que você já tem.</p>
-                <button className="secondary-button public-video-cta" type="button" onClick={() => document.querySelector('.public-diagnostic-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                <button
+                  className="secondary-button public-video-cta"
+                  type="button"
+                  onClick={() => {
+                    void trackEvent('VIDEO_CTA_CLICKED', {
+                      metadata: {
+                        actionName: 'musa_initial_explainer_video_cta_clicked',
+                        experimentId: 69,
+                        videoPlacement: 'public_diagnostic_initial_explainer',
+                        experienceVersion: currentExperienceVersion,
+                      },
+                    });
+                    document.querySelector('.public-diagnostic-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
                   Começar diagnóstico
                   <ChevronRight size={17} />
                 </button>

@@ -355,6 +355,8 @@ class AccessServiceTest {
                 "PAGE_VISIBLE_TIME",
                 "SECTION_VIEW",
                 "CTA_VIEWED",
+                "VIDEO_VIEWED",
+                "VIDEO_CTA_CLICKED",
                 "FUNNEL_EXPERIMENT_ASSIGNED",
                 "PRESENCE_MAP_CHOICE_SELECTED",
                 "DIAGNOSTIC_CHOICE_SELECTED",

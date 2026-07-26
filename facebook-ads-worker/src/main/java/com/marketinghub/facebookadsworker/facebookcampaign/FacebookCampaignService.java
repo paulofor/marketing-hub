@@ -1313,24 +1313,6 @@ public class FacebookCampaignService {
             );
         }
 
-        /** Substitui o vídeo por um frame estático quando a Meta rejeita todos os uploads de vídeo. */
-        private CreativePublicationPayload withVideoFrameFallbackImageHash(String value) {
-            return new CreativePublicationPayload(
-                creative,
-                websiteUrl,
-                leadGenFormId,
-                message,
-                callToAction,
-                headline,
-                description,
-                value,
-                null,
-                null,
-                null,
-                instagramActorId,
-                adNameSuffix
-            );
-        }
     }
 
     private List<Creative> resolveCreatives(long experimentId) {
@@ -1703,35 +1685,24 @@ public class FacebookCampaignService {
                 );
                 resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
             } catch (RuntimeException ex) {
-                LOGGER.warn(
-                    "Creative video upload failed after official and legacy Meta flows; using extracted frame fallback: experimentId={}, creativeId={}, filename={}, message={}",
+                String reason = "Campanha bloqueada: a Meta não aceitou o upload do vídeo do criativo "
+                    + payload.creative().id()
+                    + ". A publicação de criativo VIDEO não será convertida para imagem fallback; gere novo upload/retry de vídeo para validar performance de vídeo.";
+                LOGGER.error(
+                    "Creative video upload failed after official and legacy Meta flows; blocking publication instead of using image fallback: experimentId={}, creativeId={}, filename={}, message={}",
                     experimentId,
                     payload.creative().id(),
                     normalizedVideo.fileName(),
                     ex.getMessage(),
                     ex
                 );
-                MetaVideoNormalizer.NormalizedImage fallbackFrame = metaVideoNormalizer.extractFallbackFrame(
-                    normalizedVideo.bytes(),
-                    normalizedVideo.fileName()
-                );
-                String uploadedImageHash = executeFacebookCallWithLogging(
+                experimentFacebookApiLogClient.logPublicationJobFailureStep(
                     publicationJobId,
                     experimentId,
-                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                    () -> facebookAdsService.uploadAdImageFromBytes(
-                        adAccountId,
-                        fallbackFrame.bytes(),
-                        fallbackFrame.fileName(),
-                        fallbackFrame.contentType())
+                    "CAMPAIGN_CREATIVE_VIDEO_UPLOAD_REQUIRED",
+                    reason + " Erro Meta: " + ex.getMessage()
                 );
-                LOGGER.info(
-                    "Creative video fallback frame uploaded to Meta as image_hash: experimentId={}, creativeId={}, imageHash={}",
-                    experimentId,
-                    payload.creative().id(),
-                    uploadedImageHash
-                );
-                resolvedPayloads.add(payload.withVideoFrameFallbackImageHash(uploadedImageHash));
+                throw new IllegalStateException(reason, ex);
             }
         }
         return resolvedPayloads;

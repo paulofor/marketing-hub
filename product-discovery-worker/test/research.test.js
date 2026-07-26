@@ -20,10 +20,39 @@ test("buildSearchQueries creates pain-oriented queries", () => {
     targetAudience: "mulheres 30+",
   });
 
-  assert.equal(queries.length, 4);
-  assert.match(queries[0], /dificuldade problema/);
-  assert.match(queries[0], /30 anos ou mais/);
-  assert.doesNotMatch(queries[0], /30\+/);
+  assert.ok(queries.length >= 10);
+  assert.ok(
+    queries.includes("comprei roupa online e ficou ruim no corpo"),
+    "deve pesquisar linguagem real de arrependimento de compra",
+  );
+  assert.ok(
+    queries.some((query) => query.includes("não consigo resolver")),
+    "deve manter fallback de dor em primeira pessoa para temas futuros",
+  );
+  assert.ok(
+    queries.some((query) => query.includes("30 anos ou mais")),
+    "deve normalizar público com 30+ para termo aceito pelo provedor",
+  );
+  assert.ok(
+    queries.every((query) => !query.includes("30+")),
+    "nenhuma query deve preservar 30+ cru",
+  );
+});
+
+test("buildSearchQueries uses domain language for style and routine cycles", () => {
+  const styleQueries = buildSearchQueries({
+    theme: "PDE diagnóstico de estilo acessível",
+    targetAudience: "mulheres 30+ imagem pessoal",
+  });
+  const routineQueries = buildSearchQueries({
+    theme: "PDE montador de looks para rotina real",
+    targetAudience: "mulheres 30+ rotina corrida",
+  });
+
+  assert.ok(styleQueries.includes("consultoria de estilo é cara"));
+  assert.ok(styleQueries.includes("me sinto apagada com minhas roupas"));
+  assert.ok(routineQueries.includes("não sei montar looks para trabalhar"));
+  assert.ok(routineQueries.includes("guarda roupa cheio e nada para vestir"));
 });
 
 test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () => {

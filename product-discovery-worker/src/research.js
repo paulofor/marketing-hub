@@ -40,6 +40,50 @@ const HIGH_RISK_TERMS = [
   "processo judicial",
 ];
 
+const DOMAIN_PAIN_QUERIES = [
+  {
+    match: ["roupa online", "comprar roupa", "compra online", "caimento"],
+    queries: [
+      "comprei roupa online e ficou ruim no corpo",
+      "roupa online tamanho errado o que fazer",
+      "me arrependi de comprar roupa online",
+      "como saber se roupa online vai vestir bem",
+      "roupa online não serviu reclamação",
+    ],
+  },
+  {
+    match: ["look", "looks", "rotina", "guardaroupa", "guarda roupa"],
+    queries: [
+      "não sei montar looks para trabalhar",
+      "guarda roupa cheio e nada para vestir",
+      "como montar looks com roupas que já tenho",
+      "looks prontos para rotina corrida",
+      "erro ao montar look do dia",
+    ],
+  },
+  {
+    match: ["estilo", "imagem pessoal", "consultoria", "presença", "presenca"],
+    queries: [
+      "consultoria de estilo é cara",
+      "não sei qual é meu estilo",
+      "diagnóstico de estilo online vale a pena",
+      "imagem pessoal sem consultoria cara",
+      "me sinto apagada com minhas roupas",
+    ],
+  },
+];
+
+const CONSUMER_LANGUAGE_TEMPLATES = [
+  "não consigo resolver {base}",
+  "tenho dificuldade com {base}",
+  "como resolver {base} sem gastar muito",
+  "{base} reclamação review",
+  "{base} vale a pena fórum",
+  "{base} antes e depois",
+  "{base} erro comum",
+  "{base} solução simples",
+];
+
 export const SEARCH_PROVIDERS = {
   BRAVE: "brave",
   TAVILY: "tavily",
@@ -51,12 +95,21 @@ export function buildSearchQueries(job) {
   const base = normalizeSearchText(
     [job.theme, job.targetAudience].filter(Boolean).join(" "),
   );
-  return [
-    `${base} dificuldade problema`,
-    `${base} reclamação review`,
-    `${base} como resolver`,
-    `${base} caro complicado`,
-  ].map((query) => query.trim());
+  const domainQueries = inferDomainPainQueries(base);
+  const genericQueries = CONSUMER_LANGUAGE_TEMPLATES.map((template) =>
+    template.replace("{base}", base),
+  );
+  const marketSignalQueries = [
+    `${base} depoimento problema`,
+    `${base} comunidade dúvida`,
+    `${base} caro complicado confuso`,
+  ];
+
+  return deduplicateQueries([
+    ...domainQueries,
+    ...genericQueries,
+    ...marketSignalQueries,
+  ]);
 }
 
 export function resolveSearchConfig(env = process.env) {
@@ -432,6 +485,38 @@ function normalizeSearchText(value) {
   return String(value || "")
     .replace(/(\d+)\+/g, "$1 anos ou mais")
     .replace(/[+]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function inferDomainPainQueries(base) {
+  const normalized = normalizeForMatching(base);
+  return DOMAIN_PAIN_QUERIES.filter((group) =>
+    group.match.some((term) => normalized.includes(normalizeForMatching(term))),
+  ).flatMap((group) => group.queries);
+}
+
+function deduplicateQueries(queries) {
+  const seen = new Set();
+  return queries
+    .map(normalizeSearchText)
+    .filter(Boolean)
+    .filter((query) => {
+      const key = normalizeForMatching(query);
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+}
+
+function normalizeForMatching(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

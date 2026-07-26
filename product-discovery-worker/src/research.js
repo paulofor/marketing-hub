@@ -38,6 +38,13 @@ const HIGH_RISK_TERMS = [
   "processo judicial",
 ];
 
+export const SEARCH_PROVIDERS = {
+  BRAVE: "brave",
+  TAVILY: "tavily",
+  SERPAPI: "serpapi",
+  DUCKDUCKGO: "duckduckgo",
+};
+
 export function buildSearchQueries(job) {
   const base = [job.theme, job.targetAudience].filter(Boolean).join(" ");
   return [
@@ -46,6 +53,86 @@ export function buildSearchQueries(job) {
     `${base} como resolver`,
     `${base} caro complicado`,
   ].map((query) => query.trim());
+}
+
+export function resolveSearchConfig(env = process.env) {
+  const requestedProvider = normalizeProvider(env.PRODUCT_DISCOVERY_SEARCH_PROVIDER);
+  const provider = requestedProvider || inferProvider(env);
+  return {
+    provider,
+    braveApiKey: env.BRAVE_SEARCH_API_KEY || "",
+    tavilyApiKey: env.TAVILY_API_KEY || "",
+    serpApiKey: env.SERPAPI_API_KEY || "",
+    braveEndpoint:
+      env.PRODUCT_DISCOVERY_BRAVE_SEARCH_ENDPOINT ||
+      "https://api.search.brave.com/res/v1/web/search",
+    tavilyEndpoint:
+      env.PRODUCT_DISCOVERY_TAVILY_SEARCH_ENDPOINT ||
+      "https://api.tavily.com/search",
+    serpApiEndpoint:
+      env.PRODUCT_DISCOVERY_SERPAPI_SEARCH_ENDPOINT ||
+      "https://serpapi.com/search.json",
+    country: env.PRODUCT_DISCOVERY_SEARCH_COUNTRY || "br",
+    language: env.PRODUCT_DISCOVERY_SEARCH_LANGUAGE || "pt-br",
+    userAgent:
+      env.PRODUCT_DISCOVERY_SEARCH_USER_AGENT ||
+      "MarketingHubProductDiscovery/1.0",
+  };
+}
+
+export async function searchInternet(job, options = {}) {
+  const config = options.config || resolveSearchConfig(options.env);
+  const fetchFn = options.fetchFn || fetch;
+  const logger = options.logger || console;
+  const maxSearchResults = Number(options.maxSearchResults || 8);
+  const queries = buildSearchQueries(job);
+  const collected = [];
+  for (const query of queries) {
+    const queryResults = await searchQuery(query, config, fetchFn, logger);
+    collected.push(...queryResults);
+    if (collected.length >= maxSearchResults) {
+      break;
+    }
+  }
+  if (collected.length === 0) {
+    return fallbackResults(job, config.provider);
+  }
+  return deduplicateResults(collected).slice(0, maxSearchResults);
+}
+
+export function normalizeBraveResponse(payload) {
+  const results = Array.isArray(payload?.web?.results) ? payload.web.results : [];
+  return results
+    .map((item) => ({
+      title: cleanText(item.title),
+      url: item.url,
+      snippet: cleanText(item.description || item.extra_snippets?.join(" ") || ""),
+    }))
+    .filter(hasSearchResultShape);
+}
+
+export function normalizeTavilyResponse(payload) {
+  const results = Array.isArray(payload?.results) ? payload.results : [];
+  return results
+    .map((item) => ({
+      title: cleanText(item.title),
+      url: item.url,
+      snippet: cleanText(item.content || item.raw_content || ""),
+    }))
+    .filter(hasSearchResultShape);
+}
+
+export function normalizeSerpApiResponse(payload) {
+  const results = Array.isArray(payload?.organic_results)
+    ? payload.organic_results
+    : [];
+  return results
+    .map((item) => ({
+      title: cleanText(item.title),
+      url: item.link,
+      snippet: cleanText(item.snippet || item.rich_snippet?.top?.detected_extensions || ""),
+    }))
+    .filter(hasSearchResultShape);
 }
 
 export function analyzeSearchResults(job, results) {
@@ -118,6 +205,152 @@ export function normalizeDuckDuckGoResponse(payload) {
   });
 }
 
+function normalizeProvider(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return Object.values(SEARCH_PROVIDERS).includes(normalized) ? normalized : "";
+}
+
+function inferProvider(env = process.env) {
+  if (env.BRAVE_SEARCH_API_KEY) {
+    return SEARCH_PROVIDERS.BRAVE;
+  }
+  if (env.TAVILY_API_KEY) {
+    return SEARCH_PROVIDERS.TAVILY;
+  }
+  if (env.SERPAPI_API_KEY) {
+    return SEARCH_PROVIDERS.SERPAPI;
+  }
+  return SEARCH_PROVIDERS.DUCKDUCKGO;
+}
+
+async function searchQuery(query, config, fetchFn, logger) {
+  if (config.provider === SEARCH_PROVIDERS.BRAVE) {
+    return searchBrave(query, config, fetchFn, logger);
+  }
+  if (config.provider === SEARCH_PROVIDERS.TAVILY) {
+    return searchTavily(query, config, fetchFn, logger);
+  }
+  if (config.provider === SEARCH_PROVIDERS.SERPAPI) {
+    return searchSerpApi(query, config, fetchFn, logger);
+  }
+  return searchDuckDuckGo(query, config, fetchFn, logger);
+}
+
+async function searchBrave(query, config, fetchFn, logger) {
+  requireApiKey(config.braveApiKey, "BRAVE_SEARCH_API_KEY", config.provider);
+  const url = new URL(config.braveEndpoint);
+  url.searchParams.set("q", query);
+  url.searchParams.set("country", config.country.toUpperCase());
+  url.searchParams.set("search_lang", config.language.split("-")[0]);
+  url.searchParams.set("count", "10");
+  const payload = await getSearchJson(url.toString(), fetchFn, logger, config.provider, query, {
+    Accept: "application/json",
+    "Accept-Encoding": "gzip",
+    "User-Agent": config.userAgent,
+    "X-Subscription-Token": config.braveApiKey,
+  });
+  return normalizeBraveResponse(payload);
+}
+
+async function searchTavily(query, config, fetchFn, logger) {
+  requireApiKey(config.tavilyApiKey, "TAVILY_API_KEY", config.provider);
+  const payload = await postSearchJson(
+    config.tavilyEndpoint,
+    {
+      query,
+      search_depth: "basic",
+      max_results: 10,
+      include_answer: false,
+      include_raw_content: false,
+      topic: "general",
+    },
+    fetchFn,
+    logger,
+    config.provider,
+    query,
+    {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.tavilyApiKey}`,
+    },
+  );
+  return normalizeTavilyResponse(payload);
+}
+
+async function searchSerpApi(query, config, fetchFn, logger) {
+  requireApiKey(config.serpApiKey, "SERPAPI_API_KEY", config.provider);
+  const url = new URL(config.serpApiEndpoint);
+  url.searchParams.set("engine", "google");
+  url.searchParams.set("q", query);
+  url.searchParams.set("api_key", config.serpApiKey);
+  url.searchParams.set("hl", config.language.split("-")[0]);
+  url.searchParams.set("gl", config.country.toLowerCase());
+  url.searchParams.set("num", "10");
+  const payload = await getSearchJson(url.toString(), fetchFn, logger, config.provider, query);
+  return normalizeSerpApiResponse(payload);
+}
+
+async function searchDuckDuckGo(query, config, fetchFn, logger) {
+  const url = new URL("https://api.duckduckgo.com/");
+  url.searchParams.set("q", query);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("no_html", "1");
+  url.searchParams.set("skip_disambig", "1");
+  const payload = await getSearchJson(url.toString(), fetchFn, logger, config.provider, query);
+  return normalizeDuckDuckGoResponse(payload);
+}
+
+async function getSearchJson(url, fetchFn, logger, provider, query, headers = {}) {
+  const response = await fetchFn(url, {
+    headers: { Accept: "application/json", ...headers },
+  });
+  if (!response.ok) {
+    throw new Error(`${provider} search failed with status ${response.status}`);
+  }
+  const payload = await response.json();
+  logRawSearchPayload(logger, provider, query, payload);
+  return payload;
+}
+
+async function postSearchJson(url, body, fetchFn, logger, provider, query, headers = {}) {
+  const response = await fetchFn(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`${provider} search failed with status ${response.status}`);
+  }
+  const payload = await response.json();
+  logRawSearchPayload(logger, provider, query, payload);
+  return payload;
+}
+
+function logRawSearchPayload(logger, provider, query, payload) {
+  logger.info?.(
+    "[product-discovery-worker] raw search payload received provider=%s query=%s payload=%s",
+    provider,
+    query,
+    JSON.stringify(maskSecrets(payload)).slice(0, 12000),
+  );
+}
+
+function requireApiKey(value, envName, provider) {
+  if (!value) {
+    throw new Error(`${provider} search requires ${envName}`);
+  }
+}
+
+function fallbackResults(job, provider = SEARCH_PROVIDERS.DUCKDUCKGO) {
+  return [
+    {
+      title: `Pesquisa inicial sobre ${job.theme}`,
+      url: `https://search.brave.com/search?q=${encodeURIComponent(job.theme || "produto PDE")}`,
+      snippet: `Busca ${provider} não retornou resultados estruturados suficientes para ${job.theme}; pesquisar mais em comunidades, reviews e anúncios.`,
+    },
+  ];
+}
+
 function toSearchResult(item) {
   if (!item?.FirstURL || !item?.Text) {
     return null;
@@ -127,6 +360,53 @@ function toSearchResult(item) {
     url: item.FirstURL,
     snippet: item.Text,
   };
+}
+
+function deduplicateResults(results) {
+  const seen = new Set();
+  return results.filter((result) => {
+    const key = `${safeDomain(result.url)}:${result.url}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function hasSearchResultShape(result) {
+  return Boolean(result?.title && result?.url && result?.snippet);
+}
+
+function cleanText(value) {
+  return String(value || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 500);
+}
+
+function maskSecrets(value) {
+  if (Array.isArray(value)) {
+    return value.map(maskSecrets);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, childValue]) => [
+        key,
+        /token|api[_-]?key|authorization|secret/i.test(key)
+          ? "[REDACTED]"
+          : maskSecrets(childValue),
+      ]),
+    );
+  }
+  if (typeof value === "string") {
+    return value.replace(
+      /(api[_-]?key|access_token|token|secret)=([^&\s"]+)/gi,
+      "$1=[REDACTED]",
+    );
+  }
+  return value;
 }
 
 function countHits(text, terms) {

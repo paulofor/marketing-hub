@@ -1,6 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyzeSearchResults, buildSearchQueries } from "../src/research.js";
+import {
+  analyzeSearchResults,
+  buildSearchQueries,
+  normalizeBraveResponse,
+  normalizeSerpApiResponse,
+  normalizeTavilyResponse,
+  resolveSearchConfig,
+  searchInternet,
+  SEARCH_PROVIDERS,
+} from "../src/research.js";
 
 test("buildSearchQueries creates pain-oriented queries", () => {
   const queries = buildSearchQueries({
@@ -40,4 +49,111 @@ test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () =>
   assert.equal(report.opportunities.length, 1);
   assert.equal(report.opportunities[0].decision, "APPROVE");
   assert.ok(report.opportunities[0].score >= 70);
+});
+
+test("resolveSearchConfig prefers Brave when key is available", () => {
+  const config = resolveSearchConfig({
+    BRAVE_SEARCH_API_KEY: "brave-test-key",
+    TAVILY_API_KEY: "tavily-test-key",
+  });
+
+  assert.equal(config.provider, SEARCH_PROVIDERS.BRAVE);
+  assert.equal(config.braveApiKey, "brave-test-key");
+});
+
+test("normalizeBraveResponse maps web results to public evidence", () => {
+  const results = normalizeBraveResponse({
+    web: {
+      results: [
+        {
+          title: "Dificuldade para escolher roupa",
+          url: "https://forum.example/roupa",
+          description: "problema caro e complicado",
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(results, [
+    {
+      title: "Dificuldade para escolher roupa",
+      url: "https://forum.example/roupa",
+      snippet: "problema caro e complicado",
+    },
+  ]);
+});
+
+test("normalizeTavilyResponse maps agent search results to public evidence", () => {
+  const results = normalizeTavilyResponse({
+    results: [
+      {
+        title: "Review de consultoria",
+        url: "https://reviews.example/consultoria",
+        content: "demorado confuso não resolve",
+      },
+    ],
+  });
+
+  assert.equal(results[0].title, "Review de consultoria");
+  assert.equal(results[0].snippet, "demorado confuso não resolve");
+});
+
+test("normalizeSerpApiResponse maps organic results to public evidence", () => {
+  const results = normalizeSerpApiResponse({
+    organic_results: [
+      {
+        title: "Perguntas sobre estilo",
+        link: "https://questions.example/estilo",
+        snippet: "não consigo decidir e tenho medo de errar",
+      },
+    ],
+  });
+
+  assert.equal(results[0].url, "https://questions.example/estilo");
+  assert.match(results[0].snippet, /não consigo/);
+});
+
+test("searchInternet calls configured Brave API and deduplicates results", async () => {
+  const calls = [];
+  const results = await searchInternet(
+    {
+      theme: "mulheres que compram roupa online",
+      targetAudience: "mulheres 30+",
+    },
+    {
+      maxSearchResults: 3,
+      config: resolveSearchConfig({
+        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+        BRAVE_SEARCH_API_KEY: "brave-test-key",
+      }),
+      logger: { info() {} },
+      fetchFn: async (url, options) => {
+        calls.push({ url, options });
+        return {
+          ok: true,
+          json: async () => ({
+            web: {
+              results: [
+                {
+                  title: "Dificuldade para escolher roupa",
+                  url: "https://forum.example/roupa",
+                  description: "problema caro e complicado",
+                },
+                {
+                  title: "Dificuldade para escolher roupa",
+                  url: "https://forum.example/roupa",
+                  description: "problema caro e complicado",
+                },
+              ],
+            },
+          }),
+        };
+      },
+    },
+  );
+
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].url, /api\.search\.brave\.com/);
+  assert.equal(calls[0].options.headers["X-Subscription-Token"], "brave-test-key");
+  assert.equal(results.length, 1);
 });

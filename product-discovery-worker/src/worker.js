@@ -1,7 +1,7 @@
 import {
   analyzeSearchResults,
-  buildSearchQueries,
-  normalizeDuckDuckGoResponse,
+  resolveSearchConfig,
+  searchInternet,
 } from "./research.js";
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL || "http://191.252.181.168";
@@ -11,9 +11,12 @@ const pollIntervalMs = Number(
 const maxSearchResults = Number(
   process.env.PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS || "8",
 );
+const searchConfig = resolveSearchConfig();
 
 async function main() {
-  console.log("[product-discovery-worker] started");
+  console.log(
+    `[product-discovery-worker] started searchProvider=${searchConfig.provider}`,
+  );
   await runCycle();
   setInterval(runCycle, pollIntervalMs);
 }
@@ -36,7 +39,11 @@ async function processJob(job) {
     `[product-discovery-worker] processing cycle=${job.cycleId} theme=${job.theme}`,
   );
   try {
-    const results = await searchInternet(job);
+    const results = await searchInternet(job, {
+      config: searchConfig,
+      maxSearchResults,
+      logger: console,
+    });
     const report = analyzeSearchResults(job, results);
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/complete`,
@@ -55,37 +62,6 @@ async function processJob(job) {
       error,
     );
   }
-}
-
-async function searchInternet(job) {
-  const queries = buildSearchQueries(job);
-  const collected = [];
-  for (const query of queries) {
-    const url = new URL("https://api.duckduckgo.com/");
-    url.searchParams.set("q", query);
-    url.searchParams.set("format", "json");
-    url.searchParams.set("no_html", "1");
-    url.searchParams.set("skip_disambig", "1");
-    const payload = await getJson(url.toString());
-    collected.push(...normalizeDuckDuckGoResponse(payload));
-    if (collected.length >= maxSearchResults) {
-      break;
-    }
-  }
-  if (collected.length === 0) {
-    return fallbackResults(job);
-  }
-  return collected.slice(0, maxSearchResults);
-}
-
-function fallbackResults(job) {
-  return [
-    {
-      title: `Pesquisa inicial sobre ${job.theme}`,
-      url: "https://duckduckgo.com/",
-      snippet: `Busca pública não retornou tópicos estruturados suficientes para ${job.theme}; pesquisar mais em comunidades, reviews e anúncios.`,
-    },
-  ];
 }
 
 async function getJson(url) {

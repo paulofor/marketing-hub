@@ -84,6 +84,14 @@ const CONSUMER_LANGUAGE_TEMPLATES = [
   "{base} solução simples",
 ];
 
+const MARKET_CONTEXT_TEMPLATES = [
+  "{base} relato real",
+  "{base} comentário de consumidor",
+  "{base} dúvida comunidade",
+  "{base} experiência negativa",
+  "{base} alternativa barata",
+];
+
 export const SEARCH_PROVIDERS = {
   BRAVE: "brave",
   TAVILY: "tavily",
@@ -99,11 +107,9 @@ export function buildSearchQueries(job) {
   const genericQueries = CONSUMER_LANGUAGE_TEMPLATES.map((template) =>
     template.replace("{base}", base),
   );
-  const marketSignalQueries = [
-    `${base} depoimento problema`,
-    `${base} comunidade dúvida`,
-    `${base} caro complicado confuso`,
-  ];
+  const marketSignalQueries = MARKET_CONTEXT_TEMPLATES.map((template) =>
+    template.replace("{base}", base),
+  );
 
   return deduplicateQueries([
     ...domainQueries,
@@ -156,11 +162,16 @@ export async function searchInternet(job, options = {}) {
   const fetchFn = options.fetchFn || fetch;
   const logger = options.logger || console;
   const maxSearchResults = Number(options.maxSearchResults || 8);
-  const queries = buildSearchQueries(job);
+  const minSearchQueries = Number(options.minSearchQueries || 4);
+  const maxSearchQueries = Number(options.maxSearchQueries || 8);
+  const maxResultsPerQuery = Number(options.maxResultsPerQuery || 2);
+  const queries = buildSearchQueries(job).slice(0, maxSearchQueries);
   const collected = [];
   const providerErrors = [];
+  let attemptedQueries = 0;
   for (const query of queries) {
     let queryResults = [];
+    attemptedQueries += 1;
     try {
       queryResults = await searchQuery(query, config, fetchFn, logger);
     } catch (error) {
@@ -177,8 +188,9 @@ export async function searchInternet(job, options = {}) {
       );
       continue;
     }
-    collected.push(...queryResults);
-    if (collected.length >= maxSearchResults) {
+    collected.push(...queryResults.slice(0, maxResultsPerQuery));
+    const uniqueResults = deduplicateResults(collected);
+    if (attemptedQueries >= minSearchQueries && uniqueResults.length >= maxSearchResults) {
       break;
     }
   }

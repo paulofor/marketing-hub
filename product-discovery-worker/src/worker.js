@@ -20,6 +20,15 @@ const pollIntervalMs = Number(
 const maxSearchResults = Number(
   process.env.PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS || "8",
 );
+const minSearchQueries = Number(
+  process.env.PRODUCT_DISCOVERY_MIN_SEARCH_QUERIES || "4",
+);
+const maxSearchQueries = Number(
+  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_QUERIES || "8",
+);
+const maxResultsPerQuery = Number(
+  process.env.PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY || "2",
+);
 const healthHost = process.env.PRODUCT_DISCOVERY_HEALTH_HOST || "0.0.0.0";
 const healthPort = Number(process.env.PRODUCT_DISCOVERY_HEALTH_PORT || "8080");
 const searchConfig = resolveSearchConfig();
@@ -65,6 +74,9 @@ async function processJob(job) {
     const results = await searchInternet(job, {
       config: searchConfig,
       maxSearchResults,
+      minSearchQueries,
+      maxSearchQueries,
+      maxResultsPerQuery,
       logger: console,
     });
     const report = analyzeSearchResults(job, results);

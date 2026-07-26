@@ -30,6 +30,10 @@ test("buildSearchQueries creates pain-oriented queries", () => {
     "deve manter fallback de dor em primeira pessoa para temas futuros",
   );
   assert.ok(
+    queries.some((query) => query.includes("comentário de consumidor")),
+    "deve buscar linguagem de consumidor além de termos genéricos de mercado",
+  );
+  assert.ok(
     queries.some((query) => query.includes("30 anos ou mais")),
     "deve normalizar público com 30+ para termo aceito pelo provedor",
   );
@@ -197,6 +201,7 @@ test("searchInternet calls configured Brave API and deduplicates results", async
       logger: { info() {} },
       fetchFn: async (url, options) => {
         calls.push({ url, options });
+        const callNumber = calls.length;
         return {
           ok: true,
           json: async () => ({
@@ -204,12 +209,12 @@ test("searchInternet calls configured Brave API and deduplicates results", async
               results: [
                 {
                   title: "Dificuldade para escolher roupa",
-                  url: "https://forum.example/roupa",
+                  url: `https://forum.example/roupa-${callNumber}`,
                   description: "problema caro e complicado",
                 },
                 {
                   title: "Dificuldade para escolher roupa",
-                  url: "https://forum.example/roupa",
+                  url: `https://forum.example/roupa-${callNumber}`,
                   description: "problema caro e complicado",
                 },
               ],
@@ -220,10 +225,10 @@ test("searchInternet calls configured Brave API and deduplicates results", async
     },
   );
 
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 4);
   assert.match(calls[0].url, /api\.search\.brave\.com/);
   assert.equal(calls[0].options.headers["X-Subscription-Token"], "brave-test-key");
-  assert.equal(results.length, 1);
+  assert.equal(results.length, 3);
 });
 
 test("searchInternet falls back when search provider rejects every query", async () => {

@@ -854,6 +854,20 @@ public class ExperimentService {
     }
 
     /**
+     * Atualiza o objetivo comercial e a função operacional atual do experimento.
+     */
+    @Transactional
+    public Experiment updateStrategicPositioning(
+            Long id,
+            String commercialObjective,
+            String currentOperationalFunction) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setCommercialObjective(normalizeLongText(commercialObjective));
+        exp.setCurrentOperationalFunction(normalizeLongText(currentOperationalFunction));
+        return exp;
+    }
+
+    /**
      * Normaliza texto longo editável preservando quebras de linha relevantes.
      */
     private String normalizeLongText(String value) {

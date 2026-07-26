@@ -305,6 +305,14 @@ public class Experiment {
     @Column(name = "learned_lessons", columnDefinition = "LONGTEXT")
     private String learnedLessons;
 
+    /** Objetivo comercial original que o experimento deve validar para vendas. */
+    @Column(name = "commercial_objective", columnDefinition = "LONGTEXT")
+    private String commercialObjective;
+
+    /** Função operacional atual assumida pelo experimento durante sua evolução. */
+    @Column(name = "current_operational_function", columnDefinition = "LONGTEXT")
+    private String currentOperationalFunction;
+
     /** Quantidade de criativos a serem gerados pelo worker. */
     @Column(name = "creatives_to_generate")
     private Integer creativesToGenerate;

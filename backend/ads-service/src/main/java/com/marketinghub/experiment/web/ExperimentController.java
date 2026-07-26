@@ -9,6 +9,7 @@ import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentLearnedLessonsRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentStrategicPositioningRequest;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
@@ -178,6 +179,17 @@ public class ExperimentController {
             @PathVariable Long id,
             @RequestBody UpdateExperimentLearnedLessonsRequest request) {
         return mapper.toDto(service.updateLearnedLessons(id, request.learnedLessons()));
+    }
+
+    /** Atualiza o objetivo comercial e a função operacional atual do experimento. */
+    @PatchMapping("/{id}/strategic-positioning")
+    public ExperimentDto updateStrategicPositioning(
+            @PathVariable Long id,
+            @RequestBody UpdateExperimentStrategicPositioningRequest request) {
+        return mapper.toDto(service.updateStrategicPositioning(
+                id,
+                request.commercialObjective(),
+                request.currentOperationalFunction()));
     }
 
     /** Solicita geração de criativos para o experimento. */

@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-26-experiment-strategic-positioning.yaml
+  - changeSet:
+      id: 2026-07-26-experiment-strategic-positioning-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: commercial_objective
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                ADD COLUMN commercial_objective LONGTEXT NULL;
+  - changeSet:
+      id: 2026-07-26-experiment-strategic-positioning-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: current_operational_function
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                ADD COLUMN current_operational_function LONGTEXT NULL;

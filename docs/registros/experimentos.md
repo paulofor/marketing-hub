@@ -6046,6 +6046,16 @@
 - causa-raiz: com múltiplas versões produtivas do PDE, o quadro de deploy por ambiente na tela de experimento confundia decisão comercial com publicação técnica.
 - foi feito: a tela de experimento ficou focada em métricas, jornada, criativos, dispositivo e escolha da versão medida; criação/manutenção de URLs produtivas fica no card do produto.
 
+## 2026-07-26 — Experimento 71: Meta rejeitava processamento de vídeo 720p
+
+- causa-raiz confirmada via teste controlado na Meta: o upload `video_ads` do MP4 era aceito, mas o processamento do `video_id` ficava em `error` porque a largura do vídeo era 720 px, abaixo do mínimo de 1080 px informado pela própria Meta.
+- evidência operacional: os criativos `245`/experimento `71` e `244`/experimento `70` usavam vídeos HeyGen 720x1280; tentativas produtivas caíam no fallback legado `/advideos` com `OAuthException code=1`, sem entregar um `video_id` processável para o `adcreative`.
+- foi feito: o `facebook-ads-worker` passou a normalizar vídeos de criativo para largura mínima de 1080 px e áudio AAC 48 kHz estéreo antes do upload para a Meta.
+- foi feito: o payload de `adcreative` de vídeo deixou de enviar `link` direto em `video_data` e passou a usar thumbnail `image_hash` extraído do próprio vídeo normalizado.
+- foi feito: o upload de vídeo passou a usar temporariamente `systemUserAccessToken` quando disponível, restaurando o token de usuário antes de criar o `adcreative`.
+- prevenção: adicionados testes garantindo saída 1080x1920/48 kHz estéreo, payload de vídeo com `video_id` + `image_hash`, sem `link` direto em `video_data`, e separação entre token de upload e token de criativo.
+- impacto comercial esperado: permitir que criativos de vídeo sejam testados como vídeo nativo na Meta, sem falso sucesso por imagem fallback e sem desperdiçar tentativas em asset que a Meta reprova no processamento.
+
 ## 2026-07-25 — Experimento 71: fallback para upload de vídeo na Meta
 
 - Contexto: o experimento `71 - Metodo MUSA - Presenca Elegante em 7 Dias-E001` foi reativado para nova tentativa de publicação no Facebook Ads.

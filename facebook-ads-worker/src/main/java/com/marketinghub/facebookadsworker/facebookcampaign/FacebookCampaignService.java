@@ -457,7 +457,13 @@ public class FacebookCampaignService {
                 resolvedTargeting.targetingJson(),
                 FacebookAdsService.BRAZIL_COUNTRY_CODE
             );
-            creativePayloads = preloadCreativeVideosForExperiment(exp.publicationJobId(), exp.id(), config.adAccountId(), creativePayloads);
+            creativePayloads = preloadCreativeVideosForExperiment(
+                exp.publicationJobId(),
+                exp.id(),
+                config.adAccountId(),
+                config.systemUserAccessToken(),
+                creativePayloads
+            );
             creativePayloads = preloadCreativeImagesForExperiment(exp.publicationJobId(), exp.id(), config.adAccountId(), creativePayloads);
             validateCreativePayloadsHaveImageHashes(exp, creativePayloads);
             try {
@@ -1313,24 +1319,6 @@ public class FacebookCampaignService {
             );
         }
 
-        /** Substitui o vídeo por um frame estático quando a Meta rejeita todos os uploads de vídeo. */
-        private CreativePublicationPayload withVideoFrameFallbackImageHash(String value) {
-            return new CreativePublicationPayload(
-                creative,
-                websiteUrl,
-                leadGenFormId,
-                message,
-                callToAction,
-                headline,
-                description,
-                value,
-                null,
-                null,
-                null,
-                instagramActorId,
-                adNameSuffix
-            );
-        }
     }
 
     private List<Creative> resolveCreatives(long experimentId) {
@@ -1664,6 +1652,7 @@ public class FacebookCampaignService {
         String publicationJobId,
         long experimentId,
         String adAccountId,
+        String videoUploadAccessToken,
         List<CreativePublicationPayload> creativePayloads
     ) {
         List<CreativePublicationPayload> resolvedPayloads = new ArrayList<>(creativePayloads.size());
@@ -1684,54 +1673,59 @@ public class FacebookCampaignService {
                 sourceFileName
             );
             try {
+                MetaVideoNormalizer.NormalizedImage thumbnail = metaVideoNormalizer.extractFallbackFrame(
+                    normalizedVideo.bytes(),
+                    normalizedVideo.fileName()
+                );
+                String thumbnailImageHash = executeFacebookCallWithLogging(
+                    publicationJobId,
+                    experimentId,
+                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                    () -> facebookAdsService.uploadAdImageFromBytes(
+                        adAccountId,
+                        thumbnail.bytes(),
+                        thumbnail.fileName(),
+                        thumbnail.contentType())
+                );
                 String uploadedVideoId = executeFacebookCallWithLogging(
                     publicationJobId,
                     experimentId,
                     ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
                     () -> uploadVideoWithOfficialFlowOrLegacyFallback(
                         adAccountId,
+                        videoUploadAccessToken,
                         normalizedVideo.bytes(),
                         normalizedVideo.fileName(),
                         normalizedVideo.contentType())
                 );
                 LOGGER.info(
-                    "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}, normalized={}",
+                    "Creative video uploaded to Meta before ad creative creation: experimentId={}, creativeId={}, videoId={}, thumbnailHash={}, normalized={}",
                     experimentId,
                     payload.creative().id(),
                     uploadedVideoId,
+                    thumbnailImageHash,
                     normalizedVideo.normalized()
                 );
-                resolvedPayloads.add(payload.withVideoId(uploadedVideoId));
+                resolvedPayloads.add(payload.withImageHash(thumbnailImageHash).withVideoId(uploadedVideoId));
             } catch (RuntimeException ex) {
-                LOGGER.warn(
-                    "Creative video upload failed after official and legacy Meta flows; using extracted frame fallback: experimentId={}, creativeId={}, filename={}, message={}",
+                String reason = "Campanha bloqueada: a Meta não aceitou o upload do vídeo do criativo "
+                    + payload.creative().id()
+                    + ". A publicação de criativo VIDEO não será convertida para imagem fallback; gere novo upload/retry de vídeo para validar performance de vídeo.";
+                LOGGER.error(
+                    "Creative video upload failed after official and legacy Meta flows; blocking publication instead of using image fallback: experimentId={}, creativeId={}, filename={}, message={}",
                     experimentId,
                     payload.creative().id(),
                     normalizedVideo.fileName(),
                     ex.getMessage(),
                     ex
                 );
-                MetaVideoNormalizer.NormalizedImage fallbackFrame = metaVideoNormalizer.extractFallbackFrame(
-                    normalizedVideo.bytes(),
-                    normalizedVideo.fileName()
-                );
-                String uploadedImageHash = executeFacebookCallWithLogging(
+                experimentFacebookApiLogClient.logPublicationJobFailureStep(
                     publicationJobId,
                     experimentId,
-                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                    () -> facebookAdsService.uploadAdImageFromBytes(
-                        adAccountId,
-                        fallbackFrame.bytes(),
-                        fallbackFrame.fileName(),
-                        fallbackFrame.contentType())
+                    "CAMPAIGN_CREATIVE_VIDEO_UPLOAD_REQUIRED",
+                    reason + " Erro Meta: " + ex.getMessage()
                 );
-                LOGGER.info(
-                    "Creative video fallback frame uploaded to Meta as image_hash: experimentId={}, creativeId={}, imageHash={}",
-                    experimentId,
-                    payload.creative().id(),
-                    uploadedImageHash
-                );
-                resolvedPayloads.add(payload.withVideoFrameFallbackImageHash(uploadedImageHash));
+                throw new IllegalStateException(reason, ex);
             }
         }
         return resolvedPayloads;
@@ -1739,10 +1733,17 @@ public class FacebookCampaignService {
 
     /** Publica o vídeo pelo fluxo oficial Video Ads e usa advideos apenas como fallback legado. */
     private String uploadVideoWithOfficialFlowOrLegacyFallback(String adAccountId,
+                                                              String videoUploadAccessToken,
                                                               byte[] videoBytes,
                                                               String fileName,
                                                               String contentType) {
+        String previousToken = facebookAdsService.getCurrentAccessToken();
+        boolean shouldUseDedicatedVideoToken = StringUtils.hasText(videoUploadAccessToken)
+            && !Objects.equals(videoUploadAccessToken.trim(), previousToken);
         try {
+            if (shouldUseDedicatedVideoToken) {
+                facebookAdsService.updateAccessToken(videoUploadAccessToken.trim());
+            }
             return facebookAdsService.uploadVideoAdFromBytes(adAccountId, videoBytes, fileName, contentType);
         } catch (WebClientResponseException ex) {
             LOGGER.warn(
@@ -1754,6 +1755,10 @@ public class FacebookCampaignService {
                 ex
             );
             return facebookAdsService.uploadAdVideoFromBytes(adAccountId, videoBytes, fileName, contentType);
+        } finally {
+            if (shouldUseDedicatedVideoToken && StringUtils.hasText(previousToken)) {
+                facebookAdsService.updateAccessToken(previousToken);
+            }
         }
     }
 

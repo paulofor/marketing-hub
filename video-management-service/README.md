@@ -122,7 +122,7 @@ Em produção, o serviço grava o arquivo em `/app/logs/video-management-service
 
 ### Staging atual
 
-- Backend de staging configurado para `http://191.252.181.168:8000`.
+- Backend de staging configurado para `http://191.252.181.168`.
 - O provider VEO só deve ser habilitado após configurar `GEMINI_API_KEY` real no host/container.
 
 ## Construção do container

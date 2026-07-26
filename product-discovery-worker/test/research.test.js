@@ -43,6 +43,35 @@ test("buildSearchQueries creates pain-oriented queries", () => {
   );
 });
 
+test("buildSearchQueries expands public sources and commercial language for MEI WhatsApp", () => {
+  const queries = buildSearchQueries({
+    theme: "MEI que sabe executar mas trava para vender pelo WhatsApp",
+    targetAudience: "autônomos e prestadores de serviço",
+  });
+
+  assert.ok(queries.length >= 30);
+  assert.ok(
+    queries.includes("MEI não sabe vender pelo WhatsApp"),
+    "deve buscar a dor específica de venda pelo WhatsApp",
+  );
+  assert.ok(
+    queries.includes("autônomo cliente pergunta preço e some"),
+    "deve buscar sinal de perda comercial no atendimento",
+  );
+  assert.ok(
+    queries.some((query) => query.includes("site:reclameaqui.com.br")),
+    "deve ampliar busca para fontes públicas de reclamação",
+  );
+  assert.ok(
+    queries.some((query) => query.includes("site:youtube.com comentários")),
+    "deve ampliar busca para linguagem de comentários",
+  );
+  assert.ok(
+    queries.some((query) => query.includes("objeção preço")),
+    "deve buscar objeções comerciais antes de decidir oferta",
+  );
+});
+
 test("buildSearchQueries uses domain language for style and routine cycles", () => {
   const styleQueries = buildSearchQueries({
     theme: "PDE diagnóstico de estilo acessível",
@@ -194,6 +223,7 @@ test("searchInternet calls configured Brave API and deduplicates results", async
     },
     {
       maxSearchResults: 3,
+      minSearchQueries: 4,
       config: resolveSearchConfig({
         PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
         BRAVE_SEARCH_API_KEY: "brave-test-key",
@@ -229,6 +259,60 @@ test("searchInternet calls configured Brave API and deduplicates results", async
   assert.match(calls[0].url, /api\.search\.brave\.com/);
   assert.equal(calls[0].options.headers["X-Subscription-Token"], "brave-test-key");
   assert.equal(results.length, 3);
+});
+
+test("searchInternet uses stronger default search depth before stopping", async () => {
+  const calls = [];
+  const results = await searchInternet(
+    {
+      theme: "MEI que sabe executar mas trava para vender pelo WhatsApp",
+      targetAudience: "autônomos",
+    },
+    {
+      config: resolveSearchConfig({
+        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+        BRAVE_SEARCH_API_KEY: "brave-test-key",
+      }),
+      logger: { info() {} },
+      fetchFn: async (url) => {
+        calls.push(url);
+        const callNumber = calls.length;
+        return {
+          ok: true,
+          json: async () => ({
+            web: {
+              results: [
+                {
+                  title: `Sinal ${callNumber} A`,
+                  url: `https://fonte${callNumber}a.example/sinal`,
+                  description: "problema caro complicado",
+                },
+                {
+                  title: `Sinal ${callNumber} B`,
+                  url: `https://fonte${callNumber}b.example/sinal`,
+                  description: "dificuldade confuso não consigo",
+                },
+                {
+                  title: `Sinal ${callNumber} C`,
+                  url: `https://fonte${callNumber}c.example/sinal`,
+                  description: "reclamação demorado não resolve",
+                },
+              ],
+            },
+          }),
+        };
+      },
+    },
+  );
+
+  assert.equal(calls.length, 6);
+  assert.equal(results.length, 12);
+  assert.ok(
+    calls.some((url) =>
+      new URL(url).searchParams.get("q")?.includes("cliente pergunta preço e some"),
+    ),
+    "deve executar consultas comerciais específicas antes de parar",
+  );
 });
 
 test("searchInternet falls back when search provider rejects every query", async () => {

@@ -18,16 +18,16 @@ const pollIntervalMs = Number(
   process.env.PRODUCT_DISCOVERY_POLL_INTERVAL_MS || "60000",
 );
 const maxSearchResults = Number(
-  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS || "8",
+  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS || "12",
 );
 const minSearchQueries = Number(
-  process.env.PRODUCT_DISCOVERY_MIN_SEARCH_QUERIES || "4",
+  process.env.PRODUCT_DISCOVERY_MIN_SEARCH_QUERIES || "6",
 );
 const maxSearchQueries = Number(
-  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_QUERIES || "8",
+  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_QUERIES || "14",
 );
 const maxResultsPerQuery = Number(
-  process.env.PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY || "2",
+  process.env.PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY || "3",
 );
 const healthHost = process.env.PRODUCT_DISCOVERY_HEALTH_HOST || "0.0.0.0";
 const healthPort = Number(process.env.PRODUCT_DISCOVERY_HEALTH_PORT || "8080");

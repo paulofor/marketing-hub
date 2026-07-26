@@ -356,9 +356,9 @@ class ExperimentReadinessServiceTest {
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
-    /** Garante que o funil PDE MUSA usa login/paywall canônico sem exigir GeraSalesPage. */
+    /** Garante que o funil PDE MUSA bloqueia domínio raiz sem versão explícita. */
     @Test
-    void shouldAllowPdeMembershipCampaignWithCanonicalMusaLoginDestination() {
+    void shouldBlockPdeMembershipCampaignWithRootMusaLoginDestination() {
         Experiment experiment = buildExperiment(67L, 77L);
         experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
         experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
@@ -368,8 +368,8 @@ class ExperimentReadinessServiceTest {
         when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(67L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(67L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
 
-        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
-        assertThat(service.isReadyForCampaign(experiment)).isTrue();
+        assertThat(service.computeMissingConfiguration(experiment)).contains("pdeMembershipDestination");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
     }
 
     /** Garante que o funil PDE MUSA aceita subdomínio de slot produtivo versionado. */
@@ -378,7 +378,7 @@ class ExperimentReadinessServiceTest {
         Experiment experiment = buildExperiment(71L, 77L);
         experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
         experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
-        experiment.setFollowUpActionUrl("https://v2.clubemusa.com.br");
+        experiment.setFollowUpActionUrl("https://v5.clubemusa.com.br");
         completeCommercialContract(experiment);
 
         when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(71L, CreativeStatus.READY)).thenReturn(true);
@@ -412,7 +412,7 @@ class ExperimentReadinessServiceTest {
         Experiment experiment = buildExperiment(experimentId, 79L);
         experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
         experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
-        experiment.setFollowUpActionUrl("https://clubemusa.com.br");
+        experiment.setFollowUpActionUrl("https://v5.clubemusa.com.br");
         completeCommercialContract(experiment);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);

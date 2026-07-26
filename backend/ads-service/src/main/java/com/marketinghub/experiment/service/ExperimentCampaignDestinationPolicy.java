@@ -21,8 +21,6 @@ import org.springframework.util.StringUtils;
 @Service
 public class ExperimentCampaignDestinationPolicy {
     private static final String STATUS_COMPLETED = "CONCLUIDO";
-    private static final String MUSA_PDE_CANONICAL_HOST = "clubemusa.com.br";
-
     private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
     private final GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
 
@@ -93,7 +91,7 @@ public class ExperimentCampaignDestinationPolicy {
                 && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL;
     }
 
-    /** Confirma que o anúncio leva para a entrada/login do Clube MUSA ou slot produtivo aprovado. */
+    /** Confirma que o anúncio leva para um slot produtivo versionado do Clube MUSA. */
     public boolean hasPdeMembershipDestination(Experiment experiment) {
         if (experiment == null) {
             return false;
@@ -170,11 +168,9 @@ public class ExperimentCampaignDestinationPolicy {
         return normalized;
     }
 
-    /** Verifica se a URL pertence ao domínio canônico ou a subdomínio produtivo do Clube MUSA. */
+    /** Verifica se a URL pertence a um subdomínio produtivo versionado do Clube MUSA. */
     private boolean isMusaPdePublicEntry(String destinationUrl) {
         return StringUtils.hasText(destinationUrl)
-                && (destinationUrl.equals("https://" + MUSA_PDE_CANONICAL_HOST)
-                || destinationUrl.startsWith("https://" + MUSA_PDE_CANONICAL_HOST + "/")
-                || destinationUrl.matches("^https://[a-z0-9-]+\\.clubemusa\\.com\\.br($|/.*)"));
+                && destinationUrl.matches("^https://v[0-9]+\\.clubemusa\\.com\\.br($|/.*)");
     }
 }

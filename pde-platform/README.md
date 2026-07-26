@@ -20,7 +20,7 @@ cd pde-platform/frontend
 npm install
 npm run build
 npm run test:visual
-PDE_PUBLIC_HEALTH_URL=https://clubemusa.com.br npm run test:public-health
+PDE_PUBLIC_HEALTH_URL=https://v5.clubemusa.com.br npm run test:public-health
 npm run dev
 ```
 
@@ -59,13 +59,13 @@ docker compose -f pde-platform/docker-compose.yml up --build
 Deploy de produção:
 
 - Defina `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` apontando para o MySQL do Marketing Hub antes de subir o backend PDE.
-- Para rollback ou novo experimento, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE` e `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE` no ambiente de deploy.
+- Para rollback ou novo experimento, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE`, `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE`, `PDE_DEPLOY_FRONTEND_URL` e `PDE_APP_BASE_URL` no ambiente de deploy.
 - Defina `PDE_PEPPER_API_TOKEN` em produção para reconciliar compras pagas quando o postback da Pepper não for entregue.
 - Mantenha `PDE_PEPPER_OFFER_HASHES=owm6x,c8mnn` durante a transição: `owm6x` é a oferta atual e `c8mnn` cobre compras reais antigas.
 - `PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS=6700` bloqueia liberação de acesso se a oferta antiga aparecer com valor zerado.
 - `PDE_PEPPER_SYNC_LOOKBACK_DAYS` define a janela de busca de transações recentes; o padrão é 14 dias.
 - Em produção, `PDE_ACCESS_REQUIRE_JDBC=true` é obrigatório para bloquear o backend quando a persistência analítica não estiver configurada.
-- Quando `PDE_APP_BASE_URL` apontar para `clubemusa.com.br`, o backend também bloqueia início sem JDBC mesmo se a flag operacional estiver ausente.
+- Quando `PDE_APP_BASE_URL` apontar para `clubemusa.com.br`, incluindo subdomínios versionados como `v5.clubemusa.com.br`, o backend também bloqueia início sem JDBC mesmo se a flag operacional estiver ausente.
 - Sem JDBC, o modo local continua disponível para desenvolvimento, mas não deve ser usado como destino de campanha paga.
 
 IA direcionada do PDE:
@@ -88,6 +88,12 @@ coerente com o histórico da jornada.
 - Experimento: `66`
 - Formato: experiencia guiada + e-book + checklists + templates
 - Checkout preferencial futuro: Pepper
+
+## Dominios versionados
+
+- A versao 5 do Clube MUSA deve responder em `https://v5.clubemusa.com.br`.
+- O dominio raiz `https://clubemusa.com.br` nao deve ser usado como URL primaria de campanha quando existir subdominio versionado para a experiencia medida.
+- Cada nova versao de PDE deve publicar e validar seu proprio subdominio, mantendo metricas, UTMs e criativos separados por `experienceVersion`.
 
 ## Login e assinatura MUSA
 

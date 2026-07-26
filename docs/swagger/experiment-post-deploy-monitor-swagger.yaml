@@ -123,25 +123,25 @@ components:
           format: int64
         slotCode:
           type: string
-          example: v2
+          example: v5
         productSlug:
           type: string
           example: metodo-musa-7-dias
         domain:
           type: string
-          example: v2.clubemusa.com.br
+          example: v5.clubemusa.com.br
         publicUrl:
           type: string
-          example: https://v2.clubemusa.com.br
+          example: https://v5.clubemusa.com.br
         backendUrl:
           type: string
           nullable: true
         experienceVersion:
           type: string
-          example: musa-pde-entry-v5-estrada-desejo
+          example: musa-pde-entry-v5-video-explicativo
         targetEnvironment:
           type: string
-          example: production-v2
+          example: production-v5
         status:
           type: string
           enum:

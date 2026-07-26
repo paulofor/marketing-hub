@@ -63,7 +63,7 @@ mcp:
     http-tail-range-bytes: ${MCP_LOG_HTTP_TAIL_RANGE_BYTES:262144}
   chat-logs:
     enabled: ${MCP_CHAT_LOG_ENABLED:true}
-    allowed-containers: ${MCP_CHAT_LOG_ALLOWED_CONTAINERS:marketinghub-fashion-chat}
+    allowed-containers: ${MCP_CHAT_LOG_ALLOWED_CONTAINERS:marketinghub-fashion-chat,product-discovery-worker}
     docker-command: ${MCP_CHAT_LOG_DOCKER_COMMAND:docker}
     max-lines: ${MCP_CHAT_LOG_MAX_LINES:500}
     timeout-seconds: ${MCP_CHAT_LOG_TIMEOUT_SECONDS:20}

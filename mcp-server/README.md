@@ -29,7 +29,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `github_actions_list_runs`: lista execuções (runs) de workflows do repositório configurado no GitHub Actions.
 - `github_actions_get_run_summary`: verifica se uma execução terminou com sucesso e detalha jobs/steps com falha.
 - `github_actions_get_run_logs`: baixa os logs compactados de uma execução e retorna um trecho em texto.
-- `chat_container_logs`: retorna logs Docker dos containers de chat permitidos no host do MCP. Por padrão, somente `marketinghub-fashion-chat`.
+- `chat_container_logs`: retorna logs Docker dos containers operacionais permitidos no host do MCP. Por padrão, `marketinghub-fashion-chat` e `product-discovery-worker`.
 
 ## Executar localmente
 
@@ -78,14 +78,14 @@ Timeout de leitura HTTP por módulo: `MCP_LOG_FETCH_TIMEOUT_SECONDS` (default `4
 
 Limite máximo por chamada: `MCP_LOG_MAX_LINES` (default `500`).
 
-## Logs Docker dos containers de chat
+## Logs Docker dos containers operacionais
 
-O tool `chat_container_logs` permite diagnosticar os containers de chat no mesmo host do MCP sem liberar shell genérico. Ele executa somente `docker logs` para containers aprovados na allowlist.
+O tool `chat_container_logs` permite diagnosticar containers operacionais no mesmo host do MCP sem liberar shell genérico. Ele executa somente `docker logs` para containers aprovados na allowlist.
 
 Configuração:
 
 - `MCP_CHAT_LOG_ENABLED` (default `true`);
-- `MCP_CHAT_LOG_ALLOWED_CONTAINERS` (default `marketinghub-fashion-chat`);
+- `MCP_CHAT_LOG_ALLOWED_CONTAINERS` (default `marketinghub-fashion-chat,product-discovery-worker`);
 - `MCP_CHAT_LOG_DOCKER_COMMAND` (default `docker`);
 - `MCP_CHAT_LOG_MAX_LINES` (default `500`);
 - `MCP_CHAT_LOG_TIMEOUT_SECONDS` (default `20`).

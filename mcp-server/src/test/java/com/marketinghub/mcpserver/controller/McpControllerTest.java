@@ -75,7 +75,7 @@ class McpControllerTest {
                 () -> TEST_LOG_DIR.resolve("video-management-service.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.enabled", () -> "true");
-        registry.add("mcp.chat-logs.allowed-containers", () -> "marketinghub-fashion-chat");
+        registry.add("mcp.chat-logs.allowed-containers", () -> "marketinghub-fashion-chat,product-discovery-worker");
         registry.add("mcp.chat-logs.docker-command", () -> TEST_LOG_DIR.resolve("docker-fake.sh").toString());
         registry.add("mcp.chat-logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.timeout-seconds", () -> "5");
@@ -440,7 +440,7 @@ class McpControllerTest {
     }
 
     /**
-     * Garante que a tool chat_container_logs lê logs Docker apenas do container de chat permitido.
+     * Garante que a tool chat_container_logs lê logs Docker apenas de container permitido.
      */
     @Test
     void shouldReadChatContainerLogs() throws Exception {
@@ -457,6 +457,20 @@ class McpControllerTest {
     }
 
     /**
+     * Garante que o Product Discovery Worker fica disponível para leitura de logs pelo MCP.
+     */
+    @Test
+    void shouldReadProductDiscoveryWorkerContainerLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":20,"method":"tools/call","params":{"name":"chat_container_logs","arguments":{"container":"product-discovery-worker","lines":2}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.container").value("product-discovery-worker"));
+    }
+
+    /**
      * Garante que a tool chat_container_logs rejeita containers fora da allowlist.
      */
     @Test
@@ -468,7 +482,8 @@ class McpControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
-                .andExpect(jsonPath("$.error.message").value("container must be one of: marketinghub-fashion-chat"));
+                .andExpect(jsonPath("$.error.message")
+                        .value("container must be one of: marketinghub-fashion-chat, product-discovery-worker"));
     }
 
 
@@ -532,7 +547,7 @@ class McpControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                 {"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}
-                                """))
+                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.tools[*].name").value(org.hamcrest.Matchers.hasItems(
                         "meta_graph_debug_token",
@@ -540,6 +555,20 @@ class McpControllerTest {
                         "github_actions_list_runs",
                         "github_actions_get_run_summary",
                         "github_actions_get_run_logs")));
+    }
+
+    /**
+     * Garante que o Product Discovery Worker aparece na enum pública dos logs Docker.
+     */
+    @Test
+    void shouldListProductDiscoveryWorkerInContainerLogTool() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                {"jsonrpc":"2.0","id":21,"method":"tools/list","params":{}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("product-discovery-worker")));
     }
 
 

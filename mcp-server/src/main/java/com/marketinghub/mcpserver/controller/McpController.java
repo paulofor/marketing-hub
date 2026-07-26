@@ -218,13 +218,13 @@ public class McpController {
                     ),
                     Map.of(
                             "name", "chat_container_logs",
-                            "description", "Retorna logs Docker dos containers de chat permitidos no host do MCP.",
+                            "description", "Retorna logs Docker dos containers operacionais permitidos no host do MCP.",
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(
                                             "container", Map.of("type", "string",
                                                     "enum", chatContainerLogService.allowedContainers(),
-                                                    "description", "Container de chat permitido para consulta."),
+                                                    "description", "Container operacional permitido para consulta."),
                                             "lines", Map.of("type", "integer", "minimum", 1,
                                                     "maximum", chatContainerLogService.maxLines(),
                                                     "description", "Quantidade de linhas retornadas. Padrão: 200."),

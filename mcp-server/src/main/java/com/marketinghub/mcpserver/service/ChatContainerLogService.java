@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Lê logs de containers de chat por Docker com escopo restrito aos containers permitidos.
+ * Lê logs de containers operacionais por Docker com escopo restrito aos containers permitidos.
  */
 @Service
 public class ChatContainerLogService {
@@ -33,7 +33,7 @@ public class ChatContainerLogService {
     }
 
     /**
-     * Retorna os containers de chat que podem ter logs consultados pelo MCP.
+     * Retorna os containers operacionais que podem ter logs consultados pelo MCP.
      */
     public List<String> allowedContainers() {
         return properties.chatLogs().allowedContainers();

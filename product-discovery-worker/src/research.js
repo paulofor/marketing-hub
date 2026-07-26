@@ -42,6 +42,32 @@ const HIGH_RISK_TERMS = [
 
 const DOMAIN_PAIN_QUERIES = [
   {
+    match: [
+      "mei",
+      "autonomo",
+      "autonomos",
+      "autônomo",
+      "autônomos",
+      "whatsapp",
+      "vender pelo whatsapp",
+      "cliente",
+      "servico",
+      "serviço",
+      "cobrar",
+      "follow up",
+    ],
+    queries: [
+      "MEI não sabe vender pelo WhatsApp",
+      "autônomo cliente pergunta preço e some",
+      "tenho vergonha de cobrar cliente no WhatsApp",
+      "como responder cliente interessado no WhatsApp",
+      "como fazer follow up com cliente sem ser chato",
+      "como vender serviço pelo WhatsApp sendo MEI",
+      "não sei colocar preço no meu serviço",
+      "como transformar serviço em oferta simples",
+    ],
+  },
+  {
     match: ["roupa online", "comprar roupa", "compra online", "caimento"],
     queries: [
       "comprei roupa online e ficou ruim no corpo",
@@ -92,6 +118,29 @@ const MARKET_CONTEXT_TEMPLATES = [
   "{base} alternativa barata",
 ];
 
+const SOURCE_DISCOVERY_TEMPLATES = [
+  "{base} site:reddit.com",
+  "{base} site:quora.com",
+  "{base} site:reclameaqui.com.br",
+  "{base} site:youtube.com comentários",
+  "{base} site:tiktok.com",
+  "{base} site:instagram.com",
+  "{base} anúncio",
+  "{base} curso",
+  "{base} comunidade",
+  "{base} fórum",
+];
+
+const COMMERCIAL_SIGNAL_TEMPLATES = [
+  "{base} cliente pergunta preço e some",
+  "{base} vergonha de cobrar",
+  "{base} não sei vender",
+  "{base} resposta pronta",
+  "{base} roteiro",
+  "{base} objeção preço",
+  "{base} antes e depois resultado",
+];
+
 export const SEARCH_PROVIDERS = {
   BRAVE: "brave",
   TAVILY: "tavily",
@@ -110,11 +159,19 @@ export function buildSearchQueries(job) {
   const marketSignalQueries = MARKET_CONTEXT_TEMPLATES.map((template) =>
     template.replace("{base}", base),
   );
+  const sourceDiscoveryQueries = SOURCE_DISCOVERY_TEMPLATES.map((template) =>
+    template.replace("{base}", base),
+  );
+  const commercialSignalQueries = COMMERCIAL_SIGNAL_TEMPLATES.map((template) =>
+    template.replace("{base}", base),
+  );
 
   return deduplicateQueries([
     ...domainQueries,
     ...genericQueries,
     ...marketSignalQueries,
+    ...sourceDiscoveryQueries,
+    ...commercialSignalQueries,
   ]);
 }
 
@@ -161,10 +218,10 @@ export async function searchInternet(job, options = {}) {
   const config = options.config || resolveSearchConfig(options.env);
   const fetchFn = options.fetchFn || fetch;
   const logger = options.logger || console;
-  const maxSearchResults = Number(options.maxSearchResults || 8);
-  const minSearchQueries = Number(options.minSearchQueries || 4);
-  const maxSearchQueries = Number(options.maxSearchQueries || 8);
-  const maxResultsPerQuery = Number(options.maxResultsPerQuery || 2);
+  const maxSearchResults = Number(options.maxSearchResults || 12);
+  const minSearchQueries = Number(options.minSearchQueries || 6);
+  const maxSearchQueries = Number(options.maxSearchQueries || 14);
+  const maxResultsPerQuery = Number(options.maxResultsPerQuery || 3);
   const queries = buildSearchQueries(job).slice(0, maxSearchQueries);
   const collected = [];
   const providerErrors = [];

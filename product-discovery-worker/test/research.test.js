@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   analyzeSearchResults,
   buildSearchQueries,
@@ -59,6 +62,40 @@ test("resolveSearchConfig prefers Brave when key is available", () => {
 
   assert.equal(config.provider, SEARCH_PROVIDERS.BRAVE);
   assert.equal(config.braveApiKey, "brave-test-key");
+});
+
+test("resolveSearchConfig reads Brave key from file when env value is absent", () => {
+  const dir = mkdtempSync(join(tmpdir(), "product-discovery-worker-"));
+  const keyPath = join(dir, "brave_api_key");
+  writeFileSync(keyPath, "brave-file-key\n", "utf8");
+
+  try {
+    const config = resolveSearchConfig({
+      PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+      BRAVE_SEARCH_API_KEY_FILE: keyPath,
+    });
+
+    assert.equal(config.provider, SEARCH_PROVIDERS.BRAVE);
+    assert.equal(config.braveApiKey, "brave-file-key");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("resolveSearchConfig selects Brave automatically when only key file is available", () => {
+  const dir = mkdtempSync(join(tmpdir(), "product-discovery-worker-"));
+  const keyPath = join(dir, "brave_api_key");
+  writeFileSync(keyPath, "brave-file-key\n", "utf8");
+
+  try {
+    const config = resolveSearchConfig({
+      BRAVE_SEARCH_API_KEY_FILE: keyPath,
+    });
+
+    assert.equal(config.provider, SEARCH_PROVIDERS.BRAVE);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("normalizeBraveResponse maps web results to public evidence", () => {

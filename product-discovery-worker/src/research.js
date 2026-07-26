@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 const PAIN_TERMS = [
   "dificuldade",
   "problema",
@@ -60,7 +62,7 @@ export function resolveSearchConfig(env = process.env) {
   const provider = requestedProvider || inferProvider(env);
   return {
     provider,
-    braveApiKey: env.BRAVE_SEARCH_API_KEY || "",
+    braveApiKey: resolveSecret(env.BRAVE_SEARCH_API_KEY, env.BRAVE_SEARCH_API_KEY_FILE),
     tavilyApiKey: env.TAVILY_API_KEY || "",
     serpApiKey: env.SERPAPI_API_KEY || "",
     braveEndpoint:
@@ -78,6 +80,20 @@ export function resolveSearchConfig(env = process.env) {
       env.PRODUCT_DISCOVERY_SEARCH_USER_AGENT ||
       "MarketingHubProductDiscovery/1.0",
   };
+}
+
+function resolveSecret(value, filePath) {
+  if (value) {
+    return value;
+  }
+  if (!filePath) {
+    return "";
+  }
+  try {
+    return readFileSync(filePath, "utf8").trim();
+  } catch {
+    return "";
+  }
 }
 
 export async function searchInternet(job, options = {}) {
@@ -211,7 +227,7 @@ function normalizeProvider(value) {
 }
 
 function inferProvider(env = process.env) {
-  if (env.BRAVE_SEARCH_API_KEY) {
+  if (env.BRAVE_SEARCH_API_KEY || env.BRAVE_SEARCH_API_KEY_FILE) {
     return SEARCH_PROVIDERS.BRAVE;
   }
   if (env.TAVILY_API_KEY) {

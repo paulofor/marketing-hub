@@ -20,10 +20,29 @@ O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
   `tavily`, `serpapi` ou `duckduckgo`. Quando vazio, o worker escolhe pela primeira
   chave disponível nesta ordem: Brave, Tavily, SerpAPI e DuckDuckGo.
 - `BRAVE_SEARCH_API_KEY`: chave da Brave Search API.
+- `BRAVE_SEARCH_API_KEY_FILE`: arquivo com a chave da Brave Search API. Use em
+  produção para não expor segredo em variável direta.
 - `TAVILY_API_KEY`: chave da Tavily Search API.
 - `SERPAPI_API_KEY`: chave da SerpAPI.
 - `PRODUCT_DISCOVERY_SEARCH_COUNTRY`: país usado na busca. Padrão: `br`.
 - `PRODUCT_DISCOVERY_SEARCH_LANGUAGE`: idioma usado na busca. Padrão: `pt-br`.
+
+## Deploy
+
+O workflow `Product Discovery Worker CI` publica o container no host operacional de
+workers `191.252.120.96`.
+
+No deploy de produção, o provider padrão é Brave, com busca direcionada ao Brasil
+(`PRODUCT_DISCOVERY_SEARCH_COUNTRY=br`, `PRODUCT_DISCOVERY_SEARCH_LANGUAGE=pt-br`).
+A chave deve existir no servidor em:
+
+```bash
+/root/infra/brave-token/brave_api_key
+```
+
+O compose de produção monta esse arquivo como Docker secret em
+`/run/secrets/brave_search_api_key` e o worker lê pelo
+`BRAVE_SEARCH_API_KEY_FILE`.
 
 ## Provedor recomendado
 

@@ -24,6 +24,7 @@ lead-portal/backend/uploads
 lead-portal/backend/data
 
 # Pastas do projeto que não devem ir para o Git
+/tmp/
 /backend/.idea/
 /backend/ads-service/target/
 log.exec

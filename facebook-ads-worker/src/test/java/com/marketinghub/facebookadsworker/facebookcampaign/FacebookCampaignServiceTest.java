@@ -1930,6 +1930,12 @@ class FacebookCampaignServiceTest {
                 assertArrayEquals(new byte[] {1, 2, 3, 4}, sourceBytes);
                 return new NormalizedVideo(normalizedBytes, "creative-video-meta.mp4", "video/mp4", true);
             }
+
+            @Override
+            public NormalizedImage extractFallbackFrame(byte[] sourceBytes, String sourceFileName) {
+                assertArrayEquals(normalizedBytes, sourceBytes);
+                return new NormalizedImage(new byte[] {5, 6, 7}, "creative-video-meta-fallback.jpg", "image/jpeg");
+            }
         };
         service = new FacebookCampaignService(
             adsService,
@@ -1942,12 +1948,17 @@ class FacebookCampaignServiceTest {
             apiLogClient,
             normalizer
         );
+        configurationClient.setConfiguration(configurationWithTokens("user-token", "system-token"));
+        adsService.updateAccessToken("user-token");
         facebook.enqueuePriorityConditionalResponse(
             request -> "/creative-video.mp4".equals(request.getPath()) && "GET".equals(request.getMethod()),
             () -> new MockResponse()
                 .setBody(new okio.Buffer().write(new byte[] {1, 2, 3, 4}))
                 .addHeader("Content-Type", "video/mp4")
         );
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"images\":{\"uploaded\":{\"hash\":\"thumb-hash\"}}}")
+            .addHeader("Content-Type", "application/json"));
         String uploadPath = "/video-ads-upload/v23.0/video-123";
         facebook.enqueueResponse(new MockResponse()
             .setBody("{\"video_id\":\"video-123\",\"upload_url\":\"" + facebook.url(uploadPath) + "\"}")
@@ -1987,10 +1998,14 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest reach = takeFacebookRequest("reach validation");
         assertTrue(reach.getPath().contains("/reachestimate?"));
+        RecordedRequest thumbnailUpload = takeFacebookRequest("video thumbnail ad image upload");
+        assertEquals("/v23.0/act_1/adimages", thumbnailUpload.getPath());
         RecordedRequest start = takeFacebookRequest("video start");
         assertEquals("/v23.0/act_1/video_ads", start.getPath());
+        assertEquals("system-token", objectMapper.readTree(start.getBody().inputStream()).get("access_token").asText());
         RecordedRequest upload = takeFacebookRequest("video upload");
         assertEquals(uploadPath, upload.getPath());
+        assertEquals("OAuth system-token", upload.getHeader("Authorization"));
         assertEquals(normalizedBytes.length, upload.getBodySize());
         assertArrayEquals(normalizedBytes, upload.getBody().readByteArray());
         RecordedRequest finish = takeFacebookRequest("video finish");
@@ -1998,8 +2013,12 @@ class FacebookCampaignServiceTest {
         takeFacebookRequest("facebook request"); // campaign
         takeFacebookRequest("facebook request"); // ad set
         RecordedRequest creative = takeFacebookRequest("facebook request");
-        JsonNode storySpec = objectMapper.readTree(creative.getBody().inputStream()).get("object_story_spec");
+        JsonNode creativePayload = objectMapper.readTree(creative.getBody().clone().inputStream());
+        JsonNode storySpec = creativePayload.get("object_story_spec");
+        assertEquals("user-token", creativePayload.get("access_token").asText());
         assertEquals("video-123", storySpec.get("video_data").get("video_id").asText());
+        assertEquals("thumb-hash", storySpec.get("video_data").get("image_hash").asText());
+        assertFalse(storySpec.get("video_data").has("link"));
     }
 
     /**
@@ -2013,6 +2032,12 @@ class FacebookCampaignServiceTest {
             public NormalizedVideo normalize(byte[] sourceBytes, String sourceFileName) {
                 assertArrayEquals(new byte[] {1, 2, 3, 4}, sourceBytes);
                 return new NormalizedVideo(normalizedBytes, "creative-video-meta.mp4", "video/mp4", true);
+            }
+
+            @Override
+            public NormalizedImage extractFallbackFrame(byte[] sourceBytes, String sourceFileName) {
+                assertArrayEquals(normalizedBytes, sourceBytes);
+                return new NormalizedImage(new byte[] {5, 6, 7}, "creative-video-meta-fallback.jpg", "image/jpeg");
             }
         };
         service = new FacebookCampaignService(
@@ -2032,6 +2057,9 @@ class FacebookCampaignServiceTest {
                 .setBody(new okio.Buffer().write(new byte[] {1, 2, 3, 4}))
                 .addHeader("Content-Type", "video/mp4")
         );
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"images\":{\"uploaded\":{\"hash\":\"thumb-hash\"}}}")
+            .addHeader("Content-Type", "application/json"));
         String uploadPath = "/video-ads-upload/v23.0/video-123";
         facebook.enqueueResponse(new MockResponse()
             .setBody("{\"video_id\":\"video-123\",\"upload_url\":\"" + facebook.url(uploadPath) + "\"}")
@@ -2067,6 +2095,8 @@ class FacebookCampaignServiceTest {
                 && "GET".equals(request.getMethod())
         );
 
+        RecordedRequest thumbnailUpload = takeFacebookRequest("video thumbnail ad image upload");
+        assertEquals("/v23.0/act_1/adimages", thumbnailUpload.getPath());
         RecordedRequest start = takeFacebookRequest("video start");
         assertEquals("/v23.0/act_1/video_ads", start.getPath());
         RecordedRequest upload = takeFacebookRequest("video upload");
@@ -2080,17 +2110,11 @@ class FacebookCampaignServiceTest {
         );
         JsonNode reachPayload = objectMapper.readTree(reachStep.getBody().inputStream());
         assertEquals("CAMPAIGN_REACH_VALIDATION", reachPayload.get("stepName").asText());
-        RecordedRequest failedUploadStep = takeBackendRequestMatching(
-            "video upload api failure step",
-            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
-                && "POST".equals(request.getMethod())
-        );
-        JsonNode failedUploadPayload = objectMapper.readTree(failedUploadStep.getBody().inputStream());
-        assertEquals("CAMPAIGN_AD_CREATIVE", failedUploadPayload.get("stepName").asText());
         RecordedRequest failureStep = takeBackendRequestMatching(
             "video upload required failure step",
             request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
                 && "POST".equals(request.getMethod())
+                && request.getBody().clone().readUtf8().contains("CAMPAIGN_CREATIVE_VIDEO_UPLOAD_REQUIRED")
         );
         JsonNode failurePayload = objectMapper.readTree(failureStep.getBody().inputStream());
         assertEquals("job-video-required", failurePayload.get("jobId").asText());
@@ -2104,7 +2128,7 @@ class FacebookCampaignServiceTest {
                 && "PATCH".equals(request.getMethod())
         );
         assertNotNull(failedStatusRequest);
-        assertEquals(5, facebook.getRequestCount());
+        assertEquals(6, facebook.getRequestCount());
     }
 
     /**
@@ -2189,11 +2213,15 @@ class FacebookCampaignServiceTest {
 
 
     private FacebookWorkerConfiguration configurationWithAccessToken(String accessToken) {
+        return configurationWithTokens(accessToken, accessToken);
+    }
+
+    private FacebookWorkerConfiguration configurationWithTokens(String accessToken, String systemUserAccessToken) {
         return new FacebookWorkerConfiguration(
             1L,
             "1",
             accessToken,
-            accessToken,
+            systemUserAccessToken,
             "123456789012345",
             "app",
             "secret",

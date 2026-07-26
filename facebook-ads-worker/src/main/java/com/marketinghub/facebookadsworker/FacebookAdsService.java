@@ -2106,7 +2106,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         boolean hasWebsiteUrl = hasText(resolvedLink);
 
         Map<String, Object> storyData = new HashMap<>();
-        if (hasWebsiteUrl) {
+        if (hasWebsiteUrl && !hasText(request.videoId())) {
             storyData.put("link", resolvedLink);
         }
         storyData.put("message", request.message());
@@ -2118,6 +2118,11 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         }
         if (hasText(request.videoId())) {
             storyData.put("video_id", request.videoId());
+            if (hasText(request.imageHash())) {
+                storyData.put("image_hash", request.imageHash());
+            } else if (hasText(request.imageUrl())) {
+                storyData.put("image_url", request.imageUrl());
+            }
         } else if (hasText(request.imageHash())) {
             storyData.put("image_hash", request.imageHash());
         } else if (hasText(request.imageUrl())) {

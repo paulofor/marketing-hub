@@ -28,6 +28,9 @@
 - Na criação de criativos (`POST /adcreatives`), se a Graph API retornar erro transitório de download da imagem (`error_subcode = 3858258`, ex.: “A imagem não foi baixada”), tente novamente até 3 vezes antes de falhar o experimento.
 - Na criação de criativos (`POST /adcreatives`), ao receber `error_subcode = 3858258`, tente fazer upload prévio da imagem em `/adimages` para obter `image_hash` e reenviar o criativo com `image_hash` (sem `picture`) antes de esgotar as tentativas.
 - Na publicação canônica de campanhas, imagens de criativos devem ser baixadas pelo worker e enviadas à Meta por bytes/multipart em `/adimages` para obter `image_hash`; não use fallback por `url` externa em `/adimages` nem `picture` no criativo quando houver imagem aprovada. Se o download/upload por bytes falhar, falhe a publicação e corrija a causa-raiz.
+- Na publicação canônica de campanhas, vídeos de criativos sem `video_id` devem ser normalizados antes do upload para largura mínima de 1080 px, MP4 H.264, `yuv420p`, áudio AAC 48 kHz estéreo e `faststart`; vídeos 720x1280 podem subir com sucesso em `video_ads`, mas a Meta reprova o processamento por largura insuficiente.
+- Em criativos de vídeo (`object_story_spec.video_data`), envie `video_id` e thumbnail por `image_hash` ou `image_url`; não envie `link` direto em `video_data`, mantendo a URL de destino apenas em `call_to_action.value.link`.
+- Quando houver `systemUserAccessToken`, use-o apenas para o upload de vídeo na Meta e restaure o token de usuário antes de criar `adcreative`, pois o criativo depende de permissão do perfil/página.
 - Identificadores de instant form no formato `ai_form_*` devem ser normalizados para `form_*` antes de chamar a Graph API.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
 - Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).

@@ -20,6 +20,9 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class MetaVideoNormalizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetaVideoNormalizer.class);
+    private static final int META_MIN_VIDEO_WIDTH = 1080;
+    private static final int META_AUDIO_SAMPLE_RATE = 48000;
+    private static final int META_AUDIO_CHANNELS = 2;
 
     private final boolean enabled;
     private final String ffmpegPath;
@@ -79,13 +82,15 @@ public class MetaVideoNormalizer {
                 "-pix_fmt",
                 "yuv420p",
                 "-vf",
-                "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+                "scale=if(lt(iw\\," + META_MIN_VIDEO_WIDTH + ")\\," + META_MIN_VIDEO_WIDTH + "\\,trunc(iw/2)*2):if(lt(iw\\," + META_MIN_VIDEO_WIDTH + ")\\,-2\\,trunc(ih/2)*2)",
                 "-r",
                 "30",
                 "-c:a",
                 "aac",
                 "-ar",
-                "44100",
+                String.valueOf(META_AUDIO_SAMPLE_RATE),
+                "-ac",
+                String.valueOf(META_AUDIO_CHANNELS),
                 "-b:a",
                 "128k",
                 "-movflags",

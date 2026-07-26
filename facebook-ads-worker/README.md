@@ -222,14 +222,20 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    aplicado a vídeo nem a lead form para não alterar a hipótese comercial desses
    fluxos. Criativos em vídeo sem `video_id` são baixados
    pelo worker e reexportados via FFmpeg para MP4 H.264/AAC com `yuv420p`,
-   `faststart`, áudio AAC 44.1 kHz e frame rate de 30 fps antes do upload em
+   `faststart`, largura mínima de 1080 px, áudio AAC 48 kHz estéreo e frame rate de 30 fps antes do upload em
    `video_ads`; o endpoint legado `/advideos` fica apenas como fallback quando o
    fluxo oficial falhar. Essa normalização reduz falhas genéricas de upload da
-   Meta causadas por variações de container/encoding em vídeos externos. Quando
-   o upload oficial e o fallback legado de vídeo falharem, o worker extrai um
-   frame JPEG do próprio vídeo normalizado, envia esse frame em `/adimages` e
-   publica o anúncio como imagem para preservar o teste comercial sem depender
-   de ativo manual fora do repositório.
+   Meta causadas por variações de container/encoding e por vídeos verticais 720p,
+   que a Meta aceita no upload inicial mas reprova no processamento. O worker
+   também extrai uma miniatura do próprio vídeo normalizado, envia em `/adimages`
+   e usa o `image_hash` em `video_data`; para criativos de vídeo, a URL de destino
+   fica apenas em `call_to_action.value.link`, sem campo `link` direto em
+   `video_data`. Quando houver `systemUserAccessToken`, ele é usado somente no
+   upload de vídeo, e o worker restaura o token de usuário antes de criar o
+   `adcreative`, porque a criação depende de permissão no perfil/página. Quando o
+   upload oficial e o fallback legado de vídeo falharem, a publicação é bloqueada
+   sem converter o criativo para imagem, preservando a leitura comercial do teste
+   de vídeo.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, já em `ACTIVE`, permitindo que o experimento comece a rodar sem
    ativação manual no Gerenciador de Anúncios.
@@ -719,7 +725,7 @@ When an experiment has no ready ad set playbook spec, the campaign publication f
 Campaign publication is now routed through the generic stage pattern described in `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`: `facebookadsworker.pipeline` contains the generic contracts and `facebookcampaign.publication` contains the concrete publication stage. This keeps Meta Ads publication as a plug-in stage inside the Facebook Ads Worker while preserving the existing backend/Graph API side effects.
 
 - Na publicação canônica de campanhas, imagens de criativos devem ser baixadas pelo worker e enviadas à Meta por bytes/multipart em `/adimages` para obter `image_hash`; não use fallback por `url` externa em `/adimages` nem `picture` no criativo quando houver imagem aprovada. Se o download/upload por bytes falhar, falhe a publicação e corrija a causa-raiz.
-- Na publicação canônica de campanhas, vídeos de criativos sem `video_id` devem ser baixados pelo worker, normalizados por FFmpeg para MP4 H.264/AAC compatível com Meta e enviados por bytes no fluxo oficial `video_ads`, usando `/advideos` apenas como fallback legado. Se ambos os uploads de vídeo falharem, o worker deve extrair um frame JPEG do vídeo normalizado e publicar com `image_hash` para manter a campanha publicável.
+- Na publicação canônica de campanhas, vídeos de criativos sem `video_id` devem ser baixados pelo worker, normalizados por FFmpeg para MP4 H.264/AAC compatível com Meta, largura mínima de 1080 px, áudio AAC 48 kHz estéreo e enviados por bytes no fluxo oficial `video_ads`, usando `/advideos` apenas como fallback legado. O `video_data` do criativo deve receber `video_id` e thumbnail por `image_hash`; não envie `link` direto em `video_data`, apenas `call_to_action.value.link`. Quando existir `systemUserAccessToken`, use-o apenas para upload do vídeo e restaure o token de usuário antes de criar `adcreative`. Se ambos os uploads de vídeo falharem, o worker deve bloquear a publicação sem converter o criativo para imagem, para preservar o aprendizado real do formato vídeo.
 
 ### Destino standalone de landing em campanhas
 

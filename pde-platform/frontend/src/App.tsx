@@ -654,6 +654,7 @@ function App() {
   const publicRoadPresentedTrackedRef = useRef(false);
   const paidContinuationTrackedRef = useRef('');
   const publicVideoHeroTrackedRef = useRef(false);
+  const publicVideoPlaybackTrackedRef = useRef(new Set<string>());
   const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
@@ -1784,6 +1785,25 @@ function App() {
     return config.fields.every((field) => answers[field.key]?.trim());
   }
 
+  function trackPublicHeroVideoPlayback(eventType: string, metadata: Record<string, unknown> = {}) {
+    const trackingKey = `${eventType}:${metadata.progressPercent ?? ''}`;
+    if (publicVideoPlaybackTrackedRef.current.has(trackingKey)) {
+      return;
+    }
+    publicVideoPlaybackTrackedRef.current.add(trackingKey);
+    void trackEvent(eventType, {
+      metadata: {
+        actionName: 'musa_initial_explainer_video_playback',
+        experimentId: 69,
+        videoPlacement: 'public_diagnostic_initial_explainer',
+        experienceVersion: currentExperienceVersion,
+        hasHeroVideoUrl: Boolean(heroVideoUrl),
+        hasHeroStreamUrl: Boolean(heroStreamUrl),
+        ...metadata,
+      },
+    });
+  }
+
   function updateMissionAnswer(missionId: string, key: string, value: string) {
     setMissionAnswers((current) => ({
       ...current,
@@ -1854,7 +1874,47 @@ function App() {
             <section className="public-video-hero" aria-label="Vídeo curto Método MUSA" data-analytics-section="public_diagnostic_video_hero">
               <div className="public-video-frame">
                 {heroPlaybackUrl ? (
-                  <AdaptiveVideoPlayer className="public-hero-video" src={heroPlaybackUrl} fallbackSrc={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
+                  <AdaptiveVideoPlayer
+                    className="public-hero-video"
+                    src={heroPlaybackUrl}
+                    fallbackSrc={heroVideoUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    poster="/assets/musa-editorial-presenca.png"
+                    onPlaybackEvent={(event) => {
+                      if (event.type === 'play') {
+                        trackPublicHeroVideoPlayback('VIDEO_PLAY', {
+                          currentTime: Math.round(event.currentTime),
+                          duration: Math.round(event.duration),
+                        });
+                        return;
+                      }
+                      if (event.type === 'progress' && event.percent) {
+                        trackPublicHeroVideoPlayback(event.percent >= 95 ? 'VIDEO_COMPLETED' : `VIDEO_PROGRESS_${event.percent}`, {
+                          progressPercent: event.percent,
+                          currentTime: Math.round(event.currentTime),
+                          duration: Math.round(event.duration),
+                        });
+                        return;
+                      }
+                      if (event.type === 'ended') {
+                        trackPublicHeroVideoPlayback('VIDEO_COMPLETED', {
+                          progressPercent: 100,
+                          currentTime: Math.round(event.currentTime),
+                          duration: Math.round(event.duration),
+                        });
+                        return;
+                      }
+                      if (event.type === 'error') {
+                        trackPublicHeroVideoPlayback('VIDEO_ERROR', {
+                          currentTime: Math.round(event.currentTime),
+                          duration: Math.round(event.duration),
+                        });
+                      }
+                    }}
+                  />
                 ) : (
                   <div className="public-video-storyboard" aria-hidden="true">
                     <img src="/assets/musa-diagnostic-slide-1.png" alt="" />
@@ -1870,7 +1930,7 @@ function App() {
               <div className="public-video-copy">
                 <p className="section-kicker">Vídeo inicial MUSA</p>
                 <h2>Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.</h2>
-                <p>A promessa continua simples: identificar o ruído visual, escolher um sinal de presença e começar com uma microação usando o que você já tem.</p>
+                <p>Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.</p>
                 <button
                   className="secondary-button public-video-cta"
                   type="button"

@@ -155,6 +155,13 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
 });
 
 test('exibe video no topo na versao publicada e permite controle para QA', async ({ page }) => {
+  await page.route('/api/pde/access/events', async (route) => {
+    await route.fulfill({ json: { status: 'RECORDED' } });
+  });
+  await page.route('/api/pde/products/metodo-musa-7-dias', async (route) => {
+    await route.fulfill({ status: 404, json: { error: 'Produto carregado pelo fallback do teste visual.' } });
+  });
+
   await page.goto('/');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
@@ -170,4 +177,40 @@ test('exibe video no topo na versao publicada e permite controle para QA', async
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
+});
+
+test('mede reproducao real do video inicial MUSA', async ({ page }) => {
+  const events: string[] = [];
+  await page.addInitScript(() => {
+    window.__MUSA_RUNTIME_CONFIG__ = {
+      VITE_MUSA_HERO_VIDEO_URL: 'https://cdn.test/musa-video.mp4',
+    };
+  });
+  await page.route('/api/pde/access/events', async (route) => {
+    const body = route.request().postDataJSON() as { eventType?: string };
+    if (body.eventType) {
+      events.push(body.eventType);
+    }
+    await route.fulfill({ json: { status: 'RECORDED' } });
+  });
+  await page.route('/api/pde/products/metodo-musa-7-dias', async (route) => {
+    await route.fulfill({ status: 404, json: { error: 'Produto carregado pelo fallback do teste visual.' } });
+  });
+
+  await page.goto('/?musa_video_variant=video');
+  const video = page.locator('video.public-hero-video');
+  await expect(video).toBeVisible();
+
+  await video.evaluate((element) => {
+    const htmlVideo = element as HTMLVideoElement;
+    Object.defineProperty(htmlVideo, 'duration', { configurable: true, value: 40 });
+    Object.defineProperty(htmlVideo, 'currentTime', { configurable: true, value: 0 });
+    htmlVideo.dispatchEvent(new Event('play'));
+    Object.defineProperty(htmlVideo, 'currentTime', { configurable: true, value: 20 });
+    htmlVideo.dispatchEvent(new Event('timeupdate'));
+    Object.defineProperty(htmlVideo, 'currentTime', { configurable: true, value: 39 });
+    htmlVideo.dispatchEvent(new Event('timeupdate'));
+  });
+
+  await expect.poll(() => events).toEqual(expect.arrayContaining(['VIDEO_PLAY', 'VIDEO_PROGRESS_25', 'VIDEO_PROGRESS_50', 'VIDEO_COMPLETED']));
 });

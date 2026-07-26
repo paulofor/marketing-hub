@@ -23,6 +23,12 @@ const REACTIVATABLE_STATUSES = new Set([
   "INCONCLUSIVE",
   "FAILED",
 ]);
+const FINALIZED_STATUSES = new Set([
+  "FINISHED",
+  "VALIDATED",
+  "INVALIDATED",
+  "INCONCLUSIVE",
+]);
 
 function parseDate(date?: string | null) {
   if (!date) return 0;
@@ -174,6 +180,7 @@ export default function ExperimentListPage() {
   const filtered = useMemo(() => {
     return experiments.filter(
       (e) =>
+        !FINALIZED_STATUSES.has(e.status) &&
         (!search || e.name.toLowerCase().includes(search.toLowerCase())) &&
         (!status || e.status === status) &&
         (!niche || e.nicheId === Number(niche)),
@@ -338,7 +345,6 @@ export default function ExperimentListPage() {
             <option value="RUNNING">RUNNING</option>
             <option value="PAUSED">PAUSED</option>
             <option value="USER_STOPPED">USER_STOPPED</option>
-            <option value="FINISHED">FINISHED</option>
             <option value="FAILED">FAILED</option>
           </select>
         </div>

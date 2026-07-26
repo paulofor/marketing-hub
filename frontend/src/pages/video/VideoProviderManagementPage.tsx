@@ -13,6 +13,13 @@ type ProviderRow = {
   score?: SalesVideoProviderScore;
 };
 
+const RECOMMENDATION_PRIORITY: Record<string, number> = {
+  priorizar: 4,
+  testar_controlado: 3,
+  usar_com_cautela: 2,
+  bloquear_ou_regenerar: 1,
+};
+
 const RECOMMENDATION_LABELS: Record<string, string> = {
   priorizar: "Priorizar",
   testar_controlado: "Teste controlado",
@@ -33,7 +40,7 @@ export default function VideoProviderManagementPage() {
     return SALES_VIDEO_PROVIDER_OPTIONS.map((option) => ({
       option,
       score: scoresByProvider.get(option.providerName),
-    }));
+    })).sort(compareProviderRows);
   }, [providerScoresQuery.data]);
 
   const bestProvider = rows
@@ -207,6 +214,51 @@ function recommendationClass(recommendation?: string) {
     return "is-warning";
   }
   return "";
+}
+
+export function compareProviderRows(a: ProviderRow, b: ProviderRow) {
+  const scoreDiff = (b.score?.score ?? -1) - (a.score?.score ?? -1);
+  if (scoreDiff !== 0) {
+    return scoreDiff;
+  }
+
+  const recommendationDiff =
+    recommendationPriority(b.score?.recommendation) -
+    recommendationPriority(a.score?.recommendation);
+  if (recommendationDiff !== 0) {
+    return recommendationDiff;
+  }
+
+  const revenueDiff = (b.score?.revenue ?? 0) - (a.score?.revenue ?? 0);
+  if (revenueDiff !== 0) {
+    return revenueDiff;
+  }
+
+  const purchaseDiff = (b.score?.purchases ?? 0) - (a.score?.purchases ?? 0);
+  if (purchaseDiff !== 0) {
+    return purchaseDiff;
+  }
+
+  const leadDiff = (b.score?.leads ?? 0) - (a.score?.leads ?? 0);
+  if (leadDiff !== 0) {
+    return leadDiff;
+  }
+
+  const readyJobsDiff = (b.score?.readyJobs ?? 0) - (a.score?.readyJobs ?? 0);
+  if (readyJobsDiff !== 0) {
+    return readyJobsDiff;
+  }
+
+  const failedJobsDiff = (a.score?.failedJobs ?? 0) - (b.score?.failedJobs ?? 0);
+  if (failedJobsDiff !== 0) {
+    return failedJobsDiff;
+  }
+
+  return a.option.label.localeCompare(b.option.label, "pt-BR");
+}
+
+function recommendationPriority(recommendation?: string) {
+  return RECOMMENDATION_PRIORITY[recommendation ?? ""] ?? 0;
 }
 
 function formatCurrency(value: number) {

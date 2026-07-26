@@ -6158,3 +6158,11 @@
 - foi feito: o cadastro de produtos passou a ter acesso para a tela "Vídeos orgânicos", que organiza calendário, mix editorial e leitura de sinais após os 7 dias.
 - prevenção: adicionados testes de contrato backend e teste de frontend para garantir que a tela mostre a verdade retornada pelo backend.
 - impacto comercial esperado: acelerar publicação orgânica do MUSA e de próximos produtos com uma cadência clara de validação antes de aumentar CTA, transformar educativo em autoridade ou usar vídeo direto como retargeting/anúncio.
+
+## 2026-07-26 — Descoberta PDE: ranking por maturidade comercial
+
+- decisão comercial: a descoberta de produtos passa a ser priorizada por maturidade, separando produto pronto, oportunidade promissora, pesquisa cuidadosa, validação e oportunidades secundárias.
+- foi feito: a tela de Descoberta PDE passou a exibir o ranking gerencial com manicure/nail designer, renda extra, melhoria pessoal, relacionamento, MUSA/moda/estilo e oportunidades secundárias.
+- foi feito: o backend passou a expor trilhas recomendadas para criar ciclos separados de renda extra para autônomos/MEIs, melhoria pessoal de baixo esforço e relacionamento responsável.
+- prevenção: o ranking fica como contrato do backend, evitando que a tela trate nichos sensíveis por heurística local ou sem travas comerciais explícitas.
+- impacto comercial esperado: acelerar a escolha de candidatos PDE com maior chance de venda sem dispersar execução em nichos grandes e genéricos.

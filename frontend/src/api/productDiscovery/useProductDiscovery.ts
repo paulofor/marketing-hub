@@ -55,6 +55,37 @@ export interface ProductDiscoveryCycleDetail {
   opportunities: ProductDiscoveryOpportunity[];
 }
 
+export interface ProductDiscoveryResearchTrack {
+  name: string;
+  focus: string;
+  reason: string;
+  theme: string;
+  targetAudience: string;
+  acquisitionChannel: string;
+  objective: string;
+  commercialConstraints: string;
+  forbiddenCategories: string;
+}
+
+export interface ProductDiscoveryMaturityItem {
+  position: number;
+  niche: string;
+  maturity: string;
+  summary: string;
+  commercialReason: string;
+  recommendedAction: string;
+  evidence: string[];
+  guardrails: string[];
+}
+
+export interface ProductDiscoveryMaturityRanking {
+  strategyName: string;
+  decisionCriterion: string;
+  recommendedPriority: string;
+  items: ProductDiscoveryMaturityItem[];
+  recommendedTracks: ProductDiscoveryResearchTrack[];
+}
+
 export interface CreateProductDiscoveryCyclePayload {
   theme: string;
   targetAudience?: string;
@@ -91,6 +122,7 @@ export const productDiscoveryDecisionLabels: Record<
 const productDiscoveryKeys = {
   cycles: ["product-discovery", "cycles"] as const,
   cycle: (cycleId: number) => ["product-discovery", "cycles", cycleId] as const,
+  maturityRanking: ["product-discovery", "maturity-ranking"] as const,
 };
 
 async function parseJsonResponse<T>(response: Response, errorMessage: string) {
@@ -128,6 +160,21 @@ export function useProductDiscoveryCycle(cycleId?: number) {
       return parseJsonResponse<ProductDiscoveryCycleDetail>(
         response,
         "Não foi possível carregar o ciclo de descoberta PDE",
+      );
+    },
+  });
+}
+
+export function useProductDiscoveryMaturityRanking() {
+  return useQuery({
+    queryKey: productDiscoveryKeys.maturityRanking,
+    queryFn: async () => {
+      const response = await fetch(
+        buildApiUrl("/api/product-discovery/v1/maturity-ranking"),
+      );
+      return parseJsonResponse<ProductDiscoveryMaturityRanking>(
+        response,
+        "Não foi possível carregar o ranking de maturidade comercial",
       );
     },
   });

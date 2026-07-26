@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -80,9 +81,14 @@ class MetaVideoNormalizerTest {
      * Verifica se o comando está disponível sem falhar o teste em ambientes mínimos.
      */
     private boolean commandExists(String command) throws Exception {
-        Process process = new ProcessBuilder(command, "-version")
-            .redirectErrorStream(true)
-            .start();
+        Process process;
+        try {
+            process = new ProcessBuilder(command, "-version")
+                .redirectErrorStream(true)
+                .start();
+        } catch (IOException ex) {
+            return false;
+        }
         return process.waitFor(5, TimeUnit.SECONDS) && process.exitValue() == 0;
     }
 

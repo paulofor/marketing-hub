@@ -28,6 +28,8 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: maven
+      - name: Install video tooling
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Run tests
         run: mvn -B -s settings.xml test
       - name: Build

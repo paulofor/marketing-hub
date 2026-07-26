@@ -13,10 +13,26 @@ type AdaptiveVideoPlayerProps = {
   loop?: boolean;
   playsInline?: boolean;
   preload?: 'none' | 'metadata' | 'auto';
+  onPlaybackEvent?: (event: VideoPlaybackEvent) => void;
+};
+
+export type VideoPlaybackEvent = {
+  type: 'play' | 'progress' | 'ended' | 'error';
+  currentTime: number;
+  duration: number;
+  percent?: number;
 };
 
 function isHlsSource(src: string) {
   return src.includes('.m3u8');
+}
+
+function readPlaybackState(video: HTMLVideoElement, percent?: number): Omit<VideoPlaybackEvent, 'type'> {
+  return {
+    currentTime: Number.isFinite(video.currentTime) ? video.currentTime : 0,
+    duration: Number.isFinite(video.duration) ? video.duration : 0,
+    percent,
+  };
 }
 
 export function AdaptiveVideoPlayer({
@@ -31,14 +47,17 @@ export function AdaptiveVideoPlayer({
   loop = false,
   playsInline = true,
   preload = 'metadata',
+  onPlaybackEvent,
 }: AdaptiveVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const progressMarksRef = useRef(new Set<number>());
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) {
       return undefined;
     }
+    progressMarksRef.current.clear();
 
     if (!isHlsSource(src)) {
       video.src = src;
@@ -90,6 +109,28 @@ export function AdaptiveVideoPlayer({
       loop={loop}
       playsInline={playsInline}
       preload={preload}
+      onPlay={(event) => {
+        onPlaybackEvent?.({ type: 'play', ...readPlaybackState(event.currentTarget) });
+      }}
+      onTimeUpdate={(event) => {
+        const video = event.currentTarget;
+        if (!Number.isFinite(video.duration) || video.duration <= 0) {
+          return;
+        }
+        const percent = Math.min(100, Math.floor((video.currentTime / video.duration) * 100));
+        [25, 50, 75, 95].forEach((mark) => {
+          if (percent >= mark && !progressMarksRef.current.has(mark)) {
+            progressMarksRef.current.add(mark);
+            onPlaybackEvent?.({ type: 'progress', ...readPlaybackState(video, mark) });
+          }
+        });
+      }}
+      onEnded={(event) => {
+        onPlaybackEvent?.({ type: 'ended', ...readPlaybackState(event.currentTarget, 100) });
+      }}
+      onError={(event) => {
+        onPlaybackEvent?.({ type: 'error', ...readPlaybackState(event.currentTarget) });
+      }}
     />
   );
 }

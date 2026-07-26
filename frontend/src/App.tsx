@@ -14,6 +14,8 @@ import EditProductPage from "./pages/product/EditProductPage";
 import ProductFinancialPage from "./pages/product/ProductFinancialPage";
 import ProductVideoImagesPage from "./pages/product/ProductVideoImagesPage";
 import ProductPdeVersionsPage from "./pages/product/ProductPdeVersionsPage";
+import ProductDiscoveryPage from "./pages/productDiscovery/ProductDiscoveryPage";
+import ProductDiscoveryCycleDetailPage from "./pages/productDiscovery/ProductDiscoveryCycleDetailPage";
 import ProductSalesVideoPage from "./pages/salesVideo/ProductSalesVideoPage";
 import SalesVideoProfileDetailPage from "./pages/salesVideo/SalesVideoProfileDetailPage";
 import AppIdeaListPage from "./pages/appIdea/AppIdeaListPage";
@@ -199,6 +201,14 @@ export default function App() {
               <Route path="/app-ideas" element={<AppIdeaListPage />} />
               <Route path="/app-ideas/new" element={<NewAppIdeaPage />} />
               <Route path="/products" element={<ProductListPage />} />
+              <Route
+                path="/product-discovery"
+                element={<ProductDiscoveryPage />}
+              />
+              <Route
+                path="/product-discovery/cycles/:cycleId"
+                element={<ProductDiscoveryCycleDetailPage />}
+              />
               <Route path="/products/new" element={<NewProductPage />} />
               <Route path="/products/:id/edit" element={<EditProductPage />} />
               <Route

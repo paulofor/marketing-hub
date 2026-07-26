@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "required": ["decisionSummary", "opportunities"],
+  "properties": {
+    "decisionSummary": { "type": "string" },
+    "opportunities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "primaryAudience", "rootPain", "score", "decision"],
+        "properties": {
+          "name": { "type": "string" },
+          "primaryAudience": { "type": "string" },
+          "rootPain": { "type": "string" },
+          "practicalPain": { "type": "string" },
+          "emotionalPain": { "type": "string" },
+          "scaleEvidence": { "type": "string" },
+          "unmetnessEvidence": { "type": "string" },
+          "pdeExperience": { "type": "string" },
+          "firstCampaignAngle": { "type": "string" },
+          "commercialRisk": { "type": "string" },
+          "evidenceJson": { "type": "string" },
+          "score": { "type": "number" },
+          "decision": {
+            "type": "string",
+            "enum": ["APPROVE", "RESEARCH_MORE", "REJECT", "HUMAN_REVIEW"]
+          }
+        }
+      }
+    }
+  }
+}

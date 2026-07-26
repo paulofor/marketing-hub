@@ -61,6 +61,8 @@ jobs:
           cache-dependency-path: pde-platform/frontend/package-lock.json
       - name: Install deps
         run: npm ci --include=dev
+      - name: Install video tooling
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Validate PDE API boundary
         run: npm run check:api-boundary
       - name: Build

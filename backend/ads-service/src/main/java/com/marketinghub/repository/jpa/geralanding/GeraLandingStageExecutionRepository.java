@@ -1,13 +1,14 @@
 package com.marketinghub.repository.jpa.geralanding;
 
 import com.marketinghub.geralanding.GeraLandingStageExecution;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Repositório responsável por consultar e persistir execuções das etapas do GeraLanding. */
 public interface GeraLandingStageExecutionRepository extends JpaRepository<GeraLandingStageExecution, byte[]> {
@@ -30,6 +31,15 @@ public interface GeraLandingStageExecutionRepository extends JpaRepository<GeraL
 
     /** Busca todas as execuções de um experimento em ordem cronológica para auditoria completa. */
     List<GeraLandingStageExecution> findByExperimentIdOrderByExecutionRequestedAtAsc(Long experimentId);
+
+    /** Soma custos em USD das execuções concluídas do GeraLanding para um experimento. */
+    @Query("""
+            select coalesce(sum(e.costUsd), 0)
+              from GeraLandingStageExecution e
+             where e.experimentId = :experimentId
+               and e.status in ('CONCLUIDO', 'CONCLUÍDO', 'COMPLETED', 'SUCCESS', 'SUCCEEDED', 'DONE')
+            """)
+    BigDecimal sumCompletedCostUsdByExperimentId(@Param("experimentId") Long experimentId);
 
     /** Busca as execuções mais antigas de uma etapa com experimento e hipótese carregados. */
     @EntityGraph(attributePaths = {"experiment", "experiment.hypothesisRef"})

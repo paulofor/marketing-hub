@@ -55,19 +55,24 @@ export function buildExperimentCostSummary({
   const computedAuditableBaseBrl = roundMoney(
     originCostBrl + paidMediaCostBrl + operationalExpenseBrl,
   );
-  const auditableBaseBrl =
-    toNumber(experiment.auditableTotalCost) || computedAuditableBaseBrl;
-  const auditableTotalBrl = roundMoney(auditableBaseBrl + technicalTotalBrl);
+  const backendAuditableTotalBrl = toNumber(experiment.auditableTotalCost);
+  const auditableTotalBrl =
+    backendAuditableTotalBrl > 0
+      ? roundMoney(backendAuditableTotalBrl)
+      : roundMoney(computedAuditableBaseBrl + technicalTotalBrl);
   const legacyTotalBrl = roundMoney(
     toNumber(experiment.legacyTotalCost) || toNumber(experiment.totalCost),
   );
-  const unreconciledLegacyCostBrl = roundMoney(
-    Math.max(
-      0,
-      toNumber(experiment.unreconciledLegacyCost) ||
-        legacyTotalBrl - auditableTotalBrl,
-    ),
-  );
+  const unreconciledLegacyCostBrl =
+    legacyTotalBrl > auditableTotalBrl
+      ? roundMoney(
+          Math.max(
+            0,
+            toNumber(experiment.unreconciledLegacyCost) ||
+              legacyTotalBrl - auditableTotalBrl,
+          ),
+        )
+      : 0;
 
   return {
     auditableTotalBrl,

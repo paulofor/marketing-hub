@@ -17,6 +17,7 @@ import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTest
 import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
 import com.marketinghub.experiment.service.ExperimentConstructionService;
+import com.marketinghub.experiment.service.ExperimentCostReconciliationService;
 import com.marketinghub.experiment.service.ExperimentDeliverablesZipService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
@@ -52,6 +53,7 @@ public class ExperimentController {
     private final ExperimentSalesPageAbTestService salesPageAbTestService;
     private final ExperimentDeliverablesZipService deliverablesZipService;
     private final ExperimentConstructionService constructionService;
+    private final ExperimentCostReconciliationService costReconciliationService;
 
     /** Inicializa o controller com serviços de experimento, diagnóstico, prontidão e geração de promessas. */
     public ExperimentController(ExperimentService service, ExperimentMapper mapper,
@@ -62,7 +64,8 @@ public class ExperimentController {
                                 ExperimentFunnelService funnelService,
                                 ExperimentSalesPageAbTestService salesPageAbTestService,
                                 ExperimentDeliverablesZipService deliverablesZipService,
-                                ExperimentConstructionService constructionService) {
+                                ExperimentConstructionService constructionService,
+                                ExperimentCostReconciliationService costReconciliationService) {
         this.service = service;
         this.mapper = mapper;
         this.diagnosticsService = diagnosticsService;
@@ -73,6 +76,7 @@ public class ExperimentController {
         this.salesPageAbTestService = salesPageAbTestService;
         this.deliverablesZipService = deliverablesZipService;
         this.constructionService = constructionService;
+        this.costReconciliationService = costReconciliationService;
     }
 
     /** Cria um novo experimento com os dados comerciais informados na tela. */
@@ -90,7 +94,8 @@ public class ExperimentController {
     /** Busca os detalhes de um experimento pelo identificador. */
     @GetMapping("/{id}")
     public ExperimentDto get(@PathVariable Long id) {
-        return mapper.toDto(service.get(id));
+        com.marketinghub.experiment.Experiment experiment = service.get(id);
+        return costReconciliationService.enrich(experiment, mapper.toDto(experiment));
     }
 
     /** Retorna a explicação de construção comercial e operacional do experimento. */
@@ -121,7 +126,7 @@ public class ExperimentController {
 
     /** Monta o contrato da lista com o resumo de engajamento da landing. */
     private ExperimentDto toListDto(com.marketinghub.experiment.Experiment experiment) {
-        ExperimentDto dto = mapper.toDto(experiment);
+        ExperimentDto dto = costReconciliationService.enrich(experiment, mapper.toDto(experiment));
         dto.setSessionDurationSummary(buildSessionDurationSummary(experiment.getId()));
         dto.setRevenue(funnelService.approvedRevenue(experiment.getId()));
         return dto;

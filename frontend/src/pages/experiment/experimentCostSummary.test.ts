@@ -75,4 +75,24 @@ describe("buildExperimentCostSummary", () => {
     expect(summary.legacyTotalBrl).toBe(91.15);
     expect(summary.unreconciledLegacyCostBrl).toBe(71.59);
   });
+
+  it("does not show unreconciled legacy cost when auditable total is greater than legacy total", () => {
+    const summary = buildExperimentCostSummary({
+      experiment: {
+        ...baseExperiment,
+        totalCost: 12.18,
+        campaignMetric: { spend: 5.37 },
+        legacyTotalCost: 12.18,
+        unreconciledLegacyCost: 6.81,
+      },
+      contentPipelineCostUsd: 0,
+      geraLandingCostUsd: 0,
+      geraSalesPageCostUsd: 0,
+      videoProductionCostUsd: 5.9,
+    });
+
+    expect(summary.auditableTotalBrl).toBe(34.87);
+    expect(summary.legacyTotalBrl).toBe(12.18);
+    expect(summary.unreconciledLegacyCostBrl).toBe(0);
+  });
 });

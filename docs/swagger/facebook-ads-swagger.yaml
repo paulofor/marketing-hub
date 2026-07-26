@@ -95,6 +95,30 @@ paths:
         - $ref: '#/components/parameters/NumericId'
       responses:
         '200': { description: Revalidação registrada. }
+  /api/accounts/facebook/{id}/token/diagnostics:
+    post:
+      tags: [Facebook Accounts]
+      summary: Valida token, permissões e acesso Meta sem expor credenciais para a UI.
+      parameters:
+        - $ref: '#/components/parameters/NumericId'
+      responses:
+        '200':
+          description: Diagnóstico seguro retornado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FacebookTokenDiagnosticResponse' }
+  /api/accounts/facebook/{id}/token/video-upload-test:
+    post:
+      tags: [Facebook Accounts]
+      summary: Executa upload controlado de vídeo mínimo na biblioteca Meta da conta.
+      parameters:
+        - $ref: '#/components/parameters/NumericId'
+      responses:
+        '200':
+          description: Resultado do teste de upload retornado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FacebookVideoUploadTestResponse' }
   /api/accounts/facebook/{accountId}/pages:
     get:
       tags: [Facebook Pages]
@@ -714,6 +738,69 @@ components:
         renewalStatus: { type: string, nullable: true }
         errorMessage: { type: string, nullable: true }
       additionalProperties: true
+    FacebookTokenDiagnosticResponse:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        accountName: { type: string, nullable: true }
+        adAccountId: { type: string, nullable: true }
+        tokenSource: { type: string }
+        checkedAt: { type: string, format: date-time }
+        hasToken: { type: boolean }
+        tokenDebug: { $ref: '#/components/schemas/FacebookGraphCallResult' }
+        permissions:
+          type: array
+          items: { $ref: '#/components/schemas/FacebookPermissionDiagnostic' }
+        adAccountAccess: { $ref: '#/components/schemas/FacebookGraphCallResult' }
+        videoLibraryReadiness: { $ref: '#/components/schemas/FacebookGraphCallResult' }
+        requiredPermissions:
+          type: array
+          items: { type: string }
+        recommendedPermissions:
+          type: array
+          items: { type: string }
+    FacebookVideoUploadTestResponse:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        accountName: { type: string, nullable: true }
+        checkedAt: { type: string, format: date-time }
+        success: { type: boolean }
+        videoId: { type: string, nullable: true }
+        upload: { $ref: '#/components/schemas/FacebookGraphCallResult' }
+    FacebookPermissionDiagnostic:
+      type: object
+      properties:
+        permission: { type: string }
+        status: { type: string, nullable: true }
+        required: { type: boolean }
+        recommended: { type: boolean }
+    FacebookGraphCallResult:
+      type: object
+      properties:
+        operation: { type: string }
+        status:
+          type: string
+          enum: [SUCCESS, FAILED, SKIPPED]
+        httpStatus: { type: integer, nullable: true }
+        message: { type: string, nullable: true }
+        code: { type: integer, nullable: true }
+        subcode: { type: integer, nullable: true }
+        fbtraceId: { type: string, nullable: true }
+        tokenDebug:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/FacebookTokenDebugDetails'
+    FacebookTokenDebugDetails:
+      type: object
+      properties:
+        valid: { type: boolean, nullable: true }
+        type: { type: string, nullable: true }
+        appId: { type: string, nullable: true }
+        application: { type: string, nullable: true }
+        userId: { type: string, nullable: true }
+        expiresAt: { type: string, format: date-time, nullable: true }
+        issuedAt: { type: string, format: date-time, nullable: true }
     FacebookPageRequest:
       type: object
       properties:

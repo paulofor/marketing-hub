@@ -2,6 +2,7 @@ package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookTokenRenewalStatus;
+import com.marketinghub.ads.FacebookTokenDiagnosticsService;
 import com.marketinghub.ads.FacebookTokenRevalidationService;
 import com.marketinghub.ads.FacebookWorkerValidationError;
 
@@ -26,13 +27,16 @@ public class FacebookAccountController {
     private static final Logger log = LoggerFactory.getLogger(FacebookAccountController.class);
     private final FacebookAccountRepository repository;
     private final FacebookTokenRevalidationService tokenRevalidationService;
+    private final FacebookTokenDiagnosticsService tokenDiagnosticsService;
 
     public FacebookAccountController(
         FacebookAccountRepository repository,
-        FacebookTokenRevalidationService tokenRevalidationService
+        FacebookTokenRevalidationService tokenRevalidationService,
+        FacebookTokenDiagnosticsService tokenDiagnosticsService
     ) {
         this.repository = repository;
         this.tokenRevalidationService = tokenRevalidationService;
+        this.tokenDiagnosticsService = tokenDiagnosticsService;
     }
 
     @GetMapping
@@ -219,6 +223,20 @@ public class FacebookAccountController {
             result.attemptedAt(),
             result.errorMessage()
         );
+    }
+
+    @PostMapping("/{id}/token/diagnostics")
+    // Executa a operação diagnoseToken da integração Facebook Ads.
+    public FacebookTokenDiagnosticsService.FacebookTokenDiagnosticResponse diagnoseToken(@PathVariable Long id) {
+        FacebookAccount account = repository.findById(id).orElseThrow();
+        return tokenDiagnosticsService.diagnose(account);
+    }
+
+    @PostMapping("/{id}/token/video-upload-test")
+    // Executa a operação testVideoUpload da integração Facebook Ads.
+    public FacebookTokenDiagnosticsService.FacebookVideoUploadTestResponse testVideoUpload(@PathVariable Long id) {
+        FacebookAccount account = repository.findById(id).orElseThrow();
+        return tokenDiagnosticsService.testVideoUpload(account);
     }
 
     @DeleteMapping("/{id}")

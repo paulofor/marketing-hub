@@ -97,6 +97,32 @@ class ModuleLogServiceTest {
     }
 
     /**
+     * Garante que endpoints HTTP agregados com JSON em lines sejam tratados como linhas de log reais.
+     */
+    @Test
+    void shouldExtractLinesFromJsonLogEndpoint() throws Exception {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/runtime-logs/tail", exchange -> {
+            byte[] body = """
+                    {"available":true,"errorMessage":null,"lines":["2026-07-26T04:05:48Z ERROR video failed","2026-07-26T04:07:56Z INFO recovered"],"generatedAt":"2026-07-26T04:08:00Z"}
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, body.length);
+            try (OutputStream outputStream = exchange.getResponseBody()) {
+                outputStream.write(body);
+            }
+        });
+        server.start();
+
+        String url = "http://localhost:" + server.getAddress().getPort() + "/runtime-logs/tail";
+        ModuleLogService service = new ModuleLogService(buildProperties(url));
+
+        Map<String, Object> result = service.readModuleLogs("facebook-ads", 10, "video failed", null, null, null, null);
+
+        assertEquals(1, result.get("returnedLines"));
+        assertEquals(List.of("2026-07-26T04:05:48Z ERROR video failed"), result.get("lines"));
+    }
+
+    /**
      * Monta propriedades MCP apontando todos os módulos para a URL local informada.
      */
     private McpProperties buildProperties(String logUrl) {

@@ -1,5 +1,7 @@
 package com.marketinghub.mcpserver.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.mcpserver.config.McpProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +33,11 @@ import java.util.stream.Stream;
 public class ModuleLogService {
     private static final Logger logger = LoggerFactory.getLogger(ModuleLogService.class);
     private static final int DEFAULT_LINES = 200;
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
+    };
     private final McpProperties properties;
     private final HttpClient httpClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final Duration logFetchTimeout;
     private final long httpTailRangeBytes;
     private final int fetchAttempts;
@@ -134,13 +139,36 @@ public class ModuleLogService {
             }
             if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) throw new IllegalArgumentException("Failed to read log stream URL: HTTP " + httpResponse.statusCode() + " | attempts: " + String.join(" | ", errors));
             return buildFilteredResponse(
-                    httpResponse.body().lines().toList(), lines, contains, httpStatus, endpoint, requestId, from, to,
+                    normalizeHttpLogBody(httpResponse.body()), lines, contains, httpStatus, endpoint, requestId, from, to,
                     offset, cursor, response, null);
         } catch (IOException | InterruptedException ex) {
             if (ex instanceof InterruptedException) Thread.currentThread().interrupt();
             logger.error("mcp-server readLogsFromUrl failed to read log stream url={} attempts={}", configuredUrl, errors, ex);
             throw new IllegalArgumentException("Failed to read log stream URL: " + ex.getMessage());
         }
+    }
+
+    /**
+     * Converte respostas HTTP de logs em linhas reais, incluindo endpoints que retornam JSON com array lines.
+     */
+    private List<String> normalizeHttpLogBody(String body) {
+        if (!StringUtils.hasText(body)) {
+            return List.of();
+        }
+        String trimmed = body.trim();
+        if (!trimmed.startsWith("{")) {
+            return body.lines().toList();
+        }
+        try {
+            Map<String, Object> payload = objectMapper.readValue(trimmed, MAP_TYPE);
+            Object payloadLines = payload.get("lines");
+            if (payloadLines instanceof List<?> logLines) {
+                return logLines.stream().map(String::valueOf).toList();
+            }
+        } catch (IOException ex) {
+            logger.warn("mcp-server normalizeHttpLogBody received non-standard JSON log payload", ex);
+        }
+        return body.lines().toList();
     }
 
     /**

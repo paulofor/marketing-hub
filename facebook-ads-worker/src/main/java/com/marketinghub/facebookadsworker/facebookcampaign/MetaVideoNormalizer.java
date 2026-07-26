@@ -34,7 +34,7 @@ public class MetaVideoNormalizer {
     public MetaVideoNormalizer(
         @Value("${creative.video.normalization.enabled:true}") boolean enabled,
         @Value("${creative.video.normalization.ffmpeg-path:ffmpeg}") String ffmpegPath,
-        @Value("${creative.video.normalization.timeout:PT2M}") Duration timeout
+        @Value("${creative.video.normalization.timeout:PT8M}") Duration timeout
     ) {
         this.enabled = enabled;
         this.ffmpegPath = StringUtils.hasText(ffmpegPath) ? ffmpegPath.trim() : "ffmpeg";
@@ -75,6 +75,8 @@ public class MetaVideoNormalizer {
                 "0:a?",
                 "-c:v",
                 "libx264",
+                "-preset",
+                "veryfast",
                 "-profile:v",
                 "high",
                 "-level",

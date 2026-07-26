@@ -464,6 +464,57 @@ class AccessServiceTest {
                     assertThat(screen.sessions()).isEqualTo(1);
                     assertThat(screen.percentage()).isEqualTo(100.0);
                 });
+        assertThat(summary.trafficSources())
+                .singleElement()
+                .satisfies(source -> {
+                    assertThat(source.trafficChannel()).isEqualTo("Meta");
+                    assertThat(source.utmSource()).isEqualTo("ig");
+                    assertThat(source.utmMedium()).isEqualTo("sem-meio");
+                    assertThat(source.utmCampaign()).isEqualTo("campanha");
+                    assertThat(source.utmContent()).isEqualTo("criativo");
+                    assertThat(source.sessions()).isEqualTo(1);
+                });
+    }
+
+    /** Confirma que remarketing nao se mistura com Meta frio na leitura por UTM. */
+    @Test
+    void classifiesRemarketingBeforeMetaTrafficSource() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_remarketing_analytics;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "PAGE_VIEW",
+                null,
+                "cliente@sandbox.local",
+                "TEST",
+                "test",
+                "http://localhost:5176/?utm_source=instagram&utm_medium=remarketing&utm_campaign=exp-71-remarketing",
+                Map.of(
+                        "visitorId", "visitor-remarketing",
+                        "sessionId", "session-remarketing",
+                        "utmSource", "instagram",
+                        "utmMedium", "remarketing",
+                        "utmCampaign", "exp-71-remarketing")));
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.trafficSources())
+                .singleElement()
+                .satisfies(source -> assertThat(source.trafficChannel()).isEqualTo("Remarketing"));
     }
 
     /** Confirma que jornadas por sessão retornam vazio no modo local sem banco analítico. */

@@ -48,7 +48,9 @@ public record PdeAnalyticsSummary(
 
     /** Representa desempenho por origem, campanha e criativo identificado por UTM. */
     public record PdeTrafficSourceMetric(
+            String trafficChannel,
             String utmSource,
+            String utmMedium,
             String utmCampaign,
             String utmContent,
             long sessions,
@@ -58,6 +60,10 @@ public record PdeAnalyticsSummary(
             long paywallViewed,
             long checkoutStarted,
             long subscriptionApproved,
+            double firstInteractionRate,
+            double paywallRate,
+            double checkoutRate,
+            double purchaseRate,
             long totalVisibleMs,
             String lastEventAt
     ) {}

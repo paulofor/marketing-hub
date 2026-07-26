@@ -205,6 +205,40 @@ public class FacebookAccountControllerTest {
     }
 
     @Test
+    void shouldReturnSafeDiagnosticsWhenTokenMissing() throws Exception {
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Missing token")
+            .currency("BRL")
+            .adAccountId("act_123")
+            .build());
+
+        mockMvc.perform(post("/api/accounts/facebook/" + account.getId() + "/token/diagnostics"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.accountId").value(account.getId()))
+            .andExpect(jsonPath("$.hasToken").value(false))
+            .andExpect(jsonPath("$.tokenSource").value("MISSING"))
+            .andExpect(jsonPath("$.tokenDebug.status").value("SKIPPED"))
+            .andExpect(jsonPath("$.adAccountAccess.status").value("SKIPPED"))
+            .andExpect(jsonPath("$.videoLibraryReadiness.status").value("SKIPPED"));
+    }
+
+    @Test
+    void shouldSkipVideoUploadDiagnosticWhenAdAccountMissing() throws Exception {
+        FacebookAccount account = repository.save(FacebookAccount.builder()
+            .name("Missing ad account")
+            .currency("BRL")
+            .accessToken("token")
+            .build());
+
+        mockMvc.perform(post("/api/accounts/facebook/" + account.getId() + "/token/video-upload-test"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.accountId").value(account.getId()))
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.upload.status").value("SKIPPED"))
+            .andExpect(jsonPath("$.upload.message").value("Conta de anuncios nao configurada"));
+    }
+
+    @Test
     void shouldPreserveTokenAndHiddenFieldsWhenUpdatingAccountWithoutExplicitValues() throws Exception {
         FacebookAccount account = repository.save(FacebookAccount.builder()
             .name("Original")

@@ -6118,3 +6118,10 @@
 - estado final validado via MCP: experimento 72 ficou `FAILED`, sem campanha persistida em `facebook_ads_campaign`.
 - risco operacional: a Meta ainda reconhece os IDs externos criados na tentativa; é necessário verificar/pausar ou remover esses objetos no Gerenciador antes de novo retry.
 - impacto comercial esperado: o gargalo de readiness do 72 foi removido, mas a validação de mercado ainda não começou porque a publicação voltou a falhar na etapa de criativo da Meta.
+
+## 2026-07-26 — Painel Meta: diagnóstico seguro de token e vídeo
+
+- causa-raiz tratada: a falha de upload nativo de vídeo na Meta exigia diagnóstico manual do token, permissões e `/advideos`, criando risco de exposição de credencial fora do sistema.
+- foi feito: a tela de contas Facebook passou a validar token/permissões e executar teste controlado de upload de vídeo por endpoints seguros do backend, sem devolver token para a interface.
+- prevenção: o diagnóstico separa leitura de permissões/acesso do teste que cria asset de vídeo, permitindo validar a causa-raiz antes de liberar novas campanhas em vídeo.
+- impacto comercial esperado: reduzir tempo para corrigir gargalos de publicação Meta e aumentar a chance de rodar criativos em vídeo nativo quando o token estiver realmente apto.

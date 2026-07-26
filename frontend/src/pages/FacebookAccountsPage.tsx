@@ -9,6 +9,14 @@ import {
   FacebookAccountPayload,
   FinancialStrategyPayload,
 } from "../api/facebookAccountMutations";
+import {
+  FacebookTokenDiagnosticResponse,
+  FacebookVideoUploadTestResponse,
+  GraphCallResult,
+  PermissionDiagnostic,
+  useFacebookTokenDiagnostics,
+  useFacebookVideoUploadTest,
+} from "../api/facebookTokenDiagnostics";
 import { useFacebookPages } from "../api/useFacebookPages";
 import {
   useCreateFacebookPage,
@@ -232,50 +240,274 @@ function formatRenewalStatusBadge(account: RemoteFacebookAccount): {
   return { className: "text-bg-info", label: "Aguardando primeira tentativa" };
 }
 
+function formatDiagnosticBadge(result?: GraphCallResult | null): {
+  className: string;
+  label: string;
+} {
+  if (!result) {
+    return { className: "text-bg-secondary", label: "Sem diagnóstico" };
+  }
+  if (result.status === "SUCCESS") {
+    return { className: "text-bg-success", label: "OK" };
+  }
+  if (result.status === "SKIPPED") {
+    return { className: "text-bg-secondary", label: "Pendente" };
+  }
+  return { className: "text-bg-danger", label: "Falhou" };
+}
+
+function formatDiagnosticMessage(result?: GraphCallResult | null): string {
+  if (!result) return "—";
+  const parts = [result.message ?? "Sem mensagem"];
+  if (typeof result.httpStatus === "number") {
+    parts.push(`HTTP ${result.httpStatus}`);
+  }
+  if (typeof result.code === "number") {
+    parts.push(`code ${result.code}`);
+  }
+  if (typeof result.subcode === "number") {
+    parts.push(`subcode ${result.subcode}`);
+  }
+  if (result.fbtraceId) {
+    parts.push(`fbtrace ${result.fbtraceId}`);
+  }
+  return parts.join(" · ");
+}
+
+function findPermission(
+  permissions: PermissionDiagnostic[],
+  name: string,
+): PermissionDiagnostic | null {
+  return (
+    permissions.find((permission) => permission.permission === name) ?? null
+  );
+}
+
+function FacebookTokenDiagnosticsPanel({
+  diagnostics,
+  uploadTest,
+}: {
+  diagnostics: FacebookTokenDiagnosticResponse | null;
+  uploadTest: FacebookVideoUploadTestResponse | null;
+}) {
+  if (!diagnostics && !uploadTest) {
+    return null;
+  }
+
+  const tokenBadge = formatDiagnosticBadge(diagnostics?.tokenDebug);
+  const adAccountBadge = formatDiagnosticBadge(diagnostics?.adAccountAccess);
+  const videoReadBadge = formatDiagnosticBadge(
+    diagnostics?.videoLibraryReadiness,
+  );
+  const uploadBadge = formatDiagnosticBadge(uploadTest?.upload);
+
+  return (
+    <div className="alert alert-light border" role="status">
+      <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
+        <div>
+          <h3 className="h6 mb-1">Diagnóstico seguro Meta</h3>
+          <p className="mb-0 text-muted">
+            Resultado gerado pelo backend; nenhum token é retornado para a tela.
+          </p>
+        </div>
+        <span className="badge text-bg-dark">
+          {diagnostics?.accountName ?? uploadTest?.accountName ?? "Conta Meta"}
+        </span>
+      </div>
+
+      {diagnostics && (
+        <>
+          <div className="row g-3 mb-3">
+            <div className="col-12 col-md-4">
+              <div className="border rounded p-3 h-100">
+                <div className="d-flex justify-content-between gap-2 mb-2">
+                  <strong>Token</strong>
+                  <span className={`badge ${tokenBadge.className}`}>
+                    {tokenBadge.label}
+                  </span>
+                </div>
+                <p className="small mb-2">
+                  {formatDiagnosticMessage(diagnostics.tokenDebug)}
+                </p>
+                <dl className="small mb-0">
+                  <dt>Origem</dt>
+                  <dd>{diagnostics.tokenSource}</dd>
+                  <dt>Tipo</dt>
+                  <dd>{diagnostics.tokenDebug.tokenDebug?.type ?? "—"}</dd>
+                  <dt>Validade Meta</dt>
+                  <dd>
+                    {formatDateTime(
+                      diagnostics.tokenDebug.tokenDebug?.expiresAt,
+                    )}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="border rounded p-3 h-100">
+                <div className="d-flex justify-content-between gap-2 mb-2">
+                  <strong>Conta de anúncios</strong>
+                  <span className={`badge ${adAccountBadge.className}`}>
+                    {adAccountBadge.label}
+                  </span>
+                </div>
+                <p className="small mb-0">
+                  {formatDiagnosticMessage(diagnostics.adAccountAccess)}
+                </p>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="border rounded p-3 h-100">
+                <div className="d-flex justify-content-between gap-2 mb-2">
+                  <strong>Biblioteca de vídeos</strong>
+                  <span className={`badge ${videoReadBadge.className}`}>
+                    {videoReadBadge.label}
+                  </span>
+                </div>
+                <p className="small mb-0">
+                  {formatDiagnosticMessage(diagnostics.videoLibraryReadiness)}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="table-responsive mb-3">
+            <table className="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Permissão</th>
+                  <th>Status</th>
+                  <th>Uso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ...diagnostics.requiredPermissions,
+                  ...diagnostics.recommendedPermissions,
+                ].map((permissionName) => {
+                  const permission = findPermission(
+                    diagnostics.permissions,
+                    permissionName,
+                  );
+                  const granted = permission?.status === "granted";
+                  return (
+                    <tr key={permissionName}>
+                      <td>{permissionName}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            granted ? "text-bg-success" : "text-bg-warning"
+                          }`}
+                        >
+                          {permission?.status ?? "não retornada"}
+                        </span>
+                      </td>
+                      <td>
+                        {diagnostics.requiredPermissions.includes(
+                          permissionName,
+                        )
+                          ? "Obrigatória"
+                          : "Recomendada"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {uploadTest && (
+        <div className="border rounded p-3">
+          <div className="d-flex justify-content-between gap-2 mb-2">
+            <strong>Teste controlado de upload</strong>
+            <span className={`badge ${uploadBadge.className}`}>
+              {uploadBadge.label}
+            </span>
+          </div>
+          <p className="small mb-1">
+            {formatDiagnosticMessage(uploadTest.upload)}
+          </p>
+          <p className="small mb-0">
+            Video ID criado: {uploadTest.videoId ?? "—"}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FacebookAccountsPage() {
   const { data, isLoading, error } = useFacebookAccounts();
   const accounts = useMemo(() => (Array.isArray(data) ? data : []), [data]);
-  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
-  const [accountForm, setAccountForm] = useState<AccountFormState>(createEmptyAccountForm);
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
+    null,
+  );
+  const [accountForm, setAccountForm] = useState<AccountFormState>(
+    createEmptyAccountForm,
+  );
   const [pageForm, setPageForm] = useState<PageFormState>({ ...emptyPageForm });
-  const [deletingAccountId, setDeletingAccountId] = useState<number | null>(null);
+  const [deletingAccountId, setDeletingAccountId] = useState<number | null>(
+    null,
+  );
   const [deletingPageId, setDeletingPageId] = useState<number | null>(null);
+  const [diagnosticsAccountId, setDiagnosticsAccountId] = useState<
+    number | null
+  >(null);
+  const [lastDiagnostics, setLastDiagnostics] =
+    useState<FacebookTokenDiagnosticResponse | null>(null);
+  const [lastUploadTest, setLastUploadTest] =
+    useState<FacebookVideoUploadTestResponse | null>(null);
 
   const createAccountMutation = useCreateFacebookAccount();
   const updateAccountMutation = useUpdateFacebookAccount();
   const deleteAccountMutation = useDeleteFacebookAccount();
+  const tokenDiagnosticsMutation = useFacebookTokenDiagnostics();
+  const videoUploadTestMutation = useFacebookVideoUploadTest();
 
   const { data: pagesData, isLoading: pagesLoading } = useFacebookPages(
     selectedAccountId ?? undefined,
   );
-  const pages = useMemo(() => (Array.isArray(pagesData) ? pagesData : []), [pagesData]);
+  const pages = useMemo(
+    () => (Array.isArray(pagesData) ? pagesData : []),
+    [pagesData],
+  );
   const accountsNeedingRenewal = useMemo(
     () =>
       accounts.filter(
-        (account) => Boolean(account.requiresTokenRenewal) || !account.accessToken,
+        (account) =>
+          Boolean(account.requiresTokenRenewal) || !account.accessToken,
       ),
     [accounts],
   );
 
-
   const accountBeingEdited = useMemo(
     () =>
       typeof accountForm.id === "number"
-        ? accounts.find((account) => account.id === accountForm.id) ?? null
+        ? (accounts.find((account) => account.id === accountForm.id) ?? null)
         : null,
     [accountForm.id, accounts],
   );
 
-  const createPageMutation = useCreateFacebookPage(selectedAccountId ?? undefined);
-  const updatePageMutation = useUpdateFacebookPage(selectedAccountId ?? undefined);
-  const deletePageMutation = useDeleteFacebookPage(selectedAccountId ?? undefined);
+  const createPageMutation = useCreateFacebookPage(
+    selectedAccountId ?? undefined,
+  );
+  const updatePageMutation = useUpdateFacebookPage(
+    selectedAccountId ?? undefined,
+  );
+  const deletePageMutation = useDeleteFacebookPage(
+    selectedAccountId ?? undefined,
+  );
 
   useEffect(() => {
     if (accounts.length === 0) {
       setSelectedAccountId(null);
       return;
     }
-    if (!selectedAccountId || !accounts.some((account) => account.id === selectedAccountId)) {
+    if (
+      !selectedAccountId ||
+      !accounts.some((account) => account.id === selectedAccountId)
+    ) {
       setSelectedAccountId(accounts[0].id);
     }
   }, [accounts, selectedAccountId]);
@@ -343,7 +575,9 @@ export default function FacebookAccountsPage() {
         payload.appSecret = trimmedSecret;
       }
     }
-    const mutation = isEditingAccount ? updateAccountMutation : createAccountMutation;
+    const mutation = isEditingAccount
+      ? updateAccountMutation
+      : createAccountMutation;
     mutation.mutate(payload, {
       onSuccess: () => {
         setAccountForm(createEmptyAccountForm());
@@ -381,13 +615,41 @@ export default function FacebookAccountsPage() {
     });
   };
 
+  const handleRunDiagnostics = (accountId: number) => {
+    if (tokenDiagnosticsMutation.isPending) return;
+    setDiagnosticsAccountId(accountId);
+    tokenDiagnosticsMutation.mutate(accountId, {
+      onSuccess: (result) => {
+        setLastDiagnostics(result);
+        setLastUploadTest((current) =>
+          current?.accountId === result.accountId ? current : null,
+        );
+      },
+      onSettled: () => setDiagnosticsAccountId(null),
+    });
+  };
+
+  const handleRunVideoUploadTest = (accountId: number) => {
+    if (videoUploadTestMutation.isPending) return;
+    setDiagnosticsAccountId(accountId);
+    videoUploadTestMutation.mutate(accountId, {
+      onSuccess: (result) => {
+        setLastUploadTest(result);
+      },
+      onSettled: () => setDiagnosticsAccountId(null),
+    });
+  };
+
   return (
     <div>
       <PageTitle>Contas do Facebook</PageTitle>
       <div className="alert alert-info" role="alert">
-        <h2 className="h6 mb-2">Campos obrigatórios para o Facebook Ads Worker</h2>
+        <h2 className="h6 mb-2">
+          Campos obrigatórios para o Facebook Ads Worker
+        </h2>
         <p className="mb-2">
-          Para liberar o worker, mantenha os seguintes campos preenchidos na conta ativa:
+          Para liberar o worker, mantenha os seguintes campos preenchidos na
+          conta ativa:
         </p>
         <ul className="mb-0 ps-3">
           <li>Token de acesso (gerado automaticamente pelo Marketing Hub)</li>
@@ -404,13 +666,14 @@ export default function FacebookAccountsPage() {
         <div className="alert alert-warning" role="alert">
           <h2 className="h6 mb-2">Renovação de token necessária</h2>
           <p className="mb-2">
-            Atualize o token de acesso de longa duração para evitar que as integrações com o
-            Facebook Ads sejam interrompidas.
+            Atualize o token de acesso de longa duração para evitar que as
+            integrações com o Facebook Ads sejam interrompidas.
           </p>
           <ul className="mb-0 ps-3">
             {accountsNeedingRenewal.map((account) => (
               <li key={account.id}>
-                <strong>{account.name}</strong>: {describeTokenExpiration(account)}
+                <strong>{account.name}</strong>:{" "}
+                {describeTokenExpiration(account)}
               </li>
             ))}
           </ul>
@@ -422,7 +685,9 @@ export default function FacebookAccountsPage() {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2 className="h5 mb-0">Contas conectadas</h2>
-                <span className="badge text-bg-primary">{accounts.length} conta(s)</span>
+                <span className="badge text-bg-primary">
+                  {accounts.length} conta(s)
+                </span>
               </div>
               <div className="table-responsive mb-3">
                 <table className="table table-striped align-middle">
@@ -439,29 +704,37 @@ export default function FacebookAccountsPage() {
                     {accounts.map((account) => {
                       const { id, name, currency } = account;
                       const isDeletingThisAccount =
-                        deleteAccountMutation.isPending && deletingAccountId === id;
+                        deleteAccountMutation.isPending &&
+                        deletingAccountId === id;
                       const rowClasses = [
                         selectedAccountId === id ? "table-primary" : "",
-                        account.requiresTokenRenewal || !account.accessToken ? "table-warning" : "",
+                        account.requiresTokenRenewal || !account.accessToken
+                          ? "table-warning"
+                          : "",
                       ]
                         .filter(Boolean)
                         .join(" ");
                       const badgeClass = !account.accessToken
                         ? "text-bg-danger"
                         : account.tokenExpired
-                        ? "text-bg-danger"
-                        : account.requiresTokenRenewal
-                        ? "text-bg-warning"
-                        : "text-bg-success";
+                          ? "text-bg-danger"
+                          : account.requiresTokenRenewal
+                            ? "text-bg-warning"
+                            : "text-bg-success";
                       const badgeLabel = !account.accessToken
                         ? "Token ausente"
                         : account.tokenExpired
-                        ? "Token expirado"
-                        : account.requiresTokenRenewal
-                        ? "Renovar token"
-                        : "Token válido";
+                          ? "Token expirado"
+                          : account.requiresTokenRenewal
+                            ? "Renovar token"
+                            : "Token válido";
                       const renewalBadge = formatRenewalStatusBadge(account);
-                      const workerValidationIssue = describeWorkerValidationIssue(account);
+                      const workerValidationIssue =
+                        describeWorkerValidationIssue(account);
+                      const isRunningDiagnostics =
+                        diagnosticsAccountId === id &&
+                        (tokenDiagnosticsMutation.isPending ||
+                          videoUploadTestMutation.isPending);
                       return (
                         <tr key={id} className={rowClasses}>
                           <td>{id}</td>
@@ -469,14 +742,19 @@ export default function FacebookAccountsPage() {
                           <td>{currency}</td>
                           <td>
                             <div className="d-flex flex-column gap-1">
-                              <span className={`badge ${badgeClass}`}>{badgeLabel}</span>
+                              <span className={`badge ${badgeClass}`}>
+                                {badgeLabel}
+                              </span>
                               <small className="text-muted">
                                 {describeTokenExpiration(account)}
                               </small>
                               <small className="text-muted">
-                                Validade: {formatDateTime(account.tokenExpiresAt)}
+                                Validade:{" "}
+                                {formatDateTime(account.tokenExpiresAt)}
                               </small>
-                              <span className={`badge ${renewalBadge.className}`}>
+                              <span
+                                className={`badge ${renewalBadge.className}`}
+                              >
                                 {renewalBadge.label}
                               </span>
                               <small className="text-muted">
@@ -484,12 +762,16 @@ export default function FacebookAccountsPage() {
                               </small>
                               {account.tokenRenewedAt && (
                                 <small className="text-muted">
-                                  Última renovação: {formatDateTime(account.tokenRenewedAt)}
+                                  Última renovação:{" "}
+                                  {formatDateTime(account.tokenRenewedAt)}
                                 </small>
                               )}
                               {account.tokenRenewalLastAttemptAt && (
                                 <small className="text-muted">
-                                  Última tentativa: {formatDateTime(account.tokenRenewalLastAttemptAt)}
+                                  Última tentativa:{" "}
+                                  {formatDateTime(
+                                    account.tokenRenewalLastAttemptAt,
+                                  )}
                                 </small>
                               )}
                               {account.tokenRenewalLastError && (
@@ -499,15 +781,21 @@ export default function FacebookAccountsPage() {
                               )}
                               {account.workerLastValidationAt && (
                                 <small className="text-muted">
-                                  Última validação do worker: {formatDateTime(account.workerLastValidationAt)}
+                                  Última validação do worker:{" "}
+                                  {formatDateTime(
+                                    account.workerLastValidationAt,
+                                  )}
                                 </small>
                               )}
                               {workerValidationIssue && (
-                                <small className="text-danger">{workerValidationIssue}</small>
+                                <small className="text-danger">
+                                  {workerValidationIssue}
+                                </small>
                               )}
                               {account.authorizedUserName && (
                                 <small className="text-muted">
-                                  Usuário autorizado: {account.authorizedUserName}
+                                  Usuário autorizado:{" "}
+                                  {account.authorizedUserName}
                                   {account.authorizedUserEmail
                                     ? ` (${account.authorizedUserEmail})`
                                     : ""}
@@ -524,24 +812,34 @@ export default function FacebookAccountsPage() {
                             <button
                               className="btn btn-sm btn-outline-primary"
                               onClick={() => {
-                                const strategyForm = toFinancialStrategyForm(account);
+                                const strategyForm =
+                                  toFinancialStrategyForm(account);
                                 setAccountForm({
                                   id,
                                   name,
-                                  authorizedUserId: account.authorizedUserId ?? "",
-                                  authorizedUserName: account.authorizedUserName ?? "",
-                                  authorizedUserEmail: account.authorizedUserEmail ?? "",
+                                  authorizedUserId:
+                                    account.authorizedUserId ?? "",
+                                  authorizedUserName:
+                                    account.authorizedUserName ?? "",
+                                  authorizedUserEmail:
+                                    account.authorizedUserEmail ?? "",
                                   appId: account.appId ?? "",
                                   appSecret: "",
                                   appSecretKept: Boolean(account.hasAppSecret),
-                                  tokenRenewalEnabled: Boolean(account.tokenRenewalEnabled),
+                                  tokenRenewalEnabled: Boolean(
+                                    account.tokenRenewalEnabled,
+                                  ),
                                   adAccountId: account.adAccountId ?? "",
-                                  defaultWebsiteUrl: account.defaultWebsiteUrl ?? "",
-                                  defaultLeadGenFormId: account.defaultLeadGenFormId ?? "",
+                                  defaultWebsiteUrl:
+                                    account.defaultWebsiteUrl ?? "",
+                                  defaultLeadGenFormId:
+                                    account.defaultLeadGenFormId ?? "",
                                   defaultCreativeMessageTemplate:
-                                    account.defaultCreativeMessageTemplate ?? "%s",
+                                    account.defaultCreativeMessageTemplate ??
+                                    "%s",
                                   defaultCallToActionType:
-                                    account.defaultCallToActionType ?? "LEARN_MORE",
+                                    account.defaultCallToActionType ??
+                                    "LEARN_MORE",
                                   financialStrategy: strategyForm,
                                   workerEnabled: Boolean(account.workerEnabled),
                                   clearAppSecret: false,
@@ -557,6 +855,50 @@ export default function FacebookAccountsPage() {
                               disabled={isDeletingThisAccount}
                             >
                               Páginas
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-info"
+                              onClick={() => handleRunDiagnostics(id)}
+                              disabled={
+                                isDeletingThisAccount ||
+                                tokenDiagnosticsMutation.isPending ||
+                                videoUploadTestMutation.isPending
+                              }
+                            >
+                              {isRunningDiagnostics &&
+                              tokenDiagnosticsMutation.isPending ? (
+                                <>
+                                  <span
+                                    className="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                  />
+                                  Validando...
+                                </>
+                              ) : (
+                                "Validar token"
+                              )}
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-warning"
+                              onClick={() => handleRunVideoUploadTest(id)}
+                              disabled={
+                                isDeletingThisAccount ||
+                                tokenDiagnosticsMutation.isPending ||
+                                videoUploadTestMutation.isPending
+                              }
+                            >
+                              {isRunningDiagnostics &&
+                              videoUploadTestMutation.isPending ? (
+                                <>
+                                  <span
+                                    className="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                  />
+                                  Testando...
+                                </>
+                              ) : (
+                                "Testar vídeo"
+                              )}
                             </button>
                             <button
                               className="btn btn-sm btn-outline-danger"
@@ -582,6 +924,21 @@ export default function FacebookAccountsPage() {
                   </tbody>
                 </table>
               </div>
+              {tokenDiagnosticsMutation.isError && (
+                <div className="alert alert-danger" role="alert">
+                  Não foi possível validar o token pela API do backend.
+                </div>
+              )}
+              {videoUploadTestMutation.isError && (
+                <div className="alert alert-danger" role="alert">
+                  Não foi possível executar o teste de upload pela API do
+                  backend.
+                </div>
+              )}
+              <FacebookTokenDiagnosticsPanel
+                diagnostics={lastDiagnostics}
+                uploadTest={lastUploadTest}
+              />
               <div className="row g-3">
                 <div className="col-12">
                   <label className="form-label">
@@ -603,9 +960,12 @@ export default function FacebookAccountsPage() {
                 </div>
                 <div className="col-12">
                   <div className="alert alert-info mb-0">
-                    <h3 className="h6 mb-1">Token de acesso gerenciado automaticamente</h3>
+                    <h3 className="h6 mb-1">
+                      Token de acesso gerenciado automaticamente
+                    </h3>
                     <p className="mb-1">
-                      O Marketing Hub gera e renova o token sempre que necessário.
+                      O Marketing Hub gera e renova o token sempre que
+                      necessário.
                     </p>
                     {accountBeingEdited ? (
                       <>
@@ -613,12 +973,14 @@ export default function FacebookAccountsPage() {
                           Status: {describeTokenExpiration(accountBeingEdited)}
                         </p>
                         <p className="mb-0">
-                          Validade atual: {formatDateTime(accountBeingEdited.tokenExpiresAt)}
+                          Validade atual:{" "}
+                          {formatDateTime(accountBeingEdited.tokenExpiresAt)}
                         </p>
                       </>
                     ) : (
                       <p className="mb-0">
-                        Após salvar a conta exibiremos a validade do token gerado automaticamente.
+                        Após salvar a conta exibiremos a validade do token
+                        gerado automaticamente.
                       </p>
                     )}
                   </div>
@@ -714,13 +1076,17 @@ export default function FacebookAccountsPage() {
                         }
                         disabled={isAccountMutationPending}
                       />
-                      <label className="form-check-label" htmlFor="clear-app-secret">
+                      <label
+                        className="form-check-label"
+                        htmlFor="clear-app-secret"
+                      >
                         Remover segredo salvo
                       </label>
                     </div>
                   )}
                   <div className="form-text">
-                    Guardamos o segredo apenas para renovar tokens automaticamente. Ele não é exibido novamente.
+                    Guardamos o segredo apenas para renovar tokens
+                    automaticamente. Ele não é exibido novamente.
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
@@ -739,13 +1105,17 @@ export default function FacebookAccountsPage() {
                       }
                       disabled={isAccountMutationPending}
                     />
-                    <label className="form-check-label" htmlFor="token-renewal-enabled">
-                      Permitir que o Marketing Hub renove o token automaticamente
+                    <label
+                      className="form-check-label"
+                      htmlFor="token-renewal-enabled"
+                    >
+                      Permitir que o Marketing Hub renove o token
+                      automaticamente
                     </label>
                   </div>
                   <div className="form-text">
-                    Mantenha o App ID e o App Secret atualizados para que o worker consiga solicitar um novo token antes do
-                    vencimento.
+                    Mantenha o App ID e o App Secret atualizados para que o
+                    worker consiga solicitar um novo token antes do vencimento.
                   </div>
                 </div>
                 <div className="col-12">
@@ -763,12 +1133,16 @@ export default function FacebookAccountsPage() {
                       }
                       disabled={isAccountMutationPending}
                     />
-                    <label className="form-check-label" htmlFor="worker-enabled">
+                    <label
+                      className="form-check-label"
+                      htmlFor="worker-enabled"
+                    >
                       Utilizar esta conta no Facebook Ads Worker
                     </label>
                   </div>
                   <div className="form-text">
-                    Apenas uma conta pode estar ativa no worker. Ao marcar esta opção, as demais contas serão desativadas.
+                    Apenas uma conta pode estar ativa no worker. Ao marcar esta
+                    opção, as demais contas serão desativadas.
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
@@ -809,7 +1183,9 @@ export default function FacebookAccountsPage() {
                   />
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">ID de formulário de leads padrão</label>
+                  <label className="form-label">
+                    ID de formulário de leads padrão
+                  </label>
                   <input
                     className="form-control"
                     placeholder="Ex.: 123456789012345"
@@ -823,11 +1199,14 @@ export default function FacebookAccountsPage() {
                     disabled={isAccountMutationPending}
                   />
                   <div className="form-text">
-                    Usado quando o criativo aprovado não informa um formulário específico.
+                    Usado quando o criativo aprovado não informa um formulário
+                    específico.
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
-                  <label className="form-label">Template da mensagem do criativo</label>
+                  <label className="form-label">
+                    Template da mensagem do criativo
+                  </label>
                   <input
                     className="form-control"
                     placeholder="Use %s para inserir o nome do experimento"
@@ -950,7 +1329,9 @@ export default function FacebookAccountsPage() {
                         />
                       </div>
                       <div className="col-12 col-md-6">
-                        <label className="form-label">Estratégia de lance</label>
+                        <label className="form-label">
+                          Estratégia de lance
+                        </label>
                         <input
                           className="form-control"
                           placeholder="LOWEST_COST_WITHOUT_CAP, COST_CAP..."
@@ -968,7 +1349,9 @@ export default function FacebookAccountsPage() {
                         />
                       </div>
                       <div className="col-12 col-md-6">
-                        <label className="form-label">Valor do lance (centavos, opcional)</label>
+                        <label className="form-label">
+                          Valor do lance (centavos, opcional)
+                        </label>
                         <input
                           className="form-control"
                           placeholder="Informe apenas quando usar estratégias com limite"
@@ -987,7 +1370,8 @@ export default function FacebookAccountsPage() {
                       </div>
                     </div>
                     <div className="form-text mt-2">
-                      O país de destino é definido automaticamente como Brasil (BR).
+                      O país de destino é definido automaticamente como Brasil
+                      (BR).
                     </div>
                   </div>
                 </div>
@@ -1058,7 +1442,9 @@ export default function FacebookAccountsPage() {
                           className="spinner-border spinner-border-sm me-2"
                           role="status"
                         />
-                        {isEditingAccount ? "Atualizando conta..." : "Adicionando conta..."}
+                        {isEditingAccount
+                          ? "Atualizando conta..."
+                          : "Adicionando conta..."}
                       </>
                     ) : isEditingAccount ? (
                       "Atualizar conta"
@@ -1085,8 +1471,8 @@ export default function FacebookAccountsPage() {
               </div>
               {!selectedAccountId ? (
                 <p className="text-muted mb-0">
-                  Cadastre ou selecione uma conta para configurar as páginas utilizadas nas
-                  campanhas.
+                  Cadastre ou selecione uma conta para configurar as páginas
+                  utilizadas nas campanhas.
                 </p>
               ) : pagesLoading ? (
                 <p>Carregando páginas...</p>
@@ -1108,7 +1494,8 @@ export default function FacebookAccountsPage() {
                           <td className="text-end d-flex justify-content-end gap-2">
                             {(() => {
                               const isDeletingThisPage =
-                                deletePageMutation.isPending && deletingPageId === page.id;
+                                deletePageMutation.isPending &&
+                                deletingPageId === page.id;
                               return (
                                 <>
                                   <button
@@ -1192,7 +1579,9 @@ export default function FacebookAccountsPage() {
                           className="spinner-border spinner-border-sm me-2"
                           role="status"
                         />
-                        {isEditingPage ? "Atualizando página..." : "Adicionando página..."}
+                        {isEditingPage
+                          ? "Atualizando página..."
+                          : "Adicionando página..."}
                       </>
                     ) : isEditingPage ? (
                       "Atualizar página"

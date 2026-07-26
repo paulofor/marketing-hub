@@ -94,6 +94,7 @@ coerente com o histórico da jornada.
 - A versao 5 do Clube MUSA deve responder em `https://v5.clubemusa.com.br`.
 - O dominio raiz `https://clubemusa.com.br` nao deve ser usado como URL primaria de campanha quando existir subdominio versionado para a experiencia medida.
 - Cada nova versao de PDE deve publicar e validar seu proprio subdominio, mantendo metricas, UTMs e criativos separados por `experienceVersion`.
+- A v5 e a versao com video explicativo inicial. O frontend gera `public/assets/musa-v5-video-explicativo.mp4` por `npm run generate:musa-v5-video` durante o build e usa esse arquivo como `VITE_MUSA_HERO_VIDEO_URL` padrao no compose.
 
 ## Login e assinatura MUSA
 

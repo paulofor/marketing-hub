@@ -56,7 +56,7 @@ services:
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
       VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: ${VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE:-musa-pde-entry-v5-video-explicativo}
       VITE_MUSA_HERO_STREAM_URL: ${VITE_MUSA_HERO_STREAM_URL:-}
-      VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_HERO_VIDEO_URL:-}
+      VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_HERO_VIDEO_URL:-/assets/musa-v5-video-explicativo.mp4}
       PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
     networks:
       - pde-platform-net

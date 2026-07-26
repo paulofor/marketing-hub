@@ -1,5 +1,6 @@
 FROM node:20-alpine AS build
 WORKDIR /app
+RUN apk add --no-cache ffmpeg
 COPY package.json package-lock.json* ./
 RUN npm install --include=dev
 COPY . .

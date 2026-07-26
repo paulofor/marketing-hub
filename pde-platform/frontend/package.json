@@ -6,6 +6,8 @@
     "check:api-boundary": "bash scripts/validate-api-boundary.sh",
     "dev": "NODE_ENV=development vite --host 0.0.0.0",
     "generate:musa-diagnostic-assets": "node scripts/generate-musa-diagnostic-assets.mjs",
+    "generate:musa-v5-video": "node scripts/generate-musa-v5-video.mjs",
+    "prebuild": "npm run generate:musa-v5-video",
     "build": "tsc --noEmit && vite build",
     "test:public-diagnostic-smoke": "playwright test tests/public-presence-diagnostic.smoke.spec.ts --config=playwright.public-api.config.ts",
     "test:public-health": "playwright test tests/public-health.spec.ts --config=playwright.public.config.ts",

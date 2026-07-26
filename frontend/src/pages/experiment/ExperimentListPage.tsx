@@ -68,10 +68,12 @@ function formatDurationMs(value?: number | null) {
 function resolveExperimentCost(experiment: {
   cost?: number | null;
   totalCost?: number | null;
+  auditableTotalCost?: number | null;
   expense?: number | null;
   campaignMetric?: { spend?: number | null } | null;
 }) {
   return (
+    experiment.auditableTotalCost ??
     experiment.totalCost ??
     experiment.campaignMetric?.spend ??
     experiment.cost ??
@@ -430,7 +432,8 @@ export default function ExperimentListPage() {
                   <td className="text-end">
                     <div className="d-flex flex-column gap-1">
                       <span className="fw-semibold">
-                        Custo: {formatCurrencyPair(resolveExperimentCost(e))}
+                        Custo:{" "}
+                        {formatCurrencyPair(resolveExperimentCost(e))}
                       </span>
                       <span className="text-success fw-semibold">
                         Receita:{" "}

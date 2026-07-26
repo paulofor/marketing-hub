@@ -1,0 +1,15 @@
+services:
+  product-discovery-worker:
+    image: ${PRODUCT_DISCOVERY_WORKER_IMAGE}
+    build: null
+    environment:
+      PRODUCT_DISCOVERY_SEARCH_PROVIDER: ${PRODUCT_DISCOVERY_SEARCH_PROVIDER:-brave}
+      PRODUCT_DISCOVERY_SEARCH_COUNTRY: ${PRODUCT_DISCOVERY_SEARCH_COUNTRY:-br}
+      PRODUCT_DISCOVERY_SEARCH_LANGUAGE: ${PRODUCT_DISCOVERY_SEARCH_LANGUAGE:-pt-br}
+      BRAVE_SEARCH_API_KEY_FILE: ${BRAVE_SEARCH_API_KEY_FILE:-/run/secrets/brave_search_api_key}
+    secrets:
+      - brave_search_api_key
+
+secrets:
+  brave_search_api_key:
+    file: ${BRAVE_SEARCH_API_KEY_HOST_FILE:-/root/infra/brave-token/brave_api_key}

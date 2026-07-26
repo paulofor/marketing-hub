@@ -6135,3 +6135,11 @@
 - foi feito: a tela de contas Facebook passou a validar token/permissões e executar teste controlado de upload de vídeo por endpoints seguros do backend, sem devolver token para a interface.
 - prevenção: o diagnóstico separa leitura de permissões/acesso do teste que cria asset de vídeo, permitindo validar a causa-raiz antes de liberar novas campanhas em vídeo.
 - impacto comercial esperado: reduzir tempo para corrigir gargalos de publicação Meta e aumentar a chance de rodar criativos em vídeo nativo quando o token estiver realmente apto.
+
+## 2026-07-26 — Experimento 69: custo de vídeo reconciliado na tela
+
+- causa-raiz confirmada via MCP: o experimento 69 mostrava `total_cost=R$ 12,18` na lista, enquanto o detalhe somava mídia `R$ 5,37` e custos de vídeo `US$ 5,90`, chegando a `R$ 34,87`.
+- foi feito: a lista de experimentos passou a somar custos de produção de vídeo vindos dos ativos auditáveis, usando o mesmo padrão `US$ 1 = R$ 5` já aplicado no detalhe.
+- foi feito: o alerta de custo legado não reconciliado deixou de aparecer quando o custo rastreável calculado já é maior que o total legado.
+- prevenção: adicionados testes de frontend reproduzindo o caso do experimento 69 e protegendo o alerta legado contra contradição visual.
+- impacto comercial esperado: melhorar a leitura de custo real por experimento para decisão de escala, pausa e priorização de criativos sem subestimar investimento em vídeo.

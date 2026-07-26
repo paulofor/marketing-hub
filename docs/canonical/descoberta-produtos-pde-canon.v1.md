@@ -74,6 +74,20 @@ conteudo promocional:
 Conteudo de solucao deve ser usado para medir saturacao e lacuna, nao como prova direta
 da dor. A prova da dor deve vir preferencialmente da linguagem do publico.
 
+## Busca dedicada
+
+O worker de descoberta deve usar API de busca dedicada quando houver chave operacional
+configurada. A ordem preferencial inicial e:
+
+1. Brave Search API para busca web estruturada com sinal bruto de mercado.
+2. Tavily quando a etapa exigir busca otimizada para agentes e conteudo sintetizavel.
+3. SerpAPI quando a validacao depender especificamente da SERP do Google.
+4. DuckDuckGo apenas como fallback sem chave, sem forca suficiente para aprovar sozinho
+   oportunidades de alto impacto.
+
+O payload bruto recebido da API de busca deve ser registrado com mascara de segredos e
+correlacao por consulta/ciclo, preservando auditoria sem expor chaves.
+
 ## Sinais obrigatorios da dor
 
 Cada dor candidata deve registrar:

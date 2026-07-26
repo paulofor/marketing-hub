@@ -3,6 +3,7 @@ package com.marketinghub.repository.jpa.experiment.video;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -75,6 +76,15 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
     boolean existsByExperimentIdAndStatusAndReviewStatus(Long experimentId,
                                                          ExperimentVideoStatus status,
                                                          ExperimentVideoReviewStatus reviewStatus);
+
+    /** Soma custos de produção de vídeo em USD para o experimento informado. */
+    @Query("""
+            select coalesce(sum(v.cost), 0)
+              from ExperimentVideoAsset v
+             where v.experiment.id = :experimentId
+               and v.cost is not null
+            """)
+    BigDecimal sumCostUsdByExperimentId(@Param("experimentId") Long experimentId);
 
     /** Lista vídeos do experimento que compartilham a mesma origem visual declarada. */
     @EntityGraph(attributePaths = {"experiment", "salesVideoProfile", "salesVideoJob", "asset", "landingVideoSlot"})

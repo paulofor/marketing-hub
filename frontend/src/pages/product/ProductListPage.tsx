@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import type { CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
+import type { Product } from "../../api/product/useProducts";
 import {
   GitBranch,
   CircleDollarSign,
@@ -26,6 +27,43 @@ function splitText(value?: string) {
     .split(/[;\n]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function normalizeProductStatus(value?: string) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
+function isCommercialValidationProduct(product: Pick<Product, "commercialStatus">) {
+  return normalizeProductStatus(product.commercialStatus) === "VALIDACAO_COMERCIAL";
+}
+
+function getProductActivityTime(product: Pick<Product, "updatedAt" | "createdAt">) {
+  const rawActivityTime = product.updatedAt || product.createdAt;
+  if (!rawActivityTime) return 0;
+  const activityTime = Date.parse(rawActivityTime);
+  return Number.isNaN(activityTime) ? 0 : activityTime;
+}
+
+function getAssociatedExperimentCount(product: Pick<Product, "associatedExperiments">) {
+  return splitText(product.associatedExperiments).length;
+}
+
+function compareProductsByCommercialActivity(a: Product, b: Product) {
+  const validationDelta =
+    Number(isCommercialValidationProduct(b)) - Number(isCommercialValidationProduct(a));
+  if (validationDelta !== 0) return validationDelta;
+
+  const activityDelta = getProductActivityTime(b) - getProductActivityTime(a);
+  if (activityDelta !== 0) return activityDelta;
+
+  const experimentsDelta = getAssociatedExperimentCount(b) - getAssociatedExperimentCount(a);
+  if (experimentsDelta !== 0) return experimentsDelta;
+
+  return b.id - a.id;
 }
 
 function isMusaProduct(product: { slug?: string; name?: string }) {
@@ -176,7 +214,10 @@ function getJourneyTrackedSections(step: {
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
   const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
-  const products = Array.isArray(data) ? data : [];
+  const products = useMemo(
+    () => (Array.isArray(data) ? [...data].sort(compareProductsByCommercialActivity) : []),
+    [data],
+  );
   if (isLoading) return <p>Carregando...</p>;
   return (
     <div>

@@ -16,10 +16,50 @@ O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
 - `BACKEND_BASE_URL`: URL do backend principal. Padrão: `http://191.252.181.168`.
 - `PRODUCT_DISCOVERY_POLL_INTERVAL_MS`: intervalo de polling. Padrão: `60000`.
 - `PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS`: máximo de resultados por consulta. Padrão: `8`.
+- `PRODUCT_DISCOVERY_SEARCH_PROVIDER`: provedor dedicado de busca. Aceita `brave`,
+  `tavily`, `serpapi` ou `duckduckgo`. Quando vazio, o worker escolhe pela primeira
+  chave disponível nesta ordem: Brave, Tavily, SerpAPI e DuckDuckGo.
+- `BRAVE_SEARCH_API_KEY`: chave da Brave Search API.
+- `BRAVE_SEARCH_API_KEY_FILE`: arquivo com a chave da Brave Search API. Use em
+  produção para não expor segredo em variável direta.
+- `TAVILY_API_KEY`: chave da Tavily Search API.
+- `SERPAPI_API_KEY`: chave da SerpAPI.
+- `PRODUCT_DISCOVERY_SEARCH_COUNTRY`: país usado na busca. Padrão: `br`.
+- `PRODUCT_DISCOVERY_SEARCH_LANGUAGE`: idioma usado na busca. Padrão: `pt-br`.
+
+## Deploy
+
+O workflow `Product Discovery Worker CI` publica o container no host operacional de
+workers `191.252.120.96`.
+
+No deploy de produção, o provider padrão é Brave, com busca direcionada ao Brasil
+(`PRODUCT_DISCOVERY_SEARCH_COUNTRY=br`, `PRODUCT_DISCOVERY_SEARCH_LANGUAGE=pt-br`).
+A chave deve existir no servidor em:
+
+```bash
+/root/infra/brave-token/brave_api_key
+```
+
+O compose de produção monta esse arquivo como Docker secret em
+`/run/secrets/brave_search_api_key` e o worker lê pelo
+`BRAVE_SEARCH_API_KEY_FILE`.
+
+## Provedor recomendado
+
+Use Brave como primeiro provedor dedicado (`PRODUCT_DISCOVERY_SEARCH_PROVIDER=brave`)
+porque entrega resultados web estruturados a partir de índice próprio e preserva melhor
+o sinal bruto de dor, lacuna e concorrência. Tavily é útil quando a pesquisa precisar
+de conteúdo mais pronto para agente. SerpAPI é útil quando a validação depender
+especificamente do que aparece no Google.
+
+DuckDuckGo fica apenas como fallback sem chave e não deve ser considerado evidência de
+escala suficiente para decisões comerciais fortes.
 
 ## Execução local
 
 ```bash
+PRODUCT_DISCOVERY_SEARCH_PROVIDER=brave \
+BRAVE_SEARCH_API_KEY=... \
 npm test
 npm start
 ```

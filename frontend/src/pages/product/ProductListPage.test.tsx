@@ -109,6 +109,51 @@ describe("ProductListPage", () => {
     ).toBeTruthy();
   });
 
+  it("prioritizes products in commercial validation by recent activity", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          slug: "produto-estavel",
+          name: "Produto Estável",
+          commercialStatus: "ESCALA",
+          updatedAt: "2026-07-26T04:00:00Z",
+        },
+        {
+          id: 2,
+          slug: "validacao-antiga",
+          name: "Validação Antiga",
+          commercialStatus: "VALIDACAO_COMERCIAL",
+          associatedExperiments: "Experimento 10",
+          updatedAt: "2026-07-24T04:00:00Z",
+        },
+        {
+          id: 3,
+          slug: "validacao-ativa",
+          name: "Validação Ativa",
+          commercialStatus: "VALIDACAO_COMERCIAL",
+          associatedExperiments: "Experimento 11; Experimento 12",
+          updatedAt: "2026-07-26T03:00:00Z",
+        },
+      ],
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    const cards = await screen.findAllByRole("heading", { level: 2 });
+    expect(cards.map((card) => card.textContent)).toEqual([
+      "Validação Ativa",
+      "Validação Antiga",
+      "Produto Estável",
+    ]);
+  });
+
   it("shows marketing definition links for listed product", async () => {
     (axios.get as any).mockResolvedValue({
       data: [

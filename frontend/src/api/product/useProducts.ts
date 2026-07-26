@@ -44,6 +44,8 @@ export interface Product {
   creativeVolume: string;
   storytelling: string;
   aiCost: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function useProducts() {

@@ -369,6 +369,66 @@ describe("ExperimentListPage", () => {
     ).toBeNull();
   });
 
+  it("uses auditable backend cost in the list when it reconciles provider costs", async () => {
+    const experiments = [
+      {
+        id: "69",
+        nicheId: 34,
+        hypothesisId: "hypothesis-69",
+        name: "MUSA-H001-E007",
+        hypothesis: "Validar vídeo na primeira dobra",
+        cost: 0,
+        expense: 0,
+        totalCost: 12.18,
+        auditableTotalCost: 34.87,
+        campaignMetric: { spend: 5.37 },
+        startDate: "2026-07-24",
+        endDate: null,
+        creativeApproved: true,
+        status: "RUNNING",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-24T00:00:00Z",
+        updatedAt: "2026-07-24T00:00:00Z",
+      },
+    ];
+
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments")
+        return Promise.resolve({ data: experiments });
+      if (url === "/api/niches") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 34,
+              name: "Mulheres urbanas",
+              description: "",
+              demandVolume: "",
+              promises: "",
+              offers: "",
+              baseSegmentation: "",
+              interests: "",
+              demographicFilters: "",
+              extraTips: "",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+
+    const row = (await screen.findByText("MUSA-H001-E007")).closest("tr");
+
+    expect(row).not.toBeNull();
+    expect(
+      within(row as HTMLTableRowElement).getByText(
+        "Custo: R$ 34,87 / US$ 6,97",
+      ),
+    ).toBeTruthy();
+  });
+
   it("prioritizes experiments in commercial validation and highlights cost and revenue in BRL and USD", async () => {
     const experiments = [
       {

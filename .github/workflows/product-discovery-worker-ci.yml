@@ -125,4 +125,5 @@ jobs:
             && export BRAVE_SEARCH_API_KEY_HOST_FILE='/root/infra/brave-token/brave_api_key' \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
+            && curl --fail --show-error --silent --retry 6 --retry-delay 5 --retry-connrefused http://127.0.0.1:18081/healthz >/dev/null \
             && docker image prune -af"

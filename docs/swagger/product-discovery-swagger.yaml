@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Product Discovery
+  version: 1.0.0
+  description: Endpoints administrativos e internos da descoberta de produtos PDE.
+paths:
+  /api/product-discovery/v1/maturity-ranking:
+    get:
+      tags:
+        - Product Discovery
+      summary: Retorna o ranking gerencial por maturidade comercial de oportunidades PDE.
+      operationId: getProductDiscoveryMaturityRanking
+      responses:
+        "200":
+          description: Ranking com nichos priorizados, travas comerciais e trilhas recomendadas para novos ciclos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoveryMaturityRanking"
+  /api/product-discovery/v1/cycles:
+    get:
+      tags:
+        - Product Discovery
+      summary: Lista ciclos recentes de descoberta PDE.
+      operationId: listProductDiscoveryCycles
+      responses:
+        "200":
+          description: Ciclos recentes.
+    post:
+      tags:
+        - Product Discovery
+      summary: Cria um ciclo de descoberta PDE para pesquisa pelo worker.
+      operationId: createProductDiscoveryCycle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductDiscoveryCycle"
+      responses:
+        "201":
+          description: Ciclo criado.
+  /api/product-discovery/v1/cycles/{cycleId}:
+    get:
+      tags:
+        - Product Discovery
+      summary: Retorna um ciclo com oportunidades ranqueadas.
+      operationId: getProductDiscoveryCycle
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Detalhe do ciclo.
+        "404":
+          description: Ciclo não encontrado.
+components:
+  schemas:
+    ProductDiscoveryMaturityRanking:
+      type: object
+      properties:
+        strategyName:
+          type: string
+        decisionCriterion:
+          type: string
+        recommendedPriority:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductDiscoveryMaturityItem"
+        recommendedTracks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductDiscoveryResearchTrack"
+    ProductDiscoveryMaturityItem:
+      type: object
+      properties:
+        position:
+          type: integer
+        niche:
+          type: string
+        maturity:
+          type: string
+          example: Oportunidade promissora
+        summary:
+          type: string
+        commercialReason:
+          type: string
+        recommendedAction:
+          type: string
+        evidence:
+          type: array
+          items:
+            type: string
+        guardrails:
+          type: array
+          items:
+            type: string
+    ProductDiscoveryResearchTrack:
+      type: object
+      properties:
+        name:
+          type: string
+        focus:
+          type: string
+        reason:
+          type: string
+        theme:
+          type: string
+        targetAudience:
+          type: string
+        acquisitionChannel:
+          type: string
+        objective:
+          type: string
+        commercialConstraints:
+          type: string
+        forbiddenCategories:
+          type: string
+    CreateProductDiscoveryCycle:
+      type: object
+      required:
+        - theme
+      properties:
+        theme:
+          type: string
+        targetAudience:
+          type: string
+        country:
+          type: string
+          example: BR
+        language:
+          type: string
+          example: pt-BR
+        acquisitionChannel:
+          type: string
+        commercialConstraints:
+          type: string
+        forbiddenCategories:
+          type: string
+        objective:
+          type: string

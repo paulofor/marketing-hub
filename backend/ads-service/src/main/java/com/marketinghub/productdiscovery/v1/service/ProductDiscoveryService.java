@@ -65,6 +65,101 @@ public class ProductDiscoveryService {
         return new ProductDiscoveryCycleDetailResponse(toCycleResponse(cycle), opportunities);
     }
 
+    /** Retorna o ranking gerencial atual por maturidade comercial para orientar novos ciclos PDE. */
+    @Transactional(readOnly = true)
+    public ProductDiscoveryMaturityRankingResponse getMaturityRanking() {
+        return new ProductDiscoveryMaturityRankingResponse(
+                "Ranking por maturidade comercial",
+                "Muitas pessoas vivem uma dor concreta, as soluções atuais deixam uma lacuna clara e conseguimos entregar uma microexperiência digital de valor rápido com baixo esforço.",
+                "Começar por renda extra para autônomos/MEIs, mantendo manicure como candidato pronto e relacionamento sob trava de segurança.",
+                List.of(
+                        new ProductDiscoveryMaturityItemResponse(
+                                1,
+                                "Manicure/nail designer",
+                                "Produto pronto",
+                                "Melhor candidato atual para venda direta de low-ticket.",
+                                "Dor operacional clara: cliente some da manutenção, agenda fica imprevisível e o profissional perde recorrência.",
+                                "Usar como benchmark comercial e preparar novos criativos orgânicos quando houver janela de execução.",
+                                List.of("Oferta Mapa de Recorrência 7D", "Campanha anterior publicada", "Dor fácil de demonstrar em vídeo curto"),
+                                List.of("Não ampliar para beleza genérica", "Manter promessa em rotina, agenda e recorrência")),
+                        new ProductDiscoveryMaturityItemResponse(
+                                2,
+                                "Renda extra",
+                                "Oportunidade promissora",
+                                "Mercado grande, urgente e próximo do DNA de produto digital prático.",
+                                "O caminho seguro é resolver etapas concretas de venda autônoma, sem prometer ganho garantido.",
+                                "Abrir primeiro ciclo de descoberta para autônomos/MEIs com foco em WhatsApp, primeira venda, cobrança e oferta simples.",
+                                List.of("Dor urgente", "Compra por alívio rápido", "Encaixe natural para microexperiência guiada"),
+                                List.of("Evitar promessa de ganho", "Evitar renda garantida", "Exigir prova prática de ação executável")),
+                        new ProductDiscoveryMaturityItemResponse(
+                                3,
+                                "Melhoria pessoal",
+                                "Oportunidade promissora",
+                                "Bom encaixe para diagnóstico, plano de 7 dias e rotina guiada.",
+                                "Pode vender bem quando recortada em decisão, clareza, rotina ou mudança prática visível.",
+                                "Abrir ciclo separado buscando dores específicas de baixo esforço e transformação percebida em poucos dias.",
+                                List.of("Alta demanda emocional", "Formato PDE combina com diagnóstico e plano", "Potencial de conteúdo orgânico"),
+                                List.of("Evitar promessa ampla", "Não vender mudança total de vida", "Recortar em comportamento específico")),
+                        new ProductDiscoveryMaturityItemResponse(
+                                4,
+                                "Relacionamento",
+                                "Pesquisar com cuidado",
+                                "Mercado emocional forte, mas sensível.",
+                                "Só deve avançar em clareza, comunicação, limites, decisão ou preparação pessoal.",
+                                "Abrir ciclo com restrições explícitas e reprovar qualquer hipótese de manipulação, controle ou reconquista garantida.",
+                                List.of("Dor intensa", "Alto engajamento orgânico", "Possibilidade de microexperiência reflexiva"),
+                                List.of("Sem promessa de reconquista", "Sem manipulação", "Sem controle de comportamento de outra pessoa")),
+                        new ProductDiscoveryMaturityItemResponse(
+                                5,
+                                "MUSA/moda/estilo",
+                                "Em validação",
+                                "Produto PDE existente, mas a prioridade é validar vídeo, experiência e conversão.",
+                                "Ainda não deve ser tratado como descoberta nova enquanto a versão com vídeo e o funil estão em leitura.",
+                                "Medir a janela do experimento 69 antes de criar nova tese de moda/estilo.",
+                                List.of("PDE MUSA ativo", "Vídeo explicativo preparado", "Experimento 69 como leitura principal"),
+                                List.of("Não duplicar experimento", "Não trocar oferta antes de medir funil")),
+                        new ProductDiscoveryMaturityItemResponse(
+                                6,
+                                "Varejo, marmitas, promoção de vendas e personal trainer",
+                                "Oportunidades secundárias",
+                                "Territórios úteis para radar, mas sem prioridade sobre renda extra e manicure neste momento.",
+                                "Podem gerar produtos bons, porém exigem recorte ou evidência adicional antes de tomar foco operacional.",
+                                "Manter no backlog e comparar depois que as três trilhas prioritárias produzirem evidência.",
+                                List.of("Dores operacionais conhecidas", "Potencial B2B/MEI", "Algumas teses já apareceram no repositório"),
+                                List.of("Não dispersar execução", "Priorizar evidência de compra rápida"))),
+                List.of(
+                        new ProductDiscoveryResearchTrackResponse(
+                                "Renda extra para autônomos/MEIs",
+                                "Aquisição de clientes, WhatsApp, cobrança e primeira venda.",
+                                "Maior conexão com venda rápida, dor urgente e microexperiência prática.",
+                                "renda extra para autonomos e MEIs",
+                                "Autônomos, MEIs e pessoas tentando vender serviços simples pelo WhatsApp",
+                                "TikTok, Reels e WhatsApp",
+                                "Encontrar uma dor concreta de venda autônoma que possa virar PDE de ação prática em até 7 dias, sem promessa de ganho garantido.",
+                                "Foco em conseguir primeiros clientes, montar oferta simples, responder interessados, cobrar com segurança e organizar rotina comercial.",
+                                "Promessa de renda garantida, investimento financeiro, pirâmide, apostas, crédito, emprego garantido ou manipulação de plataformas."),
+                        new ProductDiscoveryResearchTrackResponse(
+                                "Melhoria pessoal de baixo esforço",
+                                "Clareza, rotina, decisão e plano de 7 dias.",
+                                "Boa aderência a diagnóstico guiado e transformação percebida sem exigir mudança radical.",
+                                "melhoria pessoal de baixo esforco",
+                                "Adultos buscando clareza prática, rotina simples ou decisão pessoal sem terapia ou promessa médica",
+                                "TikTok, Reels e Shorts",
+                                "Encontrar uma dor específica de melhoria pessoal que aceite microexperiência digital simples, com resultado prático percebido em poucos dias.",
+                                "Diagnóstico, plano de 7 dias, organização de decisão, clareza de prioridade e rotina mínima.",
+                                "Promessa terapêutica, cura, tratamento médico, mudança total de vida ou resultado psicológico garantido."),
+                        new ProductDiscoveryResearchTrackResponse(
+                                "Relacionamento responsável",
+                                "Comunicação, autoconhecimento, limites e decisão.",
+                                "Mercado forte, mas só avança se a promessa for ética, pessoal e controlável pelo usuário.",
+                                "relacionamento responsavel",
+                                "Pessoas buscando clareza e comunicação em relações, sem promessa de controlar ou reconquistar alguém",
+                                "TikTok, Reels e Shorts",
+                                "Encontrar dores de relacionamento que possam virar PDE responsável de clareza, conversa, limites ou tomada de decisão.",
+                                "Foco em comunicação, preparação para conversa, limites pessoais, leitura de padrões e decisão responsável.",
+                                "Reconquista garantida, manipulação emocional, controle do outro, aconselhamento jurídico ou situação de violência.")));
+    }
+
     /** Entrega pendências ao worker e marca ciclos como em pesquisa para evitar consumo duplicado. */
     @Transactional
     public List<ProductDiscoveryPendingResponse> pending() {

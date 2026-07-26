@@ -4,6 +4,7 @@ import com.marketinghub.productdiscovery.v1.service.CreateProductDiscoveryCycleR
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleDetailResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryFailureRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryPendingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResultRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
@@ -50,6 +51,12 @@ public class ProductDiscoveryController {
     @GetMapping("/product-discovery/v1/cycles/{cycleId}")
     public ResponseEntity<ProductDiscoveryCycleDetailResponse> getCycle(@PathVariable Long cycleId) {
         return ResponseEntity.ok(service.getCycle(cycleId));
+    }
+
+    /** Retorna o ranking gerencial por maturidade comercial para priorização de descoberta. */
+    @GetMapping("/product-discovery/v1/maturity-ranking")
+    public ResponseEntity<ProductDiscoveryMaturityRankingResponse> getMaturityRanking() {
+        return ResponseEntity.ok(service.getMaturityRanking());
     }
 
     /** Entrega pendências canônicas para o worker de pesquisa. */

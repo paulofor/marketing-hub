@@ -5,6 +5,8 @@ import {
   productDiscoveryStatusLabels,
   useCreateProductDiscoveryCycle,
   useProductDiscoveryCycles,
+  useProductDiscoveryMaturityRanking,
+  type ProductDiscoveryResearchTrack,
 } from "../../api/productDiscovery/useProductDiscovery";
 
 function formatDateTime(value: string | undefined) {
@@ -16,6 +18,7 @@ function formatDateTime(value: string | undefined) {
 
 export default function ProductDiscoveryPage() {
   const cyclesQuery = useProductDiscoveryCycles();
+  const maturityRankingQuery = useProductDiscoveryMaturityRanking();
   const createCycle = useCreateProductDiscoveryCycle();
   const [theme, setTheme] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
@@ -55,6 +58,19 @@ export default function ProductDiscoveryPage() {
     });
     setTheme("");
     setTargetAudience("");
+  }
+
+  async function handleCreateTrackCycle(track: ProductDiscoveryResearchTrack) {
+    await createCycle.mutateAsync({
+      theme: track.theme,
+      targetAudience: track.targetAudience,
+      country: "BR",
+      language: "pt-BR",
+      acquisitionChannel: track.acquisitionChannel,
+      commercialConstraints: track.commercialConstraints,
+      forbiddenCategories: track.forbiddenCategories,
+      objective: track.objective,
+    });
   }
 
   return (
@@ -99,6 +115,120 @@ export default function ProductDiscoveryPage() {
               <strong className="h3 mb-0">{summary.failed}</strong>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <h2 className="h5 mb-1">Ranking de maturidade comercial</h2>
+              <p className="text-secondary mb-0">
+                Priorize produtos prontos, oportunidades promissoras e temas
+                que ainda precisam de evidência.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm"
+              onClick={() => maturityRankingQuery.refetch()}
+              disabled={maturityRankingQuery.isFetching}
+            >
+              Atualizar
+            </button>
+          </div>
+          {maturityRankingQuery.isLoading ? (
+            <div className="text-secondary">Carregando maturidade...</div>
+          ) : null}
+          {maturityRankingQuery.isError ? (
+            <div className="alert alert-danger">
+              Não foi possível carregar o ranking de maturidade.
+            </div>
+          ) : null}
+          {maturityRankingQuery.data ? (
+            <div className="d-flex flex-column gap-3">
+              <div className="alert alert-primary mb-0">
+                <strong>{maturityRankingQuery.data.strategyName}:</strong>{" "}
+                {maturityRankingQuery.data.recommendedPriority}
+                <div className="small mt-2">
+                  {maturityRankingQuery.data.decisionCriterion}
+                </div>
+              </div>
+              <div className="table-responsive">
+                <table className="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Nicho</th>
+                      <th>Maturidade</th>
+                      <th>Leitura comercial</th>
+                      <th>Próxima ação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {maturityRankingQuery.data.items.map((item) => (
+                      <tr key={`${item.position}-${item.niche}`}>
+                        <td>{item.position}</td>
+                        <td>
+                          <strong>{item.niche}</strong>
+                          <div className="text-secondary small">
+                            {item.summary}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge text-bg-light">
+                            {item.maturity}
+                          </span>
+                        </td>
+                        <td>
+                          <div>{item.commercialReason}</div>
+                          <div className="small text-secondary mt-1">
+                            Evidências: {item.evidence.join(" · ")}
+                          </div>
+                          <div className="small text-danger mt-1">
+                            Travas: {item.guardrails.join(" · ")}
+                          </div>
+                        </td>
+                        <td>{item.recommendedAction}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <h3 className="h6 mb-3">Próximos ciclos recomendados</h3>
+                <div className="row g-3">
+                  {maturityRankingQuery.data.recommendedTracks.map((track) => (
+                    <div className="col-lg-4" key={track.name}>
+                      <article className="border rounded-2 p-3 h-100 d-flex flex-column gap-2">
+                        <div>
+                          <h4 className="h6 mb-1">{track.name}</h4>
+                          <p className="text-secondary small mb-0">
+                            {track.focus}
+                          </p>
+                        </div>
+                        <p className="mb-0">{track.reason}</p>
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm mt-auto align-self-start"
+                          onClick={() => handleCreateTrackCycle(track)}
+                          disabled={createCycle.isPending}
+                        >
+                          {createCycle.isPending ? (
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                          Criar ciclo
+                        </button>
+                      </article>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 

@@ -18,6 +18,7 @@ import java.nio.file.Path;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -97,6 +98,19 @@ class McpControllerTest {
         jdbcTemplate.execute("CREATE TABLE leads (id BIGINT PRIMARY KEY, name VARCHAR(100), email VARCHAR(150))");
         jdbcTemplate.update("INSERT INTO leads (id, name, email) VALUES (?,?,?)", 1L, "Ana", "ana@example.com");
         jdbcTemplate.update("INSERT INTO leads (id, name, email) VALUES (?,?,?)", 2L, "Bruno", "bruno@example.com");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS publication_audit");
+        jdbcTemplate.execute("""
+                CREATE TABLE publication_audit (
+                    id BIGINT PRIMARY KEY,
+                    payload LONGVARCHAR,
+                    access_token LONGVARCHAR
+                )
+                """);
+        jdbcTemplate.update(
+                "INSERT INTO publication_audit (id, payload, access_token) VALUES (?,?,?)",
+                1L,
+                "{\"objective\":\"SALES\",\"access_token\":\"EAA-real-token-123\",\"url\":\"https://graph.facebook.com/v23.0/act_1/adcreatives?access_token=EAA-url-token-456\"}",
+                "EAA-column-token-789");
 
         pdeJdbcTemplate.execute("DROP TABLE IF EXISTS pde_funnel_events");
         pdeJdbcTemplate.execute("""
@@ -115,6 +129,7 @@ class McpControllerTest {
                 "line-1\n"
                         + "2026-07-25T21:07:00Z ERROR Erro HTTP 500 não tratado. requestId=req-500-creative status=500 method=POST endpoint=/api/creatives/10/reject uri=/api/creatives/10/reject\n"
                         + "2026-07-25T21:08:00Z ERROR Erro HTTP 500 não tratado. requestId=req-500-other status=500 method=POST endpoint=/api/other uri=/api/other\n"
+                        + "2026-07-25T21:09:00Z INFO Meta payload={\"access_token\":\"EAA-log-token-123\",\"campaign\":\"exp-68\"} path=/v23.0/act_1/adcreatives?access_token=EAA-log-url-token-456 Authorization=Bearer bearer-log-token\n"
                         + "line-2\n"
                         + "line-3\n",
                 StandardCharsets.UTF_8);
@@ -189,7 +204,7 @@ class McpControllerTest {
                                 {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"db_list_tables","arguments":{}}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.structuredContent.tableCount").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.tableCount").value(2))
                 .andExpect(jsonPath("$.result.structuredContent.tables[0]").value("LEADS"));
     }
 
@@ -262,6 +277,27 @@ class McpControllerTest {
     }
 
     /**
+     * Garante que consultas de auditoria não devolvem tokens persistidos em payloads históricos.
+     */
+    @Test
+    void shouldMaskSensitiveTokensOnDatabaseQueryTool() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":23,"method":"tools/call","params":{"name":"db_query","arguments":{"query":"SELECT payload, access_token FROM publication_audit","limit":1}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.rows[0].ACCESS_TOKEN").value("[REDACTED]"))
+                .andExpect(jsonPath("$.result.structuredContent.rows[0].PAYLOAD")
+                        .value(org.hamcrest.Matchers.containsString("\"objective\":\"SALES\"")))
+                .andExpect(jsonPath("$.result.structuredContent.rows[0].PAYLOAD")
+                        .value(org.hamcrest.Matchers.containsString("\"access_token\":\"[REDACTED]\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("EAA-real-token-123"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("EAA-url-token-456"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("EAA-column-token-789"))));
+    }
+
+    /**
      * Garante que a tool db_query rejeita comandos que alteram dados.
      */
     @Test
@@ -292,6 +328,27 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.content[0].text").value(org.hamcrest.Matchers.containsString("line-2")))
                 .andExpect(jsonPath("$.result.structuredContent.lines[0]").value("line-2"))
                 .andExpect(jsonPath("$.result.structuredContent.lines[1]").value("line-3"));
+    }
+
+    /**
+     * Garante que logs Java retornados pelo MCP não expõem tokens de payloads históricos.
+     */
+    @Test
+    void shouldMaskSensitiveTokensOnJavaModuleLogsTool() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":24,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"backend","lines":10,"contains":"Meta payload"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value(org.hamcrest.Matchers.containsString("campaign\":\"exp-68")))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value(org.hamcrest.Matchers.containsString("access_token\":\"[REDACTED]")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("EAA-log-token-123"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("EAA-log-url-token-456"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("bearer-log-token"))));
     }
 
     /**

@@ -7,6 +7,7 @@ import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.GithubActionsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
 import com.marketinghub.mcpserver.service.PdeDatabaseDiagnosticsService;
+import com.marketinghub.mcpserver.service.SensitiveDataSanitizer;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,7 @@ public class McpController {
     private final ChatContainerLogService chatContainerLogService;
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
+    private final SensitiveDataSanitizer sensitiveDataSanitizer;
 
     /**
      * Inicializa o controller com os serviços responsáveis pelas ferramentas MCP.
@@ -58,7 +60,8 @@ public class McpController {
                          ModuleLogService moduleLogService,
                          ChatContainerLogService chatContainerLogService,
                          MetaDiagnosticsService metaDiagnosticsService,
-                         GithubActionsService githubActionsService) {
+                         GithubActionsService githubActionsService,
+                         SensitiveDataSanitizer sensitiveDataSanitizer) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
         this.pdeDatabaseDiagnosticsService = pdeDatabaseDiagnosticsService;
@@ -66,6 +69,7 @@ public class McpController {
         this.chatContainerLogService = chatContainerLogService;
         this.metaDiagnosticsService = metaDiagnosticsService;
         this.githubActionsService = githubActionsService;
+        this.sensitiveDataSanitizer = sensitiveDataSanitizer;
     }
 
     /**
@@ -765,11 +769,14 @@ public class McpController {
      * Monta uma resposta JSON-RPC de sucesso para tools com conteúdo textual e estruturado.
      */
     private Map<String, Object> successToolResult(Object id, Map<String, Object> data, String text) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> sanitizedData = (Map<String, Object>) sensitiveDataSanitizer.sanitize(data);
+        String sanitizedText = sensitiveDataSanitizer.sanitizeText(text);
         return success(id, Map.of(
                 "content", List.of(Map.of(
                         "type", "text",
-                        "text", text)),
-                "structuredContent", data
+                        "text", sanitizedText)),
+                "structuredContent", sanitizedData
         ));
     }
 

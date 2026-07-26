@@ -48,7 +48,9 @@ export const SEARCH_PROVIDERS = {
 };
 
 export function buildSearchQueries(job) {
-  const base = [job.theme, job.targetAudience].filter(Boolean).join(" ");
+  const base = normalizeSearchText(
+    [job.theme, job.targetAudience].filter(Boolean).join(" "),
+  );
   return [
     `${base} dificuldade problema`,
     `${base} reclamação review`,
@@ -103,12 +105,36 @@ export async function searchInternet(job, options = {}) {
   const maxSearchResults = Number(options.maxSearchResults || 8);
   const queries = buildSearchQueries(job);
   const collected = [];
+  const providerErrors = [];
   for (const query of queries) {
-    const queryResults = await searchQuery(query, config, fetchFn, logger);
+    let queryResults = [];
+    try {
+      queryResults = await searchQuery(query, config, fetchFn, logger);
+    } catch (error) {
+      if (!isSearchProviderHttpError(error)) {
+        throw error;
+      }
+      providerErrors.push(error);
+      logger.warn?.(
+        "[product-discovery-worker] search query failed provider=%s query=%s status=%s error=%s",
+        error.provider,
+        query,
+        error.status,
+        error.message,
+      );
+      continue;
+    }
     collected.push(...queryResults);
     if (collected.length >= maxSearchResults) {
       break;
     }
+  }
+  if (providerErrors.length === queries.length) {
+    logger.warn?.(
+      "[product-discovery-worker] all search queries failed provider=%s failures=%s",
+      config.provider,
+      providerErrors.length,
+    );
   }
   if (collected.length === 0) {
     return fallbackResults(job, config.provider);
@@ -321,7 +347,7 @@ async function getSearchJson(url, fetchFn, logger, provider, query, headers = {}
     headers: { Accept: "application/json", ...headers },
   });
   if (!response.ok) {
-    throw new Error(`${provider} search failed with status ${response.status}`);
+    throw new SearchProviderHttpError(provider, query, response.status);
   }
   const payload = await response.json();
   logRawSearchPayload(logger, provider, query, payload);
@@ -335,7 +361,7 @@ async function postSearchJson(url, body, fetchFn, logger, provider, query, heade
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    throw new Error(`${provider} search failed with status ${response.status}`);
+    throw new SearchProviderHttpError(provider, query, response.status);
   }
   const payload = await response.json();
   logRawSearchPayload(logger, provider, query, payload);
@@ -400,6 +426,28 @@ function cleanText(value) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 500);
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .replace(/(\d+)\+/g, "$1 anos ou mais")
+    .replace(/[+]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+class SearchProviderHttpError extends Error {
+  constructor(provider, query, status) {
+    super(`${provider} search failed with status ${status}`);
+    this.name = "SearchProviderHttpError";
+    this.provider = provider;
+    this.query = query;
+    this.status = status;
+  }
+}
+
+function isSearchProviderHttpError(error) {
+  return error?.name === "SearchProviderHttpError";
 }
 
 function maskSecrets(value) {

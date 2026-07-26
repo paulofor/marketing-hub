@@ -22,6 +22,8 @@ test("buildSearchQueries creates pain-oriented queries", () => {
 
   assert.equal(queries.length, 4);
   assert.match(queries[0], /dificuldade problema/);
+  assert.match(queries[0], /30 anos ou mais/);
+  assert.doesNotMatch(queries[0], /30\+/);
 });
 
 test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () => {
@@ -193,4 +195,29 @@ test("searchInternet calls configured Brave API and deduplicates results", async
   assert.match(calls[0].url, /api\.search\.brave\.com/);
   assert.equal(calls[0].options.headers["X-Subscription-Token"], "brave-test-key");
   assert.equal(results.length, 1);
+});
+
+test("searchInternet falls back when search provider rejects every query", async () => {
+  const results = await searchInternet(
+    {
+      theme: "diagnostico de estilo acessivel",
+      targetAudience: "mulheres 30+ estilo imagem pessoal",
+    },
+    {
+      maxSearchResults: 3,
+      config: resolveSearchConfig({
+        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+        BRAVE_SEARCH_API_KEY: "brave-test-key",
+      }),
+      logger: { warn() {}, info() {} },
+      fetchFn: async () => ({
+        ok: false,
+        status: 422,
+        json: async () => ({}),
+      }),
+    },
+  );
+
+  assert.equal(results.length, 1);
+  assert.match(results[0].title, /Pesquisa inicial/);
 });

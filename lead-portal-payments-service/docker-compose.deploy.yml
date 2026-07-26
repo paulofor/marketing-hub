@@ -69,13 +69,19 @@ services:
     image: certbot/certbot:latest
     profiles:
       - certbot
+    entrypoint:
+      - /bin/sh
+      - -c
     depends_on:
       proxy:
         condition: service_started
     environment:
       CERTBOT_EMAIL: "paulofore@gmail.com.br"
-    command: >-
-      sh -c "
+      CERTBOT_PRIMARY_DOMAIN: ${CERTBOT_PRIMARY_DOMAIN:-pagamentopalf.site}
+      CERTBOT_SECONDARY_DOMAIN: ${CERTBOT_SECONDARY_DOMAIN:-}
+      CERTBOT_EXTRA_DOMAINS: ${CERTBOT_EXTRA_DOMAINS:-}
+    command:
+      - |-
         PRIMARY_DOMAIN="$${CERTBOT_PRIMARY_DOMAIN:-pagamentopalf.site}"
         DOMAIN_ARGS="-d $${PRIMARY_DOMAIN} -d www.$${PRIMARY_DOMAIN}"
         if [ -n "$${CERTBOT_SECONDARY_DOMAIN:-}" ]; then
@@ -90,7 +96,6 @@ services:
           --email "$${CERTBOT_EMAIL}" \
           --webroot --webroot-path=/var/www/certbot \
           $${DOMAIN_ARGS}
-      "
     volumes:
       - ./docker/proxy/html:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt

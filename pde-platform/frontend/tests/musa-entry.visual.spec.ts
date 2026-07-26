@@ -165,6 +165,8 @@ test('exibe video no topo na versao publicada e permite controle para QA', async
   await page.goto('/');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
+  await expect(page.locator('video.public-hero-video')).toBeVisible();
+  await expect(page.locator('video.public-hero-video')).toHaveAttribute('src', '/assets/musa-v5-video-explicativo.mp4');
   await expect(page.getByRole('heading', { name: /Veja em poucos segundos/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=video');

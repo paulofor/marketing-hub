@@ -139,7 +139,7 @@ Essa auditoria pode apontar passivos antigos já versionados. O deploy seguro us
 
 Quando for necessário atualizar **somente** o serviço `video-management` no host `177.153.62.107`, use o script abaixo.
 
-> Neste cenário, o `video-management` deve apontar para o backend remoto em `191.252.181.168` (porta `8000`).
+> Neste cenário, o `video-management` deve apontar para o backend remoto em `http://191.252.181.168` (porta pública `80`).
 
 1. Gere a imagem do módulo de vídeo e exporte para tar:
    ```bash
@@ -157,7 +157,7 @@ Quando for necessário atualizar **somente** o serviço `video-management` no ho
    sudo mv /tmp/docker-compose.yml /opt/marketinghub/containers/docker-compose.yml
    sudo mv /tmp/apply-video-only.sh /opt/marketinghub/containers/apply-video-only.sh
    sudo chmod +x /opt/marketinghub/containers/apply-video-only.sh
-   VIDEO_BACKEND_BASE_URL=http://191.252.181.168:8000 sudo /opt/marketinghub/containers/apply-video-only.sh
+   VIDEO_BACKEND_BASE_URL=http://191.252.181.168 sudo /opt/marketinghub/containers/apply-video-only.sh
    ```
 
 Esse fluxo atualiza só o container `marketinghub-video-management`, preservando `backend` e `frontend` em execução.

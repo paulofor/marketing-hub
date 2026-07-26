@@ -5,7 +5,7 @@ DEPLOY_DIR=${DEPLOY_DIR:-/opt/marketinghub/containers}
 VIDEO_TAR=${VIDEO_TAR:-/tmp/video-management-image.tar}
 VIDEO_IMAGE=${VIDEO_IMAGE:-marketinghub-video-management}
 IMAGE_TAG=${IMAGE_TAG:-latest}
-VIDEO_BACKEND_BASE_URL=${VIDEO_BACKEND_BASE_URL:-http://191.252.181.168:8000}
+VIDEO_BACKEND_BASE_URL=${VIDEO_BACKEND_BASE_URL:-http://191.252.181.168}
 
 mkdir -p "${DEPLOY_DIR}"
 cd "${DEPLOY_DIR}"

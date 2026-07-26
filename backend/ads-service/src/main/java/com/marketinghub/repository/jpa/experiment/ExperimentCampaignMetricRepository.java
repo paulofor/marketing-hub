@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -18,6 +19,11 @@ public interface ExperimentCampaignMetricRepository extends JpaRepository<Experi
     Optional<ExperimentCampaignMetric> findByCampaign(FacebookAdsCampaign campaign);
 
     Optional<ExperimentCampaignMetric> findByExperiment(Experiment experiment);
+
+    /**
+     * Lista métricas consolidadas das campanhas informadas para compor painéis de desempenho.
+     */
+    List<ExperimentCampaignMetric> findByCampaignIdIn(Collection<String> campaignIds);
 
     @Modifying
     @Query("delete from ExperimentCampaignMetric m where m.campaign.id in :campaignIds")

@@ -10,6 +10,7 @@ import {
   useExperimentVideoAssets,
 } from "../../api/experiment/useExperimentVideoAssets";
 import { useUpdateExperimentVideoAssetReview } from "../../api/experiment/useUpdateExperimentVideoAssetReview";
+import { useExperimentVideoPerformanceDashboard } from "../../api/experiment/useExperimentVideoPerformanceDashboard";
 import { useTenantContext } from "../../utils/tenantContext";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import "./ExperimentVideoTab.css";
@@ -33,6 +34,10 @@ function formatUsd(value?: number | null) {
     style: "currency",
     currency: "USD",
   }).format(value);
+}
+
+function formatInteger(value?: number | null) {
+  return new Intl.NumberFormat("pt-BR").format(value ?? 0);
 }
 
 function buildExperimentTestUrl(url?: string | null) {
@@ -114,6 +119,9 @@ export default function ExperimentVideoTab({
     experiment.id,
   );
   const geraSalesPagePublications = useGeraSalesPagePublications(experiment.id);
+  const performanceDashboard = useExperimentVideoPerformanceDashboard(
+    experiment.id,
+  );
   const tenantContext = useTenantContext();
   const updateVideoReview = useUpdateExperimentVideoAssetReview();
 
@@ -184,6 +192,7 @@ export default function ExperimentVideoTab({
     latestSalesPagePublication?.salesPageUrl,
   );
   const productVideoUrl = "/products/4/sales-videos";
+  const performance = performanceDashboard.data;
 
   async function handleVideoReview(
     video: ExperimentVideoAsset,
@@ -202,6 +211,151 @@ export default function ExperimentVideoTab({
 
   return (
     <div className="d-flex flex-column gap-3">
+      <div className="card experiment-video-performance-card">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+            <div>
+              <h5 className="card-title mb-1">Painel consolidado de vídeo</h5>
+              <p className="text-muted small mb-0">
+                Cruza asset aprovado, criativo Meta e avanço comercial do
+                funil.
+              </p>
+            </div>
+            <span className="badge text-bg-light border">
+              {performanceDashboard.isLoading
+                ? "Carregando"
+                : performance?.summary.lastMetricAt
+                  ? `Sync ${formatDate(performance.summary.lastMetricAt)}`
+                  : "Sem sync Meta"}
+            </span>
+          </div>
+
+          {performanceDashboard.isError ? (
+            <div className="alert alert-warning mb-0">
+              Não foi possível carregar o painel consolidado de vídeo.
+            </div>
+          ) : (
+            <>
+              <div className="experiment-video-performance-card__metrics">
+                <MetricTile
+                  label="Vídeos aprovados"
+                  value={formatInteger(performance?.summary.approvedAssets)}
+                />
+                <MetricTile
+                  label="Criativos Meta vídeo"
+                  value={formatInteger(performance?.summary.metaVideoCreatives)}
+                />
+                <MetricTile
+                  label="Impressões"
+                  value={formatInteger(performance?.summary.impressions)}
+                />
+                <MetricTile
+                  label="Cliques"
+                  value={formatInteger(performance?.summary.clicks)}
+                />
+                <MetricTile
+                  label="Início diagnóstico"
+                  value={formatInteger(performance?.summary.diagnosticStarts)}
+                />
+                <MetricTile
+                  label="Checkout"
+                  value={formatInteger(performance?.summary.checkoutAccesses)}
+                />
+                <MetricTile
+                  label="Compra"
+                  value={formatInteger(performance?.summary.purchases)}
+                />
+                <MetricTile
+                  label="Gasto"
+                  value={formatUsd(performance?.summary.spend)}
+                />
+              </div>
+
+              <div className="alert alert-light border mt-3 mb-3">
+                <div className="fw-semibold">Leitura recomendada</div>
+                <div className="small text-muted">
+                  {performance?.summary.recommendation ??
+                    "Aguardando dados persistidos para orientar o próximo ajuste."}
+                </div>
+              </div>
+
+              <div className="table-responsive">
+                <table className="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Asset</th>
+                      <th>Slot</th>
+                      <th>Revisão</th>
+                      <th>Criativo Meta</th>
+                      <th>Atribuição</th>
+                      <th>Diagnóstico</th>
+                      <th>Checkout</th>
+                      <th>Compra</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {performanceDashboard.isLoading ? (
+                      <tr>
+                        <td colSpan={8} className="text-muted">
+                          Carregando painel...
+                        </td>
+                      </tr>
+                    ) : !performance || performance.assets.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="text-muted">
+                          Nenhum vídeo aprovado ou publicável para consolidar.
+                        </td>
+                      </tr>
+                    ) : (
+                      performance.assets.map((asset) => (
+                        <tr key={asset.assetId}>
+                          <td>
+                            <div className="fw-semibold">#{asset.assetId}</div>
+                            <div className="text-muted small">
+                              {asset.provider || "Provider não registrado"}
+                            </div>
+                          </td>
+                          <td>{asset.slot ?? "—"}</td>
+                          <td>{asset.reviewStatus ?? "—"}</td>
+                          <td>
+                            {asset.metaCreatives.length > 0 ? (
+                              asset.metaCreatives.map((creative) => (
+                                <div
+                                  key={`${creative.creativeId}-${creative.adId}`}
+                                  className="experiment-video-performance-card__creative"
+                                >
+                                  <span>{creative.creativeKind}</span>
+                                  <span>{creative.adName || creative.adId}</span>
+                                  {creative.metaVideoId ? (
+                                    <span>Vídeo Meta {creative.metaVideoId}</span>
+                                  ) : null}
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-muted">
+                                Sem vínculo direto
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            {asset.attributionLevel === "AD"
+                              ? "Anúncio"
+                              : "Experimento"}
+                          </td>
+                          <td>{formatInteger(asset.diagnosticStarts)}</td>
+                          <td>{formatInteger(asset.checkoutAccesses)}</td>
+                          <td>{formatInteger(asset.purchases)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       <div className="card experiment-video-preview-card">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
@@ -496,6 +650,15 @@ function ExperimentVideoReviewControls({
           Reprovar
         </button>
       </div>
+    </div>
+  );
+}
+
+function MetricTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="experiment-video-performance-card__metric">
+      <div>{label}</div>
+      <strong>{value}</strong>
     </div>
   );
 }

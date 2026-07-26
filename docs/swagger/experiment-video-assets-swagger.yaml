@@ -35,6 +35,19 @@ paths:
       responses:
         "200":
           description: Vídeo criado
+  /api/experiments/{experimentId}/video-assets/performance-dashboard:
+    get:
+      summary: Retorna painel consolidado de vídeo, criativo Meta e funil comercial
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Painel consolidado retornado
   /api/experiments/{experimentId}/video-assets/{videoAssetId}:
     patch:
       summary: Atualiza vídeo comercial de um experimento

@@ -983,9 +983,20 @@ public class FacebookCampaignService {
             );
             return;
         }
-        if (bounds.lowerBound() < MIN_REACH_LOWER_BOUND || bounds.upperBound() > MAX_REACH_UPPER_BOUND) {
+        if (bounds.lowerBound() < MIN_REACH_LOWER_BOUND) {
             String message = "Público pequeno demais para publicar: a Meta estimou %d a %d pessoas, mas o mínimo operacional é %d. Revise o público usando critérios mais amplos em OU e libere novamente."
                 .formatted(bounds.lowerBound(), bounds.upperBound(), MIN_REACH_LOWER_BOUND);
+            experimentFacebookApiLogClient.logPublicationJobFailureStep(
+                publicationJobId,
+                experimentId,
+                "CAMPAIGN_REACH_VALIDATION_BLOCKED",
+                message
+            );
+            throw new IllegalStateException(message);
+        }
+        if (bounds.upperBound() > MAX_REACH_UPPER_BOUND) {
+            String message = "Público amplo demais para publicar: a Meta estimou %d a %d pessoas, mas o máximo operacional é %d. Refine o público com critérios mais específicos e libere novamente."
+                .formatted(bounds.lowerBound(), bounds.upperBound(), MAX_REACH_UPPER_BOUND);
             experimentFacebookApiLogClient.logPublicationJobFailureStep(
                 publicationJobId,
                 experimentId,
@@ -1040,9 +1051,10 @@ public class FacebookCampaignService {
      * Extrai os limites de usuários retornados pelo endpoint reachestimate.
      */
     private ReachEstimateBounds extractReachEstimateBounds(JsonNode response) {
-        JsonNode dataNode = response != null && response.path("data").isArray() && response.path("data").size() > 0
-            ? response.path("data").get(0)
-            : response;
+        JsonNode data = response != null ? response.path("data") : null;
+        JsonNode dataNode = data != null && data.isArray() && data.size() > 0
+            ? data.get(0)
+            : data != null && data.isObject() ? data : response;
         Long lowerBound = readLong(dataNode, "users_lower_bound");
         Long upperBound = readLong(dataNode, "users_upper_bound");
         return new ReachEstimateBounds(lowerBound, upperBound);

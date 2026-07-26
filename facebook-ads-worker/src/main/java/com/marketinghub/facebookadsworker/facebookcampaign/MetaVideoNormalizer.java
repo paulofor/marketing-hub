@@ -23,6 +23,7 @@ public class MetaVideoNormalizer {
     private static final int META_MIN_VIDEO_WIDTH = 1080;
     private static final int META_AUDIO_SAMPLE_RATE = 48000;
     private static final int META_AUDIO_CHANNELS = 2;
+    private static final int META_VIDEO_FRAME_RATE = 30;
 
     private final boolean enabled;
     private final String ffmpegPath;
@@ -34,11 +35,11 @@ public class MetaVideoNormalizer {
     public MetaVideoNormalizer(
         @Value("${creative.video.normalization.enabled:true}") boolean enabled,
         @Value("${creative.video.normalization.ffmpeg-path:ffmpeg}") String ffmpegPath,
-        @Value("${creative.video.normalization.timeout:PT8M}") Duration timeout
+        @Value("${creative.video.normalization.timeout:PT20M}") Duration timeout
     ) {
         this.enabled = enabled;
         this.ffmpegPath = StringUtils.hasText(ffmpegPath) ? ffmpegPath.trim() : "ffmpeg";
-        this.timeout = timeout == null ? Duration.ofMinutes(2) : timeout;
+        this.timeout = timeout == null ? Duration.ofMinutes(20) : timeout;
     }
 
     /**
@@ -61,6 +62,22 @@ public class MetaVideoNormalizer {
             log = Files.createTempFile("marketinghub-meta-video-", ".log");
             Files.write(input, sourceBytes);
 
+            VideoProbe probe = probeVideo(input);
+            if (probe.isMetaCompatible()) {
+                LOGGER.info(
+                    "Creative video already matches Meta upload profile: sourceFileName={}, width={}, height={}, videoCodec={}, pixelFormat={}, audioCodec={}, audioRate={}, audioChannels={}",
+                    sourceFileName,
+                    probe.width(),
+                    probe.height(),
+                    probe.videoCodec(),
+                    probe.pixelFormat(),
+                    probe.audioCodec(),
+                    probe.audioSampleRate(),
+                    probe.audioChannels()
+                );
+                return new NormalizedVideo(sourceBytes, resolveOutputFileName(sourceFileName), "video/mp4", false);
+            }
+
             Process process = new ProcessBuilder(List.of(
                 ffmpegPath,
                 "-hide_banner",
@@ -76,7 +93,9 @@ public class MetaVideoNormalizer {
                 "-c:v",
                 "libx264",
                 "-preset",
-                "veryfast",
+                "ultrafast",
+                "-crf",
+                "28",
                 "-profile:v",
                 "high",
                 "-level",
@@ -86,7 +105,7 @@ public class MetaVideoNormalizer {
                 "-vf",
                 "scale=if(lt(iw\\," + META_MIN_VIDEO_WIDTH + ")\\," + META_MIN_VIDEO_WIDTH + "\\,trunc(iw/2)*2):if(lt(iw\\," + META_MIN_VIDEO_WIDTH + ")\\,-2\\,trunc(ih/2)*2)",
                 "-r",
-                "30",
+                String.valueOf(META_VIDEO_FRAME_RATE),
                 "-c:a",
                 "aac",
                 "-ar",
@@ -131,6 +150,135 @@ public class MetaVideoNormalizer {
             deleteQuietly(input);
             deleteQuietly(output);
             deleteQuietly(log);
+        }
+    }
+
+    /**
+     * Inspeciona o arquivo com ffprobe para decidir se a transcodificação pesada é realmente necessária.
+     */
+    private VideoProbe probeVideo(Path input) {
+        Path log = null;
+        try {
+            log = Files.createTempFile("marketinghub-meta-video-probe-", ".log");
+            Process process = new ProcessBuilder(List.of(
+                resolveFfprobePath(),
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=codec_name,width,height,pix_fmt",
+                "-of",
+                "csv=p=0",
+                input.toString()
+            ))
+                .redirectErrorStream(true)
+                .redirectOutput(log.toFile())
+                .start();
+
+            boolean finished = process.waitFor(Math.min(timeout.toMillis(), Duration.ofSeconds(20).toMillis()), TimeUnit.MILLISECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                LOGGER.warn("FFprobe video inspection timed out; falling back to normalization");
+                return VideoProbe.requiresNormalization();
+            }
+            if (process.exitValue() != 0) {
+                LOGGER.warn("FFprobe video inspection failed; falling back to normalization: {}", readLog(log));
+                return VideoProbe.requiresNormalization();
+            }
+            String[] values = Files.readString(log).trim().split(",");
+            if (values.length < 4) {
+                return VideoProbe.requiresNormalization();
+            }
+            AudioProbe audio = probeAudio(input);
+            return new VideoProbe(
+                parseInt(values[1]),
+                parseInt(values[2]),
+                values[0],
+                values[3],
+                audio.codec(),
+                audio.sampleRate(),
+                audio.channels()
+            );
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Creative video inspection interrupted; falling back to normalization", ex);
+            return VideoProbe.requiresNormalization();
+        } catch (IOException ex) {
+            LOGGER.warn("Creative video inspection failed; falling back to normalization: {}", ex.getMessage(), ex);
+            return VideoProbe.requiresNormalization();
+        } finally {
+            deleteQuietly(log);
+        }
+    }
+
+    /**
+     * Inspeciona a trilha de áudio para reaproveitar vídeos que já têm AAC 48 kHz estéreo.
+     */
+    private AudioProbe probeAudio(Path input) {
+        Path log = null;
+        try {
+            log = Files.createTempFile("marketinghub-meta-video-audio-probe-", ".log");
+            Process process = new ProcessBuilder(List.of(
+                resolveFfprobePath(),
+                "-v",
+                "error",
+                "-select_streams",
+                "a:0",
+                "-show_entries",
+                "stream=codec_name,sample_rate,channels",
+                "-of",
+                "csv=p=0",
+                input.toString()
+            ))
+                .redirectErrorStream(true)
+                .redirectOutput(log.toFile())
+                .start();
+            boolean finished = process.waitFor(Math.min(timeout.toMillis(), Duration.ofSeconds(20).toMillis()), TimeUnit.MILLISECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                return AudioProbe.requiresNormalization();
+            }
+            if (process.exitValue() != 0) {
+                return AudioProbe.noAudio();
+            }
+            String text = Files.readString(log).trim();
+            if (!StringUtils.hasText(text)) {
+                return AudioProbe.noAudio();
+            }
+            String[] values = text.split(",");
+            if (values.length < 3) {
+                return AudioProbe.requiresNormalization();
+            }
+            return new AudioProbe(values[0], parseInt(values[1]), parseInt(values[2]));
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            return AudioProbe.requiresNormalization();
+        } catch (IOException ex) {
+            return AudioProbe.requiresNormalization();
+        } finally {
+            deleteQuietly(log);
+        }
+    }
+
+    /**
+     * Resolve o binário ffprobe coerente com o caminho configurado para ffmpeg.
+     */
+    private String resolveFfprobePath() {
+        if (ffmpegPath.endsWith("ffmpeg")) {
+            return ffmpegPath.substring(0, ffmpegPath.length() - "ffmpeg".length()) + "ffprobe";
+        }
+        return "ffprobe";
+    }
+
+    /**
+     * Converte valores numéricos do ffprobe em inteiro seguro.
+     */
+    private int parseInt(String value) {
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (RuntimeException ex) {
+            return 0;
         }
     }
 
@@ -270,4 +418,60 @@ public class MetaVideoNormalizer {
      * Representa o frame estático pronto para fallback de upload como imagem na Meta.
      */
     public record NormalizedImage(byte[] bytes, String fileName, String contentType) {}
+
+    /**
+     * Representa os metadados técnicos usados para decidir se a Meta já aceitará o vídeo.
+     */
+    private record VideoProbe(
+        int width,
+        int height,
+        String videoCodec,
+        String pixelFormat,
+        String audioCodec,
+        int audioSampleRate,
+        int audioChannels
+    ) {
+        /**
+         * Cria uma inspeção que obriga normalização por falta de metadados confiáveis.
+         */
+        private static VideoProbe requiresNormalization() {
+            return new VideoProbe(0, 0, "", "", "", 0, 0);
+        }
+
+        /**
+         * Indica se o arquivo já atende ao perfil técnico usado para criativos Meta.
+         */
+        private boolean isMetaCompatible() {
+            boolean videoMatches = width >= META_MIN_VIDEO_WIDTH
+                && height > 0
+                && width % 2 == 0
+                && height % 2 == 0
+                && "h264".equalsIgnoreCase(videoCodec)
+                && "yuv420p".equalsIgnoreCase(pixelFormat);
+            boolean audioMatches = !StringUtils.hasText(audioCodec)
+                || ("aac".equalsIgnoreCase(audioCodec)
+                    && audioSampleRate == META_AUDIO_SAMPLE_RATE
+                    && audioChannels == META_AUDIO_CHANNELS);
+            return videoMatches && audioMatches;
+        }
+    }
+
+    /**
+     * Representa os metadados da trilha de áudio do vídeo.
+     */
+    private record AudioProbe(String codec, int sampleRate, int channels) {
+        /**
+         * Representa vídeo sem áudio, permitido no fluxo de criativo.
+         */
+        private static AudioProbe noAudio() {
+            return new AudioProbe("", 0, 0);
+        }
+
+        /**
+         * Cria uma inspeção que obriga normalização por falta de metadados confiáveis.
+         */
+        private static AudioProbe requiresNormalization() {
+            return new AudioProbe("unknown", 0, 0);
+        }
+    }
 }

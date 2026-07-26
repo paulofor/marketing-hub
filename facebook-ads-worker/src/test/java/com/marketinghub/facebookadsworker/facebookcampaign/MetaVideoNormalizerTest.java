@@ -1,6 +1,8 @@
 package com.marketinghub.facebookadsworker.facebookcampaign;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.junit.jupiter.api.Test;
@@ -74,6 +76,53 @@ class MetaVideoNormalizerTest {
         } finally {
             Files.deleteIfExists(source);
             Files.deleteIfExists(normalized);
+        }
+    }
+
+    /**
+     * Garante que vídeos já compatíveis com a Meta não sejam reexportados sem necessidade.
+     */
+    @Test
+    void keepsAlreadyCompatibleMetaVideoWithoutReencoding() throws Exception {
+        assumeTrue(commandExists("ffmpeg"), "ffmpeg indisponível no ambiente de teste");
+        assumeTrue(commandExists("ffprobe"), "ffprobe indisponível no ambiente de teste");
+
+        Path source = Files.createTempFile("meta-video-ready-", ".mp4");
+        try {
+            run(List.of(
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=black:s=1080x1920:d=1:r=30",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=1000:duration=1:sample_rate=48000",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "aac",
+                "-ac",
+                "2",
+                "-shortest",
+                source.toString()
+            ));
+
+            byte[] original = Files.readAllBytes(source);
+            MetaVideoNormalizer normalizer = new MetaVideoNormalizer(true, "ffmpeg", Duration.ofSeconds(60));
+            MetaVideoNormalizer.NormalizedVideo result = normalizer.normalize(original, "creative.mp4");
+
+            assertFalse(result.normalized());
+            assertArrayEquals(original, result.bytes());
+        } finally {
+            Files.deleteIfExists(source);
         }
     }
 

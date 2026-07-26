@@ -269,7 +269,9 @@ public class PostDeployMonitorService {
         }
         return summary.trafficSources().stream()
                 .map(source -> new PostDeployPdeTrafficSourceDto(
+                        source.trafficChannel(),
                         source.utmSource(),
+                        source.utmMedium(),
                         source.utmCampaign(),
                         source.utmContent(),
                         source.sessions(),
@@ -279,6 +281,10 @@ public class PostDeployMonitorService {
                         source.paywallViewed(),
                         source.checkoutStarted(),
                         source.subscriptionApproved(),
+                        source.firstInteractionRate(),
+                        source.paywallRate(),
+                        source.checkoutRate(),
+                        source.purchaseRate(),
                         source.totalVisibleMs(),
                         source.lastEventAt()))
                 .toList();

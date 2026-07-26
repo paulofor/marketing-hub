@@ -39,6 +39,10 @@ function formatDuration(ms?: number | null) {
   return `${minutes}min ${remainingSeconds}s`;
 }
 
+function formatPercent(value?: number | null) {
+  return value == null ? "—" : `${value.toFixed(1)}%`;
+}
+
 function shortUrl(value?: string | null) {
   if (!value) return "—";
   try {
@@ -302,23 +306,38 @@ export default function ExperimentLandingAnalyticsTab({
               <div className="card-body">
                 <h5 className="card-title mb-1">Origem do tráfego</h5>
                 <p className="text-muted small mb-3">
-                  Sessões do PDE por campanha e criativo Meta.
+                  Comparação por UTM para Meta, orgânico, Search, remarketing
+                  e outros canais.
                 </p>
                 <div className="d-flex flex-column gap-2">
                   {pdeTrafficSources.map((source) => (
                     <div
                       className="border rounded-3 p-3"
-                      key={`${source.utmSource}-${source.utmCampaign}-${source.utmContent}`}
+                      key={`${source.trafficChannel}-${source.utmSource}-${source.utmMedium}-${source.utmCampaign}-${source.utmContent}`}
                     >
-                      <div className="fw-semibold">
-                        {source.utmSource} · {source.utmContent}
+                      <div className="d-flex justify-content-between gap-2">
+                        <div className="fw-semibold">
+                          {source.trafficChannel} · {source.utmSource}
+                        </div>
+                        <span className="badge text-bg-light border">
+                          {source.utmMedium}
+                        </span>
                       </div>
                       <div className="text-muted small">
-                        Campanha {source.utmCampaign}
+                        {source.utmCampaign} · {source.utmContent}
                       </div>
-                      <div className="small mt-2">
-                        {source.sessions} sessões · {source.pdeEntries} entradas
-                        no PDE
+                      <div className="small mt-2 d-flex flex-wrap gap-2">
+                        <span>{source.sessions} sessões</span>
+                        <span>{source.pdeEntries} entradas</span>
+                        <span>
+                          {formatPercent(source.firstInteractionRate)} 1ª ação
+                        </span>
+                        <span>
+                          {formatPercent(source.paywallRate)} paywall
+                        </span>
+                        <span>
+                          {formatPercent(source.purchaseRate)} compra
+                        </span>
                       </div>
                     </div>
                   ))}

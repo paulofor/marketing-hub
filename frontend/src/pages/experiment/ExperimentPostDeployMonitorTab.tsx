@@ -424,30 +424,45 @@ export default function ExperimentPostDeployMonitorTab({
                 <thead>
                   <tr>
                     <th>Origem</th>
+                    <th>Meio</th>
                     <th>Campanha</th>
                     <th>Criativo</th>
                     <th className="text-end">Sessões</th>
                     <th className="text-end">Entrada</th>
                     <th className="text-end">1ª ação</th>
-                    <th className="text-end">Login</th>
                     <th className="text-end">Paywall</th>
+                    <th className="text-end">Checkout</th>
                     <th className="text-end">Compra</th>
                     <th className="text-end">Tempo médio/sessão</th>
                   </tr>
                 </thead>
                 <tbody>
                   {trafficSources.map((source) => (
-                    <tr key={`${source.utmSource}-${source.utmCampaign}-${source.utmContent}`}>
-                      <td>{source.utmSource}</td>
+                    <tr
+                      key={`${source.trafficChannel}-${source.utmSource}-${source.utmMedium}-${source.utmCampaign}-${source.utmContent}`}
+                    >
+                      <td>
+                        <span className="fw-semibold">
+                          {source.trafficChannel}
+                        </span>
+                        <div className="text-muted small">{source.utmSource}</div>
+                      </td>
+                      <td>{source.utmMedium}</td>
                       <td>{source.utmCampaign}</td>
                       <td className="fw-semibold">{source.utmContent}</td>
                       <td className="text-end">{formatNumber(source.sessions)}</td>
                       <td className="text-end">{formatNumber(source.pdeEntries)}</td>
-                      <td className="text-end">{formatNumber(source.firstInteractionClicks)}</td>
-                      <td className="text-end">{formatNumber(source.loginStarted)}</td>
-                      <td className="text-end">{formatNumber(source.paywallViewed)}</td>
-                      <td className="text-end">{formatNumber(source.subscriptionApproved)}</td>
-                      <td className="text-end">{formatDuration(averageDuration(source.totalVisibleMs, source.sessions))}</td>
+                      <td className="text-end">
+                        {formatPercent(source.firstInteractionRate)}
+                      </td>
+                      <td className="text-end">{formatPercent(source.paywallRate)}</td>
+                      <td className="text-end">{formatPercent(source.checkoutRate)}</td>
+                      <td className="text-end">{formatPercent(source.purchaseRate)}</td>
+                      <td className="text-end">
+                        {formatDuration(
+                          averageDuration(source.totalVisibleMs, source.sessions),
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

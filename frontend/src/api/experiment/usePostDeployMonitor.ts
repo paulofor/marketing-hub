@@ -83,7 +83,9 @@ export interface PostDeployPdeExperienceVersion {
 }
 
 export interface PostDeployPdeTrafficSource {
+  trafficChannel: string;
   utmSource: string;
+  utmMedium: string;
   utmCampaign: string;
   utmContent: string;
   sessions: number;
@@ -93,6 +95,10 @@ export interface PostDeployPdeTrafficSource {
   paywallViewed: number;
   checkoutStarted: number;
   subscriptionApproved: number;
+  firstInteractionRate: number;
+  paywallRate: number;
+  checkoutRate: number;
+  purchaseRate: number;
   totalVisibleMs: number;
   lastEventAt?: string | null;
 }

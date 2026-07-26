@@ -15,7 +15,10 @@ O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
 
 - `BACKEND_BASE_URL`: URL do backend principal. Padrão: `http://191.252.181.168`.
 - `PRODUCT_DISCOVERY_POLL_INTERVAL_MS`: intervalo de polling. Padrão: `60000`.
-- `PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS`: máximo de resultados por consulta. Padrão: `8`.
+- `PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS`: máximo total de resultados públicos usados no ciclo. Padrão: `8`.
+- `PRODUCT_DISCOVERY_MIN_SEARCH_QUERIES`: mínimo de consultas diferentes por ciclo antes de encerrar a busca. Padrão: `4`.
+- `PRODUCT_DISCOVERY_MAX_SEARCH_QUERIES`: teto de consultas diferentes por ciclo. Padrão: `8`.
+- `PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY`: máximo de resultados aproveitados por consulta, para evitar que uma única frase domine a evidência. Padrão: `2`.
 - `PRODUCT_DISCOVERY_HEALTH_HOST`: host do servidor HTTP de health. Padrão: `0.0.0.0`.
 - `PRODUCT_DISCOVERY_HEALTH_PORT`: porta interna do servidor HTTP de health. Padrão: `8080`.
 - `PRODUCT_DISCOVERY_HEALTH_PUBLISHED_PORT`: porta publicada no host pelo Compose. Padrão: `18081`.

@@ -888,9 +888,10 @@ public class AccessService {
         String sql = """
                 SELECT
                   COALESCE(NULLIF(utm_source, ''), 'sem-origem') AS resolved_utm_source,
+                  COALESCE(NULLIF(utm_medium, ''), 'sem-meio') AS resolved_utm_medium,
                   COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha') AS resolved_utm_campaign,
                   COALESCE(NULLIF(utm_content, ''), 'sem-criativo') AS resolved_utm_content,
-                  COUNT(DISTINCT session_id) AS sessions,
+                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions,
                   SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS pde_entries,
                   SUM(CASE WHEN event_type IN ('PRESENCE_MAP_CHOICE_SELECTED', 'DIAGNOSTIC_CHOICE_SELECTED') THEN 1 ELSE 0 END)
                     AS first_interaction_clicks,
@@ -904,6 +905,7 @@ public class AccessService {
                 WHERE product_slug = ?
                 GROUP BY
                   COALESCE(NULLIF(utm_source, ''), 'sem-origem'),
+                  COALESCE(NULLIF(utm_medium, ''), 'sem-meio'),
                   COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha'),
                   COALESCE(NULLIF(utm_content, ''), 'sem-criativo')
                 ORDER BY sessions DESC, last_event_at DESC
@@ -915,23 +917,79 @@ public class AccessService {
                 List<FunnelAnalyticsTrafficSourceMetricDto> metrics = new java.util.ArrayList<>();
                 while (resultSet.next()) {
                     Timestamp lastEventAt = resultSet.getTimestamp("last_event_at");
+                    String utmSource = resultSet.getString("resolved_utm_source");
+                    String utmMedium = resultSet.getString("resolved_utm_medium");
+                    long sessions = resultSet.getLong("sessions");
+                    long firstInteractionClicks = resultSet.getLong("first_interaction_clicks");
+                    long paywallViewed = resultSet.getLong("paywall_viewed");
+                    long checkoutStarted = resultSet.getLong("checkout_started");
+                    long subscriptionApproved = resultSet.getLong("subscription_approved");
                     metrics.add(new FunnelAnalyticsTrafficSourceMetricDto(
-                            resultSet.getString("resolved_utm_source"),
+                            resolveTrafficChannel(utmSource, utmMedium, resultSet.getString("resolved_utm_campaign")),
+                            utmSource,
+                            utmMedium,
                             resultSet.getString("resolved_utm_campaign"),
                             resultSet.getString("resolved_utm_content"),
-                            resultSet.getLong("sessions"),
+                            sessions,
                             resultSet.getLong("pde_entries"),
-                            resultSet.getLong("first_interaction_clicks"),
+                            firstInteractionClicks,
                             resultSet.getLong("login_started"),
-                            resultSet.getLong("paywall_viewed"),
-                            resultSet.getLong("checkout_started"),
-                            resultSet.getLong("subscription_approved"),
+                            paywallViewed,
+                            checkoutStarted,
+                            subscriptionApproved,
+                            percentage(firstInteractionClicks, sessions),
+                            percentage(paywallViewed, sessions),
+                            percentage(checkoutStarted, sessions),
+                            percentage(subscriptionApproved, sessions),
                             resultSet.getLong("total_visible_ms"),
                             lastEventAt == null ? null : toOperationalInstant(lastEventAt).toString()));
                 }
                 return metrics;
             }
         }
+    }
+
+    /** Classifica a origem UTM em canais úteis para decisão de mídia e recuperação. */
+    private String resolveTrafficChannel(String utmSource, String utmMedium, String utmCampaign) {
+        String normalizedSource = normalizeTrafficText(utmSource);
+        String normalizedMedium = normalizeTrafficText(utmMedium);
+        String normalizedCampaign = normalizeTrafficText(utmCampaign);
+        if (containsAny(normalizedMedium, "remarketing", "retargeting")
+                || containsAny(normalizedCampaign, "remarketing", "retargeting", "recuperacao", "recuperação")) {
+            return "Remarketing";
+        }
+        if (containsAny(normalizedSource, "facebook", "instagram", "meta", "ig", "fb")) {
+            return "Meta";
+        }
+        if (containsAny(normalizedSource, "google") || containsAny(normalizedMedium, "cpc", "paid-search", "search")) {
+            return "Google Search";
+        }
+        if (containsAny(normalizedMedium, "organic", "organic-social", "shorts", "reels")) {
+            return "Orgânico";
+        }
+        if ("sem-origem".equals(normalizedSource) && "sem-meio".equals(normalizedMedium)) {
+            return "Sem UTM";
+        }
+        return "Outros";
+    }
+
+    /** Normaliza texto livre de UTM para classificar canais sem depender de caixa ou acentos. */
+    private String normalizeTrafficText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return java.text.Normalizer.normalize(value.trim().toLowerCase(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+    }
+
+    /** Verifica se o texto normalizado contém qualquer sinal conhecido do canal. */
+    private boolean containsAny(String value, String... needles) {
+        for (String needle : needles) {
+            if (value.contains(needle)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Lê distribuição de sessões por dispositivo para diagnosticar aderência do tráfego pago ao PDE. */

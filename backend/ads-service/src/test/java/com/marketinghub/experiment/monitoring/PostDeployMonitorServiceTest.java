@@ -96,7 +96,9 @@ class PostDeployMonitorServiceTest {
                 List.of(new PdeAnalyticsSummary.PdeExperienceVersionMetric(
                         "musa-pde-entry-v3", 80, 15, 15, 0, 0, 0, 0, 0, 0, 0)),
                 List.of(new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                        "Meta",
                         "facebook",
+                        "paid_social",
                         "musa-campanha",
                         "criativo-a",
                         15,
@@ -106,6 +108,10 @@ class PostDeployMonitorServiceTest {
                         0,
                         0,
                         0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
                         2000,
                         "2026-07-21T02:00:00Z")),
                 List.of(),
@@ -147,6 +153,9 @@ class PostDeployMonitorServiceTest {
         assertThat(response.pde().trafficSources())
                 .extracting("utmContent")
                 .contains("criativo-a");
+        assertThat(response.pde().trafficSources())
+                .extracting("trafficChannel")
+                .contains("Meta");
         assertThat(response.pde().recentJourneys())
                 .extracting("abandonmentPoint")
                 .contains("SAIU_NA_PRIMEIRA_DOBRA");

@@ -24,6 +24,9 @@ import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
+import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoDecisionRuleResponse;
+import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanItemResponse;
+import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
@@ -330,6 +333,28 @@ public class ProductService {
         profit);
   }
 
+  /** Monta o plano recomendado de vídeos orgânicos para conduzir desconhecidos ao desejo. */
+  @Transactional(readOnly = true)
+  public ProductOrganicVideoPlanResponse getOrganicVideoPlan(Long productId) {
+    Product product = getProduct(productId);
+    return new ProductOrganicVideoPlanResponse(
+        product.getId(),
+        product.getName(),
+        product.getSlug(),
+        "9 vídeos em 7 dias",
+        "Validar atenção, identificação e intenção antes de aumentar CTA ou levar o criativo para anúncio.",
+        "7 dias, com 1 publicação diária e 2 dias com reforço de segundo vídeo.",
+        "TikTok e Instagram Reels como leitura principal; YouTube Shorts como reaproveitamento.",
+        "6 vídeos de entretenimento/dor cotidiana criam relevância, 2 educativos constroem autoridade e 1 direto testa conversão para diagnóstico.",
+        buildOrganicVideoPlanItems(product),
+        buildOrganicVideoDecisionRules(),
+        List.of(
+            "Começar por situação reconhecível antes de falar do produto.",
+            "Usar o diagnóstico como próximo passo leve, não como venda agressiva.",
+            "Comparar retenção, comentários e cliques por categoria antes de mudar a oferta.",
+            "Só transformar vídeo direto em anúncio quando ele converter mesmo com alcance menor."));
+  }
+
   /** Monta uma linha de custo informada originalmente em dólares. */
   private ProductFinancialLineResponse costLine(
       String type, String label, BigDecimal monthlyUsd, BigDecimal annualUsd, String source) {
@@ -464,6 +489,180 @@ public class ProductService {
   private BigDecimal queryBigDecimal(String sql, Object... args) {
     BigDecimal value = jdbcTemplate.queryForObject(sql, BigDecimal.class, args);
     return Optional.ofNullable(value).orElse(BigDecimal.ZERO);
+  }
+
+  /** Define os nove roteiros operacionais do playbook orgânico do produto. */
+  private List<ProductOrganicVideoPlanItemResponse> buildOrganicVideoPlanItems(Product product) {
+    String cta = StringUtils.hasText(product.getPrimaryCta())
+        ? product.getPrimaryCta().trim()
+        : "Faça o diagnóstico e veja seu primeiro ajuste.";
+    return List.of(
+        videoPlanItem(
+            1,
+            1,
+            "ENTRETENIMENTO_DOR",
+            "Desconhecido -> relevante",
+            "Isso acontece comigo.",
+            "TikTok + Reels",
+            "POV: você já trocou de roupa 4 vezes e nenhuma parece você.",
+            "Cena rápida de troca de looks no espelho, com expressão de frustração cotidiana.",
+            "O problema não é falta de roupa; pode ser falta de intenção visual.",
+            "Quer descobrir o que está faltando no seu visual?",
+            "Retenção nos 3 primeiros segundos e comentários de identificação.",
+            "Cortes rápidos; legenda grande; sem citar o produto nos primeiros segundos."),
+        videoPlanItem(
+            2,
+            2,
+            "ENTRETENIMENTO_DOR",
+            "Desconhecido -> relevante",
+            "Eu vivo esse desconforto.",
+            "TikTok + Reels",
+            "Quando o look está certo, mas ainda parece sem graça.",
+            "Antes/depois simples com o mesmo look e mudança de acabamento.",
+            "Um detalhe final pode mudar a percepção de presença sem exigir compra nova.",
+            "Salve para testar no próximo look.",
+            "Salvamentos e retenção média.",
+            "Mostrar transformação visual clara; evitar tom professoral."),
+        videoPlanItem(
+            3,
+            3,
+            "EDUCATIVO",
+            "Relevante -> compreensível",
+            "Agora entendo o que pode estar errado.",
+            "Reels + Shorts",
+            "Ruído visual: o motivo de algumas combinações parecerem improvisadas.",
+            "Apontar três elementos competindo no look e remover um deles.",
+            "Ruído visual tira clareza da sua presença; reduzir excesso aumenta elegância percebida.",
+            "Teste removendo um item antes de sair.",
+            "Salvamentos e compartilhamentos.",
+            "Usar exemplo visual concreto; uma regra por vídeo."),
+        videoPlanItem(
+            4,
+            4,
+            "ENTRETENIMENTO_DOR",
+            "Relevante -> curiosidade segura",
+            "Talvez exista um jeito simples de resolver.",
+            "TikTok + Reels",
+            "O acessório errado que faz o look parecer improvisado.",
+            "Cena de escolha entre dois acessórios com reação imediata no espelho.",
+            "Acessório não é enfeite; é sinal visual. O sinal errado bagunça a mensagem.",
+            "Comente qual dos dois parece mais elegante.",
+            "Comentários e taxa de conclusão.",
+            "Estimular escolha A/B nos comentários."),
+        videoPlanItem(
+            5,
+            5,
+            "ENTRETENIMENTO_DOR",
+            "Curiosidade segura -> mecanismo plausível",
+            "Não preciso virar outra pessoa.",
+            "TikTok + Reels",
+            "Você não precisa comprar roupa nova. Talvez precise tirar ruído.",
+            "Usar o mesmo look em duas versões: com excesso e com intenção.",
+            "O mecanismo é reduzir ruído e escolher uma peça-sinal.",
+            "Faça o teste da peça-sinal hoje.",
+            "Retenção completa e salvamentos.",
+            "Falar de mecanismo sem jargão; visual antes da explicação."),
+        videoPlanItem(
+            5,
+            6,
+            "EDUCATIVO",
+            "Mecanismo plausível -> microexperiência",
+            "Consigo testar isso em mim.",
+            "Reels + Shorts",
+            "O teste do espelho: seu look tem uma peça-sinal ou só peças competindo?",
+            "Checklist visual em três tomadas: cor, acabamento, peça-sinal.",
+            "Uma peça-sinal orienta a leitura do visual e reduz esforço na escolha.",
+            cta,
+            "Cliques no diagnóstico e salvamentos.",
+            "CTA leve; mostrar o teste antes de mencionar diagnóstico."),
+        videoPlanItem(
+            6,
+            7,
+            "ENTRETENIMENTO_DOR",
+            "Microexperiência -> valioso para mim",
+            "Isso melhora uma situação real minha.",
+            "TikTok + Reels",
+            "Quando você se arruma para parecer confiante, mas sente que faltou presença.",
+            "Situação de saída para trabalho, encontro ou evento simples.",
+            "Presença visual nasce de sinais consistentes, não de exagero.",
+            "Quer seu primeiro ajuste de presença?",
+            "Comentários qualificados e cliques.",
+            "Abrir com emoção cotidiana; fechar com pergunta curta."),
+        videoPlanItem(
+            6,
+            8,
+            "ENTRETENIMENTO_DOR",
+            "Valioso para mim -> desejável",
+            "Quero repetir esse ganho.",
+            "TikTok + Reels",
+            "O look que funciona porque comunica uma intenção.",
+            "Montar look em três passos com legenda de intenção em cada peça.",
+            "Quando cada elemento tem função, o visual parece mais elegante e menos acidental.",
+            "Envie para alguém que sempre diz que nada combina.",
+            "Compartilhamentos e retenção.",
+            "Evitar venda direta; buscar prova social via compartilhamento."),
+        videoPlanItem(
+            7,
+            9,
+            "DIRETO_DIAGNOSTICO",
+            "Desejável -> comprável",
+            "Quero saber meu próximo passo.",
+            "Reels + retargeting",
+            "Se você sente que falta presença no visual, comece pelo diagnóstico MUSA.",
+            "Tela ou simulação do diagnóstico com promessa de plano de 7 dias.",
+            "O diagnóstico transforma sensação vaga em um primeiro plano prático.",
+            cta,
+            "Cliques, início de diagnóstico e checkout quando houver.",
+            "Usar como candidato a retargeting se converter mesmo com alcance menor."));
+  }
+
+  /** Cria um item de plano de vídeo orgânico com notas de produção. */
+  private ProductOrganicVideoPlanItemResponse videoPlanItem(
+      int day,
+      int sequence,
+      String category,
+      String funnelStage,
+      String mentalShift,
+      String platformPriority,
+      String hook,
+      String scene,
+      String message,
+      String callToAction,
+      String primaryMetric,
+      String productionNote) {
+    return new ProductOrganicVideoPlanItemResponse(
+        day,
+        sequence,
+        category,
+        funnelStage,
+        mentalShift,
+        platformPriority,
+        hook,
+        scene,
+        message,
+        callToAction,
+        primaryMetric,
+        List.of(productionNote));
+  }
+
+  /** Define as regras de leitura para decidir o próximo movimento comercial. */
+  private List<ProductOrganicVideoDecisionRuleResponse> buildOrganicVideoDecisionRules() {
+    return List.of(
+        new ProductOrganicVideoDecisionRuleResponse(
+            "Dor cotidiana",
+            "Vídeos de dor geram retenção e comentários acima dos demais.",
+            "Aumentar CTA para diagnóstico nos próximos roteiros.",
+            "A audiência reconheceu o problema; vale conduzir para microexperiência."),
+        new ProductOrganicVideoDecisionRuleResponse(
+            "Educativo",
+            "Só os vídeos educativos performam melhor.",
+            "Ajustar a linha editorial para mais autoridade e demonstração.",
+            "O público precisa entender mecanismo antes de aceitar promessa."),
+        new ProductOrganicVideoDecisionRuleResponse(
+            "Direto para diagnóstico",
+            "Vídeo direto converte mesmo com menor alcance.",
+            "Usar como retargeting e anúncio de intenção.",
+            "Baixo alcance com clique qualificado indica criativo mais próximo de compra."));
   }
 
   /** Aplica os campos editáveis do cadastro comercial ao produto informado. */

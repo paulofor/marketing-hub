@@ -27,6 +27,29 @@ paths:
                 $ref: "#/components/schemas/ProductFinancialSummary"
         "404":
           description: Produto não encontrado.
+  /api/products/{id}/organic-video-plan:
+    get:
+      tags:
+        - Products
+      summary: Retorna o playbook de vídeos orgânicos recomendado para o produto.
+      operationId: getProductOrganicVideoPlan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        "200":
+          description: Plano de 9 vídeos em 7 dias com mix editorial, métricas e regras de decisão.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductOrganicVideoPlan"
+        "404":
+          description: Produto não encontrado.
   /api/products/{id}/video-seed-image:
     patch:
       tags:
@@ -230,6 +253,88 @@ components:
           type: number
           format: decimal
           example: 50.00
+    ProductOrganicVideoPlan:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+          example: Método MUSA
+        productSlug:
+          type: string
+          example: metodo-musa-7-dias
+        strategyName:
+          type: string
+          example: 9 vídeos em 7 dias
+        objective:
+          type: string
+        publishingWindow:
+          type: string
+        channelPriority:
+          type: string
+        mixRationale:
+          type: string
+        videos:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductOrganicVideoPlanItem"
+        decisionRules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductOrganicVideoDecisionRule"
+        operatingPrinciples:
+          type: array
+          items:
+            type: string
+    ProductOrganicVideoPlanItem:
+      type: object
+      properties:
+        day:
+          type: integer
+          example: 1
+        sequence:
+          type: integer
+          example: 1
+        category:
+          type: string
+          example: ENTRETENIMENTO_DOR
+        funnelStage:
+          type: string
+          example: Desconhecido -> relevante
+        mentalShift:
+          type: string
+          example: Isso acontece comigo.
+        platformPriority:
+          type: string
+          example: TikTok + Reels
+        hook:
+          type: string
+        scene:
+          type: string
+        message:
+          type: string
+        callToAction:
+          type: string
+        primaryMetric:
+          type: string
+        productionNotes:
+          type: array
+          items:
+            type: string
+    ProductOrganicVideoDecisionRule:
+      type: object
+      properties:
+        signal:
+          type: string
+          example: Dor cotidiana
+        condition:
+          type: string
+        decision:
+          type: string
+        commercialReason:
+          type: string
     UpdateProductVideoSeedImageRequest:
       type: object
       required:

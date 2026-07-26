@@ -14,6 +14,9 @@ import com.marketinghub.product.service.ProductService;
 import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
+import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoDecisionRuleResponse;
+import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanItemResponse;
+import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -127,6 +130,47 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.costs[0].type").value("MEDIA"))
                 .andExpect(jsonPath("$.revenue.monthly.brl").value(67.00))
                 .andExpect(jsonPath("$.profit.annual.usd").value(84.00));
+    }
+
+    /** Deve expor o playbook de vídeos orgânicos do produto pelo contrato canônico. */
+    @Test
+    void getOrganicVideoPlan() throws Exception {
+        var response = new ProductOrganicVideoPlanResponse(
+                1L,
+                "Método MUSA",
+                "metodo-musa-7-dias",
+                "9 vídeos em 7 dias",
+                "Validar atenção antes de aumentar CTA.",
+                "7 dias",
+                "TikTok + Reels",
+                "6 vídeos de dor, 2 educativos e 1 direto.",
+                List.of(new ProductOrganicVideoPlanItemResponse(
+                        1,
+                        1,
+                        "ENTRETENIMENTO_DOR",
+                        "Desconhecido -> relevante",
+                        "Isso acontece comigo.",
+                        "TikTok + Reels",
+                        "POV: você já trocou de roupa 4 vezes e nenhuma parece você.",
+                        "Cena no espelho.",
+                        "Falta intenção visual.",
+                        "Faça o diagnóstico.",
+                        "Retenção e comentários.",
+                        List.of("Legenda grande."))),
+                List.of(new ProductOrganicVideoDecisionRuleResponse(
+                        "Dor cotidiana",
+                        "Vídeos de dor geram retenção.",
+                        "Aumentar CTA.",
+                        "A audiência reconheceu o problema.")),
+                List.of("Começar por situação reconhecível."));
+
+        when(service.getOrganicVideoPlan(1L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/products/{id}/organic-video-plan", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.strategyName").value("9 vídeos em 7 dias"))
+                .andExpect(jsonPath("$.videos[0].category").value("ENTRETENIMENTO_DOR"))
+                .andExpect(jsonPath("$.decisionRules[0].decision").value("Aumentar CTA."));
     }
 
     /** Deve expor a definição pública de mercado do produto como Markdown. */

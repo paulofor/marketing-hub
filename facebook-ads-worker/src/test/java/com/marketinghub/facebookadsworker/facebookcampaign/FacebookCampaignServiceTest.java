@@ -684,6 +684,57 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Garante que a campanha não é criada quando a Meta retorna público acima do máximo operacional.
+    void skipsCampaignCreationWhenReachValidationIsAboveMaximumWithObjectData() throws Exception {
+        reachEstimateResponseBody = "{\"data\":{\"users_lower_bound\":84000000,\"users_upper_bound\":98900000,\"estimate_ready\":true}}";
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-high\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("experiments ready");
+        takeBackendRequest("creatives ready");
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        RecordedRequest reachRequest = takeFacebookRequest("reach validation");
+        assertTrue(reachRequest.getPath().contains("/reachestimate?"));
+        takeBackendRequestMatching(
+            "publication job reach step",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+        );
+        RecordedRequest failureStepRequest = takeBackendRequestMatching(
+            "publication job failure step",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+        );
+        JsonNode failureStepPayload = objectMapper.readTree(failureStepRequest.getBody().inputStream());
+        assertEquals("CAMPAIGN_REACH_VALIDATION_BLOCKED", failureStepPayload.get("stepName").asText());
+        assertTrue(failureStepPayload.get("errorMessage").asText().contains("Público amplo demais"));
+        RecordedRequest failedStatusRequest = takeBackendRequestMatching(
+            "failed status update",
+            request -> request.getPath() != null
+                && request.getPath().contains("/api/experiments/1/status?status=FAILED")
+                && "PATCH".equals(request.getMethod())
+        );
+        assertNotNull(failedStatusRequest);
+        assertEquals(1, facebook.getRequestCount());
+    }
+
+    @Test
     // Garante que nenhum objeto de anúncio seja criado quando o criativo pronto não tem imagem.
     void blocksCampaignPublicationWhenReadyCreativeHasNoImage() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-no-image\"}]")

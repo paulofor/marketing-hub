@@ -15,6 +15,7 @@ import {
   Workflow,
   AlertTriangle,
   CreditCard,
+  Search,
   Mail,
   Microscope,
   HeartPulse,
@@ -64,6 +65,11 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Produtos e Mercado",
     items: [
       { to: "/planning", label: "Planejamento", icon: ClipboardCheck },
+      {
+        to: "/product-discovery",
+        label: "Descoberta PDE",
+        icon: Search,
+      },
       { to: "/products", label: "Produtos", icon: Package },
       { to: "/niches", label: "Nichos", icon: nicheIcon },
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },

@@ -1,0 +1,8 @@
+services:
+  product-discovery-worker:
+    build: .
+    environment:
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://191.252.181.168}
+      PRODUCT_DISCOVERY_POLL_INTERVAL_MS: ${PRODUCT_DISCOVERY_POLL_INTERVAL_MS:-60000}
+      PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS: ${PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS:-8}
+    restart: unless-stopped

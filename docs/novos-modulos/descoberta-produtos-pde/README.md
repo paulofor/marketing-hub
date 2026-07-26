@@ -118,6 +118,29 @@ A v1 deve ser simples e focada em decisao:
 - permitir aprovacao humana antes de enviar para hipotese;
 - manter evidencias e motivos de decisao persistidos.
 
+## Implementacao operacional v1
+
+A primeira implementacao operacional foi criada em tres partes:
+
+- backend `com.marketinghub.productdiscovery.v1`, como fonte de verdade dos ciclos,
+  oportunidades, pendencias e callbacks;
+- tela administrativa em `/product-discovery`, para criar ciclos e revisar o ranking;
+- worker `product-discovery-worker`, para consumir pendencias, pesquisar sinais publicos
+  e devolver oportunidades com evidencias.
+
+Contratos principais:
+
+- `GET /api/product-discovery/v1/cycles`
+- `POST /api/product-discovery/v1/cycles`
+- `GET /api/product-discovery/v1/cycles/{cycleId}`
+- `GET /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending`
+- `POST /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/complete`
+- `POST /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/fail`
+
+O backend nao pesquisa internet, nao executa rotina e nao cria produto automaticamente.
+Ele apenas persiste contratos, publica pendencias e recebe resultados. O worker executor
+mantem a rotina operacional e os prompts/schemas versionados em `product-discovery-worker`.
+
 Fora da v1:
 
 - criar campanha automaticamente;

@@ -1,0 +1,162 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { buildApiUrl } from "../../utils/buildApiUrl";
+
+export type ProductDiscoveryCycleStatus =
+  | "DRAFT"
+  | "READY_FOR_RESEARCH"
+  | "RESEARCHING"
+  | "COMPLETED"
+  | "FAILED"
+  | "ARCHIVED";
+
+export type ProductDiscoveryOpportunityDecision =
+  | "APPROVE"
+  | "RESEARCH_MORE"
+  | "REJECT"
+  | "HUMAN_REVIEW";
+
+export interface ProductDiscoveryCycle {
+  id: number;
+  theme: string;
+  targetAudience?: string | null;
+  country: string;
+  language: string;
+  acquisitionChannel?: string | null;
+  status: ProductDiscoveryCycleStatus;
+  stageCode: string;
+  decisionSummary?: string | null;
+  errorMessage?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductDiscoveryOpportunity {
+  id: number;
+  cycleId: number;
+  name: string;
+  primaryAudience: string;
+  rootPain: string;
+  practicalPain?: string | null;
+  emotionalPain?: string | null;
+  scaleEvidence?: string | null;
+  unmetnessEvidence?: string | null;
+  pdeExperience?: string | null;
+  firstCampaignAngle?: string | null;
+  commercialRisk?: string | null;
+  evidenceJson?: string | null;
+  score: number;
+  decision: ProductDiscoveryOpportunityDecision;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductDiscoveryCycleDetail {
+  cycle: ProductDiscoveryCycle;
+  opportunities: ProductDiscoveryOpportunity[];
+}
+
+export interface CreateProductDiscoveryCyclePayload {
+  theme: string;
+  targetAudience?: string;
+  country?: string;
+  language?: string;
+  acquisitionChannel?: string;
+  commercialConstraints?: string;
+  forbiddenCategories?: string;
+  objective?: string;
+}
+
+export const productDiscoveryStatusLabels: Record<
+  ProductDiscoveryCycleStatus,
+  string
+> = {
+  DRAFT: "Rascunho",
+  READY_FOR_RESEARCH: "Pronto para pesquisa",
+  RESEARCHING: "Pesquisando",
+  COMPLETED: "Concluído",
+  FAILED: "Falhou",
+  ARCHIVED: "Arquivado",
+};
+
+export const productDiscoveryDecisionLabels: Record<
+  ProductDiscoveryOpportunityDecision,
+  string
+> = {
+  APPROVE: "Aprovar",
+  RESEARCH_MORE: "Pesquisar mais",
+  REJECT: "Rejeitar",
+  HUMAN_REVIEW: "Revisão humana",
+};
+
+const productDiscoveryKeys = {
+  cycles: ["product-discovery", "cycles"] as const,
+  cycle: (cycleId: number) => ["product-discovery", "cycles", cycleId] as const,
+};
+
+async function parseJsonResponse<T>(response: Response, errorMessage: string) {
+  if (!response.ok) {
+    throw new Error(`${errorMessage} (status ${response.status}).`);
+  }
+  return (await response.json()) as T;
+}
+
+export function useProductDiscoveryCycles() {
+  return useQuery({
+    queryKey: productDiscoveryKeys.cycles,
+    queryFn: async () => {
+      const response = await fetch(
+        buildApiUrl("/api/product-discovery/v1/cycles"),
+      );
+      return parseJsonResponse<ProductDiscoveryCycle[]>(
+        response,
+        "Não foi possível carregar os ciclos de descoberta PDE",
+      );
+    },
+  });
+}
+
+export function useProductDiscoveryCycle(cycleId?: number) {
+  return useQuery({
+    queryKey: cycleId
+      ? productDiscoveryKeys.cycle(cycleId)
+      : ["product-discovery", "cycle", "missing"],
+    enabled: cycleId != null,
+    queryFn: async () => {
+      const response = await fetch(
+        buildApiUrl(`/api/product-discovery/v1/cycles/${cycleId}`),
+      );
+      return parseJsonResponse<ProductDiscoveryCycleDetail>(
+        response,
+        "Não foi possível carregar o ciclo de descoberta PDE",
+      );
+    },
+  });
+}
+
+export function useCreateProductDiscoveryCycle() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateProductDiscoveryCyclePayload) => {
+      const response = await fetch(
+        buildApiUrl("/api/product-discovery/v1/cycles"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      return parseJsonResponse<ProductDiscoveryCycle>(
+        response,
+        "Não foi possível criar o ciclo de descoberta PDE",
+      );
+    },
+    onSuccess: async (cycle) => {
+      await queryClient.invalidateQueries({
+        queryKey: productDiscoveryKeys.cycles,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: productDiscoveryKeys.cycle(cycle.id),
+      });
+    },
+  });
+}

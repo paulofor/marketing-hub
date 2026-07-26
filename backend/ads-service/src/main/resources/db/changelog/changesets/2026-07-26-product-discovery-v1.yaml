@@ -1,0 +1,79 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-26-product-discovery-v1.yaml
+  - changeSet:
+      id: 2026-07-26-product-discovery-v1-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: product_discovery_cycle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE product_discovery_cycle (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                theme VARCHAR(191) NOT NULL,
+                target_audience VARCHAR(191) NULL,
+                country VARCHAR(16) NOT NULL DEFAULT 'BR',
+                language VARCHAR(16) NOT NULL DEFAULT 'pt-BR',
+                acquisition_channel VARCHAR(120) NULL,
+                commercial_constraints LONGTEXT NULL,
+                forbidden_categories LONGTEXT NULL,
+                objective LONGTEXT NULL,
+                status VARCHAR(40) NOT NULL DEFAULT 'READY_FOR_RESEARCH',
+                stage_code VARCHAR(80) NOT NULL DEFAULT 'research',
+                decision_summary LONGTEXT NULL,
+                error_message LONGTEXT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_product_discovery_cycle_status_updated (status, updated_at),
+                KEY idx_product_discovery_cycle_theme (theme)
+              );
+  - changeSet:
+      id: 2026-07-26-product-discovery-v1-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: product_discovery_opportunity
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE product_discovery_opportunity (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                cycle_id BIGINT NOT NULL,
+                name VARCHAR(191) NOT NULL,
+                primary_audience VARCHAR(191) NOT NULL,
+                root_pain LONGTEXT NOT NULL,
+                practical_pain LONGTEXT NULL,
+                emotional_pain LONGTEXT NULL,
+                scale_evidence LONGTEXT NULL,
+                unmetness_evidence LONGTEXT NULL,
+                pde_experience LONGTEXT NULL,
+                first_campaign_angle LONGTEXT NULL,
+                commercial_risk LONGTEXT NULL,
+                evidence_json LONGTEXT NULL,
+                score DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+                decision VARCHAR(40) NOT NULL DEFAULT 'RESEARCH_MORE',
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_product_discovery_opportunity_cycle_score (cycle_id, score),
+                KEY idx_product_discovery_opportunity_decision (decision),
+                CONSTRAINT fk_product_discovery_opportunity_cycle
+                  FOREIGN KEY (cycle_id) REFERENCES product_discovery_cycle (id)
+                  ON DELETE CASCADE
+              );

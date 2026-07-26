@@ -76,3 +76,26 @@ Se o visitante enxergar prova visual e for conduzido para uma ação de menor at
 - Colocar prova visual antes do checkout.
 - Só levar ao checkout depois de demonstrar valor concreto.
 - Não lançar o experimento 56 até validar que o gargalo de página/formulário do 55 foi corrigido.
+
+## Backlog operacional
+
+### Histórico auditável de status do experimento
+
+Recomendação registrada em 2026-07-26: o relatório operacional do experimento deve expor um histórico auditável de mudanças de status, incluindo o motivo estruturado quando o experimento entrar em `FAILED`.
+
+Objetivo comercial:
+
+- reduzir tempo de diagnóstico quando uma campanha ou etapa técnica falhar;
+- evitar republicação ou reativação de tráfego sem entender a causa real;
+- separar falha de mídia, falha de ativo, falha de publicação, falha de funil e falha de tracking;
+- melhorar a decisão entre corrigir, relançar, pausar ou descartar um experimento.
+
+Campos mínimos recomendados:
+
+- data e hora da mudança;
+- status anterior e novo status;
+- etapa operacional no momento da mudança;
+- motivo funcional do `FAILED`;
+- origem da mudança, como usuário, backend, worker ou integração;
+- referência a campanha, ativo, job, endpoint externo ou erro de integração quando existir;
+- ação recomendada para destravar o experimento.

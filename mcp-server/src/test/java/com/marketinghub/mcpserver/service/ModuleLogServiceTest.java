@@ -173,7 +173,14 @@ class ModuleLogServiceTest {
                 "repo",
                 ""
         );
+        McpProperties.ProductDiscoveryWorker productDiscoveryWorker = new McpProperties.ProductDiscoveryWorker(
+                true,
+                "product-discovery-worker",
+                "docker",
+                "http://127.0.0.1:8080/healthz",
+                10
+        );
 
-        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, meta, github);
+        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, productDiscoveryWorker, meta, github);
     }
 }

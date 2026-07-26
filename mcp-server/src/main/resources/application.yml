@@ -67,6 +67,12 @@ mcp:
     docker-command: ${MCP_CHAT_LOG_DOCKER_COMMAND:docker}
     max-lines: ${MCP_CHAT_LOG_MAX_LINES:500}
     timeout-seconds: ${MCP_CHAT_LOG_TIMEOUT_SECONDS:20}
+  product-discovery-worker:
+    enabled: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_ENABLED:true}
+    container: ${MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER:product-discovery-worker}
+    docker-command: ${MCP_PRODUCT_DISCOVERY_WORKER_DOCKER_COMMAND:${MCP_CHAT_LOG_DOCKER_COMMAND:docker}}
+    health-url: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:http://127.0.0.1:8080/healthz}
+    timeout-seconds: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_TIMEOUT_SECONDS:10}
   meta:
     enabled: ${MCP_META_ENABLED:true}
     graph-base-url: ${MCP_META_GRAPH_BASE_URL:https://graph.facebook.com}

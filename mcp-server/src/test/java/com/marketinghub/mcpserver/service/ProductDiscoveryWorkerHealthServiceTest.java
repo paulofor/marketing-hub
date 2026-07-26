@@ -1,5 +1,6 @@
 package com.marketinghub.mcpserver.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.mcpserver.config.McpProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -11,61 +12,51 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Valida a leitura restrita de logs Docker dos containers operacionais pelo MCP.
+ * Valida a consulta restrita do health do Product Discovery Worker pelo MCP.
  */
-class ChatContainerLogServiceTest {
+class ProductDiscoveryWorkerHealthServiceTest {
 
     @TempDir
     private Path tempDir;
 
     /**
-     * Garante que apenas containers permitidos são aceitos para consulta de logs.
+     * Garante que o serviço executa o comando Docker fixo e retorna o payload de health estruturado.
      */
     @Test
-    void shouldRejectContainerOutsideAllowList() throws Exception {
-        ChatContainerLogService service = new ChatContainerLogService(buildProperties(fakeDockerCommand()));
+    void shouldReadProductDiscoveryWorkerHealth() throws Exception {
+        ProductDiscoveryWorkerHealthService service = new ProductDiscoveryWorkerHealthService(
+                buildProperties(fakeDockerCommand()),
+                new ObjectMapper()
+        );
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> service.readLogs("marketinghub-backend", 10, null));
+        Map<String, Object> result = service.readHealth();
 
-        assertEquals("container must be one of: marketinghub-fashion-chat, product-discovery-worker",
-                exception.getMessage());
+        assertEquals("product-discovery-worker", result.get("container"));
+        assertEquals(true, result.get("reachable"));
+        Map<?, ?> payload = (Map<?, ?>) result.get("payload");
+        assertEquals("UP", payload.get("status"));
+        assertEquals("brave", payload.get("activeSearchProvider"));
+        Map<?, ?> polling = (Map<?, ?>) payload.get("polling");
+        assertEquals("COMPLETED", polling.get("lastPollStatus"));
     }
 
     /**
-     * Garante execução do Docker CLI configurado e filtro textual sobre as linhas retornadas.
-     */
-    @Test
-    void shouldReadAllowedContainerLogsAndFilterByText() throws Exception {
-        ChatContainerLogService service = new ChatContainerLogService(buildProperties(fakeDockerCommand()));
-
-        Map<String, Object> result = service.readLogs("marketinghub-fashion-chat", 20, "Fashion");
-
-        assertEquals("marketinghub-fashion-chat", result.get("container"));
-        assertEquals(1, result.get("returnedLines"));
-        assertEquals(List.of("2026-07-12T10:00:00Z Fashion chat service listening on port 8094"),
-                result.get("lines"));
-    }
-
-    /**
-     * Cria um executável falso para simular o comando docker logs durante o teste.
+     * Cria um executável falso para simular docker exec durante o teste.
      */
     private String fakeDockerCommand() throws Exception {
         Path script = tempDir.resolve("docker-fake.sh");
         Files.writeString(script, """
                 #!/usr/bin/env sh
-                echo "2026-07-12T10:00:00Z Fashion chat service listening on port 8094"
-                echo "2026-07-12T10:00:01Z health ok"
+                echo '{"service":"product-discovery-worker","status":"UP","activeSearchProvider":"brave","braveSearch":{"keyStatus":"CONFIGURED","keySource":"file"},"polling":{"lastPollStatus":"COMPLETED","lastPollError":null},"lastCycleProcessed":null}'
                 """, StandardCharsets.UTF_8);
         script.toFile().setExecutable(true);
         return script.toString();
     }
 
     /**
-     * Monta propriedades MCP mínimas para testar logs de chat.
+     * Monta propriedades MCP mínimas para testar o health do Product Discovery Worker.
      */
     private McpProperties buildProperties(String dockerCommand) {
         McpProperties.Logs logs = new McpProperties.Logs(

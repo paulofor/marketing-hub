@@ -505,6 +505,95 @@ describe("ExperimentListPage", () => {
     ).toBeTruthy();
   });
 
+  it("hides finalized experiments from the main list", async () => {
+    const experiments = [
+      {
+        id: "71",
+        nicheId: 10,
+        hypothesisId: "hypothesis-71",
+        name: "Experimento em execução",
+        hypothesis: "Hipótese em execução",
+        cost: 10,
+        startDate: "2026-07-24",
+        endDate: null,
+        creativeApproved: true,
+        status: "RUNNING",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-24T00:00:00Z",
+        updatedAt: "2026-07-24T00:00:00Z",
+      },
+      {
+        id: "55",
+        nicheId: 10,
+        hypothesisId: "hypothesis-55",
+        name: "Experimento finalizado",
+        hypothesis: "Hipótese finalizada",
+        cost: 40,
+        startDate: "2026-07-01",
+        endDate: "2026-07-02",
+        creativeApproved: true,
+        status: "FINISHED",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-01T00:00:00Z",
+        updatedAt: "2026-07-02T00:00:00Z",
+      },
+      {
+        id: "54",
+        nicheId: 10,
+        hypothesisId: "hypothesis-54",
+        name: "Experimento invalidado",
+        hypothesis: "Hipótese invalidada",
+        cost: 40,
+        startDate: "2026-07-01",
+        endDate: "2026-07-02",
+        creativeApproved: true,
+        status: "INVALIDATED",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-01T00:00:00Z",
+        updatedAt: "2026-07-02T00:00:00Z",
+      },
+    ];
+
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments")
+        return Promise.resolve({ data: experiments });
+      if (url === "/api/niches") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 10,
+              name: "Nicho Principal",
+              description: "",
+              demandVolume: "",
+              promises: "",
+              offers: "",
+              baseSegmentation: "",
+              interests: "",
+              demographicFilters: "",
+              extraTips: "",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Experimento em execução")).toBeTruthy();
+    expect(screen.queryByText("Experimento finalizado")).toBeNull();
+    expect(screen.queryByText("Experimento invalidado")).toBeNull();
+    expect(screen.queryByRole("option", { name: "FINISHED" })).toBeNull();
+    expect(
+      screen.getByText((content) =>
+        content.includes("Exibindo 1-1 de 1 experimentos"),
+      ),
+    ).toBeTruthy();
+  });
+
   it("reactivates a stopped experiment with a registered reason", async () => {
     const experiments = [
       {

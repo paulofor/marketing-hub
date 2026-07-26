@@ -52,6 +52,7 @@ import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesP
 import { useExperimentPipelineJobHistory } from "../../api/experiment/useExperimentPipelineJobHistory";
 import { useExperimentVideoAssets } from "../../api/experiment/useExperimentVideoAssets";
 import { useUpdateExperimentLearnedLessons } from "../../api/experiment/useUpdateExperimentLearnedLessons";
+import { useUpdateExperimentStrategicPositioning } from "../../api/experiment/useUpdateExperimentStrategicPositioning";
 import { buildExperimentCostSummary } from "./experimentCostSummary";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
@@ -325,6 +326,135 @@ function isExperimentAlterationLocked(experiment: {
 export function buildLearnedLessonsPayload(value: string) {
   const normalized = value.trim();
   return { learnedLessons: normalized ? normalized : null };
+}
+
+export function buildStrategicPositioningPayload(
+  commercialObjective: string,
+  currentOperationalFunction: string,
+) {
+  const normalizedCommercialObjective = commercialObjective.trim();
+  const normalizedCurrentOperationalFunction =
+    currentOperationalFunction.trim();
+  return {
+    commercialObjective: normalizedCommercialObjective
+      ? normalizedCommercialObjective
+      : null,
+    currentOperationalFunction: normalizedCurrentOperationalFunction
+      ? normalizedCurrentOperationalFunction
+      : null,
+  };
+}
+
+function ExperimentStrategicPositioningCard({
+  experimentId,
+  commercialObjective,
+  currentOperationalFunction,
+}: {
+  experimentId: string;
+  commercialObjective?: string | null;
+  currentOperationalFunction?: string | null;
+}) {
+  const [commercialObjectiveDraft, setCommercialObjectiveDraft] = useState(
+    commercialObjective ?? "",
+  );
+  const [currentOperationalFunctionDraft, setCurrentOperationalFunctionDraft] =
+    useState(currentOperationalFunction ?? "");
+  const updateStrategicPositioning =
+    useUpdateExperimentStrategicPositioning(experimentId);
+  const hasChanges =
+    commercialObjectiveDraft !== (commercialObjective ?? "") ||
+    currentOperationalFunctionDraft !== (currentOperationalFunction ?? "");
+
+  useEffect(() => {
+    setCommercialObjectiveDraft(commercialObjective ?? "");
+    setCurrentOperationalFunctionDraft(currentOperationalFunction ?? "");
+  }, [commercialObjective, currentOperationalFunction]);
+
+  const handleSave = async () => {
+    try {
+      await updateStrategicPositioning.mutateAsync(
+        buildStrategicPositioningPayload(
+          commercialObjectiveDraft,
+          currentOperationalFunctionDraft,
+        ),
+      );
+      toast.success("Posicionamento estratégico salvo.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível salvar o posicionamento estratégico.")
+        : "Não foi possível salvar o posicionamento estratégico.";
+      toast.error(message);
+    }
+  };
+
+  return (
+    <div className="card">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+          <div>
+            <h5 className="card-title mb-1">Posicionamento estratégico</h5>
+            <p className="text-muted small mb-0">
+              Separe a hipótese comercial original da função operacional que o
+              experimento assumiu durante a execução.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={handleSave}
+            disabled={!hasChanges || updateStrategicPositioning.isPending}
+          >
+            {updateStrategicPositioning.isPending ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                />
+                Salvando...
+              </>
+            ) : (
+              "Salvar"
+            )}
+          </button>
+        </div>
+        <div className="row g-3">
+          <div className="col-12 col-lg-6">
+            <label className="form-label" htmlFor="commercialObjective">
+              Objetivo comercial do experimento
+            </label>
+            <textarea
+              id="commercialObjective"
+              className="form-control"
+              rows={5}
+              value={commercialObjectiveDraft}
+              onChange={(event) =>
+                setCommercialObjectiveDraft(event.target.value)
+              }
+              placeholder="Ex.: Validar se vídeo humano aumenta início de diagnóstico e avanço para checkout."
+            />
+          </div>
+          <div className="col-12 col-lg-6">
+            <label className="form-label" htmlFor="currentOperationalFunction">
+              Função operacional atual
+            </label>
+            <textarea
+              id="currentOperationalFunction"
+              className="form-control"
+              rows={5}
+              value={currentOperationalFunctionDraft}
+              onChange={(event) =>
+                setCurrentOperationalFunctionDraft(event.target.value)
+              }
+              placeholder="Ex.: Validação operacional do roteamento A/B de página antes de declarar vencedor."
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ExperimentLearnedLessonsCard({
@@ -2852,6 +2982,11 @@ export default function ExperimentDetailPage() {
           <Tabs.Content value="overview" asChild>
             <div className="d-flex flex-column gap-3">
               <ExperimentRunPanel experimentId={expId} compact />
+              <ExperimentStrategicPositioningCard
+                experimentId={expId}
+                commercialObjective={data?.commercialObjective}
+                currentOperationalFunction={data?.currentOperationalFunction}
+              />
               <ExperimentLearnedLessonsCard
                 experimentId={expId}
                 learnedLessons={data?.learnedLessons}

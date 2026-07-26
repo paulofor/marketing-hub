@@ -567,13 +567,16 @@ public class ExperimentService {
     }
 
     /**
-     * Atualiza o status do experimento e solicita pausa operacional das campanhas Meta quando aplicável.
+     * Atualiza o status do experimento validando pré-condições comerciais da transição.
      */
     @Transactional
     public Experiment updateStatus(Long id, ExperimentStatus status) {
         Experiment exp = repository.findById(id).orElseThrow();
         if (status == ExperimentStatus.RUNNING) {
             validateRunningStatusTransition(exp);
+        }
+        if (status == ExperimentStatus.FINISHED) {
+            validateFinishedStatusTransition(exp);
         }
         exp.setStatus(status);
         if (status == ExperimentStatus.PAUSED) {
@@ -638,6 +641,15 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "reason must have at most 1024 characters");
         }
         return normalized;
+    }
+
+    /** Valida se a finalização definitiva possui aprendizado comercial registrado. */
+    private void validateFinishedStatusTransition(Experiment exp) {
+        if (!StringUtils.hasText(exp.getLearnedLessons())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "learnedLessons required before setting experiment FINISHED");
+        }
     }
 
     /** Valida as evidências mínimas antes de aceitar experimento como em execução. */
@@ -850,6 +862,20 @@ public class ExperimentService {
     public Experiment updateLearnedLessons(Long id, String learnedLessons) {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setLearnedLessons(normalizeLongText(learnedLessons));
+        return exp;
+    }
+
+    /**
+     * Atualiza o objetivo comercial e a função operacional atual do experimento.
+     */
+    @Transactional
+    public Experiment updateStrategicPositioning(
+            Long id,
+            String commercialObjective,
+            String currentOperationalFunction) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setCommercialObjective(normalizeLongText(commercialObjective));
+        exp.setCurrentOperationalFunction(normalizeLongText(currentOperationalFunction));
         return exp;
     }
 

@@ -16,6 +16,9 @@ O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
 - `BACKEND_BASE_URL`: URL do backend principal. Padrão: `http://191.252.181.168`.
 - `PRODUCT_DISCOVERY_POLL_INTERVAL_MS`: intervalo de polling. Padrão: `60000`.
 - `PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS`: máximo de resultados por consulta. Padrão: `8`.
+- `PRODUCT_DISCOVERY_HEALTH_HOST`: host do servidor HTTP de health. Padrão: `0.0.0.0`.
+- `PRODUCT_DISCOVERY_HEALTH_PORT`: porta interna do servidor HTTP de health. Padrão: `8080`.
+- `PRODUCT_DISCOVERY_HEALTH_PUBLISHED_PORT`: porta publicada no host pelo Compose. Padrão: `18081`.
 - `PRODUCT_DISCOVERY_SEARCH_PROVIDER`: provedor dedicado de busca. Aceita `brave`,
   `tavily`, `serpapi` ou `duckduckgo`. Quando vazio, o worker escolhe pela primeira
   chave disponível nesta ordem: Brave, Tavily, SerpAPI e DuckDuckGo.
@@ -43,6 +46,27 @@ A chave deve existir no servidor em:
 O compose de produção monta esse arquivo como Docker secret em
 `/run/secrets/brave_search_api_key` e o worker lê pelo
 `BRAVE_SEARCH_API_KEY_FILE`.
+
+## Health operacional
+
+O worker expõe `GET /healthz` e `GET /health` na porta interna `8080`. Em
+produção, o Compose publica o endpoint apenas em `127.0.0.1:18081` por padrão.
+
+O payload informa o provider ativo, status da chave Brave sem revelar o segredo,
+último polling e último ciclo processado:
+
+```json
+{
+  "service": "product-discovery-worker",
+  "status": "UP",
+  "activeSearchProvider": "brave",
+  "braveSearch": {
+    "keyStatus": "CONFIGURED",
+    "keySource": "file"
+  },
+  "lastCycleProcessed": null
+}
+```
 
 ## Provedor recomendado
 

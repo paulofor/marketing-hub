@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Valida a leitura restrita de logs Docker dos containers de chat pelo MCP.
+ * Valida a leitura restrita de logs Docker dos containers operacionais pelo MCP.
  */
 class ChatContainerLogServiceTest {
 
@@ -31,7 +31,8 @@ class ChatContainerLogServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> service.readLogs("marketinghub-backend", 10, null));
 
-        assertEquals("container must be one of: marketinghub-fashion-chat", exception.getMessage());
+        assertEquals("container must be one of: marketinghub-fashion-chat, product-discovery-worker",
+                exception.getMessage());
     }
 
     /**
@@ -91,7 +92,7 @@ class ChatContainerLogServiceTest {
         );
         McpProperties.ChatLogs chatLogs = new McpProperties.ChatLogs(
                 true,
-                List.of("marketinghub-fashion-chat"),
+                List.of("marketinghub-fashion-chat", "product-discovery-worker"),
                 dockerCommand,
                 500,
                 5

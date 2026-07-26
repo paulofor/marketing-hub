@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildExperimentTestUrl,
   buildLearnedLessonsPayload,
+  buildStrategicPositioningPayload,
 } from "./ExperimentDetailPage";
 
 describe("buildExperimentTestUrl", () => {
@@ -38,5 +39,27 @@ describe("buildLearnedLessonsPayload", () => {
 
   it("envia nulo quando o usuario limpa as licoes aprendidas", () => {
     expect(buildLearnedLessonsPayload("  ")).toEqual({ learnedLessons: null });
+  });
+});
+
+describe("buildStrategicPositioningPayload", () => {
+  it("normaliza objetivo comercial e funcao operacional antes de salvar", () => {
+    expect(
+      buildStrategicPositioningPayload(
+        "  Validar se vídeo humano aumenta início do diagnóstico.  ",
+        "  Validação operacional do A/B de página.  ",
+      ),
+    ).toEqual({
+      commercialObjective:
+        "Validar se vídeo humano aumenta início do diagnóstico.",
+      currentOperationalFunction: "Validação operacional do A/B de página.",
+    });
+  });
+
+  it("envia nulo quando os campos de posicionamento sao limpos", () => {
+    expect(buildStrategicPositioningPayload(" ", "\n")).toEqual({
+      commercialObjective: null,
+      currentOperationalFunction: null,
+    });
   });
 });

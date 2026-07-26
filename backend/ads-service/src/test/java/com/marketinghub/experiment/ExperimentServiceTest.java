@@ -288,6 +288,100 @@ class ExperimentServiceTest {
     }
 
     @Test
+    void updateStatusRequiresLearnedLessonsBeforeFinished() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste finalizacao").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Finalizacao").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150_FINISH_LEARNINGS")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp finalizacao");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150_FINISH_LEARNINGS");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        Experiment exp = service.create(req);
+
+        assertThatThrownBy(() -> service.updateStatus(exp.getId(), ExperimentStatus.FINISHED))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("learnedLessons required");
+
+        service.updateLearnedLessons(exp.getId(), "Falha técnica contaminada; relançar sucessor limpo.");
+        Experiment finished = service.updateStatus(exp.getId(), ExperimentStatus.FINISHED);
+
+        assertThat(finished.getStatus()).isEqualTo(ExperimentStatus.FINISHED);
+    }
+
+    @Test
+    void updateStrategicPositioningStoresAndClearsCurrentExperimentRole() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste posicionamento").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Posicionamento").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150_POSITIONING")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp posicionamento");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150_POSITIONING");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        Experiment exp = service.create(req);
+
+        Experiment updated = service.updateStrategicPositioning(
+                exp.getId(),
+                "  Validar se vídeo humano aumenta início do diagnóstico.  ",
+                "  Validação operacional do roteamento A/B de página.  ");
+
+        assertThat(updated.getCommercialObjective())
+                .isEqualTo("Validar se vídeo humano aumenta início do diagnóstico.");
+        assertThat(updated.getCurrentOperationalFunction())
+                .isEqualTo("Validação operacional do roteamento A/B de página.");
+
+        Experiment cleared = service.updateStrategicPositioning(exp.getId(), " ", null);
+
+        assertThat(cleared.getCommercialObjective()).isNull();
+        assertThat(cleared.getCurrentOperationalFunction()).isNull();
+    }
+
+    @Test
     void createNewExperimentWithExistingNiche() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());

@@ -1,0 +1,119 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  createHealthPayload,
+  createHealthState,
+  markCycleCompleted,
+  markCycleFailed,
+  markPollCompleted,
+  markPollFailed,
+  markPollStarted,
+  startHealthServer,
+} from "../src/health.js";
+import { resolveSearchConfig, SEARCH_PROVIDERS } from "../src/research.js";
+
+test("createHealthPayload reports provider and Brave key status without leaking secret", () => {
+  const state = createHealthState(new Date("2026-07-26T12:00:00.000Z"));
+  const searchConfig = resolveSearchConfig({
+    PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+    BRAVE_SEARCH_API_KEY: "brave-secret-value",
+  });
+
+  const payload = createHealthPayload({
+    searchConfig,
+    state,
+    pollIntervalMs: 60000,
+    maxSearchResults: 8,
+    env: {
+      PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+      BRAVE_SEARCH_API_KEY: "brave-secret-value",
+    },
+  });
+
+  assert.equal(payload.status, "UP");
+  assert.equal(payload.activeSearchProvider, SEARCH_PROVIDERS.BRAVE);
+  assert.deepEqual(payload.braveSearch, {
+    keyStatus: "CONFIGURED",
+    keySource: "env",
+  });
+  assert.equal(JSON.stringify(payload).includes("brave-secret-value"), false);
+});
+
+test("createHealthPayload keeps last processed cycle after completion and failure", () => {
+  const state = createHealthState(new Date("2026-07-26T12:00:00.000Z"));
+  markPollStarted(state, new Date("2026-07-26T12:01:00.000Z"));
+  markCycleCompleted(
+    state,
+    {
+      cycleId: 7,
+      theme: "mulheres que compram roupa online",
+      targetAudience: "mulheres 30+",
+    },
+    { opportunities: [{ name: "PDE MUSA" }] },
+    new Date("2026-07-26T12:02:00.000Z"),
+  );
+  markPollCompleted(state, new Date("2026-07-26T12:03:00.000Z"));
+
+  assert.equal(state.lastCycleProcessed.cycleId, 7);
+  assert.equal(state.lastCycleProcessed.status, "COMPLETED");
+  assert.equal(state.lastCycleProcessed.opportunitiesCount, 1);
+
+  markCycleFailed(
+    state,
+    { cycleId: 8, theme: "moda prática" },
+    new Error("Brave indisponível"),
+    new Date("2026-07-26T12:04:00.000Z"),
+  );
+  markPollFailed(
+    state,
+    new Error("Falha no polling"),
+    new Date("2026-07-26T12:05:00.000Z"),
+  );
+
+  const payload = createHealthPayload({
+    searchConfig: resolveSearchConfig({}),
+    state,
+    pollIntervalMs: 60000,
+    maxSearchResults: 8,
+    env: {},
+  });
+
+  assert.equal(payload.status, "DEGRADED");
+  assert.equal(payload.lastCycleProcessed.cycleId, 8);
+  assert.equal(payload.lastCycleProcessed.status, "FAILED");
+  assert.equal(payload.polling.lastPollError, "Falha no polling");
+});
+
+test("startHealthServer serves healthz JSON and not found responses", async () => {
+  const state = createHealthState(new Date("2026-07-26T12:00:00.000Z"));
+  const server = startHealthServer({
+    host: "127.0.0.1",
+    port: 0,
+    searchConfig: resolveSearchConfig({
+      PRODUCT_DISCOVERY_SEARCH_PROVIDER: "duckduckgo",
+    }),
+    state,
+    pollIntervalMs: 60000,
+    maxSearchResults: 8,
+    logger: { info() {} },
+    env: {},
+  });
+
+  await new Promise((resolve) => server.once("listening", resolve));
+  const { port } = server.address();
+
+  try {
+    const healthResponse = await fetch(`http://127.0.0.1:${port}/healthz`);
+    assert.equal(healthResponse.status, 200);
+    const payload = await healthResponse.json();
+    assert.equal(payload.service, "product-discovery-worker");
+    assert.equal(payload.activeSearchProvider, SEARCH_PROVIDERS.DUCKDUCKGO);
+
+    const notFoundResponse = await fetch(`http://127.0.0.1:${port}/missing`);
+    assert.equal(notFoundResponse.status, 404);
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});

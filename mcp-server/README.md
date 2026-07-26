@@ -30,6 +30,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `github_actions_get_run_summary`: verifica se uma execução terminou com sucesso e detalha jobs/steps com falha.
 - `github_actions_get_run_logs`: baixa os logs compactados de uma execução e retorna um trecho em texto.
 - `chat_container_logs`: retorna logs Docker dos containers operacionais permitidos no host do MCP. Por padrão, `marketinghub-fashion-chat` e `product-discovery-worker`.
+- `product_discovery_worker_health`: consulta o health do `product-discovery-worker` e retorna provider ativo, status da chave Brave, último polling, último erro e último ciclo processado.
 
 ## Executar localmente
 
@@ -91,6 +92,29 @@ Configuração:
 - `MCP_CHAT_LOG_TIMEOUT_SECONDS` (default `20`).
 
 No Docker Compose do MCP, o socket `/var/run/docker.sock` é montado como somente leitura para viabilizar a leitura de logs. Não exponha essa permissão para execução de comandos arbitrários.
+
+## Health do Product Discovery Worker
+
+O tool `product_discovery_worker_health` consulta o endpoint `GET /healthz` dentro do container `product-discovery-worker` usando um comando Docker restrito:
+
+```text
+docker exec product-discovery-worker node -e <health-fetch-fixo> http://127.0.0.1:8080/healthz
+```
+
+Isso evita depender da porta publicada no host e permite diagnosticar rapidamente:
+
+- provider de busca ativo (`activeSearchProvider`);
+- status da chave Brave sem revelar segredo (`braveSearch.keyStatus`);
+- último polling e último erro (`polling.lastPollStatus`, `polling.lastPollError`);
+- último ciclo processado (`lastCycleProcessed`).
+
+Configuração:
+
+- `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_ENABLED` (default `true`);
+- `MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER` (default `product-discovery-worker`);
+- `MCP_PRODUCT_DISCOVERY_WORKER_DOCKER_COMMAND` (default herda `MCP_CHAT_LOG_DOCKER_COMMAND` ou `docker`);
+- `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL` (default `http://127.0.0.1:8080/healthz`);
+- `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_TIMEOUT_SECONDS` (default `10`).
 
 ## Ferramentas de diagnóstico Meta
 

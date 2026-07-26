@@ -20,6 +20,7 @@ public record McpProperties(
         @NotBlank String serverVersion,
         @NotNull @Valid Logs logs,
         @NotNull @Valid ChatLogs chatLogs,
+        @NotNull @Valid ProductDiscoveryWorker productDiscoveryWorker,
         @NotNull @Valid Meta meta,
         @NotNull @Valid Github github
 ) {
@@ -58,6 +59,18 @@ public record McpProperties(
             @NotEmpty List<@NotBlank String> allowedContainers,
             @NotBlank String dockerCommand,
             @Positive int maxLines,
+            @Positive int timeoutSeconds
+    ) {
+    }
+
+    /**
+     * Define como o MCP consulta o health operacional do Product Discovery Worker.
+     */
+    public record ProductDiscoveryWorker(
+            boolean enabled,
+            @NotBlank String container,
+            @NotBlank String dockerCommand,
+            @NotBlank String healthUrl,
             @Positive int timeoutSeconds
     ) {
     }

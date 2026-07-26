@@ -7,6 +7,7 @@ import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.GithubActionsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
 import com.marketinghub.mcpserver.service.PdeDatabaseDiagnosticsService;
+import com.marketinghub.mcpserver.service.ProductDiscoveryWorkerHealthService;
 import com.marketinghub.mcpserver.service.SensitiveDataSanitizer;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ public class McpController {
     private final PdeDatabaseDiagnosticsService pdeDatabaseDiagnosticsService;
     private final ModuleLogService moduleLogService;
     private final ChatContainerLogService chatContainerLogService;
+    private final ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService;
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
     private final SensitiveDataSanitizer sensitiveDataSanitizer;
@@ -59,6 +61,7 @@ public class McpController {
                          PdeDatabaseDiagnosticsService pdeDatabaseDiagnosticsService,
                          ModuleLogService moduleLogService,
                          ChatContainerLogService chatContainerLogService,
+                         ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService,
                          MetaDiagnosticsService metaDiagnosticsService,
                          GithubActionsService githubActionsService,
                          SensitiveDataSanitizer sensitiveDataSanitizer) {
@@ -67,6 +70,7 @@ public class McpController {
         this.pdeDatabaseDiagnosticsService = pdeDatabaseDiagnosticsService;
         this.moduleLogService = moduleLogService;
         this.chatContainerLogService = chatContainerLogService;
+        this.productDiscoveryWorkerHealthService = productDiscoveryWorkerHealthService;
         this.metaDiagnosticsService = metaDiagnosticsService;
         this.githubActionsService = githubActionsService;
         this.sensitiveDataSanitizer = sensitiveDataSanitizer;
@@ -234,6 +238,14 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "product_discovery_worker_health",
+                            "description", "Consulta o health do Product Discovery Worker e retorna provider ativo, chave configurada, último polling, último erro e último ciclo processado.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "meta_docs_get",
                             "description", "Busca uma página de documentação da Meta em hosts aprovados e retorna texto simplificado.",
                             "inputSchema", Map.of(
@@ -347,6 +359,7 @@ public class McpController {
                 case "pde_db_query" -> callPdeQueryTool(id, arguments);
                 case "java_module_logs" -> callJavaModuleLogsTool(id, arguments);
                 case "chat_container_logs" -> callChatContainerLogsTool(id, arguments);
+                case "product_discovery_worker_health" -> callProductDiscoveryWorkerHealthTool(id);
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
                 case "meta_graph_get" -> callMetaGraphGetTool(id, arguments);
                 case "meta_graph_debug_token" -> callMetaGraphDebugTokenTool(id, arguments);
@@ -557,6 +570,43 @@ public class McpController {
                 .map(String::valueOf)
                 .collect(Collectors.joining("\n"));
         return header + "\n" + logLines;
+    }
+
+    /**
+     * Consulta o health do Product Discovery Worker pelo Docker local do host MCP.
+     */
+    private Map<String, Object> callProductDiscoveryWorkerHealthTool(Object id) {
+        try {
+            Map<String, Object> result = productDiscoveryWorkerHealthService.readHealth();
+            return successToolResult(id, result, buildProductDiscoveryWorkerHealthText(result));
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP product_discovery_worker_health inválido: requestId={} motivo={}", id, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar product_discovery_worker_health: requestId={}", id, ex);
+            return error(id, -32603, "Failed to read product discovery worker health: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Formata um resumo textual do health do Product Discovery Worker.
+     */
+    @SuppressWarnings("unchecked")
+    private String buildProductDiscoveryWorkerHealthText(Map<String, Object> result) {
+        Object payloadObject = result.get("payload");
+        if (!(payloadObject instanceof Map<?, ?> payload)) {
+            return "Product Discovery Worker health fetched";
+        }
+        Object pollingObject = payload.get("polling");
+        Map<String, Object> polling = pollingObject instanceof Map<?, ?> pollingMap
+                ? (Map<String, Object>) pollingMap
+                : Map.of();
+        return "Product Discovery Worker health: status=%s provider=%s lastPollStatus=%s lastPollError=%s"
+                .formatted(
+                        payload.get("status"),
+                        payload.get("activeSearchProvider"),
+                        polling.get("lastPollStatus"),
+                        polling.get("lastPollError"));
     }
 
     /**

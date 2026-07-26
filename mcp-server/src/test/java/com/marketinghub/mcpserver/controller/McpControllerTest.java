@@ -79,6 +79,11 @@ class McpControllerTest {
         registry.add("mcp.chat-logs.docker-command", () -> TEST_LOG_DIR.resolve("docker-fake.sh").toString());
         registry.add("mcp.chat-logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.timeout-seconds", () -> "5");
+        registry.add("mcp.product-discovery-worker.enabled", () -> "true");
+        registry.add("mcp.product-discovery-worker.container", () -> "product-discovery-worker");
+        registry.add("mcp.product-discovery-worker.docker-command", () -> TEST_LOG_DIR.resolve("docker-fake.sh").toString());
+        registry.add("mcp.product-discovery-worker.health-url", () -> "http://127.0.0.1:8080/healthz");
+        registry.add("mcp.product-discovery-worker.timeout-seconds", () -> "5");
         registry.add("mcp.meta.enabled", () -> "false");
         registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
         registry.add("mcp.meta.graph-version", () -> "v23.0");
@@ -148,6 +153,10 @@ class McpControllerTest {
         Path fakeDocker = TEST_LOG_DIR.resolve("docker-fake.sh");
         Files.writeString(fakeDocker,
                 "#!/usr/bin/env sh\n"
+                        + "if [ \"$1\" = \"exec\" ]; then\n"
+                        + "  echo '{\"service\":\"product-discovery-worker\",\"status\":\"UP\",\"activeSearchProvider\":\"brave\",\"braveSearch\":{\"keyStatus\":\"CONFIGURED\",\"keySource\":\"file\"},\"polling\":{\"lastPollStatus\":\"COMPLETED\",\"lastPollError\":null},\"lastCycleProcessed\":{\"cycleId\":77,\"status\":\"COMPLETED\"}}'\n"
+                        + "  exit 0\n"
+                        + "fi\n"
                         + "echo \"2026-07-12T10:00:00Z Fashion chat service listening on port 8094\"\n"
                         + "echo \"2026-07-12T10:00:01Z health ok\"\n",
                 StandardCharsets.UTF_8);
@@ -471,6 +480,23 @@ class McpControllerTest {
     }
 
     /**
+     * Garante que o health do Product Discovery Worker fica disponível pelo MCP.
+     */
+    @Test
+    void shouldReadProductDiscoveryWorkerHealth() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":25,"method":"tools/call","params":{"name":"product_discovery_worker_health","arguments":{}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.container").value("product-discovery-worker"))
+                .andExpect(jsonPath("$.result.structuredContent.payload.status").value("UP"))
+                .andExpect(jsonPath("$.result.structuredContent.payload.activeSearchProvider").value("brave"))
+                .andExpect(jsonPath("$.result.structuredContent.payload.polling.lastPollStatus").value("COMPLETED"));
+    }
+
+    /**
      * Garante que a tool chat_container_logs rejeita containers fora da allowlist.
      */
     @Test
@@ -568,7 +594,8 @@ class McpControllerTest {
                 {"jsonrpc":"2.0","id":21,"method":"tools/list","params":{}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("product-discovery-worker")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("product-discovery-worker")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("product_discovery_worker_health")));
     }
 
 

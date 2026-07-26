@@ -8,6 +8,7 @@ REMOTE_DEPLOY_DIR=${REMOTE_DEPLOY_DIR:-/opt/marketinghub/containers}
 BACKEND_PUBLIC_BASE_URL=${BACKEND_PUBLIC_BASE_URL:-http://191.252.181.168}
 VALIDATION_PATH=${VALIDATION_PATH:-/api/products/public/metodo-musa-7-dias/marketing-definition}
 VALIDATION_EXPECTED=${VALIDATION_EXPECTED:-Jornada de 7 dias}
+PDE_PUBLIC_BASE_URL=${PDE_PUBLIC_BASE_URL:-https://clubemusa.com.br}
 CONFIRM_DEPLOY=${CONFIRM_DEPLOY:-}
 ALLOW_DIRTY_WORKTREE=${ALLOW_DIRTY_WORKTREE:-false}
 
@@ -126,6 +127,12 @@ validate_remote_endpoint() {
 
   rm -f "${response_file}"
   log "Endpoint validado com sucesso"
+
+  log "Validando consistência pública PDE MUSA"
+  BACKEND_PUBLIC_BASE_URL="${BACKEND_PUBLIC_BASE_URL}" \
+    PDE_PUBLIC_BASE_URL="${PDE_PUBLIC_BASE_URL}" \
+    PRODUCT_SLUG="metodo-musa-7-dias" \
+    scripts/check-musa-pde-public-consistency.sh
 }
 
 main() {

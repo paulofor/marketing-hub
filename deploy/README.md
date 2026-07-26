@@ -111,6 +111,21 @@ http://191.252.181.168/api/products/public/metodo-musa-7-dias/marketing-definiti
 
 e exige que a resposta contenha `Jornada de 7 dias`.
 
+Depois da validação comercial básica, o deploy seguro também executa:
+
+```bash
+scripts/check-musa-pde-public-consistency.sh
+```
+
+Esse healthcheck automatizado valida simultaneamente:
+
+- `GET /api/products/public/{slug}/pde-experience` no backend principal;
+- `GET /api/pde/products/{slug}` no backend principal;
+- `GET /api/pde/products/{slug}` no domínio final do Clube MUSA;
+- `GET /healthz` e a página pública do domínio final.
+
+O check falha quando `slug`, `experienceVersion` ou `funnelVersion` divergem entre o contrato canônico do Marketing Hub, o alias público do backend e o domínio final `clubemusa.com.br`.
+
 Variáveis úteis:
 
 | Variável | Descrição | Padrão |
@@ -119,6 +134,7 @@ Variáveis úteis:
 | `DEPLOY_HOST` / `DEPLOY_USER` | alternativa para montar o alvo SSH | vazio |
 | `IMAGE_TAG` | tag da imagem gerada | timestamp UTC |
 | `BACKEND_PUBLIC_BASE_URL` | base pública do backend para validação | `http://191.252.181.168` |
+| `PDE_PUBLIC_BASE_URL` | base pública final do PDE usada no healthcheck de consistência | `https://clubemusa.com.br` |
 | `VALIDATION_PATH` | endpoint de negócio validado após deploy | `/api/products/public/metodo-musa-7-dias/marketing-definition` |
 | `VALIDATION_EXPECTED` | texto obrigatório na resposta final | `Jornada de 7 dias` |
 | `LIQUIBASE_VALIDATE_SCOPE` | escopo da validação estática: `changed` ou `all` | `changed` |

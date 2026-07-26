@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Loader2,
   Pencil,
+  PlaySquare,
   Video,
   Workflow,
 } from "lucide-react";
@@ -386,6 +387,13 @@ export default function ProductListPage() {
                       >
                         <Video size={16} aria-hidden="true" />
                         Vídeos de venda
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/products/${product.id}/organic-videos`}
+                      >
+                        <PlaySquare size={16} aria-hidden="true" />
+                        Vídeos orgânicos
                       </Link>
                       <Link
                         className="product-catalog-card__action-button product-catalog-card__action-button--secondary"

@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-26-product-musa-pde-video-explainer-entry.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-26-experiment-strategic-positioning.yaml
       relativeToChangelogFile: true
   - include:

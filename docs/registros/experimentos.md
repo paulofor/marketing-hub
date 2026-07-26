@@ -1,3 +1,10 @@
+## 2026-07-26 — Experimento 69: entrada MUSA com vídeo explicativo inicial
+
+- decisão comercial: não criar novo experimento; o experimento 69 continua sendo o teste principal para medir se o vídeo explicativo inicial aumenta avanço real no PDE MUSA.
+- foi feito: o contrato PDE do produto MUSA no Marketing Hub passou para `experienceVersion=musa-pde-entry-v5-video-explicativo`, mantendo `funnelVersion=musa-membership-funnel-v1`.
+- foi feito: o frontend PDE reconhece essa versão como entrada com vídeo antes do diagnóstico e registra `VIDEO_VIEWED` e `VIDEO_CTA_CLICKED` junto dos eventos de diagnóstico, paywall, checkout e compra.
+- prevenção de recorrência: mudanças de primeira dobra com impacto de conversão continuam versionadas no contrato do Hub, separando a nova janela de leitura de tráfego da versão anterior sem vídeo.
+
 ## 2026-07-25 — Experimento 68: fallback minimo para criativo Meta
 
 - causa-raiz operacional confirmada pelo histórico: os objetos órfãos antigos da Meta já estavam removidos, mas a republicação do experimento 68 voltou a falhar no mesmo ponto, `POST /adcreatives`, depois de campanha e ad set criados com sucesso.
@@ -6143,3 +6150,11 @@
 - foi feito: o alerta de custo legado não reconciliado deixou de aparecer quando o custo rastreável calculado já é maior que o total legado.
 - prevenção: adicionados testes de frontend reproduzindo o caso do experimento 69 e protegendo o alerta legado contra contradição visual.
 - impacto comercial esperado: melhorar a leitura de custo real por experimento para decisão de escala, pausa e priorização de criativos sem subestimar investimento em vídeo.
+
+## 2026-07-26 — Produtos: playbook de vídeos orgânicos em 7 dias
+
+- decisão comercial: o primeiro ciclo orgânico do produto deve começar com 6 vídeos de entretenimento/dor cotidiana, 2 educativos e 1 direto para diagnóstico, evitando pular do desconhecimento para a oferta.
+- foi feito: criado endpoint do produto para expor o playbook de 9 vídeos em 7 dias com canais, hooks, cenas, mensagens, CTAs, métricas e regras de decisão.
+- foi feito: o cadastro de produtos passou a ter acesso para a tela "Vídeos orgânicos", que organiza calendário, mix editorial e leitura de sinais após os 7 dias.
+- prevenção: adicionados testes de contrato backend e teste de frontend para garantir que a tela mostre a verdade retornada pelo backend.
+- impacto comercial esperado: acelerar publicação orgânica do MUSA e de próximos produtos com uma cadência clara de validação antes de aumentar CTA, transformar educativo em autoridade ou usar vídeo direto como retargeting/anúncio.

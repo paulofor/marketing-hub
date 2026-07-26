@@ -1,0 +1,203 @@
+import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  BarChart3,
+  CalendarDays,
+  Clapperboard,
+  MessageCircle,
+  MousePointerClick,
+  PlaySquare,
+  Map,
+  Share2,
+} from "lucide-react";
+import { useProductOrganicVideoPlan } from "../../api/product/useProductOrganicVideoPlan";
+import PageTitle from "../../components/PageTitle";
+
+const categoryLabels: Record<string, string> = {
+  ENTRETENIMENTO_DOR: "Entretenimento / dor",
+  EDUCATIVO: "Educativo",
+  DIRETO_DIAGNOSTICO: "Direto para diagnóstico",
+};
+
+const categoryIcons: Record<string, typeof MessageCircle> = {
+  ENTRETENIMENTO_DOR: MessageCircle,
+  EDUCATIVO: Share2,
+  DIRETO_DIAGNOSTICO: MousePointerClick,
+};
+
+function getCategoryLabel(category: string) {
+  return categoryLabels[category] ?? category.replace(/_/g, " ");
+}
+
+function groupByDay<T extends { day: number }>(items: T[]) {
+  return items.reduce<Record<number, T[]>>((groups, item) => {
+    groups[item.day] = [...(groups[item.day] ?? []), item];
+    return groups;
+  }, {});
+}
+
+export default function ProductOrganicVideoPlanPage() {
+  const { productId } = useParams();
+  const planQuery = useProductOrganicVideoPlan(productId);
+  const plan = planQuery.data;
+
+  if (planQuery.isLoading) {
+    return <p className="text-muted">Carregando plano de vídeos orgânicos...</p>;
+  }
+
+  if (planQuery.isError || !plan) {
+    return (
+      <div>
+        <Link className="btn btn-outline-secondary mb-3" to="/products">
+          <ArrowLeft size={16} aria-hidden="true" />
+          Voltar para produtos
+        </Link>
+        <div className="alert alert-danger">
+          Não foi possível carregar o plano orgânico do produto.
+        </div>
+      </div>
+    );
+  }
+
+  const videosByDay = groupByDay(plan.videos);
+  const entertainmentCount = plan.videos.filter(
+    (video) => video.category === "ENTRETENIMENTO_DOR",
+  ).length;
+  const educationCount = plan.videos.filter(
+    (video) => video.category === "EDUCATIVO",
+  ).length;
+  const directCount = plan.videos.filter(
+    (video) => video.category === "DIRETO_DIAGNOSTICO",
+  ).length;
+
+  return (
+    <div>
+      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+        <div>
+          <PageTitle>Plano orgânico de vídeos</PageTitle>
+          <p className="text-muted mb-0">
+            {plan.productName || plan.productSlug || `Produto ${plan.productId}`} ·{" "}
+            {plan.strategyName}
+          </p>
+        </div>
+        <Link className="btn btn-outline-secondary" to="/products">
+          <ArrowLeft size={16} aria-hidden="true" />
+          Voltar para produtos
+        </Link>
+      </div>
+
+      <section className="organic-video-plan__summary">
+        <div className="organic-video-plan__summary-main">
+          <span className="badge text-bg-light border">Playbook backend</span>
+          <h2>{plan.objective}</h2>
+          <p>{plan.mixRationale}</p>
+        </div>
+        <div className="organic-video-plan__metrics">
+          <div>
+            <strong>{entertainmentCount}</strong>
+            <span>Dor cotidiana</span>
+          </div>
+          <div>
+            <strong>{educationCount}</strong>
+            <span>Educativos</span>
+          </div>
+          <div>
+            <strong>{directCount}</strong>
+            <span>Diagnóstico</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="organic-video-plan__context">
+        <div>
+          <CalendarDays size={18} aria-hidden="true" />
+          <span>{plan.publishingWindow}</span>
+        </div>
+        <div>
+          <PlaySquare size={18} aria-hidden="true" />
+          <span>{plan.channelPriority}</span>
+        </div>
+        <div>
+          <Map size={18} aria-hidden="true" />
+          <span>Sequência baseada em desconhecimento, relevância, mecanismo, microexperiência e desejo.</span>
+        </div>
+      </div>
+
+      <section className="organic-video-plan__calendar" aria-label="Calendário de vídeos">
+        {Object.entries(videosByDay).map(([day, videos]) => (
+          <article className="organic-video-day" key={day}>
+            <div className="organic-video-day__header">
+              <span>Dia {day}</span>
+              <strong>{videos.length} vídeo{videos.length > 1 ? "s" : ""}</strong>
+            </div>
+            <div className="organic-video-day__videos">
+              {videos.map((video) => {
+                const Icon = categoryIcons[video.category] ?? Clapperboard;
+                return (
+                  <div className="organic-video-card" key={video.sequence}>
+                    <div className="organic-video-card__topline">
+                      <span>
+                        <Icon size={16} aria-hidden="true" />
+                        {getCategoryLabel(video.category)}
+                      </span>
+                      <small>#{video.sequence}</small>
+                    </div>
+                    <h3>{video.hook}</h3>
+                    <dl>
+                      <div>
+                        <dt>Cena</dt>
+                        <dd>{video.scene}</dd>
+                      </div>
+                      <div>
+                        <dt>Mensagem</dt>
+                        <dd>{video.message}</dd>
+                      </div>
+                      <div>
+                        <dt>CTA</dt>
+                        <dd>{video.callToAction}</dd>
+                      </div>
+                      <div>
+                        <dt>Métrica</dt>
+                        <dd>{video.primaryMetric}</dd>
+                      </div>
+                    </dl>
+                    <div className="organic-video-card__footer">
+                      <span>{video.funnelStage}</span>
+                      <span>{video.platformPriority}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="organic-video-plan__rules">
+        <div className="organic-video-plan__rules-heading">
+          <BarChart3 size={18} aria-hidden="true" />
+          <h2>Como decidir depois dos 7 dias</h2>
+        </div>
+        <div className="organic-video-plan__rule-grid">
+          {plan.decisionRules.map((rule) => (
+            <article className="organic-video-rule" key={rule.signal}>
+              <span>{rule.signal}</span>
+              <h3>{rule.condition}</h3>
+              <p>{rule.decision}</p>
+              <small>{rule.commercialReason}</small>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="organic-video-plan__principles">
+        <h2>Princípios operacionais</h2>
+        <ul>
+          {plan.operatingPrinciples.map((principle) => (
+            <li key={principle}>{principle}</li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}

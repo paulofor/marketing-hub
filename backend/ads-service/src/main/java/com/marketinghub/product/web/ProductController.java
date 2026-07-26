@@ -12,6 +12,7 @@ import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
+import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
@@ -65,6 +66,12 @@ public class ProductController {
   @GetMapping("/{id}/financial-summary")
   public ProductFinancialSummaryResponse getFinancialSummary(@PathVariable Long id) {
     return service.getFinancialSummary(id);
+  }
+
+  /** Retorna o playbook de vídeos orgânicos recomendado para o produto. */
+  @GetMapping("/{id}/organic-video-plan")
+  public ProductOrganicVideoPlanResponse getOrganicVideoPlan(@PathVariable Long id) {
+    return service.getOrganicVideoPlan(id);
   }
 
   /** Insere a jornada persuasiva interativa padrão no contrato PDE do produto. */

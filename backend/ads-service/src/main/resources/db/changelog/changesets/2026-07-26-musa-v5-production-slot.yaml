@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-26-musa-v5-production-slot.yaml
+  - changeSet:
+      id: 2026-07-26-musa-v5-production-slot-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pde_production_slot
+                 SET domain = 'v2.clubemusa.com.br',
+                     public_url = 'https://v2.clubemusa.com.br',
+                     notes = 'Slot produtivo legado da Hipotese 2. Para a versao 5 atual, usar o slot v5 em https://v5.clubemusa.com.br.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE product_slug = 'metodo-musa-7-dias'
+                 AND slot_code = 'v2'
+                 AND domain = 'clubemusa.com.br';
+
+              INSERT INTO pde_production_slot (
+                slot_code,
+                product_slug,
+                domain,
+                public_url,
+                backend_url,
+                experience_version,
+                target_environment,
+                status,
+                source_experiment_id,
+                notes
+              ) VALUES (
+                'v5',
+                'metodo-musa-7-dias',
+                'v5.clubemusa.com.br',
+                'https://v5.clubemusa.com.br',
+                NULL,
+                'musa-pde-entry-v5-video-explicativo',
+                'production-v5',
+                'READY',
+                NULL,
+                'Slot produtivo oficial da versao 5 do Clube MUSA. Campanhas, criativos e validacoes da v5 devem usar este subdominio.'
+              )
+              ON DUPLICATE KEY UPDATE
+                domain = VALUES(domain),
+                public_url = VALUES(public_url),
+                backend_url = VALUES(backend_url),
+                experience_version = VALUES(experience_version),
+                target_environment = VALUES(target_environment),
+                status = VALUES(status),
+                source_experiment_id = VALUES(source_experiment_id),
+                notes = VALUES(notes),
+                updated_at = CURRENT_TIMESTAMP;

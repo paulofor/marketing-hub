@@ -320,7 +320,7 @@ public class ExperimentController {
         if (missing.contains("pdeMembershipDestination")) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Experimento PDE MUSA exige que o link do anúncio aponte para https://clubemusa.com.br ou para slot produtivo aprovado, com login gratuito e paywall interno.");
+                    "Experimento PDE MUSA exige que o link do anúncio aponte para um slot produtivo versionado aprovado, como https://v5.clubemusa.com.br, com login gratuito e paywall interno.");
         }
     }
 

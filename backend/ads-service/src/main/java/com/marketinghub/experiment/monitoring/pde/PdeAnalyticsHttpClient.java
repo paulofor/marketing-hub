@@ -6,11 +6,11 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-/** Consulta o backend PDE por HTTP para obter métricas administrativas do funil. */
+/** Consulta o backend PDE por HTTP para obter métricas administrativas do funil versionado. */
 @Component
 public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
 
-    private static final String DEFAULT_PDE_BASE_URL = "https://clubemusa.com.br";
+    private static final String DEFAULT_PDE_BASE_URL = "https://v5.clubemusa.com.br";
 
     private final RestClient restClient;
 

@@ -278,6 +278,8 @@ O modelo canônico é um **slot produtivo PDE** persistido no backend principal 
 
 Slots produtivos existem para separar aprendizado comercial e reduzir risco operacional. Um teste novo não deve obrigar a troca global de `clubemusa.com.br` quando for possível publicar uma variação em subdomínio próprio, mantendo eventos por `experienceVersion`, URL de anúncio explícita e histórico de campanha rastreável.
 
+Quando a versão comercial for numerada, o slot produtivo deve usar o subdomínio correspondente à versão, como `v5.clubemusa.com.br` para a versão 5. O domínio raiz pode existir como entrada institucional, legado ou redirecionamento, mas não deve ser a URL primária de uma campanha que mede uma versão específica.
+
 O Marketing Hub pode cadastrar e acompanhar slots antes da automação completa de infraestrutura. A publicação real continua proibida por SSH manual: o deploy deve ser feito por workflow, Compose, Dockerfile ou pipeline versionados do repositório.
 
 ## Contrato mínimo de produto
@@ -342,9 +344,9 @@ Um produto PDE só pode ser considerado pronto para tráfego quando:
 4. experiência guiada estiver carregando;
 5. materiais de apoio estiverem disponíveis;
 6. progresso estiver persistindo ou registrado de forma auditável;
-7. o anúncio apontar para a entrada/login do PDE em `https://clubemusa.com.br` ou em slot produtivo versionado aprovado, como `https://v1.clubemusa.com.br`, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
+7. o anúncio apontar para a entrada/login do PDE em slot produtivo versionado aprovado, como `https://v5.clubemusa.com.br` para a versão 5, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
 8. produto da cliente não expuser termos técnicos internos.
 9. funil e analytics do PED estiverem registrando eventos próprios de entrada, sessão, UTM, paywall, checkout, compra, liberação e ativação.
 10. health check público comercial estiver publicado e passando com os textos críticos do PDE.
 
-Para experimentos do tipo `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, a prontidão de campanha não deve exigir GeraSalesPage v1 como página de venda tradicional. A validação correta é: contrato comercial completo, URL canônica do Clube MUSA/PDE, criativos prontos, segmentação publicável, checkout/webhook/acesso e experiência inicial/paga validados.
+Para experimentos do tipo `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, a prontidão de campanha não deve exigir GeraSalesPage v1 como página de venda tradicional. A validação correta é: contrato comercial completo, URL versionada do Clube MUSA/PDE, criativos prontos, segmentação publicável, checkout/webhook/acesso e experiência inicial/paga validados.

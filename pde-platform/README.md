@@ -94,7 +94,9 @@ coerente com o histórico da jornada.
 - A versao 5 do Clube MUSA deve responder em `https://v5.clubemusa.com.br`.
 - O dominio raiz `https://clubemusa.com.br` nao deve ser usado como URL primaria de campanha quando existir subdominio versionado para a experiencia medida.
 - Cada nova versao de PDE deve publicar e validar seu proprio subdominio, mantendo metricas, UTMs e criativos separados por `experienceVersion`.
-- A v5 e a versao com video explicativo inicial. O frontend gera `public/assets/musa-v5-video-explicativo.mp4` por `npm run generate:musa-v5-video` durante o build e usa esse arquivo como `VITE_MUSA_HERO_VIDEO_URL` padrao no compose.
+- A v5 e a versao com video explicativo inicial. O frontend gera `public/assets/musa-v5-video-explicativo.mp4` por `npm run generate:musa-videos` durante o build e usa esse arquivo como video padrao da v5.
+- A v6 e a versao com video motivacional inicial. Quando o hostname for `v6.clubemusa.com.br` e nao houver override explicito em runtime, o frontend usa `musa-pde-entry-v6-video-motivacional` e carrega `public/assets/musa-v6-video-motivacional.mp4`.
+- Os videos v5/v6 devem nascer do script versionado de build, nunca de copia manual para o container, para evitar dominios versionados servindo HTML de fallback no lugar de MP4.
 
 ## Login e assinatura MUSA
 

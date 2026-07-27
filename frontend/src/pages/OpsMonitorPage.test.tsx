@@ -130,6 +130,11 @@ describe("OpsMonitorPage", () => {
               name: "Clube MUSA PDE v5",
               type: "PDE",
               criticality: "CRITICAL",
+              publishedVersion: "musa-pde-entry-v5-video-explicativo",
+              productUrl: "https://v5.clubemusa.com.br",
+              monitoringUrl: "https://v5.clubemusa.com.br/?mh_monitor=1",
+              containerImageVersion:
+                "pde-platform-backend / pde-platform-frontend: tag do workflow",
               status: "ONLINE",
               lastCheckedAt: "2026-07-27T10:00:00Z",
               lastResponseTimeMs: 120,
@@ -142,7 +147,19 @@ describe("OpsMonitorPage", () => {
       if (
         url === "/api/ops-monitor/v1/modules/pde-musa-v5/availability-history"
       ) {
-        return Promise.resolve({ data: [] });
+        return Promise.resolve({
+          data: [
+            {
+              date: "2026-07-27",
+              totalChecks: 20,
+              successfulChecks: 19,
+              failedChecks: 1,
+              availabilityPercentage: 95,
+              offlineSeconds: 120,
+              degradedSeconds: 30,
+            },
+          ],
+        });
       }
       if (url === "/api/ops-monitor/v1/incidents/open") {
         return Promise.resolve({ data: [] });
@@ -166,7 +183,16 @@ describe("OpsMonitorPage", () => {
     );
 
     expect(await screen.findByText("Saúde PDE 24/7")).toBeInTheDocument();
-    expect(await screen.findAllByText("Clube MUSA PDE v5")).toHaveLength(2);
+    expect(await screen.findAllByText("Clube MUSA PDE v5")).toHaveLength(3);
+    expect(
+      await screen.findByText("musa-pde-entry-v5-video-explicativo"),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText("Abrir sem estatística comercial"),
+    ).toHaveAttribute("href", "https://v5.clubemusa.com.br/?mh_monitor=1");
+    expect(await screen.findByText("Revalidar agora")).toBeInTheDocument();
+    expect(await screen.findByText("Tempo fora")).toBeInTheDocument();
+    expect(await screen.findByText("2min")).toBeInTheDocument();
     expect(
       await screen.findByText("Monitoramento 24/7 das versões vendidas."),
     ).toBeInTheDocument();

@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-27-ops-monitor-pde-commercial-metadata-001
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+        - not:
+            columnExists:
+              tableName: ops_monitored_module
+              columnName: published_version
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE ops_monitored_module
+                ADD COLUMN published_version VARCHAR(150) NULL AFTER criticality,
+                ADD COLUMN product_url VARCHAR(512) NULL AFTER published_version,
+                ADD COLUMN monitoring_url VARCHAR(512) NULL AFTER product_url,
+                ADD COLUMN container_image_version VARCHAR(512) NULL AFTER monitoring_url;
+
+  - changeSet:
+      id: 2026-07-27-ops-monitor-pde-commercial-metadata-002
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+        - columnExists:
+            tableName: ops_monitored_module
+            columnName: published_version
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ops_monitored_module
+              SET published_version = 'musa-pde-entry-v5-video-explicativo',
+                  product_url = 'https://v5.clubemusa.com.br',
+                  monitoring_url = 'https://v5.clubemusa.com.br/?mh_monitor=1',
+                  container_image_version = 'pde-platform-backend / pde-platform-frontend: tag do workflow'
+              WHERE code = 'pde-musa-v5';
+
+              UPDATE ops_monitored_module
+              SET published_version = 'musa-pde-entry-v6-video-motivacional',
+                  product_url = 'https://v6.clubemusa.com.br',
+                  monitoring_url = 'https://v6.clubemusa.com.br/?mh_monitor=1',
+                  container_image_version = 'pde-platform-backend / pde-platform-frontend: tag do workflow'
+              WHERE code = 'pde-musa-v6';

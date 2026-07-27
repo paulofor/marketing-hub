@@ -16,6 +16,10 @@ export interface ModuleAvailability {
   name: string;
   type: string;
   criticality: string;
+  publishedVersion?: string | null;
+  productUrl?: string | null;
+  monitoringUrl?: string | null;
+  containerImageVersion?: string | null;
   status: OpsMonitorStatus;
   lastCheckedAt?: string | null;
   lastResponseTimeMs?: number | null;

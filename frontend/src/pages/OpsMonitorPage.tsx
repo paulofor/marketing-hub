@@ -3,6 +3,8 @@ import ReactECharts from "echarts-for-react";
 import {
   AlertTriangle,
   Activity,
+  ExternalLink,
+  RefreshCw,
   ServerCrash,
   ShieldCheck,
 } from "lucide-react";
@@ -75,6 +77,10 @@ function formatDuration(seconds?: number | null) {
   return `${Math.floor(minutes / 60)}h ${minutes % 60}min`;
 }
 
+function formatHistoryDuration(seconds: number) {
+  return seconds > 0 ? formatDuration(seconds) : "0s";
+}
+
 function getImpact(module: ModuleAvailability) {
   if (module.type === "PDE") {
     return (
@@ -118,6 +124,7 @@ export default function OpsMonitorPage({
   const incidentHistoryQuery = useOpsMonitorIncidentHistory(filters);
 
   const modules = availabilityQuery.data ?? [];
+  const pdeVersions = modules.filter((module) => module.type === "PDE");
   const pdeSummary = {
     online: modules.filter((module) => module.status === "ONLINE").length,
     degraded: modules.filter((module) => module.status === "DEGRADED").length,
@@ -142,6 +149,16 @@ export default function OpsMonitorPage({
       (module.status === "OFFLINE" ||
         (pdeFocus && module.status === "DEGRADED")),
   );
+
+  const refreshHealth = () => {
+    void summaryQuery.refetch();
+    void availabilityQuery.refetch();
+    void incidentsQuery.refetch();
+    void incidentHistoryQuery.refetch();
+    if (selectedModule?.moduleCode) {
+      void historyQuery.refetch();
+    }
+  };
 
   const chartOption = {
     tooltip: { trigger: "axis" },
@@ -172,6 +189,81 @@ export default function OpsMonitorPage({
     <div className="ops-monitor-page">
       <PageTitle>{title}</PageTitle>
       <p className="text-muted mb-4">{subtitle}</p>
+
+      {pdeFocus ? (
+        <div className="card mb-4 ops-monitor-page__pde-versions">
+          <div className="card-header d-flex justify-content-between align-items-center gap-3">
+            <span>Versões PDE em venda</span>
+            <button
+              className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
+              type="button"
+              onClick={refreshHealth}
+              disabled={
+                availabilityQuery.isFetching || incidentsQuery.isFetching
+              }
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              Revalidar agora
+            </button>
+          </div>
+          <div className="card-body">
+            {pdeVersions.length === 0 ? (
+              <p className="text-muted mb-0">
+                Nenhuma versão PDE crítica retornada pelo backend.
+              </p>
+            ) : (
+              <div className="row g-3">
+                {pdeVersions.map((module) => (
+                  <div className="col-lg-6" key={module.moduleCode}>
+                    <div className="ops-monitor-page__pde-version-card">
+                      <div className="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                          <strong>{module.name}</strong>
+                          <div className="text-muted small">
+                            {module.publishedVersion ?? "Versão não informada"}
+                          </div>
+                        </div>
+                        <span
+                          className={`badge ${STATUS_BADGES[module.status]}`}
+                        >
+                          {STATUS_LABELS[module.status]}
+                        </span>
+                      </div>
+                      <div className="ops-monitor-page__pde-version-meta">
+                        <div>
+                          <span>Domínio</span>
+                          <strong>
+                            {module.productUrl ??
+                              module.attemptedUrl ??
+                              "Sem URL"}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Imagem/container</span>
+                          <strong>
+                            {module.containerImageVersion ?? "Não informado"}
+                          </strong>
+                        </div>
+                      </div>
+                      {module.monitoringUrl ? (
+                        <a
+                          className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2 mt-3"
+                          href={module.monitoringUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir sem estatística comercial
+                          <ExternalLink size={14} aria-hidden="true" />
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {summaryQuery.isError ||
       availabilityQuery.isError ||
@@ -327,7 +419,47 @@ export default function OpsMonitorPage({
               {historyQuery.isLoading ? (
                 <p>Carregando gráfico...</p>
               ) : (
-                <ReactECharts option={chartOption} style={{ height: 320 }} />
+                <>
+                  <ReactECharts option={chartOption} style={{ height: 320 }} />
+                  <div className="table-responsive mt-3">
+                    <table className="table table-sm align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>Dia</th>
+                          <th>Checks</th>
+                          <th>Falhas</th>
+                          <th>Tempo fora</th>
+                          <th>Tempo instável</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(historyQuery.data ?? []).slice(0, 7).map((item) => (
+                          <tr key={item.date}>
+                            <td>{item.date}</td>
+                            <td>{item.totalChecks}</td>
+                            <td>{item.failedChecks}</td>
+                            <td>
+                              {formatHistoryDuration(item.offlineSeconds)}
+                            </td>
+                            <td>
+                              {formatHistoryDuration(item.degradedSeconds)}
+                            </td>
+                          </tr>
+                        ))}
+                        {(historyQuery.data ?? []).length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              className="text-center text-muted py-3"
+                            >
+                              Sem histórico diário para o módulo selecionado.
+                            </td>
+                          </tr>
+                        ) : null}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>

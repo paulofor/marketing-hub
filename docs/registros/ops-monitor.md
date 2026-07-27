@@ -1,5 +1,11 @@
 # Registros do monitor operacional
 
+## 2026-07-27 — Metadados comerciais na tela PDE 24/7
+
+- Causa-raiz: a tela PDE mostrava saúde técnica do endpoint, mas não destacava no topo a versão comercial publicada, o link operacional do produto e a referência de imagem/container.
+- Ajuste: o contrato de disponibilidade passou a expor `publishedVersion`, `productUrl`, `monitoringUrl` e `containerImageVersion`; a tela `/ops-monitor/pde` passou a exibir esses dados no início e um botão de revalidação dos dados do monitor.
+- Prevenção: o link operacional usa marcador `mh_monitor=1` para separar acessos de monitoramento do tráfego comercial, mantendo o painel orientado à disponibilidade 24/7 sem contaminar leitura de campanha.
+
 ## 2026-07-27 — Tela de saúde PDE 24/7
 
 - Decisão operacional: versões PDE em venda precisam aparecer no Marketing Hub como disponibilidade crítica, separadas dos módulos técnicos genéricos.

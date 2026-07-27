@@ -12,6 +12,7 @@ Módulo dedicado ao gerenciamento técnico do ciclo de vida de vídeos que não 
 - Provider `real` com integração HTTP configurável (request render + polling + download), com normalização de falhas/expiração para o backend.
 - Provider `luma` com integração direta à Luma Agents API para jobs `providerName=LUMA_RAY_3_2`, gerando três cenas Ray 3.2 de 10s e montando o MP4 final com `ffmpeg`.
 - Provider `veo` com integração direta à Gemini API para jobs `providerName=VEO`, incluindo criação da operação, polling e download do MP4 final.
+- Providers `kling` e `runway` preparados para cenas curtas image-to-video quando o job trouxer imagem aprovada em `metadataJson.image_to_video.source_image_url`.
 - Dispatcher multi-thread com controle contra concorrência duplicada.
 - Poller interno que consome jobs `RENDER` com `provider_family=EXTERNAL_VIDEO_MODULE` e envia para o dispatcher.
 
@@ -84,7 +85,7 @@ O adapter direto `HeyGenVideoProvider` processa jobs `providerName=HEYGEN` usand
 
 ### Nota operacional sobre Runway
 
-O compose monta por padrao `/root/infra/runaway-token/runaway_api_key` em `/run/secrets/runway_api_key:ro`. O entrypoint carrega esse arquivo sem imprimir o valor e deixa a chave disponivel como `RUNWAY_API_KEY` e `VIDEO_PROVIDERS_RUNWAY_API_KEY`, seguindo o mesmo padrao de Luma/Kling/VEO/HeyGen.
+O compose monta por padrao `/root/infra/runaway-token/runaway_api_key` em `/run/secrets/runway_api_key:ro`. O entrypoint carrega esse arquivo sem imprimir o valor e deixa a chave disponivel como `RUNWAY_API_KEY` e `VIDEO_PROVIDERS_RUNWAY_API_KEY`, seguindo o mesmo padrao de Luma/Kling/VEO/HeyGen. No compose de deploy, `VIDEO_PROVIDERS_RUNWAY_ENABLED` deve permanecer `true` para que jobs `providerName=RUNWAY` tenham adapter registrado.
 
 ## Observabilidade (Sprint V3)
 

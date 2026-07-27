@@ -18,6 +18,8 @@ export type SalesVideoRenderMetadataOptions = {
   openAiReferenceImageEnabled?: boolean;
   openAiReferenceImagePrompt?: string;
   referenceImageCount?: number;
+  sourceImageAssetId?: number;
+  sourceImageUrl?: string;
 };
 
 export const DEFAULT_VISUAL_PROVIDER_DIRECTIVES = [
@@ -124,22 +126,39 @@ export function buildSalesVideoRenderMetadata(
     2,
     Math.max(1, Number(renderOptions?.referenceImageCount ?? 1)),
   );
+  const sourceImageUrl = renderOptions?.sourceImageUrl?.trim();
+  const sourceImageAssetId = renderOptions?.sourceImageAssetId;
+  const providerUsesApprovedSourceImage = Boolean(
+    sourceImageUrl && provider.providerName !== "LUMA_RAY_3_2",
+  );
   return JSON.stringify({
     commercial_goal: "PDE_MUSA_HERO_VIDEO",
     generation_strategy: openAiReferenceImageEnabled
       ? "OPENAI_IMAGE_TO_LUMA_VIDEO"
+      : providerUsesApprovedSourceImage
+        ? "APPROVED_IMAGE_TO_VIDEO"
       : "TEXT_TO_VIDEO",
     visual_provider_directives: normalizedVisualProviderDirectives,
     image_to_video: {
-      enabled: openAiReferenceImageEnabled,
-      source_image_provider: openAiReferenceImageEnabled ? "OPENAI" : null,
+      enabled: openAiReferenceImageEnabled || providerUsesApprovedSourceImage,
+      source_image_provider: openAiReferenceImageEnabled
+        ? "OPENAI"
+        : providerUsesApprovedSourceImage
+          ? "APPROVED_ASSET"
+          : null,
+      source_image_asset_id: sourceImageAssetId ?? null,
+      source_image_url: sourceImageUrl || null,
       animation_provider: provider.providerName,
-      reference_image_count: referenceImageCount,
+      reference_image_count: providerUsesApprovedSourceImage
+        ? 1
+        : referenceImageCount,
       image_prompt:
         renderOptions?.openAiReferenceImagePrompt?.trim() ||
         "Quadro-base MUSA anti-sensualizacao: mulher brasileira adulta em acao pratica, organizando visual com clareza, alivio e presenca elegante acessivel.",
       expected_benefit:
-        "Controlar composicao, postura e luz antes de animar na Luma para reduzir cenas sensualizadas ou nebulosas.",
+        providerUsesApprovedSourceImage
+          ? "Animar uma imagem ja aprovada comercialmente para preservar personagem, postura, luz e enquadramento nos testes de criativo."
+          : "Controlar composicao, postura e luz antes de animar na Luma para reduzir cenas sensualizadas ou nebulosas.",
     },
     provider_strategy: {
       provider_name: provider.providerName,

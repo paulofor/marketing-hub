@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.netty.http.client.HttpClient;
 
 /** Responsabilidade: renderizar vídeos comerciais curtos pela Runway para jobs do Marketing Hub. */
@@ -111,13 +112,18 @@ public class RunwayVideoProvider implements VideoProvider {
     private String submitRender(SalesVideoJob job, Map<String, Object> payload) {
         String path = properties.getProviders().getRunway().getCreatePath();
         log.info("Chamando Runway para criar vídeo; jobId={} url={} request={}", job.id(), resolveBaseUrl() + path, payload);
-        JsonNode response = authorized(webClient.post()
-                        .uri(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(payload))
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block();
+        JsonNode response;
+        try {
+            response = authorized(webClient.post()
+                            .uri(path)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(payload))
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw providerHttpError(job, "criação", path, ex);
+        }
         log.info("Resposta Runway create; jobId={} response={}", job.id(), response);
         String taskId = firstText(response, "/id", "/taskId", "/task_id");
         if (!StringUtils.hasText(taskId)) {
@@ -133,10 +139,15 @@ public class RunwayVideoProvider implements VideoProvider {
         for (int attempt = 1; attempt <= config.getMaxPollAttempts(); attempt++) {
             String path = config.getStatusPathTemplate().replace("{taskId}", taskId);
             log.info("Consultando Runway; taskId={} url={}", taskId, resolveBaseUrl() + path);
-            JsonNode status = authorized(webClient.get().uri(path))
-                    .retrieve()
-                    .bodyToMono(JsonNode.class)
-                    .block();
+            JsonNode status;
+            try {
+                status = authorized(webClient.get().uri(path))
+                        .retrieve()
+                        .bodyToMono(JsonNode.class)
+                        .block();
+            } catch (WebClientResponseException ex) {
+                throw providerHttpError(null, "consulta", path, ex);
+            }
             log.info("Resposta Runway status; taskId={} response={}", taskId, status);
             String taskStatus = normalize(firstText(status, "/status"));
             if (isSuccess(taskStatus)) {
@@ -274,6 +285,35 @@ public class RunwayVideoProvider implements VideoProvider {
     private String resolveVideoUrl(JsonNode status) {
         String direct = firstText(status, "/output/0", "/outputs/0", "/video_url", "/videoUrl", "/url");
         return StringUtils.hasText(direct) ? direct : null;
+    }
+
+    /** Converte erro HTTP da Runway em falha auditável com corpo sanitizado. */
+    private VideoProviderException providerHttpError(SalesVideoJob job,
+                                                     String operation,
+                                                     String path,
+                                                     WebClientResponseException ex) {
+        String body = sanitizeProviderBody(ex.getResponseBodyAsString());
+        log.warn("Runway retornou erro HTTP; jobId={} operation={} status={} url={} responseBody={}",
+                job == null ? null : job.id(),
+                operation,
+                ex.getStatusCode().value(),
+                resolveBaseUrl() + path,
+                body,
+                ex);
+        String code = ex.getStatusCode().value() == 429 ? "PROVIDER_RATE_LIMIT" : "PROVIDER_RENDER_FAILED";
+        return new VideoProviderException(code,
+                "Runway retornou HTTP %d em %s: %s"
+                        .formatted(ex.getStatusCode().value(), operation, body),
+                ex);
+    }
+
+    /** Limita corpo de erro externo para log e retorno sem vazar conteúdo excessivo. */
+    private String sanitizeProviderBody(String body) {
+        if (!StringUtils.hasText(body)) {
+            return "sem corpo";
+        }
+        String normalized = body.replaceAll("[\\r\\n\\t]+", " ").trim();
+        return normalized.length() > 1200 ? normalized.substring(0, 1200) : normalized;
     }
 
     /** Resolve primeiro texto existente nos JSON pointers informados. */

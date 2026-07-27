@@ -158,9 +158,11 @@ public class VideoManagementProperties {
          */
         private String apiKeyFile;
 
-        private String model = "kling-v3";
+        private String model = "kling-v3-0";
         private String createPath = "/v1/videos/text2video";
         private String statusPathTemplate = "/v1/videos/text2video/{taskId}";
+        private String imageCreatePath = "/v1/videos/image2video";
+        private String imageStatusPathTemplate = "/v1/videos/image2video/{taskId}";
         private String aspectRatio = "9:16";
         private String mode = "std";
         private String duration = "5";

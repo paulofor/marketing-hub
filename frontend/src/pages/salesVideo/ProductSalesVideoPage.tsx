@@ -353,6 +353,8 @@ export default function ProductSalesVideoPage() {
           openAiReferenceImageEnabled,
           openAiReferenceImagePrompt,
           referenceImageCount: Number(referenceImageCount),
+          sourceImageAssetId: selectedSeedImageAsset?.id,
+          sourceImageUrl: selectedSeedImageAsset?.publicUrl ?? undefined,
         }),
       });
       toast.success("Geração de vídeo solicitada");

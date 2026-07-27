@@ -45,7 +45,7 @@ class KlingVideoProviderTest {
         server.shutdown();
     }
 
-    /** Deve criar uma tarefa Kling, aguardar sucesso e devolver MP4 auditável. */
+    /** Deve criar uma tarefa Kling text-to-video, aguardar sucesso e devolver MP4 auditável. */
     @Test
     void shouldRenderKlingJobThroughTextToVideoApi() throws Exception {
         server.enqueue(json("""
@@ -79,20 +79,57 @@ class KlingVideoProviderTest {
         assertThat(artifacts.videoFile().fileName()).isEqualTo("sales-video-1-kling.mp4");
         assertThat(artifacts.metadata())
                 .containsEntry("provider", "KLING_3_0")
-                .containsEntry("model", "kling-v3")
+                .containsEntry("model", "kling-v3-0")
                 .containsEntry("duration_seconds", 5);
         assertThat(progress.get()).isEqualTo(95);
         RecordedRequest createRequest = server.takeRequest();
         assertThat(createRequest.getPath()).isEqualTo("/v1/videos/text2video");
         assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer kling-test-key");
         assertThat(createRequest.getBody().readUtf8())
-                .contains("\"model_name\":\"kling-v3\"")
+                .contains("\"model_name\":\"kling-v3-0\"")
                 .contains("\"aspect_ratio\":\"9:16\"")
                 .contains("Método MUSA")
                 .contains("No seductive pose")
                 .contains("Very sharp image, crisp focus and constant soft natural daylight");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v1/videos/text2video/kling-task-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/kling-task-123.mp4");
+    }
+
+    /** Deve usar image-to-video quando o job traz imagem aprovada estruturada. */
+    @Test
+    void shouldRenderKlingJobThroughImageToVideoApiWhenSourceImageExists() throws Exception {
+        server.enqueue(json("""
+                {"code":0,"message":"SUCCEED","data":{"task_id":"kling-image-task-123","task_status":"submitted"}}
+                """));
+        server.enqueue(json("""
+                {
+                  "code": 0,
+                  "message": "SUCCEED",
+                  "data": {
+                    "task_id": "kling-image-task-123",
+                    "task_status": "succeed",
+                    "task_result": {
+                      "videos": [
+                        {"url": "%s/download/kling-image-task-123.mp4"}
+                      ]
+                    }
+                  }
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        KlingVideoProvider provider = new KlingVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(jobWithSourceImage(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.metadata())
+                .containsEntry("provider", "KLING_3_0")
+                .containsEntry("modality", "image_to_video");
+        RecordedRequest createRequest = server.takeRequest();
+        assertThat(createRequest.getPath()).isEqualTo("/v1/videos/image2video");
+        assertThat(createRequest.getBody().readUtf8())
+                .contains("\"model_name\":\"kling-v3-0\"")
+                .contains("\"image\":\"https://assets.example/musa-approved.png\"");
+        assertThat(server.takeRequest().getPath()).isEqualTo("/v1/videos/image2video/kling-image-task-123");
     }
 
     /** Deve falhar cedo quando a chave Kling não estiver configurada. */
@@ -205,6 +242,49 @@ class KlingVideoProviderTest {
                               {"role":"MECANISMO","title":"Microações MUSA","message":"Reduzir ruído visual, peça-sinal, cor e acabamento."},
                               {"role":"CTA","title":"Diagnóstico gratuito","message":"Veja seu Plano MUSA de 7 dias."}
                             ]
+                          },
+                          "visual_provider_directives": "Very sharp image, crisp focus and constant soft natural daylight. No seductive pose."
+                        }
+                        """,
+                Instant.now(),
+                Instant.now());
+    }
+
+    /** Cria um job Kling com URL de imagem aprovada para animação image-to-video. */
+    private SalesVideoJob jobWithSourceImage() {
+        return new SalesVideoJob(
+                1L,
+                2L,
+                3L,
+                "tenant-a",
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                "KLING_3_0",
+                null,
+                SalesVideoJobType.RENDER,
+                SalesVideoStatus.VIDEO_REQUESTED,
+                1,
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                Instant.now(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                """
+                        {
+                          "image_to_video": {
+                            "enabled": true,
+                            "source_image_provider": "APPROVED_ASSET",
+                            "source_image_asset_id": 1925,
+                            "source_image_url": "https://assets.example/musa-approved.png",
+                            "animation_provider": "KLING_3_0"
                           },
                           "visual_provider_directives": "Very sharp image, crisp focus and constant soft natural daylight. No seductive pose."
                         }

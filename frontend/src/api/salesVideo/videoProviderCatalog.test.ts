@@ -91,6 +91,28 @@ describe("videoProviderCatalog", () => {
     expect(provider?.supportsSceneAssembly).toBe(true);
   });
 
+  it("usa imagem aprovada como fonte para Kling e Runway quando houver asset selecionado", () => {
+    const provider = findSalesVideoProviderOption("KLING_3_0");
+
+    expect(provider).toBeDefined();
+
+    const metadata = JSON.parse(
+      buildSalesVideoRenderMetadata(provider!, {
+        sourceImageAssetId: 1925,
+        sourceImageUrl: "https://assets.example/musa-approved.png",
+      }),
+    );
+
+    expect(metadata.generation_strategy).toBe("APPROVED_IMAGE_TO_VIDEO");
+    expect(metadata.image_to_video.enabled).toBe(true);
+    expect(metadata.image_to_video.source_image_provider).toBe("APPROVED_ASSET");
+    expect(metadata.image_to_video.source_image_asset_id).toBe(1925);
+    expect(metadata.image_to_video.source_image_url).toBe(
+      "https://assets.example/musa-approved.png",
+    );
+    expect(metadata.image_to_video.animation_provider).toBe("KLING_3_0");
+  });
+
   it("declara limites por solicitacao para os providers integrados", () => {
     expect(findSalesVideoProviderOption("LUMA_RAY_3_2")?.maxDirectDurationSeconds).toBe(30);
     expect(findSalesVideoProviderOption("KLING_3_0")?.maxDirectDurationSeconds).toBe(10);

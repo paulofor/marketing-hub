@@ -387,15 +387,6 @@ export function HypothesisFrameworkTabsForm({
                   {...register("framework.offer.corePromise")}
                 />
               </div>
-              <div className="col-md-12">
-                <label className="form-label">Entregáveis principais</label>
-                <textarea
-                  className="form-control"
-                  rows={3}
-                  disabled={readOnly}
-                  {...register("framework.offer.deliverables")}
-                />
-              </div>
               <div className="col-md-6">
                 <label className="form-label">Mitigação de risco</label>
                 <textarea

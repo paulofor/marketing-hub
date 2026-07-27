@@ -586,7 +586,6 @@ export function HypothesisFrameworkTabsView({
         return renderRows([
           { label: "Nome", value: data.offer.name },
           { label: "Promessa", value: data.offer.corePromise },
-          { label: "Entregáveis", value: data.offer.deliverables },
           { label: "Risco", value: data.offer.riskReversal },
           { label: "Narrativa de preço", value: data.offer.priceLogic },
           {
@@ -704,7 +703,6 @@ export function HypothesisFrameworkTabsView({
         "### Oferta",
         `- Nome: ${data.offer.name?.trim() || "-"}`,
         `- Promessa: ${data.offer.corePromise?.trim() || "-"}`,
-        `- Entregáveis: ${data.offer.deliverables?.trim() || "-"}`,
         `- Risco: ${data.offer.riskReversal?.trim() || "-"}`,
         `- Narrativa de preço: ${data.offer.priceLogic?.trim() || "-"}`,
         `- CTA: ${data.offer.cta?.trim() || "-"}`,

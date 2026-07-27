@@ -175,8 +175,6 @@ const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
 const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
-const MUSA_V5_HERO_VIDEO_URL = '/assets/musa-v5-video-explicativo.mp4';
-const MUSA_V6_HERO_VIDEO_URL = '/assets/musa-v6-video-motivacional.mp4';
 const MUSA_V5_HERO_STREAM_URL = '/assets/hls/musa-v5-video-explicativo/index.m3u8';
 const MUSA_V6_HERO_STREAM_URL = '/assets/hls/musa-v6-video-motivacional/index.m3u8';
 const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string; heroVideoUrl: string }> = {
@@ -587,6 +585,10 @@ function resolveHeroVideoUrl(experienceVersion: string) {
   if (hostHeroVideoUrl) {
     return hostHeroVideoUrl;
   }
+  const streamOverride = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
+  if (streamOverride) {
+    return streamOverride;
+  }
   return readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? resolveDefaultHeroVideoUrl(experienceVersion));
 }
 
@@ -706,7 +708,7 @@ function App() {
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
   const heroVideoUrl = resolveHeroVideoUrl(currentExperienceVersion);
-  const heroPlaybackUrl = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? heroVideoUrl);
+  const heroPlaybackUrl = heroVideoUrl;
 
   const activeMission = useMemo(() => {
     const missionList = workspace?.product.missions ?? product.missions;
@@ -1996,7 +1998,7 @@ function App() {
               <div className="public-video-copy">
                 <p className="section-kicker">{showMotivationalTimelineVideo ? 'Timeline MUSA' : 'Vídeo inicial MUSA'}</p>
                 <h2>{showMotivationalTimelineVideo ? 'Assista como um primeiro story e siga para seu mapa de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
-                <p>{showMotivationalTimelineVideo ? 'A v6 começa com vídeo motivacional no próprio HTML, registra visualização parcial ou completa e conduz para a escolha das opções sem travar a experiência.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
+                <p>{showMotivationalTimelineVideo ? 'A v6 começa com vídeo motivacional em streaming, registra visualização parcial ou completa e conduz para a escolha das opções sem travar a experiência.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
                 <button
                   className="secondary-button public-video-cta"
                   type="button"

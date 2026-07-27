@@ -11,9 +11,9 @@ test('v6 publica PDE com video motivacional inicial e diagnostico em seguida', a
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   const video = page.locator('video.public-hero-video');
   await expect(video, 'A v6 deve renderizar o player de video no topo do diagnostico publico').toBeVisible();
-  await expect(video, 'A v6 deve apontar para o MP4 motivacional gerado no build').toHaveAttribute(
+  await expect(video, 'A v6 deve apontar para o HLS motivacional gerado no build').toHaveAttribute(
     'src',
-    '/assets/musa-v6-video-motivacional.mp4',
+    '/assets/hls/musa-v6-video-motivacional/index.m3u8',
   );
   await expect(page.locator('.public-video-play-badge span')).toHaveText('Vídeo rápido');
   await expect(page.getByRole('button', { name: /Começar diagnóstico/i })).toBeVisible();
@@ -29,7 +29,7 @@ test('v6 preserva versao e video do hostname mesmo com runtime global de v5', as
   await page.addInitScript(() => {
     window.__MUSA_RUNTIME_CONFIG__ = {
       VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: 'musa-pde-entry-v5-video-explicativo',
-      VITE_MUSA_HERO_VIDEO_URL: '/assets/musa-v5-video-explicativo.mp4',
+      VITE_MUSA_HERO_STREAM_URL: '/assets/hls/musa-v5-video-explicativo/index.m3u8',
     };
   });
   await page.route('**/api/pde/products/metodo-musa-7-dias', async (route) => {
@@ -39,6 +39,6 @@ test('v6 preserva versao e video do hostname mesmo com runtime global de v5', as
   await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa');
 
   const video = page.locator('video.public-hero-video');
-  await expect(video).toHaveAttribute('src', '/assets/musa-v6-video-motivacional.mp4');
+  await expect(video).toHaveAttribute('src', '/assets/hls/musa-v6-video-motivacional/index.m3u8');
   await expect(page.getByText(/Timeline MUSA/i)).toBeVisible();
 });

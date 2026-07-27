@@ -35,6 +35,7 @@ import org.springframework.util.StringUtils;
 @Component
 public class SalesVideoJobService {
   private static final int MAX_PAGE_SIZE = 200;
+  private static final int MAX_MONTAGE_DURATION_SECONDS = 600;
   private static final String SHORT_DURATION_FAILURE_CODE = "RENDER_DURATION_SHORT";
 
   private final SalesVideoJobRepository jobRepository;
@@ -525,6 +526,7 @@ public class SalesVideoJobService {
     Map<String, Object> metadata = new LinkedHashMap<>();
     metadata.put("sourceJobIds", sourceJobs.stream().map(SalesVideoJob::getId).toList());
     metadata.put("sourceVideos", sources);
+    metadata.put("maxDurationSeconds", MAX_MONTAGE_DURATION_SECONDS);
     metadata.put(
         "commercialIntent",
         "Montar clipes curtos aprovados em uma sequência única para experimento de venda.");

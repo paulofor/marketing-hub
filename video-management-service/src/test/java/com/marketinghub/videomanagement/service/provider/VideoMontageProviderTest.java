@@ -81,6 +81,7 @@ class VideoMontageProviderTest {
         properties.setBackendBaseUrl(URI.create(server.url("/").toString()));
         properties.getProviders().getPostProduction().setEnabled(true);
         properties.getProviders().getPostProduction().setFfmpegPath(fakeFfmpeg().toString());
+        properties.getProviders().getPostProduction().setFfprobePath(fakeFfprobe().toString());
         return properties;
     }
 
@@ -94,6 +95,18 @@ class VideoMontageProviderTest {
                   output="$arg"
                 done
                 printf '\\000\\000\\000\\040ftypisom\\000\\000\\002\\000' > "$output"
+                exit 0
+                """);
+        script.toFile().setExecutable(true);
+        return script;
+    }
+
+    /** Cria um script executável que simula a auditoria de duração do ffprobe. */
+    private Path fakeFfprobe() throws Exception {
+        Path script = Files.createTempFile("fake-ffprobe-montage", ".sh");
+        Files.writeString(script, """
+                #!/bin/sh
+                printf '20.000000\\n'
                 exit 0
                 """);
         script.toFile().setExecutable(true);

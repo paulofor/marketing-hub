@@ -347,6 +347,7 @@ public class VideoManagementProperties {
         private List<String> acceptedNames = new ArrayList<>(List.of("MUSA_POST_PRODUCTION", "POST_PRODUCTION"));
 
         private String ffmpegPath = "ffmpeg";
+        private String ffprobePath = "ffprobe";
         private String espeakPath = "espeak-ng";
         private String espeakVoice = "pt-br";
         private String fontFile = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";

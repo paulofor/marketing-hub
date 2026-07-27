@@ -205,6 +205,16 @@
   gap: 0.35rem;
 }
 
+.product-video-page__warning {
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .product-video-page__toggle {
   display: flex;
   gap: 0.55rem;

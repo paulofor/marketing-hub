@@ -3,7 +3,6 @@ import Hls from 'hls.js';
 
 type AdaptiveVideoPlayerProps = {
   src: string;
-  fallbackSrc?: string;
   poster?: string;
   className?: string;
   style?: CSSProperties;
@@ -37,7 +36,6 @@ function readPlaybackState(video: HTMLVideoElement, percent?: number): Omit<Vide
 
 export function AdaptiveVideoPlayer({
   src,
-  fallbackSrc,
   poster,
   className,
   style,
@@ -50,7 +48,12 @@ export function AdaptiveVideoPlayer({
   onPlaybackEvent,
 }: AdaptiveVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playbackEventRef = useRef(onPlaybackEvent);
   const progressMarksRef = useRef(new Set<number>());
+
+  useEffect(() => {
+    playbackEventRef.current = onPlaybackEvent;
+  }, [onPlaybackEvent]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -60,7 +63,7 @@ export function AdaptiveVideoPlayer({
     progressMarksRef.current.clear();
 
     if (!isHlsSource(src)) {
-      video.src = src;
+      playbackEventRef.current?.({ type: 'error', ...readPlaybackState(video) });
       return undefined;
     }
 
@@ -78,10 +81,10 @@ export function AdaptiveVideoPlayer({
       hls.loadSource(src);
       hls.attachMedia(video);
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal && fallbackSrc) {
+        if (data.fatal) {
+          playbackEventRef.current?.({ type: 'error', ...readPlaybackState(video) });
           hls.destroy();
           destroyed = true;
-          video.src = fallbackSrc;
         }
       });
       return () => {
@@ -91,11 +94,9 @@ export function AdaptiveVideoPlayer({
       };
     }
 
-    if (fallbackSrc) {
-      video.src = fallbackSrc;
-    }
+    playbackEventRef.current?.({ type: 'error', ...readPlaybackState(video) });
     return undefined;
-  }, [fallbackSrc, src]);
+  }, [src]);
 
   return (
     <video

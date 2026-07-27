@@ -177,14 +177,16 @@ const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explica
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
 const MUSA_V5_HERO_VIDEO_URL = '/assets/musa-v5-video-explicativo.mp4';
 const MUSA_V6_HERO_VIDEO_URL = '/assets/musa-v6-video-motivacional.mp4';
+const MUSA_V5_HERO_STREAM_URL = '/assets/hls/musa-v5-video-explicativo/index.m3u8';
+const MUSA_V6_HERO_STREAM_URL = '/assets/hls/musa-v6-video-motivacional/index.m3u8';
 const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string; heroVideoUrl: string }> = {
   'v5.clubemusa.com.br': {
     experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
-    heroVideoUrl: MUSA_V5_HERO_VIDEO_URL,
+    heroVideoUrl: MUSA_V5_HERO_STREAM_URL,
   },
   'v6.clubemusa.com.br': {
     experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
-    heroVideoUrl: MUSA_V6_HERO_VIDEO_URL,
+    heroVideoUrl: MUSA_V6_HERO_STREAM_URL,
   },
 };
 const MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS = new Set([
@@ -334,7 +336,7 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
   'dia-3-base-acessivel': {
     guidanceType: 'MUSA_DAY_3_WARDROBE_REUSE',
     kicker: 'Consultora MUSA',
-    title: 'Mostre o que você já tem para a IA montar uma base elegante acessível.',
+    title: 'Mostre o que você já tem para receber uma base elegante acessível.',
     helperText: 'Depois de enviar, você recebe uma base prática usando peças reais, sem transformar o método em lista de compras.',
     buttonLabel: 'Montar minha base acessível',
     loadingLabel: 'Organizando base...',
@@ -394,7 +396,7 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
   'dia-5-compra-inteligente': {
     guidanceType: 'MUSA_DAY_5_ANTI_IMPULSE_DECISION',
     kicker: 'Consultora MUSA',
-    title: 'Antes de comprar, deixe a IA testar se o item fortalece sua assinatura.',
+    title: 'Antes de comprar, veja se o item fortalece sua assinatura.',
     helperText: 'Depois de enviar, você recebe uma decisão mais clara: comprar com intenção, adiar ou reaproveitar algo que já tem.',
     buttonLabel: 'Avaliar minha compra',
     loadingLabel: 'Avaliando compra...',
@@ -575,9 +577,9 @@ function isMusaVideoExplainerExperience(experienceVersion: string) {
 
 function resolveDefaultHeroVideoUrl(experienceVersion: string) {
   if (experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION) {
-    return MUSA_V6_HERO_VIDEO_URL;
+    return MUSA_V6_HERO_STREAM_URL;
   }
-  return MUSA_V5_HERO_VIDEO_URL;
+  return MUSA_V5_HERO_STREAM_URL;
 }
 
 function resolveHeroVideoUrl(experienceVersion: string) {
@@ -704,8 +706,7 @@ function App() {
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
   const heroVideoUrl = resolveHeroVideoUrl(currentExperienceVersion);
-  const heroStreamUrl = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
-  const heroPlaybackUrl = heroStreamUrl || heroVideoUrl;
+  const heroPlaybackUrl = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? heroVideoUrl);
 
   const activeMission = useMemo(() => {
     const missionList = workspace?.product.missions ?? product.missions;
@@ -1842,7 +1843,7 @@ function App() {
         videoPlacement: 'public_diagnostic_initial_explainer',
         experienceVersion: currentExperienceVersion,
         hasHeroVideoUrl: Boolean(heroVideoUrl),
-        hasHeroStreamUrl: Boolean(heroStreamUrl),
+        hasHeroStreamUrl: Boolean(heroPlaybackUrl),
         ...metadata,
       },
     });
@@ -1930,7 +1931,6 @@ function App() {
                   <AdaptiveVideoPlayer
                     className="public-hero-video"
                     src={heroPlaybackUrl}
-                    fallbackSrc={heroVideoUrl}
                     autoPlay
                     controls={showMotivationalTimelineVideo}
                     muted
@@ -2116,7 +2116,7 @@ function App() {
           {publicDiagnosticGuidance?.status === 'FAILED' && (
             <section className="public-ai-status public-ai-status-error" role="status">
               <Sparkles size={20} />
-              <span>Suas respostas foram recebidas, mas a IA não concluiu agora. Envie novamente em alguns instantes.</span>
+              <span>Suas respostas foram recebidas, mas a análise não concluiu agora. Envie novamente em alguns instantes.</span>
             </section>
           )}
 
@@ -2365,7 +2365,7 @@ function App() {
           {showVideoHero ? (
             <div className="experience-card login-cover video-login-cover" aria-label="Vídeo da experiência Método MUSA" data-analytics-section="musa_video_hero">
               {heroPlaybackUrl ? (
-                <AdaptiveVideoPlayer className="musa-hero-video" src={heroPlaybackUrl} fallbackSrc={heroVideoUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
+                <AdaptiveVideoPlayer className="musa-hero-video" src={heroPlaybackUrl} autoPlay muted loop playsInline poster="/assets/musa-editorial-presenca.png" />
               ) : (
                 <div className="musa-video-fallback" aria-hidden="true">
                   <img src="/assets/musa-editorial-presenca.png" alt="" />

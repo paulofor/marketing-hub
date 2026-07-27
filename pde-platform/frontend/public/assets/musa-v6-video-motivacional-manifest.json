@@ -1,6 +1,7 @@
 {
   "generatedBy": "scripts/generate-musa-v5-video.mjs",
   "output": "musa-v6-video-motivacional.mp4",
+  "hlsPlaylist": "hls/musa-v6-video-motivacional/index.m3u8",
   "purpose": "Video motivacional inicial da versao v6 do Clube MUSA.",
   "sourceSlides": [
     "musa-diagnostic-slide-1.png",
@@ -10,5 +11,5 @@
     "musa-diagnostic-slide-5.png"
   ],
   "durationSeconds": 16,
-  "format": "mp4/h264"
+  "format": "hls/h264"
 }

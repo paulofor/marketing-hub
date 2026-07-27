@@ -53,4 +53,20 @@ class HealthCheckProcessorTest {
             assertThat(output.httpStatus()).isEqualTo(503);
         }
     }
+
+    @Test
+    void deveClassificarHlsComSegmentoIndisponivelComoInstavel() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setResponseCode(200).setBody("#EXTM3U\n#EXTINF:4,\nsegment-000.ts\n"));
+            server.enqueue(new MockResponse().setResponseCode(404));
+            server.start();
+            var processor = new HealthCheckProcessor(WebClient.builder().build());
+
+            var output = processor.process(StageContext.simple("stage-hls", "pde-musa-v6-hls"),
+                    new HealthCheckInput("pde-musa-v6-hls", server.url("/assets/hls/v6/index.m3u8").toString(), Duration.ofSeconds(2)));
+
+            assertThat(output.status()).isEqualTo("DEGRADED");
+            assertThat(output.httpStatus()).isEqualTo(200);
+        }
+    }
 }

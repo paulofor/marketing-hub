@@ -93,6 +93,7 @@ public class ExperimentService {
   private final ProductAiExperimentPreparationService productAiExperimentPreparationService;
   private final ExperimentFunnelStandbyService experimentFunnelStandbyService;
   private final PdeProductionSlotRepository pdeProductionSlotRepository;
+  private static final String VALIDATION_OK = "OK";
 
   /** Inicializa o serviço com repositórios, integrações e validadores usados pelos experimentos. */
   public ExperimentService(
@@ -717,19 +718,19 @@ public class ExperimentService {
 
   /** Bloqueia tráfego para versão PDE planejada, pausada ou encerrada. */
   private void validateActivePdeDestination(Experiment exp) {
-    Optional<PdeProductionSlot> slotByExperiment =
-        pdeProductionSlotRepository.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(exp.getId());
-    Optional<PdeProductionSlot> slotByDestination =
-        normalizeDomainFromUrl(exp.getFollowUpActionUrl())
-            .flatMap(pdeProductionSlotRepository::findFirstByDomain);
-    PdeProductionSlot slot = slotByDestination.or(() -> slotByExperiment).orElse(null);
-    if (slot == null || slot.getStatus() == PdeProductionSlotStatus.ACTIVE) {
+    if (exp == null
+        || exp.getExperimentType() != ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+      return;
+    }
+    PdeProductionSlot slot = approvedPdeDestinationSlot(exp);
+    if (slot.getStatus() == PdeProductionSlotStatus.ACTIVE
+        && VALIDATION_OK.equals(slot.getValidationStatus())) {
       return;
     }
     throw new ResponseStatusException(
         HttpStatus.BAD_REQUEST,
-        "Versão PDE %s está %s; ative a versão antes de colocar o experimento em RUNNING"
-            .formatted(slot.getSlotCode(), slot.getStatus()));
+        "Versão PDE %s está %s e validação %s; ative e aprove a versão antes de colocar o experimento em RUNNING"
+            .formatted(slot.getSlotCode(), slot.getStatus(), slot.getValidationStatus()));
   }
 
   /** Extrai o domínio de uma URL pública para comparar com o cadastro operacional de PDE. */
@@ -758,6 +759,23 @@ public class ExperimentService {
       return Optional.empty();
     }
     return Optional.of(normalized.toLowerCase(Locale.ROOT));
+  }
+
+  /** Busca o slot PDE do destino e exige que ele exista no cadastro operacional. */
+  private PdeProductionSlot approvedPdeDestinationSlot(Experiment experiment) {
+    Optional<PdeProductionSlot> slotByDestination =
+        normalizeDomainFromUrl(experiment.getFollowUpActionUrl())
+            .flatMap(pdeProductionSlotRepository::findFirstByDomain);
+    Optional<PdeProductionSlot> slotByExperiment =
+        pdeProductionSlotRepository.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(
+            experiment.getId());
+    return slotByDestination
+        .or(() -> slotByExperiment)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento PDE MUSA exige uma versão PDE cadastrada, validada e aprovada no Marketing Hub antes da campanha."));
   }
 
   /**
@@ -1177,6 +1195,14 @@ public class ExperimentService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "Experimento PDE MUSA exige que o link do anúncio aponte para um slot produtivo versionado aprovado, como https://v5.clubemusa.com.br, com login gratuito e paywall interno.");
+    }
+    PdeProductionSlot slot = approvedPdeDestinationSlot(experiment);
+    if (slot.getStatus() != PdeProductionSlotStatus.ACTIVE
+        || !VALIDATION_OK.equals(slot.getValidationStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Experimento PDE MUSA exige versão PDE aprovada manualmente no Marketing Hub antes de liberar campanha; slot %s está %s e validação %s."
+              .formatted(slot.getSlotCode(), slot.getStatus(), slot.getValidationStatus()));
     }
   }
 

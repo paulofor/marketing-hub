@@ -1,43 +1,35 @@
 package com.marketinghub.chat;
 
+import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.util.List;
-import com.marketinghub.niche.MarketNiche;
-
-import java.time.Instant;
-
-/**
- * Stored ChatGPT dialog link.
- */
+/** Stored ChatGPT dialog link. */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatDialog {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String url;
+  private String url;
 
-    @Lob
-    private String description;
+  @Lob private String description;
 
-    private String theme;
+  private String theme;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 
-    @OneToMany(mappedBy = "chatDialog")
-    @ToString.Exclude
-    private List<MarketNiche> niches;
+  @OneToMany(mappedBy = "chatDialog")
+  @ToString.Exclude
+  private List<MarketNiche> niches;
 }
-

@@ -20,37 +20,37 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiPromptSchemaTemplate {
-    @Id
-    @Column(name = "template_key", nullable = false, length = 191)
-    private String templateKey;
+  @Id
+  @Column(name = "template_key", nullable = false, length = 191)
+  private String templateKey;
 
-    @Column(name = "pipeline_code", nullable = false, length = 100)
-    private String pipelineCode;
+  @Column(name = "pipeline_code", nullable = false, length = 100)
+  private String pipelineCode;
 
-    @Column(name = "stage_code", nullable = false, length = 100)
-    private String stageCode;
+  @Column(name = "stage_code", nullable = false, length = 100)
+  private String stageCode;
 
-    @Column(name = "version", nullable = false, length = 40)
-    private String version;
+  @Column(name = "version", nullable = false, length = 40)
+  private String version;
 
-    @Column(name = "openai_model", nullable = false, length = 120)
-    private String openAiModel;
+  @Column(name = "openai_model", nullable = false, length = 120)
+  private String openAiModel;
 
-    @Column(name = "schema_name", nullable = false, length = 120)
-    private String schemaName;
+  @Column(name = "schema_name", nullable = false, length = 120)
+  private String schemaName;
 
-    @Column(name = "prompt_markdown_content", nullable = false, columnDefinition = "LONGTEXT")
-    private String promptMarkdownContent;
+  @Column(name = "prompt_markdown_content", nullable = false, columnDefinition = "LONGTEXT")
+  private String promptMarkdownContent;
 
-    @Column(name = "schema_json", nullable = false, columnDefinition = "LONGTEXT")
-    private String schemaJson;
+  @Column(name = "schema_json", nullable = false, columnDefinition = "LONGTEXT")
+  private String schemaJson;
 
-    @Column(name = "active", nullable = false)
-    private boolean active;
+  @Column(name = "active", nullable = false)
+  private boolean active;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

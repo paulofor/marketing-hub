@@ -17,31 +17,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/agent-themes")
 public class AgentThemeController {
 
-    private final AgentThemeService service;
-    private final AgentMapper mapper;
+  private final AgentThemeService service;
+  private final AgentMapper mapper;
 
-    public AgentThemeController(AgentThemeService service, AgentMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public AgentThemeController(AgentThemeService service, AgentMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @PostMapping
-    public AgentThemeDto create(@RequestBody SaveAgentThemeRequest request) {
-        return mapper.toDto(service.create(request));
-    }
+  @PostMapping
+  public AgentThemeDto create(@RequestBody SaveAgentThemeRequest request) {
+    return mapper.toDto(service.create(request));
+  }
 
-    @PutMapping("/{id}")
-    public AgentThemeDto update(@PathVariable Long id, @RequestBody SaveAgentThemeRequest request) {
-        return mapper.toDto(service.update(id, request));
-    }
+  @PutMapping("/{id}")
+  public AgentThemeDto update(@PathVariable Long id, @RequestBody SaveAgentThemeRequest request) {
+    return mapper.toDto(service.update(id, request));
+  }
 
-    @GetMapping
-    public List<AgentThemeDto> list() {
-        return service.list().stream().map(mapper::toDto).toList();
-    }
+  @GetMapping
+  public List<AgentThemeDto> list() {
+    return service.list().stream().map(mapper::toDto).toList();
+  }
 
-    @GetMapping("/{id}")
-    public AgentThemeDto get(@PathVariable Long id) {
-        return mapper.toDto(service.get(id));
-    }
+  @GetMapping("/{id}")
+  public AgentThemeDto get(@PathVariable Long id) {
+    return mapper.toDto(service.get(id));
+  }
 }

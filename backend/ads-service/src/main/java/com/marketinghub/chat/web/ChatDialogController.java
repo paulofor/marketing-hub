@@ -5,36 +5,33 @@ import com.marketinghub.chat.dto.CreateChatDialogRequest;
 import com.marketinghub.chat.dto.UpdateChatDialogRequest;
 import com.marketinghub.chat.mapper.ChatDialogMapper;
 import com.marketinghub.chat.service.ChatDialogService;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 /** REST controller for ChatDialog. */
 @RestController
 @RequestMapping("/api/chat-dialogs")
 public class ChatDialogController {
-    private final ChatDialogService service;
-    private final ChatDialogMapper mapper;
+  private final ChatDialogService service;
+  private final ChatDialogMapper mapper;
 
-    public ChatDialogController(ChatDialogService service, ChatDialogMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public ChatDialogController(ChatDialogService service, ChatDialogMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @GetMapping
-    public List<ChatDialogDto> list() {
-        return service.findAll().stream().map(mapper::toDto).toList();
-    }
+  @GetMapping
+  public List<ChatDialogDto> list() {
+    return service.findAll().stream().map(mapper::toDto).toList();
+  }
 
-    @PostMapping
-    public ChatDialogDto create(@RequestBody CreateChatDialogRequest request) {
-        return mapper.toDto(service.create(request));
-    }
+  @PostMapping
+  public ChatDialogDto create(@RequestBody CreateChatDialogRequest request) {
+    return mapper.toDto(service.create(request));
+  }
 
-    @PutMapping("/{id}")
-    public ChatDialogDto update(
-            @PathVariable Long id, @RequestBody UpdateChatDialogRequest request) {
-        return mapper.toDto(service.update(id, request));
-    }
+  @PutMapping("/{id}")
+  public ChatDialogDto update(@PathVariable Long id, @RequestBody UpdateChatDialogRequest request) {
+    return mapper.toDto(service.update(id, request));
+  }
 }
-

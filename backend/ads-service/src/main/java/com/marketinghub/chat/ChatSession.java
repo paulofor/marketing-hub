@@ -1,37 +1,33 @@
 package com.marketinghub.chat;
 
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-import java.util.List;
-
-/**
- * Conversation session between a user and the platform.
- */
+/** Conversation session between a user and the platform. */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatSession {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "user_id")
-    private String userId;
-    private String channel;
-    private String state;
+  @Column(name = "user_id")
+  private String userId;
 
-    @OneToMany(mappedBy = "session")
-    private List<ChatMessage> messages;
+  private String channel;
+  private String state;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @OneToMany(mappedBy = "session")
+  private List<ChatMessage> messages;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @CreationTimestamp private Instant createdAt;
+
+  @UpdateTimestamp private Instant updatedAt;
 }

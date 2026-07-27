@@ -1,45 +1,46 @@
 package com.marketinghub.ads.post;
 
-import com.marketinghub.repository.jpa.ads.post.InstagramPostRepository;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
-import org.springframework.web.bind.annotation.*;
-
+import com.marketinghub.repository.jpa.ads.post.InstagramPostRepository;
 import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/accounts/instagram/{accountId}/posts")
 public class InstagramPostController {
-    private final InstagramAccountRepository accountRepository;
-    private final InstagramPostRepository repository;
+  private final InstagramAccountRepository accountRepository;
+  private final InstagramPostRepository repository;
 
-    public InstagramPostController(InstagramAccountRepository accountRepository, InstagramPostRepository repository) {
-        this.accountRepository = accountRepository;
-        this.repository = repository;
-    }
+  public InstagramPostController(
+      InstagramAccountRepository accountRepository, InstagramPostRepository repository) {
+    this.accountRepository = accountRepository;
+    this.repository = repository;
+  }
 
-    @GetMapping
-    public List<InstagramPost> list(@PathVariable Long accountId) {
-        return repository.findByAccountId(accountId);
-    }
+  @GetMapping
+  public List<InstagramPost> list(@PathVariable Long accountId) {
+    return repository.findByAccountId(accountId);
+  }
 
-    @PostMapping
-    public InstagramPost create(@PathVariable Long accountId, @RequestBody InstagramPost post) {
-        InstagramAccount account = accountRepository.findById(accountId).orElseThrow();
-        post.setAccount(account);
-        return repository.save(post);
-    }
+  @PostMapping
+  public InstagramPost create(@PathVariable Long accountId, @RequestBody InstagramPost post) {
+    InstagramAccount account = accountRepository.findById(accountId).orElseThrow();
+    post.setAccount(account);
+    return repository.save(post);
+  }
 
-    @PutMapping("/{postId}")
-    public InstagramPost update(@PathVariable Long accountId, @PathVariable Long postId, @RequestBody InstagramPost post) {
-        InstagramAccount account = accountRepository.findById(accountId).orElseThrow();
-        post.setId(postId);
-        post.setAccount(account);
-        return repository.save(post);
-    }
+  @PutMapping("/{postId}")
+  public InstagramPost update(
+      @PathVariable Long accountId, @PathVariable Long postId, @RequestBody InstagramPost post) {
+    InstagramAccount account = accountRepository.findById(accountId).orElseThrow();
+    post.setId(postId);
+    post.setAccount(account);
+    return repository.save(post);
+  }
 
-    @DeleteMapping("/{postId}")
-    public void delete(@PathVariable Long postId) {
-        repository.deleteById(postId);
-    }
+  @DeleteMapping("/{postId}")
+  public void delete(@PathVariable Long postId) {
+    repository.deleteById(postId);
+  }
 }

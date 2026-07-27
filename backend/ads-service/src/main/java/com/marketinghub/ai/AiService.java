@@ -1,46 +1,39 @@
 package com.marketinghub.ai;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
-/**
- * Entity representing an AI service used in the marketing plan.
- */
+/** Entity representing an AI service used in the marketing plan. */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiService {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String name;
+  private String name;
 
-    @Lob
-    private String objective;
+  @Lob private String objective;
 
-    private String url;
+  private String url;
 
-    /** Phase of the marketing process where this service is used. */
-    private String phase;
+  /** Phase of the marketing process where this service is used. */
+  private String phase;
 
-    private BigDecimal price;
+  private BigDecimal price;
 
-    private BigDecimal cost;
+  private BigDecimal cost;
 
-    @Lob
-    private String observation;
+  @Lob private String observation;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

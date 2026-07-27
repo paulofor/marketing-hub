@@ -19,43 +19,42 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 public class Agent {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "theme_id", nullable = false)
-    private AgentTheme theme;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "theme_id", nullable = false)
+  private AgentTheme theme;
 
-    @Column(nullable = false)
-    private String name;
+  @Column(nullable = false)
+  private String name;
 
-    @Column(name = "execution_mode", nullable = false, length = 50)
-    private String executionMode;
+  @Column(name = "execution_mode", nullable = false, length = 50)
+  private String executionMode;
 
-    @Lob
-    private String description;
+  @Lob private String description;
 
-    @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("orderIndex ASC, id ASC")
-    @Builder.Default
-    private List<AgentInput> inputs = new ArrayList<>();
+  @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("orderIndex ASC, id ASC")
+  @Builder.Default
+  private List<AgentInput> inputs = new ArrayList<>();
 
-    @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("orderIndex ASC, id ASC")
-    @Builder.Default
-    private List<AgentOutput> outputs = new ArrayList<>();
+  @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("orderIndex ASC, id ASC")
+  @Builder.Default
+  private List<AgentOutput> outputs = new ArrayList<>();
 
-    @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("orderIndex ASC, id ASC")
-    @Builder.Default
-    private List<AgentInternalFunction> internalFunctions = new ArrayList<>();
+  @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("orderIndex ASC, id ASC")
+  @Builder.Default
+  private List<AgentInternalFunction> internalFunctions = new ArrayList<>();
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private Instant updatedAt;
 }

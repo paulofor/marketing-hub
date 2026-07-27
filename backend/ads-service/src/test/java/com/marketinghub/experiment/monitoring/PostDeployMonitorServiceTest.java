@@ -309,6 +309,14 @@ class PostDeployMonitorServiceTest {
                 slot.getStatus(),
                 slot.getSourceExperimentId(),
                 slot.getNotes(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 slot.getCreatedAt(),
                 slot.getUpdatedAt());
     }

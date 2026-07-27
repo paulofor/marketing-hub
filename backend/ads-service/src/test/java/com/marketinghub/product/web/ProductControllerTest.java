@@ -517,6 +517,14 @@ class ProductControllerTest {
                         PdeProductionSlotStatus.PLANNED,
                         71L,
                         "Hipotese 2",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
                         Instant.parse("2026-07-24T10:00:00Z"),
                         Instant.parse("2026-07-24T10:00:00Z"))));
 

@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   useProductPdeProductionSlots,
   useSaveProductPdeProductionSlot,
+  useValidateProductPdeProductionSlot,
 } from "../../api/product/usePdeProductionSlots";
 import { useProduct } from "../../api/product/useProduct";
 import type {
@@ -162,11 +163,24 @@ function isPausedSlot(slot: PostDeployPdeProductionSlot) {
   return slot.status === "PAUSED" || slot.status === "RETIRED";
 }
 
+function validationBadgeClass(status?: string | null) {
+  if (status === "OK") return "text-bg-success";
+  if (status === "FAILED") return "text-bg-danger";
+  return "text-bg-secondary";
+}
+
+function validationLabel(status?: string | null) {
+  if (status === "OK") return "Entrega OK";
+  if (status === "FAILED") return "Falhou";
+  return "Não testada";
+}
+
 export default function ProductPdeVersionsPage() {
   const { productId } = useParams();
   const productQuery = useProduct(productId);
   const slotsQuery = useProductPdeProductionSlots(productId);
   const saveSlot = useSaveProductPdeProductionSlot(productId);
+  const validateSlot = useValidateProductPdeProductionSlot(productId);
   const product = productQuery.data;
   const slots = slotsQuery.data ?? [];
   const sourceExperimentIds = Array.from(
@@ -429,12 +443,18 @@ export default function ProductPdeVersionsPage() {
                 emptyMessage="Nenhuma versão ativa, pronta ou planejada."
                 slots={activeSlots}
                 monitorsByExperimentId={monitorsByExperimentId}
+                onValidate={(slot) => validateSlot.mutate(slot.slotCode)}
+                validatingSlotCode={validateSlot.variables}
+                isValidating={validateSlot.isPending}
               />
               <SlotTable
                 title="Versões pausadas ou encerradas"
                 emptyMessage="Nenhuma versão pausada ou encerrada."
                 slots={pausedSlots}
                 monitorsByExperimentId={monitorsByExperimentId}
+                onValidate={(slot) => validateSlot.mutate(slot.slotCode)}
+                validatingSlotCode={validateSlot.variables}
+                isValidating={validateSlot.isPending}
               />
             </>
           )}
@@ -449,11 +469,17 @@ function SlotTable({
   emptyMessage,
   slots,
   monitorsByExperimentId,
+  onValidate,
+  validatingSlotCode,
+  isValidating,
 }: {
   title: string;
   emptyMessage: string;
   slots: PostDeployPdeProductionSlot[];
   monitorsByExperimentId: Map<number, PostDeployMonitorResponse>;
+  onValidate: (slot: PostDeployPdeProductionSlot) => void;
+  validatingSlotCode?: string;
+  isValidating: boolean;
 }) {
   return (
     <section className="mb-4">
@@ -467,6 +493,7 @@ function SlotTable({
               <th>Versão PDE</th>
               <th>URL pública</th>
               <th>Validação</th>
+              <th>Entrega URL</th>
               <th>Acesso</th>
               <th>Permanência</th>
               <th>Avanço no funil</th>
@@ -479,7 +506,7 @@ function SlotTable({
           <tbody>
             {slots.length === 0 ? (
               <tr>
-                <td colSpan={12} className="text-muted">
+                <td colSpan={13} className="text-muted">
                   {emptyMessage}
                 </td>
               </tr>
@@ -544,6 +571,39 @@ function SlotTable({
                           Sem experimento
                         </span>
                       )}
+                    </td>
+                    <td>
+                      <div className="d-flex flex-column gap-1">
+                        <span
+                          className={`badge ${validationBadgeClass(
+                            slot.validationStatus,
+                          )}`}
+                        >
+                          {validationLabel(slot.validationStatus)}
+                        </span>
+                        {slot.validationSummary && (
+                          <span className="small text-muted">
+                            {slot.validationSummary}
+                          </span>
+                        )}
+                        {slot.validationCheckedAt && (
+                          <span className="small text-muted">
+                            {formatDate(slot.validationCheckedAt)}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => onValidate(slot)}
+                          disabled={
+                            isValidating && validatingSlotCode === slot.slotCode
+                          }
+                        >
+                          {isValidating && validatingSlotCode === slot.slotCode
+                            ? "Testando..."
+                            : "Testar URL"}
+                        </button>
+                      </div>
                     </td>
                     <td>
                       <div>{formatInteger(entries)} acessos</div>

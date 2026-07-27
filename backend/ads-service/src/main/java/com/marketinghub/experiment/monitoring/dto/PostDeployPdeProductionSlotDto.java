@@ -16,6 +16,14 @@ public record PostDeployPdeProductionSlotDto(
         PdeProductionSlotStatus status,
         Long sourceExperimentId,
         String notes,
+        String validationStatus,
+        Instant validationCheckedAt,
+        Integer validationHttpStatus,
+        String validationSummary,
+        String validationDetail,
+        String validationContractSlug,
+        String validationContractHealthPath,
+        String validationResolvedUrl,
         Instant createdAt,
         Instant updatedAt
 ) {}

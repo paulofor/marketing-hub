@@ -74,6 +74,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PostDeployPdeProductionSlot"
+  /api/experiments/{experimentId}/post-deploy-monitor/pde/production-slots/{slotCode}/validate:
+    post:
+      summary: Valida a entrega pública de um slot produtivo PDE
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: slotCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productSlug
+          in: query
+          required: false
+          schema:
+            type: string
+            default: metodo-musa-7-dias
+      responses:
+        "200":
+          description: Slot com o resultado auditável da última validação de URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDeployPdeProductionSlot"
 components:
   schemas:
     PostDeployMonitorResponse:
@@ -155,6 +183,35 @@ components:
           format: int64
           nullable: true
         notes:
+          type: string
+          nullable: true
+        validationStatus:
+          type: string
+          nullable: true
+          enum:
+            - OK
+            - FAILED
+        validationCheckedAt:
+          type: string
+          format: date-time
+          nullable: true
+        validationHttpStatus:
+          type: integer
+          nullable: true
+        validationSummary:
+          type: string
+          nullable: true
+          example: URL produtiva validada
+        validationDetail:
+          type: string
+          nullable: true
+        validationContractSlug:
+          type: string
+          nullable: true
+        validationContractHealthPath:
+          type: string
+          nullable: true
+        validationResolvedUrl:
           type: string
           nullable: true
         createdAt:

@@ -172,6 +172,14 @@ public class ProductController {
         product.getSlug(), request.sourceExperimentId(), request);
   }
 
+  /** Valida se uma versão produtiva PDE realmente entrega a URL e o contrato público. */
+  @PostMapping("/{id}/pde-production-slots/{slotCode}/validate")
+  public PostDeployPdeProductionSlotDto validatePdeProductionSlot(
+      @PathVariable Long id, @PathVariable String slotCode) {
+    Product product = service.getProduct(id);
+    return pdeProductionSlotService.validateProductionSlot(product.getSlug(), slotCode);
+  }
+
   /** Lista os produtos comerciais cadastrados no Marketing Hub. */
   @GetMapping
   public List<ProductDto> list() {

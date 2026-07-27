@@ -40,3 +40,24 @@ export function useSaveProductPdeProductionSlot(productId?: string | number) {
     },
   });
 }
+
+export function useValidateProductPdeProductionSlot(productId?: string | number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (slotCode: string) => {
+      const { data } = await axios.post<PostDeployPdeProductionSlot>(
+        `/api/products/${productId}/pde-production-slots/${slotCode}/validate`,
+      );
+      return data;
+    },
+    onSuccess: (slot) => {
+      toast.success(`URL da versão PDE ${slot.slotCode} validada.`);
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-production-slots"],
+      });
+    },
+    onError: () => {
+      toast.error("Não foi possível testar a URL produtiva PDE agora.");
+    },
+  });
+}

@@ -1463,5 +1463,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-07-27-pde-production-slot-url-validation.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-07-24-experiment-learned-lessons.yaml
       relativeToChangelogFile: true

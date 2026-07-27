@@ -146,6 +146,14 @@ export interface PostDeployPdeProductionSlot {
   status: PdeProductionSlotStatus;
   sourceExperimentId?: number | null;
   notes?: string | null;
+  validationStatus?: string | null;
+  validationCheckedAt?: string | null;
+  validationHttpStatus?: number | null;
+  validationSummary?: string | null;
+  validationDetail?: string | null;
+  validationContractSlug?: string | null;
+  validationContractHealthPath?: string | null;
+  validationResolvedUrl?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }

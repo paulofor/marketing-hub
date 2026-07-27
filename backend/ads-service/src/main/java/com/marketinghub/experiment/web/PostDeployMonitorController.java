@@ -49,4 +49,13 @@ public class PostDeployMonitorController {
             @Valid @RequestBody PostDeployPdeProductionSlotRequestDto request) {
         return service.saveProductionSlot(experimentId, request);
     }
+
+    /** Valida por HTTP se um slot PDE entrega a experiência definida no cadastro. */
+    @PostMapping("/pde/production-slots/{slotCode}/validate")
+    public PostDeployPdeProductionSlotDto validateProductionSlot(
+            @PathVariable Long experimentId,
+            @PathVariable String slotCode,
+            @RequestParam(name = "productSlug", required = false) String productSlug) {
+        return service.validateProductionSlot(experimentId, productSlug, slotCode);
+    }
 }

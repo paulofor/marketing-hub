@@ -950,7 +950,7 @@ public class AccessService {
                             percentage(checkoutStarted, sessions),
                             percentage(subscriptionApproved, sessions),
                             resultSet.getLong("total_visible_ms"),
-                            lastEventAt == null ? null : toOperationalInstant(lastEventAt).toString()));
+                            timestampAsOperationalText(lastEventAt)));
                 }
                 return metrics;
             }

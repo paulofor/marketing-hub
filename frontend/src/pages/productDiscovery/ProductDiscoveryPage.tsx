@@ -43,6 +43,10 @@ export default function ProductDiscoveryPage() {
       failed: cycles.filter((cycle) => cycle.status === "FAILED").length,
     };
   }, [cyclesQuery.data]);
+  const topSuccessProducts = useMemo(
+    () => maturityRankingQuery.data?.items.slice(0, 10) ?? [],
+    [maturityRankingQuery.data],
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,6 +119,66 @@ export default function ProductDiscoveryPage() {
               <strong className="h3 mb-0">{summary.failed}</strong>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body">
+          <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+            <div>
+              <h2 className="h5 mb-1">
+                Top 10 produtos com mais chance de sucesso
+              </h2>
+              <p className="text-secondary mb-0">
+                Visão rápida dos produtos priorizados pelo ranking de
+                maturidade comercial do backend.
+              </p>
+            </div>
+            <span className="badge text-bg-primary align-self-start">
+              {topSuccessProducts.length} produtos
+            </span>
+          </div>
+          {maturityRankingQuery.isLoading ? (
+            <div className="text-secondary">Carregando produtos...</div>
+          ) : null}
+          {maturityRankingQuery.isError ? (
+            <div className="alert alert-danger mb-0">
+              Não foi possível carregar o Top 10 de produtos.
+            </div>
+          ) : null}
+          {!maturityRankingQuery.isLoading &&
+          !maturityRankingQuery.isError &&
+          topSuccessProducts.length === 0 ? (
+            <div className="text-secondary">
+              Nenhum produto priorizado disponível no momento.
+            </div>
+          ) : null}
+          {topSuccessProducts.length > 0 ? (
+            <div className="row g-3">
+              {topSuccessProducts.map((item) => (
+                <div className="col-md-6 col-xl-4" key={item.position}>
+                  <article className="border rounded-2 p-3 h-100">
+                    <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
+                      <div>
+                        <div className="small text-secondary">
+                          #{item.position}
+                        </div>
+                        <h3 className="h6 mb-0">{item.niche}</h3>
+                      </div>
+                      <span className="badge text-bg-light">
+                        {item.maturity}
+                      </span>
+                    </div>
+                    <p className="small text-secondary mb-2">{item.summary}</p>
+                    <p className="mb-2">{item.commercialReason}</p>
+                    <div className="small">
+                      <strong>Próxima ação:</strong> {item.recommendedAction}
+                    </div>
+                  </article>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
 

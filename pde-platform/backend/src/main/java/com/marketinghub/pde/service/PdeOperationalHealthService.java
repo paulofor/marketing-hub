@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -47,6 +48,7 @@ public class PdeOperationalHealthService {
     private final JdbcConnectionProvider connectionProvider;
 
     /** Recebe a configuração JDBC usada para persistir e ler saúde operacional. */
+    @Autowired
     public PdeOperationalHealthService(
             @Value("${pde.access.jdbc-url:}") String jdbcUrl,
             @Value("${pde.access.jdbc-username:}") String jdbcUsername,

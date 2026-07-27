@@ -71,6 +71,12 @@ servido como `video/mp4` e que eventos de vídeo entram no analytics persistido.
 Use `PDE_KEEP_LOCAL_DB=1` para manter o banco após o teste e inspecionar os
 dados gravados.
 
+O deploy produtivo do Método MUSA também valida os dois subdomínios
+versionados. Em `main`, o workflow publica automaticamente a stack e executa
+smoke tests para `v5` e `v6`, incluindo health público, renderização, diagnóstico
+público, `experienceVersion` esperada e asset MP4 real. `workflow_dispatch`
+continua disponível apenas como acionamento manual adicional.
+
 Deploy de produção:
 
 - Defina `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` apontando para o MySQL do Marketing Hub antes de subir o backend PDE.

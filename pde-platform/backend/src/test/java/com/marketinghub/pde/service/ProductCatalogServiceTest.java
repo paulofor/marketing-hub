@@ -92,6 +92,20 @@ class ProductCatalogServiceTest {
         assertThat(product.funnelVersion()).isEqualTo("musa-membership-funnel-v1");
     }
 
+    /** Confirma que o hostname versionado tem prioridade sobre override global de deploy. */
+    @Test
+    void appliesVersionedHostBeforeGlobalOverride() {
+        ProductCatalogService service = new ProductCatalogService(
+                RestClient.builder(),
+                "",
+                "musa-pde-entry-v5-video-explicativo");
+
+        var product = service.getProductForHost("metodo-musa-7-dias", "v6.clubemusa.com.br:5176");
+
+        assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v6-video-motivacional");
+        assertThat(product.funnelVersion()).isEqualTo("musa-membership-funnel-v1");
+    }
+
     /** Confirma que o catálogo tenta a próxima base quando a primeira URL do Hub falha. */
     @Test
     void returnsMarketingHubProductFromFallbackBaseUrl() {

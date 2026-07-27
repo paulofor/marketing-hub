@@ -152,7 +152,7 @@ jobs:
       - backend
       - frontend
       - docker
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.target_environment == 'production'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.target_environment == 'production'))
     permissions:
       contents: read
       packages: read
@@ -252,3 +252,16 @@ jobs:
         run: |
           PDE_PUBLIC_HEALTH_URL=https://v5.clubemusa.com.br npm run test:public-diagnostic-smoke
           PDE_PUBLIC_HEALTH_URL=https://v6.clubemusa.com.br npm run test:public-diagnostic-smoke
+      - name: Validate production versioned PDE contracts
+        run: |
+          PRODUCT_SLUG=metodo-musa-7-dias \
+          PDE_PUBLIC_BASE_URL=https://v5.clubemusa.com.br \
+          EXPECTED_EXPERIENCE_VERSION=musa-pde-entry-v5-video-explicativo \
+          EXPECTED_HERO_VIDEO_PATH=/assets/musa-v5-video-explicativo.mp4 \
+          bash scripts/check-musa-pde-public-consistency.sh
+
+          PRODUCT_SLUG=metodo-musa-7-dias \
+          PDE_PUBLIC_BASE_URL=https://v6.clubemusa.com.br \
+          EXPECTED_EXPERIENCE_VERSION=musa-pde-entry-v6-video-motivacional \
+          EXPECTED_HERO_VIDEO_PATH=/assets/musa-v6-video-motivacional.mp4 \
+          bash scripts/check-musa-pde-public-consistency.sh

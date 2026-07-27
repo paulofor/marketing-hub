@@ -891,7 +891,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SIGN_UP\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"3 mensagens prontas\",\"primaryText\":\"Receba 3 mensagens prontas para conversar com leads\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SIGN_UP\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
@@ -946,7 +946,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"BUY_NOW\",\"destinationUrl\":\"https://exp.example/checkout\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"Ver amostra gratuita\",\"primaryText\":\"Veja a amostra gratuita e compre o produto completo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"BUY_NOW\",\"destinationUrl\":\"https://exp.example/checkout\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
@@ -2039,7 +2039,7 @@ class FacebookCampaignServiceTest {
             [{"id":1,"name":"Exp","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"}}]
             """).addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("""
-            [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","format":"VIDEO","videoUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY"}]
+            [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","format":"VIDEO","videoUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY","videoCreative":true,"audibleApprovedVideo":true}]
             """.formatted(videoUrl)).addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -2138,7 +2138,7 @@ class FacebookCampaignServiceTest {
             [{"id":1,"name":"Exp","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-video-required"}]
             """).addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("""
-            [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","format":"VIDEO","videoUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY"}]
+            [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","format":"VIDEO","videoUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY","videoCreative":true,"audibleApprovedVideo":true}]
             """.formatted(videoUrl)).addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
@@ -2205,6 +2205,76 @@ class FacebookCampaignServiceTest {
         int valueEnd = path.indexOf('&', valueStart);
         String encoded = valueEnd >= 0 ? path.substring(valueStart, valueEnd) : path.substring(valueStart);
         return objectMapper.readTree(URLDecoder.decode(encoded, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    // Garante que vídeo sem áudio aprovado é bloqueado antes de qualquer chamada à Meta.
+    void blocksVideoCreativeWithoutAudibleApprovalBeforeFacebookPublication() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("""
+            [{"id":1,"name":"Exp","singlePain":"cliente some depois da manutencao","funnelPromise":"encaixes em 7 dias","primaryCta":"Comprar o Mapa 7D","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-audio-gate"}]
+            """).addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("""
+            [{"id":101,"experimentId":1,"headline":"Cliente some depois da manutencao","primaryText":"Veja encaixes em 7 dias antes do cliente sumir","format":"VIDEO","videoUrl":"https://cdn.example/video-sem-som.mp4","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY","videoCreative":true,"audibleApprovedVideo":false}]
+            """).addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setResponseCode(204));
+
+        service.createCampaignsFromExperiments();
+
+        assertEquals("/api/facebook-campaigns/experiments-ready", takeBackendRequest("experiments-ready").getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", takeBackendRequest("creatives-ready").getPath());
+        RecordedRequest failureStep = takeBackendRequestMatching(
+            "publication gate failure",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+        );
+        JsonNode failurePayload = objectMapper.readTree(failureStep.getBody().inputStream());
+        assertEquals("job-audio-gate", failurePayload.get("jobId").asText());
+        assertEquals("CAMPAIGN_CREATIVE_PUBLICATION_GATE", failurePayload.get("stepName").asText());
+        assertTrue(failurePayload.get("errorMessage").asText().contains("audible audio"));
+        RecordedRequest failedStatusRequest = takeBackendRequestMatching(
+            "failed status update",
+            request -> request.getPath() != null
+                && request.getPath().contains("/api/experiments/1/status?status=FAILED")
+                && "PATCH".equals(request.getMethod())
+        );
+        assertNotNull(failedStatusRequest);
+        assertEquals(0, facebook.getRequestCount());
+    }
+
+    @Test
+    // Garante que copy desalinhada com o contrato comercial é bloqueada antes da Meta.
+    void blocksMisalignedCreativeCopyBeforeFacebookPublication() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("""
+            [{"id":1,"name":"Exp","singlePain":"cliente some depois da manutencao","funnelPromise":"encaixes em 7 dias","primaryCta":"Comprar o Mapa 7D","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-copy-gate"}]
+            """).addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("""
+            [{"id":101,"experimentId":1,"headline":"Oferta imperdivel","primaryText":"Clique e veja novidades para mudar sua rotina","imageUrl":"%s","description":"Desc","cta":"LEARN_MORE","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY"}]
+            """.formatted(imageUrl)).addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setResponseCode(204));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("experiments-ready");
+        takeBackendRequest("creatives-ready");
+        RecordedRequest failureStep = takeBackendRequestMatching(
+            "publication gate failure",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+        );
+        JsonNode failurePayload = objectMapper.readTree(failureStep.getBody().inputStream());
+        assertEquals("CAMPAIGN_CREATIVE_PUBLICATION_GATE", failurePayload.get("stepName").asText());
+        assertTrue(failurePayload.get("errorMessage").asText().contains("does not match"));
+        takeBackendRequestMatching(
+            "failed status update",
+            request -> request.getPath() != null
+                && request.getPath().contains("/api/experiments/1/status?status=FAILED")
+                && "PATCH".equals(request.getMethod())
+        );
+        assertEquals(0, facebook.getRequestCount());
     }
 
     @Test

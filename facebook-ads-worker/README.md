@@ -122,6 +122,14 @@ O campo `pixelOwnerBusinessId` é enviado apenas quando estiver preenchido, sem 
 
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 
+Antes de qualquer chamada à Meta, o worker aplica o gate obrigatório de criativo
+recebido do backend. Vídeos só podem publicar quando o contrato do criativo
+informar `audibleApprovedVideo=true`, confirmando áudio audível e aprovação
+humana. A copy também precisa ter `primaryText`, `headline`, `cta` e conexão
+mínima com a dor, promessa, recompensa ou CTA do experimento. Se o gate falhar,
+o worker registra o passo `CAMPAIGN_CREATIVE_PUBLICATION_GATE`, marca o
+experimento como `FAILED` e não cria campanha, ad set, criativo ou anúncio.
+
 1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_LEADS` quando o
    experimento trouxer `campaignObjective=LEADS`, `freeReward` ou criativo
    direcionado para formulário de leads; use `OUTCOME_TRAFFIC` apenas para

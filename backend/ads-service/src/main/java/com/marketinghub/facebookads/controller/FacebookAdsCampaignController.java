@@ -16,6 +16,7 @@ import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbTestDto;
 import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbVariantDto;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
@@ -101,6 +102,7 @@ public class FacebookAdsCampaignController {
     private final ExperimentCampaignMetricService campaignMetricService;
     private final ExperimentFunnelAutoStopService funnelAutoStopService;
     private final com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService;
+    private final ExperimentVideoAssetService experimentVideoAssetService;
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
 
     private final LeadPortalMetricsService leadPortalMetricsService;
@@ -124,6 +126,7 @@ public class FacebookAdsCampaignController {
                                          ExperimentCampaignMetricService campaignMetricService,
                                          ExperimentFunnelAutoStopService funnelAutoStopService,
                                          com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService,
+                                         ExperimentVideoAssetService experimentVideoAssetService,
                                          LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
                                          LeadPortalMetricsService leadPortalMetricsService,
                                          FacebookCampaignRecommendationService recommendationService,
@@ -142,6 +145,7 @@ public class FacebookAdsCampaignController {
         this.campaignMetricService = campaignMetricService;
         this.funnelAutoStopService = funnelAutoStopService;
         this.experimentReadinessService = experimentReadinessService;
+        this.experimentVideoAssetService = experimentVideoAssetService;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
         this.leadPortalMetricsService = leadPortalMetricsService;
         this.recommendationService = recommendationService;
@@ -582,6 +586,11 @@ public class FacebookAdsCampaignController {
     // Converte o criativo do domínio Experimento no contrato de leitura do módulo Facebook.
     private FacebookCreativeConsumptionResponse toFacebookCreativeConsumptionResponse(Creative creative) {
         Long experimentId = creative.getExperiment() != null ? creative.getExperiment().getId() : null;
+        boolean videoCreative = creative.getFormat() != null && "VIDEO".equalsIgnoreCase(creative.getFormat().trim());
+        boolean audibleApprovedVideo = !videoCreative || experimentVideoAssetService.hasReadyApprovedAudibleVideoForPublication(
+                experimentId,
+                creative.getVideoId(),
+                creative.getVideoUrl());
         return new FacebookCreativeConsumptionResponse(
                 creative.getId(),
                 experimentId,
@@ -596,7 +605,9 @@ public class FacebookAdsCampaignController {
                 creative.getDestinationUrl(),
                 creative.getLeadGenFormId(),
                 creative.getInstagramUserId(),
-                creative.getStatus() != null ? creative.getStatus().name() : null
+                creative.getStatus() != null ? creative.getStatus().name() : null,
+                videoCreative,
+                audibleApprovedVideo
         );
     }
 
@@ -1208,7 +1219,9 @@ public class FacebookAdsCampaignController {
             String destinationUrl,
             String leadGenFormId,
             String instagramUserId,
-            String status) {}
+            String status,
+            boolean videoCreative,
+            boolean audibleApprovedVideo) {}
 
     public record CreateCampaignRequest(
             String id,

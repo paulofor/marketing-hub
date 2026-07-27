@@ -1,5 +1,6 @@
 package com.marketinghub.experiment.service;
 
+import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -20,12 +21,14 @@ import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTest
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Consolida pendências básicas de preparação do experimento.
@@ -309,7 +312,117 @@ public class ExperimentReadinessService {
         if (experiment == null || experiment.getId() == null) {
             return false;
         }
-        return creativeRepository.existsByExperimentIdAndStatusAndUsableImage(experiment.getId(), CreativeStatus.READY);
+        if (!creativeRepository.existsByExperimentIdAndStatusAndUsableImage(experiment.getId(), CreativeStatus.READY)) {
+            return false;
+        }
+        List<Creative> readyCreatives = creativeRepository.findByExperimentId(experiment.getId()).stream()
+                .filter(creative -> creative.getStatus() == CreativeStatus.READY)
+                .toList();
+        if (readyCreatives.isEmpty()) {
+            return true;
+        }
+        return readyCreatives.stream().anyMatch(creative -> passesPublicationGate(experiment, creative));
+    }
+
+    /** Valida o gate mínimo de publicação Meta para mídia e copy do criativo. */
+    private boolean passesPublicationGate(Experiment experiment, Creative creative) {
+        return hasPublishableMedia(experiment, creative) && hasCommerciallyAlignedCopy(experiment, creative);
+    }
+
+    /** Verifica se a mídia do criativo pode ser publicada sem pular a aprovação técnica de vídeo. */
+    private boolean hasPublishableMedia(Experiment experiment, Creative creative) {
+        if (creative == null) {
+            return false;
+        }
+        if (isVideoCreative(creative)) {
+            return experimentVideoAssetService.hasReadyApprovedAudibleVideoForPublication(
+                    experiment.getId(),
+                    creative.getVideoId(),
+                    creative.getVideoUrl());
+        }
+        return StringUtils.hasText(creative.getImageUrl());
+    }
+
+    /** Confirma que a copy possui mensagem, headline, CTA e conexão mínima com o contrato comercial. */
+    private boolean hasCommerciallyAlignedCopy(Experiment experiment, Creative creative) {
+        if (creative == null
+                || !StringUtils.hasText(creative.getPrimaryText())
+                || !StringUtils.hasText(creative.getHeadline())
+                || !StringUtils.hasText(creative.getCta())) {
+            return false;
+        }
+        List<String> anchors = commercialCopyAnchors(experiment);
+        if (anchors.isEmpty()) {
+            return true;
+        }
+        String copy = normalizeCommercialText(String.join(" ",
+                creative.getPrimaryText(),
+                creative.getHeadline(),
+                creative.getDescription() == null ? "" : creative.getDescription(),
+                creative.getCta()));
+        return anchors.stream().anyMatch(anchor -> copy.contains(anchor));
+    }
+
+    /** Extrai termos comerciais fortes de dor, promessa, recompensa e CTA para checagem determinística. */
+    private List<String> commercialCopyAnchors(Experiment experiment) {
+        if (experiment == null) {
+            return List.of();
+        }
+        return Stream.of(
+                        experiment.getSinglePain(),
+                        experiment.getFunnelPromise(),
+                        experiment.getFreeReward(),
+                        experiment.getPrimaryCta())
+                .flatMap(value -> significantTerms(value).stream())
+                .distinct()
+                .toList();
+    }
+
+    /** Extrai termos suficientemente específicos para evitar aprovação de copy genérica ou desalinhada. */
+    private List<String> significantTerms(String value) {
+        String normalized = normalizeCommercialText(value);
+        if (!StringUtils.hasText(normalized)) {
+            return List.of();
+        }
+        return List.of(normalized.split(" ")).stream()
+                .filter(term -> term.length() >= 5)
+                .filter(term -> !isCommonCommercialTerm(term))
+                .limit(8)
+                .toList();
+    }
+
+    /** Remove termos genéricos que não provam aderência real da copy ao experimento. */
+    private boolean isCommonCommercialTerm(String term) {
+        return Set.of(
+                "receber",
+                "baixar",
+                "acessar",
+                "conheca",
+                "gratis",
+                "agora",
+                "metodo",
+                "produto",
+                "digital",
+                "clique").contains(term);
+    }
+
+    /** Normaliza texto comercial para comparação simples e estável. */
+    private String normalizeCommercialText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim();
+    }
+
+    /** Identifica criativos de vídeo que exigem áudio perceptível e revisão humana aprovados. */
+    private boolean isVideoCreative(Creative creative) {
+        return creative != null
+                && StringUtils.hasText(creative.getFormat())
+                && "VIDEO".equalsIgnoreCase(creative.getFormat().trim());
     }
 
     /** Verifica se existe fluxo aprovado do portal do lead vinculado ao experimento. */

@@ -63,6 +63,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Orquestra a publicação de campanhas Facebook para experimentos liberados no Marketing Hub.
@@ -325,6 +326,18 @@ public class FacebookCampaignService {
             List<Creative> selectedCreatives = readyCreatives.isEmpty()
                 ? List.of(creatives.get(0))
                 : readyCreatives;
+            String creativeGateBlocker = firstCreativePublicationGateBlocker(exp, selectedCreatives);
+            if (StringUtils.hasText(creativeGateBlocker)) {
+                LOGGER.warn("Skipping experiment {} because creative publication gate failed: {}", exp.id(), creativeGateBlocker);
+                experimentFacebookApiLogClient.logPublicationJobFailureStep(
+                    exp.publicationJobId(),
+                    exp.id(),
+                    "CAMPAIGN_CREATIVE_PUBLICATION_GATE",
+                    creativeGateBlocker
+                );
+                markExperimentAsFailed(exp.id(), creativeGateBlocker);
+                return;
+            }
 
             Experiment.InstagramAccount instagramAccount = exp.instagramAccount();
             String fallbackInstagramActorId = coalesce(
@@ -1390,6 +1403,122 @@ public class FacebookCampaignService {
             LOGGER.debug("Stacktrace while fetching ad set playbook for experiment {}", experimentId, ex);
             return Collections.emptyList();
         }
+    }
+
+    /** Retorna o primeiro bloqueio técnico/comercial que impede publicar os criativos na Meta. */
+    private String firstCreativePublicationGateBlocker(Experiment experiment, List<Creative> creatives) {
+        if (creatives == null || creatives.isEmpty()) {
+            return "no creative selected for publication";
+        }
+        for (Creative creative : creatives) {
+            String mediaBlocker = creativeMediaPublicationBlocker(creative);
+            if (StringUtils.hasText(mediaBlocker)) {
+                return mediaBlocker;
+            }
+            String copyBlocker = creativeCopyPublicationBlocker(experiment, creative);
+            if (StringUtils.hasText(copyBlocker)) {
+                return copyBlocker;
+            }
+        }
+        return null;
+    }
+
+    /** Valida mídia do criativo antes de qualquer chamada à Meta. */
+    private String creativeMediaPublicationBlocker(Creative creative) {
+        if (creative == null) {
+            return "creative payload is empty";
+        }
+        if (isVideoCreative(creative) && !Boolean.TRUE.equals(creative.audibleApprovedVideo())) {
+            return "video creative requires confirmed audible audio and human approval before Meta publication";
+        }
+        if (isVideoCreative(creative) && !StringUtils.hasText(creative.videoId()) && !StringUtils.hasText(creative.videoUrl())) {
+            return "video creative is missing videoId or videoUrl";
+        }
+        return null;
+    }
+
+    /** Valida que a copy possui estrutura mínima e aderência ao contrato comercial recebido do backend. */
+    private String creativeCopyPublicationBlocker(Experiment experiment, Creative creative) {
+        if (creative == null
+            || !StringUtils.hasText(creative.primaryText())
+            || !StringUtils.hasText(creative.headline())
+            || !StringUtils.hasText(creative.cta())) {
+            return "creative copy requires primaryText, headline and cta";
+        }
+        List<String> anchors = commercialCopyAnchors(experiment);
+        if (anchors.isEmpty()) {
+            return null;
+        }
+        String copy = normalizeCommercialText(String.join(" ",
+            creative.primaryText(),
+            creative.headline(),
+            creative.description() == null ? "" : creative.description(),
+            creative.cta()));
+        return anchors.stream().anyMatch(copy::contains)
+            ? null
+            : "creative copy does not match experiment pain, promise, reward or CTA";
+    }
+
+    /** Extrai termos fortes do contrato comercial para checagem determinística de aderência. */
+    private List<String> commercialCopyAnchors(Experiment experiment) {
+        if (experiment == null) {
+            return Collections.emptyList();
+        }
+        return Stream.of(
+                experiment.singlePain(),
+                experiment.funnelPromise(),
+                experiment.freeReward(),
+                experiment.primaryCta())
+            .flatMap(value -> significantCommercialTerms(value).stream())
+            .distinct()
+            .toList();
+    }
+
+    /** Extrai termos específicos suficientes para evitar aprovar copy genérica. */
+    private List<String> significantCommercialTerms(String value) {
+        String normalized = normalizeCommercialText(value);
+        if (!StringUtils.hasText(normalized)) {
+            return Collections.emptyList();
+        }
+        return List.of(normalized.split(" ")).stream()
+            .filter(term -> term.length() >= 5)
+            .filter(term -> !isCommonCommercialTerm(term))
+            .limit(8)
+            .toList();
+    }
+
+    /** Remove termos comuns que não comprovam aderência real da copy. */
+    private boolean isCommonCommercialTerm(String term) {
+        return Set.of(
+            "receber",
+            "baixar",
+            "acessar",
+            "conheca",
+            "gratis",
+            "agora",
+            "metodo",
+            "produto",
+            "digital",
+            "clique").contains(term);
+    }
+
+    /** Normaliza texto comercial para comparação determinística simples. */
+    private String normalizeCommercialText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return Normalizer.normalize(value, Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "")
+            .toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z0-9]+", " ")
+            .trim();
+    }
+
+    /** Identifica criativo de vídeo pelo formato recebido do backend. */
+    private boolean isVideoCreative(Creative creative) {
+        return creative != null
+            && StringUtils.hasText(creative.format())
+            && "VIDEO".equalsIgnoreCase(creative.format().trim());
     }
 
     private AdSetPlaybookSpec selectPrimarySpec(List<AdSetPlaybookSpec> specs) {
@@ -2941,7 +3070,9 @@ public class FacebookCampaignService {
         String destinationUrl,
         String leadGenFormId,
         String instagramUserId,
-        String status
+        String status,
+        Boolean videoCreative,
+        Boolean audibleApprovedVideo
     ) {}
 
 }

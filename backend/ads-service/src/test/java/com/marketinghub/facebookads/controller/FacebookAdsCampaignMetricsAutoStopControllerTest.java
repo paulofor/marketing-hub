@@ -17,6 +17,7 @@ import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
+import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.facebookads.FacebookAdStatus;
@@ -90,6 +91,8 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
     @Mock
     private ExperimentReadinessService experimentReadinessService;
     @Mock
+    private ExperimentVideoAssetService experimentVideoAssetService;
+    @Mock
     private LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
     @Mock
     private LeadPortalMetricsService leadPortalMetricsService;
@@ -129,6 +132,7 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                 campaignMetricService,
                 autoStopService,
                 experimentReadinessService,
+                experimentVideoAssetService,
                 leadPortalPublicUrlResolver,
                 leadPortalMetricsService,
                 recommendationService,

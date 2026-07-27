@@ -23,6 +23,7 @@ import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.FacebookAdsAdCreative;
@@ -135,6 +136,8 @@ class FacebookAdsCampaignControllerTest {
     ExperimentFunnelAutoStopService funnelAutoStopService;
     @MockBean
     ExperimentCampaignMetricService campaignMetricService;
+    @MockBean
+    ExperimentVideoAssetService experimentVideoAssetService;
 
     @BeforeEach
     // Mantem o comportamento real: sem teste A/B ativo, nao ha bloqueio de publicacao por A/B.
@@ -203,6 +206,8 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[1].format").value("VIDEO"))
                 .andExpect(jsonPath("$[1].videoId").value("vid-123"))
                 .andExpect(jsonPath("$[1].videoUrl").value("https://cdn.example/video.mp4"))
+                .andExpect(jsonPath("$[1].videoCreative").value(true))
+                .andExpect(jsonPath("$[1].audibleApprovedVideo").value(false))
                 .andExpect(jsonPath("$[2]").doesNotExist());
     }
 

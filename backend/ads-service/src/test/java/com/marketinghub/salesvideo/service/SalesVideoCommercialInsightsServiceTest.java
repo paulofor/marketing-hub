@@ -11,6 +11,7 @@ import com.marketinghub.product.Product;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
 import com.marketinghub.salesvideo.tenant.TenantContext;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import org.junit.jupiter.api.BeforeEach;
@@ -186,7 +187,47 @@ class SalesVideoCommercialInsightsServiceTest {
         assertThat(response.getProviderScores()).hasSize(1);
         assertThat(response.getProviderScores().get(0).getScore()).isEqualTo(13);
         assertThat(response.getProviderScores().get(0).getRejectedAssets()).isEqualTo(1);
+        assertThat(response.getProviderScores().get(0).getRiskCategory()).isEqualTo("REPROVACAO_CRIATIVA");
         assertThat(response.getProviderScores().get(0).getRecommendation()).isEqualTo("bloquear_ou_regenerar");
+    }
+
+    /** Deve separar falha operacional de configuração da reprovação criativa do provider. */
+    @Test
+    void shouldAllowControlledTestAfterOnlyOperationalProviderConfigurationFailure() {
+        SalesVideoProfile profile = profile();
+        SalesVideoJob failedJob = SalesVideoJob.builder()
+                .id(20473L)
+                .profile(profile)
+                .providerName("RUNWAY")
+                .tenantId("tenant-a")
+                .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                .jobType(SalesVideoJobType.RENDER)
+                .status(SalesVideoStatus.VIDEO_FAILED)
+                .failureCode("VIDEO_PROVIDER_ERROR")
+                .failureDetail("retryable=false;code=VIDEO_PROVIDER_ERROR;message=Nenhum provider configurado para o job")
+                .build();
+
+        given(jobRepository.findByTenantIdOrderByRequestedAtDesc("tenant-a")).willReturn(List.of(failedJob));
+        given(experimentVideoAssetRepository.findProviderReviewsByTenantId("tenant-a"))
+                .willReturn(List.of());
+        given(conversionEventRepository.findByTenantIdOrderByOccurredAtDesc("tenant-a"))
+                .willReturn(List.of());
+
+        TenantContextHolder.set(new TenantContext("tenant-a", "seller@example.com", false));
+        try {
+            List<SalesVideoProviderScoreDto> response = service.summarizeProviderScores();
+
+            assertThat(response).hasSize(1);
+            assertThat(response.get(0).getProviderName()).isEqualTo("RUNWAY");
+            assertThat(response.get(0).getFailedJobs()).isEqualTo(1);
+            assertThat(response.get(0).getOperationalFailedJobs()).isEqualTo(1);
+            assertThat(response.get(0).getRejectedAssets()).isZero();
+            assertThat(response.get(0).getRecommendation()).isEqualTo("testar_controlado");
+            assertThat(response.get(0).getRiskCategory()).isEqualTo("FALHA_OPERACIONAL_CONFIGURACAO");
+            assertThat(response.get(0).getRiskMessage()).contains("liberar teste controlado");
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 
     /** Deve resumir score global dos providers usando o tenant corrente. */

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useMemo, type CSSProperties } from "react";
 import type { Product } from "../../api/product/useProducts";
 import {
+  BookOpen,
   GitBranch,
   CircleDollarSign,
   Eye,
@@ -409,6 +410,13 @@ export default function ProductListPage() {
                       >
                         <CircleDollarSign size={16} aria-hidden="true" />
                         Financeiro
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/products/${product.id}/scientific-articles`}
+                      >
+                        <BookOpen size={16} aria-hidden="true" />
+                        Artigos científicos
                       </Link>
                       <Link
                         className="product-catalog-card__action-button product-catalog-card__action-button--secondary"

@@ -141,6 +141,42 @@ const COMMERCIAL_SIGNAL_TEMPLATES = [
   "{base} antes e depois resultado",
 ];
 
+const SCIENTIFIC_RESEARCH_TEMPLATES = [
+  "{base} scientific study mechanism",
+  "{base} peer reviewed study mechanism",
+  "{base} systematic review intervention",
+  "{base} evidence based behavior change",
+  "{base} ciência aplicada mecanismo",
+  "{base} estudo científico revisão sistemática",
+  "{base} artigo científico intervenção",
+  "{base} site:pubmed.ncbi.nlm.nih.gov",
+  "{base} site:scielo.org",
+  "{base} site:frontiersin.org",
+  "{base} site:ncbi.nlm.nih.gov/pmc",
+  "{base} site:doi.org",
+];
+
+const SCIENTIFIC_SOURCE_DOMAINS = [
+  "pubmed.ncbi.nlm.nih.gov",
+  "ncbi.nlm.nih.gov",
+  "pmc.ncbi.nlm.nih.gov",
+  "scielo.org",
+  "frontiersin.org",
+  "nature.com",
+  "springer.com",
+  "sciencedirect.com",
+  "tandfonline.com",
+  "wiley.com",
+  "mdpi.com",
+  "plos.org",
+  "sagepub.com",
+  "bmj.com",
+  "jamanetwork.com",
+  "thelancet.com",
+  "doi.org",
+  "researchgate.net",
+];
+
 export const SEARCH_PROVIDERS = {
   BRAVE: "brave",
   TAVILY: "tavily",
@@ -165,6 +201,9 @@ export function buildSearchQueries(job) {
   const commercialSignalQueries = COMMERCIAL_SIGNAL_TEMPLATES.map((template) =>
     template.replace("{base}", base),
   );
+  const scientificResearchQueries = SCIENTIFIC_RESEARCH_TEMPLATES.map(
+    (template) => template.replace("{base}", base),
+  );
 
   return deduplicateQueries([
     ...domainQueries,
@@ -172,15 +211,21 @@ export function buildSearchQueries(job) {
     ...marketSignalQueries,
     ...sourceDiscoveryQueries,
     ...commercialSignalQueries,
+    ...scientificResearchQueries,
   ]);
 }
 
 export function resolveSearchConfig(env = process.env) {
-  const requestedProvider = normalizeProvider(env.PRODUCT_DISCOVERY_SEARCH_PROVIDER);
+  const requestedProvider = normalizeProvider(
+    env.PRODUCT_DISCOVERY_SEARCH_PROVIDER,
+  );
   const provider = requestedProvider || inferProvider(env);
   return {
     provider,
-    braveApiKey: resolveSecret(env.BRAVE_SEARCH_API_KEY, env.BRAVE_SEARCH_API_KEY_FILE),
+    braveApiKey: resolveSecret(
+      env.BRAVE_SEARCH_API_KEY,
+      env.BRAVE_SEARCH_API_KEY_FILE,
+    ),
     tavilyApiKey: env.TAVILY_API_KEY || "",
     serpApiKey: env.SERPAPI_API_KEY || "",
     braveEndpoint:
@@ -247,7 +292,10 @@ export async function searchInternet(job, options = {}) {
     }
     collected.push(...queryResults.slice(0, maxResultsPerQuery));
     const uniqueResults = deduplicateResults(collected);
-    if (attemptedQueries >= minSearchQueries && uniqueResults.length >= maxSearchResults) {
+    if (
+      attemptedQueries >= minSearchQueries &&
+      uniqueResults.length >= maxSearchResults
+    ) {
       break;
     }
   }
@@ -265,12 +313,16 @@ export async function searchInternet(job, options = {}) {
 }
 
 export function normalizeBraveResponse(payload) {
-  const results = Array.isArray(payload?.web?.results) ? payload.web.results : [];
+  const results = Array.isArray(payload?.web?.results)
+    ? payload.web.results
+    : [];
   return results
     .map((item) => ({
       title: cleanText(item.title),
       url: item.url,
-      snippet: cleanText(item.description || item.extra_snippets?.join(" ") || ""),
+      snippet: cleanText(
+        item.description || item.extra_snippets?.join(" ") || "",
+      ),
     }))
     .filter(hasSearchResultShape);
 }
@@ -294,7 +346,9 @@ export function normalizeSerpApiResponse(payload) {
     .map((item) => ({
       title: cleanText(item.title),
       url: item.link,
-      snippet: cleanText(item.snippet || item.rich_snippet?.top?.detected_extensions || ""),
+      snippet: cleanText(
+        item.snippet || item.rich_snippet?.top?.detected_extensions || "",
+      ),
     }))
     .filter(hasSearchResultShape);
 }
@@ -305,6 +359,10 @@ export function analyzeSearchResults(job, results) {
     url: result.url,
     snippet: result.snippet,
   }));
+  const scientificArticles = extractScientificArticles(results, job).slice(
+    0,
+    8,
+  );
   const combined = evidence
     .map((item) => `${item.title} ${item.snippet}`)
     .join(" ")
@@ -318,18 +376,28 @@ export function analyzeSearchResults(job, results) {
   const scaleScore = Math.min(35, independentDomains * 7 + painHits * 3);
   const unmetScore = Math.min(30, unmetHits * 5);
   const pdeScore = highRiskHits > 0 ? 5 : 25;
-  const score = Math.min(100, scaleScore + unmetScore + pdeScore + 10);
+  const scientificEvidenceScore = Math.min(10, scientificArticles.length * 3);
+  const score = Math.min(
+    100,
+    scaleScore + unmetScore + pdeScore + scientificEvidenceScore + 5,
+  );
   const decision =
     highRiskHits > 0
       ? "HUMAN_REVIEW"
-      : score >= 70 && independentDomains >= 2
-        ? "APPROVE"
-        : score >= 45
-          ? "RESEARCH_MORE"
-          : "REJECT";
+      : scientificArticles.length === 0
+        ? "RESEARCH_MORE"
+        : score >= 70 && independentDomains >= 2
+          ? "APPROVE"
+          : score >= 45
+            ? "RESEARCH_MORE"
+            : "REJECT";
+  const mechanismEvidence =
+    scientificArticles.length > 0
+      ? `${scientificArticles.length} artigo(s) científico(s) candidato(s) coletado(s) para sustentar ou limitar o mecanismo.`
+      : "Nenhum artigo científico candidato foi coletado; o mecanismo não deve ser tratado como validado antes de nova pesquisa científica.";
 
   return {
-    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas e ${independentDomains} domínios independentes. Principal decisão: ${decision}.`,
+    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${independentDomains} domínios independentes e ${scientificArticles.length} artigos científicos candidatos. Principal decisão: ${decision}.`,
     opportunities: [
       {
         name: `PDE de alívio para ${job.theme}`,
@@ -341,14 +409,18 @@ export function analyzeSearchResults(job, results) {
           "A fricção tende a gerar insegurança, medo de errar e sensação de estar sozinho na decisão.",
         scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
         unmetnessEvidence: `${unmetHits} sinais sugerem soluções caras, confusas, demoradas ou incompletas.`,
-        pdeExperience:
-          "Experiência guiada em que o usuário informa sua situação, recebe diagnóstico simples, plano de ação e primeiro antes/depois aplicável.",
+        pdeExperience: `Experiência guiada em que o usuário informa sua situação, recebe diagnóstico simples, plano de ação e primeiro antes/depois aplicável. Mecanismo deve ser definido usando os artigos coletados: ${mechanismEvidence}`,
         firstCampaignAngle: `Pare de tentar resolver ${job.theme} no improviso: veja em poucos minutos qual é o próximo passo mais seguro.`,
         commercialRisk:
           highRiskHits > 0
             ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
-            : "Risco principal é a dor ainda estar ampla demais; validar linguagem específica antes de campanha.",
-        evidenceJson: JSON.stringify(evidence),
+            : scientificArticles.length === 0
+              ? "Risco principal é criar promessa sem sustentação científica do mecanismo; pesquisar artigos antes de campanha."
+              : "Risco principal é extrapolar artigos científicos para promessa comercial absoluta; transformar evidência em mecanismo prático com limites claros.",
+        evidenceJson: JSON.stringify({
+          publicEvidence: evidence,
+          scientificArticles,
+        }),
         score,
         decision,
       },
@@ -370,7 +442,9 @@ export function normalizeDuckDuckGoResponse(payload) {
 }
 
 function normalizeProvider(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   return Object.values(SEARCH_PROVIDERS).includes(normalized) ? normalized : "";
 }
 
@@ -407,12 +481,19 @@ async function searchBrave(query, config, fetchFn, logger) {
   url.searchParams.set("country", config.country.toUpperCase());
   url.searchParams.set("search_lang", config.language.split("-")[0]);
   url.searchParams.set("count", "10");
-  const payload = await getSearchJson(url.toString(), fetchFn, logger, config.provider, query, {
-    Accept: "application/json",
-    "Accept-Encoding": "gzip",
-    "User-Agent": config.userAgent,
-    "X-Subscription-Token": config.braveApiKey,
-  });
+  const payload = await getSearchJson(
+    url.toString(),
+    fetchFn,
+    logger,
+    config.provider,
+    query,
+    {
+      Accept: "application/json",
+      "Accept-Encoding": "gzip",
+      "User-Agent": config.userAgent,
+      "X-Subscription-Token": config.braveApiKey,
+    },
+  );
   return normalizeBraveResponse(payload);
 }
 
@@ -450,7 +531,13 @@ async function searchSerpApi(query, config, fetchFn, logger) {
   url.searchParams.set("hl", config.language.split("-")[0]);
   url.searchParams.set("gl", config.country.toLowerCase());
   url.searchParams.set("num", "10");
-  const payload = await getSearchJson(url.toString(), fetchFn, logger, config.provider, query);
+  const payload = await getSearchJson(
+    url.toString(),
+    fetchFn,
+    logger,
+    config.provider,
+    query,
+  );
   return normalizeSerpApiResponse(payload);
 }
 
@@ -460,11 +547,24 @@ async function searchDuckDuckGo(query, config, fetchFn, logger) {
   url.searchParams.set("format", "json");
   url.searchParams.set("no_html", "1");
   url.searchParams.set("skip_disambig", "1");
-  const payload = await getSearchJson(url.toString(), fetchFn, logger, config.provider, query);
+  const payload = await getSearchJson(
+    url.toString(),
+    fetchFn,
+    logger,
+    config.provider,
+    query,
+  );
   return normalizeDuckDuckGoResponse(payload);
 }
 
-async function getSearchJson(url, fetchFn, logger, provider, query, headers = {}) {
+async function getSearchJson(
+  url,
+  fetchFn,
+  logger,
+  provider,
+  query,
+  headers = {},
+) {
   const response = await fetchFn(url, {
     headers: { Accept: "application/json", ...headers },
   });
@@ -476,7 +576,15 @@ async function getSearchJson(url, fetchFn, logger, provider, query, headers = {}
   return payload;
 }
 
-async function postSearchJson(url, body, fetchFn, logger, provider, query, headers = {}) {
+async function postSearchJson(
+  url,
+  body,
+  fetchFn,
+  logger,
+  provider,
+  query,
+  headers = {},
+) {
   const response = await fetchFn(url, {
     method: "POST",
     headers,
@@ -536,6 +644,52 @@ function deduplicateResults(results) {
     seen.add(key);
     return true;
   });
+}
+
+function extractScientificArticles(results, job) {
+  return deduplicateResults(results)
+    .filter(isScientificArticleCandidate)
+    .map((result) => {
+      const summary =
+        result.snippet || "Resumo indisponível no resultado de busca.";
+      return {
+        link: result.url,
+        originalTitle: result.title,
+        portugueseTitle: translateScientificTitleHeuristically(result.title),
+        summary,
+        mechanismApplication: buildMechanismApplication(result, job),
+      };
+    });
+}
+
+function isScientificArticleCandidate(result) {
+  const domain = safeDomain(result.url);
+  const text = `${result.title} ${result.snippet}`.toLowerCase();
+  return (
+    SCIENTIFIC_SOURCE_DOMAINS.some((sourceDomain) =>
+      domain.includes(sourceDomain),
+    ) ||
+    /\b(pubmed|doi|systematic review|meta-analysis|clinical trial|peer reviewed|journal|estudo científico|artigo científico|revisão sistemática)\b/i.test(
+      text,
+    )
+  );
+}
+
+function translateScientificTitleHeuristically(title) {
+  const normalized = cleanText(title);
+  if (
+    /[áéíóúâêôãõç]/i.test(normalized) ||
+    /\b(de|da|do|para|com|em|sobre)\b/i.test(normalized)
+  ) {
+    return normalized;
+  }
+  return `Título em português a revisar: ${normalized}`;
+}
+
+function buildMechanismApplication(result, job) {
+  const theme = cleanText(job.theme || "o tema pesquisado");
+  const finding = cleanText(result.snippet || result.title);
+  return `Usar este artigo como evidência candidata para explicar qual mecanismo causal pode reduzir a dor em ${theme}. A aplicação no produto deve traduzir o achado em diagnóstico, recomendação prática e limite de promessa, sem afirmar resultado garantido. Evidência localizada: ${finding}`;
 }
 
 function hasSearchResultShape(result) {
@@ -628,7 +782,10 @@ function maskSecrets(value) {
 }
 
 function countHits(text, terms) {
-  return terms.reduce((total, term) => total + (text.includes(term) ? 1 : 0), 0);
+  return terms.reduce(
+    (total, term) => total + (text.includes(term) ? 1 : 0),
+    0,
+  );
 }
 
 function safeDomain(url) {

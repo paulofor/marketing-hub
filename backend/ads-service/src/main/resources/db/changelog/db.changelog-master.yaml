@@ -1,5 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-27-video-project-studio.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-07-27-product-scientific-articles.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-26-product-musa-pde-video-explainer-entry.yaml
       relativeToChangelogFile: true
   - include:
@@ -1457,6 +1463,10 @@ databaseChangeLog:
 
   - include:
       file: changesets/2026-07-27-musa-pde-slot-v5-v6-governance.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-27-pde-production-slot-url-validation.yaml
       relativeToChangelogFile: true
 
   - include:

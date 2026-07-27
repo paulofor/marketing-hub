@@ -315,6 +315,7 @@ export interface SalesVideoProviderScore {
   score: number;
   readyJobs: number;
   failedJobs: number;
+  operationalFailedJobs?: number;
   approvedAssets: number;
   rejectedAssets: number;
   leads: number;
@@ -323,6 +324,8 @@ export interface SalesVideoProviderScore {
   purchases: number;
   revenue: number;
   recommendation: string;
+  riskCategory?: string | null;
+  riskMessage?: string | null;
 }
 
 export interface SalesVideoPerformanceSummary {
@@ -337,4 +340,77 @@ export interface SalesVideoPerformanceSummary {
   totalRevenue: number;
   variants: SalesVideoVariantPerformance[];
   providerScores: SalesVideoProviderScore[];
+}
+
+export type VideoProjectStatus =
+  | "DRAFT"
+  | "READY_FOR_SCRIPT"
+  | "READY_FOR_RENDER"
+  | "IN_PRODUCTION"
+  | "READY_FOR_REVIEW"
+  | "APPROVED"
+  | "ARCHIVED";
+
+export interface VideoProject {
+  id: number;
+  tenantId?: string | null;
+  productId?: number | null;
+  experimentId?: number | null;
+  salesVideoProfileId?: number | null;
+  campaignKey?: string | null;
+  contextType: string;
+  productionMode: string;
+  targetChannel: string;
+  format: string;
+  title: string;
+  objective: string;
+  funnelStage?: string | null;
+  primaryMetric?: string | null;
+  hookText?: string | null;
+  scriptText?: string | null;
+  scenePlan?: string | null;
+  visualReferences?: string | null;
+  voiceoverPlan?: string | null;
+  soundtrackPlan?: string | null;
+  captionPlan?: string | null;
+  ctaText?: string | null;
+  targetDurationSeconds?: number | null;
+  providerPlan?: string | null;
+  editingNotes?: string | null;
+  qualityGate?: string | null;
+  status: VideoProjectStatus;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface VideoProjectPayload {
+  productId?: number | null;
+  experimentId?: number | null;
+  salesVideoProfileId?: number | null;
+  campaignKey?: string;
+  contextType: string;
+  productionMode: string;
+  targetChannel: string;
+  format: string;
+  title: string;
+  objective: string;
+  funnelStage?: string;
+  primaryMetric?: string;
+  hookText?: string;
+  scriptText?: string;
+  scenePlan?: string;
+  visualReferences?: string;
+  voiceoverPlan?: string;
+  soundtrackPlan?: string;
+  captionPlan?: string;
+  ctaText?: string;
+  targetDurationSeconds?: number | null;
+  providerPlan?: string;
+  editingNotes?: string;
+  qualityGate?: string;
+  status?: VideoProjectStatus;
+  createdBy?: string;
+  updatedBy?: string;
 }

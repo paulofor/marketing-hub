@@ -1,0 +1,38 @@
+package com.marketinghub.salesvideo.dto;
+
+import com.marketinghub.salesvideo.VideoProjectStatus;
+import java.time.Instant;
+
+/** Representa a definição editável de um vídeo no estúdio administrativo. */
+public record VideoProjectDto(
+    Long id,
+    String tenantId,
+    Long productId,
+    Long experimentId,
+    Long salesVideoProfileId,
+    String campaignKey,
+    String contextType,
+    String productionMode,
+    String targetChannel,
+    String format,
+    String title,
+    String objective,
+    String funnelStage,
+    String primaryMetric,
+    String hookText,
+    String scriptText,
+    String scenePlan,
+    String visualReferences,
+    String voiceoverPlan,
+    String soundtrackPlan,
+    String captionPlan,
+    String ctaText,
+    Integer targetDurationSeconds,
+    String providerPlan,
+    String editingNotes,
+    String qualityGate,
+    VideoProjectStatus status,
+    String createdBy,
+    String updatedBy,
+    Instant createdAt,
+    Instant updatedAt) {}

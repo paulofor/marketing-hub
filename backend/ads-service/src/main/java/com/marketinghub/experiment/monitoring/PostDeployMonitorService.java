@@ -104,6 +104,16 @@ public class PostDeployMonitorService {
         return pdeProductionSlotService.saveProductionSlot(request.productSlug(), experimentId, request);
     }
 
+    /** Valida a entrega pública de um slot PDE antes de usar a URL em campanha. */
+    public PostDeployPdeProductionSlotDto validateProductionSlot(
+            Long experimentId,
+            String productSlug,
+            String slotCode) {
+        experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experimento %d não encontrado".formatted(experimentId)));
+        return pdeProductionSlotService.validateProductionSlot(productSlug, slotCode);
+    }
+
     /** Converte a métrica persistida da campanha em resumo do painel. */
     private PostDeployMetaAdsSummaryDto toMetaAdsSummary(ExperimentCampaignMetric metric) {
         if (metric == null) {

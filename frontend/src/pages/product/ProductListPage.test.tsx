@@ -92,6 +92,14 @@ describe("ProductListPage", () => {
     });
     expect(financialLink).toHaveAttribute("href", "/products/1/financial");
 
+    const scientificArticlesLink = screen.getByRole("link", {
+      name: /Artigos científicos/i,
+    });
+    expect(scientificArticlesLink).toHaveAttribute(
+      "href",
+      "/products/1/scientific-articles",
+    );
+
     const comparisonLink = screen.getByRole("link", {
       name: /Comparar experimentos/i,
     });

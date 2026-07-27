@@ -6,8 +6,6 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const assetsDir = path.join(rootDir, 'public', 'assets');
-const outputVideo = path.join(assetsDir, 'musa-v5-video-explicativo.mp4');
-const outputManifest = path.join(assetsDir, 'musa-v5-video-explicativo-manifest.json');
 
 const sourceSlides = [
   'musa-diagnostic-slide-1.png',
@@ -17,13 +15,26 @@ const sourceSlides = [
   'musa-diagnostic-slide-5.png',
 ].map((fileName) => path.join(assetsDir, fileName));
 
+const videos = [
+  {
+    output: 'musa-v5-video-explicativo.mp4',
+    manifest: 'musa-v5-video-explicativo-manifest.json',
+    purpose: 'Video explicativo inicial da versao v5 do Clube MUSA.',
+  },
+  {
+    output: 'musa-v6-video-motivacional.mp4',
+    manifest: 'musa-v6-video-motivacional-manifest.json',
+    purpose: 'Video motivacional inicial da versao v6 do Clube MUSA.',
+  },
+];
+
 async function assertSourcesExist() {
   for (const sourceSlide of sourceSlides) {
     await fs.access(sourceSlide);
   }
 }
 
-function runFfmpeg() {
+function runFfmpeg(outputVideo) {
   const inputs = sourceSlides.flatMap((sourceSlide) => ['-loop', '1', '-t', '3.2', '-i', sourceSlide]);
   const filter = sourceSlides
     .map((_sourceSlide, index) => `[${index}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,format=yuv420p[v${index}]`)
@@ -56,25 +67,28 @@ function runFfmpeg() {
   );
 
   if (result.status !== 0) {
-    throw new Error(`ffmpeg falhou ao gerar o video MUSA v5: ${result.stderr}`);
+    throw new Error(`ffmpeg falhou ao gerar o video MUSA: ${result.stderr}`);
   }
 }
 
 await assertSourcesExist();
-runFfmpeg();
-await fs.writeFile(
-  outputManifest,
-  JSON.stringify(
-    {
-      generatedBy: 'scripts/generate-musa-v5-video.mjs',
-      output: 'musa-v5-video-explicativo.mp4',
-      purpose: 'Video explicativo inicial da versao v5 do Clube MUSA.',
-      sourceSlides: sourceSlides.map((sourceSlide) => path.basename(sourceSlide)),
-      durationSeconds: 16,
-      format: 'mp4/h264',
-    },
-    null,
-    2,
-  ),
-  'utf8',
-);
+for (const video of videos) {
+  const outputVideo = path.join(assetsDir, video.output);
+  runFfmpeg(outputVideo);
+  await fs.writeFile(
+    path.join(assetsDir, video.manifest),
+    JSON.stringify(
+      {
+        generatedBy: 'scripts/generate-musa-v5-video.mjs',
+        output: video.output,
+        purpose: video.purpose,
+        sourceSlides: sourceSlides.map((sourceSlide) => path.basename(sourceSlide)),
+        durationSeconds: 16,
+        format: 'mp4/h264',
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
+}

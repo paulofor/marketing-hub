@@ -26,6 +26,7 @@ function score(
     score: 0,
     readyJobs: 0,
     failedJobs: 0,
+    operationalFailedJobs: 0,
     approvedAssets: 0,
     rejectedAssets: 0,
     leads: 0,

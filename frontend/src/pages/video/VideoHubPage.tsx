@@ -20,6 +20,11 @@ import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfile
 import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSalesVideoScript";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
+import {
+  useCreateVideoProject,
+  useUpdateVideoProject,
+  useVideoProjects,
+} from "../../api/salesVideo/useVideoProjects";
 import { useAsset } from "../../api/media/useAsset";
 import {
   ExperimentVideoAsset,
@@ -37,61 +42,91 @@ import {
   findSalesVideoProviderOption,
   SALES_VIDEO_PROVIDER_OPTIONS,
 } from "../../api/salesVideo/videoProviderCatalog";
+import {
+  VideoProjectPayload,
+  VideoProjectStatus,
+} from "../../api/salesVideo/types";
 import "./VideoHubPage.css";
 
-type VideoStageStatus = "READY" | "DRAFT";
-
-type VideoStage = {
-  id: string;
+type VideoProjectForm = {
+  productId: string;
+  experimentId: string;
+  salesVideoProfileId: string;
+  campaignKey: string;
+  contextType: string;
+  productionMode: string;
+  targetChannel: string;
+  format: string;
   title: string;
-  status: VideoStageStatus;
-  content: string;
-};
-
-const DEFAULT_STAGES: VideoStage[] = [
-  {
-    id: "objectives",
-    title: "Objetivos",
-    status: "READY",
-    content:
-      'Produto: Método MUSA 7 Dias.\nObjetivo principal: aumentar o primeiro microcompromisso no PDE, levando a visitante a clicar em "Descobrir o que minha imagem comunica hoje".\nObjetivo secundário: reduzir ansiedade antes do login/e-mail, mostrando que o Mapa de Presença entrega uma leitura rápida, prática e pessoal.\nMétrica associada: aumento de PRESENCE_MAP_CHOICE_SELECTED, DIAGNOSTIC_CHOICE_SELECTED, FIELD_FILLED, LOGIN_STARTED e PAYWALL_VIEWED por versão do PDE.',
-  },
-  {
-    id: "briefing",
-    title: "Briefing comercial",
-    status: "READY",
-    content:
-      "Tipo: vídeo explicativo para entrada do PDE.\nDuração alvo: 30 segundos.\nProvider principal recomendado: Luma Ray 3.2.\nProvider alternativo de teste: Kling 3.0.\nVeo deve ser usado apenas como teaser curto ou cenas isoladas para montagem.\nPrimeira dobra: acima do CTA principal.\nPromessa: mostrar em poucos segundos o que a imagem da mulher comunica hoje e qual pequeno ajuste pode aumentar presença, desejo e segurança visual.\nTom: íntimo, elegante, direto e sem parecer aula longa.",
-  },
-  {
-    id: "script",
-    title: "Roteiro",
-    status: "DRAFT",
-    content:
-      "Você já se arrumou, olhou no espelho e sentiu que ainda faltava presença?\nNão é sobre comprar mais roupa. É sobre entender quais pequenos sinais deixam sua imagem comum, apagada ou desalinhada.\nO Método MUSA começa com um diagnóstico rápido para mostrar o que sua imagem comunica hoje e qual ajuste simples pode aproximar você da mulher elegante, segura e intencional que quer ser percebida.\nResponda agora e veja seu plano MUSA de 7 dias.",
-  },
-  {
-    id: "creation",
-    title: "Criação",
-    status: "DRAFT",
-    content:
-      'Formato recomendado: vertical 9:16, montagem final de aproximadamente 30 segundos, cortes rápidos e inspiradores.\nCena 1: mulher urbana em frente ao espelho, elegante sem ostentação, com luz editorial quente.\nCena 2: close em detalhe de acabamento: brinco, tecido, cabelo, botão, bolsa ou colar como peça-sinal.\nCena 3: gesto de retirar excesso visual e escolher uma combinação mais limpa.\nCena 4: postura final mais segura, expressão leve e confiante, sem antes/depois agressivo.\nLegenda fixa: "Presença elegante começa com pequenos sinais".\nEntrega publicável: stream HLS adaptativo para o player do Clube MUSA, com MP4 apenas como fallback.',
-  },
-  {
-    id: "validation",
-    title: "Validação",
-    status: "DRAFT",
-    content:
-      "Publicar como nova versão do PDE pelo Marketing Hub.\nComparar contra a versão anterior por experienceVersion/funnelVersion.\nCritério positivo inicial: sair de 0 cliques no Mapa para qualquer volume consistente de primeira ação com tráfego pago ativo.\nCritério de corte: manter gasto até o limite definido e pausar se continuar sem primeira ação.",
-  },
-];
-
-const STATUS_LABELS: Record<VideoStageStatus, string> = {
-  READY: "Pronto",
-  DRAFT: "Rascunho",
+  objective: string;
+  funnelStage: string;
+  primaryMetric: string;
+  hookText: string;
+  scriptText: string;
+  scenePlan: string;
+  visualReferences: string;
+  voiceoverPlan: string;
+  soundtrackPlan: string;
+  captionPlan: string;
+  ctaText: string;
+  targetDurationSeconds: string;
+  providerPlan: string;
+  editingNotes: string;
+  qualityGate: string;
+  status: VideoProjectStatus;
 };
 
 const CURRENT_PDE_VERSION = "musa-pde-entry-v4-video-hero";
+
+const DEFAULT_PROJECT_FORM: VideoProjectForm = {
+  productId: "",
+  experimentId: "",
+  salesVideoProfileId: "",
+  campaignKey: CURRENT_PDE_VERSION,
+  contextType: "PDE",
+  productionMode: "MIXED_AI_SCENES",
+  targetChannel: "PDE",
+  format: "VERTICAL_9_16",
+  title: "Vídeo explicativo de entrada do PDE",
+  objective:
+    'Aumentar o primeiro microcompromisso no PDE, levando a visitante a clicar em "Descobrir o que minha imagem comunica hoje".',
+  funnelStage: "AWARENESS_TO_DIAGNOSTIC",
+  primaryMetric:
+    "PRESENCE_MAP_CHOICE_SELECTED, DIAGNOSTIC_CHOICE_SELECTED, FIELD_FILLED, LOGIN_STARTED, PAYWALL_VIEWED",
+  hookText:
+    "Sua imagem já está comunicando algo antes de você dizer uma palavra.",
+  scriptText:
+    "Você já se arrumou, olhou no espelho e sentiu que ainda faltava presença?\nNão é sobre comprar mais roupa. É sobre entender quais pequenos sinais deixam sua imagem comum, apagada ou desalinhada.\nO Método MUSA começa com um diagnóstico rápido para mostrar o que sua imagem comunica hoje e qual ajuste simples pode aproximar você da mulher elegante, segura e intencional que quer ser percebida.\nResponda agora e veja seu plano MUSA de 7 dias.",
+  scenePlan:
+    "Cena 1: mulher urbana em frente ao espelho, elegante sem ostentação, com luz editorial quente.\nCena 2: close em detalhe de acabamento: brinco, tecido, cabelo, botão, bolsa ou colar como peça-sinal.\nCena 3: gesto de retirar excesso visual e escolher uma combinação mais limpa.\nCena 4: postura final mais segura, expressão leve e confiante, sem antes/depois agressivo.",
+  visualReferences:
+    "Estética mobile premium, cortes rápidos, close em detalhes de presença, sem antes/depois agressivo e sem aparência de banco de imagem.",
+  voiceoverPlan:
+    "Voz feminina pt-BR, íntima, elegante, direta e comercialmente clara.",
+  soundtrackPlan:
+    "Trilha leve, moderna e discreta, sem competir com a narração.",
+  captionPlan:
+    'Legenda fixa principal: "Presença elegante começa com pequenos sinais". Legendas curtas sincronizadas com a voz.',
+  ctaText: "Descobrir o que minha imagem comunica hoje",
+  targetDurationSeconds: "30",
+  providerPlan:
+    "Luma Ray 3.2 como padrão para cenas principais; Kling 3.0 como alternativa de teste; Veo apenas para teasers curtos; montagem final com áudio, legenda e HLS.",
+  editingNotes:
+    "Montagem final com ritmo de anúncio orgânico premium: abrir com dor, mostrar mecanismo visual e fechar com CTA direto para diagnóstico.",
+  qualityGate:
+    "Aprovar somente com áudio audível, CTA claro, vídeo vertical sem artefatos visuais, primeira dobra forte e aderência ao mecanismo Dor -> Resultado -> Mecanismo -> Prova -> Oferta.",
+  status: "DRAFT",
+};
+
+const VIDEO_PROJECT_STATUS_LABELS: Record<VideoProjectStatus, string> = {
+  DRAFT: "Rascunho",
+  READY_FOR_SCRIPT: "Pronto para roteiro",
+  READY_FOR_RENDER: "Pronto para render",
+  IN_PRODUCTION: "Em produção",
+  READY_FOR_REVIEW: "Pronto para revisão",
+  APPROVED: "Aprovado",
+  ARCHIVED: "Arquivado",
+};
 
 const VIDEO_STATUS_OPTIONS: Array<"ALL" | ExperimentVideoStatus> = [
   "ALL",
@@ -114,9 +149,12 @@ export default function VideoHubPage() {
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: experiments } = useExperiments();
   const videoLibraryQuery = useAllExperimentVideoAssets();
+  const videoProjectsQuery = useVideoProjects();
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
-  const [stages, setStages] = useState<VideoStage[]>(DEFAULT_STAGES);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [projectForm, setProjectForm] =
+    useState<VideoProjectForm>(DEFAULT_PROJECT_FORM);
   const [selectedProviderName, setSelectedProviderName] = useState(
     DEFAULT_SALES_VIDEO_PROVIDER.providerName,
   );
@@ -135,6 +173,8 @@ export default function VideoHubPage() {
     selectedProfileId || undefined,
   );
   const requestRender = useRequestVideoRender(selectedProfileId || undefined);
+  const createVideoProject = useCreateVideoProject();
+  const updateVideoProject = useUpdateVideoProject();
   const updateVideoReview = useUpdateExperimentVideoAssetReview();
 
   const productList = useMemo(() => products ?? [], [products]);
@@ -153,6 +193,10 @@ export default function VideoHubPage() {
   const videoLibrary = useMemo(
     () => videoLibraryQuery.data ?? [],
     [videoLibraryQuery.data],
+  );
+  const videoProjects = useMemo(
+    () => videoProjectsQuery.data ?? [],
+    [videoProjectsQuery.data],
   );
   const filteredVideoLibrary = useMemo(() => {
     return videoLibrary.filter((video) =>
@@ -181,12 +225,12 @@ export default function VideoHubPage() {
   const selectedProfile = profileList.find(
     (profile) => String(profile.id) === selectedProfileId,
   );
+  const selectedProject = videoProjects.find(
+    (project) => String(project.id) === selectedProjectId,
+  );
   const latestJob = jobs?.[0];
   const latestAssetId = latestJob?.assetId ?? undefined;
   const { data: latestAsset } = useAsset(latestAssetId);
-  const scriptStage =
-    stages.find((stage) => stage.id === "script") ?? stages[2];
-  const readyCount = stages.filter((stage) => stage.status === "READY").length;
   const latestAssetUrl = latestAsset?.publicUrl ?? "";
   const latestStreamPlaybackUrl = latestJob?.streamPlaybackUrl?.trim() ?? "";
   const latestPlaybackUrl = latestStreamPlaybackUrl || latestAssetUrl;
@@ -195,9 +239,16 @@ export default function VideoHubPage() {
     DEFAULT_SALES_VIDEO_PROVIDER;
   const providerDurationLimitExceeded = Boolean(
     selectedProvider.maxDirectDurationSeconds &&
-    selectedProfile?.targetDurationSeconds &&
-    selectedProfile.targetDurationSeconds >
-      selectedProvider.maxDirectDurationSeconds,
+    Number(
+      projectForm.targetDurationSeconds ||
+        selectedProfile?.targetDurationSeconds ||
+        0,
+    ) &&
+    Number(
+      projectForm.targetDurationSeconds ||
+        selectedProfile?.targetDurationSeconds ||
+        0,
+    ) > selectedProvider.maxDirectDurationSeconds,
   );
 
   async function handleVideoReview(
@@ -229,8 +280,57 @@ export default function VideoHubPage() {
     const nextProductId = String(musaProduct.id);
     if (nextProductId !== selectedProductId) {
       setSelectedProductId(nextProductId);
+      setProjectForm((current) => ({ ...current, productId: nextProductId }));
     }
   }, [productList, selectedProductId]);
+
+  useEffect(() => {
+    if (videoProjects.length === 0 || selectedProjectId) {
+      return;
+    }
+    setSelectedProjectId(String(videoProjects[0].id));
+  }, [selectedProjectId, videoProjects]);
+
+  useEffect(() => {
+    if (!selectedProject) {
+      return;
+    }
+    setProjectForm({
+      productId: selectedProject.productId
+        ? String(selectedProject.productId)
+        : "",
+      experimentId: selectedProject.experimentId
+        ? String(selectedProject.experimentId)
+        : "",
+      salesVideoProfileId: selectedProject.salesVideoProfileId
+        ? String(selectedProject.salesVideoProfileId)
+        : "",
+      campaignKey: selectedProject.campaignKey ?? "",
+      contextType: selectedProject.contextType,
+      productionMode: selectedProject.productionMode,
+      targetChannel: selectedProject.targetChannel,
+      format: selectedProject.format,
+      title: selectedProject.title,
+      objective: selectedProject.objective,
+      funnelStage: selectedProject.funnelStage ?? "",
+      primaryMetric: selectedProject.primaryMetric ?? "",
+      hookText: selectedProject.hookText ?? "",
+      scriptText: selectedProject.scriptText ?? "",
+      scenePlan: selectedProject.scenePlan ?? "",
+      visualReferences: selectedProject.visualReferences ?? "",
+      voiceoverPlan: selectedProject.voiceoverPlan ?? "",
+      soundtrackPlan: selectedProject.soundtrackPlan ?? "",
+      captionPlan: selectedProject.captionPlan ?? "",
+      ctaText: selectedProject.ctaText ?? "",
+      targetDurationSeconds: selectedProject.targetDurationSeconds
+        ? String(selectedProject.targetDurationSeconds)
+        : "",
+      providerPlan: selectedProject.providerPlan ?? "",
+      editingNotes: selectedProject.editingNotes ?? "",
+      qualityGate: selectedProject.qualityGate ?? "",
+      status: selectedProject.status,
+    });
+  }, [selectedProject]);
 
   useEffect(() => {
     if (profileList.length === 0) {
@@ -254,36 +354,101 @@ export default function VideoHubPage() {
     }
   }, [profileList, selectedProfileId]);
 
-  const updateStageContent = (stageId: string, content: string) => {
-    setStages((current) =>
-      current.map((stage) =>
-        stage.id === stageId ? { ...stage, content } : stage,
-      ),
-    );
-  };
-
-  const toggleStageStatus = (stageId: string) => {
-    setStages((current) =>
-      current.map((stage) =>
-        stage.id === stageId
-          ? {
-              ...stage,
-              status: stage.status === "READY" ? "DRAFT" : "READY",
-            }
-          : stage,
-      ),
-    );
+  const updateProjectField = <K extends keyof VideoProjectForm>(
+    field: K,
+    value: VideoProjectForm[K],
+  ) => {
+    setProjectForm((current) => ({ ...current, [field]: value }));
+    if (field === "productId") {
+      setSelectedProductId(String(value));
+    }
+    if (field === "salesVideoProfileId") {
+      setSelectedProfileId(String(value));
+    }
   };
 
   const resetPlan = () => {
-    setStages(DEFAULT_STAGES);
-    toast.info("Plano de vídeo restaurado");
+    setSelectedProjectId("");
+    setProjectForm({
+      ...DEFAULT_PROJECT_FORM,
+      productId: selectedProductId,
+      salesVideoProfileId: selectedProfileId,
+    });
+    toast.info("Novo projeto de vídeo iniciado");
   };
 
   const buildScriptText = () => {
-    return stages
-      .map((stage) => `## ${stage.title}\n${stage.content.trim()}`)
+    return [
+      ["Objetivo", projectForm.objective],
+      ["Gancho", projectForm.hookText],
+      ["Roteiro", projectForm.scriptText],
+      ["Plano de cenas", projectForm.scenePlan],
+      ["Narração", projectForm.voiceoverPlan],
+      ["Legendas", projectForm.captionPlan],
+      ["CTA", projectForm.ctaText],
+      ["Gate de qualidade", projectForm.qualityGate],
+    ]
+      .filter(([, content]) => content.trim().length > 0)
+      .map(([title, content]) => `## ${title}\n${content.trim()}`)
       .join("\n\n");
+  };
+
+  const buildProjectPayload = (): VideoProjectPayload => ({
+    productId: projectForm.productId ? Number(projectForm.productId) : null,
+    experimentId: projectForm.experimentId
+      ? Number(projectForm.experimentId)
+      : null,
+    salesVideoProfileId: projectForm.salesVideoProfileId
+      ? Number(projectForm.salesVideoProfileId)
+      : selectedProfileId
+        ? Number(selectedProfileId)
+        : null,
+    campaignKey: projectForm.campaignKey,
+    contextType: projectForm.contextType,
+    productionMode: projectForm.productionMode,
+    targetChannel: projectForm.targetChannel,
+    format: projectForm.format,
+    title: projectForm.title,
+    objective: projectForm.objective,
+    funnelStage: projectForm.funnelStage,
+    primaryMetric: projectForm.primaryMetric,
+    hookText: projectForm.hookText,
+    scriptText: projectForm.scriptText,
+    scenePlan: projectForm.scenePlan,
+    visualReferences: projectForm.visualReferences,
+    voiceoverPlan: projectForm.voiceoverPlan,
+    soundtrackPlan: projectForm.soundtrackPlan,
+    captionPlan: projectForm.captionPlan,
+    ctaText: projectForm.ctaText,
+    targetDurationSeconds: projectForm.targetDurationSeconds
+      ? Number(projectForm.targetDurationSeconds)
+      : null,
+    providerPlan: projectForm.providerPlan,
+    editingNotes: projectForm.editingNotes,
+    qualityGate: projectForm.qualityGate,
+    status: projectForm.status,
+    createdBy: tenantContext.userEmail,
+    updatedBy: tenantContext.userEmail,
+  });
+
+  const handleSaveProject = async () => {
+    try {
+      const payload = buildProjectPayload();
+      const saved = selectedProjectId
+        ? await updateVideoProject.mutateAsync({
+            projectId: Number(selectedProjectId),
+            payload,
+          })
+        : await createVideoProject.mutateAsync(payload);
+      setSelectedProjectId(String(saved.id));
+      toast.success("Projeto de vídeo salvo no Marketing Hub");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Falha ao salvar projeto de vídeo";
+      toast.error(message);
+    }
   };
 
   const handleCreateProfile = async (event: FormEvent<HTMLFormElement>) => {
@@ -296,14 +461,22 @@ export default function VideoHubPage() {
       const profile = await createProfile.mutateAsync({
         videoKind: "HERO",
         avatarStrategy: "PLATFORM_TEST_AVATAR",
-        title: `PDE entrada explicativa - ${CURRENT_PDE_VERSION}`,
+        title:
+          projectForm.title ||
+          `PDE entrada explicativa - ${CURRENT_PDE_VERSION}`,
         personaName: "Visitante MUSA",
         personaStyle: "mulher buscando presença visual, elegância e segurança",
-        voiceStyle: "íntima, elegante, direta e comercialmente clara",
+        voiceStyle:
+          projectForm.voiceoverPlan ||
+          "íntima, elegante, direta e comercialmente clara",
         language: "pt-BR",
-        targetDurationSeconds: 30,
+        targetDurationSeconds: Number(projectForm.targetDurationSeconds || 30),
       });
       setSelectedProfileId(String(profile.id));
+      setProjectForm((current) => ({
+        ...current,
+        salesVideoProfileId: String(profile.id),
+      }));
       toast.success("Perfil de vídeo criado no Marketing Hub");
     } catch (error) {
       const message =
@@ -319,18 +492,16 @@ export default function VideoHubPage() {
       toast.error("Crie ou selecione um perfil de vídeo antes do roteiro");
       return;
     }
-    if (!scriptStage.content.trim()) {
+    if (!projectForm.scriptText.trim()) {
       toast.error("O roteiro precisa de conteúdo");
       return;
     }
     try {
       await approveScript.mutateAsync({
         scriptText: buildScriptText(),
-        hookText:
-          "Sua imagem já está comunicando algo antes de você dizer uma palavra.",
-        ctaText: "Descobrir o que minha imagem comunica hoje",
-        captionText:
-          "Mapa de Presença MUSA: uma leitura rápida para entender o que sua imagem comunica hoje.",
+        hookText: projectForm.hookText,
+        ctaText: projectForm.ctaText,
+        captionText: projectForm.captionPlan,
         approvedBy: tenantContext.userEmail,
       });
       toast.success("Roteiro aprovado e salvo no Marketing Hub");
@@ -470,13 +641,47 @@ export default function VideoHubPage() {
 
       <div className="video-hub-page__grid">
         <aside className="video-hub-page__type-list">
-          <button type="button" className="video-hub-page__type-button">
-            <strong>Vídeo explicativo de entrada do PDE</strong>
+          <button
+            type="button"
+            className="video-hub-page__type-button"
+            onClick={resetPlan}
+          >
+            <strong>Novo projeto de vídeo</strong>
             <span>
-              Objetivos, roteiro, criação por job e validação por versão
-              comercial.
+              Briefing completo para produto, campanha, orgânico, PDE, avatar,
+              cenas de IA, montagem e pós-produção.
             </span>
           </button>
+
+          <div className="video-hub-page__project-list">
+            <span className="video-hub-page__stage-kicker">
+              Projetos salvos
+            </span>
+            {videoProjectsQuery.isLoading ? (
+              <p>Carregando projetos...</p>
+            ) : videoProjects.length === 0 ? (
+              <p>Nenhum projeto salvo.</p>
+            ) : (
+              videoProjects.map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  className={
+                    String(project.id) === selectedProjectId
+                      ? "video-hub-page__project-button video-hub-page__project-button--active"
+                      : "video-hub-page__project-button"
+                  }
+                  onClick={() => setSelectedProjectId(String(project.id))}
+                >
+                  <strong>{project.title}</strong>
+                  <span>
+                    {project.contextType} · {project.targetChannel} ·{" "}
+                    {VIDEO_PROJECT_STATUS_LABELS[project.status]}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
 
           <form
             className="video-hub-page__setup"
@@ -490,8 +695,11 @@ export default function VideoHubPage() {
               className="form-select"
               value={selectedProductId}
               disabled={productsLoading}
-              onChange={(event) => setSelectedProductId(event.target.value)}
+              onChange={(event) =>
+                updateProjectField("productId", event.target.value)
+              }
             >
+              <option value="">Sem produto vinculado</option>
               {productList.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.name || product.slug || `Produto #${product.id}`}
@@ -507,7 +715,9 @@ export default function VideoHubPage() {
               className="form-select"
               value={selectedProfileId}
               disabled={profilesLoading || profileList.length === 0}
-              onChange={(event) => setSelectedProfileId(event.target.value)}
+              onChange={(event) =>
+                updateProjectField("salesVideoProfileId", event.target.value)
+              }
             >
               {profileList.length === 0 ? (
                 <option value="">Nenhum perfil criado</option>
@@ -550,7 +760,7 @@ export default function VideoHubPage() {
               disabled={createProfile.isPending || !selectedProductId}
             >
               <Clapperboard size={16} aria-hidden="true" />
-              Criar perfil PDE v4
+              Criar perfil de render
             </button>
           </form>
         </aside>
@@ -561,36 +771,45 @@ export default function VideoHubPage() {
               label="Produto"
               value={selectedProduct?.name || selectedProduct?.slug || "-"}
             />
-            <SummaryMetric label="Versão PDE" value={CURRENT_PDE_VERSION} />
-            <SummaryMetric label="Etapas prontas" value={`${readyCount}/5`} />
+            <SummaryMetric
+              label="Projeto"
+              value={selectedProjectId ? `#${selectedProjectId}` : "Novo"}
+            />
+            <SummaryMetric
+              label="Status"
+              value={VIDEO_PROJECT_STATUS_LABELS[projectForm.status]}
+            />
             <SummaryMetric label="Provider" value={selectedProvider.label} />
           </div>
 
           <div className="video-hub-page__notice">
             <CheckCircle2 size={18} aria-hidden="true" />
             <span>
-              Procedimento correto: código muda via GitHub; artefato de vídeo
-              nasce como perfil, roteiro aprovado, job, stream HLS e fallback
-              MP4 dentro do Marketing Hub.
+              Definição criativa salva no backend antes do render: contexto,
+              roteiro, cenas, narração, legenda, trilha, CTA e gate de qualidade
+              ficam auditáveis para uso em produto, campanha e orgânicos.
             </span>
           </div>
 
           <section className="video-hub-page__strategy">
             <article>
-              <strong>Hero premium</strong>
-              <span>Luma Ray 3.2 é o padrão para vídeo principal do PDE.</span>
-            </article>
-            <article>
-              <strong>Teste criativo</strong>
+              <strong>Vídeo principal</strong>
               <span>
-                Kling entra como alternativa para comparar retenção e clique.
+                Briefing completo para narrativas mais longas e comerciais.
               </span>
             </article>
             <article>
-              <strong>Teaser curto</strong>
+              <strong>Cortes orgânicos</strong>
               <span>
-                Veo fica para cenas de 8s ou montagem, não como vídeo único de
-                30s.
+                Mesmo projeto pode orientar variações curtas por dor, prova e
+                objeção.
+              </span>
+            </article>
+            <article>
+              <strong>Produção híbrida</strong>
+              <span>
+                Avatar, cenas de IA, montagem, voz, legenda e pós-produção no
+                mesmo plano.
               </span>
             </article>
           </section>
@@ -598,7 +817,7 @@ export default function VideoHubPage() {
           <section className="video-hub-page__watch">
             <div className="video-hub-page__watch-copy">
               <span className="video-hub-page__stage-kicker">Assistir</span>
-              <h2>Vídeo MUSA do diagnóstico</h2>
+              <h2>{projectForm.title || "Projeto de vídeo"}</h2>
               <p>
                 Quando o stream estiver processado, o player usa HLS adaptativo.
                 O MP4 fica como fallback para revisão e contingência, evitando
@@ -625,43 +844,148 @@ export default function VideoHubPage() {
             </div>
           </section>
 
-          <div className="video-hub-page__stages">
-            {stages.map((stage, index) => (
-              <article className="video-hub-page__stage" key={stage.id}>
-                <div className="video-hub-page__stage-header">
-                  <div>
-                    <span className="video-hub-page__stage-kicker">
-                      Etapa {index + 1}
-                    </span>
-                    <strong className="video-hub-page__stage-title">
-                      {stage.title}
-                    </strong>
-                  </div>
-                  <button
-                    type="button"
-                    className={`video-hub-page__status ${
-                      stage.status === "READY"
-                        ? "video-hub-page__status--ready"
-                        : "video-hub-page__status--draft"
-                    }`}
-                    onClick={() => toggleStageStatus(stage.id)}
-                  >
-                    {stage.status === "READY" ? (
-                      <CheckCircle2 size={14} aria-hidden="true" />
-                    ) : null}{" "}
-                    {STATUS_LABELS[stage.status]}
-                  </button>
-                </div>
-                <textarea
-                  className="form-control video-hub-page__textarea"
-                  value={stage.content}
-                  onChange={(event) =>
-                    updateStageContent(stage.id, event.target.value)
-                  }
-                  aria-label={stage.title}
-                />
-              </article>
-            ))}
+          <div className="video-hub-page__editor">
+            <div className="video-hub-page__inline-fields">
+              <TextField
+                label="Título *"
+                value={projectForm.title}
+                onChange={(value) => updateProjectField("title", value)}
+              />
+              <SelectField
+                label="Status"
+                value={projectForm.status}
+                onChange={(value) =>
+                  updateProjectField("status", value as VideoProjectStatus)
+                }
+                options={Object.entries(VIDEO_PROJECT_STATUS_LABELS).map(
+                  ([value, label]) => ({ value, label }),
+                )}
+              />
+            </div>
+            <div className="video-hub-page__inline-fields">
+              <TextField
+                label="Contexto *"
+                value={projectForm.contextType}
+                onChange={(value) => updateProjectField("contextType", value)}
+              />
+              <TextField
+                label="Modo de produção *"
+                value={projectForm.productionMode}
+                onChange={(value) =>
+                  updateProjectField("productionMode", value)
+                }
+              />
+              <TextField
+                label="Canal *"
+                value={projectForm.targetChannel}
+                onChange={(value) => updateProjectField("targetChannel", value)}
+              />
+              <TextField
+                label="Formato *"
+                value={projectForm.format}
+                onChange={(value) => updateProjectField("format", value)}
+              />
+            </div>
+            <div className="video-hub-page__inline-fields">
+              <TextField
+                label="Campanha/versão"
+                value={projectForm.campaignKey}
+                onChange={(value) => updateProjectField("campaignKey", value)}
+              />
+              <TextField
+                label="Etapa do funil"
+                value={projectForm.funnelStage}
+                onChange={(value) => updateProjectField("funnelStage", value)}
+              />
+              <TextField
+                label="Duração alvo"
+                value={projectForm.targetDurationSeconds}
+                type="number"
+                onChange={(value) =>
+                  updateProjectField("targetDurationSeconds", value)
+                }
+              />
+            </div>
+            <TextAreaField
+              label="Objetivo comercial *"
+              value={projectForm.objective}
+              onChange={(value) => updateProjectField("objective", value)}
+              rows={3}
+            />
+            <TextAreaField
+              label="Métrica primária"
+              value={projectForm.primaryMetric}
+              onChange={(value) => updateProjectField("primaryMetric", value)}
+              rows={2}
+            />
+            <TextAreaField
+              label="Gancho"
+              value={projectForm.hookText}
+              onChange={(value) => updateProjectField("hookText", value)}
+              rows={2}
+            />
+            <TextAreaField
+              label="Roteiro"
+              value={projectForm.scriptText}
+              onChange={(value) => updateProjectField("scriptText", value)}
+              rows={6}
+            />
+            <TextAreaField
+              label="Plano de cenas"
+              value={projectForm.scenePlan}
+              onChange={(value) => updateProjectField("scenePlan", value)}
+              rows={5}
+            />
+            <TextAreaField
+              label="Referências visuais"
+              value={projectForm.visualReferences}
+              onChange={(value) =>
+                updateProjectField("visualReferences", value)
+              }
+              rows={3}
+            />
+            <TextAreaField
+              label="Narração/voz"
+              value={projectForm.voiceoverPlan}
+              onChange={(value) => updateProjectField("voiceoverPlan", value)}
+              rows={3}
+            />
+            <TextAreaField
+              label="Trilha e áudio"
+              value={projectForm.soundtrackPlan}
+              onChange={(value) => updateProjectField("soundtrackPlan", value)}
+              rows={2}
+            />
+            <TextAreaField
+              label="Legendas"
+              value={projectForm.captionPlan}
+              onChange={(value) => updateProjectField("captionPlan", value)}
+              rows={3}
+            />
+            <TextAreaField
+              label="CTA"
+              value={projectForm.ctaText}
+              onChange={(value) => updateProjectField("ctaText", value)}
+              rows={2}
+            />
+            <TextAreaField
+              label="Plano de providers"
+              value={projectForm.providerPlan}
+              onChange={(value) => updateProjectField("providerPlan", value)}
+              rows={3}
+            />
+            <TextAreaField
+              label="Notas de edição"
+              value={projectForm.editingNotes}
+              onChange={(value) => updateProjectField("editingNotes", value)}
+              rows={3}
+            />
+            <TextAreaField
+              label="Gate de qualidade"
+              value={projectForm.qualityGate}
+              onChange={(value) => updateProjectField("qualityGate", value)}
+              rows={3}
+            />
           </div>
 
           <div className="video-hub-page__actions">
@@ -671,7 +995,18 @@ export default function VideoHubPage() {
               onClick={resetPlan}
             >
               <RefreshCcw size={16} aria-hidden="true" />
-              Restaurar
+              Novo projeto
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={handleSaveProject}
+              disabled={
+                createVideoProject.isPending || updateVideoProject.isPending
+              }
+            >
+              <Save size={16} aria-hidden="true" />
+              Salvar projeto
             </button>
             <button
               type="button"
@@ -731,6 +1066,89 @@ function SummaryMetric({ label, value }: { label: string; value: string }) {
       <div className="video-hub-page__metric-label">{label}</div>
       <div className="video-hub-page__metric-value">{value}</div>
     </div>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  const id = `video-project-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  return (
+    <label className="video-hub-page__field" htmlFor={id}>
+      <span>{label}</span>
+      <input
+        id={id}
+        className="form-control"
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  const id = `video-project-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  return (
+    <label className="video-hub-page__field" htmlFor={id}>
+      <span>{label}</span>
+      <select
+        id={id}
+        className="form-select"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  rows,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  rows: number;
+  onChange: (value: string) => void;
+}) {
+  const id = `video-project-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  return (
+    <label className="video-hub-page__field" htmlFor={id}>
+      <span>{label}</span>
+      <textarea
+        id={id}
+        className="form-control video-hub-page__textarea"
+        rows={rows}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
   );
 }
 

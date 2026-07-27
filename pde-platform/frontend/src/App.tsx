@@ -175,7 +175,8 @@ const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
 const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
-const MUSA_DEFAULT_HERO_VIDEO_URL = '/assets/musa-v5-video-explicativo.mp4';
+const MUSA_V5_HERO_VIDEO_URL = '/assets/musa-v5-video-explicativo.mp4';
+const MUSA_V6_HERO_VIDEO_URL = '/assets/musa-v6-video-motivacional.mp4';
 const MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS = new Set([
   'musa-pde-entry-v5-estrada-desejo',
   MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
@@ -531,14 +532,27 @@ function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLI
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
 }
 
+function resolveHostExperienceVersionOverride() {
+  const hostname = window.location.hostname.toLowerCase();
+  if (hostname === 'v6.clubemusa.com.br') {
+    return MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
+  }
+  if (hostname === 'v5.clubemusa.com.br') {
+    return MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
+  }
+  return '';
+}
+
 function applyExperienceOverrides(productExperience: ProductExperience) {
   const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
-  if (!experienceVersionOverride) {
+  const hostExperienceVersionOverride = resolveHostExperienceVersionOverride();
+  const selectedExperienceVersion = experienceVersionOverride || hostExperienceVersionOverride;
+  if (!selectedExperienceVersion) {
     return productExperience;
   }
   return {
     ...productExperience,
-    experienceVersion: experienceVersionOverride,
+    experienceVersion: selectedExperienceVersion,
   };
 }
 
@@ -549,6 +563,13 @@ function isMusaDesireRoadExperience(experienceVersion: string) {
 function isMusaVideoExplainerExperience(experienceVersion: string) {
   return experienceVersion === MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION
     || experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
+}
+
+function resolveDefaultHeroVideoUrl(experienceVersion: string) {
+  if (experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION) {
+    return MUSA_V6_HERO_VIDEO_URL;
+  }
+  return MUSA_V5_HERO_VIDEO_URL;
 }
 
 const presenceBlockers: DiagnosticOption[] = [
@@ -660,9 +681,11 @@ function App() {
   const publicVideoHeroTrackedRef = useRef(false);
   const publicVideoPlaybackTrackedRef = useRef(new Set<string>());
   const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
+  const currentProduct = workspace?.product ?? product;
+  const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
-  const heroVideoUrl = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? MUSA_DEFAULT_HERO_VIDEO_URL);
+  const heroVideoUrl = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? resolveDefaultHeroVideoUrl(currentExperienceVersion));
   const heroStreamUrl = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
   const heroPlaybackUrl = heroStreamUrl || heroVideoUrl;
 
@@ -1741,8 +1764,6 @@ function App() {
     ];
   }
 
-  const currentProduct = workspace?.product ?? product;
-  const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
   const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id)) ?? currentProduct.missions[0];

@@ -6,6 +6,10 @@ const chromiumExecutablePath =
   process.env.CHROME_BIN ||
   process.env.PUPPETEER_EXECUTABLE_PATH ||
   undefined;
+const launchOptions = {
+  ...(chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : {}),
+  args: ['--host-resolver-rules=MAP v5.clubemusa.com.br 127.0.0.1,MAP v6.clubemusa.com.br 127.0.0.1'],
+};
 
 export default defineConfig({
   testDir: './tests',
@@ -15,7 +19,7 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://127.0.0.1:57180',
-    launchOptions: chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : undefined,
+    launchOptions,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

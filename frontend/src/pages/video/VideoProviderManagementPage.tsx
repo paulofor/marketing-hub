@@ -130,6 +130,10 @@ export default function VideoProviderManagementPage() {
             <dl className="video-provider-page__facts">
               <Fact label="Prontos" value={score?.readyJobs ?? 0} />
               <Fact label="Falhas" value={score?.failedJobs ?? 0} />
+              <Fact
+                label="Falhas operacionais"
+                value={score?.operationalFailedJobs ?? 0}
+              />
               <Fact label="Aprovados" value={score?.approvedAssets ?? 0} />
               <Fact label="Rejeitados" value={score?.rejectedAssets ?? 0} />
               <Fact label="Leads" value={score?.leads ?? 0} />
@@ -143,6 +147,9 @@ export default function VideoProviderManagementPage() {
                 value={`${option.maxDirectDurationSeconds ?? option.clipDurationSeconds}s`}
               />
             </dl>
+            {score?.riskMessage ? (
+              <p className="video-provider-page__risk">{score.riskMessage}</p>
+            ) : null}
 
             <div className="video-provider-page__capabilities">
               <Capability

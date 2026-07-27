@@ -9,7 +9,10 @@ import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.ProductDto;
+import com.marketinghub.product.dto.ProductScientificArticleDto;
+import com.marketinghub.product.dto.SaveProductScientificArticleRequest;
 import com.marketinghub.product.mapper.ProductMapper;
+import com.marketinghub.product.service.ProductScientificArticleService;
 import com.marketinghub.product.service.ProductService;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonExperimentResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonFunnelStageResponse;
@@ -38,6 +41,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -57,6 +61,9 @@ class ProductControllerTest {
     private ProductService service;
 
     @Mock
+    private ProductScientificArticleService scientificArticleService;
+
+    @Mock
     private ProductMapper mapper;
 
     @Mock
@@ -65,7 +72,8 @@ class ProductControllerTest {
     /** Monta o controller isolado para validar o contrato HTTP de produto. */
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new ProductController(service, mapper, pdeProductionSlotService)).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                new ProductController(service, scientificArticleService, mapper, pdeProductionSlotService)).build();
     }
 
     /** Deve aceitar atualização de dados comerciais pelo endpoint canônico de produto. */
@@ -234,6 +242,100 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.strategyName").value("9 vídeos em 7 dias"))
                 .andExpect(jsonPath("$.videos[0].category").value("ENTRETENIMENTO_DOR"))
                 .andExpect(jsonPath("$.decisionRules[0].decision").value("Aumentar CTA."));
+    }
+
+    /** Deve expor os artigos científicos usados no mecanismo do produto. */
+    @Test
+    void listScientificArticles() throws Exception {
+        var response = new ProductScientificArticleDto(
+                8L,
+                1L,
+                "https://doi.org/10.1016/j.jesp.2012.02.008",
+                "Enclothed cognition",
+                "Cognição vestida",
+                "Resumo operacional.",
+                "Aplicação no mecanismo MUSA.",
+                Instant.parse("2026-07-27T00:00:00Z"),
+                Instant.parse("2026-07-27T00:00:00Z"));
+
+        when(scientificArticleService.listArticles(1L)).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/products/{id}/scientific-articles", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(8L))
+                .andExpect(jsonPath("$[0].originalTitle").value("Enclothed cognition"))
+                .andExpect(jsonPath("$[0].portugueseTitle").value("Cognição vestida"))
+                .andExpect(jsonPath("$[0].mechanismApplication").value("Aplicação no mecanismo MUSA."));
+    }
+
+    /** Deve cadastrar artigo científico pelo contrato canônico do produto. */
+    @Test
+    void createScientificArticle() throws Exception {
+        var response = new ProductScientificArticleDto(
+                9L,
+                1L,
+                "https://doi.org/10.1177/1948550615579462",
+                "The Cognitive Consequences of Formal Clothing",
+                "As consequências cognitivas da roupa formal",
+                "Resumo.",
+                "Aplicação.",
+                null,
+                null);
+        var request = new SaveProductScientificArticleRequest(
+                response.link(),
+                response.originalTitle(),
+                response.portugueseTitle(),
+                response.summary(),
+                response.mechanismApplication());
+
+        when(scientificArticleService.createArticle(eq(1L), any(SaveProductScientificArticleRequest.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/products/{id}/scientific-articles", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(9L))
+                .andExpect(jsonPath("$.link").value(response.link()));
+    }
+
+    /** Deve atualizar artigo científico do produto pelo contrato canônico. */
+    @Test
+    void updateScientificArticle() throws Exception {
+        var response = new ProductScientificArticleDto(
+                9L,
+                1L,
+                "https://doi.org/10.1177/1948550615579462",
+                "The Cognitive Consequences of Formal Clothing",
+                "Roupa formal e cognição",
+                "Resumo revisado.",
+                "Aplicação revisada.",
+                null,
+                null);
+        var request = new SaveProductScientificArticleRequest(
+                response.link(),
+                response.originalTitle(),
+                response.portugueseTitle(),
+                response.summary(),
+                response.mechanismApplication());
+
+        when(scientificArticleService.updateArticle(
+                eq(1L), eq(9L), any(SaveProductScientificArticleRequest.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(put("/api/products/{id}/scientific-articles/{articleId}", 1L, 9L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.portugueseTitle").value("Roupa formal e cognição"))
+                .andExpect(jsonPath("$.summary").value("Resumo revisado."));
+    }
+
+    /** Deve remover artigo científico do produto sem retornar corpo. */
+    @Test
+    void deleteScientificArticle() throws Exception {
+        mockMvc.perform(delete("/api/products/{id}/scientific-articles/{articleId}", 1L, 9L))
+                .andExpect(status().isNoContent());
     }
 
     /** Deve expor a definição pública de mercado do produto como Markdown. */
@@ -415,6 +517,14 @@ class ProductControllerTest {
                         PdeProductionSlotStatus.PLANNED,
                         71L,
                         "Hipotese 2",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
                         Instant.parse("2026-07-24T10:00:00Z"),
                         Instant.parse("2026-07-24T10:00:00Z"))));
 

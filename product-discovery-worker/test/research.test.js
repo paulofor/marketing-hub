@@ -34,6 +34,14 @@ test("buildSearchQueries creates pain-oriented queries", () => {
     "deve buscar linguagem de consumidor além de termos genéricos de mercado",
   );
   assert.ok(
+    queries.some((query) => query.includes("scientific study mechanism")),
+    "deve pesquisar artigos cientificos que apoiem o mecanismo",
+  );
+  assert.ok(
+    queries.some((query) => query.includes("site:pubmed.ncbi.nlm.nih.gov")),
+    "deve incluir fontes cientificas candidatas na pesquisa",
+  );
+  assert.ok(
     queries.some((query) => query.includes("30 anos ou mais")),
     "deve normalizar público com 30+ para termo aceito pelo provedor",
   );
@@ -110,12 +118,58 @@ test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () =>
         url: "https://questions.example/c",
         snippet: "não consigo decidir e tenho medo de errar",
       },
+      {
+        title: "Behavior change intervention for online decision support",
+        url: "https://pubmed.ncbi.nlm.nih.gov/123456/",
+        snippet: "systematic review evidence based intervention",
+      },
     ],
   );
 
   assert.equal(report.opportunities.length, 1);
   assert.equal(report.opportunities[0].decision, "APPROVE");
   assert.ok(report.opportunities[0].score >= 70);
+  const evidence = JSON.parse(report.opportunities[0].evidenceJson);
+  assert.equal(evidence.scientificArticles.length, 1);
+  assert.deepEqual(Object.keys(evidence.scientificArticles[0]), [
+    "link",
+    "originalTitle",
+    "portugueseTitle",
+    "summary",
+    "mechanismApplication",
+  ]);
+});
+
+test("analyzeSearchResults requires scientific articles before approving mechanism", () => {
+  const report = analyzeSearchResults(
+    {
+      theme: "mulheres que compram roupa online",
+      targetAudience: "mulheres 30+",
+    },
+    [
+      {
+        title: "Dificuldade para escolher roupa online",
+        url: "https://forum.example/a",
+        snippet: "problema insegurança caro complicado como fazer",
+      },
+      {
+        title: "Review de consultoria de estilo",
+        url: "https://reviews.example/b",
+        snippet: "demorado confuso não resolve reclamação",
+      },
+      {
+        title: "Perguntas frequentes sobre estilo",
+        url: "https://questions.example/c",
+        snippet: "não consigo decidir e tenho medo de errar",
+      },
+    ],
+  );
+
+  assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
+  assert.match(
+    report.opportunities[0].commercialRisk,
+    /sem sustentação científica do mecanismo/,
+  );
 });
 
 test("resolveSearchConfig prefers Brave when key is available", () => {
@@ -257,7 +311,10 @@ test("searchInternet calls configured Brave API and deduplicates results", async
 
   assert.equal(calls.length, 4);
   assert.match(calls[0].url, /api\.search\.brave\.com/);
-  assert.equal(calls[0].options.headers["X-Subscription-Token"], "brave-test-key");
+  assert.equal(
+    calls[0].options.headers["X-Subscription-Token"],
+    "brave-test-key",
+  );
   assert.equal(results.length, 3);
 });
 
@@ -309,7 +366,9 @@ test("searchInternet uses stronger default search depth before stopping", async 
   assert.equal(results.length, 12);
   assert.ok(
     calls.some((url) =>
-      new URL(url).searchParams.get("q")?.includes("cliente pergunta preço e some"),
+      new URL(url).searchParams
+        .get("q")
+        ?.includes("cliente pergunta preço e some"),
     ),
     "deve executar consultas comerciais específicas antes de parar",
   );

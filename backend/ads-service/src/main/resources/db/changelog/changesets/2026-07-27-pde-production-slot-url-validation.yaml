@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-27-pde-production-slot-url-validation.yaml
+  - changeSet:
+      id: 2026-07-27-pde-production-slot-url-validation-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+        - not:
+            columnExists:
+              tableName: pde_production_slot
+              columnName: validation_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pde_production_slot
+                ADD COLUMN validation_status VARCHAR(32) NULL AFTER notes,
+                ADD COLUMN validation_checked_at DATETIME NULL AFTER validation_status,
+                ADD COLUMN validation_http_status INT NULL AFTER validation_checked_at,
+                ADD COLUMN validation_summary VARCHAR(512) NULL AFTER validation_http_status,
+                ADD COLUMN validation_detail LONGTEXT NULL AFTER validation_summary,
+                ADD COLUMN validation_contract_slug VARCHAR(191) NULL AFTER validation_detail,
+                ADD COLUMN validation_contract_health_path VARCHAR(191) NULL AFTER validation_contract_slug,
+                ADD COLUMN validation_resolved_url VARCHAR(512) NULL AFTER validation_contract_health_path;

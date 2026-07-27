@@ -6181,3 +6181,11 @@
 - foi feito: o backend passou a expor trilhas recomendadas para criar ciclos separados de renda extra para autônomos/MEIs, melhoria pessoal de baixo esforço e relacionamento responsável.
 - prevenção: o ranking fica como contrato do backend, evitando que a tela trate nichos sensíveis por heurística local ou sem travas comerciais explícitas.
 - impacto comercial esperado: acelerar a escolha de candidatos PDE com maior chance de venda sem dispersar execução em nichos grandes e genéricos.
+
+## 2026-07-27 — PDE MUSA: validação real de URLs versionadas
+
+- causa-raiz confirmada: v1 e v2 estavam cadastradas no painel como slots históricos, mas as URLs públicas falhavam em validação real de acesso; o painel ainda não tinha um comando próprio para provar que a URL entrega health, contrato público e ativo versionado antes de tráfego.
+- foi feito: adicionado comando administrativo para testar a URL pública do slot PDE e persistir status, data, HTTP status, resumo, detalhe, contrato lido e URL resolvida.
+- foi feito: a tela de versões PDE do produto passou a ter botão `Testar URL` e exibir o resultado da última validação.
+- prevenção: a decisão de usar uma versão PDE em campanha passa a depender de evidência operacional salva no slot, não apenas de domínio cadastrado manualmente.
+- impacto comercial esperado: evitar tráfego pago ou leitura de experimento sobre URL inexistente, errada ou sem ativo comercial obrigatório.

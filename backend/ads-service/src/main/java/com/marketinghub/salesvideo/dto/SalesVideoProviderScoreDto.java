@@ -15,6 +15,7 @@ public class SalesVideoProviderScoreDto {
     private int score;
     private long readyJobs;
     private long failedJobs;
+    private long operationalFailedJobs;
     private long approvedAssets;
     private long rejectedAssets;
     private long leads;
@@ -23,4 +24,6 @@ public class SalesVideoProviderScoreDto {
     private long purchases;
     private BigDecimal revenue;
     private String recommendation;
+    private String riskCategory;
+    private String riskMessage;
 }

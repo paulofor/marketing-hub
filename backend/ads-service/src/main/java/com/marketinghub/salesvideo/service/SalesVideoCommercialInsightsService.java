@@ -32,6 +32,7 @@ public class SalesVideoCommercialInsightsService {
     private final SalesVideoConversionEventRepository conversionEventRepository;
     private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
+    /** Inicializa o serviço com os repositórios usados para consolidar aprendizados comerciais. */
     public SalesVideoCommercialInsightsService(SalesVideoProfileRepository profileRepository,
                                                SalesVideoJobRepository jobRepository,
                                                SalesVideoScriptRepository scriptRepository,
@@ -62,6 +63,7 @@ public class SalesVideoCommercialInsightsService {
         return toDto(playbookRepository.save(playbook));
     }
 
+    /** Lista playbooks comerciais cadastrados para o perfil de vídeo. */
     @Transactional(readOnly = true)
     public List<SalesVideoCommercialPlaybookDto> listPlaybooks(Long profileId) {
         SalesVideoProfile profile = loadProfile(profileId);
@@ -71,6 +73,7 @@ public class SalesVideoCommercialInsightsService {
                 .toList();
     }
 
+    /** Registra um evento comercial vinculado ao perfil, script e job quando informados. */
     @Transactional
     public SalesVideoConversionEventDto createConversionEvent(Long profileId, CreateSalesVideoConversionEventRequest request) {
         SalesVideoProfile profile = loadProfile(profileId);
@@ -213,6 +216,9 @@ public class SalesVideoCommercialInsightsService {
             }
             if (job.getStatus() == SalesVideoStatus.VIDEO_FAILED) {
                 accumulator.failedJobs++;
+                if (isOperationalFailure(job)) {
+                    accumulator.operationalFailedJobs++;
+                }
             }
         }
         for (ExperimentVideoAssetProviderReviewProjection asset : providerReviews) {
@@ -258,6 +264,25 @@ public class SalesVideoCommercialInsightsService {
         return StringUtils.hasText(providerName) ? providerName.trim() : "unknown";
     }
 
+    /** Identifica falha causada por configuração/roteamento operacional, não por qualidade criativa. */
+    private static boolean isOperationalFailure(SalesVideoJob job) {
+        String failureCode = normalizeFailureText(job.getFailureCode());
+        String failureDetail = normalizeFailureText(job.getFailureDetail());
+        return failureCode.contains("PROVIDER_AUTH")
+                || failureCode.contains("PROVIDER_CONFIG")
+                || failureDetail.contains("NENHUM PROVIDER CONFIGURADO")
+                || failureDetail.contains("API_KEY")
+                || failureDetail.contains("SECRET")
+                || failureDetail.contains("CHAVE")
+                || failureDetail.contains("CONFIGURAD");
+    }
+
+    /** Normaliza texto de falha para classificação conservadora de reputação. */
+    private static String normalizeFailureText(String value) {
+        return StringUtils.hasText(value) ? value.trim().toUpperCase(Locale.ROOT) : "";
+    }
+
+    /** Carrega o perfil e valida se ele pertence ao tenant corrente. */
     private SalesVideoProfile loadProfile(Long profileId) {
         SalesVideoProfile profile = profileRepository.findById(profileId)
                 .orElseThrow(() -> VideoModuleException.notFound(VideoModuleErrorCode.PROFILE_NOT_FOUND,
@@ -266,10 +291,12 @@ public class SalesVideoCommercialInsightsService {
         return profile;
     }
 
+    /** Converte texto em branco para nulo antes da persistência. */
     private static String normalizeBlank(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 
+    /** Converte entidade de playbook em DTO da API. */
     private SalesVideoCommercialPlaybookDto toDto(SalesVideoCommercialPlaybook playbook) {
         return SalesVideoCommercialPlaybookDto.builder()
                 .id(playbook.getId())
@@ -286,6 +313,7 @@ public class SalesVideoCommercialInsightsService {
                 .build();
     }
 
+    /** Converte entidade de evento comercial em DTO da API. */
     private SalesVideoConversionEventDto toDto(SalesVideoConversionEvent event) {
         return SalesVideoConversionEventDto.builder()
                 .id(event.getId())
@@ -338,6 +366,7 @@ public class SalesVideoCommercialInsightsService {
         private final String providerName;
         private long readyJobs;
         private long failedJobs;
+        private long operationalFailedJobs;
         private long approvedAssets;
         private long rejectedAssets;
         private long leads;
@@ -352,6 +381,7 @@ public class SalesVideoCommercialInsightsService {
 
         /** Converte os sinais acumulados em DTO de pontuação comercial. */
         private SalesVideoProviderScoreDto toDto() {
+            long creativeFailedJobs = Math.max(0, failedJobs - operationalFailedJobs);
             int score = Math.max(0, Math.min(100, 50
                     + (int) readyJobs * 8
                     + (int) approvedAssets * 10
@@ -359,13 +389,16 @@ public class SalesVideoCommercialInsightsService {
                     + (int) qualifiedLeads * 8
                     + (int) checkoutStarts * 18
                     + (int) purchases * 30
-                    - (int) failedJobs * 12
+                    - (int) operationalFailedJobs * 4
+                    - (int) creativeFailedJobs * 12
                     - (int) rejectedAssets * 25));
+            String recommendation = recommendation(score, rejectedAssets, failedJobs, operationalFailedJobs, purchases);
             return SalesVideoProviderScoreDto.builder()
                     .providerName(providerName)
                     .score(score)
                     .readyJobs(readyJobs)
                     .failedJobs(failedJobs)
+                    .operationalFailedJobs(operationalFailedJobs)
                     .approvedAssets(approvedAssets)
                     .rejectedAssets(rejectedAssets)
                     .leads(leads)
@@ -373,22 +406,70 @@ public class SalesVideoCommercialInsightsService {
                     .checkoutStarts(checkoutStarts)
                     .purchases(purchases)
                     .revenue(revenue)
-                    .recommendation(recommendation(score, rejectedAssets, failedJobs, purchases))
+                    .recommendation(recommendation)
+                    .riskCategory(riskCategory(rejectedAssets, failedJobs, operationalFailedJobs, score))
+                    .riskMessage(riskMessage(providerName, rejectedAssets, failedJobs, operationalFailedJobs, score, recommendation))
                     .build();
         }
 
         /** Define recomendação operacional para o provider conforme score e falhas críticas. */
-        private String recommendation(int score, long rejectedAssets, long failedJobs, long purchases) {
-            if (rejectedAssets > 0 || score < 40) {
+        private String recommendation(int score,
+                                      long rejectedAssets,
+                                      long failedJobs,
+                                      long operationalFailedJobs,
+                                      long purchases) {
+            if (rejectedAssets > 0) {
                 return "bloquear_ou_regenerar";
             }
             if (purchases > 0 || score >= 75) {
                 return "priorizar";
             }
+            if (failedJobs > 0 && failedJobs == operationalFailedJobs) {
+                return "testar_controlado";
+            }
+            if (score < 40) {
+                return "bloquear_ou_regenerar";
+            }
             if (failedJobs > 0 || score < 60) {
                 return "usar_com_cautela";
             }
             return "testar_controlado";
+        }
+
+        /** Classifica o principal risco por trás da reputação exibida na tela. */
+        private String riskCategory(long rejectedAssets, long failedJobs, long operationalFailedJobs, int score) {
+            if (rejectedAssets > 0) {
+                return "REPROVACAO_CRIATIVA";
+            }
+            if (failedJobs > 0 && failedJobs == operationalFailedJobs) {
+                return "FALHA_OPERACIONAL_CONFIGURACAO";
+            }
+            if (failedJobs > operationalFailedJobs || score < 40) {
+                return "FALHA_TECNICA_PROVIDER";
+            }
+            return "SEM_RISCO_CRITICO";
+        }
+
+        /** Explica a decisão de reputação de forma acionável para o operador. */
+        private String riskMessage(String providerName,
+                                   long rejectedAssets,
+                                   long failedJobs,
+                                   long operationalFailedJobs,
+                                   int score,
+                                   String recommendation) {
+            if (rejectedAssets > 0) {
+                return "%s tem %d reprovação(ões) visual(is); bloquear uso comercial e regenerar criativo antes de gastar mídia."
+                        .formatted(providerName, rejectedAssets);
+            }
+            if (failedJobs > 0 && failedJobs == operationalFailedJobs) {
+                return "%s falhou por configuração operacional; se a configuração atual estiver OK, liberar teste controlado/regeneração."
+                        .formatted(providerName);
+            }
+            if (failedJobs > operationalFailedJobs) {
+                return "%s tem falha técnica de provider; usar com cautela até haver novo job pronto ou evidência comercial."
+                        .formatted(providerName);
+            }
+            return "%s está com score %d e recomendação %s.".formatted(providerName, score, recommendation);
         }
     }
 }

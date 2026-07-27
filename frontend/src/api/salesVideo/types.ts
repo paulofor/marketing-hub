@@ -315,6 +315,7 @@ export interface SalesVideoProviderScore {
   score: number;
   readyJobs: number;
   failedJobs: number;
+  operationalFailedJobs?: number;
   approvedAssets: number;
   rejectedAssets: number;
   leads: number;
@@ -323,6 +324,8 @@ export interface SalesVideoProviderScore {
   purchases: number;
   revenue: number;
   recommendation: string;
+  riskCategory?: string | null;
+  riskMessage?: string | null;
 }
 
 export interface SalesVideoPerformanceSummary {

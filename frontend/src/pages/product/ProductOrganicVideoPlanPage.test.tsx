@@ -224,4 +224,57 @@ describe("ProductOrganicVideoPlanPage", () => {
     expect(button[0]).toBeDisabled();
     expect(axios.post).not.toHaveBeenCalled();
   });
+
+  it("allows controlled render when provider only has operational configuration failure", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/provider-scores") {
+        return Promise.resolve({
+          data: [
+            {
+              providerName: "RUNWAY",
+              score: 46,
+              readyJobs: 0,
+              failedJobs: 1,
+              operationalFailedJobs: 1,
+              approvedAssets: 0,
+              rejectedAssets: 0,
+              leads: 0,
+              qualifiedLeads: 0,
+              checkoutStarts: 0,
+              purchases: 0,
+              revenue: 0,
+              recommendation: "testar_controlado",
+              riskCategory: "FALHA_OPERACIONAL_CONFIGURACAO",
+              riskMessage:
+                "RUNWAY falhou por configuração operacional; se a configuração atual estiver OK, liberar teste controlado/regeneração.",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: planResponse });
+    });
+    const client = new QueryClient();
+
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/products/:productId/organic-videos"
+              element={<ProductOrganicVideoPlanPage />}
+            />
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    const buttons = await screen.findAllByRole("button", {
+      name: /Renderizar orgânico/i,
+    });
+
+    expect(
+      await screen.findByText(/liberar teste controlado/i),
+    ).toBeTruthy();
+    expect(buttons[0]).not.toBeDisabled();
+  });
 });

@@ -71,6 +71,9 @@ function providerBlockReason(
   if (!score) {
     return "";
   }
+  if (score.riskCategory === "FALHA_OPERACIONAL_CONFIGURACAO") {
+    return "";
+  }
   if (score.recommendation === "bloquear_ou_regenerar") {
     return `Bloqueado por reputação: score ${score.score}, recomendação ${score.recommendation}.`;
   }
@@ -87,6 +90,9 @@ function providerScoreLabel(
   const score = scores?.find((item) => item.providerName === providerName);
   if (!score) {
     return "Sem histórico suficiente";
+  }
+  if (score.riskMessage) {
+    return `${score.riskMessage} Score ${score.score} · ${score.recommendation}`;
   }
   return `Score ${score.score} · ${score.recommendation}`;
 }

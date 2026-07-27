@@ -282,6 +282,10 @@ Quando a versão comercial for numerada, o slot produtivo deve usar o subdomíni
 
 O Marketing Hub pode cadastrar e acompanhar slots antes da automação completa de infraestrutura. A publicação real continua proibida por SSH manual: o deploy deve ser feito por workflow, Compose, Dockerfile ou pipeline versionados do repositório.
 
+Quando uma mesma imagem/deploy do frontend PDE servir mais de um subdomínio versionado, o hostname público do slot é a fonte decisiva da versão comercial exibida. Overrides globais de runtime podem existir para ambientes não versionados, preview ou rollback operacional, mas não podem fazer `v6.clubemusa.com.br` registrar ou renderizar a experiência da `v5`, nem o inverso. O frontend deve resolver `experienceVersion` e ativo obrigatório de vídeo pelo hostname quando ele corresponder a um slot produtivo versionado conhecido.
+
+O workflow oficial de publicação do `pde-platform` deve validar cada slot produtivo versionado ativo ou pronto, no mínimo `https://v5.clubemusa.com.br` e `https://v6.clubemusa.com.br` enquanto ambos existirem. A validação pós-deploy precisa provar health público, renderização da entrada, contrato público e jornada diagnóstica em cada subdomínio, porque um único smoke test no domínio raiz não comprova teste simultâneo de versões.
+
 ## Contrato mínimo de produto
 
 Cada produto PDE deve ter, no mínimo:

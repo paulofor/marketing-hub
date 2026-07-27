@@ -24,3 +24,21 @@ test('v6 publica PDE com video motivacional inicial e diagnostico em seguida', a
   await expect(page.getByRole('button', { name: 'Falta acabamento' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeDisabled();
 });
+
+test('v6 preserva versao e video do hostname mesmo com runtime global de v5', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__MUSA_RUNTIME_CONFIG__ = {
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: 'musa-pde-entry-v5-video-explicativo',
+      VITE_MUSA_HERO_VIDEO_URL: '/assets/musa-v5-video-explicativo.mp4',
+    };
+  });
+  await page.route('**/api/pde/products/metodo-musa-7-dias', async (route) => {
+    await route.fulfill({ status: 404, body: 'not found' });
+  });
+
+  await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa');
+
+  const video = page.locator('video.public-hero-video');
+  await expect(video).toHaveAttribute('src', '/assets/musa-v6-video-motivacional.mp4');
+  await expect(page.getByText(/Timeline MUSA/i)).toBeVisible();
+});

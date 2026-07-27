@@ -213,7 +213,7 @@ jobs:
             && export PDE_DEPLOY_COMPOSE_FILE=docker-compose.deploy.yml \
             && export PDE_DEPLOY_COMMIT_SHA='${GITHUB_SHA}' \
             && export PDE_DEPLOY_IMAGE_TAG='${IMAGE_TAG}' \
-            && export PDE_DEPLOY_FRONTEND_URL=https://clubemusa.com.br \
+            && export PDE_DEPLOY_FRONTEND_URL=https://v5.clubemusa.com.br \
             && export PDE_DEPLOY_BACKEND_URL=\"http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}\" \
             && export PDE_DEPLOY_DEPLOYED_AT='${DEPLOYED_AT}' \
             && export AWS_REGION='${AWS_REGION}' \
@@ -242,14 +242,13 @@ jobs:
           cache-dependency-path: pde-platform/frontend/package-lock.json
       - name: Validate production public rendering
         working-directory: pde-platform/frontend
-        env:
-          PDE_PUBLIC_HEALTH_URL: https://clubemusa.com.br
         run: |
           npm ci --include=dev
           npx playwright install --with-deps chromium
-          npm run test:public-health
+          PDE_PUBLIC_HEALTH_URL=https://v5.clubemusa.com.br npm run test:public-health
+          PDE_PUBLIC_HEALTH_URL=https://v6.clubemusa.com.br npm run test:public-health
       - name: Validate production public diagnostic smoke
         working-directory: pde-platform/frontend
-        env:
-          PDE_PUBLIC_HEALTH_URL: https://clubemusa.com.br
-        run: npm run test:public-diagnostic-smoke
+        run: |
+          PDE_PUBLIC_HEALTH_URL=https://v5.clubemusa.com.br npm run test:public-diagnostic-smoke
+          PDE_PUBLIC_HEALTH_URL=https://v6.clubemusa.com.br npm run test:public-diagnostic-smoke

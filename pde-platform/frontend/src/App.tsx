@@ -177,6 +177,16 @@ const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explica
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
 const MUSA_V5_HERO_VIDEO_URL = '/assets/musa-v5-video-explicativo.mp4';
 const MUSA_V6_HERO_VIDEO_URL = '/assets/musa-v6-video-motivacional.mp4';
+const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string; heroVideoUrl: string }> = {
+  'v5.clubemusa.com.br': {
+    experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+    heroVideoUrl: MUSA_V5_HERO_VIDEO_URL,
+  },
+  'v6.clubemusa.com.br': {
+    experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
+    heroVideoUrl: MUSA_V6_HERO_VIDEO_URL,
+  },
+};
 const MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS = new Set([
   'musa-pde-entry-v5-estrada-desejo',
   MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
@@ -532,21 +542,19 @@ function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLI
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
 }
 
-function resolveHostExperienceVersionOverride() {
+function resolveMusaVersionedHostConfig() {
   const hostname = window.location.hostname.toLowerCase();
-  if (hostname === 'v6.clubemusa.com.br') {
-    return MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
-  }
-  if (hostname === 'v5.clubemusa.com.br') {
-    return MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
-  }
-  return '';
+  return MUSA_VERSIONED_HOSTS[hostname];
+}
+
+function resolveHostExperienceVersionOverride() {
+  return resolveMusaVersionedHostConfig()?.experienceVersion ?? '';
 }
 
 function applyExperienceOverrides(productExperience: ProductExperience) {
   const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
   const hostExperienceVersionOverride = resolveHostExperienceVersionOverride();
-  const selectedExperienceVersion = experienceVersionOverride || hostExperienceVersionOverride;
+  const selectedExperienceVersion = hostExperienceVersionOverride || experienceVersionOverride;
   if (!selectedExperienceVersion) {
     return productExperience;
   }
@@ -570,6 +578,14 @@ function resolveDefaultHeroVideoUrl(experienceVersion: string) {
     return MUSA_V6_HERO_VIDEO_URL;
   }
   return MUSA_V5_HERO_VIDEO_URL;
+}
+
+function resolveHeroVideoUrl(experienceVersion: string) {
+  const hostHeroVideoUrl = resolveMusaVersionedHostConfig()?.heroVideoUrl;
+  if (hostHeroVideoUrl) {
+    return hostHeroVideoUrl;
+  }
+  return readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? resolveDefaultHeroVideoUrl(experienceVersion));
 }
 
 const presenceBlockers: DiagnosticOption[] = [
@@ -687,7 +703,7 @@ function App() {
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
-  const heroVideoUrl = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? resolveDefaultHeroVideoUrl(currentExperienceVersion));
+  const heroVideoUrl = resolveHeroVideoUrl(currentExperienceVersion);
   const heroStreamUrl = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
   const heroPlaybackUrl = heroStreamUrl || heroVideoUrl;
 

@@ -17,51 +17,43 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FrameworkImagePipelineResumeSchedulerTest {
 
-    @Mock
-    private FrameworkImageGenerationService frameworkImageGenerationService;
+  @Mock private FrameworkImageGenerationService frameworkImageGenerationService;
 
-    @Mock
-    private ExperimentPipelineGenerationService experimentPipelineGenerationService;
+  @Mock private ExperimentPipelineGenerationService experimentPipelineGenerationService;
 
-    @Test
-    void runResumesFlowForDistinctExperimentIds() {
-        FrameworkImagePipelineResumeScheduler scheduler = new FrameworkImagePipelineResumeScheduler(
-                frameworkImageGenerationService,
-                experimentPipelineGenerationService,
-                true,
-                50);
+  @Test
+  void runResumesFlowForDistinctExperimentIds() {
+    FrameworkImagePipelineResumeScheduler scheduler =
+        new FrameworkImagePipelineResumeScheduler(
+            frameworkImageGenerationService, experimentPipelineGenerationService, true, 50);
 
-        when(frameworkImageGenerationService.listPendingJobs(50)).thenReturn(List.of(
-                job(11L),
-                job(11L),
-                job(12L)));
+    when(frameworkImageGenerationService.listPendingJobs(50))
+        .thenReturn(List.of(job(11L), job(11L), job(12L)));
 
-        scheduler.run();
+    scheduler.run();
 
-        verify(experimentPipelineGenerationService, times(1)).resumeFlowAfterImagePlanningIfReady(11L);
-        verify(experimentPipelineGenerationService, times(1)).resumeFlowAfterImagePlanningIfReady(12L);
-    }
+    verify(experimentPipelineGenerationService, times(1)).resumeFlowAfterImagePlanningIfReady(11L);
+    verify(experimentPipelineGenerationService, times(1)).resumeFlowAfterImagePlanningIfReady(12L);
+  }
 
-    @Test
-    void runDoesNothingWhenDisabled() {
-        FrameworkImagePipelineResumeScheduler scheduler = new FrameworkImagePipelineResumeScheduler(
-                frameworkImageGenerationService,
-                experimentPipelineGenerationService,
-                false,
-                50);
+  @Test
+  void runDoesNothingWhenDisabled() {
+    FrameworkImagePipelineResumeScheduler scheduler =
+        new FrameworkImagePipelineResumeScheduler(
+            frameworkImageGenerationService, experimentPipelineGenerationService, false, 50);
 
-        scheduler.run();
+    scheduler.run();
 
-        verify(frameworkImageGenerationService, never()).listPendingJobs(50);
-        verify(experimentPipelineGenerationService, never()).resumeFlowAfterImagePlanningIfReady(11L);
-    }
+    verify(frameworkImageGenerationService, never()).listPendingJobs(50);
+    verify(experimentPipelineGenerationService, never()).resumeFlowAfterImagePlanningIfReady(11L);
+  }
 
-    private FrameworkImageGenerationJobDto job(Long experimentId) {
-        return FrameworkImageGenerationJobDto.builder()
-                .id(UUID.randomUUID())
-                .experimentId(experimentId)
-                .planningItemKey("key")
-                .status("PENDING")
-                .build();
-    }
+  private FrameworkImageGenerationJobDto job(Long experimentId) {
+    return FrameworkImageGenerationJobDto.builder()
+        .id(UUID.randomUUID())
+        .experimentId(experimentId)
+        .planningItemKey("key")
+        .status("PENDING")
+        .build();
+  }
 }

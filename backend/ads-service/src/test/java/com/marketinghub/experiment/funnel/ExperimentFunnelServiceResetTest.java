@@ -21,47 +21,45 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Testa a limpeza operacional de eventos do funil quando o experimento precisa descartar dados de teste.
+ * Testa a limpeza operacional de eventos do funil quando o experimento precisa descartar dados de
+ * teste.
  */
 @ExtendWith(MockitoExtension.class)
 class ExperimentFunnelServiceResetTest {
 
-    @Mock
-    private ExperimentRepository experimentRepository;
+  @Mock private ExperimentRepository experimentRepository;
 
-    @Mock
-    private ExperimentFunnelEventRepository eventRepository;
+  @Mock private ExperimentFunnelEventRepository eventRepository;
 
-    @Mock
-    private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
+  @Mock private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
 
-    @Mock
-    private LeadRepository leadRepository;
+  @Mock private LeadRepository leadRepository;
 
-    @Mock
-    private JdbcTemplate jdbcTemplate;
+  @Mock private JdbcTemplate jdbcTemplate;
 
-    @InjectMocks
-    private ExperimentFunnelService service;
+  @InjectMocks private ExperimentFunnelService service;
 
-    /**
-     * Valida que o reset apaga analytics de sessão antes dos demais eventos e atualiza o marco temporal.
-     */
-    @Test
-    void resetFunnelUpdatesTimestamp() {
-        Experiment experiment = Experiment.builder().id(9L).build();
-        when(experimentRepository.findById(9L)).thenReturn(Optional.of(experiment));
+  /**
+   * Valida que o reset apaga analytics de sessão antes dos demais eventos e atualiza o marco
+   * temporal.
+   */
+  @Test
+  void resetFunnelUpdatesTimestamp() {
+    Experiment experiment = Experiment.builder().id(9L).build();
+    when(experimentRepository.findById(9L)).thenReturn(Optional.of(experiment));
 
-        Instant resetAt = service.resetFunnel(9L);
+    Instant resetAt = service.resetFunnel(9L);
 
-        InOrder inOrder = inOrder(landingAnalyticsEventRepository, eventRepository, experimentRepository);
-        inOrder.verify(landingAnalyticsEventRepository).deleteByExperimentId(9L);
-        inOrder.verify(eventRepository).deleteByExperimentIdAndSource(
-                9L,
-                ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);
-        inOrder.verify(eventRepository).deleteByExperimentId(9L);
-        inOrder.verify(experimentRepository).save(experiment);
-        assertNotNull(experiment.getFunnelResetAt());
-        assertEquals(experiment.getFunnelResetAt(), resetAt);
-    }
+    InOrder inOrder =
+        inOrder(landingAnalyticsEventRepository, eventRepository, experimentRepository);
+    inOrder.verify(landingAnalyticsEventRepository).deleteByExperimentId(9L);
+    inOrder
+        .verify(eventRepository)
+        .deleteByExperimentIdAndSource(
+            9L, ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);
+    inOrder.verify(eventRepository).deleteByExperimentId(9L);
+    inOrder.verify(experimentRepository).save(experiment);
+    assertNotNull(experiment.getFunnelResetAt());
+    assertEquals(experiment.getFunnelResetAt(), resetAt);
+  }
 }

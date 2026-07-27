@@ -27,69 +27,74 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import(WebConfig.class)
 class CreativeControllerCorsTest {
 
-    private static final String REQUEST_ORIGIN = "http://app.local";
+  private static final String REQUEST_ORIGIN = "http://app.local";
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    @MockBean
-    private CreativeService creativeService;
+  @MockBean private CreativeService creativeService;
 
-    @MockBean
-    private CreativeMapper creativeMapper;
+  @MockBean private CreativeMapper creativeMapper;
 
-    @MockBean
-    private AssetRepository assetRepository;
+  @MockBean private AssetRepository assetRepository;
 
-    @Test
-    void uploadImageRespondsWithCorsHeaders() throws Exception {
-        AssetUploadResponse mockResponse = new AssetUploadResponse(
-                "https://cdn.test/mock.png",
-                "experiments/creatives/mock.png",
-                AssetUploadCategory.EXPERIMENT_CREATIVE);
-        when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(mockResponse);
+  @Test
+  void uploadImageRespondsWithCorsHeaders() throws Exception {
+    AssetUploadResponse mockResponse =
+        new AssetUploadResponse(
+            "https://cdn.test/mock.png",
+            "experiments/creatives/mock.png",
+            AssetUploadCategory.EXPERIMENT_CREATIVE);
+    when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any(), any()))
+        .thenReturn(mockResponse);
 
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "image.png", "image/png", "dummy".getBytes());
+    MockMultipartFile file =
+        new MockMultipartFile("file", "image.png", "image/png", "dummy".getBytes());
 
-        mockMvc.perform(multipart("/api/assets")
-                        .file(file)
-                        .param("prompt", "simple-form-test")
-                        .header(HttpHeaders.ORIGIN, REQUEST_ORIGIN))
-                .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN))
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, containsString("Location")));
-    }
+    mockMvc
+        .perform(
+            multipart("/api/assets")
+                .file(file)
+                .param("prompt", "simple-form-test")
+                .header(HttpHeaders.ORIGIN, REQUEST_ORIGIN))
+        .andExpect(status().isOk())
+        .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN))
+        .andExpect(
+            header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, containsString("Location")));
+  }
 
-    @Test
-    void uploadLargeImageStillHonorsCorsHeaders() throws Exception {
-        AssetUploadResponse largeResponse = new AssetUploadResponse(
-                "https://cdn.test/large.png",
-                "experiments/creatives/large.png",
-                AssetUploadCategory.EXPERIMENT_CREATIVE);
-        when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(largeResponse);
+  @Test
+  void uploadLargeImageStillHonorsCorsHeaders() throws Exception {
+    AssetUploadResponse largeResponse =
+        new AssetUploadResponse(
+            "https://cdn.test/large.png",
+            "experiments/creatives/large.png",
+            AssetUploadCategory.EXPERIMENT_CREATIVE);
+    when(creativeService.uploadImage(any(), any(), any(), any(), any(), any(), any(), any()))
+        .thenReturn(largeResponse);
 
-        byte[] largePayload = new byte[4 * 1024 * 1024];
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "large.png", "image/png", largePayload);
+    byte[] largePayload = new byte[4 * 1024 * 1024];
+    MockMultipartFile file = new MockMultipartFile("file", "large.png", "image/png", largePayload);
 
-        mockMvc.perform(multipart("/api/assets")
-                        .file(file)
-                        .param("prompt", "large-image")
-                        .header(HttpHeaders.ORIGIN, REQUEST_ORIGIN))
-                .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN));
-    }
+    mockMvc
+        .perform(
+            multipart("/api/assets")
+                .file(file)
+                .param("prompt", "large-image")
+                .header(HttpHeaders.ORIGIN, REQUEST_ORIGIN))
+        .andExpect(status().isOk())
+        .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN));
+  }
 
-    @Test
-    void preflightRequestIncludesCorsMetadata() throws Exception {
-        mockMvc.perform(options("/api/assets")
-                        .header(HttpHeaders.ORIGIN, REQUEST_ORIGIN)
-                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
-                .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN))
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")));
-    }
+  @Test
+  void preflightRequestIncludesCorsMetadata() throws Exception {
+    mockMvc
+        .perform(
+            options("/api/assets")
+                .header(HttpHeaders.ORIGIN, REQUEST_ORIGIN)
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
+        .andExpect(status().isOk())
+        .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN))
+        .andExpect(
+            header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")));
+  }
 }

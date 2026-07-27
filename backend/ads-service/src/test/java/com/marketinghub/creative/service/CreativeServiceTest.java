@@ -1,30 +1,38 @@
 package com.marketinghub.creative.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.marketinghub.FixtureUtils;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
+import com.marketinghub.creative.dto.AssetUploadResponse;
+import com.marketinghub.creative.dto.CreateCreativeRequest;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
-import com.marketinghub.repository.jpa.creative.CreativeRepository;
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
-import com.marketinghub.repository.jpa.creative.label.AngleRepository;
-import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
-import com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository;
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.FixtureUtils;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
+import com.marketinghub.repository.jpa.creative.label.AngleRepository;
+import com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository;
+import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
-import com.marketinghub.creative.dto.AssetUploadResponse;
-import com.marketinghub.creative.dto.CreateCreativeRequest;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,221 +41,211 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 @SpringBootTest(classes = AdsServiceApplication.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
+@TestPropertySource(
+    properties = {
+      "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.driverClassName=org.h2.Driver",
+      "spring.datasource.username=sa",
+      "spring.datasource.password=",
+      "spring.jpa.hibernate.ddl-auto=create",
+      "spring.liquibase.enabled=false"
+    })
 class CreativeServiceTest {
 
-    @Autowired
-    CreativeRepository repository;
-    @Autowired
-    ExperimentRepository experimentRepository;
-    @Autowired
-    AngleRepository angleRepository;
-    @Autowired
-    VisualProofRepository visualProofRepository;
-    @Autowired
-    EmotionalTriggerRepository emotionalTriggerRepository;
-    @Autowired
-    FixtureUtils fixtures;
-    @Autowired
-    AssetRepository assetRepository;
-    @Autowired
-    ExperimentVideoAssetRepository experimentVideoAssetRepository;
+  @Autowired CreativeRepository repository;
+  @Autowired ExperimentRepository experimentRepository;
+  @Autowired AngleRepository angleRepository;
+  @Autowired VisualProofRepository visualProofRepository;
+  @Autowired EmotionalTriggerRepository emotionalTriggerRepository;
+  @Autowired FixtureUtils fixtures;
+  @Autowired AssetRepository assetRepository;
+  @Autowired ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
-    @Autowired
-    CreativeService service;
+  @Autowired CreativeService service;
 
-    @MockBean
-    HttpClient httpClient;
+  @MockBean HttpClient httpClient;
 
-    @MockBean
-    AssetStorageService assetStorageService;
+  @MockBean AssetStorageService assetStorageService;
 
-    @BeforeEach
-    void setup() {
-        experimentVideoAssetRepository.deleteAll();
-        assetRepository.deleteAll();
+  @BeforeEach
+  void setup() {
+    experimentVideoAssetRepository.deleteAll();
+    assetRepository.deleteAll();
+  }
+
+  @Test
+  void uploadImageReturnsPath() throws Exception {
+    MultipartFile file =
+        new org.springframework.mock.web.MockMultipartFile(
+            "file", "test.png", "image/png", new byte[] {1, 2});
+    AssetStorageService.StoredObject stored =
+        new AssetStorageService.StoredObject(
+            "experiments/exp-1/test.png",
+            "https://cdn.test/assets/test.png",
+            file.getSize(),
+            "image/png",
+            true);
+    when(assetStorageService.store(any(), any())).thenReturn(stored);
+
+    AssetUploadResponse response =
+        service.uploadImage(
+            file,
+            "dall-e-3",
+            "prompt text",
+            "intermediate prompt",
+            AssetUploadCategory.EXPERIMENT_CREATIVE,
+            1L,
+            null,
+            "slug-test");
+
+    assertThat(response.url()).isEqualTo("https://cdn.test/assets/test.png");
+    Asset saved = assetRepository.findAll().stream().findFirst().orElseThrow();
+    assertThat(saved.getUrl()).isEqualTo("https://cdn.test/assets/test.png");
+    assertThat(saved.getExternalId()).isEqualTo("experiments/exp-1/test.png");
+    assertThat(saved.getType()).isEqualTo(AssetType.IMAGE);
+    assertThat(saved.getStatus()).isEqualTo(AssetStatus.READY);
+    assertThat(saved.getModel()).isEqualTo("dall-e-3");
+    assertThat(saved.getPrompt()).isEqualTo("prompt text");
+    assertThat(saved.getPromptIntermediate()).isEqualTo("intermediate prompt");
+    assertThat(saved.getPayload()).contains("EXPERIMENT_CREATIVE");
+  }
+
+  @Test
+  void previewParsesHtml() throws Exception {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    fixtures.createAndSaveCreative(exp);
+
+    HttpResponse<String> resp = mock(HttpResponse.class);
+    when(resp.body()).thenReturn("{\"data\":[{\"body\":\"<div>ok</div>\"}]}");
+    when(httpClient.send(any(), any())).thenReturn((HttpResponse) resp);
+    System.setProperty("FB_ACCESS_TOKEN", "dummy");
+    try {
+      String html = service.preview(1L);
+      assertThat(html).contains("ok");
+    } finally {
+      System.clearProperty("FB_ACCESS_TOKEN");
     }
+  }
 
-    @Test
-    void uploadImageReturnsPath() throws Exception {
-        MultipartFile file = new org.springframework.mock.web.MockMultipartFile(
-                "file", "test.png", "image/png", new byte[]{1,2});
-        AssetStorageService.StoredObject stored = new AssetStorageService.StoredObject(
-                "experiments/exp-1/test.png",
-                "https://cdn.test/assets/test.png",
-                file.getSize(),
-                "image/png",
-                true);
-        when(assetStorageService.store(any(), any())).thenReturn(stored);
+  @Test
+  void approvingCreativeMarksExperimentAsReady() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
 
-        AssetUploadResponse response = service.uploadImage(
-                file,
-                "dall-e-3",
-                "prompt text",
-                "intermediate prompt",
-                AssetUploadCategory.EXPERIMENT_CREATIVE,
-                1L,
-                null,
-                "slug-test");
+    CreateCreativeRequest createRequest = new CreateCreativeRequest();
+    createRequest.setHeadline("Headline");
+    createRequest.setPrimaryText("Primary");
+    createRequest.setImageUrl("/img.png");
+    createRequest.setStatus(CreativeStatus.DRAFT);
+    Creative creative = service.create(exp.getId(), createRequest);
 
-        assertThat(response.url()).isEqualTo("https://cdn.test/assets/test.png");
-        Asset saved = assetRepository.findAll().stream().findFirst().orElseThrow();
-        assertThat(saved.getUrl()).isEqualTo("https://cdn.test/assets/test.png");
-        assertThat(saved.getExternalId()).isEqualTo("experiments/exp-1/test.png");
-        assertThat(saved.getType()).isEqualTo(AssetType.IMAGE);
-        assertThat(saved.getStatus()).isEqualTo(AssetStatus.READY);
-        assertThat(saved.getModel()).isEqualTo("dall-e-3");
-        assertThat(saved.getPrompt()).isEqualTo("prompt text");
-        assertThat(saved.getPromptIntermediate()).isEqualTo("intermediate prompt");
-        assertThat(saved.getPayload()).contains("EXPERIMENT_CREATIVE");
-    }
+    Experiment afterCreate = experimentRepository.findById(exp.getId()).orElseThrow();
+    assertThat(afterCreate.isCreativeApproved()).isFalse();
 
-    @Test
-    void previewParsesHtml() throws Exception {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
-        fixtures.createAndSaveCreative(exp);
+    CreateCreativeRequest approveRequest = new CreateCreativeRequest();
+    approveRequest.setHeadline("Headline");
+    approveRequest.setPrimaryText("Primary");
+    approveRequest.setImageUrl("/img.png");
+    approveRequest.setStatus(CreativeStatus.READY);
+    service.update(creative.getId(), approveRequest);
 
-        HttpResponse<String> resp = mock(HttpResponse.class);
-        when(resp.body()).thenReturn("{\"data\":[{\"body\":\"<div>ok</div>\"}]}");
-        when(httpClient.send(any(), any())).thenReturn((HttpResponse) resp);
-        System.setProperty("FB_ACCESS_TOKEN", "dummy");
-        try {
-            String html = service.preview(1L);
-            assertThat(html).contains("ok");
-        } finally {
-            System.clearProperty("FB_ACCESS_TOKEN");
-        }
-    }
+    Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
+    assertThat(afterApproval.isCreativeApproved()).isTrue();
+  }
 
-    @Test
-    void approvingCreativeMarksExperimentAsReady() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
+  /** Garante que criativo de vídeo aprovado por status libera o experimento para campanha. */
+  @Test
+  void approvingVideoCreativeByStatusMarksExperimentAsReady() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
 
-        CreateCreativeRequest createRequest = new CreateCreativeRequest();
-        createRequest.setHeadline("Headline");
-        createRequest.setPrimaryText("Primary");
-        createRequest.setImageUrl("/img.png");
-        createRequest.setStatus(CreativeStatus.DRAFT);
-        Creative creative = service.create(exp.getId(), createRequest);
+    CreateCreativeRequest createRequest = new CreateCreativeRequest();
+    createRequest.setFormat("VIDEO");
+    createRequest.setHeadline("Video");
+    createRequest.setPrimaryText("Primary");
+    createRequest.setVideoUrl("https://cdn.test/video.mp4");
+    createRequest.setStatus(CreativeStatus.DRAFT);
+    Creative creative = service.create(exp.getId(), createRequest);
 
-        Experiment afterCreate = experimentRepository.findById(exp.getId()).orElseThrow();
-        assertThat(afterCreate.isCreativeApproved()).isFalse();
+    service.updateStatus(creative.getId(), CreativeStatus.READY);
 
-        CreateCreativeRequest approveRequest = new CreateCreativeRequest();
-        approveRequest.setHeadline("Headline");
-        approveRequest.setPrimaryText("Primary");
-        approveRequest.setImageUrl("/img.png");
-        approveRequest.setStatus(CreativeStatus.READY);
-        service.update(creative.getId(), approveRequest);
+    Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
+    assertThat(afterApproval.isCreativeApproved()).isTrue();
+  }
 
-        Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
-        assertThat(afterApproval.isCreativeApproved()).isTrue();
-    }
+  /**
+   * Garante que reprovação de vídeo exija motivo e mantenha o experimento bloqueado para campanha.
+   */
+  @Test
+  void rejectingVideoCreativeByStatusRequiresReasonAndKeepsExperimentBlocked() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
 
-    /** Garante que criativo de vídeo aprovado por status libera o experimento para campanha. */
-    @Test
-    void approvingVideoCreativeByStatusMarksExperimentAsReady() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest createRequest = new CreateCreativeRequest();
+    createRequest.setFormat("VIDEO");
+    createRequest.setHeadline("Video");
+    createRequest.setPrimaryText("Primary");
+    createRequest.setVideoUrl("https://cdn.test/video.mp4");
+    createRequest.setStatus(CreativeStatus.DRAFT);
+    Creative creative = service.create(exp.getId(), createRequest);
 
-        CreateCreativeRequest createRequest = new CreateCreativeRequest();
-        createRequest.setFormat("VIDEO");
-        createRequest.setHeadline("Video");
-        createRequest.setPrimaryText("Primary");
-        createRequest.setVideoUrl("https://cdn.test/video.mp4");
-        createRequest.setStatus(CreativeStatus.DRAFT);
-        Creative creative = service.create(exp.getId(), createRequest);
+    assertThatThrownBy(() -> service.updateStatus(creative.getId(), CreativeStatus.REJECTED, " "))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("motivo da reprovação");
 
-        service.updateStatus(creative.getId(), CreativeStatus.READY);
+    Creative rejected =
+        service.updateStatus(
+            creative.getId(),
+            CreativeStatus.REJECTED,
+            "Avatar não comunica sofisticação suficiente.");
 
-        Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
-        assertThat(afterApproval.isCreativeApproved()).isTrue();
-    }
+    assertThat(rejected.getStatus()).isEqualTo(CreativeStatus.REJECTED);
+    assertThat(rejected.getRejectionReason())
+        .isEqualTo("Avatar não comunica sofisticação suficiente.");
+    Experiment afterRejection = experimentRepository.findById(exp.getId()).orElseThrow();
+    assertThat(afterRejection.isCreativeApproved()).isFalse();
+  }
 
-    /** Garante que reprovação de vídeo exija motivo e mantenha o experimento bloqueado para campanha. */
-    @Test
-    void rejectingVideoCreativeByStatusRequiresReasonAndKeepsExperimentBlocked() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
+  /** Garante que a fila de revisão traga apenas criativos de vídeo com mídia publicável. */
+  @Test
+  void listVideoReviewQueueReturnsVideoCreativesWithCommercialContext() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
 
-        CreateCreativeRequest createRequest = new CreateCreativeRequest();
-        createRequest.setFormat("VIDEO");
-        createRequest.setHeadline("Video");
-        createRequest.setPrimaryText("Primary");
-        createRequest.setVideoUrl("https://cdn.test/video.mp4");
-        createRequest.setStatus(CreativeStatus.DRAFT);
-        Creative creative = service.create(exp.getId(), createRequest);
+    CreateCreativeRequest videoRequest = new CreateCreativeRequest();
+    videoRequest.setFormat("VIDEO");
+    videoRequest.setHeadline("Video");
+    videoRequest.setPrimaryText("Primary");
+    videoRequest.setVideoUrl("https://cdn.test/video.mp4");
+    videoRequest.setStatus(CreativeStatus.DRAFT);
+    Creative videoCreative = service.create(exp.getId(), videoRequest);
 
-        assertThatThrownBy(() -> service.updateStatus(creative.getId(), CreativeStatus.REJECTED, " "))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("motivo da reprovação");
+    CreateCreativeRequest imageRequest = new CreateCreativeRequest();
+    imageRequest.setFormat("IMAGE");
+    imageRequest.setHeadline("Image");
+    imageRequest.setPrimaryText("Primary");
+    imageRequest.setImageUrl("https://cdn.test/image.png");
+    imageRequest.setStatus(CreativeStatus.DRAFT);
+    service.create(exp.getId(), imageRequest);
 
-        Creative rejected = service.updateStatus(
-                creative.getId(),
-                CreativeStatus.REJECTED,
-                "Avatar não comunica sofisticação suficiente.");
+    var queue = service.listVideoReviewQueue(CreativeStatus.DRAFT);
 
-        assertThat(rejected.getStatus()).isEqualTo(CreativeStatus.REJECTED);
-        assertThat(rejected.getRejectionReason()).isEqualTo("Avatar não comunica sofisticação suficiente.");
-        Experiment afterRejection = experimentRepository.findById(exp.getId()).orElseThrow();
-        assertThat(afterRejection.isCreativeApproved()).isFalse();
-    }
+    assertThat(queue).hasSize(1);
+    assertThat(queue.get(0).id()).isEqualTo(videoCreative.getId());
+    assertThat(queue.get(0).experimentId()).isEqualTo(exp.getId());
+    assertThat(queue.get(0).nicheName()).isEqualTo(niche.getName());
+  }
 
-    /** Garante que a fila de revisão traga apenas criativos de vídeo com mídia publicável. */
-    @Test
-    void listVideoReviewQueueReturnsVideoCreativesWithCommercialContext() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
-
-        CreateCreativeRequest videoRequest = new CreateCreativeRequest();
-        videoRequest.setFormat("VIDEO");
-        videoRequest.setHeadline("Video");
-        videoRequest.setPrimaryText("Primary");
-        videoRequest.setVideoUrl("https://cdn.test/video.mp4");
-        videoRequest.setStatus(CreativeStatus.DRAFT);
-        Creative videoCreative = service.create(exp.getId(), videoRequest);
-
-        CreateCreativeRequest imageRequest = new CreateCreativeRequest();
-        imageRequest.setFormat("IMAGE");
-        imageRequest.setHeadline("Image");
-        imageRequest.setPrimaryText("Primary");
-        imageRequest.setImageUrl("https://cdn.test/image.png");
-        imageRequest.setStatus(CreativeStatus.DRAFT);
-        service.create(exp.getId(), imageRequest);
-
-        var queue = service.listVideoReviewQueue(CreativeStatus.DRAFT);
-
-        assertThat(queue).hasSize(1);
-        assertThat(queue.get(0).id()).isEqualTo(videoCreative.getId());
-        assertThat(queue.get(0).experimentId()).isEqualTo(exp.getId());
-        assertThat(queue.get(0).nicheName()).isEqualTo(niche.getName());
-    }
-
-    /** Garante que a fila humana bloqueia campanha e hero com a mesma origem visual sem exceção. */
-    @Test
-    void approvingExperimentVideoReviewBlocksRepeatedVisualSourceAcrossAdAndHero() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
-        ExperimentVideoAsset heroVideo = experimentVideoAssetRepository.save(ExperimentVideoAsset.builder()
+  /** Garante que a fila humana bloqueia campanha e hero com a mesma origem visual sem exceção. */
+  @Test
+  void approvingExperimentVideoReviewBlocksRepeatedVisualSourceAcrossAdAndHero() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    ExperimentVideoAsset heroVideo =
+        experimentVideoAssetRepository.save(
+            ExperimentVideoAsset.builder()
                 .experiment(exp)
                 .slot(ExperimentVideoSlot.LANDING_HERO)
                 .objective("Explicar PDE")
@@ -262,7 +260,9 @@ class CreativeServiceTest {
                 .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
                 .requiredForRelease(true)
                 .build());
-        ExperimentVideoAsset adVideo = experimentVideoAssetRepository.save(ExperimentVideoAsset.builder()
+    ExperimentVideoAsset adVideo =
+        experimentVideoAssetRepository.save(
+            ExperimentVideoAsset.builder()
                 .experiment(exp)
                 .slot(ExperimentVideoSlot.AD)
                 .objective("Validar criativo")
@@ -278,72 +278,74 @@ class CreativeServiceTest {
                 .requiredForRelease(true)
                 .build());
 
-        assertThat(heroVideo.getId()).isNotNull();
-        assertThatThrownBy(() -> service.updateVideoReviewStatus(
-                CreativeVideoReviewSourceType.EXPERIMENT_VIDEO_ASSET,
-                adVideo.getId(),
-                CreativeStatus.READY,
-                null))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("mesma origem visual");
-    }
+    assertThat(heroVideo.getId()).isNotNull();
+    assertThatThrownBy(
+            () ->
+                service.updateVideoReviewStatus(
+                    CreativeVideoReviewSourceType.EXPERIMENT_VIDEO_ASSET,
+                    adVideo.getId(),
+                    CreativeStatus.READY,
+                    null))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("mesma origem visual");
+  }
 
-    /** Garante que criativo de imagem não possa ser aprovado sem imagem gerada. */
-    @Test
-    void shouldRejectReadyImageCreativeWithoutImageUrl() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
+  /** Garante que criativo de imagem não possa ser aprovado sem imagem gerada. */
+  @Test
+  void shouldRejectReadyImageCreativeWithoutImageUrl() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
 
-        CreateCreativeRequest createRequest = new CreateCreativeRequest();
-        createRequest.setHeadline("Headline");
-        createRequest.setPrimaryText("Primary");
-        createRequest.setFormat("IMAGE");
-        createRequest.setStatus(CreativeStatus.READY);
+    CreateCreativeRequest createRequest = new CreateCreativeRequest();
+    createRequest.setHeadline("Headline");
+    createRequest.setPrimaryText("Primary");
+    createRequest.setFormat("IMAGE");
+    createRequest.setStatus(CreativeStatus.READY);
 
-        assertThatThrownBy(() -> service.create(exp.getId(), createRequest))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("precisa ter imagem");
+    assertThatThrownBy(() -> service.create(exp.getId(), createRequest))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("precisa ter imagem");
 
-        Experiment afterAttempt = experimentRepository.findById(exp.getId()).orElseThrow();
-        assertThat(afterAttempt.isCreativeApproved()).isFalse();
-    }
+    Experiment afterAttempt = experimentRepository.findById(exp.getId()).orElseThrow();
+    assertThat(afterAttempt.isCreativeApproved()).isFalse();
+  }
 
-    /** Garante que CTAs livres longos não quebram o limite físico da coluna. */
-    @Test
-    void normalizesLongCallToActionBeforePersisting() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
+  /** Garante que CTAs livres longos não quebram o limite físico da coluna. */
+  @Test
+  void normalizesLongCallToActionBeforePersisting() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
 
-        CreateCreativeRequest createRequest = new CreateCreativeRequest();
-        createRequest.setHeadline("Headline");
-        createRequest.setPrimaryText("Primary");
-        createRequest.setImageUrl("/img.png");
-        createRequest.setCta("Gerar minha amostra personalizada");
-        createRequest.setStatus(CreativeStatus.DRAFT);
+    CreateCreativeRequest createRequest = new CreateCreativeRequest();
+    createRequest.setHeadline("Headline");
+    createRequest.setPrimaryText("Primary");
+    createRequest.setImageUrl("/img.png");
+    createRequest.setCta("Gerar minha amostra personalizada");
+    createRequest.setStatus(CreativeStatus.DRAFT);
 
-        Creative creative = service.create(exp.getId(), createRequest);
+    Creative creative = service.create(exp.getId(), createRequest);
 
-        assertThat(creative.getCta()).isEqualTo("LEARN_MORE");
-    }
+    assertThat(creative.getCta()).isEqualTo("LEARN_MORE");
+  }
 
-    @Test
-    void deletingLastApprovedCreativeResetsFlag() {
-        MarketNiche niche = fixtures.createAndSaveNiche();
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
+  @Test
+  void deletingLastApprovedCreativeResetsFlag() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
 
-        CreateCreativeRequest createRequest = new CreateCreativeRequest();
-        createRequest.setHeadline("Headline");
-        createRequest.setPrimaryText("Primary");
-        createRequest.setImageUrl("/img.png");
-        createRequest.setStatus(CreativeStatus.READY);
-        Creative creative = service.create(exp.getId(), createRequest);
+    CreateCreativeRequest createRequest = new CreateCreativeRequest();
+    createRequest.setHeadline("Headline");
+    createRequest.setPrimaryText("Primary");
+    createRequest.setImageUrl("/img.png");
+    createRequest.setStatus(CreativeStatus.READY);
+    Creative creative = service.create(exp.getId(), createRequest);
 
-        Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
-        assertThat(afterApproval.isCreativeApproved()).isTrue();
+    Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
+    assertThat(afterApproval.isCreativeApproved()).isTrue();
 
-        service.delete(creative.getId());
+    service.delete(creative.getId());
 
-        Experiment afterDelete = experimentRepository.findById(exp.getId()).orElseThrow();
-        assertThat(afterDelete.isCreativeApproved()).isFalse();
-    }
+    Experiment afterDelete = experimentRepository.findById(exp.getId()).orElseThrow();
+    assertThat(afterDelete.isCreativeApproved()).isFalse();
+  }
 }

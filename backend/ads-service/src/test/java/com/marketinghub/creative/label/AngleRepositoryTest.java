@@ -1,28 +1,24 @@
 package com.marketinghub.creative.label;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DataJpaTest
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 class AngleRepositoryTest {
 
-    @Autowired
-    AngleRepository repository;
+  @Autowired AngleRepository repository;
 
-    @Test
-    void testSaveAngle() {
-        Angle angle = Angle.builder()
-                .name("Ganho")
-                .description("Descricao")
-                .frameType("BENEFIT")
-                .build();
-        repository.save(angle);
-        assertThat(repository.findById(angle.getId())).isPresent();
-    }
+  @Test
+  void testSaveAngle() {
+    Angle angle =
+        Angle.builder().name("Ganho").description("Descricao").frameType("BENEFIT").build();
+    repository.save(angle);
+    assertThat(repository.findById(angle.getId())).isPresent();
+  }
 }

@@ -22,36 +22,42 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @WebMvcTest(controllers = FrameworkImageWebnizationInternalController.class)
 class FrameworkImageWebnizationInternalControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    @MockBean
-    private FrameworkImageGenerationService service;
+  @MockBean private FrameworkImageGenerationService service;
 
-    @Test
-    void listPendingWebnizationReturnsAssets() throws Exception {
-        UUID jobId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-        when(service.listPendingWebnizationAssets(20)).thenReturn(List.of(new FrameworkImageWebnizationPendingAssetDto(
-                jobId,
-                88L,
-                "hero",
-                700L,
-                "https://cdn/source.jpg",
-                Instant.parse("2026-04-08T10:00:00Z"))));
+  @Test
+  void listPendingWebnizationReturnsAssets() throws Exception {
+    UUID jobId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    when(service.listPendingWebnizationAssets(20))
+        .thenReturn(
+            List.of(
+                new FrameworkImageWebnizationPendingAssetDto(
+                    jobId,
+                    88L,
+                    "hero",
+                    700L,
+                    "https://cdn/source.jpg",
+                    Instant.parse("2026-04-08T10:00:00Z"))));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/internal/framework-image/assets/pending-webnization"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].jobId").value(jobId.toString()))
-                .andExpect(jsonPath("$[0].assetId").value(700L));
-    }
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.get("/api/internal/framework-image/assets/pending-webnization"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].jobId").value(jobId.toString()))
+        .andExpect(jsonPath("$[0].assetId").value(700L));
+  }
 
-    @Test
-    void webReadyDelegatesToService() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/internal/framework-image/assets/{assetId}/web-ready", 700L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"webUrl\":\"https://cdn/final.webp\"}"))
-                .andExpect(status().isOk());
+  @Test
+  void webReadyDelegatesToService() throws Exception {
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.post(
+                    "/api/internal/framework-image/assets/{assetId}/web-ready", 700L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"webUrl\":\"https://cdn/final.webp\"}"))
+        .andExpect(status().isOk());
 
-        verify(service).markAssetAsWebReady(eq(700L), eq("https://cdn/final.webp"));
-    }
+    verify(service).markAssetAsWebReady(eq(700L), eq("https://cdn/final.webp"));
+  }
 }

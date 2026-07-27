@@ -1,58 +1,55 @@
 package com.marketinghub.experiment;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.experiment.dto.CreateCreativeRequest;
 import com.marketinghub.experiment.service.CreativeVariantService;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 @SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
+@TestPropertySource(
+    properties = {
+      "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.driverClassName=org.h2.Driver",
+      "spring.datasource.username=sa",
+      "spring.datasource.password=",
+      "spring.jpa.hibernate.ddl-auto=create",
+      "spring.liquibase.enabled=false"
+    })
 class CreativeVariantServiceTest {
-    @Autowired
-    CreativeVariantService service;
-    @Autowired
-    FixtureUtils fixtures;
-    @Autowired
-    MarketNicheRepository nicheRepository;
-    @Autowired
-    ExperimentRepository experimentRepository;
+  @Autowired CreativeVariantService service;
+  @Autowired FixtureUtils fixtures;
+  @Autowired MarketNicheRepository nicheRepository;
+  @Autowired ExperimentRepository experimentRepository;
 
-    Long experimentId;
-    Long nicheId;
+  Long experimentId;
+  Long nicheId;
 
-    @BeforeEach
-    void setup() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("N").build());
-        Experiment exp = fixtures.createAndSaveExperiment(niche);
-        experimentId = exp.getId();
-        nicheId = niche.getId();
-    }
+  @BeforeEach
+  void setup() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("N").build());
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    experimentId = exp.getId();
+    nicheId = niche.getId();
+  }
 
-    @Test
-    void rejectWhenExperimentFinished() {
-        Experiment exp = fixtures.createAndSaveExperiment(nicheRepository.findById(nicheId).orElseThrow());
-        exp.setStatus(ExperimentStatus.FINISHED);
-        experimentRepository.save(exp);
-        CreateCreativeRequest req = new CreateCreativeRequest();
-        req.setExperimentId(exp.getId());
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
-    }
+  @Test
+  void rejectWhenExperimentFinished() {
+    Experiment exp =
+        fixtures.createAndSaveExperiment(nicheRepository.findById(nicheId).orElseThrow());
+    exp.setStatus(ExperimentStatus.FINISHED);
+    experimentRepository.save(exp);
+    CreateCreativeRequest req = new CreateCreativeRequest();
+    req.setExperimentId(exp.getId());
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+  }
 }

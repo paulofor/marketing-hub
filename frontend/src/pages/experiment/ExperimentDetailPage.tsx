@@ -1,16 +1,14 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useExperiment } from "../../api/experiment/useExperiment";
-import type { ExperimentStage } from "../../api/experiment/useExperiments";
 import { useExperimentDiagnostics } from "../../api/experiment/useExperimentDiagnostics";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import "../../components/PageTitle.css";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
-import { getExperimentStageLabel } from "./stageLabels";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
@@ -49,11 +47,7 @@ import {
 } from "../../api/pipeline/useGeraLandingStageModels";
 import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
 import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
-import { useExperimentPipelineJobHistory } from "../../api/experiment/useExperimentPipelineJobHistory";
 import { useExperimentVideoAssets } from "../../api/experiment/useExperimentVideoAssets";
-import { useUpdateExperimentLearnedLessons } from "../../api/experiment/useUpdateExperimentLearnedLessons";
-import { useUpdateExperimentStrategicPositioning } from "../../api/experiment/useUpdateExperimentStrategicPositioning";
-import { buildExperimentCostSummary } from "./experimentCostSummary";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   const name = stageModel?.openAiModelName?.trim();
@@ -69,7 +63,6 @@ function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
 }
 
 const experimentDetailTabs = [
-  { value: "overview", label: "Overview" },
   { value: "construction", label: "Construção", manualOnly: true },
   { value: "funnel", label: "Funil de vendas" },
   { value: "post-deploy", label: "Pós-deploy" },
@@ -323,212 +316,6 @@ function isExperimentAlterationLocked(experiment: {
   );
 }
 
-export function buildLearnedLessonsPayload(value: string) {
-  const normalized = value.trim();
-  return { learnedLessons: normalized ? normalized : null };
-}
-
-export function buildStrategicPositioningPayload(
-  commercialObjective: string,
-  currentOperationalFunction: string,
-) {
-  const normalizedCommercialObjective = commercialObjective.trim();
-  const normalizedCurrentOperationalFunction =
-    currentOperationalFunction.trim();
-  return {
-    commercialObjective: normalizedCommercialObjective
-      ? normalizedCommercialObjective
-      : null,
-    currentOperationalFunction: normalizedCurrentOperationalFunction
-      ? normalizedCurrentOperationalFunction
-      : null,
-  };
-}
-
-function ExperimentStrategicPositioningCard({
-  experimentId,
-  commercialObjective,
-  currentOperationalFunction,
-}: {
-  experimentId: string;
-  commercialObjective?: string | null;
-  currentOperationalFunction?: string | null;
-}) {
-  const [commercialObjectiveDraft, setCommercialObjectiveDraft] = useState(
-    commercialObjective ?? "",
-  );
-  const [currentOperationalFunctionDraft, setCurrentOperationalFunctionDraft] =
-    useState(currentOperationalFunction ?? "");
-  const updateStrategicPositioning =
-    useUpdateExperimentStrategicPositioning(experimentId);
-  const hasChanges =
-    commercialObjectiveDraft !== (commercialObjective ?? "") ||
-    currentOperationalFunctionDraft !== (currentOperationalFunction ?? "");
-
-  useEffect(() => {
-    setCommercialObjectiveDraft(commercialObjective ?? "");
-    setCurrentOperationalFunctionDraft(currentOperationalFunction ?? "");
-  }, [commercialObjective, currentOperationalFunction]);
-
-  const handleSave = async () => {
-    try {
-      await updateStrategicPositioning.mutateAsync(
-        buildStrategicPositioningPayload(
-          commercialObjectiveDraft,
-          currentOperationalFunctionDraft,
-        ),
-      );
-      toast.success("Posicionamento estratégico salvo.");
-    } catch (error) {
-      const message = axios.isAxiosError(error)
-        ? (error.response?.data?.message ??
-          error.response?.data?.detail ??
-          "Não foi possível salvar o posicionamento estratégico.")
-        : "Não foi possível salvar o posicionamento estratégico.";
-      toast.error(message);
-    }
-  };
-
-  return (
-    <div className="card">
-      <div className="card-body">
-        <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
-          <div>
-            <h5 className="card-title mb-1">Posicionamento estratégico</h5>
-            <p className="text-muted small mb-0">
-              Separe a hipótese comercial original da função operacional que o
-              experimento assumiu durante a execução.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={handleSave}
-            disabled={!hasChanges || updateStrategicPositioning.isPending}
-          >
-            {updateStrategicPositioning.isPending ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                />
-                Salvando...
-              </>
-            ) : (
-              "Salvar"
-            )}
-          </button>
-        </div>
-        <div className="row g-3">
-          <div className="col-12 col-lg-6">
-            <label className="form-label" htmlFor="commercialObjective">
-              Objetivo comercial do experimento
-            </label>
-            <textarea
-              id="commercialObjective"
-              className="form-control"
-              rows={5}
-              value={commercialObjectiveDraft}
-              onChange={(event) =>
-                setCommercialObjectiveDraft(event.target.value)
-              }
-              placeholder="Ex.: Validar se vídeo humano aumenta início de diagnóstico e avanço para checkout."
-            />
-          </div>
-          <div className="col-12 col-lg-6">
-            <label className="form-label" htmlFor="currentOperationalFunction">
-              Função operacional atual
-            </label>
-            <textarea
-              id="currentOperationalFunction"
-              className="form-control"
-              rows={5}
-              value={currentOperationalFunctionDraft}
-              onChange={(event) =>
-                setCurrentOperationalFunctionDraft(event.target.value)
-              }
-              placeholder="Ex.: Validação operacional do roteamento A/B de página antes de declarar vencedor."
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ExperimentLearnedLessonsCard({
-  experimentId,
-  learnedLessons,
-}: {
-  experimentId: string;
-  learnedLessons?: string | null;
-}) {
-  const [draft, setDraft] = useState(learnedLessons ?? "");
-  const updateLearnedLessons = useUpdateExperimentLearnedLessons(experimentId);
-  const hasChanges = draft !== (learnedLessons ?? "");
-
-  useEffect(() => {
-    setDraft(learnedLessons ?? "");
-  }, [learnedLessons]);
-
-  const handleSave = async () => {
-    try {
-      await updateLearnedLessons.mutateAsync(buildLearnedLessonsPayload(draft));
-      toast.success("Lições aprendidas salvas.");
-    } catch (error) {
-      const message = axios.isAxiosError(error)
-        ? (error.response?.data?.message ??
-          error.response?.data?.detail ??
-          "Não foi possível salvar as lições aprendidas.")
-        : "Não foi possível salvar as lições aprendidas.";
-      toast.error(message);
-    }
-  };
-
-  return (
-    <div className="card">
-      <div className="card-body">
-        <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
-          <div>
-            <h5 className="card-title mb-1">Lições aprendidas</h5>
-            <p className="text-muted small mb-0">
-              Registre a conclusão comercial para orientar próximos criativos,
-              públicos, PDEs e hipóteses.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={handleSave}
-            disabled={!hasChanges || updateLearnedLessons.isPending}
-          >
-            {updateLearnedLessons.isPending ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                />
-                Salvando...
-              </>
-            ) : (
-              "Salvar"
-            )}
-          </button>
-        </div>
-        <textarea
-          className="form-control"
-          rows={6}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Ex.: CTR atraiu curiosidade, mas não houve início de diagnóstico. Próximo teste deve prometer uma primeira ação mais concreta e reduzir fricção na primeira dobra."
-        />
-      </div>
-    </div>
-  );
-}
-
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -537,14 +324,8 @@ export default function ExperimentDetailPage() {
   const { data, isLoading } = useExperiment(expId);
   const videoAssetsQuery = useExperimentVideoAssets(expId);
   const geraSalesPagePublications = useGeraSalesPagePublications(expId);
-  const experimentPipelineJobHistory = useExperimentPipelineJobHistory({
-    experimentId: expId,
-    page: 0,
-    size: 50,
-  });
   const { data: geraLandingStageModels, isLoading: isLoadingStageModels } =
     useGeraLandingStageModels();
-  const experimentTestUrl = buildExperimentTestUrl(data?.followUpActionUrl);
   const {
     data: diagnostics,
     isLoading: isLoadingDiagnostics,
@@ -558,7 +339,7 @@ export default function ExperimentDetailPage() {
   const { data: presets } = useMetricPresets();
   const initialTab = (location.state as { initialTab?: string } | null)
     ?.initialTab;
-  const [tab, setTab] = useState(initialTab || "overview");
+  const [tab, setTab] = useState(initialTab || "funnel");
   const tabsSectionRef = useRef<HTMLDivElement | null>(null);
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
@@ -1967,7 +1748,7 @@ export default function ExperimentDetailPage() {
     (item) => item.value === tab,
   )
     ? tab
-    : "overview";
+    : "funnel";
   const hasPublishedFacebookCampaigns = Boolean(facebookCampaigns?.length);
   const showGeraLandingStartButtons = !Boolean(data.facebookReleaseRequestedAt);
   const preset = presets?.find((p) => p.id === data.metricPresetId);
@@ -1990,19 +1771,7 @@ export default function ExperimentDetailPage() {
     !hasItemsToReset ||
     Boolean(previewErrorMessage) ||
     resetCampaigns.isPending;
-  const formatCurrency = (n?: number | null) =>
-    n != null
-      ? new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        }).format(n)
-      : "—";
   const formatPercent = (n?: number | null) => (n != null ? `${n}%` : "—");
-  const formatCurrencyValue = (value: number, currency: "BRL" | "USD") =>
-    new Intl.NumberFormat(currency === "BRL" ? "pt-BR" : "en-US", {
-      style: "currency",
-      currency,
-    }).format(value);
   const formatDateTimeValue = (value?: string | null) => {
     if (!value) return "—";
     const date = new Date(value);
@@ -2032,34 +1801,6 @@ export default function ExperimentDetailPage() {
       : null);
   const salesPagePublications = geraSalesPagePublications.data ?? [];
   const latestSalesPagePublication = salesPagePublications[0];
-  const videoProductionCostUsd =
-    videoAssetsQuery.data?.reduce(
-      (sum, videoAsset) => sum + (videoAsset.cost ?? 0),
-      0,
-    ) ?? 0;
-  const contentPipelineCostUsd =
-    experimentPipelineJobHistory.data?.content.reduce(
-      (sum, job) => sum + (job.costUsd ?? 0),
-      0,
-    ) ?? 0;
-  const geraSalesPageCostUsd = salesPagePublications.reduce(
-    (sum, publication) =>
-      sum +
-      publication.stages.reduce(
-        (stageSum, stage) => stageSum + (stage.costUsd ?? 0),
-        0,
-      ),
-    0,
-  );
-  const experimentCostSummary = buildExperimentCostSummary({
-    experiment: data,
-    contentPipelineCostUsd,
-    geraLandingCostUsd: totalCompletedGeraLandingAllStagesCostUsd,
-    geraSalesPageCostUsd,
-    videoProductionCostUsd,
-  });
-  const experimentPage = data.facebookPage;
-  const instagramAccount = data.instagramAccount;
   const hasCreativesReady =
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
@@ -2153,19 +1894,6 @@ export default function ExperimentDetailPage() {
     data.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
   const isSalesObjectiveExperiment =
     isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
-  const experimentTypeLabel = isPdeMembershipSubscriptionFunnel
-    ? "PDE / assinatura MUSA"
-    : isLowTicketProduct
-      ? "Produto low-ticket"
-      : "Teste de nicho / lead";
-  const productAiSubtypeLabel: Record<string, string> = {
-    AI_VISUAL_PREVIEW: "Prévia visual IA",
-    AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
-    AI_TRANSFORMATION_SIMULATOR: "Simulador de transformação IA",
-    AI_VISUAL_ASSET_PACK: "Pacote visual IA",
-    AI_IDENTITY_AVATAR_PRODUCT: "Identidade/avatar IA",
-    AI_REPORT_VISUAL_EVIDENCE: "Relatório com evidência visual IA",
-  };
   const campaignObjectiveLabel =
     data.campaignObjective === "LEADS"
       ? "Leads"
@@ -2191,8 +1919,8 @@ export default function ExperimentDetailPage() {
           : "Ajuste o objetivo para vendas antes de liberar tráfego",
       isMet: campaignObjectiveLabel === "Vendas",
       isLoading: false,
-      actionLabel: "Ver overview",
-      action: () => openExperimentTab("overview"),
+      actionLabel: "Editar experimento",
+      action: () => navigate(`/experiments/${expId}/edit`),
     },
     {
       id: "sales-page",
@@ -2255,84 +1983,6 @@ export default function ExperimentDetailPage() {
     COMPLETED: "Concluído",
     FAILED: "Com erro",
   };
-  const rows = [
-    {
-      label: "Tipo de experimento",
-      value: experimentTypeLabel,
-    },
-    {
-      label: "Nicho",
-      value: <Link to={`/niches/${data.nicheId}`}>{niche?.name}</Link>,
-    },
-    {
-      label: "Hipótese",
-      value: (
-        <Link to={`/niches/${data.nicheId}/hypotheses/${data.hypothesisId}`}>
-          {hyp?.title || data.hypothesis}
-        </Link>
-      ),
-    },
-    {
-      label: "Etapa priorizada",
-      value: getExperimentStageLabel(data.stage as ExperimentStage),
-    },
-    {
-      label: "Dor única",
-      value: data.singlePain || "—",
-    },
-    {
-      label: isSalesObjectiveExperiment
-        ? "Prova/preview da oferta"
-        : "Isca digital",
-      value:
-        data.freeReward ||
-        (isSalesObjectiveExperiment ? "Sem prova/preview informada" : "—"),
-    },
-    {
-      label: "Promessa do funil",
-      value: data.funnelPromise || "—",
-    },
-    {
-      label: "CTA principal",
-      value: data.primaryCta || "—",
-    },
-    {
-      label: "Objetivo da campanha",
-      value: campaignObjectiveLabel,
-    },
-    {
-      label: "Custo rastreável",
-      value: formatCurrency(experimentCostSummary.auditableTotalBrl),
-    },
-    {
-      label: "Criativos aprovados",
-      value: `${readinessCreativeCount}/3`,
-    },
-    {
-      label: "Público para publicação",
-      value: hasPublisherTargeting ? "Salvo" : "Pendente",
-    },
-    {
-      label: "Página de venda",
-      value: data.followUpActionUrl ? (
-        <div className="d-flex flex-wrap gap-2">
-          <a href={data.followUpActionUrl} target="_blank" rel="noreferrer">
-            Abrir página
-          </a>
-          {experimentTestUrl ? (
-            <a href={experimentTestUrl} target="_blank" rel="noreferrer">
-              Abrir teste
-            </a>
-          ) : null}
-        </div>
-      ) : (
-        "Pendente"
-      ),
-    },
-    { label: "Plataforma", value: data.platform },
-    { label: "Início", value: data.startDate },
-    { label: "Término", value: data.endDate },
-  ];
   return (
     <div>
       <div className="d-flex justify-content-between align-items-start">
@@ -2979,131 +2629,6 @@ export default function ExperimentDetailPage() {
               </Tabs.Trigger>
             ))}
           </Tabs.List>
-          <Tabs.Content value="overview" asChild>
-            <div className="d-flex flex-column gap-3">
-              <ExperimentRunPanel experimentId={expId} compact />
-              <ExperimentStrategicPositioningCard
-                experimentId={expId}
-                commercialObjective={data?.commercialObjective}
-                currentOperationalFunction={data?.currentOperationalFunction}
-              />
-              <ExperimentLearnedLessonsCard
-                experimentId={expId}
-                learnedLessons={data?.learnedLessons}
-              />
-              <div className="card">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
-                    <div>
-                      <h5 className="card-title mb-1">Custos do experimento</h5>
-                      <p className="text-muted small mb-0">
-                        Total rastreável em BRL com custos técnicos em USD
-                        convertidos pelo padrão US$ 1 = R$ 5.
-                      </p>
-                    </div>
-                    <div className="text-end">
-                      <div className="text-muted small">Custo rastreável</div>
-                      <div className="fs-4 fw-semibold">
-                        {formatCurrencyValue(
-                          experimentCostSummary.auditableTotalBrl,
-                          "BRL",
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="row g-3">
-                    {experimentCostSummary.brlRows.map((costRow) => (
-                      <div
-                        key={costRow.label}
-                        className="col-12 col-md-6 col-xl-4"
-                      >
-                        <div className="border rounded-3 p-3 h-100">
-                          <div className="text-muted small">
-                            {costRow.label}
-                          </div>
-                          <div className="fw-semibold">
-                            {formatCurrencyValue(
-                              costRow.value,
-                              costRow.currency,
-                            )}
-                          </div>
-                          {costRow.convertedValueBrl != null ? (
-                            <div className="text-muted small">
-                              Equivale a{" "}
-                              {formatCurrencyValue(
-                                costRow.convertedValueBrl,
-                                "BRL",
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="row g-3 mt-1">
-                    {experimentCostSummary.technicalRows.map((costRow) => (
-                      <div
-                        key={costRow.label}
-                        className="col-12 col-md-6 col-xl-4"
-                      >
-                        <div className="border rounded-3 p-3 h-100">
-                          <div className="text-muted small">
-                            {costRow.label}
-                          </div>
-                          <div className="fw-semibold">
-                            {formatCurrencyValue(
-                              costRow.value,
-                              costRow.currency,
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {experimentCostSummary.unreconciledLegacyCostBrl > 0 ? (
-                    <div className="alert alert-warning mt-3 mb-0">
-                      <div className="fw-semibold">
-                        Custo legado não reconciliado:{" "}
-                        {formatCurrencyValue(
-                          experimentCostSummary.unreconciledLegacyCostBrl,
-                          "BRL",
-                        )}
-                      </div>
-                      <div className="small">
-                        Total legado registrado:{" "}
-                        {formatCurrencyValue(
-                          experimentCostSummary.legacyTotalBrl,
-                          "BRL",
-                        )}
-                        . Esta diferença não é exibida como custo técnico real
-                        porque não tem origem auditável nas parcelas atuais.
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              <div className="card">
-                <div className="card-body p-0">
-                  <dl className="row mb-0">
-                    {rows.map((r, idx) => (
-                      <Fragment key={r.label}>
-                        <dt
-                          className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                        >
-                          {r.label}
-                        </dt>
-                        <dd
-                          className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                        >
-                          {r.value}
-                        </dd>
-                      </Fragment>
-                    ))}
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </Tabs.Content>
           <Tabs.Content value="construction" asChild>
             <ExperimentConstructionTab
               experimentId={expId}

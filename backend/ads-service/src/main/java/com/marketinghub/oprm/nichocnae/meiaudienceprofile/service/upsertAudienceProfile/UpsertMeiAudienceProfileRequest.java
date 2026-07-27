@@ -1,6 +1,9 @@
 package com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.upsertAudienceProfile;
 
-/** DTO responsável por receber a gravação do perfil de público-alvo MEI/autônomo pesquisado pelo OPRM. */
+/**
+ * DTO responsável por receber a gravação do perfil de público-alvo MEI/autônomo pesquisado pelo
+ * OPRM.
+ */
 public record UpsertMeiAudienceProfileRequest(
     Long researchCycleId,
     Long routineCardId,

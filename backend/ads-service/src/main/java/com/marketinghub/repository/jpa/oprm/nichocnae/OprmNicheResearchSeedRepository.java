@@ -8,18 +8,19 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Repositório responsável por persistir e consultar seeds de pesquisa de nicho CNAE. */
-public interface OprmNicheResearchSeedRepository extends JpaRepository<OprmNicheResearchSeed, Long> {
-    /** Verifica se um ciclo já possui seed de pesquisa operacional gerado. */
-    boolean existsByResearchCycleId(Long researchCycleId);
+public interface OprmNicheResearchSeedRepository
+    extends JpaRepository<OprmNicheResearchSeed, Long> {
+  /** Verifica se um ciclo já possui seed de pesquisa operacional gerado. */
+  boolean existsByResearchCycleId(Long researchCycleId);
 
-    /** Busca o seed operacional gerado para um ciclo de pesquisa. */
-    Optional<OprmNicheResearchSeed> findByResearchCycleId(Long researchCycleId);
+  /** Busca o seed operacional gerado para um ciclo de pesquisa. */
+  Optional<OprmNicheResearchSeed> findByResearchCycleId(Long researchCycleId);
 
-    /** Soma o custo de IA registrado para um ciclo de pesquisa. */
-    @Query(
+  /** Soma o custo de IA registrado para um ciclo de pesquisa. */
+  @Query(
       "select coalesce(sum(s.costUsd), 0) from OprmNicheResearchSeed s where s.researchCycleId = :researchCycleId")
-    BigDecimal sumCostUsdByResearchCycleId(@Param("researchCycleId") Long researchCycleId);
+  BigDecimal sumCostUsdByResearchCycleId(@Param("researchCycleId") Long researchCycleId);
 
-    /** Remove o seed de um ciclo antes de reexecutar etapas do mesmo job. */
-    void deleteByResearchCycleId(Long researchCycleId);
+  /** Remove o seed de um ciclo antes de reexecutar etapas do mesmo job. */
+  void deleteByResearchCycleId(Long researchCycleId);
 }

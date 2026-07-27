@@ -16,30 +16,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 public class SalesPageTypeController {
-    private final SalesPageTypeService service;
+  private final SalesPageTypeService service;
 
-    /** Inicializa o controller com o servico de tipos de pagina de venda. */
-    public SalesPageTypeController(SalesPageTypeService service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com o servico de tipos de pagina de venda. */
+  public SalesPageTypeController(SalesPageTypeService service) {
+    this.service = service;
+  }
 
-    /** Lista os tipos de pagina de venda ativos. */
-    @GetMapping("/sales-page-types")
-    public List<SalesPageTypeResponse> listTypes() {
-        return service.listActiveTypes();
-    }
+  /** Lista os tipos de pagina de venda ativos. */
+  @GetMapping("/sales-page-types")
+  public List<SalesPageTypeResponse> listTypes() {
+    return service.listActiveTypes();
+  }
 
-    /** Lista os tipos de pagina de venda selecionados para o experimento. */
-    @GetMapping("/experiments/{experimentId}/sales-page-types")
-    public List<ExperimentSalesPageTypeSelectionResponse> listExperimentSelections(@PathVariable Long experimentId) {
-        return service.listExperimentSelections(experimentId);
-    }
+  /** Lista os tipos de pagina de venda selecionados para o experimento. */
+  @GetMapping("/experiments/{experimentId}/sales-page-types")
+  public List<ExperimentSalesPageTypeSelectionResponse> listExperimentSelections(
+      @PathVariable Long experimentId) {
+    return service.listExperimentSelections(experimentId);
+  }
 
-    /** Substitui os tipos de pagina de venda selecionados para o experimento. */
-    @PutMapping("/experiments/{experimentId}/sales-page-types")
-    public List<ExperimentSalesPageTypeSelectionResponse> replaceExperimentSelections(
-            @PathVariable Long experimentId,
-            @RequestBody UpdateExperimentSalesPageTypeSelectionRequest request) {
-        return service.replaceExperimentSelections(experimentId, request);
-    }
+  /** Substitui os tipos de pagina de venda selecionados para o experimento. */
+  @PutMapping("/experiments/{experimentId}/sales-page-types")
+  public List<ExperimentSalesPageTypeSelectionResponse> replaceExperimentSelections(
+      @PathVariable Long experimentId,
+      @RequestBody UpdateExperimentSalesPageTypeSelectionRequest request) {
+    return service.replaceExperimentSelections(experimentId, request);
+  }
 }

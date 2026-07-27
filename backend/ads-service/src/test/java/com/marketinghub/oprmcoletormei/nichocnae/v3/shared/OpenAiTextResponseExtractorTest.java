@@ -7,12 +7,14 @@ import org.junit.jupiter.api.Test;
 
 /** Testa a limpeza do response bruto da OpenAI para gravação funcional no NichoCNAE v3. */
 class OpenAiTextResponseExtractorTest {
-    private final OpenAiTextResponseExtractor extractor = new OpenAiTextResponseExtractor(new ObjectMapper());
+  private final OpenAiTextResponseExtractor extractor =
+      new OpenAiTextResponseExtractor(new ObjectMapper());
 
-    /** Extrai o campo text quando o response vem no envelope padrão da Responses API. */
-    @Test
-    void extractsTextFromResponsesApiOutputEnvelope() {
-        String raw = """
+  /** Extrai o campo text quando o response vem no envelope padrão da Responses API. */
+  @Test
+  void extractsTextFromResponsesApiOutputEnvelope() {
+    String raw =
+        """
                 {
                   "id": "resp_123",
                   "output": [
@@ -29,15 +31,18 @@ class OpenAiTextResponseExtractorTest {
                 }
                 """;
 
-        String extracted = extractor.extract(raw);
+    String extracted = extractor.extract(raw);
 
-        assertThat(extracted).isEqualTo("{\"stage\":\"persona-candidate-generator\",\"status\":\"PERSONAS_CANDIDATAS\"}");
-    }
+    assertThat(extracted)
+        .isEqualTo(
+            "{\"stage\":\"persona-candidate-generator\",\"status\":\"PERSONAS_CANDIDATAS\"}");
+  }
 
-    /** Extrai o campo text quando o worker envia diretamente uma mensagem da OpenAI. */
-    @Test
-    void extractsTextFromDirectMessageContentEnvelope() {
-        String raw = """
+  /** Extrai o campo text quando o worker envia diretamente uma mensagem da OpenAI. */
+  @Test
+  void extractsTextFromDirectMessageContentEnvelope() {
+    String raw =
+        """
                 {
                   "type": "message",
                   "content": [
@@ -49,18 +54,18 @@ class OpenAiTextResponseExtractorTest {
                 }
                 """;
 
-        String extracted = extractor.extract(raw);
+    String extracted = extractor.extract(raw);
 
-        assertThat(extracted).isEqualTo("resposta limpa");
-    }
+    assertThat(extracted).isEqualTo("resposta limpa");
+  }
 
-    /** Mantém o response original quando não existe envelope JSON da OpenAI. */
-    @Test
-    void keepsOriginalResponseWhenTextCannotBeExtracted() {
-        String raw = "resposta direta sem envelope";
+  /** Mantém o response original quando não existe envelope JSON da OpenAI. */
+  @Test
+  void keepsOriginalResponseWhenTextCannotBeExtracted() {
+    String raw = "resposta direta sem envelope";
 
-        String extracted = extractor.extract(raw);
+    String extracted = extractor.extract(raw);
 
-        assertThat(extracted).isEqualTo(raw);
-    }
+    assertThat(extracted).isEqualTo(raw);
+  }
 }

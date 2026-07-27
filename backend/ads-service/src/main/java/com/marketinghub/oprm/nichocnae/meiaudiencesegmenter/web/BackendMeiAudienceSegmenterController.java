@@ -14,14 +14,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Controller responsável pelos endpoints internos da segmentação comportamental MEI/autônomo do OPRM. */
+/**
+ * Controller responsável pelos endpoints internos da segmentação comportamental MEI/autônomo do
+ * OPRM.
+ */
 @RestController
 @RequestMapping("/api")
 public class BackendMeiAudienceSegmenterController {
   private final BackendMeiAudienceSegmenterService executionService;
 
   /** Inicializa o controller com o serviço backend da segmentação comportamental MEI/autônomo. */
-  public BackendMeiAudienceSegmenterController(BackendMeiAudienceSegmenterService executionService) {
+  public BackendMeiAudienceSegmenterController(
+      BackendMeiAudienceSegmenterService executionService) {
     this.executionService = executionService;
   }
 
@@ -32,15 +36,19 @@ public class BackendMeiAudienceSegmenterController {
   }
 
   /** Persiste a segmentação comportamental validada para um ciclo de pesquisa. */
-  @PostMapping("/internal/oprm/nichocnae/mei-audience-segmenter/stage-executions/{researchCycleId}/complete")
+  @PostMapping(
+      "/internal/oprm/nichocnae/mei-audience-segmenter/stage-executions/{researchCycleId}/complete")
   public ResponseEntity<CompleteMeiAudienceSegmenterResponse> complete(
-      @PathVariable Long researchCycleId, @RequestBody CompleteMeiAudienceSegmenterRequest request) {
+      @PathVariable Long researchCycleId,
+      @RequestBody CompleteMeiAudienceSegmenterRequest request) {
     return ResponseEntity.ok(executionService.complete(researchCycleId, request));
   }
 
   /** Registra falha operacional da segmentação comportamental de um ciclo. */
-  @PostMapping("/internal/oprm/nichocnae/mei-audience-segmenter/stage-executions/{researchCycleId}/fail")
-  public ResponseEntity<Void> fail(@PathVariable Long researchCycleId, @RequestBody FailMeiAudienceSegmenterRequest request) {
+  @PostMapping(
+      "/internal/oprm/nichocnae/mei-audience-segmenter/stage-executions/{researchCycleId}/fail")
+  public ResponseEntity<Void> fail(
+      @PathVariable Long researchCycleId, @RequestBody FailMeiAudienceSegmenterRequest request) {
     executionService.fail(researchCycleId, request);
     return ResponseEntity.noContent().build();
   }

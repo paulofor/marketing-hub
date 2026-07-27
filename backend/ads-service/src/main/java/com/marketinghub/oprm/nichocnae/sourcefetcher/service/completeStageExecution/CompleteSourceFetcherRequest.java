@@ -2,7 +2,10 @@ package com.marketinghub.oprm.nichocnae.sourcefetcher.service.completeStageExecu
 
 import java.time.Instant;
 
-/** Representa o payload de conclusão da etapa quatro com metadados, classificação e trecho curto coletado. */
+/**
+ * Representa o payload de conclusão da etapa quatro com metadados, classificação e trecho curto
+ * coletado.
+ */
 public record CompleteSourceFetcherRequest(
     String sourceUrl,
     String sourceDomain,

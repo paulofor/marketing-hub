@@ -9,7 +9,8 @@ public class GeraLandingDeliverablesStageService {
 
   private final GeraLandingDeliverablesStageExecutionService executionService;
 
-  public GeraLandingDeliverablesStageService(GeraLandingDeliverablesStageExecutionService executionService) {
+  public GeraLandingDeliverablesStageService(
+      GeraLandingDeliverablesStageExecutionService executionService) {
     this.executionService = executionService;
   }
 
@@ -18,5 +19,4 @@ public class GeraLandingDeliverablesStageService {
     var execution = executionService.registerInitialExecution(experimentId, STAGE_NAME);
     return new GeraLandingDeliverablesStartResponse(execution.idJob(), execution.status());
   }
-
 }

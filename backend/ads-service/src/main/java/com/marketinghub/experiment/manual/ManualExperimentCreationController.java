@@ -9,25 +9,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Expõe a porta de entrada manual para criação de experimentos sem execução de IA.
- */
+/** Expõe a porta de entrada manual para criação de experimentos sem execução de IA. */
 @RestController
 @RequestMapping("/api/manual-experiments")
 public class ManualExperimentCreationController {
-    private final ManualExperimentCreationService service;
-    private final ExperimentMapper mapper;
+  private final ManualExperimentCreationService service;
+  private final ExperimentMapper mapper;
 
-    /** Inicializa o controller com o serviço manual e o mapper de experimentos. */
-    public ManualExperimentCreationController(ManualExperimentCreationService service, ExperimentMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  /** Inicializa o controller com o serviço manual e o mapper de experimentos. */
+  public ManualExperimentCreationController(
+      ManualExperimentCreationService service, ExperimentMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    /** Cria um experimento oficial marcado como originado pelo fluxo manual. */
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ExperimentDto create(@RequestBody ManualExperimentCreationRequest request) {
-        return mapper.toDto(service.create(request));
-    }
+  /** Cria um experimento oficial marcado como originado pelo fluxo manual. */
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  public ExperimentDto create(@RequestBody ManualExperimentCreationRequest request) {
+    return mapper.toDto(service.create(request));
+  }
 }

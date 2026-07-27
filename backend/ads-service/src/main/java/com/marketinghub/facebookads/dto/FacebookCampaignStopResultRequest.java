@@ -1,7 +1,3 @@
 package com.marketinghub.facebookads.dto;
 
-public record FacebookCampaignStopResultRequest(
-        boolean success,
-        String message
-) {
-}
+public record FacebookCampaignStopResultRequest(boolean success, String message) {}

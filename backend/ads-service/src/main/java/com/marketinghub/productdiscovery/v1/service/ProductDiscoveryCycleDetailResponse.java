@@ -4,5 +4,4 @@ import java.util.List;
 
 /** Resposta detalhada de um ciclo com oportunidades descobertas. */
 public record ProductDiscoveryCycleDetailResponse(
-        ProductDiscoveryCycleResponse cycle,
-        List<ProductDiscoveryOpportunityResponse> opportunities) {}
+    ProductDiscoveryCycleResponse cycle, List<ProductDiscoveryOpportunityResponse> opportunities) {}

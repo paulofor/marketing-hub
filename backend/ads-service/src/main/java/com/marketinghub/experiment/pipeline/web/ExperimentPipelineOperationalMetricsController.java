@@ -10,16 +10,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/experiments/pipeline")
 public class ExperimentPipelineOperationalMetricsController {
-    private final PipelineOperationalMetricsService metricsService;
+  private final PipelineOperationalMetricsService metricsService;
 
-    public ExperimentPipelineOperationalMetricsController(PipelineOperationalMetricsService metricsService) {
-        this.metricsService = metricsService;
-    }
+  public ExperimentPipelineOperationalMetricsController(
+      PipelineOperationalMetricsService metricsService) {
+    this.metricsService = metricsService;
+  }
 
-    @GetMapping("/operational-metrics")
-    public PipelineOperationalMetricsDto operationalMetrics(
-            @RequestParam(name = "limit", defaultValue = "300") int limit) {
-        return metricsService.collect(limit);
-    }
+  @GetMapping("/operational-metrics")
+  public PipelineOperationalMetricsDto operationalMetrics(
+      @RequestParam(name = "limit", defaultValue = "300") int limit) {
+    return metricsService.collect(limit);
+  }
 }
-

@@ -3,5 +3,5 @@ package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.sourc
 import jakarta.validation.constraints.NotBlank;
 
 /** Contrato de entrada do endpoint recebeRequest da etapa sourceproductmatch do dossiê MOIS v1. */
-public record DossierSourceProductMatchRecebeRequestRequest(@NotBlank String request, String plataforma, String prompt, String schema) {
-}
+public record DossierSourceProductMatchRecebeRequestRequest(
+    @NotBlank String request, String plataforma, String prompt, String schema) {}

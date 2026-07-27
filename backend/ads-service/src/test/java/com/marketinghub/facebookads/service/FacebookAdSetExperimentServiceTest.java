@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
@@ -12,22 +13,21 @@ import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.mapper.MarketNicheMapper;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.dto.TargetingElementDto;
 import com.marketinghub.targeting.mapper.TargetingElementMapper;
-import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,419 +38,435 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Valida a montagem dos pacotes de targeting expostos ao Facebook Ads Worker.
- */
+/** Valida a montagem dos pacotes de targeting expostos ao Facebook Ads Worker. */
 @ExtendWith(MockitoExtension.class)
 class FacebookAdSetExperimentServiceTest {
-    @Mock
-    private ExperimentRepository experimentRepository;
-    @Mock
-    private ExperimentTargetingSelectionRepository targetingSelectionRepository;
-    @Mock
-    private TargetingElementRepository targetingElementRepository;
-    @Mock
-    private ExperimentReadinessService readinessService;
+  @Mock private ExperimentRepository experimentRepository;
+  @Mock private ExperimentTargetingSelectionRepository targetingSelectionRepository;
+  @Mock private TargetingElementRepository targetingElementRepository;
+  @Mock private ExperimentReadinessService readinessService;
 
-    private FacebookAdSetExperimentService service;
+  private FacebookAdSetExperimentService service;
 
-    /**
-     * Configura o serviço com mocks e mapeadores reais usados nas respostas do contrato.
-     */
-    @BeforeEach
-    void setUp() {
-        ExperimentMapper experimentMapper = Mappers.getMapper(ExperimentMapper.class);
-        injectFacebookInstantFormMapper(experimentMapper);
-        MarketNicheMapper marketNicheMapper = Mappers.getMapper(MarketNicheMapper.class);
-        HypothesisMapper hypothesisMapper = Mappers.getMapper(HypothesisMapper.class);
-        injectFrameworkMapper(hypothesisMapper);
-        TargetingElementMapper targetingElementMapper = Mappers.getMapper(TargetingElementMapper.class);
-        service = new FacebookAdSetExperimentService(
-                experimentRepository,
-                targetingSelectionRepository,
-                targetingElementRepository,
-                experimentMapper,
-                marketNicheMapper,
-                hypothesisMapper,
-                targetingElementMapper,
-                readinessService);
+  /** Configura o serviço com mocks e mapeadores reais usados nas respostas do contrato. */
+  @BeforeEach
+  void setUp() {
+    ExperimentMapper experimentMapper = Mappers.getMapper(ExperimentMapper.class);
+    injectFacebookInstantFormMapper(experimentMapper);
+    MarketNicheMapper marketNicheMapper = Mappers.getMapper(MarketNicheMapper.class);
+    HypothesisMapper hypothesisMapper = Mappers.getMapper(HypothesisMapper.class);
+    injectFrameworkMapper(hypothesisMapper);
+    TargetingElementMapper targetingElementMapper = Mappers.getMapper(TargetingElementMapper.class);
+    service =
+        new FacebookAdSetExperimentService(
+            experimentRepository,
+            targetingSelectionRepository,
+            targetingElementRepository,
+            experimentMapper,
+            marketNicheMapper,
+            hypothesisMapper,
+            targetingElementMapper,
+            readinessService);
+  }
+
+  /** Injeta o suporte de framework no mapper de hipótese gerado pelo MapStruct. */
+  private void injectFrameworkMapper(HypothesisMapper hypothesisMapper) {
+    HypothesisFrameworkMapperSupport support =
+        new HypothesisFrameworkMapperSupport(new ObjectMapper());
+    try {
+      hypothesisMapper
+          .getClass()
+          .getMethod("setHypothesisFrameworkMapperSupport", HypothesisFrameworkMapperSupport.class)
+          .invoke(hypothesisMapper, support);
+      return;
+    } catch (NoSuchMethodException ignored) {
+      // fallback to field injection
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException(
+          "Não foi possível configurar HypothesisFrameworkMapperSupport no HypothesisMapper", e);
     }
-
-    /**
-     * Injeta o suporte de framework no mapper de hipótese gerado pelo MapStruct.
-     */
-    private void injectFrameworkMapper(HypothesisMapper hypothesisMapper) {
-        HypothesisFrameworkMapperSupport support = new HypothesisFrameworkMapperSupport(new ObjectMapper());
-        try {
-            hypothesisMapper
-                    .getClass()
-                    .getMethod("setHypothesisFrameworkMapperSupport", HypothesisFrameworkMapperSupport.class)
-                    .invoke(hypothesisMapper, support);
-            return;
-        } catch (NoSuchMethodException ignored) {
-            // fallback to field injection
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Não foi possível configurar HypothesisFrameworkMapperSupport no HypothesisMapper", e);
-        }
-        try {
-            var field = hypothesisMapper.getClass().getDeclaredField("hypothesisFrameworkMapperSupport");
-            field.setAccessible(true);
-            field.set(hypothesisMapper, support);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Não foi possível configurar HypothesisFrameworkMapperSupport no HypothesisMapper", e);
-        }
+    try {
+      var field = hypothesisMapper.getClass().getDeclaredField("hypothesisFrameworkMapperSupport");
+      field.setAccessible(true);
+      field.set(hypothesisMapper, support);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException(
+          "Não foi possível configurar HypothesisFrameworkMapperSupport no HypothesisMapper", e);
     }
+  }
 
-    /**
-     * Injeta o mapper de formulário instantâneo no mapper de experimento gerado pelo MapStruct.
-     */
-    private void injectFacebookInstantFormMapper(ExperimentMapper experimentMapper) {
-        FacebookInstantFormMapper formMapper = Mappers.getMapper(FacebookInstantFormMapper.class);
-        try {
-            experimentMapper
-                    .getClass()
-                    .getMethod("setFacebookInstantFormMapper", FacebookInstantFormMapper.class)
-                    .invoke(experimentMapper, formMapper);
-            return;
-        } catch (NoSuchMethodException ignored) {
-            // fall back to field injection below
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Não foi possível configurar o FacebookInstantFormMapper no ExperimentMapper", e);
-        }
-        try {
-            var field = experimentMapper.getClass().getDeclaredField("facebookInstantFormMapper");
-            field.setAccessible(true);
-            field.set(experimentMapper, formMapper);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Não foi possível configurar o FacebookInstantFormMapper no ExperimentMapper", e);
-        }
+  /** Injeta o mapper de formulário instantâneo no mapper de experimento gerado pelo MapStruct. */
+  private void injectFacebookInstantFormMapper(ExperimentMapper experimentMapper) {
+    FacebookInstantFormMapper formMapper = Mappers.getMapper(FacebookInstantFormMapper.class);
+    try {
+      experimentMapper
+          .getClass()
+          .getMethod("setFacebookInstantFormMapper", FacebookInstantFormMapper.class)
+          .invoke(experimentMapper, formMapper);
+      return;
+    } catch (NoSuchMethodException ignored) {
+      // fall back to field injection below
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException(
+          "Não foi possível configurar o FacebookInstantFormMapper no ExperimentMapper", e);
     }
-
-    /**
-     * Garante que experimentos prontos recebem pacote completo de interesses, cargos e comportamentos.
-     */
-    @Test
-    void listExperimentsReadyIncludesTargetingPackage() {
-        MarketNiche niche = new MarketNiche();
-        niche.setId(5L);
-        niche.setName("Health");
-
-        UUID hypothesisId = UUID.randomUUID();
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(hypothesisId);
-        hypothesis.setTitle("Lose weight fast");
-        hypothesis.setMarketNiche(niche);
-
-        Experiment experiment = new Experiment();
-        experiment.setId(10L);
-        experiment.setName("Weight loss test");
-        experiment.setNiche(niche);
-        experiment.setHypothesisRef(hypothesis);
-        experiment.setStatus(ExperimentStatus.PLANNED);
-        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
-        experiment.setCreativeApproved(true);
-
-        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
-                .thenReturn(List.of(experiment));
-        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
-
-        TargetingElement interest = TargetingElement.builder()
-                .id(1L)
-                .niche(niche)
-                .hypothesis(hypothesis)
-                .type(TargetingElementType.INTEREST)
-                .term("Remarketing")
-                .status(TargetingElementStatus.APPROVED)
-                .metaId("interest-1")
-                .build();
-        TargetingElement jobTitle = TargetingElement.builder()
-                .id(2L)
-                .niche(niche)
-                .hypothesis(hypothesis)
-                .type(TargetingElementType.JOB_TITLE)
-                .term("CMO")
-                .status(TargetingElementStatus.APPROVED)
-                .metaId("job-2")
-                .build();
-        TargetingElement behavior = TargetingElement.builder()
-                .id(3L)
-                .niche(niche)
-                .hypothesis(hypothesis)
-                .type(TargetingElementType.BEHAVIOR)
-                .term("Engaged Shoppers")
-                .status(TargetingElementStatus.APPROVED)
-                .metaId("behavior-3")
-                .build();
-
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
-                .thenReturn(List.of(interest));
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.JOB_TITLE, hypothesisId))
-                .thenReturn(List.of(jobTitle));
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.BEHAVIOR, hypothesisId))
-                .thenReturn(List.of(behavior));
-
-        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
-
-        assertThat(result).hasSize(1);
-        ExperimentReadyForAdSetDto dto = result.getFirst();
-        assertThat(dto.getExperiment().getId()).isEqualTo(10L);
-        assertThat(dto.getHypothesis()).isNotNull();
-        assertThat(dto.getHypothesis().getId()).isEqualTo(hypothesisId);
-        assertThat(dto.getTargeting().getInterests()).extracting(TargetingElementDto::getTerm)
-                .containsExactly("Remarketing");
-        assertThat(dto.getTargeting().getJobTitles()).extracting(TargetingElementDto::getTerm)
-                .containsExactly("CMO");
-        assertThat(dto.getTargeting().getBehaviors()).extracting(TargetingElementDto::getTerm)
-                .containsExactly("Engaged Shoppers");
+    try {
+      var field = experimentMapper.getClass().getDeclaredField("facebookInstantFormMapper");
+      field.setAccessible(true);
+      field.set(experimentMapper, formMapper);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException(
+          "Não foi possível configurar o FacebookInstantFormMapper no ExperimentMapper", e);
     }
+  }
 
-    /**
-     * Garante que um cargo aprovado e identificável pela Meta basta para expor o pacote publicável.
-     */
-    @Test
-    void listExperimentsReadyAcceptsOnlyApprovedJobTitle() {
-        MarketNiche niche = new MarketNiche();
-        niche.setId(5L);
+  /**
+   * Garante que experimentos prontos recebem pacote completo de interesses, cargos e
+   * comportamentos.
+   */
+  @Test
+  void listExperimentsReadyIncludesTargetingPackage() {
+    MarketNiche niche = new MarketNiche();
+    niche.setId(5L);
+    niche.setName("Health");
 
-        UUID hypothesisId = UUID.randomUUID();
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(hypothesisId);
-        hypothesis.setMarketNiche(niche);
+    UUID hypothesisId = UUID.randomUUID();
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(hypothesisId);
+    hypothesis.setTitle("Lose weight fast");
+    hypothesis.setMarketNiche(niche);
 
-        Experiment experiment = new Experiment();
-        experiment.setId(11L);
-        experiment.setName("Job title only");
-        experiment.setNiche(niche);
-        experiment.setHypothesisRef(hypothesis);
-        experiment.setStatus(ExperimentStatus.PLANNED);
-        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
-        experiment.setCreativeApproved(true);
+    Experiment experiment = new Experiment();
+    experiment.setId(10L);
+    experiment.setName("Weight loss test");
+    experiment.setNiche(niche);
+    experiment.setHypothesisRef(hypothesis);
+    experiment.setStatus(ExperimentStatus.PLANNED);
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    experiment.setCreativeApproved(true);
 
-        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
-                .thenReturn(List.of(experiment));
-        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
-                .thenReturn(List.of());
+    when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
+        .thenReturn(List.of(experiment));
+    when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
 
-        TargetingElement jobTitle = TargetingElement.builder()
-                .id(2L)
-                .niche(niche)
-                .hypothesis(hypothesis)
-                .type(TargetingElementType.JOB_TITLE)
-                .term("CMO")
-                .status(TargetingElementStatus.APPROVED)
-                .metaId("job-2")
-                .build();
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.JOB_TITLE, hypothesisId))
-                .thenReturn(List.of(jobTitle));
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.BEHAVIOR, hypothesisId))
-                .thenReturn(List.of());
+    TargetingElement interest =
+        TargetingElement.builder()
+            .id(1L)
+            .niche(niche)
+            .hypothesis(hypothesis)
+            .type(TargetingElementType.INTEREST)
+            .term("Remarketing")
+            .status(TargetingElementStatus.APPROVED)
+            .metaId("interest-1")
+            .build();
+    TargetingElement jobTitle =
+        TargetingElement.builder()
+            .id(2L)
+            .niche(niche)
+            .hypothesis(hypothesis)
+            .type(TargetingElementType.JOB_TITLE)
+            .term("CMO")
+            .status(TargetingElementStatus.APPROVED)
+            .metaId("job-2")
+            .build();
+    TargetingElement behavior =
+        TargetingElement.builder()
+            .id(3L)
+            .niche(niche)
+            .hypothesis(hypothesis)
+            .type(TargetingElementType.BEHAVIOR)
+            .term("Engaged Shoppers")
+            .status(TargetingElementStatus.APPROVED)
+            .metaId("behavior-3")
+            .build();
 
-        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.INTEREST, hypothesisId))
+        .thenReturn(List.of(interest));
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.JOB_TITLE, hypothesisId))
+        .thenReturn(List.of(jobTitle));
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.BEHAVIOR, hypothesisId))
+        .thenReturn(List.of(behavior));
 
-        assertThat(result).hasSize(1);
-        ExperimentReadyForAdSetDto dto = result.getFirst();
-        assertThat(dto.getExperiment().getId()).isEqualTo(11L);
-        assertThat(dto.getTargeting().getInterests()).isEmpty();
-        assertThat(dto.getTargeting().getJobTitles()).extracting(TargetingElementDto::getTerm)
-                .containsExactly("CMO");
-        assertThat(dto.getTargeting().getBehaviors()).isEmpty();
-    }
+    List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
 
-    /**
-     * Garante que o filtro por experimento prioriza a seleção manual e ignora itens sem metaId.
-     */
-    @Test
-    void listExperimentsReadyPrioritizesSelectedExperimentTargeting() {
-        MarketNiche niche = new MarketNiche();
-        niche.setId(5L);
+    assertThat(result).hasSize(1);
+    ExperimentReadyForAdSetDto dto = result.getFirst();
+    assertThat(dto.getExperiment().getId()).isEqualTo(10L);
+    assertThat(dto.getHypothesis()).isNotNull();
+    assertThat(dto.getHypothesis().getId()).isEqualTo(hypothesisId);
+    assertThat(dto.getTargeting().getInterests())
+        .extracting(TargetingElementDto::getTerm)
+        .containsExactly("Remarketing");
+    assertThat(dto.getTargeting().getJobTitles())
+        .extracting(TargetingElementDto::getTerm)
+        .containsExactly("CMO");
+    assertThat(dto.getTargeting().getBehaviors())
+        .extracting(TargetingElementDto::getTerm)
+        .containsExactly("Engaged Shoppers");
+  }
 
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(UUID.randomUUID());
-        hypothesis.setMarketNiche(niche);
+  /**
+   * Garante que um cargo aprovado e identificável pela Meta basta para expor o pacote publicável.
+   */
+  @Test
+  void listExperimentsReadyAcceptsOnlyApprovedJobTitle() {
+    MarketNiche niche = new MarketNiche();
+    niche.setId(5L);
 
-        Experiment experiment = new Experiment();
-        experiment.setId(13L);
-        experiment.setName("Selected targeting");
-        experiment.setNiche(niche);
-        experiment.setHypothesisRef(hypothesis);
-        experiment.setStatus(ExperimentStatus.PLANNED);
-        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
-        experiment.setCreativeApproved(true);
+    UUID hypothesisId = UUID.randomUUID();
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(hypothesisId);
+    hypothesis.setMarketNiche(niche);
 
-        TargetingElement selectedJobTitle = TargetingElement.builder()
-                .id(21L)
-                .niche(niche)
-                .type(TargetingElementType.JOB_TITLE)
-                .term("Personal Trainer")
-                .status(TargetingElementStatus.APPROVED)
-                .metaId("1419795191647433")
-                .metaKey("Certified Personal Trainer")
-                .build();
-        TargetingElement ignoredMissingMetaId = TargetingElement.builder()
-                .id(22L)
-                .niche(niche)
-                .type(TargetingElementType.JOB_TITLE)
-                .term("Profissionais de Educação Física")
-                .status(TargetingElementStatus.APPROVED)
-                .build();
+    Experiment experiment = new Experiment();
+    experiment.setId(11L);
+    experiment.setName("Job title only");
+    experiment.setNiche(niche);
+    experiment.setHypothesisRef(hypothesis);
+    experiment.setStatus(ExperimentStatus.PLANNED);
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    experiment.setCreativeApproved(true);
 
-        when(experimentRepository.findForAdSetTargetingById(13L, ExperimentPlatform.FACEBOOK))
-                .thenReturn(Optional.of(experiment));
-        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
-        when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(13L))
-                .thenReturn(List.of(
-                        ExperimentTargetingSelection.builder()
-                                .experiment(experiment)
-                                .candidateType(TargetingCandidateType.WORK_POSITION)
-                                .term("Personal Trainer")
-                                .targetingElement(selectedJobTitle)
-                                .build(),
-                        ExperimentTargetingSelection.builder()
-                                .experiment(experiment)
-                                .candidateType(TargetingCandidateType.WORK_POSITION)
-                                .term("Profissionais de Educação Física")
-                                .targetingElement(ignoredMissingMetaId)
-                                .build()));
+    when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
+        .thenReturn(List.of(experiment));
+    when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.INTEREST, hypothesisId))
+        .thenReturn(List.of());
 
-        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets(13L);
+    TargetingElement jobTitle =
+        TargetingElement.builder()
+            .id(2L)
+            .niche(niche)
+            .hypothesis(hypothesis)
+            .type(TargetingElementType.JOB_TITLE)
+            .term("CMO")
+            .status(TargetingElementStatus.APPROVED)
+            .metaId("job-2")
+            .build();
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.JOB_TITLE, hypothesisId))
+        .thenReturn(List.of(jobTitle));
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.BEHAVIOR, hypothesisId))
+        .thenReturn(List.of());
 
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getTargeting().getJobTitles())
-                .extracting(TargetingElementDto::getMetaId)
-                .containsExactly("1419795191647433");
-        assertThat(result.getFirst().getTargeting().getJobTitles())
-                .extracting(TargetingElementDto::getTerm)
-                .containsExactly("Personal Trainer");
-    }
+    List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
 
-    /**
-     * Garante que o filtro direto por experimento ainda resolve targeting após falha operacional anterior.
-     */
-    @Test
-    void listExperimentsReadyByExperimentIdIgnoresOperationalStatus() {
-        MarketNiche niche = new MarketNiche();
-        niche.setId(16L);
+    assertThat(result).hasSize(1);
+    ExperimentReadyForAdSetDto dto = result.getFirst();
+    assertThat(dto.getExperiment().getId()).isEqualTo(11L);
+    assertThat(dto.getTargeting().getInterests()).isEmpty();
+    assertThat(dto.getTargeting().getJobTitles())
+        .extracting(TargetingElementDto::getTerm)
+        .containsExactly("CMO");
+    assertThat(dto.getTargeting().getBehaviors()).isEmpty();
+  }
 
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(UUID.randomUUID());
-        hypothesis.setMarketNiche(niche);
+  /** Garante que o filtro por experimento prioriza a seleção manual e ignora itens sem metaId. */
+  @Test
+  void listExperimentsReadyPrioritizesSelectedExperimentTargeting() {
+    MarketNiche niche = new MarketNiche();
+    niche.setId(5L);
 
-        Experiment experiment = new Experiment();
-        experiment.setId(38L);
-        experiment.setName("Experimento 38");
-        experiment.setNiche(niche);
-        experiment.setHypothesisRef(hypothesis);
-        experiment.setStatus(ExperimentStatus.FAILED);
-        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
-        experiment.setCreativeApproved(true);
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(UUID.randomUUID());
+    hypothesis.setMarketNiche(niche);
 
-        TargetingElement selectedJobTitle = TargetingElement.builder()
-                .id(10L)
-                .niche(niche)
-                .type(TargetingElementType.JOB_TITLE)
-                .term("Personal Trainer")
-                .status(TargetingElementStatus.APPROVED)
-                .metaId("1419795191647433")
-                .metaKey("Certified Personal Trainer")
-                .build();
+    Experiment experiment = new Experiment();
+    experiment.setId(13L);
+    experiment.setName("Selected targeting");
+    experiment.setNiche(niche);
+    experiment.setHypothesisRef(hypothesis);
+    experiment.setStatus(ExperimentStatus.PLANNED);
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    experiment.setCreativeApproved(true);
 
-        when(experimentRepository.findForAdSetTargetingById(38L, ExperimentPlatform.FACEBOOK))
-                .thenReturn(Optional.of(experiment));
-        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
-        when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(38L))
-                .thenReturn(List.of(
-                        ExperimentTargetingSelection.builder()
-                                .experiment(experiment)
-                                .candidateType(TargetingCandidateType.WORK_POSITION)
-                                .term("Personal Trainer")
-                                .targetingElement(selectedJobTitle)
-                                .build()));
+    TargetingElement selectedJobTitle =
+        TargetingElement.builder()
+            .id(21L)
+            .niche(niche)
+            .type(TargetingElementType.JOB_TITLE)
+            .term("Personal Trainer")
+            .status(TargetingElementStatus.APPROVED)
+            .metaId("1419795191647433")
+            .metaKey("Certified Personal Trainer")
+            .build();
+    TargetingElement ignoredMissingMetaId =
+        TargetingElement.builder()
+            .id(22L)
+            .niche(niche)
+            .type(TargetingElementType.JOB_TITLE)
+            .term("Profissionais de Educação Física")
+            .status(TargetingElementStatus.APPROVED)
+            .build();
 
-        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets(38L);
+    when(experimentRepository.findForAdSetTargetingById(13L, ExperimentPlatform.FACEBOOK))
+        .thenReturn(Optional.of(experiment));
+    when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
+    when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(13L))
+        .thenReturn(
+            List.of(
+                ExperimentTargetingSelection.builder()
+                    .experiment(experiment)
+                    .candidateType(TargetingCandidateType.WORK_POSITION)
+                    .term("Personal Trainer")
+                    .targetingElement(selectedJobTitle)
+                    .build(),
+                ExperimentTargetingSelection.builder()
+                    .experiment(experiment)
+                    .candidateType(TargetingCandidateType.WORK_POSITION)
+                    .term("Profissionais de Educação Física")
+                    .targetingElement(ignoredMissingMetaId)
+                    .build()));
 
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getExperiment().getId()).isEqualTo(38L);
-        assertThat(result.getFirst().getTargeting().getJobTitles())
-                .extracting(TargetingElementDto::getMetaId)
-                .containsExactly("1419795191647433");
-    }
+    List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets(13L);
 
-    /**
-     * Garante que interesse aprovado também libera pacote publicável sem exigir cargo.
-     */
-    @Test
-    void listExperimentsReadyAcceptsApprovedInterestWithoutJobTitle() {
-        MarketNiche niche = new MarketNiche();
-        niche.setId(5L);
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().getTargeting().getJobTitles())
+        .extracting(TargetingElementDto::getMetaId)
+        .containsExactly("1419795191647433");
+    assertThat(result.getFirst().getTargeting().getJobTitles())
+        .extracting(TargetingElementDto::getTerm)
+        .containsExactly("Personal Trainer");
+  }
 
-        UUID hypothesisId = UUID.randomUUID();
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(hypothesisId);
-        hypothesis.setMarketNiche(niche);
+  /**
+   * Garante que o filtro direto por experimento ainda resolve targeting após falha operacional
+   * anterior.
+   */
+  @Test
+  void listExperimentsReadyByExperimentIdIgnoresOperationalStatus() {
+    MarketNiche niche = new MarketNiche();
+    niche.setId(16L);
 
-        Experiment experiment = new Experiment();
-        experiment.setId(12L);
-        experiment.setNiche(niche);
-        experiment.setHypothesisRef(hypothesis);
-        experiment.setStatus(ExperimentStatus.PLANNED);
-        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
-        experiment.setCreativeApproved(true);
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(UUID.randomUUID());
+    hypothesis.setMarketNiche(niche);
 
-        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
-                .thenReturn(List.of(experiment));
-        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
-        TargetingElement interest = TargetingElement.builder()
-                .id(9L)
-                .niche(niche)
-                .hypothesis(hypothesis)
-                .type(TargetingElementType.INTEREST)
-                .term("Manicure")
-                .status(TargetingElementStatus.APPROVED)
-                .metaId("6003139266461")
-                .build();
+    Experiment experiment = new Experiment();
+    experiment.setId(38L);
+    experiment.setName("Experimento 38");
+    experiment.setNiche(niche);
+    experiment.setHypothesisRef(hypothesis);
+    experiment.setStatus(ExperimentStatus.FAILED);
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    experiment.setCreativeApproved(true);
 
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
-                .thenReturn(List.of(interest));
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.JOB_TITLE, hypothesisId))
-                .thenReturn(List.of());
-        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.BEHAVIOR, hypothesisId))
-                .thenReturn(List.of());
+    TargetingElement selectedJobTitle =
+        TargetingElement.builder()
+            .id(10L)
+            .niche(niche)
+            .type(TargetingElementType.JOB_TITLE)
+            .term("Personal Trainer")
+            .status(TargetingElementStatus.APPROVED)
+            .metaId("1419795191647433")
+            .metaKey("Certified Personal Trainer")
+            .build();
 
-        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
+    when(experimentRepository.findForAdSetTargetingById(38L, ExperimentPlatform.FACEBOOK))
+        .thenReturn(Optional.of(experiment));
+    when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
+    when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(38L))
+        .thenReturn(
+            List.of(
+                ExperimentTargetingSelection.builder()
+                    .experiment(experiment)
+                    .candidateType(TargetingCandidateType.WORK_POSITION)
+                    .term("Personal Trainer")
+                    .targetingElement(selectedJobTitle)
+                    .build()));
 
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getTargeting().getInterests())
-                .extracting(TargetingElementDto::getMetaId)
-                .containsExactly("6003139266461");
-        assertThat(result.getFirst().getTargeting().getJobTitles()).isEmpty();
-    }
+    List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets(38L);
 
-    /**
-     * Garante que o endpoint não expõe adset quando o readiness bloqueia contrato, página ou campanha.
-     */
-    @Test
-    void listExperimentsReadySkipsExperimentBlockedByReadinessGate() {
-        MarketNiche niche = new MarketNiche();
-        niche.setId(5L);
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().getExperiment().getId()).isEqualTo(38L);
+    assertThat(result.getFirst().getTargeting().getJobTitles())
+        .extracting(TargetingElementDto::getMetaId)
+        .containsExactly("1419795191647433");
+  }
 
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(UUID.randomUUID());
-        hypothesis.setMarketNiche(niche);
+  /** Garante que interesse aprovado também libera pacote publicável sem exigir cargo. */
+  @Test
+  void listExperimentsReadyAcceptsApprovedInterestWithoutJobTitle() {
+    MarketNiche niche = new MarketNiche();
+    niche.setId(5L);
 
-        Experiment experiment = new Experiment();
-        experiment.setId(56L);
-        experiment.setNiche(niche);
-        experiment.setHypothesisRef(hypothesis);
-        experiment.setStatus(ExperimentStatus.PLANNED);
-        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    UUID hypothesisId = UUID.randomUUID();
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(hypothesisId);
+    hypothesis.setMarketNiche(niche);
 
-        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
-                .thenReturn(List.of(experiment));
-        when(readinessService.isReadyForCampaign(experiment)).thenReturn(false);
+    Experiment experiment = new Experiment();
+    experiment.setId(12L);
+    experiment.setNiche(niche);
+    experiment.setHypothesisRef(hypothesis);
+    experiment.setStatus(ExperimentStatus.PLANNED);
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    experiment.setCreativeApproved(true);
 
-        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
+    when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
+        .thenReturn(List.of(experiment));
+    when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
+    TargetingElement interest =
+        TargetingElement.builder()
+            .id(9L)
+            .niche(niche)
+            .hypothesis(hypothesis)
+            .type(TargetingElementType.INTEREST)
+            .term("Manicure")
+            .status(TargetingElementStatus.APPROVED)
+            .metaId("6003139266461")
+            .build();
 
-        assertThat(result).isEmpty();
-    }
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.INTEREST, hypothesisId))
+        .thenReturn(List.of(interest));
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.JOB_TITLE, hypothesisId))
+        .thenReturn(List.of());
+    when(targetingElementRepository.findApprovedForExperiment(
+            5L, TargetingElementType.BEHAVIOR, hypothesisId))
+        .thenReturn(List.of());
+
+    List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().getTargeting().getInterests())
+        .extracting(TargetingElementDto::getMetaId)
+        .containsExactly("6003139266461");
+    assertThat(result.getFirst().getTargeting().getJobTitles()).isEmpty();
+  }
+
+  /**
+   * Garante que o endpoint não expõe adset quando o readiness bloqueia contrato, página ou
+   * campanha.
+   */
+  @Test
+  void listExperimentsReadySkipsExperimentBlockedByReadinessGate() {
+    MarketNiche niche = new MarketNiche();
+    niche.setId(5L);
+
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(UUID.randomUUID());
+    hypothesis.setMarketNiche(niche);
+
+    Experiment experiment = new Experiment();
+    experiment.setId(56L);
+    experiment.setNiche(niche);
+    experiment.setHypothesisRef(hypothesis);
+    experiment.setStatus(ExperimentStatus.PLANNED);
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+
+    when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
+        .thenReturn(List.of(experiment));
+    when(readinessService.isReadyForCampaign(experiment)).thenReturn(false);
+
+    List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
+
+    assertThat(result).isEmpty();
+  }
 }

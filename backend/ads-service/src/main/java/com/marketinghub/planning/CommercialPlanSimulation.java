@@ -29,57 +29,57 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommercialPlanSimulation {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "plan_id", nullable = false)
-    private CommercialPlan plan;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "plan_id", nullable = false)
+  private CommercialPlan plan;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private CommercialPlanRecommendation recommendation;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 32)
+  private CommercialPlanRecommendation recommendation;
 
-    @Column(name = "most_likely_scenario", length = 512)
-    private String mostLikelyScenario;
+  @Column(name = "most_likely_scenario", length = 512)
+  private String mostLikelyScenario;
 
-    @Column(name = "best_realistic_scenario", length = 512)
-    private String bestRealisticScenario;
+  @Column(name = "best_realistic_scenario", length = 512)
+  private String bestRealisticScenario;
 
-    @Column(name = "worst_likely_scenario", length = 512)
-    private String worstLikelyScenario;
+  @Column(name = "worst_likely_scenario", length = 512)
+  private String worstLikelyScenario;
 
-    @Column(name = "main_risk", length = 512)
-    private String mainRisk;
+  @Column(name = "main_risk", length = 512)
+  private String mainRisk;
 
-    @Column(name = "best_next_action", length = 512)
-    private String bestNextAction;
+  @Column(name = "best_next_action", length = 512)
+  private String bestNextAction;
 
-    @Column(name = "action_to_avoid", length = 512)
-    private String actionToAvoid;
+  @Column(name = "action_to_avoid", length = 512)
+  private String actionToAvoid;
 
-    @Column(name = "continue_condition", length = 512)
-    private String continueCondition;
+  @Column(name = "continue_condition", length = 512)
+  private String continueCondition;
 
-    @Column(name = "stop_condition", length = 512)
-    private String stopCondition;
+  @Column(name = "stop_condition", length = 512)
+  private String stopCondition;
 
-    @Column(name = "evidence_7_days", length = 512)
-    private String evidence7Days;
+  @Column(name = "evidence_7_days", length = 512)
+  private String evidence7Days;
 
-    @Column(name = "evidence_14_days", length = 512)
-    private String evidence14Days;
+  @Column(name = "evidence_14_days", length = 512)
+  private String evidence14Days;
 
-    @Column(name = "evidence_30_days", length = 512)
-    private String evidence30Days;
+  @Column(name = "evidence_30_days", length = 512)
+  private String evidence30Days;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "decision_notes", columnDefinition = "LONGTEXT")
-    private String decisionNotes;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "decision_notes", columnDefinition = "LONGTEXT")
+  private String decisionNotes;
 
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at")
+  private Instant createdAt;
 }

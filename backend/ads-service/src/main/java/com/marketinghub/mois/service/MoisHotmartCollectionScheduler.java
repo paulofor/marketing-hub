@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class MoisHotmartCollectionScheduler {
 
-    @Scheduled(cron = "0 */20 * * * *")
-    public void scheduleCollection() {
-        log.info("MOIS scheduler heartbeat: execução simples a cada 20 minutos.");
-    }
+  @Scheduled(cron = "0 */20 * * * *")
+  public void scheduleCollection() {
+    log.info("MOIS scheduler heartbeat: execução simples a cada 20 minutos.");
+  }
 }

@@ -23,6 +23,11 @@ import org.springframework.web.client.RestClient;
 @Service
 public class ProductCatalogService {
     private static final Logger log = LoggerFactory.getLogger(ProductCatalogService.class);
+    private static final String MUSA_V5_EXPERIENCE_VERSION = "musa-pde-entry-v5-video-explicativo";
+    private static final String MUSA_V6_EXPERIENCE_VERSION = "musa-pde-entry-v6-video-motivacional";
+    private static final Map<String, String> MUSA_VERSIONED_HOST_EXPERIENCES = Map.of(
+            "v5.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
+            "v6.clubemusa.com.br", MUSA_V6_EXPERIENCE_VERSION);
 
     private final Map<String, ProductExperienceResponse> products = Map.of(
             "metodo-musa-7-dias", createMusaProduct());
@@ -48,25 +53,34 @@ public class ProductCatalogService {
 
     /** Retorna a experiência configurada para o produto informado. */
     public ProductExperienceResponse getProduct(String slug) {
+        return getProductForHost(slug, "");
+    }
+
+    /** Retorna a experiência configurada considerando o hostname versionado de produção. */
+    public ProductExperienceResponse getProductForHost(String slug, String host) {
         Optional<ProductExperienceResponse> marketingHubProduct = loadMarketingHubProduct(slug);
         if (marketingHubProduct.isPresent()) {
-            return applyExperienceVersionOverride(marketingHubProduct.get());
+            return applyExperienceVersionOverride(marketingHubProduct.get(), host);
         }
         ProductExperienceResponse product = products.get(slug);
         if (product == null) {
             throw new IllegalArgumentException("Produto PDE não encontrado: " + slug);
         }
-        return applyExperienceVersionOverride(product);
+        return applyExperienceVersionOverride(product, host);
     }
 
-    /** Aplica override operacional para publicar uma versão específica sem alterar o contrato base. */
-    private ProductExperienceResponse applyExperienceVersionOverride(ProductExperienceResponse product) {
-        if (!StringUtils.hasText(experienceVersionOverride)) {
+    /** Aplica override operacional ou versão derivada do hostname sem alterar o contrato base. */
+    private ProductExperienceResponse applyExperienceVersionOverride(ProductExperienceResponse product, String host) {
+        String selectedExperienceVersion = resolveHostExperienceVersion(host);
+        if (!StringUtils.hasText(selectedExperienceVersion)) {
+            selectedExperienceVersion = experienceVersionOverride;
+        }
+        if (!StringUtils.hasText(selectedExperienceVersion)) {
             return product;
         }
         return new ProductExperienceResponse(
                 product.slug(),
-                experienceVersionOverride.trim(),
+                selectedExperienceVersion.trim(),
                 product.funnelVersion(),
                 product.name(),
                 product.promise(),
@@ -78,6 +92,15 @@ public class ProductCatalogService {
                 product.supportMaterials(),
                 product.scientificEvidencePack(),
                 product.completionOffer());
+    }
+
+    /** Resolve a versão comercial esperada para subdomínios públicos versionados do MUSA. */
+    private static String resolveHostExperienceVersion(String host) {
+        if (!StringUtils.hasText(host)) {
+            return "";
+        }
+        String normalizedHost = host.split(":", 2)[0].trim().toLowerCase();
+        return MUSA_VERSIONED_HOST_EXPERIENCES.getOrDefault(normalizedHost, "");
     }
 
     /** Carrega o contrato PDE publicado pelo Marketing Hub quando a integração estiver configurada. */
@@ -121,7 +144,7 @@ public class ProductCatalogService {
     private static ProductExperienceResponse createMusaProduct() {
         return new ProductExperienceResponse(
                 "metodo-musa-7-dias",
-                "musa-pde-entry-v5-video-explicativo",
+                MUSA_V5_EXPERIENCE_VERSION,
                 "musa-membership-funnel-v1",
                 "Método MUSA - Experiência Guiada de 7 Dias",
                 "Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.",

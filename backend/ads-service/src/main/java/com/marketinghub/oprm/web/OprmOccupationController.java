@@ -22,28 +22,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/oprm/occupations")
 @RequiredArgsConstructor
 public class OprmOccupationController {
-    private final OprmOccupationService service;
+  private final OprmOccupationService service;
 
-    @GetMapping
-    public List<OprmOccupationResponseDto> list() {
-        return service.listOccupations();
-    }
+  @GetMapping
+  public List<OprmOccupationResponseDto> list() {
+    return service.listOccupations();
+  }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public OprmOccupationResponseDto create(@Valid @RequestBody OprmOccupationUpsertRequestDto request) {
-        return service.createOccupation(request);
-    }
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  public OprmOccupationResponseDto create(
+      @Valid @RequestBody OprmOccupationUpsertRequestDto request) {
+    return service.createOccupation(request);
+  }
 
-    @PutMapping("/{occupationId}")
-    public OprmOccupationResponseDto update(@PathVariable UUID occupationId,
-                                            @Valid @RequestBody OprmOccupationUpsertRequestDto request) {
-        return service.updateOccupation(occupationId, request);
-    }
+  @PutMapping("/{occupationId}")
+  public OprmOccupationResponseDto update(
+      @PathVariable UUID occupationId, @Valid @RequestBody OprmOccupationUpsertRequestDto request) {
+    return service.updateOccupation(occupationId, request);
+  }
 
-    @DeleteMapping("/{occupationId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID occupationId) {
-        service.deleteOccupation(occupationId);
-    }
+  @DeleteMapping("/{occupationId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void delete(@PathVariable UUID occupationId) {
+    service.deleteOccupation(occupationId);
+  }
 }

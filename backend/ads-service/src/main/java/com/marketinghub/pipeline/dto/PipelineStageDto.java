@@ -6,27 +6,25 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO que expõe uma etapa ordenada de pipeline para a tela administrativa.
- */
+/** DTO que expõe uma etapa ordenada de pipeline para a tela administrativa. */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class PipelineStageDto {
-    private Long id;
-    private Long pipelineId;
-    private Integer position;
-    private String name;
-    private String code;
-    private String description;
-    private String executionModule;
-    private String rootPackage;
-    private boolean required;
-    private boolean active;
-    private Long openAiModelId;
-    private String openAiModelName;
-    private String openAiModelCode;
-    private Instant createdAt;
-    private Instant updatedAt;
+  private Long id;
+  private Long pipelineId;
+  private Integer position;
+  private String name;
+  private String code;
+  private String description;
+  private String executionModule;
+  private String rootPackage;
+  private boolean required;
+  private boolean active;
+  private Long openAiModelId;
+  private String openAiModelName;
+  private String openAiModelCode;
+  private Instant createdAt;
+  private Instant updatedAt;
 }

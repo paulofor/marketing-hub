@@ -24,10 +24,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Responsável por disponibilizar, persistir e consultar a síntese de rotina da etapa seis do OPRM NichoCNAE. */
+/**
+ * Responsável por disponibilizar, persistir e consultar a síntese de rotina da etapa seis do OPRM
+ * NichoCNAE.
+ */
 @Service
 public class BackendRoutineSynthesizerService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(BackendRoutineSynthesizerService.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BackendRoutineSynthesizerService.class);
   private static final String RUNNING_STATUS = "RUNNING";
   private static final String FAILED_STATUS = "FAILED";
   private static final String SYNTHESIZED_STATUS = "ROUTINE_SYNTHESIZED";
@@ -56,10 +60,15 @@ public class BackendRoutineSynthesizerService {
   @Transactional(readOnly = true)
   public List<RecordRoutineSynthesizerPending> listPending() {
     return routineResearchCycleRepository
-        .findByCurrentStageCodeOrderByStartedAtAsc(CURRENT_STAGE_ROUTINE_SYNTHESIZER, PageRequest.of(0, MAX_PENDING))
+        .findByCurrentStageCodeOrderByStartedAtAsc(
+            CURRENT_STAGE_ROUTINE_SYNTHESIZER, PageRequest.of(0, MAX_PENDING))
         .stream()
         .filter(cycle -> !routineCardRepository.existsByResearchCycleId(cycle.getId()))
-        .map(cycle -> new CycleWithSignals(cycle, extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(cycle.getId())))
+        .map(
+            cycle ->
+                new CycleWithSignals(
+                    cycle,
+                    extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(cycle.getId())))
         .filter(item -> !item.signals().isEmpty())
         .map(item -> toPending(item.cycle(), item.signals()))
         .toList();
@@ -67,7 +76,8 @@ public class BackendRoutineSynthesizerService {
 
   /** Persiste o cartão de rotina sintetizado e marca o ciclo como sintetizado. */
   @Transactional
-  public CompleteRoutineSynthesizerResponse complete(Long researchCycleId, CompleteRoutineSynthesizerRequest request) {
+  public CompleteRoutineSynthesizerResponse complete(
+      Long researchCycleId, CompleteRoutineSynthesizerRequest request) {
     try {
       validateCompletionRequest(researchCycleId, request);
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
@@ -75,23 +85,28 @@ public class BackendRoutineSynthesizerService {
         throw new IllegalArgumentException("researchCycleId must match path");
       }
       if (routineCardRepository.existsByResearchCycleId(researchCycleId)) {
-        throw new IllegalStateException("research cycle already has a routine card: " + researchCycleId);
+        throw new IllegalStateException(
+            "research cycle already has a routine card: " + researchCycleId);
       }
       Instant now = Instant.now();
       OprmNicheRoutineCard card = new OprmNicheRoutineCard();
       card.setResearchCycleId(researchCycleId);
       card.setNicheName(requiredText(request.nicheName(), "nicheName"));
       card.setRoutineSummary(requiredText(request.routineSummary(), "routineSummary"));
-      card.setCustomerBehaviorSummary(requiredText(request.customerBehaviorSummary(), "customerBehaviorSummary"));
+      card.setCustomerBehaviorSummary(
+          requiredText(request.customerBehaviorSummary(), "customerBehaviorSummary"));
       card.setChannelsSummary(requiredText(request.channelsSummary(), "channelsSummary"));
-      card.setOperationalPainsSummary(requiredText(request.operationalPainsSummary(), "operationalPainsSummary"));
-      card.setEmotionalPainsSummary(requiredText(request.emotionalPainsSummary(), "emotionalPainsSummary"));
+      card.setOperationalPainsSummary(
+          requiredText(request.operationalPainsSummary(), "operationalPainsSummary"));
+      card.setEmotionalPainsSummary(
+          requiredText(request.emotionalPainsSummary(), "emotionalPainsSummary"));
       card.setDreamsSummary(requiredText(request.dreamsSummary(), "dreamsSummary"));
       card.setFearsSummary(requiredText(request.fearsSummary(), "fearsSummary"));
       card.setLanguageSummary(requiredText(request.languageSummary(), "languageSummary"));
       card.setPainsSummary(requiredText(request.painsSummary(), "painsSummary"));
       card.setResultsSummary(requiredText(request.resultsSummary(), "resultsSummary"));
-      card.setMechanismOpportunitiesSummary(requiredText(request.mechanismOpportunitiesSummary(), "mechanismOpportunitiesSummary"));
+      card.setMechanismOpportunitiesSummary(
+          requiredText(request.mechanismOpportunitiesSummary(), "mechanismOpportunitiesSummary"));
       card.setEvidenceSummary(requiredText(request.evidenceSummary(), "evidenceSummary"));
       card.setSourceDomains(requiredText(request.sourceDomains(), "sourceDomains"));
       card.setConfidenceScore(request.confidenceScore());
@@ -108,7 +123,12 @@ public class BackendRoutineSynthesizerService {
       cycle.setErrorMessage(null);
       routineResearchCycleRepository.save(cycle);
       return new CompleteRoutineSynthesizerResponse(
-          saved.getId(), saved.getResearchCycleId(), cycle.getStatus(), saved.getNicheName(), saved.getConfidenceScore(), saved.getCreatedAt());
+          saved.getId(),
+          saved.getResearchCycleId(),
+          cycle.getStatus(),
+          saved.getNicheName(),
+          saved.getConfidenceScore(),
+          saved.getCreatedAt());
     } catch (RuntimeException ex) {
       LOGGER.error(
           "Erro ao concluir etapa seis do OPRM nichocnae (researchCycleId={}, confidenceScore={})",
@@ -127,12 +147,16 @@ public class BackendRoutineSynthesizerService {
       Instant now = Instant.now();
       cycle.setStatus(FAILED_STATUS);
       cycle.setCurrentStageCode(CURRENT_STAGE_ROUTINE_SYNTHESIZER);
-      cycle.setErrorMessage(requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
+      cycle.setErrorMessage(
+          requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
       cycle.setFinishedAt(now);
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
     } catch (RuntimeException ex) {
-      LOGGER.error("Erro ao registrar falha da etapa seis do OPRM nichocnae (researchCycleId={})", researchCycleId, ex);
+      LOGGER.error(
+          "Erro ao registrar falha da etapa seis do OPRM nichocnae (researchCycleId={})",
+          researchCycleId,
+          ex);
       throw ex;
     }
   }
@@ -141,21 +165,28 @@ public class BackendRoutineSynthesizerService {
   @Transactional(readOnly = true)
   public RoutineSynthesizerDetailResponse detail(Long researchCycleId) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-    RoutineCardResponse routineCard = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId)
-        .map(this::toCardResponse)
-        .orElse(null);
-    return new RoutineSynthesizerDetailResponse(cycle.getId(), cycle.getStatus(), cycle.getTotalExtractedSignals(), routineCard);
+    RoutineCardResponse routineCard =
+        routineCardRepository
+            .findFirstByResearchCycleIdOrderByIdDesc(researchCycleId)
+            .map(this::toCardResponse)
+            .orElse(null);
+    return new RoutineSynthesizerDetailResponse(
+        cycle.getId(), cycle.getStatus(), cycle.getTotalExtractedSignals(), routineCard);
   }
 
   /** Localiza o ciclo de pesquisa ou falha com erro de contrato quando ele não existe. */
   private OprmRoutineResearchCycle findCycle(Long researchCycleId) {
     return routineResearchCycleRepository
         .findById(researchCycleId)
-        .orElseThrow(() -> new EntityNotFoundException("Routine research cycle not found: " + researchCycleId));
+        .orElseThrow(
+            () ->
+                new EntityNotFoundException(
+                    "Routine research cycle not found: " + researchCycleId));
   }
 
   /** Valida o payload da etapa seis para bloquear cartões vazios ou confiança fora da escala. */
-  private void validateCompletionRequest(Long researchCycleId, CompleteRoutineSynthesizerRequest request) {
+  private void validateCompletionRequest(
+      Long researchCycleId, CompleteRoutineSynthesizerRequest request) {
     if (researchCycleId == null) {
       throw new IllegalArgumentException("researchCycleId is required");
     }
@@ -194,17 +225,23 @@ public class BackendRoutineSynthesizerService {
   private void validateSummary(String value, String fieldName) {
     String text = requiredText(value, fieldName);
     if (text.length() > MAX_SUMMARY_LENGTH) {
-      throw new IllegalArgumentException(fieldName + " must contain at most " + MAX_SUMMARY_LENGTH + " characters");
+      throw new IllegalArgumentException(
+          fieldName + " must contain at most " + MAX_SUMMARY_LENGTH + " characters");
     }
   }
 
   /** Converte um ciclo com sinais persistidos para a unidade de trabalho da etapa seis. */
-  private RecordRoutineSynthesizerPending toPending(OprmRoutineResearchCycle cycle, List<OprmExtractedSignal> signals) {
-    List<SignalForRoutineSynthesis> selectedSignals = signals.stream()
-        .sorted(Comparator.comparing(OprmExtractedSignal::getConfidenceScore).reversed().thenComparing(OprmExtractedSignal::getId))
-        .limit(MAX_SIGNALS_PER_CYCLE)
-        .map(this::toSignal)
-        .toList();
+  private RecordRoutineSynthesizerPending toPending(
+      OprmRoutineResearchCycle cycle, List<OprmExtractedSignal> signals) {
+    List<SignalForRoutineSynthesis> selectedSignals =
+        signals.stream()
+            .sorted(
+                Comparator.comparing(OprmExtractedSignal::getConfidenceScore)
+                    .reversed()
+                    .thenComparing(OprmExtractedSignal::getId))
+            .limit(MAX_SIGNALS_PER_CYCLE)
+            .map(this::toSignal)
+            .toList();
     return new RecordRoutineSynthesizerPending(
         cycle.getId(),
         cycle.getSourceNicheId(),
@@ -273,5 +310,6 @@ public class BackendRoutineSynthesizerService {
   }
 
   /** Agrupa ciclo e sinais para evitar reconsultas na montagem do contrato pending. */
-  private record CycleWithSignals(OprmRoutineResearchCycle cycle, List<OprmExtractedSignal> signals) {}
+  private record CycleWithSignals(
+      OprmRoutineResearchCycle cycle, List<OprmExtractedSignal> signals) {}
 }

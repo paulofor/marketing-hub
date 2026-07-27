@@ -9,7 +9,10 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.Data;
 
-/** Entidade responsável por armazenar sinais estruturados extraídos de snapshots públicos do pipeline OPRM NichoCNAE. */
+/**
+ * Entidade responsável por armazenar sinais estruturados extraídos de snapshots públicos do
+ * pipeline OPRM NichoCNAE.
+ */
 @Entity
 @Data
 @Table(name = "oprm_extracted_signal")

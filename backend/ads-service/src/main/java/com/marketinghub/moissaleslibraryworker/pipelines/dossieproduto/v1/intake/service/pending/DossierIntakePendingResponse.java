@@ -3,5 +3,4 @@ package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.intak
 import java.util.List;
 
 /** Contrato de resposta do endpoint pending da etapa entrada inicial do dossiê MOIS v1. */
-public record DossierIntakePendingResponse(boolean claimed, List<DossierIntakePendingJob> jobs) {
-}
+public record DossierIntakePendingResponse(boolean claimed, List<DossierIntakePendingJob> jobs) {}

@@ -1,27 +1,26 @@
 package com.marketinghub.targeting.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class TargetingCandidateReprocessRequest {
-    @JsonProperty("seed")
-    private String seed;
+  @JsonProperty("seed")
+  private String seed;
 
-    /** Campo legado aceito temporariamente. */
-    @JsonProperty("texto_sugerido")
-    private String legacySeed;
+  /** Campo legado aceito temporariamente. */
+  @JsonProperty("texto_sugerido")
+  private String legacySeed;
 
-    @JsonProperty("seed_variants")
-    private List<String> seedVariants = new ArrayList<>();
+  @JsonProperty("seed_variants")
+  private List<String> seedVariants = new ArrayList<>();
 
-    @JsonProperty("idioma_hint")
-    private String idiomaHint;
+  @JsonProperty("idioma_hint")
+  private String idiomaHint;
 
-    private String idioma;
+  private String idioma;
 
-    private String pais;
+  private String pais;
 }

@@ -2,7 +2,10 @@ package com.marketinghub.oprm.nichocnae.sourcesearcher.service.completeStageExec
 
 import java.time.Instant;
 
-/** Representa um resultado classificado retornado pelo provedor de busca para ser salvo como fonte candidata. */
+/**
+ * Representa um resultado classificado retornado pelo provedor de busca para ser salvo como fonte
+ * candidata.
+ */
 public record SourceCandidateRequest(
     String sourceUrl,
     String sourceTitle,
@@ -22,7 +25,10 @@ public record SourceCandidateRequest(
     Integer autonomousProfessionalEvidenceScore,
     Boolean structuredBusinessDriftRisk,
     Instant publishedAt) {
-  /** Mantém compatibilidade para chamadas legadas que ainda não informam atualidade e aderência MEI/autônomo. */
+  /**
+   * Mantém compatibilidade para chamadas legadas que ainda não informam atualidade e aderência
+   * MEI/autônomo.
+   */
   public SourceCandidateRequest(
       String sourceUrl,
       String sourceTitle,

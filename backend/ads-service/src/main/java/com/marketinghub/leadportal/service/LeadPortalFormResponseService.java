@@ -24,22 +24,23 @@ import org.springframework.util.StringUtils;
 @Service
 public class LeadPortalFormResponseService {
 
-    private static final Logger log = LoggerFactory.getLogger(LeadPortalFormResponseService.class);
-    private static final int MAX_LIMIT = 200;
-    private static final List<String> PHONE_KEYS =
-            List.of("phone", "telefone", "whatsapp", "celular", "primary_contact_phone", "phone_number");
+  private static final Logger log = LoggerFactory.getLogger(LeadPortalFormResponseService.class);
+  private static final int MAX_LIMIT = 200;
+  private static final List<String> PHONE_KEYS =
+      List.of("phone", "telefone", "whatsapp", "celular", "primary_contact_phone", "phone_number");
 
-    private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper;
+  private final JdbcTemplate jdbcTemplate;
+  private final ObjectMapper objectMapper;
 
-    public LeadPortalFormResponseService(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.objectMapper = objectMapper;
-    }
+  public LeadPortalFormResponseService(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
+    this.jdbcTemplate = jdbcTemplate;
+    this.objectMapper = objectMapper;
+  }
 
-    public List<LeadPortalFormResponseDto> listRecentResponses(int limit) {
-        int sanitizedLimit = Math.max(1, Math.min(limit, MAX_LIMIT));
-        String sql = """
+  public List<LeadPortalFormResponseDto> listRecentResponses(int limit) {
+    int sanitizedLimit = Math.max(1, Math.min(limit, MAX_LIMIT));
+    String sql =
+        """
                 SELECT
                     sub.id,
                     sub.flow_slug,
@@ -57,106 +58,112 @@ public class LeadPortalFormResponseService {
                 LIMIT ?
                 """;
 
-        return jdbcTemplate.query(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setInt(1, sanitizedLimit);
-            return ps;
-        }, this::mapResponse);
+    return jdbcTemplate.query(
+        connection -> {
+          PreparedStatement ps = connection.prepareStatement(sql);
+          ps.setInt(1, sanitizedLimit);
+          return ps;
+        },
+        this::mapResponse);
+  }
+
+  private LeadPortalFormResponseDto mapResponse(ResultSet rs, int rowNum) throws SQLException {
+    String answersJson = rs.getString("answers_json");
+    List<LeadPortalFormResponseAnswerDto> answers = parseAnswers(answersJson);
+    return new LeadPortalFormResponseDto(
+        mapSubmissionId(rs),
+        rs.getString("flow_slug"),
+        rs.getString("flow_name"),
+        getLong(rs, "experiment_id"),
+        rs.getString("experiment_name"),
+        rs.getString("lead_name"),
+        rs.getString("lead_email"),
+        extractPhone(answers),
+        getInstant(rs, "created_at"),
+        answers);
+  }
+
+  private UUID mapSubmissionId(ResultSet rs) throws SQLException {
+    Object rawValue = rs.getObject("id");
+    if (rawValue instanceof byte[] bytes) {
+      ByteBuffer buffer = ByteBuffer.wrap(bytes);
+      return new UUID(buffer.getLong(), buffer.getLong());
     }
 
-    private LeadPortalFormResponseDto mapResponse(ResultSet rs, int rowNum) throws SQLException {
-        String answersJson = rs.getString("answers_json");
-        List<LeadPortalFormResponseAnswerDto> answers = parseAnswers(answersJson);
-        return new LeadPortalFormResponseDto(
-                mapSubmissionId(rs),
-                rs.getString("flow_slug"),
-                rs.getString("flow_name"),
-                getLong(rs, "experiment_id"),
-                rs.getString("experiment_name"),
-                rs.getString("lead_name"),
-                rs.getString("lead_email"),
-                extractPhone(answers),
-                getInstant(rs, "created_at"),
-                answers);
+    String submission = rs.getString("id");
+    if (!StringUtils.hasText(submission)) {
+      return null;
     }
 
-    private UUID mapSubmissionId(ResultSet rs) throws SQLException {
-        Object rawValue = rs.getObject("id");
-        if (rawValue instanceof byte[] bytes) {
-            ByteBuffer buffer = ByteBuffer.wrap(bytes);
-            return new UUID(buffer.getLong(), buffer.getLong());
-        }
+    try {
+      return UUID.fromString(submission);
+    } catch (IllegalArgumentException ex) {
+      log.warn("Valor de submission_id '{}' não pôde ser convertido para UUID", submission);
+      return null;
+    }
+  }
 
-        String submission = rs.getString("id");
-        if (!StringUtils.hasText(submission)) {
-            return null;
-        }
+  private Long getLong(ResultSet rs, String column) throws SQLException {
+    Object value = rs.getObject(column);
+    return value == null ? null : ((Number) value).longValue();
+  }
 
-        try {
-            return UUID.fromString(submission);
-        } catch (IllegalArgumentException ex) {
-            log.warn("Valor de submission_id '{}' não pôde ser convertido para UUID", submission);
-            return null;
-        }
+  private Instant getInstant(ResultSet rs, String column) throws SQLException {
+    Timestamp timestamp = rs.getTimestamp(column);
+    return timestamp == null ? null : timestamp.toInstant();
+  }
+
+  private List<LeadPortalFormResponseAnswerDto> parseAnswers(String answersJson) {
+    if (!StringUtils.hasText(answersJson)) {
+      return List.of();
     }
 
-    private Long getLong(ResultSet rs, String column) throws SQLException {
-        Object value = rs.getObject(column);
-        return value == null ? null : ((Number) value).longValue();
-    }
-
-    private Instant getInstant(ResultSet rs, String column) throws SQLException {
-        Timestamp timestamp = rs.getTimestamp(column);
-        return timestamp == null ? null : timestamp.toInstant();
-    }
-
-    private List<LeadPortalFormResponseAnswerDto> parseAnswers(String answersJson) {
-        if (!StringUtils.hasText(answersJson)) {
-            return List.of();
+    try {
+      JsonNode root = objectMapper.readTree(answersJson);
+      List<LeadPortalFormResponseAnswerDto> answers = new ArrayList<>();
+      if (root.isObject()) {
+        root.fields()
+            .forEachRemaining(
+                field ->
+                    answers.add(
+                        new LeadPortalFormResponseAnswerDto(
+                            field.getKey(), formatValue(field.getValue()))));
+      } else if (root.isArray()) {
+        int index = 0;
+        for (JsonNode node : root) {
+          answers.add(new LeadPortalFormResponseAnswerDto("item_" + index++, formatValue(node)));
         }
-
-        try {
-            JsonNode root = objectMapper.readTree(answersJson);
-            List<LeadPortalFormResponseAnswerDto> answers = new ArrayList<>();
-            if (root.isObject()) {
-                root.fields().forEachRemaining(field ->
-                        answers.add(new LeadPortalFormResponseAnswerDto(field.getKey(), formatValue(field.getValue()))));
-            } else if (root.isArray()) {
-                int index = 0;
-                for (JsonNode node : root) {
-                    answers.add(new LeadPortalFormResponseAnswerDto("item_" + index++, formatValue(node)));
-                }
-            } else {
-                answers.add(new LeadPortalFormResponseAnswerDto("valor", formatValue(root)));
-            }
-            return List.copyOf(answers);
-        } catch (JsonProcessingException ex) {
-            log.warn("Não foi possível interpretar respostas do formulário", ex);
-            return List.of(new LeadPortalFormResponseAnswerDto("raw", answersJson));
-        }
+      } else {
+        answers.add(new LeadPortalFormResponseAnswerDto("valor", formatValue(root)));
+      }
+      return List.copyOf(answers);
+    } catch (JsonProcessingException ex) {
+      log.warn("Não foi possível interpretar respostas do formulário", ex);
+      return List.of(new LeadPortalFormResponseAnswerDto("raw", answersJson));
     }
+  }
 
-    private String formatValue(JsonNode node) {
-        if (node == null || node.isNull()) {
-            return "";
-        }
-        if (node.isValueNode()) {
-            return node.asText().trim();
-        }
-        return node.toString();
+  private String formatValue(JsonNode node) {
+    if (node == null || node.isNull()) {
+      return "";
     }
+    if (node.isValueNode()) {
+      return node.asText().trim();
+    }
+    return node.toString();
+  }
 
-    private String extractPhone(List<LeadPortalFormResponseAnswerDto> answers) {
-        for (String candidate : PHONE_KEYS) {
-            for (LeadPortalFormResponseAnswerDto answer : answers) {
-                if (answer.key() != null && answer.key().equalsIgnoreCase(candidate)) {
-                    String value = answer.value();
-                    if (StringUtils.hasText(value)) {
-                        return value;
-                    }
-                }
-            }
+  private String extractPhone(List<LeadPortalFormResponseAnswerDto> answers) {
+    for (String candidate : PHONE_KEYS) {
+      for (LeadPortalFormResponseAnswerDto answer : answers) {
+        if (answer.key() != null && answer.key().equalsIgnoreCase(candidate)) {
+          String value = answer.value();
+          if (StringUtils.hasText(value)) {
+            return value;
+          }
         }
-        return null;
+      }
     }
+    return null;
+  }
 }

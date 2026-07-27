@@ -7,17 +7,16 @@ import lombok.Builder;
 
 @Builder
 public record HypothesisFrameworkGenerationJobDto(
-        UUID id,
-        UUID hypothesisId,
-        HypothesisFrameworkSection section,
-        String status,
-        String stage,
-        String customInstructions,
-        String errorMessage,
-        String model,
-        String prompt,
-        String requestBodyJson,
-        Instant createdAt,
-        Instant startedAt,
-        Instant finishedAt) {
-}
+    UUID id,
+    UUID hypothesisId,
+    HypothesisFrameworkSection section,
+    String status,
+    String stage,
+    String customInstructions,
+    String errorMessage,
+    String model,
+    String prompt,
+    String requestBodyJson,
+    Instant createdAt,
+    Instant startedAt,
+    Instant finishedAt) {}

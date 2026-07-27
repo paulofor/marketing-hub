@@ -9,7 +9,9 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.Data;
 
-/** Entidade responsável por guardar metadados e trechos curtos coletados de uma fonte selecionada. */
+/**
+ * Entidade responsável por guardar metadados e trechos curtos coletados de uma fonte selecionada.
+ */
 @Entity
 @Data
 @Table(name = "oprm_source_snapshot")

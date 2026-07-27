@@ -33,7 +33,8 @@ public class BackendSourceFetcherController {
   }
 
   /** Persiste metadados e trecho curto coletados para uma fonte candidata selecionada. */
-  @PostMapping("/internal/oprm/nichocnae/source-fetcher/stage-executions/{sourceCandidateId}/complete")
+  @PostMapping(
+      "/internal/oprm/nichocnae/source-fetcher/stage-executions/{sourceCandidateId}/complete")
   public ResponseEntity<CompleteSourceFetcherResponse> complete(
       @PathVariable Long sourceCandidateId, @RequestBody CompleteSourceFetcherRequest request) {
     return ResponseEntity.ok(executionService.complete(sourceCandidateId, request));
@@ -41,7 +42,8 @@ public class BackendSourceFetcherController {
 
   /** Registra falha ou rejeição operacional de coleta para uma fonte candidata. */
   @PostMapping("/internal/oprm/nichocnae/source-fetcher/stage-executions/{sourceCandidateId}/fail")
-  public ResponseEntity<Void> fail(@PathVariable Long sourceCandidateId, @RequestBody FailSourceFetcherRequest request) {
+  public ResponseEntity<Void> fail(
+      @PathVariable Long sourceCandidateId, @RequestBody FailSourceFetcherRequest request) {
     executionService.fail(sourceCandidateId, request);
     return ResponseEntity.noContent().build();
   }

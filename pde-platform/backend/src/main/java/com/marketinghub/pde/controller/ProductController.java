@@ -4,6 +4,7 @@ import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.service.ProductCatalogService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,7 +22,9 @@ public class ProductController {
 
     /** Retorna a experiência configurada para um produto pelo seu slug. */
     @GetMapping("/{slug}")
-    public ProductExperienceResponse getProduct(@PathVariable("slug") String slug) {
-        return productCatalogService.getProduct(slug);
+    public ProductExperienceResponse getProduct(
+            @PathVariable("slug") String slug,
+            @RequestHeader(value = "Host", required = false) String host) {
+        return productCatalogService.getProductForHost(slug, host);
     }
 }

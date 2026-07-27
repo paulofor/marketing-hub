@@ -5,44 +5,40 @@ import com.marketinghub.successproduct.dto.SuccessProductDto;
 import com.marketinghub.successproduct.dto.UpdateSuccessProductRequest;
 import com.marketinghub.successproduct.mapper.SuccessProductMapper;
 import com.marketinghub.successproduct.service.SuccessProductService;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.stream.StreamSupport;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * REST controller for success products.
- */
+/** REST controller for success products. */
 @RestController
 @RequestMapping("/api/success-products")
 public class SuccessProductController {
-    private final SuccessProductService service;
-    private final SuccessProductMapper mapper;
+  private final SuccessProductService service;
+  private final SuccessProductMapper mapper;
 
-    public SuccessProductController(SuccessProductService service, SuccessProductMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public SuccessProductController(SuccessProductService service, SuccessProductMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @PostMapping
-    public SuccessProductDto create(@RequestBody CreateSuccessProductRequest request) {
-        return mapper.toDto(service.create(request));
-    }
+  @PostMapping
+  public SuccessProductDto create(@RequestBody CreateSuccessProductRequest request) {
+    return mapper.toDto(service.create(request));
+  }
 
-    @GetMapping("/{id}")
-    public SuccessProductDto get(@PathVariable Long id) {
-        return mapper.toDto(service.get(id));
-    }
+  @GetMapping("/{id}")
+  public SuccessProductDto get(@PathVariable Long id) {
+    return mapper.toDto(service.get(id));
+  }
 
-    @GetMapping
-    public List<SuccessProductDto> list() {
-        return StreamSupport.stream(service.list().spliterator(), false)
-                .map(mapper::toDto)
-                .toList();
-    }
+  @GetMapping
+  public List<SuccessProductDto> list() {
+    return StreamSupport.stream(service.list().spliterator(), false).map(mapper::toDto).toList();
+  }
 
-    @PutMapping("/{id}")
-    public SuccessProductDto update(@PathVariable Long id, @RequestBody UpdateSuccessProductRequest request) {
-        return mapper.toDto(service.update(id, request));
-    }
+  @PutMapping("/{id}")
+  public SuccessProductDto update(
+      @PathVariable Long id, @RequestBody UpdateSuccessProductRequest request) {
+    return mapper.toDto(service.update(id, request));
+  }
 }

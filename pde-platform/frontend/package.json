@@ -9,6 +9,7 @@
     "generate:musa-videos": "node scripts/generate-musa-v5-video.mjs",
     "prebuild": "npm run generate:musa-videos",
     "build": "tsc --noEmit && vite build",
+    "test:local-integration": "playwright test tests/musa-local-integration.spec.ts --config=playwright.local-integration.config.ts",
     "test:public-diagnostic-smoke": "playwright test tests/public-presence-diagnostic.smoke.spec.ts --config=playwright.public-api.config.ts",
     "test:public-health": "playwright test tests/public-health.spec.ts --config=playwright.public.config.ts",
     "test:visual": "playwright test",

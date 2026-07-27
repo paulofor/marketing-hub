@@ -21,77 +21,77 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ExperimentHeroImageResolverTest {
 
-    @Mock
-    private FrameworkImageGenerationJobRepository jobRepository;
+  @Mock private FrameworkImageGenerationJobRepository jobRepository;
 
-    private ExperimentHeroImageResolver resolver;
+  private ExperimentHeroImageResolver resolver;
 
-    @BeforeEach
-    void setUp() {
-        resolver = new ExperimentHeroImageResolver(jobRepository, new ObjectMapper());
-    }
+  @BeforeEach
+  void setUp() {
+    resolver = new ExperimentHeroImageResolver(jobRepository, new ObjectMapper());
+  }
 
-    @Test
-    void returnsWebUrlFromCompletedHeroJob() {
-        Experiment experiment = Experiment.builder()
-                .id(10L)
-                .landingPageImagePlanning("{" +
-                        "\"landingPageImagePlanning\": {" +
-                        "  \"images\": [{\"sectionId\": \"s0-hero\", \"placement\": \"hero\"}]" +
-                        " }" +
-                        "}")
-                .build();
+  @Test
+  void returnsWebUrlFromCompletedHeroJob() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(10L)
+            .landingPageImagePlanning(
+                "{"
+                    + "\"landingPageImagePlanning\": {"
+                    + "  \"images\": [{\"sectionId\": \"s0-hero\", \"placement\": \"hero\"}]"
+                    + " }"
+                    + "}")
+            .build();
 
-        FrameworkImageGenerationJob job = new FrameworkImageGenerationJob();
-        job.setPlanningItemKey("s0-hero");
-        job.setWebUrl("https://cdn.example/hero-web.jpg");
+    FrameworkImageGenerationJob job = new FrameworkImageGenerationJob();
+    job.setPlanningItemKey("s0-hero");
+    job.setWebUrl("https://cdn.example/hero-web.jpg");
 
-        when(jobRepository.findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
-                eq(10L), anyCollection(), eq(FrameworkImageGenerationJobStatus.COMPLETED)))
-                .thenReturn(List.of(job));
+    when(jobRepository.findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
+            eq(10L), anyCollection(), eq(FrameworkImageGenerationJobStatus.COMPLETED)))
+        .thenReturn(List.of(job));
 
-        Optional<String> resolved = resolver.resolve(experiment);
+    Optional<String> resolved = resolver.resolve(experiment);
 
-        assertThat(resolved).contains("https://cdn.example/hero-web.jpg");
-    }
+    assertThat(resolved).contains("https://cdn.example/hero-web.jpg");
+  }
 
-    @Test
-    void fallsBackToSourceUrlWhenWebUrlIsMissing() {
-        Experiment experiment = Experiment.builder()
-                .id(55L)
-                .landingPageImagePlanning("{" +
-                        "\"landingPageImagePlanning\": {" +
-                        "  \"images\": [{\"sectionId\": \"item-1\", \"placement\": \"hero\"}]" +
-                        " }" +
-                        "}")
-                .build();
+  @Test
+  void fallsBackToSourceUrlWhenWebUrlIsMissing() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(55L)
+            .landingPageImagePlanning(
+                "{"
+                    + "\"landingPageImagePlanning\": {"
+                    + "  \"images\": [{\"sectionId\": \"item-1\", \"placement\": \"hero\"}]"
+                    + " }"
+                    + "}")
+            .build();
 
-        FrameworkImageGenerationJob job = new FrameworkImageGenerationJob();
-        job.setPlanningItemKey("item-1");
-        job.setSourceUrl("https://cdn.example/hero-source.jpg");
+    FrameworkImageGenerationJob job = new FrameworkImageGenerationJob();
+    job.setPlanningItemKey("item-1");
+    job.setSourceUrl("https://cdn.example/hero-source.jpg");
 
-        when(jobRepository.findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
-                eq(55L), anyCollection(), eq(FrameworkImageGenerationJobStatus.COMPLETED)))
-                .thenReturn(List.of(job));
+    when(jobRepository.findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
+            eq(55L), anyCollection(), eq(FrameworkImageGenerationJobStatus.COMPLETED)))
+        .thenReturn(List.of(job));
 
-        Optional<String> resolved = resolver.resolve(experiment);
+    Optional<String> resolved = resolver.resolve(experiment);
 
-        assertThat(resolved).contains("https://cdn.example/hero-source.jpg");
-    }
+    assertThat(resolved).contains("https://cdn.example/hero-source.jpg");
+  }
 
-    @Test
-    void returnsEmptyWhenNoCompletedJobsExist() {
-        Experiment experiment = Experiment.builder()
-                .id(42L)
-                .landingPageImagePlanning("{}")
-                .build();
+  @Test
+  void returnsEmptyWhenNoCompletedJobsExist() {
+    Experiment experiment = Experiment.builder().id(42L).landingPageImagePlanning("{}").build();
 
-        when(jobRepository.findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
-                eq(42L), anyCollection(), eq(FrameworkImageGenerationJobStatus.COMPLETED)))
-                .thenReturn(List.of());
+    when(jobRepository.findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
+            eq(42L), anyCollection(), eq(FrameworkImageGenerationJobStatus.COMPLETED)))
+        .thenReturn(List.of());
 
-        Optional<String> resolved = resolver.resolve(experiment);
+    Optional<String> resolved = resolver.resolve(experiment);
 
-        assertThat(resolved).isEmpty();
-    }
+    assertThat(resolved).isEmpty();
+  }
 }

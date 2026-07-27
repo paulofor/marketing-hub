@@ -1,21 +1,24 @@
 package com.marketinghub.leadportal.service;
 
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
-import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
+import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalImagePromptRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalSimpleFormStyleRepository;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.niche.MarketNiche;
+import java.time.Instant;
+import java.util.*;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -25,366 +28,383 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.regex.Pattern;
-
-/**
- * Handles validation and persistence of {@link LeadPortalFlow} records.
- */
+/** Handles validation and persistence of {@link LeadPortalFlow} records. */
 @Service
 public class LeadPortalFlowService {
-    private static final Logger log = LoggerFactory.getLogger(LeadPortalFlowService.class);
-    private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
-    private static final Pattern DATA_KEY_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*$");
+  private static final Logger log = LoggerFactory.getLogger(LeadPortalFlowService.class);
+  private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
+  private static final Pattern DATA_KEY_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*$");
 
-    private final LeadPortalFlowRepository repository;
-    private final LeadPortalFlowPublisher flowPublisher;
-    private final ExperimentRepository experimentRepository;
-    private final MarketNicheRepository marketNicheRepository;
-    private final LeadPortalSimpleFormStyleRepository simpleFormStyleRepository;
+  private final LeadPortalFlowRepository repository;
+  private final LeadPortalFlowPublisher flowPublisher;
+  private final ExperimentRepository experimentRepository;
+  private final MarketNicheRepository marketNicheRepository;
+  private final LeadPortalSimpleFormStyleRepository simpleFormStyleRepository;
 
-    public LeadPortalFlowService(LeadPortalFlowRepository repository,
-                                 LeadPortalFlowPublisher flowPublisher,
-                                 ExperimentRepository experimentRepository,
-                                 MarketNicheRepository marketNicheRepository,
-                                 LeadPortalSimpleFormStyleRepository simpleFormStyleRepository) {
-        this.repository = repository;
-        this.flowPublisher = flowPublisher;
-        this.experimentRepository = experimentRepository;
-        this.marketNicheRepository = marketNicheRepository;
-        this.simpleFormStyleRepository = simpleFormStyleRepository;
+  public LeadPortalFlowService(
+      LeadPortalFlowRepository repository,
+      LeadPortalFlowPublisher flowPublisher,
+      ExperimentRepository experimentRepository,
+      MarketNicheRepository marketNicheRepository,
+      LeadPortalSimpleFormStyleRepository simpleFormStyleRepository) {
+    this.repository = repository;
+    this.flowPublisher = flowPublisher;
+    this.experimentRepository = experimentRepository;
+    this.marketNicheRepository = marketNicheRepository;
+    this.simpleFormStyleRepository = simpleFormStyleRepository;
+  }
+
+  public List<LeadPortalFlow> listAll() {
+    return repository.findAllByOrderByNameAsc();
+  }
+
+  public List<LeadPortalFlow> listByExperiment(Long experimentId) {
+    if (experimentId == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentId is required");
     }
+    attachExperiment(experimentId);
+    return repository.findAllByExperimentIdOrderByCreatedAtDesc(experimentId);
+  }
 
-    public List<LeadPortalFlow> listAll() {
-        return repository.findAllByOrderByNameAsc();
+  public List<LeadPortalFlow> listByMarketNiche(Long marketNicheId) {
+    if (marketNicheId == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
     }
+    return repository.findAllByMarketNicheIdOrderByCreatedAtDesc(marketNicheId);
+  }
 
-    public List<LeadPortalFlow> listByExperiment(Long experimentId) {
-        if (experimentId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentId is required");
-        }
-        attachExperiment(experimentId);
-        return repository.findAllByExperimentIdOrderByCreatedAtDesc(experimentId);
+  public LeadPortalFlow get(Long id) {
+    return repository
+        .findById(id)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Lead portal flow not found: " + id));
+  }
+
+  public LeadPortalFlow getApprovedBySlug(String slug) {
+    String normalizedSlug = normalizeSlug(slug);
+    LeadPortalFlow flow =
+        repository
+            .findBySlug(normalizedSlug)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Lead portal flow not found: " + normalizedSlug));
+    if (!flow.isApproved()) {
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "Lead portal flow not found: " + normalizedSlug);
     }
+    return flow;
+  }
 
-    public List<LeadPortalFlow> listByMarketNiche(Long marketNicheId) {
-        if (marketNicheId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
-        }
-        return repository.findAllByMarketNicheIdOrderByCreatedAtDesc(marketNicheId);
+  @Transactional
+  public LeadPortalFlow create(CreateLeadPortalFlowRequest request) {
+    String name = normalizeName(request.getName());
+    String slug = normalizeSlug(request.getSlug());
+    ensureUniqueSlug(slug, null);
+    Long marketNicheId = request.getMarketNicheId();
+    if (marketNicheId == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
     }
-
-    public LeadPortalFlow get(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Lead portal flow not found: " + id));
+    MarketNiche marketNiche = attachMarketNiche(marketNicheId);
+    Experiment experiment =
+        request.getExperimentId() == null ? null : attachExperiment(request.getExperimentId());
+    if (experiment != null
+        && experiment.getNiche() != null
+        && !Objects.equals(experiment.getNiche().getId(), marketNiche.getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "experimentId must belong to the provided marketNicheId");
     }
+    LeadPortalFlow flow =
+        LeadPortalFlow.builder()
+            .name(name)
+            .slug(slug)
+            .description(trimToNull(request.getDescription()))
+            .customFormHtml(trimToNull(request.getCustomFormHtml()))
+            .schemaFirst(Boolean.TRUE.equals(request.getSchemaFirst()))
+            .model(trimToNull(request.getModel()))
+            .imagePromptModel(trimToNull(request.getImagePromptModel()))
+            .imagePromptTemplate(trimToNull(request.getImagePromptTemplate()))
+            .imagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()))
+            .marketNiche(marketNiche)
+            .experiment(experiment)
+            .simpleFormStyle(resolveSimpleFormStyle(request.getSimpleFormStyleId()))
+            .build();
+    flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
+    return repository.save(flow);
+  }
 
-
-    public LeadPortalFlow getApprovedBySlug(String slug) {
-        String normalizedSlug = normalizeSlug(slug);
-        LeadPortalFlow flow = repository.findBySlug(normalizedSlug)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Lead portal flow not found: " + normalizedSlug));
-        if (!flow.isApproved()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Lead portal flow not found: " + normalizedSlug);
-        }
-        return flow;
+  @Transactional
+  public LeadPortalFlow update(Long id, UpdateLeadPortalFlowRequest request) {
+    LeadPortalFlow flow = get(id);
+    boolean managedByExperiment = flow.getExperiment() != null;
+    String previousSlug = flow.getSlug();
+    boolean wasApproved = flow.isApproved();
+    if (request.getName() != null) {
+      flow.setName(normalizeName(request.getName()));
     }
-
-    @Transactional
-    public LeadPortalFlow create(CreateLeadPortalFlowRequest request) {
-        String name = normalizeName(request.getName());
-        String slug = normalizeSlug(request.getSlug());
-        ensureUniqueSlug(slug, null);
-        Long marketNicheId = request.getMarketNicheId();
-        if (marketNicheId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
-        }
-        MarketNiche marketNiche = attachMarketNiche(marketNicheId);
-        Experiment experiment = request.getExperimentId() == null
-                ? null
-                : attachExperiment(request.getExperimentId());
-        if (experiment != null && experiment.getNiche() != null &&
-                !Objects.equals(experiment.getNiche().getId(), marketNiche.getId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "experimentId must belong to the provided marketNicheId");
-        }
-        LeadPortalFlow flow = LeadPortalFlow.builder()
-                .name(name)
-                .slug(slug)
-                .description(trimToNull(request.getDescription()))
-                .customFormHtml(trimToNull(request.getCustomFormHtml()))
-                .schemaFirst(Boolean.TRUE.equals(request.getSchemaFirst()))
-                .model(trimToNull(request.getModel()))
-                .imagePromptModel(trimToNull(request.getImagePromptModel()))
-                .imagePromptTemplate(trimToNull(request.getImagePromptTemplate()))
-                .imagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()))
-                .marketNiche(marketNiche)
-                .experiment(experiment)
-                .simpleFormStyle(resolveSimpleFormStyle(request.getSimpleFormStyleId()))
-                .build();
-        flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
-        return repository.save(flow);
+    if (request.getSlug() != null) {
+      String slug = normalizeSlug(request.getSlug());
+      ensureUniqueSlug(slug, id);
+      flow.setSlug(slug);
     }
-
-    @Transactional
-    public LeadPortalFlow update(Long id, UpdateLeadPortalFlowRequest request) {
-        LeadPortalFlow flow = get(id);
-        boolean managedByExperiment = flow.getExperiment() != null;
-        String previousSlug = flow.getSlug();
-        boolean wasApproved = flow.isApproved();
-        if (request.getName() != null) {
-            flow.setName(normalizeName(request.getName()));
-        }
-        if (request.getSlug() != null) {
-            String slug = normalizeSlug(request.getSlug());
-            ensureUniqueSlug(slug, id);
-            flow.setSlug(slug);
-        }
-        if (request.getDescription() != null) {
-            flow.setDescription(trimToNull(request.getDescription()));
-        }
-        if (request.getCustomFormHtml() != null) {
-            flow.setCustomFormHtml(trimToNull(request.getCustomFormHtml()));
-        }
-        if (request.getSchemaFirst() != null) {
-            flow.setSchemaFirst(Boolean.TRUE.equals(request.getSchemaFirst()));
-        }
-        if (request.getMarketNicheId() != null) {
-            flow.setMarketNiche(attachMarketNiche(request.getMarketNicheId()));
-        }
-        if (request.getModel() != null) {
-            flow.setModel(trimToNull(request.getModel()));
-        }
-        if (request.getImagePromptModel() != null) {
-            if (managedByExperiment) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "imagePromptModel is managed by the experiment");
-            }
-            flow.setImagePromptModel(trimToNull(request.getImagePromptModel()));
-        }
-        if (request.getImagePromptTemplate() != null) {
-            flow.setImagePromptTemplate(trimToNull(request.getImagePromptTemplate()));
-        }
-        if (request.getImagePromptBatchSize() != null) {
-            if (managedByExperiment) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "imagePromptBatchSize is managed by the experiment");
-            }
-            flow.setImagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()));
-        }
-        if (request.getSimpleFormStyleId() != null) {
-            flow.setSimpleFormStyle(resolveSimpleFormStyle(request.getSimpleFormStyleId()));
-        }
-        if (request.getQuestions() != null) {
-            flow.getQuestions().clear();
-            repository.flush();
-            flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
-        }
-        LeadPortalFlow saved = repository.save(flow);
-        if (wasApproved) {
-            syncPublishedFlowAfterUpdate(saved, previousSlug);
-        }
-        return saved;
+    if (request.getDescription() != null) {
+      flow.setDescription(trimToNull(request.getDescription()));
     }
-
-    @Transactional
-    public LeadPortalFlow updateImagePrompt(Long id, UpdateLeadPortalImagePromptRequest request) {
-        LeadPortalFlow flow = get(id);
-        if (request.getImagePromptModel() != null) {
-            flow.setImagePromptModel(trimToNull(request.getImagePromptModel()));
-        }
-        if (request.getImagePromptTemplate() != null) {
-            flow.setImagePromptTemplate(trimToNull(request.getImagePromptTemplate()));
-        }
-        if (request.getImagePromptBatchSize() != null) {
-            flow.setImagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()));
-        }
-        LeadPortalFlow saved = repository.save(flow);
-        if (saved.isApproved()) {
-            syncPublishedFlowAfterUpdate(saved, saved.getSlug());
-        }
-        return saved;
+    if (request.getCustomFormHtml() != null) {
+      flow.setCustomFormHtml(trimToNull(request.getCustomFormHtml()));
     }
-
-    private void syncPublishedFlowAfterUpdate(LeadPortalFlow flow, String previousSlug) {
-        try {
-            if (StringUtils.hasText(previousSlug) && !Objects.equals(previousSlug, flow.getSlug())) {
-                flowPublisher.remove(previousSlug);
-            }
-            flowPublisher.publish(flow);
-        } catch (LeadPortalPublicationException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "failed to synchronise lead portal flow", ex);
-        }
+    if (request.getSchemaFirst() != null) {
+      flow.setSchemaFirst(Boolean.TRUE.equals(request.getSchemaFirst()));
     }
-
-    @Transactional
-    public LeadPortalFlow updateApproval(Long id, boolean approved) {
-        LeadPortalFlow flow = get(id);
-        flow.setApproved(approved);
-        flow.setApprovedAt(approved ? Instant.now() : null);
-        LeadPortalFlow saved = repository.save(flow);
-        try {
-            if (approved) {
-                flowPublisher.publish(saved);
-            } else {
-                flowPublisher.remove(saved.getSlug());
-            }
-        } catch (LeadPortalPublicationException ex) {
-            log.warn("Lead portal flow approval updated locally, but synchronisation failed for flow {} (approved={})",
-                    saved.getSlug(), approved, ex);
-        }
-        return saved;
+    if (request.getMarketNicheId() != null) {
+      flow.setMarketNiche(attachMarketNiche(request.getMarketNicheId()));
     }
-
-    private List<LeadPortalFlowQuestion> buildQuestions(LeadPortalFlow flow,
-                                                        List<LeadPortalFlowQuestionRequest> questionRequests) {
-        if (CollectionUtils.isEmpty(questionRequests)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "questions are required");
-        }
-        List<LeadPortalFlowQuestion> questions = new ArrayList<>();
-        Set<String> usedKeys = new HashSet<>();
-        for (int index = 0; index < questionRequests.size(); index++) {
-            questions.add(toQuestion(flow, questionRequests.get(index), index, usedKeys));
-        }
-        return questions;
+    if (request.getModel() != null) {
+      flow.setModel(trimToNull(request.getModel()));
     }
-
-    private LeadPortalFlowQuestion toQuestion(LeadPortalFlow flow,
-                                              LeadPortalFlowQuestionRequest request,
-                                              int index,
-                                              Set<String> usedKeys) {
-        String title = normalizeTitle(request.getTitle());
-        String dataKey = normalizeDataKey(request.getDataKey());
-        if (!usedKeys.add(dataKey)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "duplicate dataKey in questions: " + dataKey);
-        }
-        LeadPortalQuestionType type = Objects.requireNonNull(request.getType(), "type");
-        List<String> options = sanitizeOptions(request.getOptions(), type);
-        return LeadPortalFlowQuestion.builder()
-                .flow(flow)
-                .title(title)
-                .dataKey(dataKey)
-                .type(type)
-                .required(request.isRequired())
-                .description(trimToNull(request.getDescription()))
-                .placeholder(trimToNull(request.getPlaceholder()))
-                .position(index)
-                .options(options)
-                .build();
+    if (request.getImagePromptModel() != null) {
+      if (managedByExperiment) {
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "imagePromptModel is managed by the experiment");
+      }
+      flow.setImagePromptModel(trimToNull(request.getImagePromptModel()));
     }
-
-    private List<String> sanitizeOptions(List<String> options, LeadPortalQuestionType type) {
-        boolean expectsOptions = type == LeadPortalQuestionType.SINGLE_CHOICE
-                || type == LeadPortalQuestionType.MULTIPLE_CHOICE;
-        if (CollectionUtils.isEmpty(options)) {
-            if (expectsOptions) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "options are required for question type " + type);
-            }
-            return new ArrayList<>();
-        }
-        List<String> cleaned = options.stream()
-                .map(option -> option == null ? null : option.trim())
-                .filter(StringUtils::hasText)
-                .toList();
-        if (cleaned.isEmpty() && expectsOptions) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "options are required for question type " + type);
-        }
-        return new ArrayList<>(cleaned);
+    if (request.getImagePromptTemplate() != null) {
+      flow.setImagePromptTemplate(trimToNull(request.getImagePromptTemplate()));
     }
-
-    private void ensureUniqueSlug(String slug, Long currentId) {
-        repository.findBySlug(slug)
-                .filter(existing -> !Objects.equals(existing.getId(), currentId))
-                .ifPresent(existing -> {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT,
-                            "slug already in use: " + slug);
-                });
+    if (request.getImagePromptBatchSize() != null) {
+      if (managedByExperiment) {
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "imagePromptBatchSize is managed by the experiment");
+      }
+      flow.setImagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()));
     }
-
-    private Experiment attachExperiment(Long experimentId) {
-        return experimentRepository.findById(experimentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "experiment not found: " + experimentId));
+    if (request.getSimpleFormStyleId() != null) {
+      flow.setSimpleFormStyle(resolveSimpleFormStyle(request.getSimpleFormStyleId()));
     }
-
-    private MarketNiche attachMarketNiche(Long marketNicheId) {
-        if (marketNicheId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
-        }
-        return marketNicheRepository.findById(marketNicheId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "market niche not found: " + marketNicheId));
+    if (request.getQuestions() != null) {
+      flow.getQuestions().clear();
+      repository.flush();
+      flow.getQuestions().addAll(buildQuestions(flow, request.getQuestions()));
     }
-
-    private LeadPortalSimpleFormStyle resolveSimpleFormStyle(Long styleId) {
-        if (styleId == null) {
-            return null;
-        }
-        return simpleFormStyleRepository.findById(styleId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "simple form style not found: " + styleId));
+    LeadPortalFlow saved = repository.save(flow);
+    if (wasApproved) {
+      syncPublishedFlowAfterUpdate(saved, previousSlug);
     }
+    return saved;
+  }
 
-    private String normalizeName(String name) {
-        if (!StringUtils.hasText(name)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
-        }
-        return name.trim();
+  @Transactional
+  public LeadPortalFlow updateImagePrompt(Long id, UpdateLeadPortalImagePromptRequest request) {
+    LeadPortalFlow flow = get(id);
+    if (request.getImagePromptModel() != null) {
+      flow.setImagePromptModel(trimToNull(request.getImagePromptModel()));
     }
+    if (request.getImagePromptTemplate() != null) {
+      flow.setImagePromptTemplate(trimToNull(request.getImagePromptTemplate()));
+    }
+    if (request.getImagePromptBatchSize() != null) {
+      flow.setImagePromptBatchSize(normalizeBatchSize(request.getImagePromptBatchSize()));
+    }
+    LeadPortalFlow saved = repository.save(flow);
+    if (saved.isApproved()) {
+      syncPublishedFlowAfterUpdate(saved, saved.getSlug());
+    }
+    return saved;
+  }
 
-    private String normalizeSlug(String slug) {
-        if (!StringUtils.hasText(slug)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "slug is required");
-        }
-        String normalized = slug.trim().toLowerCase(Locale.ROOT);
-        if (!SLUG_PATTERN.matcher(normalized).matches()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "slug must contain only lowercase letters, numbers and hyphen");
-        }
-        return normalized;
+  private void syncPublishedFlowAfterUpdate(LeadPortalFlow flow, String previousSlug) {
+    try {
+      if (StringUtils.hasText(previousSlug) && !Objects.equals(previousSlug, flow.getSlug())) {
+        flowPublisher.remove(previousSlug);
+      }
+      flowPublisher.publish(flow);
+    } catch (LeadPortalPublicationException ex) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_GATEWAY, "failed to synchronise lead portal flow", ex);
     }
+  }
 
-    private String normalizeTitle(String title) {
-        if (!StringUtils.hasText(title)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title is required");
-        }
-        return title.trim();
+  @Transactional
+  public LeadPortalFlow updateApproval(Long id, boolean approved) {
+    LeadPortalFlow flow = get(id);
+    flow.setApproved(approved);
+    flow.setApprovedAt(approved ? Instant.now() : null);
+    LeadPortalFlow saved = repository.save(flow);
+    try {
+      if (approved) {
+        flowPublisher.publish(saved);
+      } else {
+        flowPublisher.remove(saved.getSlug());
+      }
+    } catch (LeadPortalPublicationException ex) {
+      log.warn(
+          "Lead portal flow approval updated locally, but synchronisation failed for flow {} (approved={})",
+          saved.getSlug(),
+          approved,
+          ex);
     }
+    return saved;
+  }
 
-    private String normalizeDataKey(String dataKey) {
-        if (!StringUtils.hasText(dataKey)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dataKey is required");
-        }
-        String normalized = dataKey.trim();
-        if (!DATA_KEY_PATTERN.matcher(normalized).matches()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "dataKey must start with a letter and contain only letters, numbers, hyphen or underscore");
-        }
-        return normalized;
+  private List<LeadPortalFlowQuestion> buildQuestions(
+      LeadPortalFlow flow, List<LeadPortalFlowQuestionRequest> questionRequests) {
+    if (CollectionUtils.isEmpty(questionRequests)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "questions are required");
     }
+    List<LeadPortalFlowQuestion> questions = new ArrayList<>();
+    Set<String> usedKeys = new HashSet<>();
+    for (int index = 0; index < questionRequests.size(); index++) {
+      questions.add(toQuestion(flow, questionRequests.get(index), index, usedKeys));
+    }
+    return questions;
+  }
 
-    private Integer normalizeBatchSize(Integer value) {
-        if (value == null) {
-            return null;
-        }
-        if (value <= 0) {
-            return null;
-        }
-        return Math.min(value, 20);
+  private LeadPortalFlowQuestion toQuestion(
+      LeadPortalFlow flow, LeadPortalFlowQuestionRequest request, int index, Set<String> usedKeys) {
+    String title = normalizeTitle(request.getTitle());
+    String dataKey = normalizeDataKey(request.getDataKey());
+    if (!usedKeys.add(dataKey)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "duplicate dataKey in questions: " + dataKey);
     }
+    LeadPortalQuestionType type = Objects.requireNonNull(request.getType(), "type");
+    List<String> options = sanitizeOptions(request.getOptions(), type);
+    return LeadPortalFlowQuestion.builder()
+        .flow(flow)
+        .title(title)
+        .dataKey(dataKey)
+        .type(type)
+        .required(request.isRequired())
+        .description(trimToNull(request.getDescription()))
+        .placeholder(trimToNull(request.getPlaceholder()))
+        .position(index)
+        .options(options)
+        .build();
+  }
 
-    private String trimToNull(String value) {
-        if (!StringUtils.hasText(value)) {
-            return null;
-        }
-        return value.trim();
+  private List<String> sanitizeOptions(List<String> options, LeadPortalQuestionType type) {
+    boolean expectsOptions =
+        type == LeadPortalQuestionType.SINGLE_CHOICE
+            || type == LeadPortalQuestionType.MULTIPLE_CHOICE;
+    if (CollectionUtils.isEmpty(options)) {
+      if (expectsOptions) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "options are required for question type " + type);
+      }
+      return new ArrayList<>();
     }
+    List<String> cleaned =
+        options.stream()
+            .map(option -> option == null ? null : option.trim())
+            .filter(StringUtils::hasText)
+            .toList();
+    if (cleaned.isEmpty() && expectsOptions) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "options are required for question type " + type);
+    }
+    return new ArrayList<>(cleaned);
+  }
+
+  private void ensureUniqueSlug(String slug, Long currentId) {
+    repository
+        .findBySlug(slug)
+        .filter(existing -> !Objects.equals(existing.getId(), currentId))
+        .ifPresent(
+            existing -> {
+              throw new ResponseStatusException(
+                  HttpStatus.CONFLICT, "slug already in use: " + slug);
+            });
+  }
+
+  private Experiment attachExperiment(Long experimentId) {
+    return experimentRepository
+        .findById(experimentId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "experiment not found: " + experimentId));
+  }
+
+  private MarketNiche attachMarketNiche(Long marketNicheId) {
+    if (marketNicheId == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
+    }
+    return marketNicheRepository
+        .findById(marketNicheId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "market niche not found: " + marketNicheId));
+  }
+
+  private LeadPortalSimpleFormStyle resolveSimpleFormStyle(Long styleId) {
+    if (styleId == null) {
+      return null;
+    }
+    return simpleFormStyleRepository
+        .findById(styleId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "simple form style not found: " + styleId));
+  }
+
+  private String normalizeName(String name) {
+    if (!StringUtils.hasText(name)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+    }
+    return name.trim();
+  }
+
+  private String normalizeSlug(String slug) {
+    if (!StringUtils.hasText(slug)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "slug is required");
+    }
+    String normalized = slug.trim().toLowerCase(Locale.ROOT);
+    if (!SLUG_PATTERN.matcher(normalized).matches()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "slug must contain only lowercase letters, numbers and hyphen");
+    }
+    return normalized;
+  }
+
+  private String normalizeTitle(String title) {
+    if (!StringUtils.hasText(title)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title is required");
+    }
+    return title.trim();
+  }
+
+  private String normalizeDataKey(String dataKey) {
+    if (!StringUtils.hasText(dataKey)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dataKey is required");
+    }
+    String normalized = dataKey.trim();
+    if (!DATA_KEY_PATTERN.matcher(normalized).matches()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "dataKey must start with a letter and contain only letters, numbers, hyphen or underscore");
+    }
+    return normalized;
+  }
+
+  private Integer normalizeBatchSize(Integer value) {
+    if (value == null) {
+      return null;
+    }
+    if (value <= 0) {
+      return null;
+    }
+    return Math.min(value, 20);
+  }
+
+  private String trimToNull(String value) {
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    return value.trim();
+  }
 }

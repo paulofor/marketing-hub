@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class ExperimentPipelineGenerationRequest {
-    private String customInstructions;
-    private String model;
+  private String customInstructions;
+  private String model;
 }

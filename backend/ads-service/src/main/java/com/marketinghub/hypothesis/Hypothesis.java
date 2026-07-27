@@ -1,24 +1,27 @@
 package com.marketinghub.hypothesis;
 
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.deliverable.DeliverablePackage;
-import com.marketinghub.creative.label.Angle;
-import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.ads.FacebookInstantForm;
+import com.marketinghub.creative.label.Angle;
+import com.marketinghub.deliverable.DeliverablePackage;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.productai.ProductAiSubtype;
+import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.targeting.TargetingElement;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.UuidGenerator;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
-/** Responsabilidade: representar uma hipótese comercial usada para gerar, validar e escalar experimentos de venda. */
+/**
+ * Responsabilidade: representar uma hipótese comercial usada para gerar, validar e escalar
+ * experimentos de venda.
+ */
 @Entity
 @Data
 @Builder
@@ -26,134 +29,128 @@ import java.util.UUID;
 @AllArgsConstructor
 @EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 public class Hypothesis {
-    @Id
-    @GeneratedValue
-    @UuidGenerator
-    private UUID id;
+  @Id @GeneratedValue @UuidGenerator private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "market_niche_id")
-    private MarketNiche marketNiche;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "market_niche_id")
+  private MarketNiche marketNiche;
 
-    @Column(nullable = false)
-    private String title;
+  @Column(nullable = false)
+  private String title;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "premise_angle_id")
-    private Angle premiseAngle;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "premise_angle_id")
+  private Angle premiseAngle;
 
-    /** Promessa de valor com espaço para textos completos gerados pela IA. */
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String promise;
+  /** Promessa de valor com espaço para textos completos gerados pela IA. */
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String promise;
 
-    /** Problema ou insight do cliente em uma frase. */
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String problem;
+  /** Problema ou insight do cliente em uma frase. */
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String problem;
 
-    /** Persona alvo dentro do nicho. */
-    @Column
-    private String persona;
+  /** Persona alvo dentro do nicho. */
+  @Column private String persona;
 
-    /** Mecanismo que sustenta a promessa. */
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String mechanism;
+  /** Mecanismo que sustenta a promessa. */
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String mechanism;
 
-    /** Mecanismo único que sustenta a promessa. */
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String uniqueMechanism;
+  /** Mecanismo único que sustenta a promessa. */
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String uniqueMechanism;
 
-    /** Entrega ou deliverable associado à hipótese. */
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String entrega;
+  /** Entrega ou deliverable associado à hipótese. */
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String entrega;
 
-    /** Prompt usado quando a hipótese é gerada por IA. */
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String prompt;
+  /** Prompt usado quando a hipótese é gerada por IA. */
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String prompt;
 
-    /** Snapshot em JSON do framework Dor → Resultado → Mecanismo → Prova → Oferta. */
-    @Lob
-    @Column(name = "framework_json", columnDefinition = "LONGTEXT")
-    private String frameworkJson;
+  /** Snapshot em JSON do framework Dor → Resultado → Mecanismo → Prova → Oferta. */
+  @Lob
+  @Column(name = "framework_json", columnDefinition = "LONGTEXT")
+  private String frameworkJson;
 
-    /** Modelo de IA responsável pela geração desta hipótese. */
-    @Column(length = 191)
-    private String model;
+  /** Modelo de IA responsável pela geração desta hipótese. */
+  @Column(length = 191)
+  private String model;
 
-    /** Custo estimado em USD para gerar esta hipótese. */
-    @Column(name = "cost_usd", precision = 10, scale = 4)
-    private BigDecimal costUsd;
+  /** Custo estimado em USD para gerar esta hipótese. */
+  @Column(name = "cost_usd", precision = 10, scale = 4)
+  private BigDecimal costUsd;
 
-    /** Custo estimado em BRL para a hipótese. */
-    @Column(precision = 10, scale = 2)
-    private BigDecimal cost;
+  /** Custo estimado em BRL para a hipótese. */
+  @Column(precision = 10, scale = 2)
+  private BigDecimal cost;
 
-    /** Custo total acumulado a partir desta hipótese. */
-    @Column(precision = 12, scale = 2)
-    private BigDecimal totalCost;
+  /** Custo total acumulado a partir desta hipótese. */
+  @Column(precision = 12, scale = 2)
+  private BigDecimal totalCost;
 
-    /** Despesa estimada em BRL para a hipótese. */
-    @Column(precision = 10, scale = 2)
-    private BigDecimal expense;
+  /** Despesa estimada em BRL para a hipótese. */
+  @Column(precision = 10, scale = 2)
+  private BigDecimal expense;
 
-    @ManyToMany
-    @JoinTable(name = "hypothesis_prompt_attribute_description",
-            joinColumns = @JoinColumn(name = "hypothesis_id"),
-            inverseJoinColumns = @JoinColumn(name = "prompt_attribute_description_id"))
-    @Builder.Default
-    private Set<PromptAttributeDescription> promptAttributeDescriptions = new HashSet<>();
+  @ManyToMany
+  @JoinTable(
+      name = "hypothesis_prompt_attribute_description",
+      joinColumns = @JoinColumn(name = "hypothesis_id"),
+      inverseJoinColumns = @JoinColumn(name = "prompt_attribute_description_id"))
+  @Builder.Default
+  private Set<PromptAttributeDescription> promptAttributeDescriptions = new HashSet<>();
 
+  /** Título curto usado para filtrar variações de imagens desta hipótese. */
+  @Column(length = 255)
+  private String imageFilterTitle;
 
-    /** Título curto usado para filtrar variações de imagens desta hipótese. */
-    @Column(length = 255)
-    private String imageFilterTitle;
+  /** Regra de sucesso que define se a hipótese será validada. */
+  @Lob
+  @Column(name = "success_rule", columnDefinition = "LONGTEXT")
+  private String successRule;
 
-    /** Regra de sucesso que define se a hipótese será validada. */
-    @Lob
-    @Column(name = "success_rule", columnDefinition = "LONGTEXT")
-    private String successRule;
+  @Enumerated(EnumType.STRING)
+  @Column
+  private OfferType offerType;
 
-    @Enumerated(EnumType.STRING)
-    @Column
-    private OfferType offerType;
+  @Column(precision = 6, scale = 2)
+  private BigDecimal price;
 
-    @Column(precision = 6, scale = 2)
-    private BigDecimal price;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "offer_package_id")
+  private DeliverablePackage offerPackage;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "offer_package_id")
-    private DeliverablePackage offerPackage;
+  @Column(precision = 7, scale = 2)
+  private BigDecimal kpiTargetCpl;
 
-    @Column(precision = 7, scale = 2)
-    private BigDecimal kpiTargetCpl;
+  /** Subtipo de Produto IA que esta hipótese pretende materializar no fluxo sistêmico. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "product_ai_subtype", length = 48)
+  private ProductAiSubtype productAiSubtype;
 
-    /** Subtipo de Produto IA que esta hipótese pretende materializar no fluxo sistêmico. */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "product_ai_subtype", length = 48)
-    private ProductAiSubtype productAiSubtype;
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  @Column
+  private HypothesisStatus status = HypothesisStatus.BACKLOG;
 
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    @Column
-    private HypothesisStatus status = HypothesisStatus.BACKLOG;
+  /** Data em que a hipótese foi gerada pela IA. */
+  private Instant generatedAt;
 
-    /** Data em que a hipótese foi gerada pela IA. */
-    private Instant generatedAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @UpdateTimestamp private Instant updatedAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @OneToMany(mappedBy = "hypothesis")
+  private java.util.List<TargetingElement> targetingElements;
 
-    @OneToMany(mappedBy = "hypothesis")
-    private java.util.List<TargetingElement> targetingElements;
-
-    @OneToMany(mappedBy = "hypothesis")
-    private java.util.List<FacebookInstantForm> instantForms;
+  @OneToMany(mappedBy = "hypothesis")
+  private java.util.List<FacebookInstantForm> instantForms;
 }

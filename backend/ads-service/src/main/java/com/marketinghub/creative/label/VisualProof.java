@@ -9,14 +9,13 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VisualProof {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String name;
+  private String name;
 
-    private String proofType;
+  private String proofType;
 
-    @Lob
-    private String description;
+  @Lob private String description;
 }

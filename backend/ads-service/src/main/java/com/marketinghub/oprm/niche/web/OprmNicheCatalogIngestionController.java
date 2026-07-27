@@ -16,10 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OprmNicheCatalogIngestionController {
 
-    private final OprmNicheCatalogIngestionService service;
+  private final OprmNicheCatalogIngestionService service;
 
-    @PostMapping("/catalog:ingest")
-    public ResponseEntity<OprmNicheSnapshotIngestResponseDto> ingest(@Valid @RequestBody OprmNicheCatalogIngestRequestDto request) {
-        return ResponseEntity.accepted().body(service.ingest(request));
-    }
+  @PostMapping("/catalog:ingest")
+  public ResponseEntity<OprmNicheSnapshotIngestResponseDto> ingest(
+      @Valid @RequestBody OprmNicheCatalogIngestRequestDto request) {
+    return ResponseEntity.accepted().body(service.ingest(request));
+  }
 }

@@ -1,15 +1,12 @@
 package com.marketinghub.epm;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-
-/**
- * Registra uma decisão financeira tomada sobre um experimento ou hipótese acompanhada pelo EPM.
- */
+/** Registra uma decisão financeira tomada sobre um experimento ou hipótese acompanhada pelo EPM. */
 @Entity
 @Table(name = "experiment_financial_decision")
 @Data
@@ -17,32 +14,32 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExperimentFinancialDecision {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_budget_id", nullable = false)
-    private ExperimentBudget experimentBudget;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "experiment_budget_id", nullable = false)
+  private ExperimentBudget experimentBudget;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "decision_type", nullable = false, length = 64)
-    private ExperimentFinancialDecisionType decisionType;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "decision_type", nullable = false, length = 64)
+  private ExperimentFinancialDecisionType decisionType;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String reason;
+  @Column(nullable = false, columnDefinition = "TEXT")
+  private String reason;
 
-    @Column(name = "decided_at", nullable = false)
-    private Instant decidedAt;
+  @Column(name = "decided_at", nullable = false)
+  private Instant decidedAt;
 
-    @Column(name = "decided_by", length = 191)
-    private String decidedBy;
+  @Column(name = "decided_by", length = 191)
+  private String decidedBy;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

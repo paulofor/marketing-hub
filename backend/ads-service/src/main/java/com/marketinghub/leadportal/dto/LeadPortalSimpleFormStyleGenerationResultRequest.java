@@ -6,9 +6,9 @@ import lombok.Data;
 
 @Data
 public class LeadPortalSimpleFormStyleGenerationResultRequest {
-    private String status;
-    private String generationError;
-    private String textParameters;
-    private BigDecimal generationCostUsd;
-    private LeadPortalSimpleFormStyleDefinition definition;
+  private String status;
+  private String generationError;
+  private String textParameters;
+  private BigDecimal generationCostUsd;
+  private LeadPortalSimpleFormStyleDefinition definition;
 }

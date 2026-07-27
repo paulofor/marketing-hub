@@ -227,6 +227,106 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
   }
 
+  /** Valida que progresso relevante no vídeo vira etapa própria antes da próxima ação comercial. */
+  @Test
+  void registerLandingPageAnalyticsSavesVideoProgressAsPartialVideoStage() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(66L)
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .build();
+    when(experimentRepository.findFirstByLeadPortalFlowSlug("musa-ped"))
+        .thenReturn(Optional.of(experiment));
+    when(eventRepository.save(any(ExperimentFunnelEvent.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    service.registerLandingPageAnalyticsEvent(
+        "musa-ped",
+        new RegisterLandingPageAnalyticsEventRequest(
+            "video-progress-1",
+            "video_progress",
+            "visitor-1",
+            "session-1",
+            null,
+            5000L,
+            5000L,
+            "https://metodomusa.ia.br/musa-ped",
+            Instant.parse("2026-07-16T21:00:00Z"),
+            "JUnit",
+            "mobile",
+            "android",
+            390,
+            844,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "hero-video",
+            5000L,
+            20000L,
+            25));
+
+    ArgumentCaptor<ExperimentFunnelEvent> eventCaptor =
+        ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
+    verify(eventRepository).save(eventCaptor.capture());
+
+    ExperimentFunnelEvent saved = eventCaptor.getValue();
+    assertEquals(ExperimentFunnelStage.VIDEO_VISTO_PARCIAL, saved.getStage());
+    assertTrue(saved.getPayload().contains("videoId=hero-video"));
+    assertTrue(saved.getPayload().contains("videoPercent=25"));
+  }
+
+  /** Valida que vídeo concluído vira etapa própria de consumo completo do argumento de venda. */
+  @Test
+  void registerLandingPageAnalyticsSavesVideoCompleteAsCompleteVideoStage() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(66L)
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .build();
+    when(experimentRepository.findFirstByLeadPortalFlowSlug("musa-ped"))
+        .thenReturn(Optional.of(experiment));
+    when(eventRepository.save(any(ExperimentFunnelEvent.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    service.registerLandingPageAnalyticsEvent(
+        "musa-ped",
+        new RegisterLandingPageAnalyticsEventRequest(
+            "video-complete-1",
+            "video_complete",
+            "visitor-1",
+            "session-1",
+            null,
+            20000L,
+            20000L,
+            "https://metodomusa.ia.br/musa-ped",
+            Instant.parse("2026-07-16T21:00:00Z"),
+            "JUnit",
+            "mobile",
+            "android",
+            390,
+            844,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "hero-video",
+            20000L,
+            20000L,
+            100));
+
+    ArgumentCaptor<ExperimentFunnelEvent> eventCaptor =
+        ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
+    verify(eventRepository).save(eventCaptor.capture());
+
+    ExperimentFunnelEvent saved = eventCaptor.getValue();
+    assertEquals(ExperimentFunnelStage.VIDEO_VISTO_COMPLETO, saved.getStage());
+    assertTrue(saved.getPayload().contains("videoId=hero-video"));
+    assertTrue(saved.getPayload().contains("videoPercent=100"));
+  }
+
   /** Valida que início do formulário vira sinal de visualização qualificada do formulário. */
   @Test
   void registerLandingPageAnalyticsSavesFormStartAsFormVisualization() {

@@ -7,48 +7,45 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Service layer for ad sets.
- */
+/** Service layer for ad sets. */
 @Service
 public class AdSetService {
-    private final AdSetRepository repository;
-    private final ExperimentRepository experimentRepository;
+  private final AdSetRepository repository;
+  private final ExperimentRepository experimentRepository;
 
-    public AdSetService(AdSetRepository repository, ExperimentRepository experimentRepository) {
-        this.repository = repository;
-        this.experimentRepository = experimentRepository;
-    }
+  public AdSetService(AdSetRepository repository, ExperimentRepository experimentRepository) {
+    this.repository = repository;
+    this.experimentRepository = experimentRepository;
+  }
 
-    /**
-     * Creates and stores an ad set.
-     */
-    @Transactional
-    public AdSet create(CreateAdSetRequest request) {
-        Experiment exp = experimentRepository.findById(request.getExperimentId()).orElseThrow();
-        if (exp.getStatus() == ExperimentStatus.FINISHED || exp.getStatus() == ExperimentStatus.FAILED) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "experiment not active");
-        }
-        AdSet adSet = AdSet.builder()
-                .experiment(exp)
-                .location(request.getLocation())
-                .interests(request.getInterests())
-                .jobTitles(request.getJobTitles())
-                .behaviors(request.getBehaviors())
-                .targetingJson(request.getTargetingJson())
-                .targetingRequestId(request.getTargetingRequestId())
-                .budget(request.getBudget())
-                .durationDays(request.getDurationDays())
-                .prompt(request.getPrompt())
-                .model(request.getModel())
-                .build();
-        return repository.save(adSet);
+  /** Creates and stores an ad set. */
+  @Transactional
+  public AdSet create(CreateAdSetRequest request) {
+    Experiment exp = experimentRepository.findById(request.getExperimentId()).orElseThrow();
+    if (exp.getStatus() == ExperimentStatus.FINISHED
+        || exp.getStatus() == ExperimentStatus.FAILED) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.BAD_REQUEST, "experiment not active");
     }
+    AdSet adSet =
+        AdSet.builder()
+            .experiment(exp)
+            .location(request.getLocation())
+            .interests(request.getInterests())
+            .jobTitles(request.getJobTitles())
+            .behaviors(request.getBehaviors())
+            .targetingJson(request.getTargetingJson())
+            .targetingRequestId(request.getTargetingRequestId())
+            .budget(request.getBudget())
+            .durationDays(request.getDurationDays())
+            .prompt(request.getPrompt())
+            .model(request.getModel())
+            .build();
+    return repository.save(adSet);
+  }
 
-    public Iterable<AdSet> listByExperiment(Long experimentId) {
-        Experiment exp = experimentRepository.findById(experimentId).orElseThrow();
-        return repository.findAll().stream().filter(a -> a.getExperiment().equals(exp)).toList();
-    }
+  public Iterable<AdSet> listByExperiment(Long experimentId) {
+    Experiment exp = experimentRepository.findById(experimentId).orElseThrow();
+    return repository.findAll().stream().filter(a -> a.getExperiment().equals(exp)).toList();
+  }
 }

@@ -8,9 +8,13 @@ import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
-/** Implementa a leitura do modelo configurado para a etapa MEI usando o contrato canônico de pipeline. */
+/**
+ * Implementa a leitura do modelo configurado para a etapa MEI usando o contrato canônico de
+ * pipeline.
+ */
 @Component
-public class JpaMeiAudienceSegmenterConfigurationGateway implements MeiAudienceSegmenterConfigurationGateway {
+public class JpaMeiAudienceSegmenterConfigurationGateway
+    implements MeiAudienceSegmenterConfigurationGateway {
   private static final String OPRM_NICHO_CNAE_PIPELINE_CODE = "oprm-nicho-cnae-pipeline";
   private static final String OPRM_NICHO_CNAE_CANONICAL_VERSION = "oprm-nichocnae-canon.v1";
   private static final String MEI_AUDIENCE_CANONICAL_CODE = "MEI_AUDIENCE_SEGMENTER";
@@ -20,21 +24,30 @@ public class JpaMeiAudienceSegmenterConfigurationGateway implements MeiAudienceS
 
   /** Inicializa o gateway com os repositórios canônicos de configuração de pipeline. */
   public JpaMeiAudienceSegmenterConfigurationGateway(
-      PipelineStageConfigRepository pipelineStageConfigRepository, PipelineStageRepository pipelineStageRepository) {
+      PipelineStageConfigRepository pipelineStageConfigRepository,
+      PipelineStageRepository pipelineStageRepository) {
     this.pipelineStageConfigRepository = pipelineStageConfigRepository;
     this.pipelineStageRepository = pipelineStageRepository;
   }
 
-  /** Recupera o modelo configurado priorizando a configuração oficial versionada e mantendo fallback operacional legado. */
+  /**
+   * Recupera o modelo configurado priorizando a configuração oficial versionada e mantendo fallback
+   * operacional legado.
+   */
   @Override
   public Optional<MeiAudienceSegmenterModel> findConfiguredModel() {
-    return findPersistentConfiguredModel().or(this::findLegacyConfiguredModel).map(this::toOprmModel);
+    return findPersistentConfiguredModel()
+        .or(this::findLegacyConfiguredModel)
+        .map(this::toOprmModel);
   }
 
   /** Busca o modelo na configuração oficial versionada do pipeline OPRM nicho CNAE. */
   private Optional<OpenAiModel> findPersistentConfiguredModel() {
     return pipelineStageConfigRepository
-        .findOfficialStageConfig(OPRM_NICHO_CNAE_PIPELINE_CODE, OPRM_NICHO_CNAE_CANONICAL_VERSION, MEI_AUDIENCE_CANONICAL_CODE)
+        .findOfficialStageConfig(
+            OPRM_NICHO_CNAE_PIPELINE_CODE,
+            OPRM_NICHO_CNAE_CANONICAL_VERSION,
+            MEI_AUDIENCE_CANONICAL_CODE)
         .map(config -> config.getOpenAiModel());
   }
 

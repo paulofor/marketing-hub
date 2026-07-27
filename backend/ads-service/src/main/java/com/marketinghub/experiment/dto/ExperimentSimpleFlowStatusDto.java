@@ -6,7 +6,4 @@ import lombok.Builder;
 
 @Builder
 public record ExperimentSimpleFlowStatusDto(
-        TargetingRequestDto request,
-        TargetingResolutionSummaryDto resolution
-) {
-}
+    TargetingRequestDto request, TargetingResolutionSummaryDto resolution) {}

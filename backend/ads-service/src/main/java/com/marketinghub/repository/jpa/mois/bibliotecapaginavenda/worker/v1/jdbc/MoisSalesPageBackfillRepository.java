@@ -16,74 +16,76 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class MoisSalesPageBackfillRepository implements MoisSalesPageBackfillGateway {
 
-    private final JdbcTemplate jdbcTemplate;
+  private final JdbcTemplate jdbcTemplate;
 
+  /**
+   * Verifica se as tabelas necessárias ao backfill existem antes de executar consultas de migração.
+   */
+  @Override
+  public boolean hasBackfillTables() {
+    return Boolean.TRUE.equals(
+        jdbcTemplate.execute(
+            (ConnectionCallback<Boolean>)
+                connection -> {
+                  DatabaseMetaData metadata = connection.getMetaData();
+                  return tableExists(metadata, "mois_sales_library_url_ingest")
+                      && tableExists(metadata, "mois_sales_library_processing_job")
+                      && tableExists(metadata, "mois_sales_library_page_analysis")
+                      && tableExists(metadata, "mois_sales_library_page_snapshot")
+                      && tableExists(metadata, "mois_sales_page")
+                      && tableExists(metadata, "mois_sales_page_job_execution");
+                }));
+  }
 
-    /**
-     * Verifica se as tabelas necessárias ao backfill existem antes de executar consultas de migração.
-     */
-    @Override
-    public boolean hasBackfillTables() {
-        return Boolean.TRUE.equals(jdbcTemplate.execute((ConnectionCallback<Boolean>) connection -> {
-            DatabaseMetaData metadata = connection.getMetaData();
-            return tableExists(metadata, "mois_sales_library_url_ingest")
-                    && tableExists(metadata, "mois_sales_library_processing_job")
-                    && tableExists(metadata, "mois_sales_library_page_analysis")
-                    && tableExists(metadata, "mois_sales_library_page_snapshot")
-                    && tableExists(metadata, "mois_sales_page")
-                    && tableExists(metadata, "mois_sales_page_job_execution");
-        }));
+  /**
+   * Consulta o metadado JDBC considerando diferenças de capitalização entre MySQL e bancos de
+   * teste.
+   */
+  private boolean tableExists(DatabaseMetaData metadata, String tableName) throws SQLException {
+    return tableExistsWithName(metadata, tableName)
+        || tableExistsWithName(metadata, tableName.toUpperCase());
+  }
+
+  /** Consulta uma variação de nome de tabela no metadado JDBC. */
+  private boolean tableExistsWithName(DatabaseMetaData metadata, String tableName)
+      throws SQLException {
+    try (ResultSet tables = metadata.getTables(null, null, tableName, new String[] {"TABLE"})) {
+      return tables.next();
     }
+  }
 
-    /**
-     * Consulta o metadado JDBC considerando diferenças de capitalização entre MySQL e bancos de teste.
-     */
-    private boolean tableExists(DatabaseMetaData metadata, String tableName) throws SQLException {
-        return tableExistsWithName(metadata, tableName) || tableExistsWithName(metadata, tableName.toUpperCase());
-    }
+  /** Conta páginas consolidadas no modelo novo para medir o progresso do backfill. */
+  @Override
+  public long countSalesPages() {
+    Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page", Long.class);
+    return count == null ? 0 : count;
+  }
 
-    /**
-     * Consulta uma variação de nome de tabela no metadado JDBC.
-     */
-    private boolean tableExistsWithName(DatabaseMetaData metadata, String tableName) throws SQLException {
-        try (ResultSet tables = metadata.getTables(null, null, tableName, new String[] {"TABLE"})) {
-            return tables.next();
-        }
-    }
+  /** Conta execuções no histórico novo para medir a cobertura de auditoria migrada. */
+  @Override
+  public long countJobExecutions() {
+    Long count =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM mois_sales_page_job_execution", Long.class);
+    return count == null ? 0 : count;
+  }
 
-    /**
-     * Conta páginas consolidadas no modelo novo para medir o progresso do backfill.
-     */
-    @Override
-    public long countSalesPages() {
-        Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page", Long.class);
-        return count == null ? 0 : count;
-    }
+  /** Conta URLs consolidadas no modelo legado que devem existir no novo estado operacional. */
+  @Override
+  public long countLegacyUrlIngests() {
+    Long count =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM mois_sales_library_url_ingest", Long.class);
+    return count == null ? 0 : count;
+  }
 
-    /**
-     * Conta execuções no histórico novo para medir a cobertura de auditoria migrada.
-     */
-    @Override
-    public long countJobExecutions() {
-        Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page_job_execution", Long.class);
-        return count == null ? 0 : count;
-    }
-
-    /**
-     * Conta URLs consolidadas no modelo legado que devem existir no novo estado operacional.
-     */
-    @Override
-    public long countLegacyUrlIngests() {
-        Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest", Long.class);
-        return count == null ? 0 : count;
-    }
-
-    /**
-     * Insere ou atualiza o estado atual consolidado em mois_sales_page a partir das tabelas legadas.
-     */
-    @Override
-    public int backfillSalesPages() {
-        return jdbcTemplate.update("""
+  /**
+   * Insere ou atualiza o estado atual consolidado em mois_sales_page a partir das tabelas legadas.
+   */
+  @Override
+  public int backfillSalesPages() {
+    return jdbcTemplate.update(
+        """
                 INSERT INTO mois_sales_page
                 (workspace_id, source, source_job_id, source_reference_id, collected_reference_id, product_name, title,
                  url_original, url_canonical, sales_page_url, product_url, url_final, redirect_root_url,
@@ -197,14 +199,13 @@ public class MoisSalesPageBackfillRepository implements MoisSalesPageBackfillGat
                   last_analyzed_at = VALUES(last_analyzed_at),
                   updated_at = UTC_TIMESTAMP()
                 """);
-    }
+  }
 
-    /**
-     * Migra o último job legado de processamento de cada página como execução de análise.
-     */
-    @Override
-    public int backfillLatestProcessingJobs() {
-        return jdbcTemplate.update("""
+  /** Migra o último job legado de processamento de cada página como execução de análise. */
+  @Override
+  public int backfillLatestProcessingJobs() {
+    return jdbcTemplate.update(
+        """
                 INSERT INTO mois_sales_page_job_execution
                 (sales_page_id, workspace_id, job_type, stage, status, attempt, input_url, error_category, error_message,
                  started_at, finished_at, created_at, updated_at)
@@ -228,14 +229,13 @@ public class MoisSalesPageBackfillRepository implements MoisSalesPageBackfillGat
                       AND e.updated_at = j.updated_at
                   )
                 """);
-    }
+  }
 
-    /**
-     * Migra a última análise de cada página como execução de auditoria de análise.
-     */
-    @Override
-    public int backfillLatestAnalyses() {
-        return jdbcTemplate.update("""
+  /** Migra a última análise de cada página como execução de auditoria de análise. */
+  @Override
+  public int backfillLatestAnalyses() {
+    return jdbcTemplate.update(
+        """
                 INSERT INTO mois_sales_page_job_execution
                 (sales_page_id, workspace_id, job_type, stage, status, attempt, input_url, score_total,
                  sections_json, copy_json, visual_json, image_json, request_payload_json, error_message,
@@ -261,14 +261,13 @@ public class MoisSalesPageBackfillRepository implements MoisSalesPageBackfillGat
                       AND e.updated_at = a.updated_at
                   )
                 """);
-    }
+  }
 
-    /**
-     * Migra o último snapshot de cada página como execução de auditoria da captura.
-     */
-    @Override
-    public int backfillLatestSnapshots() {
-        return jdbcTemplate.update("""
+  /** Migra o último snapshot de cada página como execução de auditoria da captura. */
+  @Override
+  public int backfillLatestSnapshots() {
+    return jdbcTemplate.update(
+        """
                 INSERT INTO mois_sales_page_job_execution
                 (sales_page_id, workspace_id, job_type, stage, status, attempt, input_url, final_url, redirect_root_url,
                  http_status, content_type, raw_html, raw_html_sha256, raw_html_bytes, screenshot_blob, screenshot_bytes,
@@ -299,14 +298,16 @@ public class MoisSalesPageBackfillRepository implements MoisSalesPageBackfillGat
                       AND e.updated_at = s.updated_at
                   )
                 """);
-    }
+  }
 
-    /**
-     * Migra a última captura bruta ligada a uma referência coletada quando há vínculo com a página consolidada.
-     */
-    @Override
-    public int backfillLatestCollectedReferenceHtmlCaptures() {
-        return jdbcTemplate.update("""
+  /**
+   * Migra a última captura bruta ligada a uma referência coletada quando há vínculo com a página
+   * consolidada.
+   */
+  @Override
+  public int backfillLatestCollectedReferenceHtmlCaptures() {
+    return jdbcTemplate.update(
+        """
                 INSERT INTO mois_sales_page_job_execution
                 (sales_page_id, workspace_id, job_type, stage, status, attempt, claimed_by, input_url, final_url,
                  http_status, content_type, raw_html, raw_html_sha256, raw_html_bytes, error_category, error_message,
@@ -331,14 +332,13 @@ public class MoisSalesPageBackfillRepository implements MoisSalesPageBackfillGat
                       AND e.updated_at = c.updated_at
                   )
                 """);
-    }
+  }
 
-    /**
-     * Atualiza cada página consolidada com o ponteiro para a execução mais recente migrada.
-     */
-    @Override
-    public int updateLastJobExecutionPointers() {
-        return jdbcTemplate.update("""
+  /** Atualiza cada página consolidada com o ponteiro para a execução mais recente migrada. */
+  @Override
+  public int updateLastJobExecutionPointers() {
+    return jdbcTemplate.update(
+        """
                 UPDATE mois_sales_page sp
                 SET sp.last_job_execution_id = (
                   SELECT e.id FROM mois_sales_page_job_execution e
@@ -350,5 +350,5 @@ public class MoisSalesPageBackfillRepository implements MoisSalesPageBackfillGat
                   SELECT 1 FROM mois_sales_page_job_execution e2 WHERE e2.sales_page_id = sp.id
                 )
                 """);
-    }
+  }
 }

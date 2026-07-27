@@ -4,9 +4,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import lombok.*;
 
-/**
- * Preset of structural metrics for experiments.
- */
+/** Preset of structural metrics for experiments. */
 @Entity
 @Data
 @NoArgsConstructor
@@ -14,16 +12,15 @@ import lombok.*;
 @Builder
 @Table(name = "metric_preset")
 public class MetricPreset {
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String name;
+  private String name;
 
-    private Integer sampleSize;
+  private Integer sampleSize;
 
-    @Column(precision = 5, scale = 2)
-    private BigDecimal stopLossFactor;
+  @Column(precision = 5, scale = 2)
+  private BigDecimal stopLossFactor;
 
-    @Column(name = "default_mde_pp", precision = 5, scale = 2)
-    private BigDecimal defaultMdePp;
+  @Column(name = "default_mde_pp", precision = 5, scale = 2)
+  private BigDecimal defaultMdePp;
 }

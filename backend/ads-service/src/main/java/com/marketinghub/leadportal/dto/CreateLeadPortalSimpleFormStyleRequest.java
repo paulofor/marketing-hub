@@ -7,20 +7,19 @@ import lombok.Data;
 @Data
 public class CreateLeadPortalSimpleFormStyleRequest {
 
-    @NotBlank
-    private String name;
+  @NotBlank private String name;
 
-    @NotBlank
-    @Pattern(regexp = "^[a-z0-9]+(?:-[a-z0-9]+)*$", message = "slug deve conter apenas letras minúsculas, números e hífens")
-    private String slug;
+  @NotBlank
+  @Pattern(
+      regexp = "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      message = "slug deve conter apenas letras minúsculas, números e hífens")
+  private String slug;
 
-    private String description;
+  private String description;
 
-    @NotBlank
-    private String textModel;
+  @NotBlank private String textModel;
 
-    @NotBlank
-    private String textPrompt;
+  @NotBlank private String textPrompt;
 
-    private String previewImageUrl;
+  private String previewImageUrl;
 }

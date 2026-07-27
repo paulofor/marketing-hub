@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class PromptDomainObjectDto {
-    private String type;
-    private String slug;
-    private String label;
-    private String contextKey;
+  private String type;
+  private String slug;
+  private String label;
+  private String contextKey;
 }

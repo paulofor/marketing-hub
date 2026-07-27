@@ -7,9 +7,10 @@ import lombok.Data;
 
 @Data
 public class CreateEmotionalTriggerRequest {
-    @NotBlank
-    @Size(max = 60)
-    private String name;
-    private EmotionalValence valence;
-    private String description;
+  @NotBlank
+  @Size(max = 60)
+  private String name;
+
+  private EmotionalValence valence;
+  private String description;
 }

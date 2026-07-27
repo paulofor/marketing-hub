@@ -26,49 +26,49 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 public class OpenAiModel {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, length = 255)
-    private String name;
+  @Column(nullable = false, length = 255)
+  private String name;
 
-    @Column(nullable = false, unique = true, length = 128)
-    private String code;
+  @Column(nullable = false, unique = true, length = 128)
+  private String code;
 
-    @Column(name = "price_input_standard", nullable = false, precision = 12, scale = 5)
-    private BigDecimal priceInputStandard;
+  @Column(name = "price_input_standard", nullable = false, precision = 12, scale = 5)
+  private BigDecimal priceInputStandard;
 
-    @Column(name = "price_input_cached_standard", nullable = false, precision = 12, scale = 5)
-    private BigDecimal priceInputCachedStandard;
+  @Column(name = "price_input_cached_standard", nullable = false, precision = 12, scale = 5)
+  private BigDecimal priceInputCachedStandard;
 
-    @Column(name = "price_output_standard", nullable = false, precision = 12, scale = 5)
-    private BigDecimal priceOutputStandard;
+  @Column(name = "price_output_standard", nullable = false, precision = 12, scale = 5)
+  private BigDecimal priceOutputStandard;
 
-    @Column(name = "price_input_batch", nullable = false, precision = 12, scale = 5)
-    private BigDecimal priceInputBatch;
+  @Column(name = "price_input_batch", nullable = false, precision = 12, scale = 5)
+  private BigDecimal priceInputBatch;
 
-    @Column(name = "price_input_cached_batch", nullable = false, precision = 12, scale = 5)
-    private BigDecimal priceInputCachedBatch;
+  @Column(name = "price_input_cached_batch", nullable = false, precision = 12, scale = 5)
+  private BigDecimal priceInputCachedBatch;
 
-    @Column(name = "price_output_batch", nullable = false, precision = 12, scale = 5)
-    private BigDecimal priceOutputBatch;
+  @Column(name = "price_output_batch", nullable = false, precision = 12, scale = 5)
+  private BigDecimal priceOutputBatch;
 
-    @Column(name = "accepts_image_input", nullable = false)
-    @Builder.Default
-    private boolean acceptsImageInput = false;
+  @Column(name = "accepts_image_input", nullable = false)
+  @Builder.Default
+  private boolean acceptsImageInput = false;
 
-    @Column(name = "pricing_source", length = 255)
-    private String pricingSource;
+  @Column(name = "pricing_source", length = 255)
+  private String pricingSource;
 
-    @Column(name = "last_pricing_sync_at")
-    private Instant lastPricingSyncAt;
+  @Column(name = "last_pricing_sync_at")
+  private Instant lastPricingSyncAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private Instant updatedAt;
 }

@@ -2,6 +2,9 @@ package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.inves
 
 import java.util.List;
 
-/** Contrato de resposta do endpoint pending da etapa geração de âncoras de investigação do dossiê MOIS v1. */
-public record DossierInvestigationAnchorBuilderPendingResponse(boolean claimed, List<DossierInvestigationAnchorBuilderPendingJob> jobs) {
-}
+/**
+ * Contrato de resposta do endpoint pending da etapa geração de âncoras de investigação do dossiê
+ * MOIS v1.
+ */
+public record DossierInvestigationAnchorBuilderPendingResponse(
+    boolean claimed, List<DossierInvestigationAnchorBuilderPendingJob> jobs) {}

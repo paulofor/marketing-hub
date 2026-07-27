@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class HypothesisFrameworkGenerationRequest {
-    private String model;
-    private String customInstructions;
+  private String model;
+  private String customInstructions;
 }

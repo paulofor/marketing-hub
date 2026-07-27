@@ -11,17 +11,18 @@ import org.springframework.data.repository.query.Param;
  * Repositório responsável por persistir e consultar frases de pesquisa do pipeline OPRM nicho CNAE.
  */
 public interface OprmResearchQueryRepository extends JpaRepository<OprmResearchQuery, Long> {
-    /** Lista as frases de pesquisa de um ciclo em ordem de prioridade operacional. */
-    List<OprmResearchQuery> findByResearchCycleIdOrderByPriorityAscIdAsc(Long researchCycleId);
+  /** Lista as frases de pesquisa de um ciclo em ordem de prioridade operacional. */
+  List<OprmResearchQuery> findByResearchCycleIdOrderByPriorityAscIdAsc(Long researchCycleId);
 
-    /** Conta frases de pesquisa de um ciclo que ainda estão em determinado status operacional. */
-    long countByResearchCycleIdAndStatus(Long researchCycleId, String status);
+  /** Conta frases de pesquisa de um ciclo que ainda estão em determinado status operacional. */
+  long countByResearchCycleIdAndStatus(Long researchCycleId, String status);
 
-    /** Lista frases pendentes de busca para a etapa três em ordem operacional. */
-    List<OprmResearchQuery> findByStatusOrderByPriorityAscIdAsc(String status, Pageable pageable);
+  /** Lista frases pendentes de busca para a etapa três em ordem operacional. */
+  List<OprmResearchQuery> findByStatusOrderByPriorityAscIdAsc(String status, Pageable pageable);
 
-    /** Lista frases pendentes somente de ciclos posicionados na etapa atual de busca pública. */
-    @Query("""
+  /** Lista frases pendentes somente de ciclos posicionados na etapa atual de busca pública. */
+  @Query(
+      """
             select query
             from OprmResearchQuery query
             join OprmRoutineResearchCycle cycle on cycle.id = query.researchCycleId
@@ -29,9 +30,11 @@ public interface OprmResearchQueryRepository extends JpaRepository<OprmResearchQ
               and cycle.currentStageCode = :currentStageCode
             order by query.priority asc, query.id asc
             """)
-    List<OprmResearchQuery> findPendingByStatusAndCycleStage(
-            @Param("status") String status, @Param("currentStageCode") String currentStageCode, Pageable pageable);
+  List<OprmResearchQuery> findPendingByStatusAndCycleStage(
+      @Param("status") String status,
+      @Param("currentStageCode") String currentStageCode,
+      Pageable pageable);
 
-    /** Remove queries de um ciclo antes de reexecutar etapas do mesmo job. */
-    void deleteByResearchCycleId(Long researchCycleId);
+  /** Remove queries de um ciclo antes de reexecutar etapas do mesmo job. */
+  void deleteByResearchCycleId(Long researchCycleId);
 }

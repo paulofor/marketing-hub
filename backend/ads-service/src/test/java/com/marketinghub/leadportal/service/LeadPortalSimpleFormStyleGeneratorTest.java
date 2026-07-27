@@ -21,23 +21,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class LeadPortalSimpleFormStyleGeneratorTest {
 
-    @Mock
-    private OpenAiBatchClient batchClient;
+  @Mock private OpenAiBatchClient batchClient;
 
-    @Captor
-    private ArgumentCaptor<Map<String, Object>> bodyCaptor;
+  @Captor private ArgumentCaptor<Map<String, Object>> bodyCaptor;
 
-    private LeadPortalSimpleFormStyleGenerator generator;
+  private LeadPortalSimpleFormStyleGenerator generator;
 
-    @BeforeEach
-    void setUp() {
-        generator = new LeadPortalSimpleFormStyleGenerator(batchClient, new ObjectMapper());
-    }
+  @BeforeEach
+  void setUp() {
+    generator = new LeadPortalSimpleFormStyleGenerator(batchClient, new ObjectMapper());
+  }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void buildRequestUsesTextJsonSchemaFormat() {
-        String json = """
+  @Test
+  @SuppressWarnings("unchecked")
+  void buildRequestUsesTextJsonSchemaFormat() {
+    String json =
+        """
                 {
                   "backgroundColor": "#ffffff",
                   "backgroundGradient": "linear-gradient(90deg,#111,#222)",
@@ -62,30 +61,27 @@ class LeadPortalSimpleFormStyleGeneratorTest {
                   "heroImageBlendColor": "#111111"
                 }
                 """;
-        OpenAiUsage usage = new OpenAiUsage(10, 5, null, null, 15);
-        OpenAiResponse response = new OpenAiResponse("resp_123", json, null, usage, null, "completed");
-        when(batchClient.executeSingle(bodyCaptor.capture(), anyString())).thenReturn(response);
+    OpenAiUsage usage = new OpenAiUsage(10, 5, null, null, 15);
+    OpenAiResponse response = new OpenAiResponse("resp_123", json, null, usage, null, "completed");
+    when(batchClient.executeSingle(bodyCaptor.capture(), anyString())).thenReturn(response);
 
-        GenerationCommand command = new GenerationCommand(
-                "gpt-4o-mini",
-                "Estilo premium e leve",
-                "Hero Gradient",
-                "Fluxo para personal trainer"
-        );
+    GenerationCommand command =
+        new GenerationCommand(
+            "gpt-4o-mini", "Estilo premium e leve", "Hero Gradient", "Fluxo para personal trainer");
 
-        generator.generate(command);
+    generator.generate(command);
 
-        Map<String, Object> body = bodyCaptor.getValue();
-        assertThat(body).containsKey("text");
-        assertThat(body).doesNotContainKey("response_format");
+    Map<String, Object> body = bodyCaptor.getValue();
+    assertThat(body).containsKey("text");
+    assertThat(body).doesNotContainKey("response_format");
 
-        Map<String, Object> textConfig = (Map<String, Object>) body.get("text");
-        Map<String, Object> format = (Map<String, Object>) textConfig.get("format");
-        assertThat(format.get("type")).isEqualTo("json_schema");
-        assertThat(format.get("name")).isEqualTo("lead_portal_simple_form_style");
-        assertThat(format.get("schema")).isInstanceOf(Map.class);
+    Map<String, Object> textConfig = (Map<String, Object>) body.get("text");
+    Map<String, Object> format = (Map<String, Object>) textConfig.get("format");
+    assertThat(format.get("type")).isEqualTo("json_schema");
+    assertThat(format.get("name")).isEqualTo("lead_portal_simple_form_style");
+    assertThat(format.get("schema")).isInstanceOf(Map.class);
 
-        Map<String, Object> jsonSchema = (Map<String, Object>) format.get("json_schema");
-        assertThat(jsonSchema.get("name")).isEqualTo("lead_portal_simple_form_style");
-    }
+    Map<String, Object> jsonSchema = (Map<String, Object>) format.get("json_schema");
+    assertThat(jsonSchema.get("name")).isEqualTo("lead_portal_simple_form_style");
+  }
 }

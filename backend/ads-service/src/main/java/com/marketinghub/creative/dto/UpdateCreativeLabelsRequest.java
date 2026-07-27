@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class UpdateCreativeLabelsRequest {
-    private Long angleId;
-    private Long visualProofId;
-    private Long emotionalTriggerId;
+  private Long angleId;
+  private Long visualProofId;
+  private Long emotionalTriggerId;
 }

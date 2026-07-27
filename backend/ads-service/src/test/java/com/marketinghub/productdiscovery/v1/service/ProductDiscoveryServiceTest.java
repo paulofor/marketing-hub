@@ -13,25 +13,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProductDiscoveryServiceTest {
 
-    @Mock
-    private ProductDiscoveryCycleRepository cycleRepository;
+  @Mock private ProductDiscoveryCycleRepository cycleRepository;
 
-    @Mock
-    private ProductDiscoveryOpportunityRepository opportunityRepository;
+  @Mock private ProductDiscoveryOpportunityRepository opportunityRepository;
 
-    /** Deve manter renda extra como primeira trilha de pesquisa recomendada com travas comerciais. */
-    @Test
-    void getMaturityRanking() {
-        ProductDiscoveryService service = new ProductDiscoveryService(cycleRepository, opportunityRepository);
+  /** Deve manter renda extra como primeira trilha de pesquisa recomendada com travas comerciais. */
+  @Test
+  void getMaturityRanking() {
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(cycleRepository, opportunityRepository);
 
-        ProductDiscoveryMaturityRankingResponse ranking = service.getMaturityRanking();
+    ProductDiscoveryMaturityRankingResponse ranking = service.getMaturityRanking();
 
-        assertThat(ranking.strategyName()).isEqualTo("Ranking por maturidade comercial");
-        assertThat(ranking.items()).extracting(ProductDiscoveryMaturityItemResponse::niche).contains("Renda extra");
-        assertThat(ranking.recommendedTracks())
-                .first()
-                .extracting(ProductDiscoveryResearchTrackResponse::name)
-                .isEqualTo("Renda extra para autônomos/MEIs");
-        assertThat(ranking.recommendedTracks().getFirst().forbiddenCategories()).contains("Promessa de renda garantida");
-    }
+    assertThat(ranking.strategyName()).isEqualTo("Ranking por maturidade comercial");
+    assertThat(ranking.items())
+        .extracting(ProductDiscoveryMaturityItemResponse::niche)
+        .contains("Renda extra");
+    assertThat(ranking.recommendedTracks())
+        .first()
+        .extracting(ProductDiscoveryResearchTrackResponse::name)
+        .isEqualTo("Renda extra para autônomos/MEIs");
+    assertThat(ranking.recommendedTracks().getFirst().forbiddenCategories())
+        .contains("Promessa de renda garantida");
+  }
 }

@@ -2,30 +2,30 @@ package com.marketinghub.repository.jpa.hypothesis;
 
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.HypothesisStatus;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.math.BigDecimal;
-import java.util.List;
-
-import java.util.UUID;
-
-/**
- * Repositório JPA responsável pela persistência de Hypothesis.
- */
+/** Repositório JPA responsável pela persistência de Hypothesis. */
 public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
-    List<Hypothesis> findByMarketNicheId(Long marketNicheId);
-    List<Hypothesis> findByMarketNicheIdAndStatus(Long marketNicheId, HypothesisStatus status);
-    List<Hypothesis> findByStatus(HypothesisStatus status);
-    long countByMarketNicheId(Long marketNicheId);
+  List<Hypothesis> findByMarketNicheId(Long marketNicheId);
 
-    @Modifying
-    @Query("""
+  List<Hypothesis> findByMarketNicheIdAndStatus(Long marketNicheId, HypothesisStatus status);
+
+  List<Hypothesis> findByStatus(HypothesisStatus status);
+
+  long countByMarketNicheId(Long marketNicheId);
+
+  @Modifying
+  @Query(
+      """
             update Hypothesis h
             set h.totalCost = coalesce(h.totalCost, 0) + :delta
             where h.id = :id
             """)
-    void incrementTotalCost(@Param("id") UUID id, @Param("delta") BigDecimal delta);
+  void incrementTotalCost(@Param("id") UUID id, @Param("delta") BigDecimal delta);
 }

@@ -30,38 +30,38 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExperimentSalesPageTypeSelection {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id", nullable = false)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "experiment_id", nullable = false)
-    @ToString.Exclude
-    private Experiment experiment;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "experiment_id", nullable = false)
+  @ToString.Exclude
+  private Experiment experiment;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sales_page_type_code", nullable = false)
-    @ToString.Exclude
-    private SalesPageType salesPageType;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "sales_page_type_code", nullable = false)
+  @ToString.Exclude
+  private SalesPageType salesPageType;
 
-    @Column(name = "variant_key", nullable = false, length = 16)
-    private String variantKey;
+  @Column(name = "variant_key", nullable = false, length = 16)
+  private String variantKey;
 
-    @Column(name = "traffic_weight", nullable = false, precision = 5, scale = 2)
-    private BigDecimal trafficWeight;
+  @Column(name = "traffic_weight", nullable = false, precision = 5, scale = 2)
+  private BigDecimal trafficWeight;
 
-    @Column(name = "active", nullable = false)
-    private boolean active;
+  @Column(name = "active", nullable = false)
+  private boolean active;
 
-    @Column(name = "notes", length = 1024)
-    private String notes;
+  @Column(name = "notes", length = 1024)
+  private String notes;
 
-    @Column(name = "created_at")
-    @CreationTimestamp
-    private Instant createdAt;
+  @Column(name = "created_at")
+  @CreationTimestamp
+  private Instant createdAt;
 
-    @Column(name = "updated_at")
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @Column(name = "updated_at")
+  @UpdateTimestamp
+  private Instant updatedAt;
 }

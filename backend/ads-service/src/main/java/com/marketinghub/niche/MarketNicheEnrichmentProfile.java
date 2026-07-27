@@ -90,7 +90,6 @@ public class MarketNicheEnrichmentProfile {
   @Column(name = "persona_daily_tasks", columnDefinition = "LONGTEXT")
   private String personaDailyTasks;
 
-
   @Column(name = "evidence_summary", nullable = false, columnDefinition = "LONGTEXT")
   private String evidenceSummary;
 

@@ -28,33 +28,33 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommercialPlanWeekObjective {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "plan_id", nullable = false)
-    private CommercialPlan plan;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "plan_id", nullable = false)
+  private CommercialPlan plan;
 
-    @Column(name = "week_number", nullable = false)
-    private Integer weekNumber;
+  @Column(name = "week_number", nullable = false)
+  private Integer weekNumber;
 
-    @Column(name = "sequence_order", nullable = false)
-    private Integer sequenceOrder;
+  @Column(name = "sequence_order", nullable = false)
+  private Integer sequenceOrder;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "objective_text", nullable = false, columnDefinition = "LONGTEXT")
-    private String objectiveText;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "objective_text", nullable = false, columnDefinition = "LONGTEXT")
+  private String objectiveText;
 
-    @Column(name = "score")
-    private Integer score;
+  @Column(name = "score")
+  private Integer score;
 
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at")
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private Instant updatedAt;
 }

@@ -17,29 +17,30 @@ import org.springframework.web.server.ResponseStatusException;
 @ExtendWith(MockitoExtension.class)
 class MetricPresetServiceTest {
 
-    @Mock
-    private MetricPresetRepository repository;
+  @Mock private MetricPresetRepository repository;
 
-    private MetricPresetService service;
+  private MetricPresetService service;
 
-    @BeforeEach
-    void setUp() {
-        service = new MetricPresetService(repository);
-    }
+  @BeforeEach
+  void setUp() {
+    service = new MetricPresetService(repository);
+  }
 
-    @Test
-    void getThrowsBadRequestWhenIdIsBlank() {
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> service.get(" "));
-        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        assertEquals("metricPresetId required", ex.getReason());
-    }
+  @Test
+  void getThrowsBadRequestWhenIdIsBlank() {
+    ResponseStatusException ex =
+        assertThrows(ResponseStatusException.class, () -> service.get(" "));
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    assertEquals("metricPresetId required", ex.getReason());
+  }
 
-    @Test
-    void getThrowsBadRequestWhenIdDoesNotExist() {
-        when(repository.findById("legacy")).thenReturn(Optional.empty());
+  @Test
+  void getThrowsBadRequestWhenIdDoesNotExist() {
+    when(repository.findById("legacy")).thenReturn(Optional.empty());
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> service.get("legacy"));
-        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        assertEquals("metricPresetId not found: legacy", ex.getReason());
-    }
+    ResponseStatusException ex =
+        assertThrows(ResponseStatusException.class, () -> service.get("legacy"));
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    assertEquals("metricPresetId not found: legacy", ex.getReason());
+  }
 }

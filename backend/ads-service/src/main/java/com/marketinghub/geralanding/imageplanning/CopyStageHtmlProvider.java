@@ -5,8 +5,6 @@ package com.marketinghub.geralanding.imageplanning;
  */
 public interface CopyStageHtmlProvider {
 
-    /**
-     * Monta o HTML provisório da etapa de copy usando os artefatos de copy e wireframe.
-     */
-    String assemble(String copyModelResponse, String wireframeModelResponse, String jobId);
+  /** Monta o HTML provisório da etapa de copy usando os artefatos de copy e wireframe. */
+  String assemble(String copyModelResponse, String wireframeModelResponse, String jobId);
 }

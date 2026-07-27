@@ -1,33 +1,32 @@
 package com.marketinghub.targeting.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
-import lombok.Data;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import lombok.Builder;
+import lombok.Data;
 
 @Data
 @Builder
 public class TargetingRecentRequestDto {
-    private UUID id;
+  private UUID id;
 
-    @JsonProperty("experiment_id")
-    private Long experimentId;
+  @JsonProperty("experiment_id")
+  private Long experimentId;
 
-    @JsonProperty("descricao")
-    private String descricao;
+  @JsonProperty("descricao")
+  private String descricao;
 
-    @JsonProperty("created_at")
-    private Instant createdAt;
+  @JsonProperty("created_at")
+  private Instant createdAt;
 
-    @JsonProperty("seed_keywords")
-    private List<String> seedKeywords;
+  @JsonProperty("seed_keywords")
+  private List<String> seedKeywords;
 
-    @JsonProperty("meta_ads_keywords")
-    private List<String> metaAdsKeywords;
+  @JsonProperty("meta_ads_keywords")
+  private List<String> metaAdsKeywords;
 
-    @JsonProperty("resolution")
-    private TargetingResolutionSummaryDto resolution;
+  @JsonProperty("resolution")
+  private TargetingResolutionSummaryDto resolution;
 }

@@ -1,12 +1,12 @@
 package com.marketinghub.geralanding.wireframe.web;
 
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
-import com.marketinghub.geralanding.wireframe.service.listStageExecutions.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.detailStageExecution.RecordBackendWireframeDetalheDto;
+import com.marketinghub.geralanding.wireframe.service.listStageExecutions.GeraLandingWireframeExecutionSummaryResponse;
+import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import com.marketinghub.geralanding.wireframe.service.recebePrompt.RecebePromptRequest;
 import com.marketinghub.geralanding.wireframe.service.recebeResposta.RecebeRespostaRequest;
-import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.slf4j.Logger;
@@ -57,7 +57,10 @@ public class BackendWireframeController {
     return executionService.listPending(STAGE_CODE);
   }
 
-  /** Recebe prompt, schema e request cru enviados para IA e marca a execução aguardando retorno da OpenAI. */
+  /**
+   * Recebe prompt, schema e request cru enviados para IA e marca a execução aguardando retorno da
+   * OpenAI.
+   */
   @PostMapping("/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt")
   public ResponseEntity<Void> recebePrompt(
       @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {

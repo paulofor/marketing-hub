@@ -12,15 +12,15 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(ExternalAccessTestController.class)
 class ExternalAccessTestControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    @Test
-    void shouldReturnExternalAccessTestPayload() throws Exception {
-        mockMvc.perform(get("/api/system/external-access-test"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ok"))
-                .andExpect(jsonPath("$.message").value("external access test endpoint is reachable"))
-                .andExpect(jsonPath("$.timestamp").isNotEmpty());
-    }
+  @Test
+  void shouldReturnExternalAccessTestPayload() throws Exception {
+    mockMvc
+        .perform(get("/api/system/external-access-test"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("ok"))
+        .andExpect(jsonPath("$.message").value("external access test endpoint is reachable"))
+        .andExpect(jsonPath("$.timestamp").isNotEmpty());
+  }
 }

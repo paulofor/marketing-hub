@@ -1,8 +1,8 @@
 package com.marketinghub.experiment.frameworkimage;
 
 public enum FrameworkImageGenerationJobStatus {
-    PENDING,
-    PROCESSING,
-    COMPLETED,
-    FAILED
+  PENDING,
+  PROCESSING,
+  COMPLETED,
+  FAILED
 }

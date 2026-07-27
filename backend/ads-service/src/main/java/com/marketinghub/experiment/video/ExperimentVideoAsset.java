@@ -26,9 +26,7 @@ import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-/**
- * Representa um vídeo vinculado a um experimento como artefato mensurável de funil.
- */
+/** Representa um vídeo vinculado a um experimento como artefato mensurável de funil. */
 @Entity
 @Table(name = "experiment_video_asset")
 @Data
@@ -36,121 +34,121 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExperimentVideoAsset {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "experiment_id", nullable = false)
-    @ToString.Exclude
-    private Experiment experiment;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "experiment_id", nullable = false)
+  @ToString.Exclude
+  private Experiment experiment;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "slot", nullable = false, length = 32)
-    private ExperimentVideoSlot slot;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "slot", nullable = false, length = 32)
+  private ExperimentVideoSlot slot;
 
-    @Column(name = "objective", nullable = false, length = 512)
-    private String objective;
+  @Column(name = "objective", nullable = false, length = 512)
+  private String objective;
 
-    @Column(name = "primary_metric", nullable = false, length = 191)
-    private String primaryMetric;
+  @Column(name = "primary_metric", nullable = false, length = 191)
+  private String primaryMetric;
 
-    @Column(name = "script", columnDefinition = "LONGTEXT")
-    private String script;
+  @Column(name = "script", columnDefinition = "LONGTEXT")
+  private String script;
 
-    @Column(name = "prompt", columnDefinition = "LONGTEXT")
-    private String prompt;
+  @Column(name = "prompt", columnDefinition = "LONGTEXT")
+  private String prompt;
 
-    @Column(name = "provider", nullable = false, length = 64)
-    private String provider;
+  @Column(name = "provider", nullable = false, length = 64)
+  private String provider;
 
-    @Column(name = "model", nullable = false, length = 128)
-    private String model;
+  @Column(name = "model", nullable = false, length = 128)
+  private String model;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 32)
-    private ExperimentVideoStatus status;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false, length = 32)
+  private ExperimentVideoStatus status;
 
-    @Column(name = "asset_url", length = 1024)
-    private String assetUrl;
+  @Column(name = "asset_url", length = 1024)
+  private String assetUrl;
 
-    @Column(name = "thumbnail_url", length = 1024)
-    private String thumbnailUrl;
+  @Column(name = "thumbnail_url", length = 1024)
+  private String thumbnailUrl;
 
-    @Column(name = "duration_seconds")
-    private Integer durationSeconds;
+  @Column(name = "duration_seconds")
+  private Integer durationSeconds;
 
-    @Column(name = "has_audio")
-    private Boolean hasAudio;
+  @Column(name = "has_audio")
+  private Boolean hasAudio;
 
-    @Column(name = "aspect_ratio", length = 16)
-    private String aspectRatio;
+  @Column(name = "aspect_ratio", length = 16)
+  private String aspectRatio;
 
-    @Column(name = "visual_source_type", length = 64)
-    private String visualSourceType;
+  @Column(name = "visual_source_type", length = 64)
+  private String visualSourceType;
 
-    @Column(name = "visual_source_key", length = 191)
-    private String visualSourceKey;
+  @Column(name = "visual_source_key", length = 191)
+  private String visualSourceKey;
 
-    @Column(name = "visual_source_description", columnDefinition = "LONGTEXT")
-    private String visualSourceDescription;
+  @Column(name = "visual_source_description", columnDefinition = "LONGTEXT")
+  private String visualSourceDescription;
 
-    @Column(name = "visual_similarity_override_reason", columnDefinition = "LONGTEXT")
-    private String visualSimilarityOverrideReason;
+  @Column(name = "visual_similarity_override_reason", columnDefinition = "LONGTEXT")
+  private String visualSimilarityOverrideReason;
 
-    @Column(name = "request_json", columnDefinition = "LONGTEXT")
-    private String requestJson;
+  @Column(name = "request_json", columnDefinition = "LONGTEXT")
+  private String requestJson;
 
-    @Column(name = "response_json", columnDefinition = "LONGTEXT")
-    private String responseJson;
+  @Column(name = "response_json", columnDefinition = "LONGTEXT")
+  private String responseJson;
 
-    @Column(name = "cost", precision = 12, scale = 4)
-    private BigDecimal cost;
+  @Column(name = "cost", precision = 12, scale = 4)
+  private BigDecimal cost;
 
-    @Column(name = "audio_cost", precision = 12, scale = 4)
-    private BigDecimal audioCost;
+  @Column(name = "audio_cost", precision = 12, scale = 4)
+  private BigDecimal audioCost;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "review_status", nullable = false, length = 32)
-    private ExperimentVideoReviewStatus reviewStatus;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "review_status", nullable = false, length = 32)
+  private ExperimentVideoReviewStatus reviewStatus;
 
-    @Column(name = "rejection_reason", columnDefinition = "LONGTEXT")
-    private String rejectionReason;
+  @Column(name = "rejection_reason", columnDefinition = "LONGTEXT")
+  private String rejectionReason;
 
-    @Column(name = "reviewed_by", length = 255)
-    private String reviewedBy;
+  @Column(name = "reviewed_by", length = 255)
+  private String reviewedBy;
 
-    @Column(name = "reviewed_at")
-    private Instant reviewedAt;
+  @Column(name = "reviewed_at")
+  private Instant reviewedAt;
 
-    @Column(name = "required_for_release", nullable = false)
-    private boolean requiredForRelease;
+  @Column(name = "required_for_release", nullable = false)
+  private boolean requiredForRelease;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sales_video_profile_id")
-    @ToString.Exclude
-    private SalesVideoProfile salesVideoProfile;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "sales_video_profile_id")
+  @ToString.Exclude
+  private SalesVideoProfile salesVideoProfile;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sales_video_job_id")
-    @ToString.Exclude
-    private SalesVideoJob salesVideoJob;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "sales_video_job_id")
+  @ToString.Exclude
+  private SalesVideoJob salesVideoJob;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "asset_id")
-    @ToString.Exclude
-    private Asset asset;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "asset_id")
+  @ToString.Exclude
+  private Asset asset;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "landing_video_slot_id")
-    @ToString.Exclude
-    private LandingVideoSlot landingVideoSlot;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "landing_video_slot_id")
+  @ToString.Exclude
+  private LandingVideoSlot landingVideoSlot;
 
-    @Column(name = "created_at")
-    @CreationTimestamp
-    private Instant createdAt;
+  @Column(name = "created_at")
+  @CreationTimestamp
+  private Instant createdAt;
 
-    @Column(name = "updated_at")
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @Column(name = "updated_at")
+  @UpdateTimestamp
+  private Instant updatedAt;
 }

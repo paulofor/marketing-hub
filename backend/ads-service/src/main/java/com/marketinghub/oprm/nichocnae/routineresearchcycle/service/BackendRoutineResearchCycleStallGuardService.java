@@ -13,10 +13,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Responsável por detectar ciclos NichoCNAE parados e expor o bloqueio operacional no status persistido. */
+/**
+ * Responsável por detectar ciclos NichoCNAE parados e expor o bloqueio operacional no status
+ * persistido.
+ */
 @Service
 public class BackendRoutineResearchCycleStallGuardService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(BackendRoutineResearchCycleStallGuardService.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BackendRoutineResearchCycleStallGuardService.class);
   private static final String CYCLE_STATUS_RUNNING = "RUNNING";
   private static final String CYCLE_STATUS_STALLED = "STALLED";
   private static final String ROUTINE_STATUS_STALLED = "RESEARCH_STALLED";
@@ -38,8 +42,9 @@ public class BackendRoutineResearchCycleStallGuardService {
   @Transactional
   public int markRunningCyclesWithoutProgressAsStalled(Instant referenceTime) {
     Instant threshold = referenceTime.minus(WITHOUT_PROGRESS_LIMIT);
-    List<OprmRoutineResearchCycle> staleCycles = routineResearchCycleRepository.findRunningCyclesWithoutProgressBefore(
-        CYCLE_STATUS_RUNNING, threshold, PageRequest.of(0, MAX_CYCLES_PER_SCAN));
+    List<OprmRoutineResearchCycle> staleCycles =
+        routineResearchCycleRepository.findRunningCyclesWithoutProgressBefore(
+            CYCLE_STATUS_RUNNING, threshold, PageRequest.of(0, MAX_CYCLES_PER_SCAN));
     staleCycles.forEach(cycle -> markCycleAsStalled(cycle, referenceTime));
     if (!staleCycles.isEmpty()) {
       LOGGER.warn(
@@ -70,8 +75,12 @@ public class BackendRoutineResearchCycleStallGuardService {
         cycle.getUpdatedAt());
   }
 
-  /** Atualiza o candidato vinculado ao ciclo parado para preservar consistência do acompanhamento operacional. */
-  private void markCandidateAsStalled(OprmNicheCandidate candidate, OprmRoutineResearchCycle cycle, Instant now) {
+  /**
+   * Atualiza o candidato vinculado ao ciclo parado para preservar consistência do acompanhamento
+   * operacional.
+   */
+  private void markCandidateAsStalled(
+      OprmNicheCandidate candidate, OprmRoutineResearchCycle cycle, Instant now) {
     candidate.setRoutineResearchStatus(ROUTINE_STATUS_STALLED);
     candidate.setLastRoutineResearchCycleId(cycle.getId());
     candidate.setUpdatedAt(now);

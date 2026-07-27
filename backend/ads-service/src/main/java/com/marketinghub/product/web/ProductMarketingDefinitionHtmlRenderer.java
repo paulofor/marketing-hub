@@ -3,16 +3,15 @@ package com.marketinghub.product.web;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Responsabilidade: renderizar a definição pública de produto em uma página HTML legível.
- */
+/** Responsabilidade: renderizar a definição pública de produto em uma página HTML legível. */
 class ProductMarketingDefinitionHtmlRenderer {
-    private static final Pattern STRONG_PATTERN = Pattern.compile("\\*\\*(.+?)\\*\\*");
+  private static final Pattern STRONG_PATTERN = Pattern.compile("\\*\\*(.+?)\\*\\*");
 
-    /** Converte o Markdown comercial gerado pelo backend em HTML seguro para visualização pública. */
-    String render(String markdown) {
-        String body = renderMarkdownBody(markdown);
-        String template = """
+  /** Converte o Markdown comercial gerado pelo backend em HTML seguro para visualização pública. */
+  String render(String markdown) {
+    String body = renderMarkdownBody(markdown);
+    String template =
+        """
                 <!doctype html>
                 <html lang="pt-BR">
                 <head>
@@ -91,69 +90,69 @@ class ProductMarketingDefinitionHtmlRenderer {
                 </body>
                 </html>
                 """;
-        return template.replace("{{body}}", body);
-    }
+    return template.replace("{{body}}", body);
+  }
 
-    /** Renderiza os blocos Markdown suportados pelo documento comercial público. */
-    private String renderMarkdownBody(String markdown) {
-        StringBuilder html = new StringBuilder();
-        boolean listOpen = false;
-        for (String rawLine : markdown.split("\\R", -1)) {
-            String line = rawLine.strip();
-            if (line.isEmpty()) {
-                if (listOpen) {
-                    html.append("</ul>\n");
-                    listOpen = false;
-                }
-                continue;
-            }
-            if (line.startsWith("- ")) {
-                if (!listOpen) {
-                    html.append("<ul>\n");
-                    listOpen = true;
-                }
-                html.append("<li>").append(renderInline(line.substring(2))).append("</li>\n");
-                continue;
-            }
-            if (listOpen) {
-                html.append("</ul>\n");
-                listOpen = false;
-            }
-            appendBlock(html, line);
-        }
+  /** Renderiza os blocos Markdown suportados pelo documento comercial público. */
+  private String renderMarkdownBody(String markdown) {
+    StringBuilder html = new StringBuilder();
+    boolean listOpen = false;
+    for (String rawLine : markdown.split("\\R", -1)) {
+      String line = rawLine.strip();
+      if (line.isEmpty()) {
         if (listOpen) {
-            html.append("</ul>\n");
+          html.append("</ul>\n");
+          listOpen = false;
         }
-        return html.toString();
-    }
-
-    /** Adiciona o bloco HTML equivalente à linha Markdown informada. */
-    private void appendBlock(StringBuilder html, String line) {
-        if (line.startsWith("# ")) {
-            html.append("<h1>").append(renderInline(line.substring(2))).append("</h1>\n");
-        } else if (line.startsWith("## ")) {
-            html.append("<h2>").append(renderInline(line.substring(3))).append("</h2>\n");
-        } else if (line.startsWith("> ")) {
-            html.append("<blockquote>").append(renderInline(line.substring(2))).append("</blockquote>\n");
-        } else {
-            html.append("<p>").append(renderInline(line)).append("</p>\n");
+        continue;
+      }
+      if (line.startsWith("- ")) {
+        if (!listOpen) {
+          html.append("<ul>\n");
+          listOpen = true;
         }
+        html.append("<li>").append(renderInline(line.substring(2))).append("</li>\n");
+        continue;
+      }
+      if (listOpen) {
+        html.append("</ul>\n");
+        listOpen = false;
+      }
+      appendBlock(html, line);
     }
+    if (listOpen) {
+      html.append("</ul>\n");
+    }
+    return html.toString();
+  }
 
-    /** Renderiza marcações inline controladas depois de escapar o conteúdo textual. */
-    private String renderInline(String value) {
-        String escaped = escapeHtml(value);
-        Matcher matcher = STRONG_PATTERN.matcher(escaped);
-        return matcher.replaceAll("<strong>$1</strong>");
+  /** Adiciona o bloco HTML equivalente à linha Markdown informada. */
+  private void appendBlock(StringBuilder html, String line) {
+    if (line.startsWith("# ")) {
+      html.append("<h1>").append(renderInline(line.substring(2))).append("</h1>\n");
+    } else if (line.startsWith("## ")) {
+      html.append("<h2>").append(renderInline(line.substring(3))).append("</h2>\n");
+    } else if (line.startsWith("> ")) {
+      html.append("<blockquote>").append(renderInline(line.substring(2))).append("</blockquote>\n");
+    } else {
+      html.append("<p>").append(renderInline(line)).append("</p>\n");
     }
+  }
 
-    /** Escapa caracteres especiais para impedir interpretação de HTML vindo dos dados do produto. */
-    private String escapeHtml(String value) {
-        return value
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
+  /** Renderiza marcações inline controladas depois de escapar o conteúdo textual. */
+  private String renderInline(String value) {
+    String escaped = escapeHtml(value);
+    Matcher matcher = STRONG_PATTERN.matcher(escaped);
+    return matcher.replaceAll("<strong>$1</strong>");
+  }
+
+  /** Escapa caracteres especiais para impedir interpretação de HTML vindo dos dados do produto. */
+  private String escapeHtml(String value) {
+    return value
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#39;");
+  }
 }

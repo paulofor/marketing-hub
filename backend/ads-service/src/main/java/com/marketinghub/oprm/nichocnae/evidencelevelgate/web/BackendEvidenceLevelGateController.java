@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Expõe contratos de leitura e escrita da etapa onze E0-E5 sem executar regra de negócio no backend. */
+/**
+ * Expõe contratos de leitura e escrita da etapa onze E0-E5 sem executar regra de negócio no
+ * backend.
+ */
 @RestController
 @RequestMapping("/api")
 public class BackendEvidenceLevelGateController {
@@ -33,21 +36,26 @@ public class BackendEvidenceLevelGateController {
   }
 
   /** Persiste o resultado E0-E5 calculado pelo executor externo. */
-  @PostMapping("/internal/oprm/nichocnae/evidence-level-gate/stage-executions/{researchCycleId}/complete")
-  public ResponseEntity<CompleteEvidenceLevelGateResponse> complete(@PathVariable Long researchCycleId, @RequestBody CompleteEvidenceLevelGateRequest request) {
+  @PostMapping(
+      "/internal/oprm/nichocnae/evidence-level-gate/stage-executions/{researchCycleId}/complete")
+  public ResponseEntity<CompleteEvidenceLevelGateResponse> complete(
+      @PathVariable Long researchCycleId, @RequestBody CompleteEvidenceLevelGateRequest request) {
     return ResponseEntity.ok(service.complete(researchCycleId, request));
   }
 
   /** Registra falha técnica informada pelo executor externo. */
-  @PostMapping("/internal/oprm/nichocnae/evidence-level-gate/stage-executions/{researchCycleId}/fail")
-  public ResponseEntity<Void> fail(@PathVariable Long researchCycleId, @RequestBody FailEvidenceLevelGateRequest request) {
+  @PostMapping(
+      "/internal/oprm/nichocnae/evidence-level-gate/stage-executions/{researchCycleId}/fail")
+  public ResponseEntity<Void> fail(
+      @PathVariable Long researchCycleId, @RequestBody FailEvidenceLevelGateRequest request) {
     service.fail(researchCycleId, request);
     return ResponseEntity.noContent().build();
   }
 
   /** Consulta o resultado E0-E5 persistido para relatório. */
   @GetMapping("/oprm/nichocnae/evidence-level-gate/stage-executions/{researchCycleId}")
-  public ResponseEntity<EvidenceLevelGateDetailResponse> detail(@PathVariable Long researchCycleId) {
+  public ResponseEntity<EvidenceLevelGateDetailResponse> detail(
+      @PathVariable Long researchCycleId) {
     return ResponseEntity.ok(service.detail(researchCycleId));
   }
 }

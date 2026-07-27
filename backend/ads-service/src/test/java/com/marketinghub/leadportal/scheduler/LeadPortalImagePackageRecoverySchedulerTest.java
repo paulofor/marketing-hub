@@ -30,73 +30,85 @@ import org.springframework.jdbc.core.RowMapper;
 @ExtendWith(MockitoExtension.class)
 class LeadPortalImagePackageRecoverySchedulerTest {
 
-    @Mock
-    private JdbcTemplate jdbcTemplate;
+  @Mock private JdbcTemplate jdbcTemplate;
 
-    @Mock
-    private LeadPortalImagePackageWorkerService workerService;
+  @Mock private LeadPortalImagePackageWorkerService workerService;
 
-    @Mock
-    private LeadPortalImagePackageStatusHistoryService historyService;
+  @Mock private LeadPortalImagePackageStatusHistoryService historyService;
 
-    private LeadPortalProcessingGuardProperties properties;
+  private LeadPortalProcessingGuardProperties properties;
 
-    private LeadPortalImagePackageRecoveryScheduler scheduler;
+  private LeadPortalImagePackageRecoveryScheduler scheduler;
 
-    @BeforeEach
-    void setUp() {
-        properties = new LeadPortalProcessingGuardProperties();
-        properties.setEnabled(true);
-        properties.setTimeout(Duration.ofMinutes(30));
-        properties.setBatchSize(10);
-        properties.setMaxAttempts(2);
+  @BeforeEach
+  void setUp() {
+    properties = new LeadPortalProcessingGuardProperties();
+    properties.setEnabled(true);
+    properties.setTimeout(Duration.ofMinutes(30));
+    properties.setBatchSize(10);
+    properties.setMaxAttempts(2);
 
-        scheduler = new LeadPortalImagePackageRecoveryScheduler(
-                jdbcTemplate, workerService, historyService, properties);
-    }
+    scheduler =
+        new LeadPortalImagePackageRecoveryScheduler(
+            jdbcTemplate, workerService, historyService, properties);
+  }
 
-    @Test
-    void requeuesPackagesStuckInProcessingWhenUnderLimit() {
-        when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Long>>any(), any(), any()))
-                .thenReturn(List.of(109L));
+  @Test
+  void requeuesPackagesStuckInProcessingWhenUnderLimit() {
+    when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Long>>any(), any(), any()))
+        .thenReturn(List.of(109L));
 
-        when(historyService.listHistory(109L)).thenReturn(List.of(
-                new StatusHistoryEntry(FlowSubmissionImagePackageStatus.RECENT, null, Instant.parse("2026-03-14T14:10:35Z")),
-                new StatusHistoryEntry(FlowSubmissionImagePackageStatus.PROCESSING, null, Instant.parse("2026-03-14T14:10:50Z"))
-        ));
+    when(historyService.listHistory(109L))
+        .thenReturn(
+            List.of(
+                new StatusHistoryEntry(
+                    FlowSubmissionImagePackageStatus.RECENT,
+                    null,
+                    Instant.parse("2026-03-14T14:10:35Z")),
+                new StatusHistoryEntry(
+                    FlowSubmissionImagePackageStatus.PROCESSING,
+                    null,
+                    Instant.parse("2026-03-14T14:10:50Z"))));
 
-        scheduler.recoverStuckPackages();
+    scheduler.recoverStuckPackages();
 
-        verify(workerService).retry(eq(109L), contains("Reaberto automaticamente"));
-        verify(workerService, never()).markFailed(anyLong(), anyString());
-    }
+    verify(workerService).retry(eq(109L), contains("Reaberto automaticamente"));
+    verify(workerService, never()).markFailed(anyLong(), anyString());
+  }
 
-    @Test
-    void marksFailedWhenProcessingAttemptsExceeded() {
-        properties.setMaxAttempts(1);
+  @Test
+  void marksFailedWhenProcessingAttemptsExceeded() {
+    properties.setMaxAttempts(1);
 
-        when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Long>>any(), any(), any()))
-                .thenReturn(List.of(77L));
+    when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Long>>any(), any(), any()))
+        .thenReturn(List.of(77L));
 
-        when(historyService.listHistory(77L)).thenReturn(List.of(
-                new StatusHistoryEntry(FlowSubmissionImagePackageStatus.PROCESSING, null, Instant.parse("2026-03-10T10:00:00Z")),
-                new StatusHistoryEntry(FlowSubmissionImagePackageStatus.PROCESSING, null, Instant.parse("2026-03-10T10:30:00Z"))
-        ));
+    when(historyService.listHistory(77L))
+        .thenReturn(
+            List.of(
+                new StatusHistoryEntry(
+                    FlowSubmissionImagePackageStatus.PROCESSING,
+                    null,
+                    Instant.parse("2026-03-10T10:00:00Z")),
+                new StatusHistoryEntry(
+                    FlowSubmissionImagePackageStatus.PROCESSING,
+                    null,
+                    Instant.parse("2026-03-10T10:30:00Z"))));
 
-        scheduler.recoverStuckPackages();
+    scheduler.recoverStuckPackages();
 
-        verify(workerService).markFailed(eq(77L), contains("FAILED"));
-        verify(workerService, never()).retry(anyLong(), anyString());
-    }
+    verify(workerService).markFailed(eq(77L), contains("FAILED"));
+    verify(workerService, never()).retry(anyLong(), anyString());
+  }
 
-    @Test
-    void doesNothingWhenGuardIsDisabled() {
-        properties.setEnabled(false);
+  @Test
+  void doesNothingWhenGuardIsDisabled() {
+    properties.setEnabled(false);
 
-        scheduler.recoverStuckPackages();
+    scheduler.recoverStuckPackages();
 
-        verifyNoInteractions(jdbcTemplate);
-        verifyNoInteractions(workerService);
-        verifyNoInteractions(historyService);
-    }
+    verifyNoInteractions(jdbcTemplate);
+    verifyNoInteractions(workerService);
+    verifyNoInteractions(historyService);
+  }
 }

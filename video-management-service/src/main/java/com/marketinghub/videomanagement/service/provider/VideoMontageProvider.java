@@ -37,6 +37,7 @@ import reactor.netty.http.client.HttpClient;
 public class VideoMontageProvider implements VideoProvider {
     private static final MediaType VIDEO_MP4 = MediaType.valueOf("video/mp4");
     private static final int MAX_VIDEO_DOWNLOAD_BYTES = 150 * 1024 * 1024;
+    private static final double MAX_MONTAGE_DURATION_SECONDS = 600.0;
     private static final String PROVIDER_NAME = "MUSA_VIDEO_MONTAGE";
     private static final Logger log = LoggerFactory.getLogger(VideoMontageProvider.class);
 
@@ -98,6 +99,8 @@ public class VideoMontageProvider implements VideoProvider {
             Files.writeString(concatList, concatFile(normalizedClips), StandardCharsets.UTF_8);
             progressCallback.onProgress(75, SalesVideoStatus.VIDEO_PROCESSING, "Unindo clipes aprovados");
             concatClips(concatList, output);
+            double durationSeconds = probeDurationSeconds(output);
+            validateMontageDuration(durationSeconds);
             ProviderFile video = new ProviderFile(
                     "sales-video-" + job.id() + "-musa-montage.mp4",
                     VIDEO_MP4,
@@ -107,7 +110,7 @@ public class VideoMontageProvider implements VideoProvider {
             progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING,
                     "Montagem finalizada para revisão");
             return new ProviderArtifacts("montage-" + job.id(), video, null, null,
-                    resultMetadata(job, sources));
+                    resultMetadata(job, sources, durationSeconds));
         } catch (IOException ex) {
             log.error("Falha de arquivo na montagem de vídeo do job {}", job.id(), ex);
             throw new VideoProviderException("VIDEO_MONTAGE_FAILED", "Falha de arquivo na montagem de vídeo", ex);
@@ -164,8 +167,44 @@ public class VideoMontageProvider implements VideoProvider {
                 "ffmpeg falhou ao concatenar clipes da montagem");
     }
 
+    /** Mede a duração real do MP4 final usando ffprobe antes de liberar o job. */
+    private double probeDurationSeconds(Path output) {
+        VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        String result = runProcessOutput(List.of(
+                config.getFfprobePath(),
+                "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                output.toAbsolutePath().toString()),
+                "ffprobe falhou ao auditar duração da montagem");
+        try {
+            return Double.parseDouble(result.trim());
+        } catch (NumberFormatException ex) {
+            log.error("ffprobe retornou duração inválida para montagem: {}", result, ex);
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
+                    "ffprobe retornou duração inválida para montagem", ex);
+        }
+    }
+
+    /** Bloqueia montagens que excedem o limite comercial atual de dez minutos. */
+    private void validateMontageDuration(double durationSeconds) {
+        if (!Double.isFinite(durationSeconds) || durationSeconds <= 0) {
+            throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
+                    "Duração final da montagem não pôde ser auditada");
+        }
+        if (durationSeconds > MAX_MONTAGE_DURATION_SECONDS) {
+            throw new VideoProviderException("VIDEO_MONTAGE_DURATION_EXCEEDED",
+                    "Montagem excede o limite atual de 10 minutos: %.2fs".formatted(durationSeconds));
+        }
+    }
+
     /** Executa um processo externo e converte falhas em erro operacional claro. */
     private void runProcess(List<String> command, String failureMessage) {
+        runProcessOutput(command, failureMessage);
+    }
+
+    /** Executa um processo externo e retorna a saída de diagnóstico. */
+    private String runProcessOutput(List<String> command, String failureMessage) {
         try {
             Process process = new ProcessBuilder(command)
                     .redirectErrorStream(true)
@@ -176,6 +215,7 @@ public class VideoMontageProvider implements VideoProvider {
                 throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
                         failureMessage + "; exitCode=" + exitCode + "; output=" + output);
             }
+            return output;
         } catch (IOException ex) {
             log.error("Falha ao executar processo externo da montagem: {}", failureMessage, ex);
             throw new VideoProviderException("VIDEO_MONTAGE_FAILED", failureMessage, ex);
@@ -240,13 +280,16 @@ public class VideoMontageProvider implements VideoProvider {
     }
 
     /** Consolida metadados de saída da montagem. */
-    private Map<String, Object> resultMetadata(SalesVideoJob job, List<SourceVideo> sources) {
+    private Map<String, Object> resultMetadata(
+            SalesVideoJob job, List<SourceVideo> sources, double durationSeconds) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", PROVIDER_NAME);
         metadata.put("provider_job_id", "montage-" + job.id());
         metadata.put("source_job_ids", sources.stream().map(SourceVideo::jobId).toList());
         metadata.put("source_count", sources.size());
         metadata.put("resolution", "720x1280");
+        metadata.put("duration_seconds", Math.round(durationSeconds));
+        metadata.put("max_duration_seconds", (int) MAX_MONTAGE_DURATION_SECONDS);
         metadata.put("audio", Map.of("preserved", false, "reason", "montagem preparada para voz off final"));
         metadata.put("finished_at", Instant.now().toString());
         return metadata;

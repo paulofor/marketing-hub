@@ -11,22 +11,22 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/**
- * Repositório JPA responsável pela persistência de OprmJob.
- */
+/** Repositório JPA responsável pela persistência de OprmJob. */
 public interface OprmJobRepository extends JpaRepository<OprmJob, UUID> {
-    List<OprmJob> findTop500ByOrderByCreatedAtDesc();
+  List<OprmJob> findTop500ByOrderByCreatedAtDesc();
 
-    @Query("""
+  @Query(
+      """
             select j.id
             from OprmJob j
             where j.jobStatus = com.marketinghub.oprm.OprmJobStatus.PENDING
             order by j.createdAt asc
             """)
-    Optional<UUID> findNextPendingJobId();
+  Optional<UUID> findNextPendingJobId();
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query(
+      """
             update OprmJob j
             set j.jobStatus = :claimed,
                 j.claimedBy = :workerId,
@@ -36,10 +36,11 @@ public interface OprmJobRepository extends JpaRepository<OprmJob, UUID> {
             where j.id = :jobId
               and j.jobStatus = :pending
             """)
-    int claimPendingJob(@Param("jobId") UUID jobId,
-                        @Param("workerId") String workerId,
-                        @Param("now") Instant now,
-                        @Param("leaseExpiresAt") Instant leaseExpiresAt,
-                        @Param("pending") OprmJobStatus pending,
-                        @Param("claimed") OprmJobStatus claimed);
+  int claimPendingJob(
+      @Param("jobId") UUID jobId,
+      @Param("workerId") String workerId,
+      @Param("now") Instant now,
+      @Param("leaseExpiresAt") Instant leaseExpiresAt,
+      @Param("pending") OprmJobStatus pending,
+      @Param("claimed") OprmJobStatus claimed);
 }

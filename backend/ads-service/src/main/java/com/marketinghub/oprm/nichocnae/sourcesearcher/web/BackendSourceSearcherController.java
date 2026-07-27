@@ -33,7 +33,8 @@ public class BackendSourceSearcherController {
   }
 
   /** Persiste os resultados encontrados por uma busca pública para uma frase de pesquisa. */
-  @PostMapping("/internal/oprm/nichocnae/source-searcher/stage-executions/{researchQueryId}/complete")
+  @PostMapping(
+      "/internal/oprm/nichocnae/source-searcher/stage-executions/{researchQueryId}/complete")
   public ResponseEntity<CompleteSourceSearcherResponse> complete(
       @PathVariable Long researchQueryId, @RequestBody CompleteSourceSearcherRequest request) {
     return ResponseEntity.ok(executionService.complete(researchQueryId, request));
@@ -41,7 +42,8 @@ public class BackendSourceSearcherController {
 
   /** Registra falha operacional da busca de fontes para uma frase de pesquisa. */
   @PostMapping("/internal/oprm/nichocnae/source-searcher/stage-executions/{researchQueryId}/fail")
-  public ResponseEntity<Void> fail(@PathVariable Long researchQueryId, @RequestBody FailSourceSearcherRequest request) {
+  public ResponseEntity<Void> fail(
+      @PathVariable Long researchQueryId, @RequestBody FailSourceSearcherRequest request) {
     executionService.fail(researchQueryId, request);
     return ResponseEntity.noContent().build();
   }

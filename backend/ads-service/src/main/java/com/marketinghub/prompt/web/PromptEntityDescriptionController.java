@@ -8,20 +8,20 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/prompt-entities/{entityId}/description")
 public class PromptEntityDescriptionController {
-    private final PromptEntityDescriptionService service;
+  private final PromptEntityDescriptionService service;
 
-    public PromptEntityDescriptionController(PromptEntityDescriptionService service) {
-        this.service = service;
-    }
+  public PromptEntityDescriptionController(PromptEntityDescriptionService service) {
+    this.service = service;
+  }
 
-    @GetMapping
-    public PromptEntityDescriptionDto get(@PathVariable Long entityId) {
-        return service.getLatest(entityId);
-    }
+  @GetMapping
+  public PromptEntityDescriptionDto get(@PathVariable Long entityId) {
+    return service.getLatest(entityId);
+  }
 
-    @PutMapping
-    public PromptEntityDescriptionDto update(@PathVariable Long entityId,
-                                             @RequestBody UpdatePromptEntityDescriptionRequest req) {
-        return service.update(entityId, req);
-    }
+  @PutMapping
+  public PromptEntityDescriptionDto update(
+      @PathVariable Long entityId, @RequestBody UpdatePromptEntityDescriptionRequest req) {
+    return service.update(entityId, req);
+  }
 }

@@ -1,57 +1,52 @@
 package com.marketinghub.media;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-
-/**
- * Media asset stored in the system.
- */
+/** Media asset stored in the system. */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Asset {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Enumerated(EnumType.STRING)
-    private AssetType type;
+  @Enumerated(EnumType.STRING)
+  private AssetType type;
 
-    @Enumerated(EnumType.STRING)
-    private MediaProvider provider;
+  @Enumerated(EnumType.STRING)
+  private MediaProvider provider;
 
-    private String externalId;
+  private String externalId;
 
-    @Enumerated(EnumType.STRING)
-    private AssetStatus status;
+  @Enumerated(EnumType.STRING)
+  private AssetStatus status;
 
-    private String url;
+  private String url;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String payload;
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String payload;
 
-    private Long campaignId;
+  private Long campaignId;
 
-    private String model;
+  private String model;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String prompt;
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String prompt;
 
-    @Lob
-    @Column(name = "prompt_intermediate", columnDefinition = "LONGTEXT")
-    private String promptIntermediate;
+  @Lob
+  @Column(name = "prompt_intermediate", columnDefinition = "LONGTEXT")
+  private String promptIntermediate;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

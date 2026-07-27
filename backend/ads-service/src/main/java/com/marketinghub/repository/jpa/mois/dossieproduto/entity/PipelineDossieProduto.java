@@ -11,79 +11,82 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 
-/** Entidade JPA responsável por auditar interações e custos das etapas do pipeline de dossiê de produto. */
+/**
+ * Entidade JPA responsável por auditar interações e custos das etapas do pipeline de dossiê de
+ * produto.
+ */
 @Entity
 @Table(name = "pipeline_dossieproduto")
 @Getter
 @Setter
 public class PipelineDossieProduto {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "id_externo")
-    private String idExterno;
+  @Column(name = "id_externo")
+  private String idExterno;
 
-    @Column(name = "request", columnDefinition = "LONGTEXT")
-    private String request;
+  @Column(name = "request", columnDefinition = "LONGTEXT")
+  private String request;
 
-    @Column(name = "response", columnDefinition = "LONGTEXT")
-    private String response;
+  @Column(name = "response", columnDefinition = "LONGTEXT")
+  private String response;
 
-    @Column(name = "resposta_final", columnDefinition = "LONGTEXT")
-    private String respostaFinal;
+  @Column(name = "resposta_final", columnDefinition = "LONGTEXT")
+  private String respostaFinal;
 
-    @Column(name = "codigo_etapa", length = 120)
-    private String codigoEtapa;
+  @Column(name = "codigo_etapa", length = 120)
+  private String codigoEtapa;
 
-    @Column(name = "status", length = 40)
-    private String status;
+  @Column(name = "status", length = 40)
+  private String status;
 
-    @Column(name = "data_hora")
-    private Instant dataHora;
+  @Column(name = "data_hora")
+  private Instant dataHora;
 
-    @Column(name = "job_id")
-    private String jobId;
+  @Column(name = "job_id")
+  private String jobId;
 
-    @Column(name = "quantidade_token_entrada")
-    private Long quantidadeTokenEntrada;
+  @Column(name = "quantidade_token_entrada")
+  private Long quantidadeTokenEntrada;
 
-    @Column(name = "quantidade_token_saida")
-    private Long quantidadeTokenSaida;
+  @Column(name = "quantidade_token_saida")
+  private Long quantidadeTokenSaida;
 
-    @Column(name = "modelo", length = 120)
-    private String modelo;
+  @Column(name = "modelo", length = 120)
+  private String modelo;
 
-    @Column(name = "custo", precision = 19, scale = 6)
-    private BigDecimal custo;
+  @Column(name = "custo", precision = 19, scale = 6)
+  private BigDecimal custo;
 
-    @Column(name = "descricao_erro", columnDefinition = "LONGTEXT")
-    private String descricaoErro;
+  @Column(name = "descricao_erro", columnDefinition = "LONGTEXT")
+  private String descricaoErro;
 
-    @Column(name = "job_id_externo")
-    private String jobIdExterno;
+  @Column(name = "job_id_externo")
+  private String jobIdExterno;
 
-    @Column(name = "plataforma", length = 120)
-    private String plataforma;
+  @Column(name = "plataforma", length = 120)
+  private String plataforma;
 
-    @Column(name = "prompt", columnDefinition = "LONGTEXT")
-    private String prompt;
+  @Column(name = "prompt", columnDefinition = "LONGTEXT")
+  private String prompt;
 
-    @Column(name = "`schema`", columnDefinition = "LONGTEXT")
-    private String schema;
+  @Column(name = "`schema`", columnDefinition = "LONGTEXT")
+  private String schema;
 
-    @Column(name = "versao_pipeline", length = 80)
-    private String versaoPipeline;
+  @Column(name = "versao_pipeline", length = 80)
+  private String versaoPipeline;
 
-    @Column(name = "pipeline_code", length = 80)
-    private String pipelineCode;
+  @Column(name = "pipeline_code", length = 80)
+  private String pipelineCode;
 
-    @Column(name = "prompt_template_key", length = 191)
-    private String promptTemplateKey;
+  @Column(name = "prompt_template_key", length = 191)
+  private String promptTemplateKey;
 
-    @Column(name = "prompt_template_version", length = 40)
-    private String promptTemplateVersion;
+  @Column(name = "prompt_template_version", length = 40)
+  private String promptTemplateVersion;
 
-    @Column(name = "schema_name", length = 120)
-    private String schemaName;
+  @Column(name = "schema_name", length = 120)
+  private String schemaName;
 }

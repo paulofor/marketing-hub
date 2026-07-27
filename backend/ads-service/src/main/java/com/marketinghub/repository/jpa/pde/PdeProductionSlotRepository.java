@@ -8,15 +8,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /** Repositório JPA responsável pelos slots produtivos versionados do PDE. */
 public interface PdeProductionSlotRepository extends JpaRepository<PdeProductionSlot, Long> {
 
-    /** Lista os slots de um produto PDE por código operacional. */
-    List<PdeProductionSlot> findByProductSlugOrderBySlotCodeAsc(String productSlug);
+  /** Lista os slots de um produto PDE por código operacional. */
+  List<PdeProductionSlot> findByProductSlugOrderBySlotCodeAsc(String productSlug);
 
-    /** Busca um slot de produto pelo código operacional. */
-    Optional<PdeProductionSlot> findByProductSlugAndSlotCode(String productSlug, String slotCode);
+  /** Busca um slot de produto pelo código operacional. */
+  Optional<PdeProductionSlot> findByProductSlugAndSlotCode(String productSlug, String slotCode);
 
-    /** Busca um slot produtivo pelo domínio público normalizado. */
-    Optional<PdeProductionSlot> findFirstByDomain(String domain);
+  /** Busca um slot produtivo pelo domínio público normalizado. */
+  Optional<PdeProductionSlot> findFirstByDomain(String domain);
 
-    /** Busca o slot mais recente associado diretamente a um experimento de origem. */
-    Optional<PdeProductionSlot> findFirstBySourceExperimentIdOrderByUpdatedAtDesc(Long sourceExperimentId);
+  /** Busca o slot mais recente associado diretamente a um experimento de origem. */
+  Optional<PdeProductionSlot> findFirstBySourceExperimentIdOrderByUpdatedAtDesc(
+      Long sourceExperimentId);
 }

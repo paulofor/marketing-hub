@@ -2,8 +2,8 @@ package com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.failStage
 
 /** Contrato devolvido após o backend registrar falha candidate-tournament do NichoCNAE v2. */
 public record CandidateTournamentFailureResponse(
-        String stageExecutionId,
-        String status,
-        String retryStageExecutionId,
-        Integer attemptNumber,
-        Integer technicalRetryNumber) {}
+    String stageExecutionId,
+    String status,
+    String retryStageExecutionId,
+    Integer attemptNumber,
+    Integer technicalRetryNumber) {}

@@ -38,11 +38,14 @@ class BackendSourceFetcherServiceTest {
 
   @InjectMocks private BackendSourceFetcherService service;
 
-  /** Deve listar fontes encontradas apenas de ciclos ativos para não misturar falhas antigas com ciclos novos. */
+  /**
+   * Deve listar fontes encontradas apenas de ciclos ativos para não misturar falhas antigas com
+   * ciclos novos.
+   */
   @Test
   void listPendingUsesFoundNotSelectedAndRunningCycleFilter() {
-    when(sourceCandidateRepository
-            .findPendingForFetchFromActiveCycles(eq("FOUND"), eq("RUNNING"), any(Pageable.class)))
+    when(sourceCandidateRepository.findPendingForFetchFromActiveCycles(
+            eq("FOUND"), eq("RUNNING"), any(Pageable.class)))
         .thenReturn(List.of(candidate()));
 
     var result = service.listPending();
@@ -63,11 +66,12 @@ class BackendSourceFetcherServiceTest {
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(sourceSnapshotRepository.existsBySourceCandidateId(301L)).thenReturn(false);
     when(sourceSnapshotRepository.save(any(OprmSourceSnapshot.class)))
-        .thenAnswer(invocation -> {
-          OprmSourceSnapshot snapshot = invocation.getArgument(0);
-          snapshot.setId(901L);
-          return snapshot;
-        });
+        .thenAnswer(
+            invocation -> {
+              OprmSourceSnapshot snapshot = invocation.getArgument(0);
+              snapshot.setId(901L);
+              return snapshot;
+            });
     when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L))
         .thenAnswer(invocation -> List.of(snapshot(901L)));
 
@@ -84,7 +88,8 @@ class BackendSourceFetcherServiceTest {
     assertThat(response.snapshot().solutionLanguageRisk()).isFalse();
     assertThat(response.snapshot().shortExcerpt()).contains("WhatsApp");
 
-    ArgumentCaptor<OprmSourceCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmSourceCandidate.class);
+    ArgumentCaptor<OprmSourceCandidate> candidateCaptor =
+        ArgumentCaptor.forClass(OprmSourceCandidate.class);
     verify(sourceCandidateRepository).save(candidateCaptor.capture());
     assertThat(candidateCaptor.getValue().getStatus()).isEqualTo("FETCHED");
     assertThat(candidateCaptor.getValue().getSelectedForFetch()).isTrue();
@@ -93,22 +98,23 @@ class BackendSourceFetcherServiceTest {
   /** Deve rejeitar trecho longo para impedir persistência de HTML completo no MVP. */
   @Test
   void completeRejectsLongExcerpt() {
-    CompleteSourceFetcherRequest request = new CompleteSourceFetcherRequest(
-        "https://exemplo.com/clientes-manicure",
-        "exemplo.com",
-        "Como conseguir mais clientes para manicure",
-        "PUBLIC_CONTENT",
-        "ROUTINE_REPORT",
-        88,
-        false,
-        false,
-        "Resumo",
-        "x".repeat(1201),
-        "COMPLETED",
-        200,
-        "SHORT_EXCERPT_ALLOWED",
-        "PUBLIC_PAGE",
-        88);
+    CompleteSourceFetcherRequest request =
+        new CompleteSourceFetcherRequest(
+            "https://exemplo.com/clientes-manicure",
+            "exemplo.com",
+            "Como conseguir mais clientes para manicure",
+            "PUBLIC_CONTENT",
+            "ROUTINE_REPORT",
+            88,
+            false,
+            false,
+            "Resumo",
+            "x".repeat(1201),
+            "COMPLETED",
+            200,
+            "SHORT_EXCERPT_ALLOWED",
+            "PUBLIC_PAGE",
+            88);
 
     assertThatThrownBy(() -> service.complete(301L, request))
         .isInstanceOf(IllegalArgumentException.class)
@@ -125,7 +131,8 @@ class BackendSourceFetcherServiceTest {
 
     assertThatThrownBy(() -> service.complete(301L, validRequest()))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("sourceCandidate must be a routine source without solution or commercial risk");
+        .hasMessageContaining(
+            "sourceCandidate must be a routine source without solution or commercial risk");
     verify(sourceSnapshotRepository, never()).save(any());
   }
 
@@ -137,7 +144,8 @@ class BackendSourceFetcherServiceTest {
 
     service.fail(301L, new FailSourceFetcherRequest("domínio bloqueado", 10));
 
-    ArgumentCaptor<OprmSourceCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmSourceCandidate.class);
+    ArgumentCaptor<OprmSourceCandidate> candidateCaptor =
+        ArgumentCaptor.forClass(OprmSourceCandidate.class);
     verify(sourceCandidateRepository).save(candidateCaptor.capture());
     assertThat(candidateCaptor.getValue().getStatus()).isEqualTo("REJECTED");
     assertThat(candidateCaptor.getValue().getRejectionReason()).isEqualTo("domínio bloqueado");

@@ -6,37 +6,37 @@ import com.marketinghub.experiment.dto.SaveExperimentTargetingSelectionsRequest;
 import com.marketinghub.experiment.service.ExperimentTargetingSelectionService;
 import com.marketinghub.targeting.dto.TargetingRequestDto;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/targeting-selections")
 public class ExperimentTargetingSelectionController {
-    private final ExperimentTargetingSelectionService service;
+  private final ExperimentTargetingSelectionService service;
 
-    public ExperimentTargetingSelectionController(ExperimentTargetingSelectionService service) {
-        this.service = service;
-    }
+  public ExperimentTargetingSelectionController(ExperimentTargetingSelectionService service) {
+    this.service = service;
+  }
 
-    @GetMapping
-    public List<ExperimentTargetingSelectionDto> list(@PathVariable Long experimentId) {
-        return service.list(experimentId);
-    }
+  @GetMapping
+  public List<ExperimentTargetingSelectionDto> list(@PathVariable Long experimentId) {
+    return service.list(experimentId);
+  }
 
-    @PutMapping
-    public List<ExperimentTargetingSelectionDto> save(@PathVariable Long experimentId,
-                                                       @Valid @RequestBody SaveExperimentTargetingSelectionsRequest request) {
-        return service.save(experimentId, request);
-    }
+  @PutMapping
+  public List<ExperimentTargetingSelectionDto> save(
+      @PathVariable Long experimentId,
+      @Valid @RequestBody SaveExperimentTargetingSelectionsRequest request) {
+    return service.save(experimentId, request);
+  }
 
-    @GetMapping("/run-simple-flow/status")
-    public ExperimentSimpleFlowStatusDto getSimpleFlowStatus(@PathVariable Long experimentId) {
-        return service.getSimpleFlowStatus(experimentId);
-    }
+  @GetMapping("/run-simple-flow/status")
+  public ExperimentSimpleFlowStatusDto getSimpleFlowStatus(@PathVariable Long experimentId) {
+    return service.getSimpleFlowStatus(experimentId);
+  }
 
-    @PostMapping("/run-simple-flow")
-    public TargetingRequestDto runSimpleFlow(@PathVariable Long experimentId) {
-        return service.runSimpleFlow(experimentId);
-    }
+  @PostMapping("/run-simple-flow")
+  public TargetingRequestDto runSimpleFlow(@PathVariable Long experimentId) {
+    return service.runSimpleFlow(experimentId);
+  }
 }

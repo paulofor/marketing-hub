@@ -4,32 +4,29 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.targeting.TargetingAudienceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 import lombok.Data;
 
-import java.util.UUID;
-
-/**
- * Payload enviado pelo cliente para solicitar hipóteses de targeting.
- */
+/** Payload enviado pelo cliente para solicitar hipóteses de targeting. */
 @Data
 public class CreateTargetingRequestPayload {
-    @NotBlank
-    @Size(max = 500)
-    @JsonProperty("descricao")
-    private String descricao;
+  @NotBlank
+  @Size(max = 500)
+  @JsonProperty("descricao")
+  private String descricao;
 
-    @JsonProperty("idioma")
-    private String idioma;
+  @JsonProperty("idioma")
+  private String idioma;
 
-    @JsonProperty("pais")
-    private String pais;
+  @JsonProperty("pais")
+  private String pais;
 
-    @JsonProperty("publico_tipo")
-    private TargetingAudienceType publicoTipo;
+  @JsonProperty("publico_tipo")
+  private TargetingAudienceType publicoTipo;
 
-    @JsonProperty("niche_id")
-    private Long nicheId;
+  @JsonProperty("niche_id")
+  private Long nicheId;
 
-    @JsonProperty("hypothesis_id")
-    private UUID hypothesisId;
+  @JsonProperty("hypothesis_id")
+  private UUID hypothesisId;
 }

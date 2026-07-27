@@ -13,15 +13,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PromptDomainObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prompt_domain_id", nullable = false)
-    private PromptDomain domain;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "prompt_domain_id", nullable = false)
+  private PromptDomain domain;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "object_type", nullable = false, length = 64)
-    private PromptDomainObjectType objectType;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "object_type", nullable = false, length = 64)
+  private PromptDomainObjectType objectType;
 }

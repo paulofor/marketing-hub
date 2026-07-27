@@ -39,6 +39,15 @@ function formatDate(value?: string | null) {
   });
 }
 
+export function formatPdeOperationalDate(value?: string | null) {
+  if (!value) return "—";
+  const normalizedValue = value.trim().replace(
+    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?Z$/i,
+    "$1-03:00",
+  );
+  return formatDate(normalizedValue);
+}
+
 function formatCurrency(value?: number | null) {
   return value == null ? "—" : currencyFormatter.format(value);
 }
@@ -504,7 +513,7 @@ export default function ExperimentPostDeployMonitorTab({
                       </td>
                       <td className="text-end">{formatNumber(journey.maxScrollDepthPercent)}%</td>
                       <td className="text-end">{formatDuration(journey.totalVisibleMs)}</td>
-                      <td className="text-end">{formatDate(journey.lastEventAt)}</td>
+                      <td className="text-end">{formatPdeOperationalDate(journey.lastEventAt)}</td>
                     </tr>
                   ))}
                 </tbody>

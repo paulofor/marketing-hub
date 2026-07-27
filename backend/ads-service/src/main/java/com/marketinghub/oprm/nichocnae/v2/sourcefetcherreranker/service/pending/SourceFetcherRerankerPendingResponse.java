@@ -1,15 +1,17 @@
 package com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.pending;
 
-/** Contrato entregue ao executor com a pendência da etapa source-fetcher-reranker do NichoCNAE v2. */
+/**
+ * Contrato entregue ao executor com a pendência da etapa source-fetcher-reranker do NichoCNAE v2.
+ */
 public record SourceFetcherRerankerPendingResponse(
-        String stageExecutionId,
-        String jobId,
-        String cnaeCode,
-        String cnaeDescription,
-        Long researchCycleId,
-        Long sourceNicheId,
-        Integer attemptNumber,
-        Integer technicalRetryNumber,
-        Integer knowledgeVersion,
-        Boolean materializationEnabled,
-        String inputPayload) {}
+    String stageExecutionId,
+    String jobId,
+    String cnaeCode,
+    String cnaeDescription,
+    Long researchCycleId,
+    Long sourceNicheId,
+    Integer attemptNumber,
+    Integer technicalRetryNumber,
+    Integer knowledgeVersion,
+    Boolean materializationEnabled,
+    String inputPayload) {}

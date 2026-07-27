@@ -481,6 +481,7 @@ class AccessServiceTest {
                     assertThat(source.utmCampaign()).isEqualTo("campanha");
                     assertThat(source.utmContent()).isEqualTo("criativo");
                     assertThat(source.sessions()).isEqualTo(1);
+                    assertThat(source.lastEventAt()).endsWith("-03:00");
                 });
     }
 

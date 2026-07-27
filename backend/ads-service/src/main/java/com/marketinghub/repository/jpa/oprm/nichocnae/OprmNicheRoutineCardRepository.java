@@ -1,7 +1,6 @@
 package com.marketinghub.repository.jpa.oprm.nichocnae;
 
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
-import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/** Repositório responsável por persistir e consultar cartões de rotina do pipeline OPRM NichoCNAE. */
+/**
+ * Repositório responsável por persistir e consultar cartões de rotina do pipeline OPRM NichoCNAE.
+ */
 public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheRoutineCard, Long> {
   /** Verifica se o ciclo já possui cartão de rotina sintetizado. */
   boolean existsByResearchCycleId(Long researchCycleId);
@@ -17,8 +18,12 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
   /** Busca o cartão de rotina mais recente de um ciclo. */
   Optional<OprmNicheRoutineCard> findFirstByResearchCycleIdOrderByIdDesc(Long researchCycleId);
 
-  /** Lista cartões sintetizados, segmentados como MEI/autônomo e ainda não avaliados pelo gate de qualidade. */
-  @Query("""
+  /**
+   * Lista cartões sintetizados, segmentados como MEI/autônomo e ainda não avaliados pelo gate de
+   * qualidade.
+   */
+  @Query(
+      """
       select c from OprmNicheRoutineCard c
       join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
       where c.qualityCheckedAt is null
@@ -31,8 +36,12 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
       """)
   List<OprmNicheRoutineCard> findPendingRoutineQualityGate(Pageable pageable);
 
-  /** Lista cartões do ciclo ativo sintetizado mais recente que ainda não possuem segmentação MEI/autônomo. */
-  @Query("""
+  /**
+   * Lista cartões do ciclo ativo sintetizado mais recente que ainda não possuem segmentação
+   * MEI/autônomo.
+   */
+  @Query(
+      """
       select c from OprmNicheRoutineCard c
       join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
       where cycle.status = 'ROUTINE_SYNTHESIZED'
@@ -58,8 +67,12 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
       """)
   List<OprmNicheRoutineCard> findPendingMeiAudienceSegmentation(Pageable pageable);
 
-  /** Busca o cartão avaliado mais recente do mesmo candidato antes do ciclo atual para orientar aprendizado automático. */
-  @Query("""
+  /**
+   * Busca o cartão avaliado mais recente do mesmo candidato antes do ciclo atual para orientar
+   * aprendizado automático.
+   */
+  @Query(
+      """
       select c
       from OprmNicheRoutineCard c
       join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
@@ -73,9 +86,11 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
       @Param("currentResearchCycleId") Long currentResearchCycleId,
       Pageable pageable);
 
-
-  /** Lista cartões aprovados no gate de qualidade que ainda aguardam classificação comercial E0-E5. */
-  @Query("""
+  /**
+   * Lista cartões aprovados no gate de qualidade que ainda aguardam classificação comercial E0-E5.
+   */
+  @Query(
+      """
       select c from OprmNicheRoutineCard c
       join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
       where c.readyForHypothesis = true
@@ -86,8 +101,12 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
       """)
   List<OprmNicheRoutineCard> findPendingEvidenceLevelGate(Pageable pageable);
 
-  /** Lista cartões aprovados no gate de qualidade que ainda não alimentaram nicho e nicho enriquecido. */
-  @Query("""
+  /**
+   * Lista cartões aprovados no gate de qualidade que ainda não alimentaram nicho e nicho
+   * enriquecido.
+   */
+  @Query(
+      """
       select c from OprmNicheRoutineCard c
       join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
       where c.readyForHypothesis = true

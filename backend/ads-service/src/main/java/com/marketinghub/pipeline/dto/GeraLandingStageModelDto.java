@@ -14,18 +14,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GeraLandingStageModelDto {
-    private String stageCode;
-    private Long pipelineId;
-    private String pipelineCode;
-    private Long pipelineStageId;
-    private String pipelineStageCode;
-    private Long openAiModelId;
-    private String openAiModelName;
-    private String openAiModelCode;
-    private BigDecimal priceInputFlex;
-    private BigDecimal priceInputCachedFlex;
-    private BigDecimal priceOutputFlex;
-    private String pricingMode;
-    private String generatedAssetType;
-    private boolean defaultModelApplied;
+  private String stageCode;
+  private Long pipelineId;
+  private String pipelineCode;
+  private Long pipelineStageId;
+  private String pipelineStageCode;
+  private Long openAiModelId;
+  private String openAiModelName;
+  private String openAiModelCode;
+  private BigDecimal priceInputFlex;
+  private BigDecimal priceInputCachedFlex;
+  private BigDecimal priceOutputFlex;
+  private String pricingMode;
+  private String generatedAssetType;
+  private boolean defaultModelApplied;
 }

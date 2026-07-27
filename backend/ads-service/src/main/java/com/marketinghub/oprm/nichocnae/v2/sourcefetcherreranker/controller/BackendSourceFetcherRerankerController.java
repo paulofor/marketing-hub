@@ -20,36 +20,39 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/oprm/nichocnae/v2/source-fetcher-reranker/stage-executions")
 public class BackendSourceFetcherRerankerController {
-    private final BackendSourceFetcherRerankerService service;
+  private final BackendSourceFetcherRerankerService service;
 
-    /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
-    public BackendSourceFetcherRerankerController(BackendSourceFetcherRerankerService service) {
-        this.service = service;
-    }
+  /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
+  public BackendSourceFetcherRerankerController(BackendSourceFetcherRerankerService service) {
+    this.service = service;
+  }
 
-    /** Entrega execuções pendentes da etapa source-fetcher-reranker ao módulo executor OPRM. */
-    @GetMapping("/pending")
-    public List<SourceFetcherRerankerPendingResponse> pending() {
-        return service.pending();
-    }
+  /** Entrega execuções pendentes da etapa source-fetcher-reranker ao módulo executor OPRM. */
+  @GetMapping("/pending")
+  public List<SourceFetcherRerankerPendingResponse> pending() {
+    return service.pending();
+  }
 
-    /** Grava uma pendência da etapa source-fetcher-reranker solicitada pelo módulo executor OPRM. */
-    @PostMapping
-    public SourceFetcherRerankerCreateResponse create(@RequestBody SourceFetcherRerankerCreateRequest request) {
-        return service.create(request);
-    }
+  /** Grava uma pendência da etapa source-fetcher-reranker solicitada pelo módulo executor OPRM. */
+  @PostMapping
+  public SourceFetcherRerankerCreateResponse create(
+      @RequestBody SourceFetcherRerankerCreateRequest request) {
+    return service.create(request);
+  }
 
-    /** Registra a conclusão da execução de coleta e reranking informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/complete")
-    public SourceFetcherRerankerCompletionResponse complete(
-            @PathVariable Long stageExecutionId, @RequestBody SourceFetcherRerankerCompletionRequest request) {
-        return service.complete(stageExecutionId, request);
-    }
+  /** Registra a conclusão da execução de coleta e reranking informada pelo módulo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/complete")
+  public SourceFetcherRerankerCompletionResponse complete(
+      @PathVariable Long stageExecutionId,
+      @RequestBody SourceFetcherRerankerCompletionRequest request) {
+    return service.complete(stageExecutionId, request);
+  }
 
-    /** Registra a falha da execução de coleta e reranking informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/fail")
-    public SourceFetcherRerankerFailureResponse fail(
-            @PathVariable Long stageExecutionId, @RequestBody SourceFetcherRerankerFailureRequest request) {
-        return service.fail(stageExecutionId, request);
-    }
+  /** Registra a falha da execução de coleta e reranking informada pelo módulo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/fail")
+  public SourceFetcherRerankerFailureResponse fail(
+      @PathVariable Long stageExecutionId,
+      @RequestBody SourceFetcherRerankerFailureRequest request) {
+    return service.fail(stageExecutionId, request);
+  }
 }

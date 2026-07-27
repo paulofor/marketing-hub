@@ -18,35 +18,37 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/settings/email-service")
 public class EmailSettingsController {
 
-    private final EmailSmtpSettingsService smtpSettingsService;
-    private final EmailSmtpTestService smtpTestService;
-    private final EmailProviderPresetService providerPresetService;
+  private final EmailSmtpSettingsService smtpSettingsService;
+  private final EmailSmtpTestService smtpTestService;
+  private final EmailProviderPresetService providerPresetService;
 
-    public EmailSettingsController(EmailSmtpSettingsService smtpSettingsService,
-                                   EmailSmtpTestService smtpTestService,
-                                   EmailProviderPresetService providerPresetService) {
-        this.smtpSettingsService = smtpSettingsService;
-        this.smtpTestService = smtpTestService;
-        this.providerPresetService = providerPresetService;
-    }
+  public EmailSettingsController(
+      EmailSmtpSettingsService smtpSettingsService,
+      EmailSmtpTestService smtpTestService,
+      EmailProviderPresetService providerPresetService) {
+    this.smtpSettingsService = smtpSettingsService;
+    this.smtpTestService = smtpTestService;
+    this.providerPresetService = providerPresetService;
+  }
 
-    @GetMapping("/smtp")
-    public EmailSmtpSettingsResponse getSmtpSettings() {
-        return smtpSettingsService.getSettings();
-    }
+  @GetMapping("/smtp")
+  public EmailSmtpSettingsResponse getSmtpSettings() {
+    return smtpSettingsService.getSettings();
+  }
 
-    @PutMapping("/smtp")
-    public EmailSmtpSettingsResponse updateSmtpSettings(@Valid @RequestBody UpdateEmailSmtpSettingsRequest request) {
-        return smtpSettingsService.update(request);
-    }
+  @PutMapping("/smtp")
+  public EmailSmtpSettingsResponse updateSmtpSettings(
+      @Valid @RequestBody UpdateEmailSmtpSettingsRequest request) {
+    return smtpSettingsService.update(request);
+  }
 
-    @PostMapping("/smtp/test")
-    public TestEmailResponse sendTestEmail(@Valid @RequestBody TestEmailRequest request) {
-        return smtpTestService.sendTestEmail(request);
-    }
+  @PostMapping("/smtp/test")
+  public TestEmailResponse sendTestEmail(@Valid @RequestBody TestEmailRequest request) {
+    return smtpTestService.sendTestEmail(request);
+  }
 
-    @GetMapping("/providers")
-    public List<EmailProviderPresetResponse> listProviderPresets() {
-        return providerPresetService.listPresets();
-    }
+  @GetMapping("/providers")
+  public List<EmailProviderPresetResponse> listProviderPresets() {
+    return providerPresetService.listPresets();
+  }
 }

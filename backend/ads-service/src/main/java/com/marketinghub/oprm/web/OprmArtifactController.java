@@ -20,17 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/oprm/artifacts")
 @RequiredArgsConstructor
 public class OprmArtifactController {
-    private final OprmArtifactService service;
+  private final OprmArtifactService service;
 
-    @PostMapping
-    public ResponseEntity<OprmArtifactPublishResponseDto> publish(@Valid @RequestBody OprmArtifactPublishRequestDto request) {
-        return ResponseEntity.accepted().body(service.publishArtifact(request));
-    }
+  @PostMapping
+  public ResponseEntity<OprmArtifactPublishResponseDto> publish(
+      @Valid @RequestBody OprmArtifactPublishRequestDto request) {
+    return ResponseEntity.accepted().body(service.publishArtifact(request));
+  }
 
-    @GetMapping
-    public List<OprmArtifactSummaryDto> list(@RequestParam(required = false) String correlationId,
-                                             @RequestParam(required = false) String occupationSeedRef,
-                                             @RequestParam(required = false) OprmArtifactStatus status) {
-        return service.listArtifacts(correlationId, occupationSeedRef, status);
-    }
+  @GetMapping
+  public List<OprmArtifactSummaryDto> list(
+      @RequestParam(required = false) String correlationId,
+      @RequestParam(required = false) String occupationSeedRef,
+      @RequestParam(required = false) OprmArtifactStatus status) {
+    return service.listArtifacts(correlationId, occupationSeedRef, status);
+  }
 }

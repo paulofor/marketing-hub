@@ -1,9 +1,12 @@
 import {
   Activity,
+  CheckCircle2,
   Clock,
   Eye,
+  Film,
   Monitor,
   MousePointer2,
+  PlayCircle,
   Smartphone,
   Tablet,
   Timer,
@@ -19,13 +22,22 @@ interface ExperimentLandingAnalyticsTabProps {
   experimentType?: string | null;
 }
 
+const BRAZIL_OPERATIONAL_TIME_ZONE = "America/Sao_Paulo";
+
+function hasExplicitTimeZone(value: string) {
+  return /(?:z|[+-]\d{2}:?\d{2})$/i.test(value.trim());
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "—";
-  const date = new Date(value);
+  const date = new Date(
+    hasExplicitTimeZone(value) ? value : `${value.replace(" ", "T")}-03:00`,
+  );
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
+    timeZone: BRAZIL_OPERATIONAL_TIME_ZONE,
   });
 }
 
@@ -64,6 +76,36 @@ function alertVariant(severity?: string | null) {
   return "info";
 }
 
+function eventCount(
+  events: Record<string, number> | undefined,
+  ...eventTypes: string[]
+) {
+  if (!events) return 0;
+  return eventTypes.reduce((total, eventType) => {
+    const direct = events[eventType] ?? 0;
+    const aliased = Object.entries(events)
+      .filter(([key]) => key.toLowerCase() === eventType.toLowerCase())
+      .reduce((sum, [, value]) => sum + value, 0);
+    return total + Math.max(direct, aliased);
+  }, 0);
+}
+
+function abandonmentLabel(value?: string | null) {
+  const labels: Record<string, string> = {
+    ASSINATURA_APROVADA: "Compra aprovada",
+    ABANDONOU_CHECKOUT: "Abandonou no checkout",
+    ABANDONOU_PAYWALL: "Abandonou no paywall",
+    ENTROU_SEM_CHEGAR_AO_PAYWALL: "Entrou sem ver paywall",
+    ABANDONOU_APOS_SOLICITAR_ACESSO: "Parou após pedir acesso",
+    ABANDONOU_NO_CAMPO_EMAIL: "Parou no e-mail",
+    FOCOU_EMAIL_SEM_ENVIAR: "Focou e-mail sem enviar",
+    CLICOU_CTA_SEM_LOGIN: "Clicou CTA sem login",
+    CONSUMIU_PAGINA_SEM_ACAO: "Consumiu página sem ação",
+    SAIU_NA_PRIMEIRA_DOBRA: "Saiu na primeira dobra",
+  };
+  return value ? (labels[value] ?? value) : "—";
+}
+
 function getJourneyStepLabel(step: {
   stageNumber?: number;
   stageName?: string;
@@ -92,9 +134,11 @@ export default function ExperimentLandingAnalyticsTab({
   experimentId,
   experimentType,
 }: ExperimentLandingAnalyticsTabProps) {
-  const isPdeExperiment = experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
-  const { data, isLoading, isError } =
-    useExperimentLandingAnalytics(isPdeExperiment ? undefined : experimentId);
+  const isPdeExperiment =
+    experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const { data, isLoading, isError } = useExperimentLandingAnalytics(
+    isPdeExperiment ? undefined : experimentId,
+  );
   const pdeMonitorQuery = usePostDeployMonitor(
     isPdeExperiment ? experimentId : undefined,
   );
@@ -106,6 +150,26 @@ export default function ExperimentLandingAnalyticsTab({
     const pdeDeviceBreakdown = pde?.deviceBreakdown ?? [];
     const pdeScreenSizeBreakdown = pde?.screenSizeBreakdown ?? [];
     const pdeTrafficSources = pde?.trafficSources ?? [];
+    const pdeRecentJourneys = pde?.recentJourneys ?? [];
+    const pdeTopEvents = Object.entries(pde?.events ?? {})
+      .sort(([, first], [, second]) => second - first)
+      .slice(0, 12);
+    const videoPlayEvents = eventCount(
+      pde?.events,
+      "VIDEO_PLAY",
+      "VIDEO_VIEWED",
+    );
+    const videoPartialEvents = eventCount(
+      pde?.events,
+      "VIDEO_PROGRESS_25",
+      "VIDEO_PROGRESS_50",
+      "VIDEO_PROGRESS_75",
+    );
+    const videoCompletedEvents = eventCount(pde?.events, "VIDEO_COMPLETED");
+    const videoCompletionRate =
+      videoPlayEvents > 0
+        ? (videoCompletedEvents / videoPlayEvents) * 100
+        : null;
     const pdeCards = [
       {
         label: "Sessões PDE",
@@ -194,58 +258,153 @@ export default function ExperimentLandingAnalyticsTab({
           })}
         </div>
 
+        <div className="row g-3">
+          <div className="col-12 col-xl-5">
+            <div className="card h-100">
+              <div className="card-body">
+                <div className="d-flex align-items-start justify-content-between gap-2 mb-3">
+                  <div>
+                    <h5 className="card-title mb-1 d-flex align-items-center gap-2">
+                      <Film size={18} /> Vídeo do PDE
+                    </h5>
+                    <p className="text-muted small mb-0">
+                      Leitura de visualização parcial e completa do vídeo,
+                      quando a versão ativa possuir vídeo.
+                    </p>
+                  </div>
+                  <span className="badge text-bg-light border">
+                    {formatPercent(videoCompletionRate)} completo
+                  </span>
+                </div>
+                <div className="row g-2">
+                  <div className="col-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <PlayCircle size={18} className="text-primary mb-2" />
+                      <div className="fw-semibold">{videoPlayEvents}</div>
+                      <div className="text-muted small">plays</div>
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <Activity size={18} className="text-primary mb-2" />
+                      <div className="fw-semibold">{videoPartialEvents}</div>
+                      <div className="text-muted small">parciais</div>
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <CheckCircle2 size={18} className="text-primary mb-2" />
+                      <div className="fw-semibold">{videoCompletedEvents}</div>
+                      <div className="text-muted small">completos</div>
+                    </div>
+                  </div>
+                </div>
+                {videoPlayEvents === 0 && videoPartialEvents === 0 ? (
+                  <p className="text-muted small mt-3 mb-0">
+                    Nenhum evento de vídeo capturado para esta versão ainda.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          <div className="col-12 col-xl-7">
+            <div className="card h-100">
+              <div className="card-body">
+                <div className="d-flex align-items-start justify-content-between gap-2 mb-3">
+                  <div>
+                    <h5 className="card-title mb-1">Eventos capturados</h5>
+                    <p className="text-muted small mb-0">
+                      Principais sinais comportamentais recebidos do PDE ativo.
+                    </p>
+                  </div>
+                  <span className="badge text-bg-light border">
+                    {pdeTopEvents.length} tipos
+                  </span>
+                </div>
+                {pdeTopEvents.length === 0 ? (
+                  <p className="text-muted small mb-0">
+                    Nenhum evento detalhado retornado pelo monitor.
+                  </p>
+                ) : (
+                  <div className="d-flex flex-column gap-2">
+                    {pdeTopEvents.map(([eventType, total]) => (
+                      <div
+                        className="d-flex align-items-center justify-content-between gap-2 border rounded-3 px-3 py-2"
+                        key={eventType}
+                      >
+                        <span className="fw-semibold">{eventType}</span>
+                        <span className="badge text-bg-light border">
+                          {total}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="card">
           <div className="card-body">
             <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
               <div>
                 <h5 className="card-title mb-1">Acessos por dispositivo</h5>
                 <p className="text-muted small mb-0">
-                  Percentual de sessões identificadas como Mobile, Computador
-                  ou Tablet no PDE.
+                  Percentual de sessões identificadas como Mobile, Computador ou
+                  Tablet no PDE.
                 </p>
               </div>
               <span className="badge text-bg-light border">
                 {pde.sessions} sessões
               </span>
             </div>
-            <div className="row g-3">
-              {pdeDeviceBreakdown.map((device) => {
-                const Icon =
-                  deviceIcons[device.deviceType as keyof typeof deviceIcons] ??
-                  Monitor;
-                return (
-                  <div className="col-12 col-md-4" key={device.deviceType}>
-                    <div className="border rounded-3 p-3 h-100">
-                      <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
-                        <span className="fw-semibold d-inline-flex align-items-center gap-2">
-                          <Icon size={18} className="text-primary" />{" "}
-                          {device.label}
-                        </span>
-                        <strong>{device.percentage.toFixed(1)}%</strong>
-                      </div>
-                      <div
-                        className="progress"
-                        role="progressbar"
-                        aria-label={`Percentual PDE ${device.label}`}
-                        aria-valuenow={device.percentage}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      >
+            {pdeDeviceBreakdown.length === 0 ? (
+              <div className="alert alert-warning mb-0">
+                O banco PDE já recebe dispositivo, mas o backend PDE publicado
+                ainda não expôs esta quebra no contrato do monitor.
+              </div>
+            ) : (
+              <div className="row g-3">
+                {pdeDeviceBreakdown.map((device) => {
+                  const Icon =
+                    deviceIcons[
+                      device.deviceType as keyof typeof deviceIcons
+                    ] ?? Monitor;
+                  return (
+                    <div className="col-12 col-md-4" key={device.deviceType}>
+                      <div className="border rounded-3 p-3 h-100">
+                        <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                          <span className="fw-semibold d-inline-flex align-items-center gap-2">
+                            <Icon size={18} className="text-primary" />{" "}
+                            {device.label}
+                          </span>
+                          <strong>{device.percentage.toFixed(1)}%</strong>
+                        </div>
                         <div
-                          className="progress-bar"
-                          style={{
-                            width: `${Math.min(100, Math.max(0, device.percentage))}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="text-muted small mt-2">
-                        {device.sessions} sessões
+                          className="progress"
+                          role="progressbar"
+                          aria-label={`Percentual PDE ${device.label}`}
+                          aria-valuenow={device.percentage}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                        >
+                          <div
+                            className="progress-bar"
+                            style={{
+                              width: `${Math.min(100, Math.max(0, device.percentage))}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="text-muted small mt-2">
+                          {device.sessions} sessões
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -306,8 +465,8 @@ export default function ExperimentLandingAnalyticsTab({
               <div className="card-body">
                 <h5 className="card-title mb-1">Origem do tráfego</h5>
                 <p className="text-muted small mb-3">
-                  Comparação por UTM para Meta, orgânico, Search, remarketing
-                  e outros canais.
+                  Comparação por UTM para Meta, orgânico, Search, remarketing e
+                  outros canais.
                 </p>
                 <div className="d-flex flex-column gap-2">
                   {pdeTrafficSources.map((source) => (
@@ -332,12 +491,8 @@ export default function ExperimentLandingAnalyticsTab({
                         <span>
                           {formatPercent(source.firstInteractionRate)} 1ª ação
                         </span>
-                        <span>
-                          {formatPercent(source.paywallRate)} paywall
-                        </span>
-                        <span>
-                          {formatPercent(source.purchaseRate)} compra
-                        </span>
+                        <span>{formatPercent(source.paywallRate)} paywall</span>
+                        <span>{formatPercent(source.purchaseRate)} compra</span>
                       </div>
                     </div>
                   ))}
@@ -349,6 +504,62 @@ export default function ExperimentLandingAnalyticsTab({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-body">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <div>
+                <h5 className="card-title mb-1">Jornadas recentes</h5>
+                <p className="text-muted small mb-0">
+                  Sessões reais do PDE com tempo, telas, seções e ponto de
+                  abandono.
+                </p>
+              </div>
+              <span className="badge text-bg-light border">
+                {pdeRecentJourneys.length} sessões
+              </span>
+            </div>
+            {pdeRecentJourneys.length === 0 ? (
+              <p className="text-muted small mb-0">
+                Nenhuma jornada recente retornada pelo monitor.
+              </p>
+            ) : (
+              <div className="d-flex flex-column gap-2">
+                {pdeRecentJourneys.slice(0, 10).map((journey) => (
+                  <div className="border rounded-3 p-3" key={journey.sessionId}>
+                    <div className="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                      <div>
+                        <div className="fw-semibold">
+                          {abandonmentLabel(journey.abandonmentPoint)}
+                        </div>
+                        <div className="text-muted small">
+                          {formatDate(journey.firstEventAt)} até{" "}
+                          {formatDate(journey.lastEventAt)}
+                        </div>
+                      </div>
+                      <span className="badge text-bg-light border">
+                        {formatDuration(journey.totalVisibleMs)}
+                      </span>
+                    </div>
+                    <div className="small mt-2 d-flex flex-wrap gap-2">
+                      <span>{journey.screenNames.length} telas</span>
+                      <span>{journey.sectionIds.length} seções</span>
+                      <span>{journey.maxScrollDepthPercent}% scroll</span>
+                      <span>
+                        {journey.paywallViewed ? "viu paywall" : "sem paywall"}
+                      </span>
+                      <span>
+                        {journey.checkoutStarted
+                          ? "foi ao checkout"
+                          : "sem checkout"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

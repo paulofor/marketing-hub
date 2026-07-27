@@ -15,10 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/niches")
 @RequiredArgsConstructor
 public class OprmNicheIngestionController {
-    private final OprmNicheIngestionService service;
+  private final OprmNicheIngestionService service;
 
-    @PostMapping("/snapshots:ingest")
-    public ResponseEntity<OprmNicheSnapshotIngestResponseDto> ingest(@Valid @RequestBody OprmNicheSnapshotIngestRequestDto request) {
-        return ResponseEntity.accepted().body(service.ingest(request));
-    }
+  @PostMapping("/snapshots:ingest")
+  public ResponseEntity<OprmNicheSnapshotIngestResponseDto> ingest(
+      @Valid @RequestBody OprmNicheSnapshotIngestRequestDto request) {
+    return ResponseEntity.accepted().body(service.ingest(request));
+  }
 }

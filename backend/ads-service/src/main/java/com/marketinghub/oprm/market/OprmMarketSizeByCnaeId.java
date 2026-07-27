@@ -9,9 +9,9 @@ import lombok.Data;
 @Data
 @Embeddable
 public class OprmMarketSizeByCnaeId implements Serializable {
-    @Column(nullable = false)
-    private LocalDate snapshotDate;
+  @Column(nullable = false)
+  private LocalDate snapshotDate;
 
-    @Column(nullable = false, length = 7)
-    private String cnaeCode;
+  @Column(nullable = false, length = 7)
+  private String cnaeCode;
 }

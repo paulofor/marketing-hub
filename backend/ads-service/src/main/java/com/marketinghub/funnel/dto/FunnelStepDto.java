@@ -6,19 +6,17 @@ import java.math.BigDecimal;
 import java.util.UUID;
 import lombok.Data;
 
-/**
- * DTO representing a step within a funnel.
- */
+/** DTO representing a step within a funnel. */
 @Data
 public class FunnelStepDto {
-    private UUID id;
-    private Integer orderIdx;
-    private StimulusType stimulusType;
-    private String channel;
-    private String templateId;
-    private String note;
-    private ActionType expectedAction;
-    private Integer scoreInc;
-    private BigDecimal revenueTarget;
-    private Boolean isActive;
+  private UUID id;
+  private Integer orderIdx;
+  private StimulusType stimulusType;
+  private String channel;
+  private String templateId;
+  private String note;
+  private ActionType expectedAction;
+  private Integer scoreInc;
+  private BigDecimal revenueTarget;
+  private Boolean isActive;
 }

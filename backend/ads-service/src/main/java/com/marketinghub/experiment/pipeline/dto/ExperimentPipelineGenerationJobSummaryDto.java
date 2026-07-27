@@ -8,15 +8,14 @@ import lombok.Builder;
 
 @Builder
 public record ExperimentPipelineGenerationJobSummaryDto(
-        UUID id,
-        Long experimentId,
-        ExperimentPipelineSection section,
-        String status,
-        String stage,
-        String model,
-        String errorMessage,
-        BigDecimal costUsd,
-        Instant createdAt,
-        Instant startedAt,
-        Instant finishedAt) {
-}
+    UUID id,
+    Long experimentId,
+    ExperimentPipelineSection section,
+    String status,
+    String stage,
+    String model,
+    String errorMessage,
+    BigDecimal costUsd,
+    Instant createdAt,
+    Instant startedAt,
+    Instant finishedAt) {}

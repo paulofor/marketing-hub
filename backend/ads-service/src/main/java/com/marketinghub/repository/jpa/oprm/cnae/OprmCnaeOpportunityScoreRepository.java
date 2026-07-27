@@ -5,17 +5,13 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-/**
- * Repositório responsável por consultar scores de oportunidade de CNAE gravados pelo OPRM.
- */
-public interface OprmCnaeOpportunityScoreRepository extends JpaRepository<OprmCnaeOpportunityScore, String> {
-    /**
-     * Lista os melhores scores ainda sem enriquecimento para o scheduler OPRM.
-     */
-    List<OprmCnaeOpportunityScore> findByEnrichedAtIsNullOrderByOpportunityScoreDescCnaeCodeAsc(Pageable pageable);
+/** Repositório responsável por consultar scores de oportunidade de CNAE gravados pelo OPRM. */
+public interface OprmCnaeOpportunityScoreRepository
+    extends JpaRepository<OprmCnaeOpportunityScore, String> {
+  /** Lista os melhores scores ainda sem enriquecimento para o scheduler OPRM. */
+  List<OprmCnaeOpportunityScore> findByEnrichedAtIsNullOrderByOpportunityScoreDescCnaeCodeAsc(
+      Pageable pageable);
 
-    /**
-     * Lista os melhores scores persistidos para acompanhamento operacional no frontend.
-     */
-    List<OprmCnaeOpportunityScore> findAllByOrderByOpportunityScoreDescCnaeCodeAsc(Pageable pageable);
+  /** Lista os melhores scores persistidos para acompanhamento operacional no frontend. */
+  List<OprmCnaeOpportunityScore> findAllByOrderByOpportunityScoreDescCnaeCodeAsc(Pageable pageable);
 }

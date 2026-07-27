@@ -33,22 +33,26 @@ public class BackendRoutineQualityGateController {
   }
 
   /** Persiste a decisão de qualidade para um cartão de rotina sintetizado. */
-  @PostMapping("/internal/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}/complete")
+  @PostMapping(
+      "/internal/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}/complete")
   public ResponseEntity<CompleteRoutineQualityGateResponse> complete(
       @PathVariable Long researchCycleId, @RequestBody CompleteRoutineQualityGateRequest request) {
     return ResponseEntity.ok(executionService.complete(researchCycleId, request));
   }
 
   /** Registra falha operacional da avaliação de qualidade para um ciclo de pesquisa. */
-  @PostMapping("/internal/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}/fail")
-  public ResponseEntity<Void> fail(@PathVariable Long researchCycleId, @RequestBody FailRoutineQualityGateRequest request) {
+  @PostMapping(
+      "/internal/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}/fail")
+  public ResponseEntity<Void> fail(
+      @PathVariable Long researchCycleId, @RequestBody FailRoutineQualityGateRequest request) {
     executionService.fail(researchCycleId, request);
     return ResponseEntity.noContent().build();
   }
 
   /** Detalha a avaliação de qualidade do cartão de rotina de um ciclo. */
   @GetMapping("/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}")
-  public ResponseEntity<RoutineQualityGateDetailResponse> detail(@PathVariable Long researchCycleId) {
+  public ResponseEntity<RoutineQualityGateDetailResponse> detail(
+      @PathVariable Long researchCycleId) {
     return ResponseEntity.ok(executionService.detail(researchCycleId));
   }
 }

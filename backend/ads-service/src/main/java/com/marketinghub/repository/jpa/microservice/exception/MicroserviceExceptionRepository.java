@@ -1,30 +1,31 @@
 package com.marketinghub.repository.jpa.microservice.exception;
 
 import com.marketinghub.microservice.exception.MicroserviceExceptionLog;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
+/** Repositório JPA responsável pela persistência de MicroserviceException. */
+public interface MicroserviceExceptionRepository
+    extends JpaRepository<MicroserviceExceptionLog, Long> {
+  Page<MicroserviceExceptionLog> findAllByMicroserviceId(Long microserviceId, Pageable pageable);
 
-/**
- * Repositório JPA responsável pela persistência de MicroserviceException.
- */
-public interface MicroserviceExceptionRepository extends JpaRepository<MicroserviceExceptionLog, Long> {
-    Page<MicroserviceExceptionLog> findAllByMicroserviceId(Long microserviceId, Pageable pageable);
+  Page<MicroserviceExceptionLog> findAllByMicroserviceIdAndSeverityIgnoreCase(
+      Long microserviceId, String severity, Pageable pageable);
 
-    Page<MicroserviceExceptionLog> findAllByMicroserviceIdAndSeverityIgnoreCase(Long microserviceId, String severity, Pageable pageable);
+  Page<MicroserviceExceptionLog> findAllBySeverityIgnoreCase(String severity, Pageable pageable);
 
-    Page<MicroserviceExceptionLog> findAllBySeverityIgnoreCase(String severity, Pageable pageable);
+  Optional<MicroserviceExceptionLog> findFirstByMicroserviceIdOrderByOccurredAtDesc(
+      Long microserviceId);
 
-    Optional<MicroserviceExceptionLog> findFirstByMicroserviceIdOrderByOccurredAtDesc(Long microserviceId);
+  long countByMicroserviceId(Long microserviceId);
 
-    long countByMicroserviceId(Long microserviceId);
-
-    @Query("""
+  @Query(
+      """
             SELECT e FROM MicroserviceExceptionLog e
             WHERE e.microservice.id IN :microserviceIds
               AND e.occurredAt = (
@@ -32,18 +33,22 @@ public interface MicroserviceExceptionRepository extends JpaRepository<Microserv
                     FROM MicroserviceExceptionLog innerLog
                     WHERE innerLog.microservice.id = e.microservice.id)
             """)
-    List<MicroserviceExceptionLog> findLatestByMicroserviceIds(@Param("microserviceIds") List<Long> microserviceIds);
+  List<MicroserviceExceptionLog> findLatestByMicroserviceIds(
+      @Param("microserviceIds") List<Long> microserviceIds);
 
-    @Query("""
+  @Query(
+      """
             SELECT e.microservice.id AS microserviceId, COUNT(e) AS total
             FROM MicroserviceExceptionLog e
             WHERE e.microservice.id IN :microserviceIds
             GROUP BY e.microservice.id
             """)
-    List<MicroserviceExceptionCountView> countByMicroserviceIds(@Param("microserviceIds") List<Long> microserviceIds);
+  List<MicroserviceExceptionCountView> countByMicroserviceIds(
+      @Param("microserviceIds") List<Long> microserviceIds);
 
-    interface MicroserviceExceptionCountView {
-        Long getMicroserviceId();
-        Long getTotal();
-    }
+  interface MicroserviceExceptionCountView {
+    Long getMicroserviceId();
+
+    Long getTotal();
+  }
 }

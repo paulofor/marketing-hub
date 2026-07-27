@@ -10,26 +10,28 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/settings")
 public class GeneralSettingController {
-    private final GeneralSettingService service;
-    public GeneralSettingController(GeneralSettingService service) {
-        this.service = service;
-    }
+  private final GeneralSettingService service;
 
-    @GetMapping("/{name}")
-    public GeneralSettingDto get(@PathVariable String name) {
-        return service.findByName(name)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "setting not found"));
-    }
+  public GeneralSettingController(GeneralSettingService service) {
+    this.service = service;
+  }
 
-    @PutMapping("/{name}")
-    public GeneralSettingDto upsert(@PathVariable String name, @RequestBody UpdateGeneralSettingRequest request) {
-        if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
-        }
-        if (!StringUtils.hasText(name)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
-        }
-        return service.upsert(name, request.value());
-    }
+  @GetMapping("/{name}")
+  public GeneralSettingDto get(@PathVariable String name) {
+    return service
+        .findByName(name)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "setting not found"));
+  }
 
+  @PutMapping("/{name}")
+  public GeneralSettingDto upsert(
+      @PathVariable String name, @RequestBody UpdateGeneralSettingRequest request) {
+    if (request == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
+    }
+    if (!StringUtils.hasText(name)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+    }
+    return service.upsert(name, request.value());
+  }
 }

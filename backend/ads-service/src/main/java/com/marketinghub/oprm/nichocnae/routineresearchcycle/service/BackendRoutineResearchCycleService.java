@@ -17,10 +17,10 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalReposit
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
-import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -70,7 +70,8 @@ public class BackendRoutineResearchCycleService {
   @Transactional(readOnly = true)
   public List<RecordRoutineResearchCyclePending> listPending() {
     return routineResearchCycleRepository
-        .findByCurrentStageCodeOrderByStartedAtAsc(CURRENT_STAGE_RESEARCH_CYCLE, PageRequest.of(0, 20))
+        .findByCurrentStageCodeOrderByStartedAtAsc(
+            CURRENT_STAGE_RESEARCH_CYCLE, PageRequest.of(0, 20))
         .stream()
         .map(this::toPending)
         .toList();
@@ -95,7 +96,8 @@ public class BackendRoutineResearchCycleService {
 
   /** Lista execuções do ciclo de pesquisa de rotina associadas ao CNAE informado. */
   @Transactional(readOnly = true)
-  public List<RoutineResearchCycleExecutionSummaryResponse> listStageExecutionsByCnae(String cnaeCode) {
+  public List<RoutineResearchCycleExecutionSummaryResponse> listStageExecutionsByCnae(
+      String cnaeCode) {
     List<OprmRoutineResearchCycle> cycles =
         routineResearchCycleRepository.findByCnaeCodeOrderByStartedAtDesc(cnaeCode);
     BigDecimal cnaeTotalCostUsd =
@@ -107,7 +109,8 @@ public class BackendRoutineResearchCycleService {
 
   /** Lista execuções do ciclo de pesquisa de rotina associadas a um nicho CNAE de origem. */
   @Transactional(readOnly = true)
-  public List<RoutineResearchCycleExecutionSummaryResponse> listStageExecutions(Long sourceNicheId) {
+  public List<RoutineResearchCycleExecutionSummaryResponse> listStageExecutions(
+      Long sourceNicheId) {
     List<OprmRoutineResearchCycle> cycles =
         routineResearchCycleRepository.findBySourceNicheIdOrderByStartedAtDesc(sourceNicheId);
     BigDecimal totalCostUsd =
@@ -139,8 +142,8 @@ public class BackendRoutineResearchCycleService {
     List<OprmResearchQuery> queries =
         researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId);
     List<OprmSourceCandidate> candidates =
-        sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(
-            researchCycleId);
+        sourceCandidateRepository
+            .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(researchCycleId);
     List<OprmSourceSnapshot> snapshots =
         sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
     List<OprmExtractedSignal> signals =
@@ -220,12 +223,13 @@ public class BackendRoutineResearchCycleService {
         cycle.getErrorMessage());
   }
 
-  /** Converte um ciclo em linha da tela de jobs recentes com links de relatório e acompanhamento. */
+  /**
+   * Converte um ciclo em linha da tela de jobs recentes com links de relatório e acompanhamento.
+   */
   private OprmNichoCnaeJobSummaryResponse toJobSummary(OprmRoutineResearchCycle cycle) {
     String reportUrl =
         "/api/oprm/nichocnae/routine-research-cycle/stage-executions/" + cycle.getId() + "/report";
-    String trackingUrl =
-        "/oprm/cnaes/" + cycle.getCnaeCode() + "/subnichos/" + cycle.getId();
+    String trackingUrl = "/oprm/cnaes/" + cycle.getCnaeCode() + "/subnichos/" + cycle.getId();
     return new OprmNichoCnaeJobSummaryResponse(
         cycle.getId(),
         cycle.getCnaeCode(),
@@ -430,7 +434,8 @@ public class BackendRoutineResearchCycleService {
   /** Soma o custo registrado pelas etapas com telemetria de IA para uma execução do ciclo. */
   private BigDecimal executionCostUsd(Long researchCycleId) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-    BigDecimal currentSeedCost = nicheResearchSeedRepository.sumCostUsdByResearchCycleId(researchCycleId);
+    BigDecimal currentSeedCost =
+        nicheResearchSeedRepository.sumCostUsdByResearchCycleId(researchCycleId);
     BigDecimal preservedReprocessCost = cycle.getReprocessPreservedCostUsd();
     return nullToZero(currentSeedCost).add(nullToZero(preservedReprocessCost));
   }

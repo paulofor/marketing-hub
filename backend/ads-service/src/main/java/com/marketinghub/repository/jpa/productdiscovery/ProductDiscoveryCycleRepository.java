@@ -7,11 +7,13 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Repositório dos ciclos de descoberta de produtos PDE. */
-public interface ProductDiscoveryCycleRepository extends JpaRepository<ProductDiscoveryCycle, Long> {
+public interface ProductDiscoveryCycleRepository
+    extends JpaRepository<ProductDiscoveryCycle, Long> {
 
-    /** Lista os ciclos mais recentes para a tela administrativa. */
-    List<ProductDiscoveryCycle> findTop50ByOrderByUpdatedAtDesc();
+  /** Lista os ciclos mais recentes para a tela administrativa. */
+  List<ProductDiscoveryCycle> findTop50ByOrderByUpdatedAtDesc();
 
-    /** Lista ciclos pendentes para consumo pelo worker. */
-    List<ProductDiscoveryCycle> findTop5ByStatusInOrderByUpdatedAtAsc(Collection<ProductDiscoveryCycleStatus> statuses);
+  /** Lista ciclos pendentes para consumo pelo worker. */
+  List<ProductDiscoveryCycle> findTop5ByStatusInOrderByUpdatedAtAsc(
+      Collection<ProductDiscoveryCycleStatus> statuses);
 }

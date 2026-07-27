@@ -5,17 +5,16 @@ import java.time.Instant;
 
 /** Representa a situação real de prontidão e autenticação do Chat Moda. */
 public record FashionChatValidationStatusResponse(
-        String serviceBaseUrl,
-        Instant checkedAt,
-        boolean ready,
-        Integer readyHttpStatus,
-        String readyError,
-        String accountStatus,
-        Boolean authenticated,
-        Boolean connected,
-        Boolean executable,
-        String blockReason,
-        Integer accountHttpStatus,
-        String accountError,
-        JsonNode accountPayload) {
-}
+    String serviceBaseUrl,
+    Instant checkedAt,
+    boolean ready,
+    Integer readyHttpStatus,
+    String readyError,
+    String accountStatus,
+    Boolean authenticated,
+    Boolean connected,
+    Boolean executable,
+    String blockReason,
+    Integer accountHttpStatus,
+    String accountError,
+    JsonNode accountPayload) {}

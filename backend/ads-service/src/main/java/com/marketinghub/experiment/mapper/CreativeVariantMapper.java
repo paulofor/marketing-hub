@@ -5,11 +5,9 @@ import com.marketinghub.experiment.dto.CreativeVariantDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-/**
- * MapStruct mapper for CreativeVariant.
- */
+/** MapStruct mapper for CreativeVariant. */
 @Mapper(componentModel = "spring")
 public interface CreativeVariantMapper {
-    @Mapping(target = "experimentId", source = "experiment.id")
-    CreativeVariantDto toDto(CreativeVariant creative);
+  @Mapping(target = "experimentId", source = "experiment.id")
+  CreativeVariantDto toDto(CreativeVariant creative);
 }

@@ -2,95 +2,97 @@ package com.marketinghub.successproduct;
 
 import com.marketinghub.ads.InstagramAccount;
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
-
-/**
- * Entity representing a successful product template.
- */
+/** Entity representing a successful product template. */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SuccessProduct {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String description;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String description;
 
-    private String name;
+  private String name;
 
-    /** Flag to indicate newly created entries. */
-    @Builder.Default
-    private boolean novo = true;
+  /** Flag to indicate newly created entries. */
+  @Builder.Default private boolean novo = true;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private SuccessProductPlatform platform = SuccessProductPlatform.COFRE;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  @Builder.Default
+  private SuccessProductPlatform platform = SuccessProductPlatform.COFRE;
 
-    /** Indicates if the AI worker should generate niche and hypothesis. */
-    @Builder.Default
-    private boolean generateNicheHypothesis = false;
+  /** Indicates if the AI worker should generate niche and hypothesis. */
+  @Builder.Default private boolean generateNicheHypothesis = false;
 
-    private String niche;
-    private String avatar;
+  private String niche;
+  private String avatar;
 
-    private String audienceType;
+  private String audienceType;
 
-    private String salesPageUrl;
-    private String instagramUrl;
-    private String facebookUrl;
-    private String youtubeUrl;
+  private String salesPageUrl;
+  private String instagramUrl;
+  private String facebookUrl;
+  private String youtubeUrl;
 
-    @ManyToOne
-    @JoinColumn(name = "instagram_account_id")
-    private InstagramAccount instagramAccount;
+  @ManyToOne
+  @JoinColumn(name = "instagram_account_id")
+  private InstagramAccount instagramAccount;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String explicitPain;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String promise;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String uniqueMechanism;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String tripwire;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String riskReversal;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String socialProof;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String checkoutMonetization;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "sales_funnel")
-    private String salesFunnel;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String creativeVolume;
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String storytelling;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String explicitPain;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String promise;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String uniqueMechanism;
+
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String tripwire;
+
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String riskReversal;
+
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String socialProof;
+
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String checkoutMonetization;
+
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "sales_funnel")
+  private String salesFunnel;
+
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String creativeVolume;
+
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String storytelling;
+
+  @CreationTimestamp private Instant createdAt;
+
+  @UpdateTimestamp private Instant updatedAt;
 }

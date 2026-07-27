@@ -177,6 +177,16 @@ const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explica
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
 const MUSA_V5_HERO_VIDEO_URL = '/assets/musa-v5-video-explicativo.mp4';
 const MUSA_V6_HERO_VIDEO_URL = '/assets/musa-v6-video-motivacional.mp4';
+const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string; heroVideoUrl: string }> = {
+  'v5.clubemusa.com.br': {
+    experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+    heroVideoUrl: MUSA_V5_HERO_VIDEO_URL,
+  },
+  'v6.clubemusa.com.br': {
+    experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
+    heroVideoUrl: MUSA_V6_HERO_VIDEO_URL,
+  },
+};
 const MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS = new Set([
   'musa-pde-entry-v5-estrada-desejo',
   MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
@@ -532,21 +542,19 @@ function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLI
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
 }
 
-function resolveHostExperienceVersionOverride() {
+function resolveMusaVersionedHostConfig() {
   const hostname = window.location.hostname.toLowerCase();
-  if (hostname === 'v6.clubemusa.com.br') {
-    return MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
-  }
-  if (hostname === 'v5.clubemusa.com.br') {
-    return MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
-  }
-  return '';
+  return MUSA_VERSIONED_HOSTS[hostname];
+}
+
+function resolveHostExperienceVersionOverride() {
+  return resolveMusaVersionedHostConfig()?.experienceVersion ?? '';
 }
 
 function applyExperienceOverrides(productExperience: ProductExperience) {
   const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
   const hostExperienceVersionOverride = resolveHostExperienceVersionOverride();
-  const selectedExperienceVersion = experienceVersionOverride || hostExperienceVersionOverride;
+  const selectedExperienceVersion = hostExperienceVersionOverride || experienceVersionOverride;
   if (!selectedExperienceVersion) {
     return productExperience;
   }
@@ -570,6 +578,14 @@ function resolveDefaultHeroVideoUrl(experienceVersion: string) {
     return MUSA_V6_HERO_VIDEO_URL;
   }
   return MUSA_V5_HERO_VIDEO_URL;
+}
+
+function resolveHeroVideoUrl(experienceVersion: string) {
+  const hostHeroVideoUrl = resolveMusaVersionedHostConfig()?.heroVideoUrl;
+  if (hostHeroVideoUrl) {
+    return hostHeroVideoUrl;
+  }
+  return readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? resolveDefaultHeroVideoUrl(experienceVersion));
 }
 
 const presenceBlockers: DiagnosticOption[] = [
@@ -638,7 +654,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
 
 function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [product, setProduct] = useState<ProductExperience>(fallbackProduct);
+  const [product, setProduct] = useState<ProductExperience>(() => applyExperienceOverrides(fallbackProduct));
   const [email, setEmail] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [activeMissionId, setActiveMissionId] = useState('');
@@ -654,6 +670,8 @@ function App() {
   const [publicDiagnosticDirection, setPublicDiagnosticDirection] = useState<'forward' | 'backward'>('forward');
   const [publicDiagnosticGuidance, setPublicDiagnosticGuidance] = useState<AiGuidance | null>(null);
   const [publicDiagnosticLoading, setPublicDiagnosticLoading] = useState(false);
+  const [publicVideoWatchPercent, setPublicVideoWatchPercent] = useState(0);
+  const [publicVideoCompleted, setPublicVideoCompleted] = useState(false);
   const [missionAnswers, setMissionAnswers] = useState<Record<string, Record<string, string>>>({});
   const [aiGuidanceByMission, setAiGuidanceByMission] = useState<Record<string, AiGuidance>>({});
   const [generatingGuidance, setGeneratingGuidance] = useState(false);
@@ -685,7 +703,7 @@ function App() {
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
-  const heroVideoUrl = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? resolveDefaultHeroVideoUrl(currentExperienceVersion));
+  const heroVideoUrl = resolveHeroVideoUrl(currentExperienceVersion);
   const heroStreamUrl = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
   const heroPlaybackUrl = heroStreamUrl || heroVideoUrl;
 
@@ -1779,6 +1797,7 @@ function App() {
   const selectedDesiredPresence = desiredPresenceSignals.find((option) => option.key === desiredPresence);
   const diagnosticReadyForEmail = authMode === 'login' || Boolean(presenceBlocker && desiredPresence);
   const showVideoHero = currentExperienceVersion === 'musa-pde-entry-v4-video-hero';
+  const showMotivationalTimelineVideo = currentExperienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
   const showPublishedPublicDiagnosticVideoHero =
     !workspace
     && ((isMusaVideoExplainerExperience(currentExperienceVersion) && publicDiagnosticVideoVariant !== 'control')
@@ -1886,6 +1905,11 @@ function App() {
     const answeredPublicDiagnosticCount = publicDiagnosticQuestions.filter((question) => publicDiagnosticAnswers[question.key]?.trim()).length;
     const publicDiagnosticProgressPercent = Math.round((answeredPublicDiagnosticCount / publicDiagnosticQuestions.length) * 100);
     const showPublicDiagnosticVideoHero = showPublishedPublicDiagnosticVideoHero;
+    const videoWatchLabel = publicVideoCompleted
+      ? 'Vídeo visto completo'
+      : publicVideoWatchPercent > 0
+        ? `Vídeo visto parcialmente: ${publicVideoWatchPercent}%`
+        : 'Vídeo pronto para começar';
 
     return (
       <main className="app-shell public-diagnostic-shell">
@@ -1896,7 +1920,11 @@ function App() {
           </div>
 
           {showPublicDiagnosticVideoHero && (
-            <section className="public-video-hero" aria-label="Vídeo curto Método MUSA" data-analytics-section="public_diagnostic_video_hero">
+            <section
+              className={`public-video-hero ${showMotivationalTimelineVideo ? 'public-video-timeline' : ''}`}
+              aria-label="Vídeo curto Método MUSA"
+              data-analytics-section="public_diagnostic_video_hero"
+            >
               <div className="public-video-frame">
                 {heroPlaybackUrl ? (
                   <AdaptiveVideoPlayer
@@ -1904,6 +1932,7 @@ function App() {
                     src={heroPlaybackUrl}
                     fallbackSrc={heroVideoUrl}
                     autoPlay
+                    controls={showMotivationalTimelineVideo}
                     muted
                     loop
                     playsInline
@@ -1917,6 +1946,10 @@ function App() {
                         return;
                       }
                       if (event.type === 'progress' && event.percent) {
+                        setPublicVideoWatchPercent((current) => Math.max(current, event.percent ?? 0));
+                        if (event.percent >= 95) {
+                          setPublicVideoCompleted(true);
+                        }
                         trackPublicHeroVideoPlayback(event.percent >= 95 ? 'VIDEO_COMPLETED' : `VIDEO_PROGRESS_${event.percent}`, {
                           progressPercent: event.percent,
                           currentTime: Math.round(event.currentTime),
@@ -1925,6 +1958,8 @@ function App() {
                         return;
                       }
                       if (event.type === 'ended') {
+                        setPublicVideoWatchPercent(100);
+                        setPublicVideoCompleted(true);
                         trackPublicHeroVideoPlayback('VIDEO_COMPLETED', {
                           progressPercent: 100,
                           currentTime: Math.round(event.currentTime),
@@ -1951,11 +1986,17 @@ function App() {
                   <Sparkles size={17} />
                   <span>{heroPlaybackUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
                 </div>
+                <div className="public-video-watch-status" aria-live="polite">
+                  <span>{videoWatchLabel}</span>
+                  <i>
+                    <b style={{ width: `${publicVideoCompleted ? 100 : publicVideoWatchPercent}%` }} />
+                  </i>
+                </div>
               </div>
               <div className="public-video-copy">
-                <p className="section-kicker">Vídeo inicial MUSA</p>
-                <h2>Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.</h2>
-                <p>Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.</p>
+                <p className="section-kicker">{showMotivationalTimelineVideo ? 'Timeline MUSA' : 'Vídeo inicial MUSA'}</p>
+                <h2>{showMotivationalTimelineVideo ? 'Assista como um primeiro story e siga para seu mapa de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
+                <p>{showMotivationalTimelineVideo ? 'A v6 começa com vídeo motivacional no próprio HTML, registra visualização parcial ou completa e conduz para a escolha das opções sem travar a experiência.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
                 <button
                   className="secondary-button public-video-cta"
                   type="button"

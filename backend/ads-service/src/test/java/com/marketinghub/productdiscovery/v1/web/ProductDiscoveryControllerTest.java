@@ -22,51 +22,55 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 @ExtendWith(MockitoExtension.class)
 class ProductDiscoveryControllerTest {
 
-    private MockMvc mockMvc;
+  private MockMvc mockMvc;
 
-    @Mock
-    private ProductDiscoveryService service;
+  @Mock private ProductDiscoveryService service;
 
-    /** Monta o controller isolado para testar as rotas do módulo. */
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new ProductDiscoveryController(service)).build();
-    }
+  /** Monta o controller isolado para testar as rotas do módulo. */
+  @BeforeEach
+  void setUp() {
+    mockMvc = MockMvcBuilders.standaloneSetup(new ProductDiscoveryController(service)).build();
+  }
 
-    /** Deve expor o ranking por maturidade comercial para a tela administrativa. */
-    @Test
-    void getMaturityRanking() throws Exception {
-        var response = new ProductDiscoveryMaturityRankingResponse(
-                "Ranking por maturidade comercial",
-                "Dor concreta, lacuna clara e microexperiência rápida.",
-                "Começar por renda extra.",
-                List.of(new ProductDiscoveryMaturityItemResponse(
-                        1,
-                        "Renda extra",
-                        "Oportunidade promissora",
-                        "Mercado grande.",
-                        "Dor urgente sem promessa garantida.",
-                        "Abrir ciclo de pesquisa.",
-                        List.of("Encaixe com WhatsApp"),
-                        List.of("Sem ganho garantido"))),
-                List.of(new ProductDiscoveryResearchTrackResponse(
-                        "Renda extra para autônomos/MEIs",
-                        "WhatsApp e primeira venda.",
-                        "Maior chance de compra rápida.",
-                        "renda extra para autonomos e MEIs",
-                        "Autônomos e MEIs",
-                        "TikTok, Reels e WhatsApp",
-                        "Encontrar dor concreta.",
-                        "Baixo esforço.",
-                        "Promessa de renda garantida.")));
+  /** Deve expor o ranking por maturidade comercial para a tela administrativa. */
+  @Test
+  void getMaturityRanking() throws Exception {
+    var response =
+        new ProductDiscoveryMaturityRankingResponse(
+            "Ranking por maturidade comercial",
+            "Dor concreta, lacuna clara e microexperiência rápida.",
+            "Começar por renda extra.",
+            List.of(
+                new ProductDiscoveryMaturityItemResponse(
+                    1,
+                    "Renda extra",
+                    "Oportunidade promissora",
+                    "Mercado grande.",
+                    "Dor urgente sem promessa garantida.",
+                    "Abrir ciclo de pesquisa.",
+                    List.of("Encaixe com WhatsApp"),
+                    List.of("Sem ganho garantido"))),
+            List.of(
+                new ProductDiscoveryResearchTrackResponse(
+                    "Renda extra para autônomos/MEIs",
+                    "WhatsApp e primeira venda.",
+                    "Maior chance de compra rápida.",
+                    "renda extra para autonomos e MEIs",
+                    "Autônomos e MEIs",
+                    "TikTok, Reels e WhatsApp",
+                    "Encontrar dor concreta.",
+                    "Baixo esforço.",
+                    "Promessa de renda garantida.")));
 
-        when(service.getMaturityRanking()).thenReturn(response);
+    when(service.getMaturityRanking()).thenReturn(response);
 
-        mockMvc.perform(get("/api/product-discovery/v1/maturity-ranking"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.strategyName").value("Ranking por maturidade comercial"))
-                .andExpect(jsonPath("$.items[0].niche").value("Renda extra"))
-                .andExpect(jsonPath("$.items[0].maturity").value("Oportunidade promissora"))
-                .andExpect(jsonPath("$.recommendedTracks[0].theme").value("renda extra para autonomos e MEIs"));
-    }
+    mockMvc
+        .perform(get("/api/product-discovery/v1/maturity-ranking"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.strategyName").value("Ranking por maturidade comercial"))
+        .andExpect(jsonPath("$.items[0].niche").value("Renda extra"))
+        .andExpect(jsonPath("$.items[0].maturity").value("Oportunidade promissora"))
+        .andExpect(
+            jsonPath("$.recommendedTracks[0].theme").value("renda extra para autonomos e MEIs"));
+  }
 }

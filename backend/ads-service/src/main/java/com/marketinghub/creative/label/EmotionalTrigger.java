@@ -9,15 +9,14 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EmotionalTrigger {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String name;
+  private String name;
 
-    @Enumerated(EnumType.STRING)
-    private EmotionalValence valence;
+  @Enumerated(EnumType.STRING)
+  private EmotionalValence valence;
 
-    @Lob
-    private String description;
+  @Lob private String description;
 }

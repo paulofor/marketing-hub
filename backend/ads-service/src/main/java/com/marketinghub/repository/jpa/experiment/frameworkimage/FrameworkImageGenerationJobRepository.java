@@ -10,37 +10,37 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-/**
- * Repositório JPA responsável pela persistência de FrameworkImageGenerationJob.
- */
-public interface FrameworkImageGenerationJobRepository extends JpaRepository<FrameworkImageGenerationJob, UUID> {
-    List<FrameworkImageGenerationJob> findByStatusOrderByCreatedAtAsc(FrameworkImageGenerationJobStatus status,
-                                                                      Pageable pageable);
+/** Repositório JPA responsável pela persistência de FrameworkImageGenerationJob. */
+public interface FrameworkImageGenerationJobRepository
+    extends JpaRepository<FrameworkImageGenerationJob, UUID> {
+  List<FrameworkImageGenerationJob> findByStatusOrderByCreatedAtAsc(
+      FrameworkImageGenerationJobStatus status, Pageable pageable);
 
-    Optional<FrameworkImageGenerationJob> findFirstByExperimentIdAndPlanningItemKeyAndStatusInOrderByCreatedAtDesc(
-            Long experimentId,
-            String planningItemKey,
-            Collection<FrameworkImageGenerationJobStatus> statuses);
+  Optional<FrameworkImageGenerationJob>
+      findFirstByExperimentIdAndPlanningItemKeyAndStatusInOrderByCreatedAtDesc(
+          Long experimentId,
+          String planningItemKey,
+          Collection<FrameworkImageGenerationJobStatus> statuses);
 
-    List<FrameworkImageGenerationJob> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
+  List<FrameworkImageGenerationJob> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
 
-    /** Remove todos os jobs de geração de imagem vinculados ao experimento informado. */
-    long deleteByExperimentId(Long experimentId);
+  /** Remove todos os jobs de geração de imagem vinculados ao experimento informado. */
+  long deleteByExperimentId(Long experimentId);
 
-    List<FrameworkImageGenerationJob> findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
-            Long experimentId,
-            Collection<String> planningItemKeys,
-            FrameworkImageGenerationJobStatus status);
+  List<FrameworkImageGenerationJob>
+      findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
+          Long experimentId,
+          Collection<String> planningItemKeys,
+          FrameworkImageGenerationJobStatus status);
 
-    List<FrameworkImageGenerationJob> findByStatusAndStageInAndAssetIdIsNotNullAndSourceUrlIsNotNullAndWebUrlIsNullOrderByUpdatedAtAsc(
-            FrameworkImageGenerationJobStatus status,
-            Collection<FrameworkImageGenerationJobStage> stages,
-            Pageable pageable);
+  List<FrameworkImageGenerationJob>
+      findByStatusAndStageInAndAssetIdIsNotNullAndSourceUrlIsNotNullAndWebUrlIsNullOrderByUpdatedAtAsc(
+          FrameworkImageGenerationJobStatus status,
+          Collection<FrameworkImageGenerationJobStage> stages,
+          Pageable pageable);
 
-    Optional<FrameworkImageGenerationJob> findFirstByAssetIdOrderByCreatedAtDesc(Long assetId);
+  Optional<FrameworkImageGenerationJob> findFirstByAssetIdOrderByCreatedAtDesc(Long assetId);
 
-    List<FrameworkImageGenerationJob> findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
-            FrameworkImageGenerationJobStatus status,
-            java.time.Instant startedAt,
-            Pageable pageable);
+  List<FrameworkImageGenerationJob> findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+      FrameworkImageGenerationJobStatus status, java.time.Instant startedAt, Pageable pageable);
 }

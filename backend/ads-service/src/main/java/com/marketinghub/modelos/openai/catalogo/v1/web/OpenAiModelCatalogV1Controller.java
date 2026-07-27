@@ -19,61 +19,68 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsabilidade: expor o catálogo administrativo e oficial de modelos OpenAI para o frontend. */
+/**
+ * Responsabilidade: expor o catálogo administrativo e oficial de modelos OpenAI para o frontend.
+ */
 @RestController
 @RequestMapping("/api/modelos/openai/catalogo/v1")
 public class OpenAiModelCatalogV1Controller {
-    private final OpenAiModelService service;
-    private final OpenAiModelMapper mapper;
-    private final OpenAiModelCatalogV1Service catalogService;
-    private final OpenAiModelPricingSyncService pricingSyncService;
+  private final OpenAiModelService service;
+  private final OpenAiModelMapper mapper;
+  private final OpenAiModelCatalogV1Service catalogService;
+  private final OpenAiModelPricingSyncService pricingSyncService;
 
-    /** Inicializa o controller com serviços de cadastro local, mapeamento e sincronização do catálogo oficial. */
-    public OpenAiModelCatalogV1Controller(
-            OpenAiModelService service,
-            OpenAiModelMapper mapper,
-            OpenAiModelCatalogV1Service catalogService,
-            OpenAiModelPricingSyncService pricingSyncService) {
-        this.service = service;
-        this.mapper = mapper;
-        this.catalogService = catalogService;
-        this.pricingSyncService = pricingSyncService;
-    }
+  /**
+   * Inicializa o controller com serviços de cadastro local, mapeamento e sincronização do catálogo
+   * oficial.
+   */
+  public OpenAiModelCatalogV1Controller(
+      OpenAiModelService service,
+      OpenAiModelMapper mapper,
+      OpenAiModelCatalogV1Service catalogService,
+      OpenAiModelPricingSyncService pricingSyncService) {
+    this.service = service;
+    this.mapper = mapper;
+    this.catalogService = catalogService;
+    this.pricingSyncService = pricingSyncService;
+  }
 
-    /** Cria um modelo OpenAI no catálogo administrativo. */
-    @PostMapping("/modelos")
-    public OpenAiModelDto create(@RequestBody CreateOpenAiModelRequest request) {
-        return mapper.toDto(service.create(request));
-    }
+  /** Cria um modelo OpenAI no catálogo administrativo. */
+  @PostMapping("/modelos")
+  public OpenAiModelDto create(@RequestBody CreateOpenAiModelRequest request) {
+    return mapper.toDto(service.create(request));
+  }
 
-    /** Retorna um modelo OpenAI específico para edição. */
-    @GetMapping("/modelos/{id}")
-    public OpenAiModelDto get(@PathVariable Long id) {
-        return mapper.toDto(service.get(id));
-    }
+  /** Retorna um modelo OpenAI específico para edição. */
+  @GetMapping("/modelos/{id}")
+  public OpenAiModelDto get(@PathVariable Long id) {
+    return mapper.toDto(service.get(id));
+  }
 
-    /** Atualiza um modelo OpenAI existente no catálogo administrativo. */
-    @PutMapping("/modelos/{id}")
-    public OpenAiModelDto update(@PathVariable Long id, @RequestBody CreateOpenAiModelRequest request) {
-        return mapper.toDto(service.update(id, request));
-    }
+  /** Atualiza um modelo OpenAI existente no catálogo administrativo. */
+  @PutMapping("/modelos/{id}")
+  public OpenAiModelDto update(
+      @PathVariable Long id, @RequestBody CreateOpenAiModelRequest request) {
+    return mapper.toDto(service.update(id, request));
+  }
 
-    /** Lista os modelos OpenAI cadastrados para telas e seletores de pipeline. */
-    @GetMapping("/modelos")
-    public List<OpenAiModelDto> list() {
-        return service.list().stream().map(mapper::toDto).toList();
-    }
+  /** Lista os modelos OpenAI cadastrados para telas e seletores de pipeline. */
+  @GetMapping("/modelos")
+  public List<OpenAiModelDto> list() {
+    return service.list().stream().map(mapper::toDto).toList();
+  }
 
-    /** Consulta o catálogo oficial da OpenAI e persiste modelos reconhecidos localmente. */
-    @GetMapping
-    public OpenAiModelCatalogResponse catalog() {
-        return catalogService.fetchAndPersistCatalog();
-    }
+  /** Consulta o catálogo oficial da OpenAI e persiste modelos reconhecidos localmente. */
+  @GetMapping
+  public OpenAiModelCatalogResponse catalog() {
+    return catalogService.fetchAndPersistCatalog();
+  }
 
-    /** Executa manualmente a sincronização financeira de preços oficiais OpenAI. */
-    @PostMapping("/modelos/precos/sincronizar")
-    public OpenAiModelPricingSyncResponse syncPricing() {
-        int updated = pricingSyncService.syncOfficialPricing();
-        return new OpenAiModelPricingSyncResponse(updated, OpenAiPricingPageClient.PRICING_PAGE_URL, Instant.now());
-    }
+  /** Executa manualmente a sincronização financeira de preços oficiais OpenAI. */
+  @PostMapping("/modelos/precos/sincronizar")
+  public OpenAiModelPricingSyncResponse syncPricing() {
+    int updated = pricingSyncService.syncOfficialPricing();
+    return new OpenAiModelPricingSyncResponse(
+        updated, OpenAiPricingPageClient.PRICING_PAGE_URL, Instant.now());
+  }
 }

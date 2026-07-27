@@ -6,9 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record OprmCreateJobRequestDto(
-        @NotNull OprmJobType jobType,
-        @NotBlank String occupationSeedRef,
-        String correlationId,
-        List<String> inputRefs
-) {
-}
+    @NotNull OprmJobType jobType,
+    @NotBlank String occupationSeedRef,
+    String correlationId,
+    List<String> inputRefs) {}

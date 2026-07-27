@@ -35,7 +35,8 @@ class OprmNicheRoutineCardRepositoryTest {
         saveCycle(200L, "FAILED", "mei-audience-segmenter", "2026-06-03T10:00:00Z");
     OprmNicheRoutineCard failedCard = saveCard(failed, "cartão falho");
     OprmRoutineResearchCycle cancelled =
-        saveCycle(300L, "CANCELLED_BY_MANUAL_RESTART", "mei-audience-segmenter", "2026-06-04T10:00:00Z");
+        saveCycle(
+            300L, "CANCELLED_BY_MANUAL_RESTART", "mei-audience-segmenter", "2026-06-04T10:00:00Z");
     OprmNicheRoutineCard cancelledCard = saveCard(cancelled, "cartão cancelado");
     OprmRoutineResearchCycle segmented =
         saveCycle(400L, "MEI_AUDIENCE_SEGMENTED", "routine-quality-gate", "2026-06-05T10:00:00Z");
@@ -45,12 +46,17 @@ class OprmNicheRoutineCardRepositoryTest {
     assertThat(routineCardRepository.findPendingMeiAudienceSegmentation(PageRequest.of(0, 10)))
         .extracting(OprmNicheRoutineCard::getId)
         .containsExactly(latestCard.getId())
-        .doesNotContain(oldCard.getId(), failedCard.getId(), cancelledCard.getId(), segmentedCard.getId());
+        .doesNotContain(
+            oldCard.getId(), failedCard.getId(), cancelledCard.getId(), segmentedCard.getId());
   }
 
-  /** Garante que a fila do gate de qualidade não fica presa por cartões antigos sem perfil MEI/autônomo. */
+  /**
+   * Garante que a fila do gate de qualidade não fica presa por cartões antigos sem perfil
+   * MEI/autônomo.
+   */
   @Test
-  void findPendingRoutineQualityGateShouldIgnoreCardsWithoutMeiAudienceProfileBeforeApplyingLimit() {
+  void
+      findPendingRoutineQualityGateShouldIgnoreCardsWithoutMeiAudienceProfileBeforeApplyingLimit() {
     for (int index = 0; index < 12; index++) {
       OprmRoutineResearchCycle oldCycle =
           saveCycle(
@@ -98,7 +104,9 @@ class OprmNicheRoutineCardRepositoryTest {
     return cycleRepository.saveAndFlush(cycle);
   }
 
-  /** Persiste um cartão de rotina vinculado ao ciclo informado para alimentar a fila MEI/autônomo. */
+  /**
+   * Persiste um cartão de rotina vinculado ao ciclo informado para alimentar a fila MEI/autônomo.
+   */
   private OprmNicheRoutineCard saveCard(OprmRoutineResearchCycle cycle, String routineSummary) {
     OprmNicheRoutineCard card = new OprmNicheRoutineCard();
     card.setResearchCycleId(cycle.getId());

@@ -259,6 +259,25 @@ GitHub Actions verde não é prova suficiente de publicação produtiva. Antes d
 - jornada principal validada em desktop e mobile;
 - eventos aparecendo no painel pós-deploy depois do tráfego real.
 
+### Publicação versionada simultânea de PDE
+
+Um mesmo produto PDE pode ter múltiplas versões produtivas simultâneas para teste controlado, como `v5.clubemusa.com.br` e `v6.clubemusa.com.br`.
+
+Regras obrigatórias:
+
+- cada versão pública deve ter subdomínio próprio, slot próprio no Marketing Hub e `experienceVersion` própria;
+- o deploy produtivo do PDE deve rodar automaticamente em `main` quando houver alteração versionada do `pde-platform`, mantendo `workflow_dispatch` apenas como acionamento manual adicional;
+- o mesmo motor pode servir múltiplos subdomínios, desde que frontend e backend resolvam a experiência pelo hostname versionado antes de qualquer override global de runtime;
+- nenhum deploy pode ser considerado pronto se `v5` e `v6` entregarem o mesmo `experienceVersion` por engano;
+- quando a versão depender de vídeo, o smoke test deve validar que o asset público esperado retorna arquivo real de vídeo, nunca HTML fallback;
+- a validação pós-deploy deve cobrir cada subdomínio versionado com health público, renderização, endpoint PDE, diagnóstico público, versão esperada e asset crítico esperado;
+- eventos de funil devem persistir `experienceVersion`, permitindo comparar v5 e v6 sem misturar tráfego, criativo ou jornada.
+
+Para o Clube MUSA, a regra operacional atual é:
+
+- `v5.clubemusa.com.br` deve servir `musa-pde-entry-v5-video-explicativo` com `/assets/musa-v5-video-explicativo.mp4`;
+- `v6.clubemusa.com.br` deve servir `musa-pde-entry-v6-video-motivacional` com `/assets/musa-v6-video-motivacional.mp4`.
+
 Quando houver hipóteses, criativos ou primeiras dobras concorrentes, a operação deve criar slots produtivos paralelos em vez de depender de ambiente intermediário. A tela de experimento apenas escolhe a versão medida; criação, manutenção e publicação das URLs ficam no fluxo do produto e no pipeline versionado do repositório.
 
 ### Slots produtivos versionados do PDE
@@ -281,6 +300,10 @@ Slots produtivos existem para separar aprendizado comercial e reduzir risco oper
 Quando a versão comercial for numerada, o slot produtivo deve usar o subdomínio correspondente à versão, como `v5.clubemusa.com.br` para a versão 5. O domínio raiz pode existir como entrada institucional, legado ou redirecionamento, mas não deve ser a URL primária de uma campanha que mede uma versão específica.
 
 O Marketing Hub pode cadastrar e acompanhar slots antes da automação completa de infraestrutura. A publicação real continua proibida por SSH manual: o deploy deve ser feito por workflow, Compose, Dockerfile ou pipeline versionados do repositório.
+
+Quando uma mesma imagem/deploy do frontend PDE servir mais de um subdomínio versionado, o hostname público do slot é a fonte decisiva da versão comercial exibida. Overrides globais de runtime podem existir para ambientes não versionados, preview ou rollback operacional, mas não podem fazer `v6.clubemusa.com.br` registrar ou renderizar a experiência da `v5`, nem o inverso. O frontend deve resolver `experienceVersion` e ativo obrigatório de vídeo pelo hostname quando ele corresponder a um slot produtivo versionado conhecido.
+
+O workflow oficial de publicação do `pde-platform` deve validar cada slot produtivo versionado ativo ou pronto, no mínimo `https://v5.clubemusa.com.br` e `https://v6.clubemusa.com.br` enquanto ambos existirem. A validação pós-deploy precisa provar health público, renderização da entrada, contrato público e jornada diagnóstica em cada subdomínio, porque um único smoke test no domínio raiz não comprova teste simultâneo de versões.
 
 ## Contrato mínimo de produto
 

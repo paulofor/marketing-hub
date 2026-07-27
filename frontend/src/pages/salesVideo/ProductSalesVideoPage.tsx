@@ -81,6 +81,7 @@ const DEFAULT_POST_PRODUCTION_CAPTION =
 
 const DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT =
   "Imagem-base MUSA anti-sensualizacao: mulher brasileira adulta em um ambiente claro e cotidiano, organizando roupa e anotacoes do plano, postura natural, expressao de alivio e clareza, elegancia acessivel, sem pose sedutora, sem foco corporal, sem luxo ostensivo.";
+const MAX_MONTAGE_DURATION_SECONDS = 600;
 
 type ProfileFormState = {
   videoKind: SalesVideoKind;
@@ -225,6 +226,13 @@ export default function ProductSalesVideoPage() {
     () => summarizeProductVideoCost(jobList),
     [jobList],
   );
+  const selectedMontageDurationSeconds = useMemo(
+    () => sumKnownVideoDurationSeconds(existingVideoJobs, montageJobIds),
+    [existingVideoJobs, montageJobIds],
+  );
+  const montageDurationExceeded =
+    selectedMontageDurationSeconds != null &&
+    selectedMontageDurationSeconds > MAX_MONTAGE_DURATION_SECONDS;
   const funnelMetrics = useMemo(
     () => summarizeFunnel(profileList, jobList),
     [profileList, jobList],
@@ -403,6 +411,10 @@ export default function ProductSalesVideoPage() {
   const handleRequestMontage = async () => {
     if (montageJobIds.length < 2) {
       toast.error("Selecione pelo menos dois vídeos prontos para montar");
+      return;
+    }
+    if (montageDurationExceeded) {
+      toast.error("A montagem atual passa de 10 minutos.");
       return;
     }
     try {
@@ -1093,7 +1105,18 @@ export default function ProductSalesVideoPage() {
                 </div>
                 <span>
                   {montageJobIds.length} vídeo(s) selecionado(s) para sequência.
+                  {selectedMontageDurationSeconds != null
+                    ? ` Duração conhecida: ${formatDurationSeconds(
+                        selectedMontageDurationSeconds,
+                      )} / 10:00.`
+                    : ""}
                 </span>
+                {montageDurationExceeded ? (
+                  <div className="product-video-page__warning">
+                    A sequência selecionada passa de 10 minutos. Remova clipes
+                    ou divida em duas montagens.
+                  </div>
+                ) : null}
                 <div className="product-video-page__montage-list">
                   {existingVideoJobs.map((job) => (
                     <label
@@ -1117,7 +1140,9 @@ export default function ProductSalesVideoPage() {
                   className="btn btn-outline-primary"
                   onClick={handleRequestMontage}
                   disabled={
-                    montageJobIds.length < 2 || requestMontage.isPending
+                    montageJobIds.length < 2 ||
+                    montageDurationExceeded ||
+                    requestMontage.isPending
                   }
                 >
                   <Layers size={16} aria-hidden="true" />
@@ -1353,6 +1378,29 @@ function readJobCost(job: SalesVideoJob) {
     return metadataCost;
   }
   return readNumericJsonField(job.auditSnapshotJson, ["cost_usd", "costUsd"]);
+}
+
+function sumKnownVideoDurationSeconds(
+  jobs: SalesVideoJob[],
+  selectedJobIds: string[],
+) {
+  let total = 0;
+  let known = 0;
+  const selected = new Set(selectedJobIds);
+  jobs.forEach((job) => {
+    if (!selected.has(String(job.id))) {
+      return;
+    }
+    const duration = readNumericJsonField(job.metadataJson, [
+      "duration_seconds",
+      "durationSeconds",
+    ]);
+    if (duration != null) {
+      total += duration;
+      known += 1;
+    }
+  });
+  return known > 0 ? total : null;
 }
 
 function readNumericJsonField(
@@ -1907,6 +1955,13 @@ function parseOptionalNumber(value?: string) {
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function formatDurationSeconds(value: number) {
+  const safeValue = Math.max(0, Math.round(value));
+  const minutes = Math.floor(safeValue / 60);
+  const seconds = safeValue % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function firstLine(value: string) {

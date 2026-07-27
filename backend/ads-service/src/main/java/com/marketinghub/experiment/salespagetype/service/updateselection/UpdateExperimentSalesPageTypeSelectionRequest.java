@@ -4,5 +4,4 @@ import java.util.List;
 
 /** Recebe a selecao completa de tipos de pagina de venda para substituir a configuracao atual. */
 public record UpdateExperimentSalesPageTypeSelectionRequest(
-        List<UpdateExperimentSalesPageTypeSelectionItem> selections) {
-}
+    List<UpdateExperimentSalesPageTypeSelectionItem> selections) {}

@@ -1,26 +1,24 @@
 package com.marketinghub.experiment.pipeline.dto.internal;
 
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
-import lombok.Builder;
-
 import java.time.Instant;
 import java.util.UUID;
+import lombok.Builder;
 
 @Builder
 public record ExperimentPipelineGenerationJobDto(
-        UUID id,
-        Long experimentId,
-        ExperimentPipelineSection section,
-        String status,
-        String stage,
-        String customInstructions,
-        String errorMessage,
-        String model,
-        String prompt,
-        String requestBodyJson,
-        String rawResponse,
-        String openAiResponseId,
-        Instant createdAt,
-        Instant startedAt,
-        Instant finishedAt) {
-}
+    UUID id,
+    Long experimentId,
+    ExperimentPipelineSection section,
+    String status,
+    String stage,
+    String customInstructions,
+    String errorMessage,
+    String model,
+    String prompt,
+    String requestBodyJson,
+    String rawResponse,
+    String openAiResponseId,
+    Instant createdAt,
+    Instant startedAt,
+    Instant finishedAt) {}

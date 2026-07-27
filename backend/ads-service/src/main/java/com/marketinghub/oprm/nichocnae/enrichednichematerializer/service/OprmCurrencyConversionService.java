@@ -5,17 +5,23 @@ import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** Serviço OPRM responsável por converter custos operacionais em dólar para real sem acoplar o módulo financeiro. */
+/**
+ * Serviço OPRM responsável por converter custos operacionais em dólar para real sem acoplar o
+ * módulo financeiro.
+ */
 @Service
 public class OprmCurrencyConversionService {
   private final BigDecimal usdToBrlRate;
 
   /** Inicializa o conversor com a cotação configurada para custos de identificação do OPRM. */
-  public OprmCurrencyConversionService(@Value("${app.currency.usd-to-brl:5.0}") BigDecimal usdToBrlRate) {
+  public OprmCurrencyConversionService(
+      @Value("${app.currency.usd-to-brl:5.0}") BigDecimal usdToBrlRate) {
     this.usdToBrlRate = usdToBrlRate;
   }
 
-  /** Converte um valor em dólar para real mantendo o arredondamento financeiro usado pelo backend. */
+  /**
+   * Converte um valor em dólar para real mantendo o arredondamento financeiro usado pelo backend.
+   */
   public BigDecimal usdToBrl(BigDecimal usdAmount) {
     if (usdAmount == null) {
       return null;

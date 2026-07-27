@@ -2,7 +2,10 @@ package com.marketinghub.oprm.nichocnae.signalextractor.service.completeStageExe
 
 import java.time.Instant;
 
-/** Representa um sinal estruturado persistido para uso nas etapas seguintes do pipeline OPRM NichoCNAE. */
+/**
+ * Representa um sinal estruturado persistido para uso nas etapas seguintes do pipeline OPRM
+ * NichoCNAE.
+ */
 public record ExtractedSignalResponse(
     Long extractedSignalId,
     Long researchCycleId,

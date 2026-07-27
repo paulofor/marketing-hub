@@ -1,17 +1,18 @@
 package com.marketinghub.geralanding;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlProcessor;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
 
-    private final CopyProvisionalHtmlProcessor processor = new CopyProvisionalHtmlProcessor();
+  private final CopyProvisionalHtmlProcessor processor = new CopyProvisionalHtmlProcessor();
 
-    @Test
-    void shouldGenerateHtmlFromPaginaWireframeAndApplyCopyItems() {
-        String wireframeJson = """
+  @Test
+  void shouldGenerateHtmlFromPaginaWireframeAndApplyCopyItems() {
+    String wireframeJson =
+        """
                 {
                   "pagina": {
                     "head": { "texto": "Wireframe novo" },
@@ -33,7 +34,8 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String copyJson = """
+    String copyJson =
+        """
                 {
                   "bodySections": [
                     {
@@ -46,17 +48,17 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String html = processor.process(wireframeJson, copyJson);
+    String html = processor.process(wireframeJson, copyJson);
 
-        assertTrue(html.contains("Transforme sua captação"));
-        assertTrue(html.contains("Receba uma prévia em poucos minutos"));
-        assertTrue(html.contains("headline"));
-    }
+    assertTrue(html.contains("Transforme sua captação"));
+    assertTrue(html.contains("Receba uma prévia em poucos minutos"));
+    assertTrue(html.contains("headline"));
+  }
 
-
-    @Test
-    void shouldApplyTextoFieldAndSetPlaceholderForInputElements() {
-        String wireframeJson = """
+  @Test
+  void shouldApplyTextoFieldAndSetPlaceholderForInputElements() {
+    String wireframeJson =
+        """
                 {
                   "sectionOrder": [
                     {
@@ -67,7 +69,8 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String copyJson = """
+    String copyJson =
+        """
                 {
                   "bodySections": [
                     {
@@ -80,16 +83,17 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String html = processor.process(wireframeJson, copyJson);
+    String html = processor.process(wireframeJson, copyJson);
 
-        assertTrue(html.contains("Novo título"));
-        assertTrue(html.contains("id=\"email-input\""));
-        assertTrue(html.contains("placeholder=\"seuemail@exemplo.com\""));
-    }
+    assertTrue(html.contains("Novo título"));
+    assertTrue(html.contains("id=\"email-input\""));
+    assertTrue(html.contains("placeholder=\"seuemail@exemplo.com\""));
+  }
 
-    @Test
-    void shouldComposeHtmlUsingCopyImagesAndDesignPreset() {
-        String wireframeJson = """
+  @Test
+  void shouldComposeHtmlUsingCopyImagesAndDesignPreset() {
+    String wireframeJson =
+        """
                 {
                   "sectionOrder": [
                     {
@@ -100,7 +104,8 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String copyJson = """
+    String copyJson =
+        """
                 {
                   "bodySections": [
                     {
@@ -112,7 +117,8 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String imagePlanningJson = """
+    String imagePlanningJson =
+        """
                 {
                   "images": [
                     {"imageUrl": "https://cdn.example.com/hero.png"}
@@ -120,7 +126,8 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String designPresetJson = """
+    String designPresetJson =
+        """
                 {
                   "landingPageDesignPreset": {
                     "presetId": "preset-77",
@@ -131,14 +138,15 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String html = processor.process(wireframeJson, copyJson);
+    String html = processor.process(wireframeJson, copyJson);
 
-        assertTrue(html.contains("Landing final"));
-    }
+    assertTrue(html.contains("Landing final"));
+  }
 
-    @Test
-    void shouldApplyCopyWhenBodySectionsAreProvidedInsidePaginaSchema() {
-        String wireframeJson = """
+  @Test
+  void shouldApplyCopyWhenBodySectionsAreProvidedInsidePaginaSchema() {
+    String wireframeJson =
+        """
                 {
                   "pagina": {
                     "corpo": {
@@ -156,7 +164,8 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String copyJson = """
+    String copyJson =
+        """
                 {
                   "landingPageCopy": {
                     "pagina": {
@@ -174,14 +183,15 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String html = processor.process(wireframeJson, copyJson);
+    String html = processor.process(wireframeJson, copyJson);
 
-        assertTrue(html.contains("Título via pagina"));
-    }
+    assertTrue(html.contains("Título via pagina"));
+  }
 
-    @Test
-    void shouldRenderResponsiveCssAndClassReferencesFromNewWireframeDefinitions() {
-        String wireframeJson = """
+  @Test
+  void shouldRenderResponsiveCssAndClassReferencesFromNewWireframeDefinitions() {
+    String wireframeJson =
+        """
                 {
                   "definicoes": {
                     "layout": {
@@ -208,13 +218,13 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String copyJson = "{\"bodySections\":[]}";
+    String copyJson = "{\"bodySections\":[]}";
 
-        String html = processor.process(wireframeJson, copyJson);
+    String html = processor.process(wireframeJson, copyJson);
 
-        assertTrue(html.contains(".section-flex-col {display:flex;}"));
-        assertTrue(html.contains("@media (max-width: 768px)"));
-        assertTrue(html.contains(".section-flex-col {display:block;}"));
-        assertTrue(html.contains("class=\"section-flex-col\""));
-    }
+    assertTrue(html.contains(".section-flex-col {display:flex;}"));
+    assertTrue(html.contains("@media (max-width: 768px)"));
+    assertTrue(html.contains(".section-flex-col {display:block;}"));
+    assertTrue(html.contains("class=\"section-flex-col\""));
+  }
 }

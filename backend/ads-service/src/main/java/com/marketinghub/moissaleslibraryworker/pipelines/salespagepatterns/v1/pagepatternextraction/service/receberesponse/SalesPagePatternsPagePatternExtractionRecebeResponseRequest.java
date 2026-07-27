@@ -4,13 +4,12 @@ import java.math.BigDecimal;
 
 /** Contrato de auditoria da resposta funcional da extração de padrões de página. */
 public record SalesPagePatternsPagePatternExtractionRecebeResponseRequest(
-        String response,
-        Integer quantidadeTokenEntrada,
-        Integer quantidadeTokenSaida,
-        BigDecimal custo,
-        String modelo,
-        String descricaoErro,
-        String promptTemplateKey,
-        String promptTemplateVersion,
-        String schemaName) {
-}
+    String response,
+    Integer quantidadeTokenEntrada,
+    Integer quantidadeTokenSaida,
+    BigDecimal custo,
+    String modelo,
+    String descricaoErro,
+    String promptTemplateKey,
+    String promptTemplateVersion,
+    String schemaName) {}

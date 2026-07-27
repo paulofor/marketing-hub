@@ -6,5 +6,5 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface AngleMapper {
-    AngleDto toDto(Angle angle);
+  AngleDto toDto(Angle angle);
 }

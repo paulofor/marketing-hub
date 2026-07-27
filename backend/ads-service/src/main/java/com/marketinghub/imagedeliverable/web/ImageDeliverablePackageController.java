@@ -5,43 +5,41 @@ import com.marketinghub.imagedeliverable.dto.ImageDeliverablePackageDto;
 import com.marketinghub.imagedeliverable.dto.UpdateImageDeliverablePackageRequest;
 import com.marketinghub.imagedeliverable.mapper.ImageDeliverablePackageMapper;
 import com.marketinghub.imagedeliverable.service.ImageDeliverablePackageService;
+import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
-/**
- * REST endpoints to manage image deliverable packages.
- */
+/** REST endpoints to manage image deliverable packages. */
 @RestController
 @RequestMapping("/api/image-deliverable-packages")
 public class ImageDeliverablePackageController {
-    private final ImageDeliverablePackageService service;
-    private final ImageDeliverablePackageMapper mapper;
+  private final ImageDeliverablePackageService service;
+  private final ImageDeliverablePackageMapper mapper;
 
-    public ImageDeliverablePackageController(ImageDeliverablePackageService service,
-                                             ImageDeliverablePackageMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public ImageDeliverablePackageController(
+      ImageDeliverablePackageService service, ImageDeliverablePackageMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @GetMapping
-    public List<ImageDeliverablePackageDto> list() {
-        return service.listAll().stream().map(mapper::toDto).toList();
-    }
+  @GetMapping
+  public List<ImageDeliverablePackageDto> list() {
+    return service.listAll().stream().map(mapper::toDto).toList();
+  }
 
-    @GetMapping("/{id}")
-    public ImageDeliverablePackageDto get(@PathVariable Long id) {
-        return mapper.toDto(service.get(id));
-    }
+  @GetMapping("/{id}")
+  public ImageDeliverablePackageDto get(@PathVariable Long id) {
+    return mapper.toDto(service.get(id));
+  }
 
-    @PostMapping
-    public ImageDeliverablePackageDto create(@RequestBody CreateImageDeliverablePackageRequest request) {
-        return mapper.toDto(service.create(request));
-    }
+  @PostMapping
+  public ImageDeliverablePackageDto create(
+      @RequestBody CreateImageDeliverablePackageRequest request) {
+    return mapper.toDto(service.create(request));
+  }
 
-    @PutMapping("/{id}")
-    public ImageDeliverablePackageDto update(@PathVariable Long id,
-                                             @RequestBody UpdateImageDeliverablePackageRequest request) {
-        return mapper.toDto(service.update(id, request));
-    }
+  @PutMapping("/{id}")
+  public ImageDeliverablePackageDto update(
+      @PathVariable Long id, @RequestBody UpdateImageDeliverablePackageRequest request) {
+    return mapper.toDto(service.update(id, request));
+  }
 }

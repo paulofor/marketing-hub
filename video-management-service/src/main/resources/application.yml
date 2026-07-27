@@ -132,6 +132,7 @@ video:
         - MUSA_POST_PRODUCTION
         - POST_PRODUCTION
       ffmpeg-path: ffmpeg
+      ffprobe-path: ffprobe
       espeak-path: espeak-ng
       espeak-voice: pt-br
       font-file: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf

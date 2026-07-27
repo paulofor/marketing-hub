@@ -6,40 +6,28 @@ import java.util.Map;
 
 public final class MoisCollectionPersistenceDtos {
 
-    private MoisCollectionPersistenceDtos() {
-    }
+  private MoisCollectionPersistenceDtos() {}
 
-    public record CollectionJobStateResponse(
-            MoisWorkspaceDtos.CollectionJobResponse job,
-            List<MoisWorkspaceDtos.CollectedReferenceResponse> references,
-            Map<String, MoisWorkspaceDtos.CollectedReferenceLineageResponse> lineageByReferenceId,
-            RuntimeStatsResponse runtime,
-            List<MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse> sourceOps
-    ) {
-    }
+  public record CollectionJobStateResponse(
+      MoisWorkspaceDtos.CollectionJobResponse job,
+      List<MoisWorkspaceDtos.CollectedReferenceResponse> references,
+      Map<String, MoisWorkspaceDtos.CollectedReferenceLineageResponse> lineageByReferenceId,
+      RuntimeStatsResponse runtime,
+      List<MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse> sourceOps) {}
 
-    public record RuntimeStatsResponse(
-            int retries,
-            long latencyMs,
-            Instant finishedAt
-    ) {
-    }
+  public record RuntimeStatsResponse(int retries, long latencyMs, Instant finishedAt) {}
 
-    public record CollectionJobStateListResponse(List<CollectionJobStateResponse> items) {
-    }
+  public record CollectionJobStateListResponse(List<CollectionJobStateResponse> items) {}
 
-    public record SourceHighlightResponse(
-            String source,
-            int totalReferences,
-            double averageSuccessScore,
-            double averageEngagementRelative,
-            double averageRecurrenceScore,
-            double averageEvidenceScore,
-            int favorites,
-            String topSuccessSignal
-    ) {
-    }
+  public record SourceHighlightResponse(
+      String source,
+      int totalReferences,
+      double averageSuccessScore,
+      double averageEngagementRelative,
+      double averageRecurrenceScore,
+      double averageEvidenceScore,
+      int favorites,
+      String topSuccessSignal) {}
 
-    public record SourceHighlightListResponse(List<SourceHighlightResponse> items) {
-    }
+  public record SourceHighlightListResponse(List<SourceHighlightResponse> items) {}
 }

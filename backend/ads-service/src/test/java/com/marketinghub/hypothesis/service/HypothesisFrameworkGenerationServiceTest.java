@@ -20,14 +20,14 @@ import com.marketinghub.hypothesis.dto.internal.HypothesisFrameworkGenerationJob
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkSection;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisFrameworkGenerationJobRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
-import com.marketinghub.openai.service.OpenAiPricingService;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,246 +39,260 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HypothesisFrameworkGenerationServiceTest {
 
-    @Mock
-    private HypothesisRepository hypothesisRepository;
+  @Mock private HypothesisRepository hypothesisRepository;
 
-    @Mock
-    private HypothesisFrameworkGenerationJobRepository jobRepository;
+  @Mock private HypothesisFrameworkGenerationJobRepository jobRepository;
 
-    @Mock
-    private HypothesisMapper mapper;
+  @Mock private HypothesisMapper mapper;
 
-    @Mock
-    private HypothesisFrameworkMapperSupport frameworkSupport;
+  @Mock private HypothesisFrameworkMapperSupport frameworkSupport;
 
-    @Mock
-    private AiWorkerGenerationService generationService;
-    @Mock
-    private OpenAiPricingService openAiPricingService;
+  @Mock private AiWorkerGenerationService generationService;
+  @Mock private OpenAiPricingService openAiPricingService;
 
-    @Captor
-    private ArgumentCaptor<HypothesisFrameworkGenerationJob> jobCaptor;
+  @Captor private ArgumentCaptor<HypothesisFrameworkGenerationJob> jobCaptor;
 
-    private HypothesisFrameworkGenerationService service;
+  private HypothesisFrameworkGenerationService service;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @BeforeEach
-    void setUp() {
-        service = new HypothesisFrameworkGenerationService(
-                hypothesisRepository,
-                jobRepository,
-                mapper,
-                frameworkSupport,
-                generationService,
-                objectMapper,
-                openAiPricingService
-        );
-        lenient().when(openAiPricingService.estimateStandardCost(any(), any())).thenReturn(BigDecimal.ZERO);
+  @BeforeEach
+  void setUp() {
+    service =
+        new HypothesisFrameworkGenerationService(
+            hypothesisRepository,
+            jobRepository,
+            mapper,
+            frameworkSupport,
+            generationService,
+            objectMapper,
+            openAiPricingService);
+    lenient()
+        .when(openAiPricingService.estimateStandardCost(any(), any()))
+        .thenReturn(BigDecimal.ZERO);
 
-        lenient().when(frameworkSupport.merge(any(HypothesisFrameworkDto.class), any(HypothesisFrameworkDto.class)))
-                .thenAnswer(invocation -> {
-                    HypothesisFrameworkDto base = invocation.getArgument(0);
-                    HypothesisFrameworkDto partial = invocation.getArgument(1);
-                    HypothesisFrameworkDto merged = base != null ? base : new HypothesisFrameworkDto();
-                    if (partial == null) {
-                        return merged;
-                    }
-                    if (partial.getPain() != null) {
-                        merged.setPain(partial.getPain());
-                    }
-                    if (partial.getResult() != null) {
-                        merged.setResult(partial.getResult());
-                    }
-                    if (partial.getMechanism() != null) {
-                        merged.setMechanism(partial.getMechanism());
-                    }
-                    if (partial.getProof() != null) {
-                        merged.setProof(partial.getProof());
-                    }
-                    if (partial.getOffer() != null) {
-                        merged.setOffer(partial.getOffer());
-                    }
-                    if (partial.getChecklist() != null) {
-                        merged.setChecklist(partial.getChecklist());
-                    }
-                    return merged;
-                });
-    }
+    lenient()
+        .when(
+            frameworkSupport.merge(
+                any(HypothesisFrameworkDto.class), any(HypothesisFrameworkDto.class)))
+        .thenAnswer(
+            invocation -> {
+              HypothesisFrameworkDto base = invocation.getArgument(0);
+              HypothesisFrameworkDto partial = invocation.getArgument(1);
+              HypothesisFrameworkDto merged = base != null ? base : new HypothesisFrameworkDto();
+              if (partial == null) {
+                return merged;
+              }
+              if (partial.getPain() != null) {
+                merged.setPain(partial.getPain());
+              }
+              if (partial.getResult() != null) {
+                merged.setResult(partial.getResult());
+              }
+              if (partial.getMechanism() != null) {
+                merged.setMechanism(partial.getMechanism());
+              }
+              if (partial.getProof() != null) {
+                merged.setProof(partial.getProof());
+              }
+              if (partial.getOffer() != null) {
+                merged.setOffer(partial.getOffer());
+              }
+              if (partial.getChecklist() != null) {
+                merged.setChecklist(partial.getChecklist());
+              }
+              return merged;
+            });
+  }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void generateEnqueuesJobWithTextJsonSchemaFormat() throws Exception {
-        UUID hypothesisId = UUID.randomUUID();
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(hypothesisId);
-        hypothesis.setTitle("Test");
+  @Test
+  @SuppressWarnings("unchecked")
+  void generateEnqueuesJobWithTextJsonSchemaFormat() throws Exception {
+    UUID hypothesisId = UUID.randomUUID();
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(hypothesisId);
+    hypothesis.setTitle("Test");
 
-        when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
-        when(jobRepository.findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
-                eq(hypothesisId), eq(HypothesisFrameworkSection.PAIN), any()))
-                .thenReturn(List.of());
-        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
-        when(mapper.toDto(hypothesis)).thenReturn(new HypothesisDto());
+    when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+    when(jobRepository.findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
+            eq(hypothesisId), eq(HypothesisFrameworkSection.PAIN), any()))
+        .thenReturn(List.of());
+    when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+    when(mapper.toDto(hypothesis)).thenReturn(new HypothesisDto());
 
-        HypothesisFrameworkGenerationRequest request = new HypothesisFrameworkGenerationRequest();
-        request.setModel("gpt-test");
+    HypothesisFrameworkGenerationRequest request = new HypothesisFrameworkGenerationRequest();
+    request.setModel("gpt-test");
 
-        service.generate(hypothesisId, HypothesisFrameworkSection.PAIN, request, false);
+    service.generate(hypothesisId, HypothesisFrameworkSection.PAIN, request, false);
 
-        verify(jobRepository).save(jobCaptor.capture());
-        Map<String, Object> body = objectMapper.readValue(jobCaptor.getValue().getRequestBodyJson(), new TypeReference<>() {
-        });
-        assertThat(body).containsKey("text");
-        assertThat(body).doesNotContainKey("response_format");
+    verify(jobRepository).save(jobCaptor.capture());
+    Map<String, Object> body =
+        objectMapper.readValue(jobCaptor.getValue().getRequestBodyJson(), new TypeReference<>() {});
+    assertThat(body).containsKey("text");
+    assertThat(body).doesNotContainKey("response_format");
 
-        Map<String, Object> text = (Map<String, Object>) body.get("text");
-        Map<String, Object> format = (Map<String, Object>) text.get("format");
-        assertThat(format.get("type")).isEqualTo("json_schema");
-        assertThat(format.get("name")).isEqualTo("hypothesis_framework_pain");
-        assertThat(format.get("schema")).isInstanceOf(Map.class);
+    Map<String, Object> text = (Map<String, Object>) body.get("text");
+    Map<String, Object> format = (Map<String, Object>) text.get("format");
+    assertThat(format.get("type")).isEqualTo("json_schema");
+    assertThat(format.get("name")).isEqualTo("hypothesis_framework_pain");
+    assertThat(format.get("schema")).isInstanceOf(Map.class);
 
-        Map<String, Object> jsonSchema = (Map<String, Object>) format.get("json_schema");
-        assertThat(jsonSchema.get("name")).isEqualTo("hypothesis_framework_pain");
-    }
+    Map<String, Object> jsonSchema = (Map<String, Object>) format.get("json_schema");
+    assertThat(jsonSchema.get("name")).isEqualTo("hypothesis_framework_pain");
+  }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void generateSummaryOnlyUsesSectionTemplateAndStructuredSummarySchema() throws Exception {
-        UUID hypothesisId = UUID.randomUUID();
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(hypothesisId);
-        hypothesis.setTitle("Hipótese de teste");
+  @Test
+  @SuppressWarnings("unchecked")
+  void generateSummaryOnlyUsesSectionTemplateAndStructuredSummarySchema() throws Exception {
+    UUID hypothesisId = UUID.randomUUID();
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(hypothesisId);
+    hypothesis.setTitle("Hipótese de teste");
 
-        when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
-        when(jobRepository.findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
-                eq(hypothesisId), eq(HypothesisFrameworkSection.PAIN), any()))
-                .thenReturn(List.of());
-        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
-        when(mapper.toDto(hypothesis)).thenReturn(new HypothesisDto());
+    when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+    when(jobRepository.findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
+            eq(hypothesisId), eq(HypothesisFrameworkSection.PAIN), any()))
+        .thenReturn(List.of());
+    when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+    when(mapper.toDto(hypothesis)).thenReturn(new HypothesisDto());
 
-        HypothesisFrameworkGenerationRequest request = new HypothesisFrameworkGenerationRequest();
-        service.generate(hypothesisId, HypothesisFrameworkSection.PAIN, request, true);
+    HypothesisFrameworkGenerationRequest request = new HypothesisFrameworkGenerationRequest();
+    service.generate(hypothesisId, HypothesisFrameworkSection.PAIN, request, true);
 
-        verify(jobRepository).save(jobCaptor.capture());
-        HypothesisFrameworkGenerationJob savedJob = jobCaptor.getValue();
-        assertThat(savedJob.getPrompt()).contains("Seção alvo: PAIN");
-        assertThat(savedJob.getPrompt()).contains("Nicho: N/A");
+    verify(jobRepository).save(jobCaptor.capture());
+    HypothesisFrameworkGenerationJob savedJob = jobCaptor.getValue();
+    assertThat(savedJob.getPrompt()).contains("Seção alvo: PAIN");
+    assertThat(savedJob.getPrompt()).contains("Nicho: N/A");
 
-        Map<String, Object> body = objectMapper.readValue(savedJob.getRequestBodyJson(), new TypeReference<>() {
-        });
-        List<Map<String, Object>> input = (List<Map<String, Object>>) body.get("input");
-        assertThat(input.get(0).get("content"))
-                .asString()
-                .contains("Você está resumindo um framework comercial para uso em experimentos de anúncio e landing page.");
+    Map<String, Object> body =
+        objectMapper.readValue(savedJob.getRequestBodyJson(), new TypeReference<>() {});
+    List<Map<String, Object>> input = (List<Map<String, Object>>) body.get("input");
+    assertThat(input.get(0).get("content"))
+        .asString()
+        .contains(
+            "Você está resumindo um framework comercial para uso em experimentos de anúncio e landing page.");
 
-        Map<String, Object> text = (Map<String, Object>) body.get("text");
-        Map<String, Object> format = (Map<String, Object>) text.get("format");
-        Map<String, Object> schema = (Map<String, Object>) format.get("schema");
-        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
-        assertThat(properties).containsKeys("coreProblem", "commercialConsequence", "urgency");
-    }
+    Map<String, Object> text = (Map<String, Object>) body.get("text");
+    Map<String, Object> format = (Map<String, Object>) text.get("format");
+    Map<String, Object> schema = (Map<String, Object>) format.get("schema");
+    Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+    assertThat(properties).containsKeys("coreProblem", "commercialConsequence", "urgency");
+  }
 
-    @Test
-    void completeSummaryJobFlattensStructuredSummaryIntoSingleField() {
-        UUID jobId = UUID.randomUUID();
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(UUID.randomUUID());
-        HypothesisFrameworkGenerationJob job = HypothesisFrameworkGenerationJob.builder()
-                .id(jobId)
-                .hypothesis(hypothesis)
-                .section(HypothesisFrameworkSection.RESULT)
-                .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
-                .model("gpt-test")
-                .prompt("prompt")
-                .requestBodyJson("{\"text\":{\"format\":{\"name\":\"hypothesis_framework_result_summary\"}}}")
-                .build();
+  @Test
+  void completeSummaryJobFlattensStructuredSummaryIntoSingleField() {
+    UUID jobId = UUID.randomUUID();
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(UUID.randomUUID());
+    HypothesisFrameworkGenerationJob job =
+        HypothesisFrameworkGenerationJob.builder()
+            .id(jobId)
+            .hypothesis(hypothesis)
+            .section(HypothesisFrameworkSection.RESULT)
+            .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
+            .model("gpt-test")
+            .prompt("prompt")
+            .requestBodyJson(
+                "{\"text\":{\"format\":{\"name\":\"hypothesis_framework_result_summary\"}}}")
+            .build();
 
-        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
-        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+    when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+    when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
 
-        service.completeJob(jobId, new HypothesisFrameworkGenerationJobCompletionRequest(
-                "{\"desiredTransformation\":\"Sai do caos\",\"businessOutcome\":\"Mais previsibilidade\",\"successMarker\":\"Agenda cheia\"}",
-                "{}",
-                "{\"model\":\"gpt-test\"}",
-                10,
-                20,
-                null
-        ));
+    service.completeJob(
+        jobId,
+        new HypothesisFrameworkGenerationJobCompletionRequest(
+            "{\"desiredTransformation\":\"Sai do caos\",\"businessOutcome\":\"Mais previsibilidade\",\"successMarker\":\"Agenda cheia\"}",
+            "{}",
+            "{\"model\":\"gpt-test\"}",
+            10,
+            20,
+            null));
 
-        ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor = ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
-        verify(frameworkSupport).storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), any(HypothesisFrameworkDto.class));
-        assertThat(snapshotCaptor.getValue().getResult().getSummary())
-                .isEqualTo("Sai do caos | Mais previsibilidade | Agenda cheia");
-    }
+    ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor =
+        ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
+    verify(frameworkSupport)
+        .storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), any(HypothesisFrameworkDto.class));
+    assertThat(snapshotCaptor.getValue().getResult().getSummary())
+        .isEqualTo("Sai do caos | Mais previsibilidade | Agenda cheia");
+  }
 
-    @Test
-    void completeJobParsesWrappedMechanismPayload() {
-        UUID jobId = UUID.randomUUID();
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(UUID.randomUUID());
-        HypothesisFrameworkGenerationJob job = HypothesisFrameworkGenerationJob.builder()
-                .id(jobId)
-                .hypothesis(hypothesis)
-                .section(HypothesisFrameworkSection.MECHANISM)
-                .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
-                .model("gpt-test")
-                .prompt("prompt")
-                .build();
+  @Test
+  void completeJobParsesWrappedMechanismPayload() {
+    UUID jobId = UUID.randomUUID();
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(UUID.randomUUID());
+    HypothesisFrameworkGenerationJob job =
+        HypothesisFrameworkGenerationJob.builder()
+            .id(jobId)
+            .hypothesis(hypothesis)
+            .section(HypothesisFrameworkSection.MECHANISM)
+            .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
+            .model("gpt-test")
+            .prompt("prompt")
+            .build();
 
-        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
-        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+    when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+    when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
 
-        service.completeJob(jobId, new HypothesisFrameworkGenerationJobCompletionRequest(
-                "{\"mechanism\":{\"core\":\"Core\",\"differential\":\"Diff\",\"believable\":\"Proof\"}}",
-                "{}",
-                "{\"model\":\"gpt-test\"}",
-                10,
-                20,
-                null
-        ));
+    service.completeJob(
+        jobId,
+        new HypothesisFrameworkGenerationJobCompletionRequest(
+            "{\"mechanism\":{\"core\":\"Core\",\"differential\":\"Diff\",\"believable\":\"Proof\"}}",
+            "{}",
+            "{\"model\":\"gpt-test\"}",
+            10,
+            20,
+            null));
 
-        ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor = ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
-        ArgumentCaptor<HypothesisFrameworkDto> partialCaptor = ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
-        verify(frameworkSupport).storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), partialCaptor.capture());
+    ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor =
+        ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
+    ArgumentCaptor<HypothesisFrameworkDto> partialCaptor =
+        ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
+    verify(frameworkSupport)
+        .storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), partialCaptor.capture());
 
-        assertThat(snapshotCaptor.getValue().getMechanism().getCore()).isEqualTo("Core");
-        assertThat(snapshotCaptor.getValue().getMechanism().getUnique()).isEqualTo("Diff");
-        assertThat(snapshotCaptor.getValue().getMechanism().getBelievability()).isEqualTo("Proof");
-        assertThat(partialCaptor.getValue().getMechanism().getCore()).isEqualTo("Core");
-        assertThat(job.getRequestBodyJson()).isEqualTo("{\"model\":\"gpt-test\"}");
-    }
+    assertThat(snapshotCaptor.getValue().getMechanism().getCore()).isEqualTo("Core");
+    assertThat(snapshotCaptor.getValue().getMechanism().getUnique()).isEqualTo("Diff");
+    assertThat(snapshotCaptor.getValue().getMechanism().getBelievability()).isEqualTo("Proof");
+    assertThat(partialCaptor.getValue().getMechanism().getCore()).isEqualTo("Core");
+    assertThat(job.getRequestBodyJson()).isEqualTo("{\"model\":\"gpt-test\"}");
+  }
 
-    @Test
-    void completeJobParsesOfferPromptAliases() {
-        UUID jobId = UUID.randomUUID();
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(UUID.randomUUID());
-        HypothesisFrameworkGenerationJob job = HypothesisFrameworkGenerationJob.builder()
-                .id(jobId)
-                .hypothesis(hypothesis)
-                .section(HypothesisFrameworkSection.OFFER)
-                .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
-                .model("gpt-test")
-                .prompt("prompt")
-                .build();
+  @Test
+  void completeJobParsesOfferPromptAliases() {
+    UUID jobId = UUID.randomUUID();
+    Hypothesis hypothesis = new Hypothesis();
+    hypothesis.setId(UUID.randomUUID());
+    HypothesisFrameworkGenerationJob job =
+        HypothesisFrameworkGenerationJob.builder()
+            .id(jobId)
+            .hypothesis(hypothesis)
+            .section(HypothesisFrameworkSection.OFFER)
+            .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
+            .model("gpt-test")
+            .prompt("prompt")
+            .build();
 
-        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
-        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+    when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+    when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
 
-        service.completeJob(jobId, new HypothesisFrameworkGenerationJobCompletionRequest(
-                "{\"name\":\"Oferta X\",\"promise\":\"Ganho claro\",\"deliverables\":\"A,B\",\"riskReversal\":\"Teste 7 dias\",\"priceNarrative\":\"Economiza tempo\",\"cta\":\"Quero agora\"}",
-                "{}",
-                "{\"model\":\"gpt-test\"}",
-                10,
-                20,
-                null
-        ));
+    service.completeJob(
+        jobId,
+        new HypothesisFrameworkGenerationJobCompletionRequest(
+            "{\"name\":\"Oferta X\",\"promise\":\"Ganho claro\",\"deliverables\":\"A,B\",\"riskReversal\":\"Teste 7 dias\",\"priceNarrative\":\"Economiza tempo\",\"cta\":\"Quero agora\"}",
+            "{}",
+            "{\"model\":\"gpt-test\"}",
+            10,
+            20,
+            null));
 
-        ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor = ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
-        verify(frameworkSupport).storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), any(HypothesisFrameworkDto.class));
+    ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor =
+        ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
+    verify(frameworkSupport)
+        .storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), any(HypothesisFrameworkDto.class));
 
-        assertThat(snapshotCaptor.getValue().getOffer().getCorePromise()).isEqualTo("Ganho claro");
-        assertThat(snapshotCaptor.getValue().getOffer().getPriceLogic()).isEqualTo("Economiza tempo");
-    }
+    assertThat(snapshotCaptor.getValue().getOffer().getCorePromise()).isEqualTo("Ganho claro");
+    assertThat(snapshotCaptor.getValue().getOffer().getPriceLogic()).isEqualTo("Economiza tempo");
+  }
 }

@@ -7,16 +7,16 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 class StorageConfigTest {
 
-    private final StorageConfig config = new StorageConfig();
+  private final StorageConfig config = new StorageConfig();
 
-    @Test
-    void shouldCreateClientWithAnonymousCredentialsWhenKeysAreMissing() {
-        StorageProperties properties = new StorageProperties();
-        properties.setRegion("us-east-1");
+  @Test
+  void shouldCreateClientWithAnonymousCredentialsWhenKeysAreMissing() {
+    StorageProperties properties = new StorageProperties();
+    properties.setRegion("us-east-1");
 
-        S3Client client = config.leadPortalS3Client(properties);
+    S3Client client = config.leadPortalS3Client(properties);
 
-        assertNotNull(client);
-        client.close();
-    }
+    assertNotNull(client);
+    client.close();
+  }
 }

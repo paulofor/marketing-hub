@@ -16,7 +16,8 @@ import org.springframework.util.StringUtils;
 
 /** Adaptador JPA que isola o domínio Niche atrás da porta permitida ao OPRM. */
 @Component
-public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, PersonaRoutineMaterializerNicheGateway {
+public class JpaOprmEnrichedNicheGateway
+    implements OprmEnrichedNicheGateway, PersonaRoutineMaterializerNicheGateway {
   private static final String SOURCE_MODULE = "OPRM_NICHO_CNAE";
 
   private final MarketNicheRepository marketNicheRepository;
@@ -33,7 +34,9 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
   /** Lista nomes neutros já gerados para orientar o OPRM sem expor entidades de Niche. */
   @Override
   public List<String> listNeutralNicheNamesByCnae(String cnaeCode, int limit) {
-    return enrichmentProfileRepository.findGeneratedByCnaeCode(cnaeCode, PageRequest.of(0, limit)).stream()
+    return enrichmentProfileRepository
+        .findGeneratedByCnaeCode(cnaeCode, PageRequest.of(0, limit))
+        .stream()
         .map(MarketNicheEnrichmentProfile::getNeutralNicheName)
         .filter(StringUtils::hasText)
         .map(String::trim)
@@ -46,7 +49,8 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
   public Optional<OprmMarketNicheSnapshot> findByCnaeAndNormalizedNeutralName(
       String cnaeCode, String normalizedNeutralNicheName) {
     return enrichmentProfileRepository
-        .findMaterializedByCnaeAndNormalizedNeutralName(cnaeCode, normalizedNeutralNicheName, PageRequest.of(0, 1))
+        .findMaterializedByCnaeAndNormalizedNeutralName(
+            cnaeCode, normalizedNeutralNicheName, PageRequest.of(0, 1))
         .stream()
         .findFirst()
         .map(profile -> new OprmMarketNicheSnapshot(profile.getMarketNiche().getId()));
@@ -56,45 +60,66 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
   @Override
   public OprmEnrichedNicheMaterializationResult materialize(
       OprmMarketNicheDraft nicheDraft, OprmEnrichedNicheProfileDraft profileDraft) {
-    MarketNiche niche = nicheDraft.marketNicheId() == null
-        ? new MarketNiche()
-        : marketNicheRepository.findById(nicheDraft.marketNicheId()).orElseGet(MarketNiche::new);
+    MarketNiche niche =
+        nicheDraft.marketNicheId() == null
+            ? new MarketNiche()
+            : marketNicheRepository
+                .findById(nicheDraft.marketNicheId())
+                .orElseGet(MarketNiche::new);
     applyNicheDraft(niche, nicheDraft);
     MarketNiche savedNiche = marketNicheRepository.save(niche);
-    MarketNicheEnrichmentProfile profile = findExistingProfileForUpdate(profileDraft)
-        .orElseGet(MarketNicheEnrichmentProfile::new);
+    MarketNicheEnrichmentProfile profile =
+        findExistingProfileForUpdate(profileDraft).orElseGet(MarketNicheEnrichmentProfile::new);
     applyProfileDraft(profile, savedNiche, profileDraft);
     MarketNicheEnrichmentProfile savedProfile = enrichmentProfileRepository.save(profile);
-    return new OprmEnrichedNicheMaterializationResult(savedNiche.getId(), savedProfile.getId(), savedProfile.getCreatedAt());
+    return new OprmEnrichedNicheMaterializationResult(
+        savedNiche.getId(), savedProfile.getId(), savedProfile.getCreatedAt());
   }
 
-  /** Busca materialização existente pelo contrato exclusivo da etapa persona-routine-materializer v3. */
+  /**
+   * Busca materialização existente pelo contrato exclusivo da etapa persona-routine-materializer
+   * v3.
+   */
   @Override
-  public Optional<PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot> findPersonaRoutineMaterializedNiche(
-      String cnaeCode, String normalizedNeutralNicheName) {
-    return marketNicheRepository.findFirstBySourceCnaeCodeOrderByIdDesc(cnaeCode)
+  public Optional<PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot>
+      findPersonaRoutineMaterializedNiche(String cnaeCode, String normalizedNeutralNicheName) {
+    return marketNicheRepository
+        .findFirstBySourceCnaeCodeOrderByIdDesc(cnaeCode)
         .map(niche -> new PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot(niche.getId()))
-        .or(() -> enrichmentProfileRepository
-            .findMaterializedByCnaeAndNormalizedNeutralName(cnaeCode, normalizedNeutralNicheName, PageRequest.of(0, 1))
-            .stream()
-            .findFirst()
-            .map(profile -> new PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot(profile.getMarketNiche().getId())));
+        .or(
+            () ->
+                enrichmentProfileRepository
+                    .findMaterializedByCnaeAndNormalizedNeutralName(
+                        cnaeCode, normalizedNeutralNicheName, PageRequest.of(0, 1))
+                    .stream()
+                    .findFirst()
+                    .map(
+                        profile ->
+                            new PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot(
+                                profile.getMarketNiche().getId())));
   }
 
-  /** Materializa ou atualiza o nicho usando o contrato exclusivo da etapa persona-routine-materializer v3. */
+  /**
+   * Materializa ou atualiza o nicho usando o contrato exclusivo da etapa
+   * persona-routine-materializer v3.
+   */
   @Override
   public PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult materialize(
       PersonaRoutineMaterializerNicheGateway.MarketNicheDraft nicheDraft,
       PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft profileDraft) {
-    OprmEnrichedNicheMaterializationResult result = materialize(toOprmNicheDraft(nicheDraft), toOprmProfileDraft(profileDraft));
+    OprmEnrichedNicheMaterializationResult result =
+        materialize(toOprmNicheDraft(nicheDraft), toOprmProfileDraft(profileDraft));
     return new PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult(
         result.marketNicheId(), result.profileId(), result.createdAt());
   }
 
   /** Busca o perfil mais recente do ciclo sem retornar entidade JPA ao OPRM. */
   @Override
-  public Optional<OprmEnrichedNicheProfileSnapshot> findLatestProfileByResearchCycleId(Long researchCycleId) {
-    return enrichmentProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).map(this::toSnapshot);
+  public Optional<OprmEnrichedNicheProfileSnapshot> findLatestProfileByResearchCycleId(
+      Long researchCycleId) {
+    return enrichmentProfileRepository
+        .findFirstByResearchCycleIdOrderByIdDesc(researchCycleId)
+        .map(this::toSnapshot);
   }
 
   /** Busca o perfil por identificador ou falha com erro claro de contrato. */
@@ -103,21 +128,27 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
     return enrichmentProfileRepository
         .findById(profileId)
         .map(this::toSnapshot)
-        .orElseThrow(() -> new EntityNotFoundException("Enriched niche profile not found: " + profileId));
+        .orElseThrow(
+            () -> new EntityNotFoundException("Enriched niche profile not found: " + profileId));
   }
 
   /** Lista perfis materializados por CNAE sem expor entidades internas. */
   @Override
   public List<OprmEnrichedNicheProfileSnapshot> listGeneratedByCnae(String cnaeCode, int limit) {
-    return enrichmentProfileRepository.findGeneratedByCnaeCode(cnaeCode, PageRequest.of(0, limit)).stream()
+    return enrichmentProfileRepository
+        .findGeneratedByCnaeCode(cnaeCode, PageRequest.of(0, limit))
+        .stream()
         .map(this::toSnapshot)
         .toList();
   }
 
   /** Lista perfis possivelmente contaminados por termos de solução para diagnóstico operacional. */
   @Override
-  public List<OprmEnrichedNicheProfileSnapshot> findPotentiallyContaminatedByTerm(String term, int limit) {
-    return enrichmentProfileRepository.findPotentiallyContaminatedByTerm(term, PageRequest.of(0, limit)).stream()
+  public List<OprmEnrichedNicheProfileSnapshot> findPotentiallyContaminatedByTerm(
+      String term, int limit) {
+    return enrichmentProfileRepository
+        .findPotentiallyContaminatedByTerm(term, PageRequest.of(0, limit))
+        .stream()
         .map(this::toSnapshot)
         .toList();
   }
@@ -155,19 +186,25 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
   }
 
   /** Localiza perfil enriquecido existente para atualização do mesmo CNAE e nome neutro. */
-  private Optional<MarketNicheEnrichmentProfile> findExistingProfileForUpdate(OprmEnrichedNicheProfileDraft draft) {
+  private Optional<MarketNicheEnrichmentProfile> findExistingProfileForUpdate(
+      OprmEnrichedNicheProfileDraft draft) {
     if (draft == null || draft.cnaeCode() == null || draft.neutralNicheName() == null) {
       return Optional.empty();
     }
     return enrichmentProfileRepository
         .findMaterializedByCnaeAndNormalizedNeutralName(
-            draft.cnaeCode().trim(), draft.neutralNicheName().trim().toLowerCase(java.util.Locale.ROOT), PageRequest.of(0, 1))
+            draft.cnaeCode().trim(),
+            draft.neutralNicheName().trim().toLowerCase(java.util.Locale.ROOT),
+            PageRequest.of(0, 1))
         .stream()
         .findFirst();
   }
 
   /** Aplica o perfil enriquecido com whitelist dos campos aceitos pelo domínio Niche. */
-  private void applyProfileDraft(MarketNicheEnrichmentProfile profile, MarketNiche niche, OprmEnrichedNicheProfileDraft draft) {
+  private void applyProfileDraft(
+      MarketNicheEnrichmentProfile profile,
+      MarketNiche niche,
+      OprmEnrichedNicheProfileDraft draft) {
     boolean creating = profile.getId() == null;
     profile.setMarketNiche(niche);
     profile.setSourceModule(SOURCE_MODULE);
@@ -228,7 +265,8 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
   }
 
   /** Converte o contrato v3 de nicho para o contrato canônico de persistência OPRM. */
-  private OprmMarketNicheDraft toOprmNicheDraft(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft draft) {
+  private OprmMarketNicheDraft toOprmNicheDraft(
+      PersonaRoutineMaterializerNicheGateway.MarketNicheDraft draft) {
     return new OprmMarketNicheDraft(
         draft.marketNicheId(),
         draft.name(),

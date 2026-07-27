@@ -12,14 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/lead-portal/payments")
 public class LeadPortalPaymentController {
 
-    private final LeadPortalPaymentQueryService paymentQueryService;
+  private final LeadPortalPaymentQueryService paymentQueryService;
 
-    public LeadPortalPaymentController(LeadPortalPaymentQueryService paymentQueryService) {
-        this.paymentQueryService = paymentQueryService;
-    }
+  public LeadPortalPaymentController(LeadPortalPaymentQueryService paymentQueryService) {
+    this.paymentQueryService = paymentQueryService;
+  }
 
-    @GetMapping
-    public List<LeadPortalPaymentDto> list(@RequestParam(name = "limit", defaultValue = "50") int limit) {
-        return paymentQueryService.listRecentPayments(limit);
-    }
+  @GetMapping
+  public List<LeadPortalPaymentDto> list(
+      @RequestParam(name = "limit", defaultValue = "50") int limit) {
+    return paymentQueryService.listRecentPayments(limit);
+  }
 }

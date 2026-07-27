@@ -6,9 +6,10 @@ import lombok.Data;
 
 @Data
 public class CreateVisualProofRequest {
-    @NotBlank
-    @Size(max = 60)
-    private String name;
-    private String proofType;
-    private String description;
+  @NotBlank
+  @Size(max = 60)
+  private String name;
+
+  private String proofType;
+  private String description;
 }

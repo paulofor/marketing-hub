@@ -61,7 +61,8 @@ public class BackendSourceSearcherService {
   @Transactional(readOnly = true)
   public List<RecordSourceSearcherPending> listPending() {
     return researchQueryRepository
-        .findPendingByStatusAndCycleStage(QUERY_STATUS_PENDING, CURRENT_STAGE_SOURCE_SEARCHER, PageRequest.of(0, 20))
+        .findPendingByStatusAndCycleStage(
+            QUERY_STATUS_PENDING, CURRENT_STAGE_SOURCE_SEARCHER, PageRequest.of(0, 20))
         .stream()
         .map(this::toPending)
         .toList();
@@ -69,21 +70,24 @@ public class BackendSourceSearcherService {
 
   /** Grava os resultados encontrados pelo provedor de busca para uma frase de pesquisa. */
   @Transactional
-  public CompleteSourceSearcherResponse complete(Long researchQueryId, CompleteSourceSearcherRequest request) {
+  public CompleteSourceSearcherResponse complete(
+      Long researchQueryId, CompleteSourceSearcherRequest request) {
     try {
       OprmResearchQuery query = findQuery(researchQueryId);
       OprmRoutineResearchCycle cycle = findCycle(query.getResearchCycleId());
       validateCompletionRequest(researchQueryId, request);
       Instant now = Instant.now();
-      List<OprmSourceCandidate> savedCandidates = sourceCandidateRepository.saveAll(
-          createCandidates(query, request, now));
+      List<OprmSourceCandidate> savedCandidates =
+          sourceCandidateRepository.saveAll(createCandidates(query, request, now));
       query.setStatus(QUERY_STATUS_COMPLETED);
       query.setResultCount(savedCandidates.size());
       query.setErrorMessage(null);
       query.setUpdatedAt(now);
       researchQueryRepository.save(query);
       cycle.setTotalSourceCandidates(countCycleCandidates(cycle.getId(), savedCandidates.size()));
-      if (researchQueryRepository.countByResearchCycleIdAndStatus(cycle.getId(), QUERY_STATUS_PENDING) == 0) {
+      if (researchQueryRepository.countByResearchCycleIdAndStatus(
+              cycle.getId(), QUERY_STATUS_PENDING)
+          == 0) {
         cycle.setCurrentStageCode(CURRENT_STAGE_SOURCE_FETCHER);
       }
       cycle.setUpdatedAt(now);
@@ -106,11 +110,15 @@ public class BackendSourceSearcherService {
       OprmResearchQuery query = findQuery(researchQueryId);
       Instant now = Instant.now();
       query.setStatus(QUERY_STATUS_FAILED);
-      query.setErrorMessage(requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
+      query.setErrorMessage(
+          requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
       query.setUpdatedAt(now);
       researchQueryRepository.save(query);
     } catch (RuntimeException ex) {
-      LOGGER.error("Erro ao registrar falha da etapa três do OPRM nichocnae (researchQueryId={})", researchQueryId, ex);
+      LOGGER.error(
+          "Erro ao registrar falha da etapa três do OPRM nichocnae (researchQueryId={})",
+          researchQueryId,
+          ex);
       throw ex;
     }
   }
@@ -120,13 +128,16 @@ public class BackendSourceSearcherService {
   public SourceSearcherDetailResponse detail(Long researchCycleId) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
     List<OprmSourceCandidate> sourceCandidates =
-        sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(researchCycleId);
-    List<SourceCandidateResponse> candidates = sourceCandidates.stream().map(this::toCandidateResponse).toList();
+        sourceCandidateRepository
+            .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(researchCycleId);
+    List<SourceCandidateResponse> candidates =
+        sourceCandidates.stream().map(this::toCandidateResponse).toList();
     List<OprmResearchQuery> queries =
         researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId);
-    OprmSourceCandidate latestCandidate = sourceCandidates.stream()
-        .max(Comparator.comparing(OprmSourceCandidate::getUpdatedAt))
-        .orElse(null);
+    OprmSourceCandidate latestCandidate =
+        sourceCandidates.stream()
+            .max(Comparator.comparing(OprmSourceCandidate::getUpdatedAt))
+            .orElse(null);
     return new SourceSearcherDetailResponse(
         cycle.getId(),
         cycle.getStatus(),
@@ -161,18 +172,23 @@ public class BackendSourceSearcherService {
   private OprmResearchQuery findQuery(Long researchQueryId) {
     return researchQueryRepository
         .findById(researchQueryId)
-        .orElseThrow(() -> new EntityNotFoundException("Research query not found: " + researchQueryId));
+        .orElseThrow(
+            () -> new EntityNotFoundException("Research query not found: " + researchQueryId));
   }
 
   /** Localiza o ciclo de pesquisa ou falha com erro de contrato quando ele não existe. */
   private OprmRoutineResearchCycle findCycle(Long researchCycleId) {
     return routineResearchCycleRepository
         .findById(researchCycleId)
-        .orElseThrow(() -> new EntityNotFoundException("Routine research cycle not found: " + researchCycleId));
+        .orElseThrow(
+            () ->
+                new EntityNotFoundException(
+                    "Routine research cycle not found: " + researchCycleId));
   }
 
   /** Valida o payload de conclusão da etapa três antes de gravar fontes candidatas. */
-  private void validateCompletionRequest(Long researchQueryId, CompleteSourceSearcherRequest request) {
+  private void validateCompletionRequest(
+      Long researchQueryId, CompleteSourceSearcherRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("request is required");
     }
@@ -181,7 +197,8 @@ public class BackendSourceSearcherService {
       throw new IllegalArgumentException("results is required");
     }
     if (request.results().size() > MAX_RESULTS_PER_QUERY) {
-      throw new IllegalArgumentException("results must contain at most " + MAX_RESULTS_PER_QUERY + " items");
+      throw new IllegalArgumentException(
+          "results must contain at most " + MAX_RESULTS_PER_QUERY + " items");
     }
     Set<String> urls = new HashSet<>();
     for (SourceCandidateRequest result : request.results()) {
@@ -190,7 +207,8 @@ public class BackendSourceSearcherService {
         throw new IllegalArgumentException("duplicated sourceUrl in payload: " + url);
       }
       if (sourceCandidateRepository.existsByResearchQueryIdAndSourceUrl(researchQueryId, url)) {
-        throw new IllegalStateException("sourceUrl already exists for researchQueryId " + researchQueryId + ": " + url);
+        throw new IllegalStateException(
+            "sourceUrl already exists for researchQueryId " + researchQueryId + ": " + url);
       }
       requiredText(result.sourceTitle(), "sourceTitle");
       requiredText(result.sourceDomain(), "sourceDomain");
@@ -205,11 +223,16 @@ public class BackendSourceSearcherService {
       OprmResearchQuery query, CompleteSourceSearcherRequest request, Instant now) {
     return request.results().stream()
         .map(result -> createCandidate(query, request.searchProvider(), result, now))
-        .sorted(Comparator.comparing(OprmSourceCandidate::getSearchPosition).thenComparing(OprmSourceCandidate::getSourceUrl))
+        .sorted(
+            Comparator.comparing(OprmSourceCandidate::getSearchPosition)
+                .thenComparing(OprmSourceCandidate::getSourceUrl))
         .toList();
   }
 
-  /** Cria uma fonte candidata individual com intenção, escore e marcação de risco comercial da etapa três. */
+  /**
+   * Cria uma fonte candidata individual com intenção, escore e marcação de risco comercial da etapa
+   * três.
+   */
   private OprmSourceCandidate createCandidate(
       OprmResearchQuery query, String searchProvider, SourceCandidateRequest result, Instant now) {
     OprmSourceCandidate candidate = new OprmSourceCandidate();
@@ -219,11 +242,14 @@ public class BackendSourceSearcherService {
     candidate.setSourceTitle(requiredText(result.sourceTitle(), "sourceTitle"));
     candidate.setSourceSnippet(trimToNull(result.sourceSnippet()));
     candidate.setSourceDomain(requiredText(result.sourceDomain(), "sourceDomain"));
-    String sourceIntent = defaultText(result.sourceIntent(), defaultText(result.sourceGroup(), DEFAULT_SOURCE_GROUP));
-    boolean commercialRisk = Boolean.TRUE.equals(result.commercialPageRisk())
-        || SOURCE_INTENT_COMMERCIAL_PAGE_RISK.equals(sourceIntent);
+    String sourceIntent =
+        defaultText(result.sourceIntent(), defaultText(result.sourceGroup(), DEFAULT_SOURCE_GROUP));
+    boolean commercialRisk =
+        Boolean.TRUE.equals(result.commercialPageRisk())
+            || SOURCE_INTENT_COMMERCIAL_PAGE_RISK.equals(sourceIntent);
     boolean solutionRisk = Boolean.TRUE.equals(result.solutionLanguageRisk());
-    int routineEvidenceScore = normalizeScore(result.routineEvidenceScore(), commercialRisk || solutionRisk);
+    int routineEvidenceScore =
+        normalizeScore(result.routineEvidenceScore(), commercialRisk || solutionRisk);
     boolean outdatedRisk = Boolean.TRUE.equals(result.outdatedSourceRisk());
     boolean structuredBusinessDriftRisk = Boolean.TRUE.equals(result.structuredBusinessDriftRisk());
     candidate.setSourceGroup(sourceIntent);
@@ -231,19 +257,25 @@ public class BackendSourceSearcherService {
     candidate.setRoutineEvidenceScore(routineEvidenceScore);
     candidate.setCommercialPageRisk(commercialRisk);
     candidate.setSolutionLanguageRisk(solutionRisk);
-    candidate.setSourceClassificationType(defaultText(result.sourceClassificationType(), DEFAULT_SOURCE_CLASSIFICATION_TYPE));
+    candidate.setSourceClassificationType(
+        defaultText(result.sourceClassificationType(), DEFAULT_SOURCE_CLASSIFICATION_TYPE));
     candidate.setSourceFreshnessScore(normalizeOptionalScore(result.sourceFreshnessScore()));
     candidate.setOutdatedSourceRisk(outdatedRisk);
     candidate.setBrazilRelevanceScore(normalizeOptionalScore(result.brazilRelevanceScore()));
-    candidate.setAutonomousProfessionalEvidenceScore(normalizeOptionalScore(result.autonomousProfessionalEvidenceScore()));
+    candidate.setAutonomousProfessionalEvidenceScore(
+        normalizeOptionalScore(result.autonomousProfessionalEvidenceScore()));
     candidate.setStructuredBusinessDriftRisk(structuredBusinessDriftRisk);
     candidate.setPublishedAt(result.publishedAt());
     candidate.setSearchProvider(requiredText(searchProvider, "searchProvider"));
     candidate.setSearchPosition(result.searchPosition());
     candidate.setRelevanceScore(routineEvidenceScore);
     candidate.setSelectedForFetch(false);
-    candidate.setRejectionReason(rejectionReason(commercialRisk, solutionRisk, outdatedRisk, structuredBusinessDriftRisk));
-    candidate.setStatus((commercialRisk || solutionRisk) ? CANDIDATE_STATUS_CONTAMINATION_RISK : CANDIDATE_STATUS_FOUND);
+    candidate.setRejectionReason(
+        rejectionReason(commercialRisk, solutionRisk, outdatedRisk, structuredBusinessDriftRisk));
+    candidate.setStatus(
+        (commercialRisk || solutionRisk)
+            ? CANDIDATE_STATUS_CONTAMINATION_RISK
+            : CANDIDATE_STATUS_FOUND);
     candidate.setCreatedAt(now);
     candidate.setUpdatedAt(now);
     return candidate;
@@ -252,7 +284,8 @@ public class BackendSourceSearcherService {
   /** Calcula o total de fontes do ciclo depois da persistência da query atual. */
   private Integer countCycleCandidates(Long researchCycleId, int fallbackCurrentQueryCount) {
     List<OprmSourceCandidate> cycleCandidates =
-        sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(researchCycleId);
+        sourceCandidateRepository
+            .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(researchCycleId);
     return cycleCandidates.isEmpty() ? fallbackCurrentQueryCount : cycleCandidates.size();
   }
 
@@ -305,7 +338,9 @@ public class BackendSourceSearcherService {
 
   /** Monta a resposta de conclusão da etapa três para a query executada. */
   private CompleteSourceSearcherResponse toCompleteResponse(
-      OprmResearchQuery query, OprmRoutineResearchCycle cycle, List<OprmSourceCandidate> candidates) {
+      OprmResearchQuery query,
+      OprmRoutineResearchCycle cycle,
+      List<OprmSourceCandidate> candidates) {
     return new CompleteSourceSearcherResponse(
         query.getId(),
         query.getResearchCycleId(),
@@ -324,15 +359,22 @@ public class BackendSourceSearcherService {
     return value.trim();
   }
 
-  /** Normaliza o escore de aderência à rotina e rebaixa fontes de solução para não virarem base principal. */
+  /**
+   * Normaliza o escore de aderência à rotina e rebaixa fontes de solução para não virarem base
+   * principal.
+   */
   private Integer normalizeScore(Integer routineEvidenceScore, boolean contaminationRisk) {
-    int score = routineEvidenceScore == null ? 50 : Math.max(0, Math.min(100, routineEvidenceScore));
+    int score =
+        routineEvidenceScore == null ? 50 : Math.max(0, Math.min(100, routineEvidenceScore));
     return contaminationRisk ? Math.min(score, 20) : score;
   }
 
   /** Registra o motivo de risco para fontes que não devem alimentar a coleta principal. */
   private String rejectionReason(
-      boolean commercialRisk, boolean solutionRisk, boolean outdatedRisk, boolean structuredBusinessDriftRisk) {
+      boolean commercialRisk,
+      boolean solutionRisk,
+      boolean outdatedRisk,
+      boolean structuredBusinessDriftRisk) {
     if (commercialRisk && solutionRisk) {
       return "Fonte comercial com linguagem de solução; registrada apenas como risco de contaminação.";
     }

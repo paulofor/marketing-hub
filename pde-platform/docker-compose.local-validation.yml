@@ -1,0 +1,19 @@
+services:
+  pde-platform-local-mysql:
+    image: mysql:5.7
+    container_name: pde-platform-local-mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${PDE_LOCAL_MYSQL_PORT:-33067}:3306"
+    environment:
+      MYSQL_DATABASE: ${PDE_LOCAL_MYSQL_DATABASE:-pde_local}
+      MYSQL_USER: ${PDE_LOCAL_MYSQL_USERNAME:-pde}
+      MYSQL_PASSWORD: ${PDE_LOCAL_MYSQL_PASSWORD:-pde}
+      MYSQL_ROOT_PASSWORD: ${PDE_LOCAL_MYSQL_ROOT_PASSWORD:-pde-root}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "pde", "-ppde"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - ./local-validation/mysql-init:/docker-entrypoint-initdb.d:ro

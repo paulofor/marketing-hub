@@ -1,9 +1,7 @@
 package com.marketinghub.experiment;
 
-/**
- * Status da landing page.
- */
+/** Status da landing page. */
 public enum LandingPageStatus {
-    DRAFT,
-    ACTIVE
+  DRAFT,
+  ACTIVE
 }

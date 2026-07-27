@@ -1,9 +1,7 @@
 package com.marketinghub.whatsapp;
 
-/**
- * Direction of a WhatsApp message.
- */
+/** Direction of a WhatsApp message. */
 public enum WhatsAppMessageDirection {
-    INBOUND,
-    OUTBOUND
+  INBOUND,
+  OUTBOUND
 }

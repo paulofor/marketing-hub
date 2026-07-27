@@ -5,13 +5,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: validar a conversão monetária local do OPRM sem dependência do módulo financeiro. */
+/**
+ * Responsabilidade: validar a conversão monetária local do OPRM sem dependência do módulo
+ * financeiro.
+ */
 class OprmCurrencyConversionServiceTest {
 
   /** Deve converter dólares para reais usando a cotação configurada e arredondamento financeiro. */
   @Test
   void shouldConvertUsdToBrlUsingConfiguredRate() {
-    OprmCurrencyConversionService service = new OprmCurrencyConversionService(new BigDecimal("5.0"));
+    OprmCurrencyConversionService service =
+        new OprmCurrencyConversionService(new BigDecimal("5.0"));
 
     BigDecimal converted = service.usdToBrl(new BigDecimal("0.0473"));
 
@@ -21,7 +25,8 @@ class OprmCurrencyConversionServiceTest {
   /** Deve preservar um centavo mínimo quando custo positivo arredondaria para zero. */
   @Test
   void shouldPreserveMinimumCentForPositiveCost() {
-    OprmCurrencyConversionService service = new OprmCurrencyConversionService(new BigDecimal("5.0"));
+    OprmCurrencyConversionService service =
+        new OprmCurrencyConversionService(new BigDecimal("5.0"));
 
     BigDecimal converted = service.usdToBrl(new BigDecimal("0.0001"));
 

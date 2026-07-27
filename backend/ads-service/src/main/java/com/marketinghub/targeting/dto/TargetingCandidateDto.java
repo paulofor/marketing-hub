@@ -3,59 +3,58 @@ package com.marketinghub.targeting.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.targeting.TargetingCandidateStatus;
 import com.marketinghub.targeting.TargetingCandidateType;
-import lombok.Builder;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import lombok.Builder;
+import lombok.Data;
 
 @Data
 @Builder
 public class TargetingCandidateDto {
-    private Long id;
+  private Long id;
 
-    @JsonProperty("request_id")
-    private UUID requestId;
+  @JsonProperty("request_id")
+  private UUID requestId;
 
-    @JsonProperty("seed")
-    private String seed;
+  @JsonProperty("seed")
+  private String seed;
 
-    /** Campo legado para compatibilidade com clientes antigos. */
-    @JsonProperty("texto_sugerido")
-    private String legacySeed;
+  /** Campo legado para compatibilidade com clientes antigos. */
+  @JsonProperty("texto_sugerido")
+  private String legacySeed;
 
-    @JsonProperty("seed_variants")
-    private List<String> seedVariants;
+  @JsonProperty("seed_variants")
+  private List<String> seedVariants;
 
-    private TargetingCandidateType tipo;
+  private TargetingCandidateType tipo;
 
-    private TargetingCandidateStatus status;
+  private TargetingCandidateStatus status;
 
-    @JsonProperty("idioma_hint")
-    private String idiomaHint;
+  @JsonProperty("idioma_hint")
+  private String idiomaHint;
 
-    private String idioma;
+  private String idioma;
 
-    @JsonProperty("pais")
-    private String pais;
+  @JsonProperty("pais")
+  private String pais;
 
-    private String origem;
+  private String origem;
 
-    @JsonProperty("intent_tag")
-    private String intentTag;
+  @JsonProperty("intent_tag")
+  private String intentTag;
 
-    private BigDecimal score;
+  private BigDecimal score;
 
-    private String rationale;
+  private String rationale;
 
-    @JsonProperty("rejection_reason")
-    private String rejectionReason;
+  @JsonProperty("rejection_reason")
+  private String rejectionReason;
 
-    private Instant createdAt;
+  private Instant createdAt;
 
-    private Instant updatedAt;
+  private Instant updatedAt;
 
-    private List<TargetingOptionDto> options;
+  private List<TargetingOptionDto> options;
 }

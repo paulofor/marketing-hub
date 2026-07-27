@@ -31,40 +31,46 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Serviço responsável por expor, validar e persistir a segmentação comportamental MEI/autônomo do OPRM. */
+/**
+ * Serviço responsável por expor, validar e persistir a segmentação comportamental MEI/autônomo do
+ * OPRM.
+ */
 @Service
 public class BackendMeiAudienceSegmenterService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(BackendMeiAudienceSegmenterService.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BackendMeiAudienceSegmenterService.class);
   private static final String ROUTINE_SYNTHESIZED_STATUS = "ROUTINE_SYNTHESIZED";
   private static final String SEGMENTED_STATUS = "MEI_AUDIENCE_SEGMENTED";
   private static final String FAILED_STATUS = "FAILED";
   private static final String NEEDS_MORE_RESEARCH_STATUS = "NEEDS_MORE_RESEARCH";
   private static final String CURRENT_STAGE_MEI_AUDIENCE_SEGMENTER = "mei-audience-segmenter";
   private static final String CURRENT_STAGE_ROUTINE_QUALITY_GATE = "routine-quality-gate";
-  private static final String INSUFFICIENT_OPERATIONAL_PAIN_REASON = "cartão sem evidência mínima de dor prática";
+  private static final String INSUFFICIENT_OPERATIONAL_PAIN_REASON =
+      "cartão sem evidência mínima de dor prática";
   private static final int MAX_PENDING = 10;
   private static final int MAX_SIGNALS = 120;
   private static final int MAX_SOURCES = 30;
   private static final int MAX_TEXT_LENGTH = 4000;
-  private static final List<String> SOLUTION_TERMS = List.of(
-      "produto",
-      "oferta",
-      "preço",
-      "promessa",
-      "campanha",
-      "landing page",
-      "software",
-      "automacao",
-      "automação",
-      "inteligencia artificial",
-      "inteligência artificial",
-      "ia",
-      "curso",
-      "ferramenta",
-      "aplicativo",
-      "app",
-      "solução",
-      "solucao");
+  private static final List<String> SOLUTION_TERMS =
+      List.of(
+          "produto",
+          "oferta",
+          "preço",
+          "promessa",
+          "campanha",
+          "landing page",
+          "software",
+          "automacao",
+          "automação",
+          "inteligencia artificial",
+          "inteligência artificial",
+          "ia",
+          "curso",
+          "ferramenta",
+          "aplicativo",
+          "app",
+          "solução",
+          "solucao");
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheRoutineCardRepository routineCardRepository;
@@ -73,7 +79,10 @@ public class BackendMeiAudienceSegmenterService {
   private final BackendMeiAudienceProfileService profileService;
   private final MeiAudienceSegmenterConfigurationGateway configurationGateway;
 
-  /** Inicializa o serviço com repositórios e serviço de perfil canônico usados pela etapa de segmentação. */
+  /**
+   * Inicializa o serviço com repositórios e serviço de perfil canônico usados pela etapa de
+   * segmentação.
+   */
   public BackendMeiAudienceSegmenterService(
       OprmRoutineResearchCycleRepository routineResearchCycleRepository,
       OprmNicheRoutineCardRepository routineCardRepository,
@@ -89,10 +98,15 @@ public class BackendMeiAudienceSegmenterService {
     this.configurationGateway = configurationGateway;
   }
 
-  /** Lista somente cartões de ciclos ativos e elegíveis para segmentação comportamental antes do gate e materialização. */
+  /**
+   * Lista somente cartões de ciclos ativos e elegíveis para segmentação comportamental antes do
+   * gate e materialização.
+   */
   @Transactional
   public List<RecordMeiAudienceSegmenterPending> listPending() {
-    return routineCardRepository.findPendingMeiAudienceSegmentation(PageRequest.of(0, MAX_PENDING)).stream()
+    return routineCardRepository
+        .findPendingMeiAudienceSegmentation(PageRequest.of(0, MAX_PENDING))
+        .stream()
         .map(this::toPendingIfEligible)
         .flatMap(Optional::stream)
         .toList();
@@ -100,7 +114,8 @@ public class BackendMeiAudienceSegmenterService {
 
   /** Persiste a segmentação validada em perfil MEI/autônomo e atualiza o status do ciclo. */
   @Transactional
-  public CompleteMeiAudienceSegmenterResponse complete(Long researchCycleId, CompleteMeiAudienceSegmenterRequest request) {
+  public CompleteMeiAudienceSegmenterResponse complete(
+      Long researchCycleId, CompleteMeiAudienceSegmenterRequest request) {
     try {
       validateCompletionRequest(researchCycleId, request);
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
@@ -108,7 +123,8 @@ public class BackendMeiAudienceSegmenterService {
       if (!card.getResearchCycleId().equals(researchCycleId)) {
         throw new IllegalArgumentException("routineCardId must belong to researchCycleId");
       }
-      UpsertMeiAudienceProfileResponse profile = profileService.upsertAudienceProfile(toProfileRequest(request));
+      UpsertMeiAudienceProfileResponse profile =
+          profileService.upsertAudienceProfile(toProfileRequest(request));
       Instant now = Instant.now();
       cycle.setStatus(SEGMENTED_STATUS);
       cycle.setCurrentStageCode(CURRENT_STAGE_ROUTINE_QUALITY_GATE);
@@ -116,8 +132,15 @@ public class BackendMeiAudienceSegmenterService {
       cycle.setErrorMessage(null);
       routineResearchCycleRepository.save(cycle);
       return new CompleteMeiAudienceSegmenterResponse(
-          profile.id(), profile.researchCycleId(), profile.routineCardId(), cycle.getStatus(), profile.audienceName(),
-          profile.autonomousProfessionalFitScore(), profile.behavioralEvidenceScore(), profile.sourceFreshnessScore(), profile.updatedAt());
+          profile.id(),
+          profile.researchCycleId(),
+          profile.routineCardId(),
+          cycle.getStatus(),
+          profile.audienceName(),
+          profile.autonomousProfessionalFitScore(),
+          profile.behavioralEvidenceScore(),
+          profile.sourceFreshnessScore(),
+          profile.updatedAt());
     } catch (RuntimeException ex) {
       LOGGER.error(
           "Erro ao concluir segmentação MEI/autônomo do OPRM nichocnae (researchCycleId={}, routineCardId={}, segmentedBy={})",
@@ -137,18 +160,23 @@ public class BackendMeiAudienceSegmenterService {
       Instant now = Instant.now();
       cycle.setStatus(FAILED_STATUS);
       cycle.setCurrentStageCode(CURRENT_STAGE_MEI_AUDIENCE_SEGMENTER);
-      cycle.setErrorMessage(requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
+      cycle.setErrorMessage(
+          requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
       cycle.setFinishedAt(now);
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
     } catch (RuntimeException ex) {
-      LOGGER.error("Erro ao registrar falha da segmentação MEI/autônomo do OPRM nichocnae (researchCycleId={})", researchCycleId, ex);
+      LOGGER.error(
+          "Erro ao registrar falha da segmentação MEI/autônomo do OPRM nichocnae (researchCycleId={})",
+          researchCycleId,
+          ex);
       throw ex;
     }
   }
 
   /** Revalida a elegibilidade do ciclo antes de expor o cartão na fila MEI/autônomo. */
-  private Optional<RecordMeiAudienceSegmenterPending> toPendingIfEligible(OprmNicheRoutineCard card) {
+  private Optional<RecordMeiAudienceSegmenterPending> toPendingIfEligible(
+      OprmNicheRoutineCard card) {
     OprmRoutineResearchCycle cycle = findCycle(card.getResearchCycleId());
     if (!ROUTINE_SYNTHESIZED_STATUS.equals(cycle.getStatus())) {
       return Optional.empty();
@@ -176,7 +204,9 @@ public class BackendMeiAudienceSegmenterService {
         cycle.getErrorMessage());
   }
 
-  /** Verifica se o cartão tem pontuação e texto suficientes para comprovar dor operacional concreta. */
+  /**
+   * Verifica se o cartão tem pontuação e texto suficientes para comprovar dor operacional concreta.
+   */
   private boolean hasMinimumOperationalPainEvidence(OprmNicheRoutineCard card) {
     return positiveScore(card.getRoutineEvidenceScore())
         && positiveScore(card.getDifficultyEvidenceScore())
@@ -200,9 +230,12 @@ public class BackendMeiAudienceSegmenterService {
   }
 
   /** Converte cartão, ciclo, fontes e sinais na unidade de trabalho enviada ao coletor de IA. */
-  private RecordMeiAudienceSegmenterPending toPending(OprmNicheRoutineCard card, OprmRoutineResearchCycle cycle) {
-    List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
-    List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
+  private RecordMeiAudienceSegmenterPending toPending(
+      OprmNicheRoutineCard card, OprmRoutineResearchCycle cycle) {
+    List<OprmSourceSnapshot> snapshots =
+        sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
+    List<OprmExtractedSignal> signals =
+        extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
     Optional<MeiAudienceSegmenterModel> configuredModel = resolveConfiguredOpenAiModel();
     return new RecordMeiAudienceSegmenterPending(
         cycle.getId(),
@@ -231,10 +264,17 @@ public class BackendMeiAudienceSegmenterService {
         card.getSourceDiversityScore(),
         card.getSolutionLanguageRiskScore(),
         card.getCreatedAt(),
-        snapshots.stream().sorted(Comparator.comparing(OprmSourceSnapshot::getId)).limit(MAX_SOURCES).map(this::toSource).toList(),
-        signals.stream().sorted(Comparator.comparing(OprmExtractedSignal::getId)).limit(MAX_SIGNALS).map(this::toSignal).toList());
+        snapshots.stream()
+            .sorted(Comparator.comparing(OprmSourceSnapshot::getId))
+            .limit(MAX_SOURCES)
+            .map(this::toSource)
+            .toList(),
+        signals.stream()
+            .sorted(Comparator.comparing(OprmExtractedSignal::getId))
+            .limit(MAX_SIGNALS)
+            .map(this::toSignal)
+            .toList());
   }
-
 
   /** Recupera o modelo configurado para a etapa MEI/autônomo sem bloquear a fila quando ausente. */
   private Optional<MeiAudienceSegmenterModel> resolveConfiguredOpenAiModel() {
@@ -244,33 +284,75 @@ public class BackendMeiAudienceSegmenterService {
   /** Converte snapshot persistido em fonte curta com indicadores de atualidade e aderência. */
   private SegmenterSourceSnapshotResponse toSource(OprmSourceSnapshot snapshot) {
     return new SegmenterSourceSnapshotResponse(
-        snapshot.getId(), snapshot.getSourceCandidateId(), snapshot.getSourceUrl(), snapshot.getSourceDomain(), snapshot.getSourceTitle(),
-        snapshot.getSourceType(), snapshot.getSourceClassificationType(), snapshot.getSourceFreshnessScore(), snapshot.getOutdatedSourceRisk(),
-        snapshot.getBrazilRelevanceScore(), snapshot.getAutonomousProfessionalEvidenceScore(), snapshot.getStructuredBusinessDriftRisk(),
-        snapshot.getSolutionLanguageRisk(), snapshot.getPublishedAt(), trimOptional(snapshot.getSnippet()), trimOptional(snapshot.getShortExcerpt()));
+        snapshot.getId(),
+        snapshot.getSourceCandidateId(),
+        snapshot.getSourceUrl(),
+        snapshot.getSourceDomain(),
+        snapshot.getSourceTitle(),
+        snapshot.getSourceType(),
+        snapshot.getSourceClassificationType(),
+        snapshot.getSourceFreshnessScore(),
+        snapshot.getOutdatedSourceRisk(),
+        snapshot.getBrazilRelevanceScore(),
+        snapshot.getAutonomousProfessionalEvidenceScore(),
+        snapshot.getStructuredBusinessDriftRisk(),
+        snapshot.getSolutionLanguageRisk(),
+        snapshot.getPublishedAt(),
+        trimOptional(snapshot.getSnippet()),
+        trimOptional(snapshot.getShortExcerpt()));
   }
 
   /** Converte sinal persistido em evidência rastreável usada pelo segmentador. */
   private SegmenterSignalResponse toSignal(OprmExtractedSignal signal) {
     return new SegmenterSignalResponse(
-        signal.getId(), signal.getSourceSnapshotId(), signal.getSourceCandidateId(), signal.getSignalType(), signal.getSignalText(),
-        signal.getEvidenceExcerpt(), signal.getSourceDomain(), signal.getConfidenceScore());
+        signal.getId(),
+        signal.getSourceSnapshotId(),
+        signal.getSourceCandidateId(),
+        signal.getSignalType(),
+        signal.getSignalText(),
+        signal.getEvidenceExcerpt(),
+        signal.getSourceDomain(),
+        signal.getConfidenceScore());
   }
 
   /** Converte a saída da etapa em contrato oficial de perfil MEI/autônomo. */
-  private UpsertMeiAudienceProfileRequest toProfileRequest(CompleteMeiAudienceSegmenterRequest request) {
+  private UpsertMeiAudienceProfileRequest toProfileRequest(
+      CompleteMeiAudienceSegmenterRequest request) {
     return new UpsertMeiAudienceProfileRequest(
-        request.researchCycleId(), request.routineCardId(), request.sourceNicheCandidateId(), null, request.cnaeCode(), request.cnaeDescription(),
-        request.neutralNicheName(), request.audienceName(), request.occupationTerms(), request.workMode(), request.customerAcquisitionBehavior(),
-        request.dailyRoutineSummary(), request.recurringTasksSummary(), request.operationalPainsSummary(), request.emotionalPainsSummary(),
-        request.dreamsSummary(), request.fearsSummary(), request.languagePatterns(), request.channelsUsed(), request.recentSourceSummary(),
-        request.autonomousProfessionalFitScore(), request.behavioralEvidenceScore(), request.sourceFreshnessScore(), request.outdatedSourceRiskScore(),
-        request.structuredBusinessDriftRiskScore(), request.solutionLanguageRiskScore());
+        request.researchCycleId(),
+        request.routineCardId(),
+        request.sourceNicheCandidateId(),
+        null,
+        request.cnaeCode(),
+        request.cnaeDescription(),
+        request.neutralNicheName(),
+        request.audienceName(),
+        request.occupationTerms(),
+        request.workMode(),
+        request.customerAcquisitionBehavior(),
+        request.dailyRoutineSummary(),
+        request.recurringTasksSummary(),
+        request.operationalPainsSummary(),
+        request.emotionalPainsSummary(),
+        request.dreamsSummary(),
+        request.fearsSummary(),
+        request.languagePatterns(),
+        request.channelsUsed(),
+        request.recentSourceSummary(),
+        request.autonomousProfessionalFitScore(),
+        request.behavioralEvidenceScore(),
+        request.sourceFreshnessScore(),
+        request.outdatedSourceRiskScore(),
+        request.structuredBusinessDriftRiskScore(),
+        request.solutionLanguageRiskScore());
   }
 
   /** Valida o contrato final e bloqueia contaminação por produto, oferta, campanha ou solução. */
-  private void validateCompletionRequest(Long researchCycleId, CompleteMeiAudienceSegmenterRequest request) {
-    if (researchCycleId == null || request == null || !researchCycleId.equals(request.researchCycleId())) {
+  private void validateCompletionRequest(
+      Long researchCycleId, CompleteMeiAudienceSegmenterRequest request) {
+    if (researchCycleId == null
+        || request == null
+        || !researchCycleId.equals(request.researchCycleId())) {
       throw new IllegalArgumentException("researchCycleId must match path");
     }
     if (request.routineCardId() == null || request.sourceNicheCandidateId() == null) {
@@ -297,26 +379,55 @@ public class BackendMeiAudienceSegmenterService {
   private void validateText(String value, String fieldName) {
     String text = requiredText(value, fieldName);
     if (text.length() > MAX_TEXT_LENGTH) {
-      throw new IllegalArgumentException(fieldName + " must contain at most " + MAX_TEXT_LENGTH + " characters");
+      throw new IllegalArgumentException(
+          fieldName + " must contain at most " + MAX_TEXT_LENGTH + " characters");
     }
   }
 
   /** Bloqueia linguagem de produto/oferta no payload final publicável de perfil. */
   private void rejectSolutionLanguage(CompleteMeiAudienceSegmenterRequest request) {
-    String combined = normalize(" " + request.audienceName() + " " + request.occupationTerms() + " " + request.workMode() + " "
-        + request.customerAcquisitionBehavior() + " " + request.dailyRoutineSummary() + " " + request.recurringTasksSummary() + " "
-        + request.operationalPainsSummary() + " " + request.emotionalPainsSummary() + " " + request.dreamsSummary() + " "
-        + request.fearsSummary() + " " + request.languagePatterns() + " " + request.channelsUsed() + " " + request.recentSourceSummary() + " ");
+    String combined =
+        normalize(
+            " "
+                + request.audienceName()
+                + " "
+                + request.occupationTerms()
+                + " "
+                + request.workMode()
+                + " "
+                + request.customerAcquisitionBehavior()
+                + " "
+                + request.dailyRoutineSummary()
+                + " "
+                + request.recurringTasksSummary()
+                + " "
+                + request.operationalPainsSummary()
+                + " "
+                + request.emotionalPainsSummary()
+                + " "
+                + request.dreamsSummary()
+                + " "
+                + request.fearsSummary()
+                + " "
+                + request.languagePatterns()
+                + " "
+                + request.channelsUsed()
+                + " "
+                + request.recentSourceSummary()
+                + " ");
     for (String term : SOLUTION_TERMS) {
       if ((" " + combined + " ").contains(" " + normalize(term).trim() + " ")) {
-        throw new IllegalArgumentException("Segmentação MEI/autônomo contém linguagem de solução proibida: " + term.trim());
+        throw new IllegalArgumentException(
+            "Segmentação MEI/autônomo contém linguagem de solução proibida: " + term.trim());
       }
     }
   }
 
   /** Normaliza texto para comparação consistente de termos proibidos. */
   private String normalize(String value) {
-    String normalized = Normalizer.normalize(value == null ? "" : value.toLowerCase(Locale.ROOT), Normalizer.Form.NFD);
+    String normalized =
+        Normalizer.normalize(
+            value == null ? "" : value.toLowerCase(Locale.ROOT), Normalizer.Form.NFD);
     return normalized.replaceAll("\\p{M}+", "").replaceAll("\\s+", " ").trim();
   }
 
@@ -329,13 +440,18 @@ public class BackendMeiAudienceSegmenterService {
 
   /** Localiza o ciclo de pesquisa ou falha com erro contratual. */
   private OprmRoutineResearchCycle findCycle(Long researchCycleId) {
-    return routineResearchCycleRepository.findById(researchCycleId)
-        .orElseThrow(() -> new EntityNotFoundException("Routine research cycle not found: " + researchCycleId));
+    return routineResearchCycleRepository
+        .findById(researchCycleId)
+        .orElseThrow(
+            () ->
+                new EntityNotFoundException(
+                    "Routine research cycle not found: " + researchCycleId));
   }
 
   /** Localiza o cartão de rotina ou falha com erro contratual. */
   private OprmNicheRoutineCard findCard(Long routineCardId) {
-    return routineCardRepository.findById(routineCardId)
+    return routineCardRepository
+        .findById(routineCardId)
         .orElseThrow(() -> new EntityNotFoundException("Routine card not found: " + routineCardId));
   }
 

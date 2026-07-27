@@ -3,70 +3,71 @@ package com.marketinghub.deliverable;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
-/**
- * Package grouping a set of deliverables for an {@link Experiment}.
- */
+/** Package grouping a set of deliverables for an {@link Experiment}. */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "deliverable_package", uniqueConstraints = {
-        @UniqueConstraint(name = "uq_deliverable_package_experiment_name", columnNames = {"experiment_id", "name"}),
-        @UniqueConstraint(name = "uq_deliverable_package_hypothesis_name", columnNames = {"hypothesis_id", "name"})
-})
+@Table(
+    name = "deliverable_package",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uq_deliverable_package_experiment_name",
+          columnNames = {"experiment_id", "name"}),
+      @UniqueConstraint(
+          name = "uq_deliverable_package_hypothesis_name",
+          columnNames = {"hypothesis_id", "name"})
+    })
 public class DeliverablePackage {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_id")
-    @ToString.Exclude
-    private Experiment experiment;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "experiment_id")
+  @ToString.Exclude
+  private Experiment experiment;
 
-    @Column(nullable = false)
-    private String name;
+  @Column(nullable = false)
+  private String name;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "hypothesis_id")
+  @ToString.Exclude
+  private Hypothesis hypothesis;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hypothesis_id")
-    @ToString.Exclude
-    private Hypothesis hypothesis;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String description;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String description;
+  @Column(length = 255)
+  private String model;
 
-    @Column(length = 255)
-    private String model;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String prompt;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String prompt;
+  @Builder.Default
+  @ManyToMany
+  @JoinTable(
+      name = "deliverable_package_item",
+      joinColumns = @JoinColumn(name = "deliverable_package_id"),
+      inverseJoinColumns = @JoinColumn(name = "deliverable_id"))
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
+  private Set<Deliverable> deliverables = new LinkedHashSet<>();
 
-    @Builder.Default
-    @ManyToMany
-    @JoinTable(name = "deliverable_package_item",
-            joinColumns = @JoinColumn(name = "deliverable_package_id"),
-            inverseJoinColumns = @JoinColumn(name = "deliverable_id"))
-    @EqualsAndHashCode.Exclude
-    @ToString.Exclude
-    private Set<Deliverable> deliverables = new LinkedHashSet<>();
+  @CreationTimestamp private Instant createdAt;
 
-    @CreationTimestamp
-    private Instant createdAt;
-
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

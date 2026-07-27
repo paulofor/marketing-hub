@@ -33,22 +33,26 @@ public class BackendRoutineSynthesizerController {
   }
 
   /** Persiste o cartão de rotina sintetizado para um ciclo de pesquisa. */
-  @PostMapping("/internal/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}/complete")
+  @PostMapping(
+      "/internal/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}/complete")
   public ResponseEntity<CompleteRoutineSynthesizerResponse> complete(
       @PathVariable Long researchCycleId, @RequestBody CompleteRoutineSynthesizerRequest request) {
     return ResponseEntity.ok(executionService.complete(researchCycleId, request));
   }
 
   /** Registra falha operacional da síntese de rotina para um ciclo de pesquisa. */
-  @PostMapping("/internal/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}/fail")
-  public ResponseEntity<Void> fail(@PathVariable Long researchCycleId, @RequestBody FailRoutineSynthesizerRequest request) {
+  @PostMapping(
+      "/internal/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}/fail")
+  public ResponseEntity<Void> fail(
+      @PathVariable Long researchCycleId, @RequestBody FailRoutineSynthesizerRequest request) {
     executionService.fail(researchCycleId, request);
     return ResponseEntity.noContent().build();
   }
 
   /** Detalha o cartão de rotina sintetizado para um ciclo de pesquisa. */
   @GetMapping("/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}")
-  public ResponseEntity<RoutineSynthesizerDetailResponse> detail(@PathVariable Long researchCycleId) {
+  public ResponseEntity<RoutineSynthesizerDetailResponse> detail(
+      @PathVariable Long researchCycleId) {
     return ResponseEntity.ok(executionService.detail(researchCycleId));
   }
 }

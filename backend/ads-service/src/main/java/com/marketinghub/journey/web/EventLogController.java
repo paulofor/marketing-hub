@@ -8,23 +8,21 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST endpoint ingesting events across channels.
- */
+/** REST endpoint ingesting events across channels. */
 @RestController
 @RequestMapping("/api/events")
 public class EventLogController {
-    private final EventLogService eventLogService;
-    private final JourneyMapper mapper;
+  private final EventLogService eventLogService;
+  private final JourneyMapper mapper;
 
-    public EventLogController(EventLogService eventLogService, JourneyMapper mapper) {
-        this.eventLogService = eventLogService;
-        this.mapper = mapper;
-    }
+  public EventLogController(EventLogService eventLogService, JourneyMapper mapper) {
+    this.eventLogService = eventLogService;
+    this.mapper = mapper;
+  }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public EventLogResponse record(@Valid @RequestBody EventLogRequest request) {
-        return mapper.toEventLogResponse(eventLogService.record(request));
-    }
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  public EventLogResponse record(@Valid @RequestBody EventLogRequest request) {
+    return mapper.toEventLogResponse(eventLogService.record(request));
+  }
 }

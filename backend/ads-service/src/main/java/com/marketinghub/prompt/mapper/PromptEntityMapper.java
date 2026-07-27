@@ -6,5 +6,5 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface PromptEntityMapper {
-    PromptEntityDto toDto(PromptEntity entity);
+  PromptEntityDto toDto(PromptEntity entity);
 }

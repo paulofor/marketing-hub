@@ -56,6 +56,27 @@ Docker:
 docker compose -f pde-platform/docker-compose.yml up --build
 ```
 
+Validação local integrada v5/v6:
+
+```bash
+bash pde-platform/scripts/test-musa-local-integration.sh
+```
+
+Esse comando sobe um MySQL 5.7 local de teste, inicia o backend PDE na porta
+`8096`, inicia o frontend PDE na porta `57180` e roda Playwright nos hostnames
+versionados `v5.clubemusa.com.br` e `v6.clubemusa.com.br` sem interceptar
+`/api`. A validação confirma que o frontend conversa com o backend real pelo
+proxy, que cada hostname resolve sua `experienceVersion`, que o MP4 da v6 é
+servido como `video/mp4` e que eventos de vídeo entram no analytics persistido.
+Use `PDE_KEEP_LOCAL_DB=1` para manter o banco após o teste e inspecionar os
+dados gravados.
+
+O deploy produtivo do Método MUSA também valida os dois subdomínios
+versionados. Em `main`, o workflow publica automaticamente a stack e executa
+smoke tests para `v5` e `v6`, incluindo health público, renderização, diagnóstico
+público, `experienceVersion` esperada e asset MP4 real. `workflow_dispatch`
+continua disponível apenas como acionamento manual adicional.
+
 Deploy de produção:
 
 - Defina `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` apontando para o MySQL do Marketing Hub antes de subir o backend PDE.
@@ -96,6 +117,7 @@ coerente com o histórico da jornada.
 - Cada nova versao de PDE deve publicar e validar seu proprio subdominio, mantendo metricas, UTMs e criativos separados por `experienceVersion`.
 - A v5 e a versao com video explicativo inicial. O frontend gera `public/assets/musa-v5-video-explicativo.mp4` por `npm run generate:musa-videos` durante o build e usa esse arquivo como video padrao da v5.
 - A v6 e uma experiencia PDE completa com video motivacional inicial. Quando o hostname for `v6.clubemusa.com.br` e nao houver override explicito em runtime, o frontend usa `musa-pde-entry-v6-video-motivacional`, carrega `public/assets/musa-v6-video-motivacional.mp4` no player de entrada e continua imediatamente para o diagnostico/perguntas do Clube MUSA.
+- Em subdominio versionado conhecido, o hostname tem prioridade sobre overrides globais de runtime. Assim, o mesmo deploy pode servir `v5.clubemusa.com.br` e `v6.clubemusa.com.br` simultaneamente sem misturar experiencia, video ou analytics por `experienceVersion`.
 - Os videos v5/v6 devem nascer do script versionado de build, nunca de copia manual para o container, para evitar dominios versionados servindo HTML de fallback no lugar de MP4.
 
 ## Login e assinatura MUSA

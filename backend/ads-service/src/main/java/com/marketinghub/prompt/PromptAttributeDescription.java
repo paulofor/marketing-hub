@@ -1,13 +1,12 @@
 package com.marketinghub.prompt;
 
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import java.util.HashSet;
-import java.util.Set;
-
-import java.time.Instant;
 
 @Entity
 @Data
@@ -17,29 +16,27 @@ import java.time.Instant;
 @EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 @Table(name = "prompt_attribute_description")
 public class PromptAttributeDescription {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prompt_attribute_id")
-    private PromptAttribute attribute;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "prompt_attribute_id")
+  private PromptAttribute attribute;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String description;
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String description;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean active = true;
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean active = true;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 
-    @ManyToMany(mappedBy = "promptAttributeDescriptions")
-    @Builder.Default
-    private Set<com.marketinghub.hypothesis.Hypothesis> hypotheses = new HashSet<>();
+  @ManyToMany(mappedBy = "promptAttributeDescriptions")
+  @Builder.Default
+  private Set<com.marketinghub.hypothesis.Hypothesis> hypotheses = new HashSet<>();
 }

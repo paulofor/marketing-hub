@@ -3,7 +3,9 @@ package com.marketinghub.oprm.nichocnae.routineresearchcycle.service.detailStage
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/** Detalha o estado operacional completo de uma execução da etapa de ciclo de pesquisa de rotina. */
+/**
+ * Detalha o estado operacional completo de uma execução da etapa de ciclo de pesquisa de rotina.
+ */
 public record RecordBackendRoutineResearchCycleDetalheDto(
     Long researchCycleId,
     Long sourceNicheId,

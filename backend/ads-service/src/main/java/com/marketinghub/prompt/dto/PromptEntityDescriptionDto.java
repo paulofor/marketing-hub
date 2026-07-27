@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class PromptEntityDescriptionDto {
-    private String description;
+  private String description;
 }

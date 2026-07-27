@@ -21,7 +21,10 @@ import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-/** Responsabilidade: registrar personagens de vídeo do produto cadastrados ou reutilizáveis por provider. */
+/**
+ * Responsabilidade: registrar personagens de vídeo do produto cadastrados ou reutilizáveis por
+ * provider.
+ */
 @Entity
 @Table(name = "product_video_provider_avatar")
 @Data
@@ -71,7 +74,9 @@ public class ProductVideoProviderAvatar {
   @Column(name = "source_image_url", length = 1024, nullable = false)
   private String sourceImageUrl;
 
-  /** Indica se o provider retornou um avatar reutilizável por ID, não apenas imagem de referência. */
+  /**
+   * Indica se o provider retornou um avatar reutilizável por ID, não apenas imagem de referência.
+   */
   @Column(name = "supports_reusable_avatar", nullable = false)
   private boolean supportsReusableAvatar;
 

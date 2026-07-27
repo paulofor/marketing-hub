@@ -9,264 +9,253 @@ import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import org.springframework.stereotype.Service;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
-/**
- * Serviço responsável por diagnosticar estatisticamente gargalos do funil de experimentos.
- */
+/** Serviço responsável por diagnosticar estatisticamente gargalos do funil de experimentos. */
 @Service
 public class ExperimentFunnelDiagnosticService {
 
-    private final ExperimentFunnelService funnelService;
-    private final ExperimentFunnelDiagnosticConfig config;
-    private final ExperimentRepository experimentRepository;
+  private final ExperimentFunnelService funnelService;
+  private final ExperimentFunnelDiagnosticConfig config;
+  private final ExperimentRepository experimentRepository;
 
-    /**
-     * Cria o serviço com a fonte de métricas do funil e a configuração canônica dos limites.
-     */
-    public ExperimentFunnelDiagnosticService(ExperimentFunnelService funnelService,
-                                             ExperimentFunnelDiagnosticConfig config,
-                                             ExperimentRepository experimentRepository) {
-        this.funnelService = funnelService;
-        this.config = config;
-        this.experimentRepository = experimentRepository;
+  /** Cria o serviço com a fonte de métricas do funil e a configuração canônica dos limites. */
+  public ExperimentFunnelDiagnosticService(
+      ExperimentFunnelService funnelService,
+      ExperimentFunnelDiagnosticConfig config,
+      ExperimentRepository experimentRepository) {
+    this.funnelService = funnelService;
+    this.config = config;
+    this.experimentRepository = experimentRepository;
+  }
+
+  /** Diagnostica as transições prioritárias do funil para um experimento. */
+  public ExperimentFunnelDiagnosticsResponseDto diagnose(Long experimentId) {
+    Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    List<ExperimentFunnelStageDto> stages = funnelService.summarize(experimentId);
+    Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage =
+        stages.stream()
+            .collect(Collectors.toMap(ExperimentFunnelStageDto::getStage, stage -> stage));
+
+    List<ExperimentFunnelStageDiagnosticDto> diagnostics =
+        rulesFor(experiment).stream()
+            .map(rule -> diagnoseRule(byStage, rule))
+            .sorted(Comparator.comparing(dto -> dto.stageKey().getOrder()))
+            .toList();
+
+    long optimizationEvents =
+        Optional.ofNullable(byStage.get(ExperimentFunnelStage.COMPRA))
+            .map(ExperimentFunnelStageDto::getTotalCount)
+            .orElse(0L);
+    String contextualAlert =
+        optimizationEvents < config.minOptimizationEventVolumeForContext()
+            ? "Alerta contextual: o evento principal de otimização ainda está com volume baixo para aprendizado da mídia."
+            : null;
+
+    return new ExperimentFunnelDiagnosticsResponseDto(diagnostics, contextualAlert);
+  }
+
+  /** Seleciona as transições estatísticas compatíveis com o tipo comercial do experimento. */
+  private List<ExperimentFunnelDiagnosticConfig.ConversionRuleSpec> rulesFor(
+      Experiment experiment) {
+    if (experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT) {
+      return config.lowTicketPrioritizedRules();
+    }
+    if (experiment != null
+        && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+      return config.pdeMembershipSubscriptionPrioritizedRules();
+    }
+    return config.prioritizedRules();
+  }
+
+  /** Aplica uma regra de conversão sobre os totais de uma transição do funil. */
+  private ExperimentFunnelStageDiagnosticDto diagnoseRule(
+      Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage,
+      ExperimentFunnelDiagnosticConfig.ConversionRuleSpec rule) {
+    long attempts =
+        Optional.ofNullable(byStage.get(rule.from()))
+            .map(ExperimentFunnelStageDto::getTotalCount)
+            .orElse(0L);
+    long successes =
+        Optional.ofNullable(byStage.get(rule.to()))
+            .map(ExperimentFunnelStageDto::getTotalCount)
+            .orElse(0L);
+    List<FunnelThresholdCheckDto> thresholdChecks = buildThresholdChecks(rule, attempts, successes);
+
+    if (attempts == 0 && successes == 0) {
+      return new ExperimentFunnelStageDiagnosticDto(
+          rule.to(),
+          rule.to().getLabel(),
+          attempts,
+          successes,
+          null,
+          rule.minAcceptableRate(),
+          null,
+          thresholdChecks,
+          FunnelDiagnosticStatus.NO_DATA,
+          FunnelDiagnosticReasonCode.NO_ATTEMPTS,
+          "Ainda não há dados dessa etapa para concluir.",
+          false);
     }
 
-    /**
-     * Diagnostica as transições prioritárias do funil para um experimento.
-     */
-    public ExperimentFunnelDiagnosticsResponseDto diagnose(Long experimentId) {
-        Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
-        List<ExperimentFunnelStageDto> stages = funnelService.summarize(experimentId);
-        Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage = stages.stream()
-                .collect(Collectors.toMap(ExperimentFunnelStageDto::getStage, stage -> stage));
-
-        List<ExperimentFunnelStageDiagnosticDto> diagnostics = rulesFor(experiment).stream()
-                .map(rule -> diagnoseRule(byStage, rule))
-                .sorted(Comparator.comparing(dto -> dto.stageKey().getOrder()))
-                .toList();
-
-        long optimizationEvents = Optional.ofNullable(byStage.get(ExperimentFunnelStage.COMPRA))
-                .map(ExperimentFunnelStageDto::getTotalCount)
-                .orElse(0L);
-        String contextualAlert = optimizationEvents < config.minOptimizationEventVolumeForContext()
-                ? "Alerta contextual: o evento principal de otimização ainda está com volume baixo para aprendizado da mídia."
-                : null;
-
-        return new ExperimentFunnelDiagnosticsResponseDto(diagnostics, contextualAlert);
+    if (successes > attempts || (attempts == 0 && successes > 0)) {
+      return new ExperimentFunnelStageDiagnosticDto(
+          rule.to(),
+          rule.to().getLabel(),
+          attempts,
+          successes,
+          attempts > 0 ? (double) successes / attempts : null,
+          rule.minAcceptableRate(),
+          null,
+          thresholdChecks,
+          FunnelDiagnosticStatus.TECHNICAL_ISSUE_SUSPECTED,
+          FunnelDiagnosticReasonCode.SEQUENTIAL_INCONSISTENCY,
+          "Possível problema técnico nesta etapa. Os números entre etapas sequenciais estão inconsistentes.",
+          true);
     }
 
-    /**
-     * Seleciona as transições estatísticas compatíveis com o tipo comercial do experimento.
-     */
-    private List<ExperimentFunnelDiagnosticConfig.ConversionRuleSpec> rulesFor(Experiment experiment) {
-        if (experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT) {
-            return config.lowTicketPrioritizedRules();
-        }
-        if (experiment != null
-                && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
-            return config.pdeMembershipSubscriptionPrioritizedRules();
-        }
-        return config.prioritizedRules();
-    }
+    int attemptsFor95Confidence = (int) Math.ceil(3.0 / rule.minAcceptableRate());
+    double observedRate = attempts > 0 ? (double) successes / attempts : 0.0;
 
-    /**
-     * Aplica uma regra de conversão sobre os totais de uma transição do funil.
-     */
-    private ExperimentFunnelStageDiagnosticDto diagnoseRule(Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage,
-                                                            ExperimentFunnelDiagnosticConfig.ConversionRuleSpec rule) {
-        long attempts = Optional.ofNullable(byStage.get(rule.from()))
-                .map(ExperimentFunnelStageDto::getTotalCount)
-                .orElse(0L);
-        long successes = Optional.ofNullable(byStage.get(rule.to()))
-                .map(ExperimentFunnelStageDto::getTotalCount)
-                .orElse(0L);
-        List<FunnelThresholdCheckDto> thresholdChecks = buildThresholdChecks(rule, attempts, successes);
-
-        if (attempts == 0 && successes == 0) {
-            return new ExperimentFunnelStageDiagnosticDto(
-                    rule.to(),
-                    rule.to().getLabel(),
-                    attempts,
-                    successes,
-                    null,
-                    rule.minAcceptableRate(),
-                    null,
-                    thresholdChecks,
-                    FunnelDiagnosticStatus.NO_DATA,
-                    FunnelDiagnosticReasonCode.NO_ATTEMPTS,
-                    "Ainda não há dados dessa etapa para concluir.",
-                    false
-            );
-        }
-
-        if (successes > attempts || (attempts == 0 && successes > 0)) {
-            return new ExperimentFunnelStageDiagnosticDto(
-                    rule.to(),
-                    rule.to().getLabel(),
-                    attempts,
-                    successes,
-                    attempts > 0 ? (double) successes / attempts : null,
-                    rule.minAcceptableRate(),
-                    null,
-                    thresholdChecks,
-                    FunnelDiagnosticStatus.TECHNICAL_ISSUE_SUSPECTED,
-                    FunnelDiagnosticReasonCode.SEQUENTIAL_INCONSISTENCY,
-                    "Possível problema técnico nesta etapa. Os números entre etapas sequenciais estão inconsistentes.",
-                    true
-            );
-        }
-
-        int attemptsFor95Confidence = (int) Math.ceil(3.0 / rule.minAcceptableRate());
-        double observedRate = attempts > 0 ? (double) successes / attempts : 0.0;
-
-        if (successes == 0) {
-            double upper95 = attempts > 0 ? 3.0 / attempts : 1.0;
-            if (attempts < attemptsFor95Confidence) {
-                return new ExperimentFunnelStageDiagnosticDto(
-                        rule.to(),
-                        rule.to().getLabel(),
-                        attempts,
-                        successes,
-                        observedRate,
-                        rule.minAcceptableRate(),
-                        upper95,
-                        thresholdChecks,
-                        FunnelDiagnosticStatus.INSUFFICIENT_DATA,
-                        FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
-                        "Ainda cedo para concluir nesta etapa.",
-                        false
-                );
-            }
-            if (upper95 <= rule.minAcceptableRate()) {
-                return new ExperimentFunnelStageDiagnosticDto(
-                        rule.to(),
-                        rule.to().getLabel(),
-                        attempts,
-                        successes,
-                        observedRate,
-                        rule.minAcceptableRate(),
-                        upper95,
-                        thresholdChecks,
-                        FunnelDiagnosticStatus.STATISTICALLY_FAILED,
-                        FunnelDiagnosticReasonCode.RULE_OF_THREE_FAILED,
-                        "Etapa reprovada estatisticamente no limite definido.",
-                        false
-                );
-            }
-            return new ExperimentFunnelStageDiagnosticDto(
-                    rule.to(),
-                    rule.to().getLabel(),
-                    attempts,
-                    successes,
-                    observedRate,
-                    rule.minAcceptableRate(),
-                    upper95,
-                    thresholdChecks,
-                    FunnelDiagnosticStatus.WEAK_SIGNAL,
-                    FunnelDiagnosticReasonCode.RULE_OF_THREE_STILL_INCONCLUSIVE,
-                    "Sinal fraco nesta etapa. Continue coletando eventos.",
-                    false
-            );
-        }
-
-        if (observedRate < rule.minAcceptableRate()) {
-            double upper95 = wilsonUpper95(successes, attempts);
-            if (upper95 <= rule.minAcceptableRate()) {
-                return new ExperimentFunnelStageDiagnosticDto(
-                        rule.to(),
-                        rule.to().getLabel(),
-                        attempts,
-                        successes,
-                        observedRate,
-                        rule.minAcceptableRate(),
-                        upper95,
-                        thresholdChecks,
-                        FunnelDiagnosticStatus.STATISTICALLY_FAILED,
-                        FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                        "Etapa reprovada estatisticamente: mesmo considerando a margem de 95%, a conversão fica abaixo do mínimo definido.",
-                        false
-                );
-            }
-            return new ExperimentFunnelStageDiagnosticDto(
-                    rule.to(),
-                    rule.to().getLabel(),
-                    attempts,
-                    successes,
-                    observedRate,
-                    rule.minAcceptableRate(),
-                    upper95,
-                    thresholdChecks,
-                    FunnelDiagnosticStatus.WEAK_SIGNAL,
-                    FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                    "Sinal fraco nesta etapa. Continue monitorando.",
-                    false
-            );
-        }
-
+    if (successes == 0) {
+      double upper95 = attempts > 0 ? 3.0 / attempts : 1.0;
+      if (attempts < attemptsFor95Confidence) {
         return new ExperimentFunnelStageDiagnosticDto(
-                rule.to(),
-                rule.to().getLabel(),
-                attempts,
-                successes,
-                observedRate,
-                rule.minAcceptableRate(),
-                null,
-                thresholdChecks,
-                FunnelDiagnosticStatus.HEALTHY_OR_INCONCLUSIVE,
-                FunnelDiagnosticReasonCode.HEALTHY_OR_INCONCLUSIVE,
-                "Sem indício forte de reprovação estatística nesta etapa.",
-                false
-        );
+            rule.to(),
+            rule.to().getLabel(),
+            attempts,
+            successes,
+            observedRate,
+            rule.minAcceptableRate(),
+            upper95,
+            thresholdChecks,
+            FunnelDiagnosticStatus.INSUFFICIENT_DATA,
+            FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
+            "Ainda cedo para concluir nesta etapa.",
+            false);
+      }
+      if (upper95 <= rule.minAcceptableRate()) {
+        return new ExperimentFunnelStageDiagnosticDto(
+            rule.to(),
+            rule.to().getLabel(),
+            attempts,
+            successes,
+            observedRate,
+            rule.minAcceptableRate(),
+            upper95,
+            thresholdChecks,
+            FunnelDiagnosticStatus.STATISTICALLY_FAILED,
+            FunnelDiagnosticReasonCode.RULE_OF_THREE_FAILED,
+            "Etapa reprovada estatisticamente no limite definido.",
+            false);
+      }
+      return new ExperimentFunnelStageDiagnosticDto(
+          rule.to(),
+          rule.to().getLabel(),
+          attempts,
+          successes,
+          observedRate,
+          rule.minAcceptableRate(),
+          upper95,
+          thresholdChecks,
+          FunnelDiagnosticStatus.WEAK_SIGNAL,
+          FunnelDiagnosticReasonCode.RULE_OF_THREE_STILL_INCONCLUSIVE,
+          "Sinal fraco nesta etapa. Continue coletando eventos.",
+          false);
     }
 
-    /**
-     * Monta os marcos estatísticos usados para explicar a regra dos 3% quando ainda há zero sucesso.
-     */
-    private List<FunnelThresholdCheckDto> buildThresholdChecks(ExperimentFunnelDiagnosticConfig.ConversionRuleSpec rule,
-                                                               long attempts,
-                                                               long successes) {
-        return rule.allThresholdRates().stream()
-                .map(thresholdRate -> {
-                    int attemptsFor95Confidence = (int) Math.ceil(3.0 / thresholdRate);
-                    Double upper95 = attempts > 0 ? 3.0 / attempts : null;
-                    boolean attemptsTargetReached = attempts >= attemptsFor95Confidence;
-                    boolean statisticallyFailed = successes == 0
-                            && attemptsTargetReached
-                            && upper95 != null
-                            && upper95 <= thresholdRate;
-                    return new FunnelThresholdCheckDto(
-                            thresholdRate,
-                            attemptsFor95Confidence,
-                            upper95,
-                            statisticallyFailed,
-                            attemptsTargetReached
-                    );
-                })
-                .toList();
+    if (observedRate < rule.minAcceptableRate()) {
+      double upper95 = wilsonUpper95(successes, attempts);
+      if (upper95 <= rule.minAcceptableRate()) {
+        return new ExperimentFunnelStageDiagnosticDto(
+            rule.to(),
+            rule.to().getLabel(),
+            attempts,
+            successes,
+            observedRate,
+            rule.minAcceptableRate(),
+            upper95,
+            thresholdChecks,
+            FunnelDiagnosticStatus.STATISTICALLY_FAILED,
+            FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+            "Etapa reprovada estatisticamente: mesmo considerando a margem de 95%, a conversão fica abaixo do mínimo definido.",
+            false);
+      }
+      return new ExperimentFunnelStageDiagnosticDto(
+          rule.to(),
+          rule.to().getLabel(),
+          attempts,
+          successes,
+          observedRate,
+          rule.minAcceptableRate(),
+          upper95,
+          thresholdChecks,
+          FunnelDiagnosticStatus.WEAK_SIGNAL,
+          FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+          "Sinal fraco nesta etapa. Continue monitorando.",
+          false);
     }
 
-    /**
-     * Calcula o limite superior de 95% pelo intervalo de Wilson para conversões com sucesso não nulo.
-     */
-    private double wilsonUpper95(long successes, long attempts) {
-        if (attempts <= 0) {
-            return 1.0;
-        }
-        double z = 1.96d;
-        double n = attempts;
-        double phat = (double) successes / n;
-        double z2 = z * z;
-        double denominator = 1.0d + z2 / n;
-        double centre = phat + z2 / (2.0d * n);
-        double margin = z * Math.sqrt((phat * (1.0d - phat) + z2 / (4.0d * n)) / n);
-        return (centre + margin) / denominator;
-    }
+    return new ExperimentFunnelStageDiagnosticDto(
+        rule.to(),
+        rule.to().getLabel(),
+        attempts,
+        successes,
+        observedRate,
+        rule.minAcceptableRate(),
+        null,
+        thresholdChecks,
+        FunnelDiagnosticStatus.HEALTHY_OR_INCONCLUSIVE,
+        FunnelDiagnosticReasonCode.HEALTHY_OR_INCONCLUSIVE,
+        "Sem indício forte de reprovação estatística nesta etapa.",
+        false);
+  }
 
+  /**
+   * Monta os marcos estatísticos usados para explicar a regra dos 3% quando ainda há zero sucesso.
+   */
+  private List<FunnelThresholdCheckDto> buildThresholdChecks(
+      ExperimentFunnelDiagnosticConfig.ConversionRuleSpec rule, long attempts, long successes) {
+    return rule.allThresholdRates().stream()
+        .map(
+            thresholdRate -> {
+              int attemptsFor95Confidence = (int) Math.ceil(3.0 / thresholdRate);
+              Double upper95 = attempts > 0 ? 3.0 / attempts : null;
+              boolean attemptsTargetReached = attempts >= attemptsFor95Confidence;
+              boolean statisticallyFailed =
+                  successes == 0
+                      && attemptsTargetReached
+                      && upper95 != null
+                      && upper95 <= thresholdRate;
+              return new FunnelThresholdCheckDto(
+                  thresholdRate,
+                  attemptsFor95Confidence,
+                  upper95,
+                  statisticallyFailed,
+                  attemptsTargetReached);
+            })
+        .toList();
+  }
+
+  /**
+   * Calcula o limite superior de 95% pelo intervalo de Wilson para conversões com sucesso não nulo.
+   */
+  private double wilsonUpper95(long successes, long attempts) {
+    if (attempts <= 0) {
+      return 1.0;
+    }
+    double z = 1.96d;
+    double n = attempts;
+    double phat = (double) successes / n;
+    double z2 = z * z;
+    double denominator = 1.0d + z2 / n;
+    double centre = phat + z2 / (2.0d * n);
+    double margin = z * Math.sqrt((phat * (1.0d - phat) + z2 / (4.0d * n)) / n);
+    return (centre + margin) / denominator;
+  }
 }

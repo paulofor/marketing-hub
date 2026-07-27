@@ -16,23 +16,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 public class HypothesisPipelineFinalizationController {
-    private final HypothesisPipelineFinalizationService finalizationService;
-    private final HypothesisMapper hypothesisMapper;
+  private final HypothesisPipelineFinalizationService finalizationService;
+  private final HypothesisMapper hypothesisMapper;
 
-    /** Inicializa o controller da etapa de fechamento com o serviço dedicado e o mapper de hipótese. */
-    public HypothesisPipelineFinalizationController(
-            HypothesisPipelineFinalizationService finalizationService,
-            HypothesisMapper hypothesisMapper) {
-        this.finalizationService = finalizationService;
-        this.hypothesisMapper = hypothesisMapper;
-    }
+  /**
+   * Inicializa o controller da etapa de fechamento com o serviço dedicado e o mapper de hipótese.
+   */
+  public HypothesisPipelineFinalizationController(
+      HypothesisPipelineFinalizationService finalizationService,
+      HypothesisMapper hypothesisMapper) {
+    this.finalizationService = finalizationService;
+    this.hypothesisMapper = hypothesisMapper;
+  }
 
-    /** Fecha o pipeline concluído como hipótese disponível no backlog para gerar experimento. */
-    @PostMapping("/niches/{nicheId}/hypothesis-pipeline/finalize")
-    public ResponseEntity<HypothesisDto> finalizeHypothesis(
-            @PathVariable Long nicheId,
-            @Valid @RequestBody FinalizeHypothesisRequest request) {
-        return ResponseEntity.status(201)
-                .body(hypothesisMapper.toDto(finalizationService.finalizeHypothesis(nicheId, request)));
-    }
+  /** Fecha o pipeline concluído como hipótese disponível no backlog para gerar experimento. */
+  @PostMapping("/niches/{nicheId}/hypothesis-pipeline/finalize")
+  public ResponseEntity<HypothesisDto> finalizeHypothesis(
+      @PathVariable Long nicheId, @Valid @RequestBody FinalizeHypothesisRequest request) {
+    return ResponseEntity.status(201)
+        .body(hypothesisMapper.toDto(finalizationService.finalizeHypothesis(nicheId, request)));
+  }
 }

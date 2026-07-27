@@ -13,84 +13,88 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /**
- * Persists and retrieves the timeline of status changes for image packages generated in the Lead Portal.
+ * Persists and retrieves the timeline of status changes for image packages generated in the Lead
+ * Portal.
  */
 @Service
 public class LeadPortalImagePackageStatusHistoryService {
 
-    private static final Logger log = LoggerFactory.getLogger(LeadPortalImagePackageStatusHistoryService.class);
+  private static final Logger log =
+      LoggerFactory.getLogger(LeadPortalImagePackageStatusHistoryService.class);
 
-    private static final String INSERT_SQL = "INSERT INTO flow_submission_image_package_status_history "
-            + "(package_id, status, failure_reason, created_at) VALUES (?, ?, ?, ?)";
-    private static final String SELECT_SQL = """
+  private static final String INSERT_SQL =
+      "INSERT INTO flow_submission_image_package_status_history "
+          + "(package_id, status, failure_reason, created_at) VALUES (?, ?, ?, ?)";
+  private static final String SELECT_SQL =
+      """
             SELECT status, failure_reason, created_at
             FROM flow_submission_image_package_status_history
             WHERE package_id = ?
             ORDER BY created_at ASC, id ASC
             """;
 
-    private final JdbcTemplate jdbcTemplate;
+  private final JdbcTemplate jdbcTemplate;
 
-    public LeadPortalImagePackageStatusHistoryService(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+  public LeadPortalImagePackageStatusHistoryService(JdbcTemplate jdbcTemplate) {
+    this.jdbcTemplate = jdbcTemplate;
+  }
 
-    public void recordStatusChange(long packageId, FlowSubmissionImagePackageStatus status, String reason) {
-        recordStatusChange(packageId, status, reason, Instant.now());
-    }
+  public void recordStatusChange(
+      long packageId, FlowSubmissionImagePackageStatus status, String reason) {
+    recordStatusChange(packageId, status, reason, Instant.now());
+  }
 
-    public void recordStatusChange(
-            long packageId, FlowSubmissionImagePackageStatus status, String reason, Instant occurredAt) {
-        if (status == null) {
-            return;
-        }
-        String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
-        Instant effectiveInstant = occurredAt != null ? occurredAt : Instant.now();
-        jdbcTemplate.update(INSERT_SQL, packageId, status.name(), normalizedReason, Timestamp.from(effectiveInstant));
+  public void recordStatusChange(
+      long packageId, FlowSubmissionImagePackageStatus status, String reason, Instant occurredAt) {
+    if (status == null) {
+      return;
     }
+    String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
+    Instant effectiveInstant = occurredAt != null ? occurredAt : Instant.now();
+    jdbcTemplate.update(
+        INSERT_SQL, packageId, status.name(), normalizedReason, Timestamp.from(effectiveInstant));
+  }
 
-    public boolean hasProcessingAttempt(long packageId) {
-        Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM flow_submission_image_package_status_history WHERE package_id = ? AND status = ?",
-                Integer.class,
-                packageId,
-                FlowSubmissionImagePackageStatus.PROCESSING.name());
-        return count != null && count > 0;
-    }
+  public boolean hasProcessingAttempt(long packageId) {
+    Integer count =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM flow_submission_image_package_status_history WHERE package_id = ? AND status = ?",
+            Integer.class,
+            packageId,
+            FlowSubmissionImagePackageStatus.PROCESSING.name());
+    return count != null && count > 0;
+  }
 
-    public List<StatusHistoryEntry> listHistory(long packageId) {
-        return jdbcTemplate.query(SELECT_SQL, (rs, rowNum) -> mapRow(rs), packageId);
-    }
+  public List<StatusHistoryEntry> listHistory(long packageId) {
+    return jdbcTemplate.query(SELECT_SQL, (rs, rowNum) -> mapRow(rs), packageId);
+  }
 
-    private StatusHistoryEntry mapRow(ResultSet rs) throws SQLException {
-        FlowSubmissionImagePackageStatus status = parseStatus(rs.getString("status"));
-        String failureReason = rs.getString("failure_reason");
-        if (failureReason != null && failureReason.isBlank()) {
-            failureReason = null;
-        }
-        Instant occurredAt = toInstant(rs.getTimestamp("created_at"));
-        return new StatusHistoryEntry(status, failureReason, occurredAt);
+  private StatusHistoryEntry mapRow(ResultSet rs) throws SQLException {
+    FlowSubmissionImagePackageStatus status = parseStatus(rs.getString("status"));
+    String failureReason = rs.getString("failure_reason");
+    if (failureReason != null && failureReason.isBlank()) {
+      failureReason = null;
     }
+    Instant occurredAt = toInstant(rs.getTimestamp("created_at"));
+    return new StatusHistoryEntry(status, failureReason, occurredAt);
+  }
 
-    private FlowSubmissionImagePackageStatus parseStatus(String value) {
-        if (!StringUtils.hasText(value)) {
-            return FlowSubmissionImagePackageStatus.RECEIVED;
-        }
-        try {
-            return FlowSubmissionImagePackageStatus.valueOf(value);
-        } catch (IllegalArgumentException ex) {
-            log.warn("Unknown flow_submission_image_package status history value '{}'", value);
-            return FlowSubmissionImagePackageStatus.RECEIVED;
-        }
+  private FlowSubmissionImagePackageStatus parseStatus(String value) {
+    if (!StringUtils.hasText(value)) {
+      return FlowSubmissionImagePackageStatus.RECEIVED;
     }
+    try {
+      return FlowSubmissionImagePackageStatus.valueOf(value);
+    } catch (IllegalArgumentException ex) {
+      log.warn("Unknown flow_submission_image_package status history value '{}'", value);
+      return FlowSubmissionImagePackageStatus.RECEIVED;
+    }
+  }
 
-    private Instant toInstant(Timestamp timestamp) {
-        return timestamp == null ? null : timestamp.toInstant();
-    }
+  private Instant toInstant(Timestamp timestamp) {
+    return timestamp == null ? null : timestamp.toInstant();
+  }
 
-    public record StatusHistoryEntry(
-            FlowSubmissionImagePackageStatus status,
-            String failureReason,
-            Instant occurredAt) {
-    }
+  public record StatusHistoryEntry(
+      FlowSubmissionImagePackageStatus status, String failureReason, Instant occurredAt) {}
 }

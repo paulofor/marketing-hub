@@ -354,6 +354,45 @@ public class FlowController {
                       if (!form) return;
                       sendEvent('form_submit', null, null);
                     }, true);
+                    const trackedVideos = new WeakMap();
+                    const videoIdentity = function(video, index){
+                      return video.getAttribute('data-video-id') || video.id || video.currentSrc || video.src || ('video-' + index);
+                    };
+                    const emitVideo = function(video, eventType, id){
+                      const duration = Number.isFinite(video.duration) && video.duration > 0 ? Math.round(video.duration * 1000) : null;
+                      const current = Number.isFinite(video.currentTime) && video.currentTime > 0 ? Math.round(video.currentTime * 1000) : null;
+                      const percent = duration && current ? Math.min(100, Math.round((current / duration) * 100)) : null;
+                      sendEvent(eventType, null, current, {
+                        videoId: id,
+                        videoCurrentTimeMs: current,
+                        videoDurationMs: duration,
+                        videoPercent: percent
+                      });
+                    };
+                    document.querySelectorAll('video').forEach(function(video, index){
+                      const id = videoIdentity(video, index);
+                      const state = {partial:false, complete:false};
+                      trackedVideos.set(video, state);
+                      video.addEventListener('timeupdate', function(){
+                        const currentState = trackedVideos.get(video);
+                        if (!currentState || currentState.partial || !Number.isFinite(video.duration) || video.duration <= 0) return;
+                        const watchedEnough = video.currentTime >= 5 || (video.currentTime / video.duration) >= 0.25;
+                        if (watchedEnough) {
+                          currentState.partial = true;
+                          emitVideo(video, 'video_progress', id);
+                        }
+                        if (!currentState.complete && (video.currentTime / video.duration) >= 0.95) {
+                          currentState.complete = true;
+                          emitVideo(video, 'video_complete', id);
+                        }
+                      });
+                      video.addEventListener('ended', function(){
+                        const currentState = trackedVideos.get(video);
+                        if (!currentState || currentState.complete) return;
+                        currentState.complete = true;
+                        emitVideo(video, 'video_complete', id);
+                      });
+                    });
                     window.addEventListener('beforeunload', function(){
                       const now = performance.now();
                       debugLog('beforeunload processando seções visíveis', {count: visibleSince.size});

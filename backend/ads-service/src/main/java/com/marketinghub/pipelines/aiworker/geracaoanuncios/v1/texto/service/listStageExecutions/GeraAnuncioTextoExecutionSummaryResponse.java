@@ -3,4 +3,5 @@ package com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.service.lis
 import java.time.Instant;
 
 /** Resumo de execução da etapa Texto do GeraAnuncio v2 para relatórios. */
-public record GeraAnuncioTextoExecutionSummaryResponse(String stageExecutionId, Long experimentId, String jobId, String status, Instant updatedAt) {}
+public record GeraAnuncioTextoExecutionSummaryResponse(
+    String stageExecutionId, Long experimentId, String jobId, String status, Instant updatedAt) {}

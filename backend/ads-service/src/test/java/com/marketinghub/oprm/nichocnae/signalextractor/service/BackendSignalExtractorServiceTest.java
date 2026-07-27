@@ -62,11 +62,12 @@ class BackendSignalExtractorServiceTest {
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(extractedSignalRepository.existsBySourceSnapshotId(901L)).thenReturn(false);
     when(extractedSignalRepository.save(any(OprmExtractedSignal.class)))
-        .thenAnswer(invocation -> {
-          OprmExtractedSignal signal = invocation.getArgument(0);
-          signal.setId(signal.getSignalType().equals("ROUTINE_TASK") ? 7001L : 7002L);
-          return signal;
-        });
+        .thenAnswer(
+            invocation -> {
+              OprmExtractedSignal signal = invocation.getArgument(0);
+              signal.setId(signal.getSignalType().equals("ROUTINE_TASK") ? 7001L : 7002L);
+              return signal;
+            });
     when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(1001L))
         .thenReturn(List.of(signal(7001L), signal(7002L)));
 
@@ -78,7 +79,8 @@ class BackendSignalExtractorServiceTest {
     assertThat(response.cycleTotalExtractedSignals()).isEqualTo(2);
     assertThat(response.signals()).extracting("signalType").contains("ROUTINE_TASK", "PAIN_POINT");
 
-    ArgumentCaptor<OprmSourceSnapshot> snapshotCaptor = ArgumentCaptor.forClass(OprmSourceSnapshot.class);
+    ArgumentCaptor<OprmSourceSnapshot> snapshotCaptor =
+        ArgumentCaptor.forClass(OprmSourceSnapshot.class);
     verify(sourceSnapshotRepository).save(snapshotCaptor.capture());
     assertThat(snapshotCaptor.getValue().getSignalExtractionStatus()).isEqualTo("COMPLETED");
     assertThat(snapshotCaptor.getValue().getSignalExtractionError()).isNull();
@@ -87,16 +89,15 @@ class BackendSignalExtractorServiceTest {
   /** Deve rejeitar payload sem sinais para não avançar a etapa cinco com saída inútil. */
   @Test
   void completeRejectsEmptySignals() {
-    CompleteSignalExtractorRequest request = new CompleteSignalExtractorRequest(
-        1001L, 301L, "exemplo.com", "COMPLETED", "test", List.of());
+    CompleteSignalExtractorRequest request =
+        new CompleteSignalExtractorRequest(
+            1001L, 301L, "exemplo.com", "COMPLETED", "test", List.of());
 
     assertThatThrownBy(() -> service.complete(901L, request))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("signals must contain at least one item");
     verify(extractedSignalRepository, never()).save(any(OprmExtractedSignal.class));
   }
-
-
 
   /** Ciclo 70: deve rejeitar sinal positivo cujo trecho pertence a ator ou contexto adjacente. */
   @Test
@@ -106,17 +107,19 @@ class BackendSignalExtractorServiceTest {
     when(sourceSnapshotRepository.findById(901L)).thenReturn(Optional.of(snapshot));
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle()));
     when(extractedSignalRepository.existsBySourceSnapshotId(901L)).thenReturn(false);
-    CompleteSignalExtractorRequest request = new CompleteSignalExtractorRequest(
-        1001L,
-        301L,
-        "exemplo.com",
-        "COMPLETED",
-        "test",
-        List.of(new SignalExtractionItemRequest(
-            "OPERATIONAL_PAIN",
-            "Cancelamento usado como dor operacional do executor",
-            "Companhia aérea cancelou o voo e passageiros pediram reembolso.",
-            80)));
+    CompleteSignalExtractorRequest request =
+        new CompleteSignalExtractorRequest(
+            1001L,
+            301L,
+            "exemplo.com",
+            "COMPLETED",
+            "test",
+            List.of(
+                new SignalExtractionItemRequest(
+                    "OPERATIONAL_PAIN",
+                    "Cancelamento usado como dor operacional do executor",
+                    "Companhia aérea cancelou o voo e passageiros pediram reembolso.",
+                    80)));
 
     assertThatThrownBy(() -> service.complete(901L, request))
         .isInstanceOf(IllegalArgumentException.class)
@@ -130,17 +133,19 @@ class BackendSignalExtractorServiceTest {
     when(sourceSnapshotRepository.findById(901L)).thenReturn(Optional.of(snapshot()));
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle()));
     when(extractedSignalRepository.existsBySourceSnapshotId(901L)).thenReturn(false);
-    CompleteSignalExtractorRequest request = new CompleteSignalExtractorRequest(
-        1001L,
-        301L,
-        "exemplo.com",
-        "COMPLETED",
-        "test",
-        List.of(new SignalExtractionItemRequest(
-            "ROUTINE_TASK",
-            "Confirmar agenda pelo WhatsApp",
-            "Resumo criado pela IA que não está no snapshot literal",
-            88)));
+    CompleteSignalExtractorRequest request =
+        new CompleteSignalExtractorRequest(
+            1001L,
+            301L,
+            "exemplo.com",
+            "COMPLETED",
+            "test",
+            List.of(
+                new SignalExtractionItemRequest(
+                    "ROUTINE_TASK",
+                    "Confirmar agenda pelo WhatsApp",
+                    "Resumo criado pela IA que não está no snapshot literal",
+                    88)));
 
     assertThatThrownBy(() -> service.complete(901L, request))
         .isInstanceOf(IllegalArgumentException.class)
@@ -148,7 +153,9 @@ class BackendSignalExtractorServiceTest {
     verify(extractedSignalRepository, never()).save(any(OprmExtractedSignal.class));
   }
 
-  /** Ciclo 75: deve permitir diagnóstico de contexto incompatível sem tratá-lo como sinal positivo. */
+  /**
+   * Ciclo 75: deve permitir diagnóstico de contexto incompatível sem tratá-lo como sinal positivo.
+   */
   @Test
   void completeAllowsSemanticContextMismatchDiagnosticForCycle75() {
     OprmSourceSnapshot snapshot = snapshot();
@@ -157,24 +164,28 @@ class BackendSignalExtractorServiceTest {
     when(sourceSnapshotRepository.findById(901L)).thenReturn(Optional.of(snapshot));
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(extractedSignalRepository.existsBySourceSnapshotId(901L)).thenReturn(false);
-    when(extractedSignalRepository.save(any(OprmExtractedSignal.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(extractedSignalRepository.save(any(OprmExtractedSignal.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of());
-    CompleteSignalExtractorRequest request = new CompleteSignalExtractorRequest(
-        1001L,
-        301L,
-        "exemplo.com",
-        "COMPLETED",
-        "test",
-        List.of(new SignalExtractionItemRequest(
-            "SEMANTIC_CONTEXT_MISMATCH",
-            "Fonte pertence a ator ou ocupação adjacente",
-            "Personal shopper ajuda consumidoras a escolher roupas em lojas.",
-            95)));
+    CompleteSignalExtractorRequest request =
+        new CompleteSignalExtractorRequest(
+            1001L,
+            301L,
+            "exemplo.com",
+            "COMPLETED",
+            "test",
+            List.of(
+                new SignalExtractionItemRequest(
+                    "SEMANTIC_CONTEXT_MISMATCH",
+                    "Fonte pertence a ator ou ocupação adjacente",
+                    "Personal shopper ajuda consumidoras a escolher roupas em lojas.",
+                    95)));
 
     CompleteSignalExtractorResponse response = service.complete(901L, request);
 
     assertThat(response.extractedSignalCount()).isEqualTo(1);
-    ArgumentCaptor<OprmExtractedSignal> signalCaptor = ArgumentCaptor.forClass(OprmExtractedSignal.class);
+    ArgumentCaptor<OprmExtractedSignal> signalCaptor =
+        ArgumentCaptor.forClass(OprmExtractedSignal.class);
     verify(extractedSignalRepository).save(signalCaptor.capture());
     assertThat(signalCaptor.getValue().getSignalType()).isEqualTo("SEMANTIC_CONTEXT_MISMATCH");
   }
@@ -190,7 +201,8 @@ class BackendSignalExtractorServiceTest {
     snapshot.setSourceTitle("Como lotar agenda de manicure");
     snapshot.setSourceType("PUBLIC_CONTENT");
     snapshot.setSnippet("Resumo sobre agenda, clientes e WhatsApp");
-    snapshot.setShortExcerpt("Profissionais usam WhatsApp para reduzir faltas na agenda e fidelizar clientes.");
+    snapshot.setShortExcerpt(
+        "Profissionais usam WhatsApp para reduzir faltas na agenda e fidelizar clientes.");
     snapshot.setFetchedAt(Instant.parse("2026-06-04T00:00:00Z"));
     snapshot.setFetchStatus("COMPLETED");
     snapshot.setHttpStatus(200);
@@ -232,9 +244,15 @@ class BackendSignalExtractorServiceTest {
         "test",
         List.of(
             new SignalExtractionItemRequest(
-                "ROUTINE_TASK", "Confirmar agenda pelo WhatsApp", "Profissionais usam WhatsApp para reduzir faltas", 88),
+                "ROUTINE_TASK",
+                "Confirmar agenda pelo WhatsApp",
+                "Profissionais usam WhatsApp para reduzir faltas",
+                88),
             new SignalExtractionItemRequest(
-                "PAIN_POINT", "Faltas quebram previsibilidade da agenda", "reduzir faltas na agenda e fidelizar clientes", 84)));
+                "PAIN_POINT",
+                "Faltas quebram previsibilidade da agenda",
+                "reduzir faltas na agenda e fidelizar clientes",
+                84)));
   }
 
   /** Cria um sinal persistido para cálculo de total em detalhe. */
@@ -245,7 +263,10 @@ class BackendSignalExtractorServiceTest {
     signal.setSourceSnapshotId(901L);
     signal.setSourceCandidateId(301L);
     signal.setSignalType(id.equals(7001L) ? "ROUTINE_TASK" : "PAIN_POINT");
-    signal.setSignalText(id.equals(7001L) ? "Confirmar agenda pelo WhatsApp" : "Faltas quebram previsibilidade da agenda");
+    signal.setSignalText(
+        id.equals(7001L)
+            ? "Confirmar agenda pelo WhatsApp"
+            : "Faltas quebram previsibilidade da agenda");
     signal.setEvidenceExcerpt("Profissionais usam WhatsApp para reduzir faltas");
     signal.setSourceDomain("exemplo.com");
     signal.setConfidenceScore(88);

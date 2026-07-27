@@ -13,15 +13,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/oprm/workspace")
 @RequiredArgsConstructor
 public class OprmWorkspaceController {
-    private final OprmArtifactService artifactService;
+  private final OprmArtifactService artifactService;
 
-    @GetMapping("/routine/{occupationSeedRef}")
-    public OprmRoutineWorkspaceResponseDto getRoutineWorkspace(@PathVariable String occupationSeedRef) {
-        return artifactService.getRoutineWorkspace(occupationSeedRef);
-    }
+  @GetMapping("/routine/{occupationSeedRef}")
+  public OprmRoutineWorkspaceResponseDto getRoutineWorkspace(
+      @PathVariable String occupationSeedRef) {
+    return artifactService.getRoutineWorkspace(occupationSeedRef);
+  }
 
-    @GetMapping("/insights/{occupationSeedRef}")
-    public OprmInsightsWorkspaceResponseDto getInsightsWorkspace(@PathVariable String occupationSeedRef) {
-        return artifactService.getInsightsWorkspace(occupationSeedRef);
-    }
+  @GetMapping("/insights/{occupationSeedRef}")
+  public OprmInsightsWorkspaceResponseDto getInsightsWorkspace(
+      @PathVariable String occupationSeedRef) {
+    return artifactService.getInsightsWorkspace(occupationSeedRef);
+  }
 }

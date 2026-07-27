@@ -1,7 +1,11 @@
 package com.marketinghub.hypothesis.web;
 
-import com.marketinghub.ads.AdsServiceApplication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.marketinghub.FixtureUtils;
+import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import org.junit.jupiter.api.Test;
@@ -11,40 +15,34 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
+@TestPropertySource(
+    properties = {
+      "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.driverClassName=org.h2.Driver",
+      "spring.datasource.username=sa",
+      "spring.datasource.password=",
+      "spring.jpa.hibernate.ddl-auto=create",
+      "spring.liquibase.enabled=false"
+    })
 class HypothesisControllerTest {
-    @Autowired
-    MockMvc mockMvc;
-    @Autowired
-    FixtureUtils fixtures;
-    @Autowired
-    HypothesisRepository repository;
+  @Autowired MockMvc mockMvc;
+  @Autowired FixtureUtils fixtures;
+  @Autowired HypothesisRepository repository;
 
-    @Test
-    void listByNicheAcceptsAllKeyword() throws Exception {
-        var niche = fixtures.createAndSaveNiche();
-        fixtures.createAndSaveHypothesis(niche);
-        var h2 = fixtures.createAndSaveHypothesis(niche);
-        h2.setStatus(HypothesisStatus.TESTING);
-        repository.save(h2);
+  @Test
+  void listByNicheAcceptsAllKeyword() throws Exception {
+    var niche = fixtures.createAndSaveNiche();
+    fixtures.createAndSaveHypothesis(niche);
+    var h2 = fixtures.createAndSaveHypothesis(niche);
+    h2.setStatus(HypothesisStatus.TESTING);
+    repository.save(h2);
 
-        mockMvc.perform(get("/api/niches/" + niche.getId() + "/hypotheses")
-                        .param("status", "ALL"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].createdAt").exists());
-    }
+    mockMvc
+        .perform(get("/api/niches/" + niche.getId() + "/hypotheses").param("status", "ALL"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].createdAt").exists());
+  }
 }

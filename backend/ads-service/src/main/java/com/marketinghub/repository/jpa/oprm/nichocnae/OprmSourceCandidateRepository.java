@@ -11,14 +11,19 @@ import org.springframework.data.repository.query.Param;
  * Repositório responsável por persistir e consultar fontes candidatas do pipeline OPRM nicho CNAE.
  */
 public interface OprmSourceCandidateRepository extends JpaRepository<OprmSourceCandidate, Long> {
-    /** Lista fontes candidatas de um ciclo na ordem em que apareceram na busca. */
-    List<OprmSourceCandidate> findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(Long researchCycleId);
+  /** Lista fontes candidatas de um ciclo na ordem em que apareceram na busca. */
+  List<OprmSourceCandidate> findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(
+      Long researchCycleId);
 
-    /** Verifica se uma URL já foi salva para uma query de pesquisa específica. */
-    boolean existsByResearchQueryIdAndSourceUrl(Long researchQueryId, String sourceUrl);
+  /** Verifica se uma URL já foi salva para uma query de pesquisa específica. */
+  boolean existsByResearchQueryIdAndSourceUrl(Long researchQueryId, String sourceUrl);
 
-    /** Lista apenas fontes de rotina, sem risco de solução/comercial, de ciclos ativos para coleta curta. */
-    @Query("""
+  /**
+   * Lista apenas fontes de rotina, sem risco de solução/comercial, de ciclos ativos para coleta
+   * curta.
+   */
+  @Query(
+      """
             select candidate
             from OprmSourceCandidate candidate, OprmRoutineResearchCycle cycle
             where cycle.id = candidate.researchCycleId
@@ -38,18 +43,21 @@ public interface OprmSourceCandidateRepository extends JpaRepository<OprmSourceC
               candidate.searchPosition asc,
               candidate.id asc
             """)
-    List<OprmSourceCandidate> findPendingForFetchFromActiveCycles(
-            @Param("candidateStatus") String candidateStatus,
-            @Param("cycleStatus") String cycleStatus,
-            @Param("currentStageCode") String currentStageCode,
-            Pageable pageable);
+  List<OprmSourceCandidate> findPendingForFetchFromActiveCycles(
+      @Param("candidateStatus") String candidateStatus,
+      @Param("cycleStatus") String cycleStatus,
+      @Param("currentStageCode") String currentStageCode,
+      Pageable pageable);
 
-    /** Mantém compatibilidade de testes e callers legados apontando para a etapa de coleta canônica. */
-    default List<OprmSourceCandidate> findPendingForFetchFromActiveCycles(
-            String candidateStatus, String cycleStatus, Pageable pageable) {
-        return findPendingForFetchFromActiveCycles(candidateStatus, cycleStatus, "source-fetcher", pageable);
-    }
+  /**
+   * Mantém compatibilidade de testes e callers legados apontando para a etapa de coleta canônica.
+   */
+  default List<OprmSourceCandidate> findPendingForFetchFromActiveCycles(
+      String candidateStatus, String cycleStatus, Pageable pageable) {
+    return findPendingForFetchFromActiveCycles(
+        candidateStatus, cycleStatus, "source-fetcher", pageable);
+  }
 
-    /** Remove fontes candidatas de um ciclo antes de reexecutar etapas do mesmo job. */
-    void deleteByResearchCycleId(Long researchCycleId);
+  /** Remove fontes candidatas de um ciclo antes de reexecutar etapas do mesmo job. */
+  void deleteByResearchCycleId(Long researchCycleId);
 }

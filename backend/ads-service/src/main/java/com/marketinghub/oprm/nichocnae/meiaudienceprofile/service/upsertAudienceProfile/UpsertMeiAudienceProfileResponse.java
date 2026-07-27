@@ -2,7 +2,10 @@ package com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.upsertAudienc
 
 import java.time.Instant;
 
-/** DTO responsável por retornar a identificação do perfil de público-alvo MEI/autônomo gravado pelo OPRM. */
+/**
+ * DTO responsável por retornar a identificação do perfil de público-alvo MEI/autônomo gravado pelo
+ * OPRM.
+ */
 public record UpsertMeiAudienceProfileResponse(
     Long id,
     Long researchCycleId,

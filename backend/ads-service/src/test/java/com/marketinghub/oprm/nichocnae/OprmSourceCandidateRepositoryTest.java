@@ -24,21 +24,27 @@ class OprmSourceCandidateRepositoryTest {
   void findPendingForFetchFromActiveCyclesShouldIgnoreClosedCycles() {
     OprmRoutineResearchCycle failedCycle = saveCycle("FAILED", "2026-06-13T02:04:18Z", true);
     OprmSourceCandidate failedCandidate = saveCandidate(failedCycle, 1);
-    OprmRoutineResearchCycle cancelledCycle = saveCycle("CANCELLED_BY_MANUAL_RESTART", "2026-06-13T02:10:18Z", true);
+    OprmRoutineResearchCycle cancelledCycle =
+        saveCycle("CANCELLED_BY_MANUAL_RESTART", "2026-06-13T02:10:18Z", true);
     OprmSourceCandidate cancelledCandidate = saveCandidate(cancelledCycle, 2);
-    OprmRoutineResearchCycle finishedRunningCycle = saveCycle("RUNNING", "2026-06-13T02:12:18Z", true);
+    OprmRoutineResearchCycle finishedRunningCycle =
+        saveCycle("RUNNING", "2026-06-13T02:12:18Z", true);
     OprmSourceCandidate finishedRunningCandidate = saveCandidate(finishedRunningCycle, 3);
     OprmRoutineResearchCycle activeCycle = saveCycle("RUNNING", "2026-06-13T02:15:18Z", false);
     OprmSourceCandidate activeCandidate = saveCandidate(activeCycle, 4);
 
-    assertThat(sourceCandidateRepository
-            .findPendingForFetchFromActiveCycles("FOUND", "RUNNING", PageRequest.of(0, 10)))
+    assertThat(
+            sourceCandidateRepository.findPendingForFetchFromActiveCycles(
+                "FOUND", "RUNNING", PageRequest.of(0, 10)))
         .extracting(OprmSourceCandidate::getId)
         .containsExactly(activeCandidate.getId())
-        .doesNotContain(failedCandidate.getId(), cancelledCandidate.getId(), finishedRunningCandidate.getId());
+        .doesNotContain(
+            failedCandidate.getId(), cancelledCandidate.getId(), finishedRunningCandidate.getId());
   }
 
-  /** Persiste um ciclo com status e finalização controlados para testar independência operacional. */
+  /**
+   * Persiste um ciclo com status e finalização controlados para testar independência operacional.
+   */
   private OprmRoutineResearchCycle saveCycle(String status, String startedAt, boolean finished) {
     Instant start = Instant.parse(startedAt);
     OprmRoutineResearchCycle cycle = new OprmRoutineResearchCycle();

@@ -16,10 +16,10 @@ import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAud
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.GeneralAudienceLeadExperimentResponse;
 import com.marketinghub.oprm.generalaudience.service.createQualityReading.CreateGeneralAudienceQualityReadingRequest;
-import com.marketinghub.oprm.generalaudience.service.listQualityReadings.GeneralAudienceQualityReadingResponse;
 import com.marketinghub.oprm.generalaudience.service.landingConfirmation.CreateGeneralAudienceLandingConfirmationRequest;
 import com.marketinghub.oprm.generalaudience.service.landingConfirmation.GeneralAudienceLandingConfirmationQuestionResponse;
 import com.marketinghub.oprm.generalaudience.service.landingConfirmation.GeneralAudienceLandingConfirmationResponse;
+import com.marketinghub.oprm.generalaudience.service.listQualityReadings.GeneralAudienceQualityReadingResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -37,23 +37,21 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(OprmGeneralAudienceDiscoveryController.class)
 class OprmGeneralAudienceDiscoveryControllerTest {
 
-    @Autowired
-    MockMvc mockMvc;
+  @Autowired MockMvc mockMvc;
 
-    @Autowired
-    ObjectMapper objectMapper;
+  @Autowired ObjectMapper objectMapper;
 
-    @MockBean
-    OprmGeneralAudienceDiscoveryService service;
+  @MockBean OprmGeneralAudienceDiscoveryService service;
 
-    @MockBean
-    OprmGeneralAudienceLandingConfirmationService landingConfirmationService;
+  @MockBean OprmGeneralAudienceLandingConfirmationService landingConfirmationService;
 
-    /** Verifica se a API cria hipótese específica a partir de ângulo aprovado. */
-    @Test
-    void shouldCreateHypothesisThroughApi() throws Exception {
-        UUID hypothesisId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-        when(service.createHypothesis(any(), any())).thenReturn(new GeneralAudienceHypothesisResponse(
+  /** Verifica se a API cria hipótese específica a partir de ângulo aprovado. */
+  @Test
+  void shouldCreateHypothesisThroughApi() throws Exception {
+    UUID hypothesisId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    when(service.createHypothesis(any(), any()))
+        .thenReturn(
+            new GeneralAudienceHypothesisResponse(
                 20L,
                 5L,
                 99L,
@@ -62,23 +60,28 @@ class OprmGeneralAudienceDiscoveryControllerTest {
                 "BACKLOG",
                 "Acreditamos que manicure autônoma com agenda vazia responderá melhor a uma isca específica.",
                 Instant.parse("2026-06-10T13:00:00Z")));
-        CreateGeneralAudienceHypothesisRequest request = new CreateGeneralAudienceHypothesisRequest(null, null, null);
+    CreateGeneralAudienceHypothesisRequest request =
+        new CreateGeneralAudienceHypothesisRequest(null, null, null);
 
-        mockMvc.perform(post("/api/oprm/general-audiences/pain-angles/20/create-hypothesis")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(header().string(HttpHeaders.LOCATION, "/api/hypotheses/" + hypothesisId))
-                .andExpect(jsonPath("$.painAngleId").value(20))
-                .andExpect(jsonPath("$.marketNicheId").value(99))
-                .andExpect(jsonPath("$.status").value("BACKLOG"));
-    }
+    mockMvc
+        .perform(
+            post("/api/oprm/general-audiences/pain-angles/20/create-hypothesis")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(header().string(HttpHeaders.LOCATION, "/api/hypotheses/" + hypothesisId))
+        .andExpect(jsonPath("$.painAngleId").value(20))
+        .andExpect(jsonPath("$.marketNicheId").value(99))
+        .andExpect(jsonPath("$.status").value("BACKLOG"));
+  }
 
-    /** Verifica se a API cria experimento planejado de lead/isca para público geral. */
-    @Test
-    void shouldCreateLeadExperimentThroughApi() throws Exception {
-        UUID hypothesisId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-        when(service.createLeadExperiment(any(), any())).thenReturn(new GeneralAudienceLeadExperimentResponse(
+  /** Verifica se a API cria experimento planejado de lead/isca para público geral. */
+  @Test
+  void shouldCreateLeadExperimentThroughApi() throws Exception {
+    UUID hypothesisId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    when(service.createLeadExperiment(any(), any()))
+        .thenReturn(
+            new GeneralAudienceLeadExperimentResponse(
                 20L,
                 5L,
                 99L,
@@ -90,73 +93,86 @@ class OprmGeneralAudienceDiscoveryControllerTest {
                 new BigDecimal("30.00"),
                 LocalDate.parse("2026-06-10"),
                 LocalDate.parse("2026-06-12")));
-        CreateGeneralAudienceLeadExperimentRequest request = new CreateGeneralAudienceLeadExperimentRequest(
-                hypothesisId,
-                null,
-                "CPL de lead qualificado",
-                new BigDecimal("12.00"),
-                new BigDecimal("30.00"),
-                3,
-                new BigDecimal("8.00"),
-                30);
+    CreateGeneralAudienceLeadExperimentRequest request =
+        new CreateGeneralAudienceLeadExperimentRequest(
+            hypothesisId,
+            null,
+            "CPL de lead qualificado",
+            new BigDecimal("12.00"),
+            new BigDecimal("30.00"),
+            3,
+            new BigDecimal("8.00"),
+            30);
 
-        mockMvc.perform(post("/api/oprm/general-audiences/pain-angles/20/create-lead-experiment")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(header().string(HttpHeaders.LOCATION, "/api/experiments/77"))
-                .andExpect(jsonPath("$.experimentId").value(77))
-                .andExpect(jsonPath("$.marketNicheId").value(99))
-                .andExpect(jsonPath("$.status").value("PLANNED"));
-    }
+    mockMvc
+        .perform(
+            post("/api/oprm/general-audiences/pain-angles/20/create-lead-experiment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(header().string(HttpHeaders.LOCATION, "/api/experiments/77"))
+        .andExpect(jsonPath("$.experimentId").value(77))
+        .andExpect(jsonPath("$.marketNicheId").value(99))
+        .andExpect(jsonPath("$.status").value("PLANNED"));
+  }
 
-    /** Verifica se a API cria formulário de confirmação para público geral. */
-    @Test
-    void shouldCreateConfirmationFlowThroughApi() throws Exception {
-        when(landingConfirmationService.createConfirmationFlow(any(), any()))
-                .thenReturn(new GeneralAudienceLandingConfirmationResponse(
-                        88L,
-                        20L,
-                        5L,
-                        99L,
-                        77L,
-                        "oprm-publico-geral-5-20-77",
-                        "Confirmação Público Geral - Manicure autônoma",
-                        "Manicure autônoma",
-                        "Agenda vazia durante a semana",
-                        "kit com 12 mensagens de WhatsApp",
-                        "a dor percebida é horário vazio e dinheiro perdido",
-                        "Responder o formulário e receber a isca",
-                        "REGISTERED",
-                        List.of(new GeneralAudienceLandingConfirmationQuestionResponse(
-                                "Você trabalha como manicure hoje?",
-                                "audience_confirmation",
-                                "SINGLE_CHOICE",
-                                true,
-                                List.of("sim", "não")))));
-        CreateGeneralAudienceLandingConfirmationRequest request = new CreateGeneralAudienceLandingConfirmationRequest(
+  /** Verifica se a API cria formulário de confirmação para público geral. */
+  @Test
+  void shouldCreateConfirmationFlowThroughApi() throws Exception {
+    when(landingConfirmationService.createConfirmationFlow(any(), any()))
+        .thenReturn(
+            new GeneralAudienceLandingConfirmationResponse(
+                88L,
+                20L,
+                5L,
+                99L,
                 77L,
-                null,
-                "Você trabalha como manicure hoje?",
-                List.of("sim", "não"),
-                null,
-                null,
-                null,
-                null);
+                "oprm-publico-geral-5-20-77",
+                "Confirmação Público Geral - Manicure autônoma",
+                "Manicure autônoma",
+                "Agenda vazia durante a semana",
+                "kit com 12 mensagens de WhatsApp",
+                "a dor percebida é horário vazio e dinheiro perdido",
+                "Responder o formulário e receber a isca",
+                "REGISTERED",
+                List.of(
+                    new GeneralAudienceLandingConfirmationQuestionResponse(
+                        "Você trabalha como manicure hoje?",
+                        "audience_confirmation",
+                        "SINGLE_CHOICE",
+                        true,
+                        List.of("sim", "não")))));
+    CreateGeneralAudienceLandingConfirmationRequest request =
+        new CreateGeneralAudienceLandingConfirmationRequest(
+            77L,
+            null,
+            "Você trabalha como manicure hoje?",
+            List.of("sim", "não"),
+            null,
+            null,
+            null,
+            null);
 
-        mockMvc.perform(post("/api/oprm/general-audiences/pain-angles/20/create-confirmation-flow")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(header().string(HttpHeaders.LOCATION, "/api/oprm/general-audiences/landing-confirmations/88"))
-                .andExpect(jsonPath("$.confirmationRecordId").value(88))
-                .andExpect(jsonPath("$.questions[0].dataKey").value("audience_confirmation"));
-    }
+    mockMvc
+        .perform(
+            post("/api/oprm/general-audiences/pain-angles/20/create-confirmation-flow")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(
+            header()
+                .string(
+                    HttpHeaders.LOCATION, "/api/oprm/general-audiences/landing-confirmations/88"))
+        .andExpect(jsonPath("$.confirmationRecordId").value(88))
+        .andExpect(jsonPath("$.questions[0].dataKey").value("audience_confirmation"));
+  }
 
-    /** Verifica se a API registra uma leitura de qualidade real de público geral. */
-    @Test
-    void shouldCreateQualityReadingThroughApi() throws Exception {
-        when(service.createQualityReading(any(), any())).thenReturn(new GeneralAudienceQualityReadingResponse(
+  /** Verifica se a API registra uma leitura de qualidade real de público geral. */
+  @Test
+  void shouldCreateQualityReadingThroughApi() throws Exception {
+    when(service.createQualityReading(any(), any()))
+        .thenReturn(
+            new GeneralAudienceQualityReadingResponse(
                 40L,
                 5L,
                 20L,
@@ -180,32 +196,59 @@ class OprmGeneralAudienceDiscoveryControllerTest {
                 Instant.parse("2026-06-10T13:30:00Z"),
                 Instant.parse("2026-06-10T14:00:00Z"),
                 Instant.parse("2026-06-10T14:00:00Z")));
-        CreateGeneralAudienceQualityReadingRequest request = new CreateGeneralAudienceQualityReadingRequest(
-                20L, 77L, 10, 7, 6, 5, 3, 2, 1, 0, 0, 0, 1, "Primeira leitura", null);
+    CreateGeneralAudienceQualityReadingRequest request =
+        new CreateGeneralAudienceQualityReadingRequest(
+            20L, 77L, 10, 7, 6, 5, 3, 2, 1, 0, 0, 0, 1, "Primeira leitura", null);
 
-        mockMvc.perform(post("/api/oprm/general-audiences/subniches/5/quality-readings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(header().string(HttpHeaders.LOCATION, "/api/oprm/general-audiences/quality-readings/40"))
-                .andExpect(jsonPath("$.qualityScore").value(92.00))
-                .andExpect(jsonPath("$.approved").value(true));
-    }
+    mockMvc
+        .perform(
+            post("/api/oprm/general-audiences/subniches/5/quality-readings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(
+            header()
+                .string(HttpHeaders.LOCATION, "/api/oprm/general-audiences/quality-readings/40"))
+        .andExpect(jsonPath("$.qualityScore").value(92.00))
+        .andExpect(jsonPath("$.approved").value(true));
+  }
 
-    /** Verifica se a API lista leituras de qualidade real do subnicho. */
-    @Test
-    void shouldListQualityReadingsThroughApi() throws Exception {
-        when(service.listQualityReadings(any())).thenReturn(List.of(new GeneralAudienceQualityReadingResponse(
-                40L, 5L, null, null, 3, 1, 0, 1, 0, 0, 2, 1, 1, 0, 2,
-                new BigDecimal("25.00"), false, List.of("Nenhuma resposta trouxe dor real."), List.of(), null,
-                Instant.parse("2026-06-10T13:30:00Z"), null, null)));
+  /** Verifica se a API lista leituras de qualidade real do subnicho. */
+  @Test
+  void shouldListQualityReadingsThroughApi() throws Exception {
+    when(service.listQualityReadings(any()))
+        .thenReturn(
+            List.of(
+                new GeneralAudienceQualityReadingResponse(
+                    40L,
+                    5L,
+                    null,
+                    null,
+                    3,
+                    1,
+                    0,
+                    1,
+                    0,
+                    0,
+                    2,
+                    1,
+                    1,
+                    0,
+                    2,
+                    new BigDecimal("25.00"),
+                    false,
+                    List.of("Nenhuma resposta trouxe dor real."),
+                    List.of(),
+                    null,
+                    Instant.parse("2026-06-10T13:30:00Z"),
+                    null,
+                    null)));
 
-        mockMvc.perform(get("/api/oprm/general-audiences/subniches/5/quality-readings"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(40))
-                .andExpect(jsonPath("$[0].approved").value(false))
-                .andExpect(jsonPath("$[0].blockers[0]").value("Nenhuma resposta trouxe dor real."));
-    }
-
-
+    mockMvc
+        .perform(get("/api/oprm/general-audiences/subniches/5/quality-readings"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(40))
+        .andExpect(jsonPath("$[0].approved").value(false))
+        .andExpect(jsonPath("$[0].blockers[0]").value("Nenhuma resposta trouxe dor real."));
+  }
 }

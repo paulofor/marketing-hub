@@ -10,62 +10,63 @@ import lombok.Setter;
 /** Representa o uso planejado de uma audiência CNAE em um experimento comercial. */
 @Entity
 @Table(
-        name = "experiment_meta_audience",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_experiment_meta_audience",
-                columnNames = {"experiment_id", "meta_audience_id", "meta_audience_segment_id"}))
+    name = "experiment_meta_audience",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "uk_experiment_meta_audience",
+            columnNames = {"experiment_id", "meta_audience_id", "meta_audience_segment_id"}))
 @Getter
 @Setter
 public class ExperimentMetaAudience {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_id", nullable = false)
-    private Experiment experiment;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "experiment_id", nullable = false)
+  private Experiment experiment;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "meta_audience_id", nullable = false)
-    private MetaAudience metaAudience;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "meta_audience_id", nullable = false)
+  private MetaAudience metaAudience;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "meta_audience_segment_id", nullable = false)
-    private MetaAudienceSegment metaAudienceSegment;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "meta_audience_segment_id", nullable = false)
+  private MetaAudienceSegment metaAudienceSegment;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "market_niche_id", nullable = false)
-    private MarketNiche marketNiche;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "market_niche_id", nullable = false)
+  private MarketNiche marketNiche;
 
-    @Column(name = "activation_status", nullable = false, length = 32)
-    private String activationStatus;
+  @Column(name = "activation_status", nullable = false, length = 32)
+  private String activationStatus;
 
-    @Column(name = "channel", length = 64)
-    private String channel;
+  @Column(name = "channel", length = 64)
+  private String channel;
 
-    @Lob
-    @Column(name = "pain_angle")
-    private String painAngle;
+  @Lob
+  @Column(name = "pain_angle")
+  private String painAngle;
 
-    @Lob
-    @Column(name = "promise")
-    private String promise;
+  @Lob
+  @Column(name = "promise")
+  private String promise;
 
-    @Lob
-    @Column(name = "offer")
-    private String offer;
+  @Lob
+  @Column(name = "offer")
+  private String offer;
 
-    @Lob
-    @Column(name = "decision_snapshot_json", columnDefinition = "MEDIUMTEXT")
-    private String decisionSnapshotJson;
+  @Lob
+  @Column(name = "decision_snapshot_json", columnDefinition = "MEDIUMTEXT")
+  private String decisionSnapshotJson;
 
-    @Lob
-    @Column(name = "analysis_summary")
-    private String analysisSummary;
+  @Lob
+  @Column(name = "analysis_summary")
+  private String analysisSummary;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

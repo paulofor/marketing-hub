@@ -8,185 +8,193 @@ import com.marketinghub.interactionjourney.model.InteractionJourneyElement;
 import com.marketinghub.interactionjourney.model.InteractionJourneyStep;
 import com.marketinghub.repository.jpa.interactionjourney.InteractionJourneyRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class InteractionJourneyService {
-    private final InteractionJourneyRepository journeyRepository;
+  private final InteractionJourneyRepository journeyRepository;
 
-    @Transactional(readOnly = true)
-    public List<InteractionJourneyDto> list() {
-        return journeyRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
-                .stream()
-                .map(this::toDto)
-                .toList();
+  @Transactional(readOnly = true)
+  public List<InteractionJourneyDto> list() {
+    return journeyRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+        .map(this::toDto)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public InteractionJourneyDto get(Long id) {
+    InteractionJourney journey =
+        journeyRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Jornada de interação não encontrada: " + id));
+    return toDto(journey);
+  }
+
+  @Transactional
+  public InteractionJourneyDto create(InteractionJourneyDto dto) {
+    validate(dto);
+    InteractionJourney journey = new InteractionJourney();
+    apply(dto, journey);
+    InteractionJourney saved = journeyRepository.save(journey);
+    return toDto(saved);
+  }
+
+  @Transactional
+  public InteractionJourneyDto update(Long id, InteractionJourneyDto dto) {
+    validate(dto);
+    InteractionJourney journey =
+        journeyRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Jornada de interação não encontrada: " + id));
+
+    journey.getSteps().clear();
+    apply(dto, journey);
+
+    InteractionJourney saved = journeyRepository.save(journey);
+    return toDto(saved);
+  }
+
+  @Transactional
+  public void delete(Long id) {
+    if (!journeyRepository.existsById(id)) {
+      throw new EntityNotFoundException("Jornada de interação não encontrada: " + id);
+    }
+    journeyRepository.deleteById(id);
+  }
+
+  private void apply(InteractionJourneyDto dto, InteractionJourney journey) {
+    journey.setName(dto.getName());
+    journey.setDescription(dto.getDescription());
+
+    List<InteractionJourneyStep> steps = new ArrayList<>();
+    List<InteractionJourneyStepDto> stepDtos =
+        Optional.ofNullable(dto.getSteps()).orElse(Collections.emptyList());
+    for (int i = 0; i < stepDtos.size(); i++) {
+      InteractionJourneyStepDto stepDto = stepDtos.get(i);
+      InteractionJourneyStep step = new InteractionJourneyStep();
+      step.setJourney(journey);
+      step.setTitle(stepDto.getTitle());
+      step.setDescription(stepDto.getDescription());
+      step.setOrderIndex(stepDto.getOrderIndex() != null ? stepDto.getOrderIndex() : i);
+
+      List<InteractionJourneyElement> elements = buildElements(step, stepDto.getElements(), null);
+      step.setElements(elements);
+      steps.add(step);
     }
 
-    @Transactional(readOnly = true)
-    public InteractionJourneyDto get(Long id) {
-        InteractionJourney journey = journeyRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Jornada de interação não encontrada: " + id));
-        return toDto(journey);
+    journey.getSteps().addAll(steps);
+  }
+
+  private List<InteractionJourneyElement> buildElements(
+      InteractionJourneyStep step,
+      List<InteractionJourneyElementDto> elementDtos,
+      InteractionJourneyElement parent) {
+    List<InteractionJourneyElementDto> safeDtos =
+        Optional.ofNullable(elementDtos).orElse(Collections.emptyList());
+    List<InteractionJourneyElement> elements = new ArrayList<>();
+
+    for (int i = 0; i < safeDtos.size(); i++) {
+      InteractionJourneyElementDto dto = safeDtos.get(i);
+      InteractionJourneyElement element = new InteractionJourneyElement();
+      element.setStep(step);
+      element.setParent(parent);
+      element.setLabel(dto.getLabel());
+      element.setType(dto.getType());
+      element.setNotes(dto.getNotes());
+      element.setOrderIndex(dto.getOrderIndex() != null ? dto.getOrderIndex() : i);
+      element.setMinQuantity(dto.getMinQuantity());
+      element.setMaxQuantity(dto.getMaxQuantity());
+
+      List<InteractionJourneyElement> children = buildElements(step, dto.getChildren(), element);
+      element.setChildren(children);
+      elements.add(element);
     }
 
-    @Transactional
-    public InteractionJourneyDto create(InteractionJourneyDto dto) {
-        validate(dto);
-        InteractionJourney journey = new InteractionJourney();
-        apply(dto, journey);
-        InteractionJourney saved = journeyRepository.save(journey);
-        return toDto(saved);
-    }
+    return elements;
+  }
 
-    @Transactional
-    public InteractionJourneyDto update(Long id, InteractionJourneyDto dto) {
-        validate(dto);
-        InteractionJourney journey = journeyRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Jornada de interação não encontrada: " + id));
-
-        journey.getSteps().clear();
-        apply(dto, journey);
-
-        InteractionJourney saved = journeyRepository.save(journey);
-        return toDto(saved);
-    }
-
-    @Transactional
-    public void delete(Long id) {
-        if (!journeyRepository.existsById(id)) {
-            throw new EntityNotFoundException("Jornada de interação não encontrada: " + id);
-        }
-        journeyRepository.deleteById(id);
-    }
-
-    private void apply(InteractionJourneyDto dto, InteractionJourney journey) {
-        journey.setName(dto.getName());
-        journey.setDescription(dto.getDescription());
-
-        List<InteractionJourneyStep> steps = new ArrayList<>();
-        List<InteractionJourneyStepDto> stepDtos = Optional.ofNullable(dto.getSteps()).orElse(Collections.emptyList());
-        for (int i = 0; i < stepDtos.size(); i++) {
-            InteractionJourneyStepDto stepDto = stepDtos.get(i);
-            InteractionJourneyStep step = new InteractionJourneyStep();
-            step.setJourney(journey);
-            step.setTitle(stepDto.getTitle());
-            step.setDescription(stepDto.getDescription());
-            step.setOrderIndex(stepDto.getOrderIndex() != null ? stepDto.getOrderIndex() : i);
-
-            List<InteractionJourneyElement> elements = buildElements(step, stepDto.getElements(), null);
-            step.setElements(elements);
-            steps.add(step);
-        }
-
-        journey.getSteps().addAll(steps);
-    }
-
-    private List<InteractionJourneyElement> buildElements(InteractionJourneyStep step,
-                                                         List<InteractionJourneyElementDto> elementDtos,
-                                                         InteractionJourneyElement parent) {
-        List<InteractionJourneyElementDto> safeDtos = Optional.ofNullable(elementDtos).orElse(Collections.emptyList());
-        List<InteractionJourneyElement> elements = new ArrayList<>();
-
-        for (int i = 0; i < safeDtos.size(); i++) {
-            InteractionJourneyElementDto dto = safeDtos.get(i);
-            InteractionJourneyElement element = new InteractionJourneyElement();
-            element.setStep(step);
-            element.setParent(parent);
-            element.setLabel(dto.getLabel());
-            element.setType(dto.getType());
-            element.setNotes(dto.getNotes());
-            element.setOrderIndex(dto.getOrderIndex() != null ? dto.getOrderIndex() : i);
-            element.setMinQuantity(dto.getMinQuantity());
-            element.setMaxQuantity(dto.getMaxQuantity());
-
-            List<InteractionJourneyElement> children = buildElements(step, dto.getChildren(), element);
-            element.setChildren(children);
-            elements.add(element);
-        }
-
-        return elements;
-    }
-
-    private InteractionJourneyDto toDto(InteractionJourney journey) {
-        return InteractionJourneyDto.builder()
-                .id(journey.getId())
-                .name(journey.getName())
-                .description(journey.getDescription())
-                .createdAt(journey.getCreatedAt())
-                .updatedAt(journey.getUpdatedAt())
-                .steps(journey.getSteps() == null ? List.of() : journey.getSteps().stream()
-                        .map(this::toDto)
-                        .toList())
-                .build();
-    }
-
-    private InteractionJourneyStepDto toDto(InteractionJourneyStep step) {
-        List<InteractionJourneyElement> rootElements = step.getElements() == null
+  private InteractionJourneyDto toDto(InteractionJourney journey) {
+    return InteractionJourneyDto.builder()
+        .id(journey.getId())
+        .name(journey.getName())
+        .description(journey.getDescription())
+        .createdAt(journey.getCreatedAt())
+        .updatedAt(journey.getUpdatedAt())
+        .steps(
+            journey.getSteps() == null
                 ? List.of()
-                : step.getElements().stream()
-                .filter(element -> element.getParent() == null)
-                .toList();
-        return InteractionJourneyStepDto.builder()
-                .id(step.getId())
-                .title(step.getTitle())
-                .description(step.getDescription())
-                .orderIndex(step.getOrderIndex())
-                .elements(rootElements.stream()
-                        .map(this::toDto)
-                        .toList())
-                .build();
-    }
+                : journey.getSteps().stream().map(this::toDto).toList())
+        .build();
+  }
 
-    private InteractionJourneyElementDto toDto(InteractionJourneyElement element) {
-        return InteractionJourneyElementDto.builder()
-                .id(element.getId())
-                .label(element.getLabel())
-                .type(element.getType())
-                .notes(element.getNotes())
-                .orderIndex(element.getOrderIndex())
-                .minQuantity(element.getMinQuantity())
-                .maxQuantity(element.getMaxQuantity())
-                .children(element.getChildren() == null ? List.of() : element.getChildren().stream()
-                        .map(this::toDto)
-                        .toList())
-                .build();
-    }
+  private InteractionJourneyStepDto toDto(InteractionJourneyStep step) {
+    List<InteractionJourneyElement> rootElements =
+        step.getElements() == null
+            ? List.of()
+            : step.getElements().stream().filter(element -> element.getParent() == null).toList();
+    return InteractionJourneyStepDto.builder()
+        .id(step.getId())
+        .title(step.getTitle())
+        .description(step.getDescription())
+        .orderIndex(step.getOrderIndex())
+        .elements(rootElements.stream().map(this::toDto).toList())
+        .build();
+  }
 
-    private void validate(InteractionJourneyDto dto) {
-        if (!StringUtils.hasText(dto.getName())) {
-            throw new IllegalArgumentException("O nome da jornada de interação é obrigatório.");
-        }
-        List<InteractionJourneyStepDto> stepDtos = Optional.ofNullable(dto.getSteps()).orElse(Collections.emptyList());
-        for (InteractionJourneyStepDto stepDto : stepDtos) {
-            validateElements(stepDto.getElements());
-        }
-    }
+  private InteractionJourneyElementDto toDto(InteractionJourneyElement element) {
+    return InteractionJourneyElementDto.builder()
+        .id(element.getId())
+        .label(element.getLabel())
+        .type(element.getType())
+        .notes(element.getNotes())
+        .orderIndex(element.getOrderIndex())
+        .minQuantity(element.getMinQuantity())
+        .maxQuantity(element.getMaxQuantity())
+        .children(
+            element.getChildren() == null
+                ? List.of()
+                : element.getChildren().stream().map(this::toDto).toList())
+        .build();
+  }
 
-    private void validateElements(List<InteractionJourneyElementDto> elements) {
-        List<InteractionJourneyElementDto> safeElements = Optional.ofNullable(elements).orElse(Collections.emptyList());
-        for (InteractionJourneyElementDto element : safeElements) {
-            Integer minQuantity = element.getMinQuantity();
-            Integer maxQuantity = element.getMaxQuantity();
-            if (minQuantity != null && minQuantity < 0) {
-                throw new IllegalArgumentException("A quantidade mínima não pode ser negativa.");
-            }
-            if (maxQuantity != null && maxQuantity < 0) {
-                throw new IllegalArgumentException("A quantidade máxima não pode ser negativa.");
-            }
-            if (minQuantity != null && maxQuantity != null && minQuantity > maxQuantity) {
-                throw new IllegalArgumentException("A quantidade mínima não pode ser maior que a máxima.");
-            }
-            validateElements(element.getChildren());
-        }
+  private void validate(InteractionJourneyDto dto) {
+    if (!StringUtils.hasText(dto.getName())) {
+      throw new IllegalArgumentException("O nome da jornada de interação é obrigatório.");
     }
+    List<InteractionJourneyStepDto> stepDtos =
+        Optional.ofNullable(dto.getSteps()).orElse(Collections.emptyList());
+    for (InteractionJourneyStepDto stepDto : stepDtos) {
+      validateElements(stepDto.getElements());
+    }
+  }
+
+  private void validateElements(List<InteractionJourneyElementDto> elements) {
+    List<InteractionJourneyElementDto> safeElements =
+        Optional.ofNullable(elements).orElse(Collections.emptyList());
+    for (InteractionJourneyElementDto element : safeElements) {
+      Integer minQuantity = element.getMinQuantity();
+      Integer maxQuantity = element.getMaxQuantity();
+      if (minQuantity != null && minQuantity < 0) {
+        throw new IllegalArgumentException("A quantidade mínima não pode ser negativa.");
+      }
+      if (maxQuantity != null && maxQuantity < 0) {
+        throw new IllegalArgumentException("A quantidade máxima não pode ser negativa.");
+      }
+      if (minQuantity != null && maxQuantity != null && minQuantity > maxQuantity) {
+        throw new IllegalArgumentException("A quantidade mínima não pode ser maior que a máxima.");
+      }
+      validateElements(element.getChildren());
+    }
+  }
 }

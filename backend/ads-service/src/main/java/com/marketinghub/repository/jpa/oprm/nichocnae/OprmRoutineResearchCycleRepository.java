@@ -11,52 +11,62 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/**
- * Repositório responsável por persistir e consultar ciclos de pesquisa de rotina de nicho CNAE.
- */
-public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRoutineResearchCycle, Long> {
-    /** Lista ciclos vinculados ao nicho CNAE de origem em ordem operacional decrescente. */
-    List<OprmRoutineResearchCycle> findBySourceNicheIdOrderByStartedAtDesc(Long sourceNicheId);
+/** Repositório responsável por persistir e consultar ciclos de pesquisa de rotina de nicho CNAE. */
+public interface OprmRoutineResearchCycleRepository
+    extends JpaRepository<OprmRoutineResearchCycle, Long> {
+  /** Lista ciclos vinculados ao nicho CNAE de origem em ordem operacional decrescente. */
+  List<OprmRoutineResearchCycle> findBySourceNicheIdOrderByStartedAtDesc(Long sourceNicheId);
 
-    /** Lista ciclos vinculados ao CNAE informado em ordem operacional decrescente. */
-    List<OprmRoutineResearchCycle> findByCnaeCodeOrderByStartedAtDesc(String cnaeCode);
+  /** Lista ciclos vinculados ao CNAE informado em ordem operacional decrescente. */
+  List<OprmRoutineResearchCycle> findByCnaeCodeOrderByStartedAtDesc(String cnaeCode);
 
-    /** Seleciona com bloqueio pessimista ciclos abertos do CNAE para encerramento antes de reinício manual. */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
+  /**
+   * Seleciona com bloqueio pessimista ciclos abertos do CNAE para encerramento antes de reinício
+   * manual.
+   */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
             select cycle
             from OprmRoutineResearchCycle cycle
             where cycle.cnaeCode = :cnaeCode
               and cycle.finishedAt is null
             order by cycle.startedAt desc
             """)
-    List<OprmRoutineResearchCycle> findOpenCyclesByCnaeCodeForUpdate(@Param("cnaeCode") String cnaeCode);
+  List<OprmRoutineResearchCycle> findOpenCyclesByCnaeCodeForUpdate(
+      @Param("cnaeCode") String cnaeCode);
 
-    /** Lista ciclos por status para filas internas do pipeline de pesquisa de rotina. */
-    List<OprmRoutineResearchCycle> findByStatusOrderByStartedAtAsc(String status, Pageable pageable);
+  /** Lista ciclos por status para filas internas do pipeline de pesquisa de rotina. */
+  List<OprmRoutineResearchCycle> findByStatusOrderByStartedAtAsc(String status, Pageable pageable);
 
-    /** Lista ciclos por etapa operacional atual para publicação precisa do pending canônico. */
-    List<OprmRoutineResearchCycle> findByCurrentStageCodeOrderByStartedAtAsc(String currentStageCode, Pageable pageable);
+  /** Lista ciclos por etapa operacional atual para publicação precisa do pending canônico. */
+  List<OprmRoutineResearchCycle> findByCurrentStageCodeOrderByStartedAtAsc(
+      String currentStageCode, Pageable pageable);
 
-    /** Conta reprocessamentos automáticos já abertos para o mesmo candidato e fonte de gatilho. */
-    long countBySourceNicheIdAndTriggerSource(Long sourceNicheId, String triggerSource);
+  /** Conta reprocessamentos automáticos já abertos para o mesmo candidato e fonte de gatilho. */
+  long countBySourceNicheIdAndTriggerSource(Long sourceNicheId, String triggerSource);
 
-    /** Lista os ciclos de pesquisa de rotina mais recentes para acompanhamento operacional. */
-    List<OprmRoutineResearchCycle> findAllByOrderByStartedAtDesc(Pageable pageable);
+  /** Lista os ciclos de pesquisa de rotina mais recentes para acompanhamento operacional. */
+  List<OprmRoutineResearchCycle> findAllByOrderByStartedAtDesc(Pageable pageable);
 
-    /** Lista ciclos recentes paginados para a tela de jobs do OPRM NichoCNAE. */
-    @Query("""
+  /** Lista ciclos recentes paginados para a tela de jobs do OPRM NichoCNAE. */
+  @Query(
+      """
             select cycle
             from OprmRoutineResearchCycle cycle
             order by cycle.startedAt desc
             """)
-    Page<OprmRoutineResearchCycle> findRecentJobs(Pageable pageable);
+  Page<OprmRoutineResearchCycle> findRecentJobs(Pageable pageable);
 
-    /** Lista ciclos de pesquisa por status para filas de diagnóstico e reprocessamento do executor. */
-    List<OprmRoutineResearchCycle> findByStatusInOrderByStartedAtAsc(List<String> statuses, Pageable pageable);
+  /**
+   * Lista ciclos de pesquisa por status para filas de diagnóstico e reprocessamento do executor.
+   */
+  List<OprmRoutineResearchCycle> findByStatusInOrderByStartedAtAsc(
+      List<String> statuses, Pageable pageable);
 
-    /** Lista ciclos aptos à etapa de seed, incluindo falhas retryáveis sem artefatos persistidos. */
-    @Query("""
+  /** Lista ciclos aptos à etapa de seed, incluindo falhas retryáveis sem artefatos persistidos. */
+  @Query(
+      """
             select cycle
             from OprmRoutineResearchCycle cycle
             where not exists (
@@ -84,35 +94,36 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
               )
             order by case when cycle.status = :failedStatus then 0 else 1 end, cycle.startedAt asc
             """)
-    List<OprmRoutineResearchCycle> findSeedBuilderPendingOrRetryable(
-            @Param("currentStageCode") String currentStageCode,
-            @Param("runningStatus") String runningStatus,
-            @Param("failedStatus") String failedStatus,
-            @Param("legacyContractErrorFragment") String legacyContractErrorFragment,
-            @Param("queryGoalLengthErrorFragment") String queryGoalLengthErrorFragment,
-            @Param("completePathFragment") String completePathFragment,
-            Pageable pageable);
+  List<OprmRoutineResearchCycle> findSeedBuilderPendingOrRetryable(
+      @Param("currentStageCode") String currentStageCode,
+      @Param("runningStatus") String runningStatus,
+      @Param("failedStatus") String failedStatus,
+      @Param("legacyContractErrorFragment") String legacyContractErrorFragment,
+      @Param("queryGoalLengthErrorFragment") String queryGoalLengthErrorFragment,
+      @Param("completePathFragment") String completePathFragment,
+      Pageable pageable);
 
-    /** Mantém compatibilidade de testes e callers legados apontando para a etapa seed canônica. */
-    default List<OprmRoutineResearchCycle> findSeedBuilderPendingOrRetryable(
-            String runningStatus,
-            String failedStatus,
-            String legacyContractErrorFragment,
-            String queryGoalLengthErrorFragment,
-            String completePathFragment,
-            Pageable pageable) {
-        return findSeedBuilderPendingOrRetryable(
-                "niche-research-seed-builder",
-                runningStatus,
-                failedStatus,
-                legacyContractErrorFragment,
-                queryGoalLengthErrorFragment,
-                completePathFragment,
-                pageable);
-    }
+  /** Mantém compatibilidade de testes e callers legados apontando para a etapa seed canônica. */
+  default List<OprmRoutineResearchCycle> findSeedBuilderPendingOrRetryable(
+      String runningStatus,
+      String failedStatus,
+      String legacyContractErrorFragment,
+      String queryGoalLengthErrorFragment,
+      String completePathFragment,
+      Pageable pageable) {
+    return findSeedBuilderPendingOrRetryable(
+        "niche-research-seed-builder",
+        runningStatus,
+        failedStatus,
+        legacyContractErrorFragment,
+        queryGoalLengthErrorFragment,
+        completePathFragment,
+        pageable);
+  }
 
-    /** Lista ciclos RUNNING antigos sem qualquer contador de progresso para proteção operacional. */
-    @Query("""
+  /** Lista ciclos RUNNING antigos sem qualquer contador de progresso para proteção operacional. */
+  @Query(
+      """
             select cycle
             from OprmRoutineResearchCycle cycle
             where cycle.status = :runningStatus
@@ -124,22 +135,26 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
               and cycle.finishedAt is null
             order by cycle.updatedAt asc
             """)
-    List<OprmRoutineResearchCycle> findRunningCyclesWithoutProgressBefore(
-            @Param("runningStatus") String runningStatus, @Param("threshold") Instant threshold, Pageable pageable);
+  List<OprmRoutineResearchCycle> findRunningCyclesWithoutProgressBefore(
+      @Param("runningStatus") String runningStatus,
+      @Param("threshold") Instant threshold,
+      Pageable pageable);
 
-    /** Localiza o identificador do nicho materializado mais recente vinculado ao ciclo informado. */
-    @Query("""
+  /** Localiza o identificador do nicho materializado mais recente vinculado ao ciclo informado. */
+  @Query(
+      """
             select profile.marketNiche.id
             from MarketNicheEnrichmentProfile profile
             where profile.researchCycleId = :researchCycleId
               and profile.marketNiche is not null
             order by profile.id desc
             """)
-    List<Long> findLatestMaterializedMarketNicheIdByResearchCycleId(
-            @Param("researchCycleId") Long researchCycleId, Pageable pageable);
+  List<Long> findLatestMaterializedMarketNicheIdByResearchCycleId(
+      @Param("researchCycleId") Long researchCycleId, Pageable pageable);
 
-    /** Lista ciclos recentes cujo nome ou conteúdo principal ainda contém linguagem de solução. */
-    @Query("""
+  /** Lista ciclos recentes cujo nome ou conteúdo principal ainda contém linguagem de solução. */
+  @Query(
+      """
             select cycle
             from OprmRoutineResearchCycle cycle
             where lower(coalesce(cycle.originalNicheName, '')) like lower(concat('%', :term, '%'))
@@ -147,5 +162,6 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
                or lower(coalesce(cycle.errorMessage, '')) like lower(concat('%', :term, '%'))
             order by cycle.startedAt desc
             """)
-    List<OprmRoutineResearchCycle> findPotentiallyContaminatedByTerm(@Param("term") String term, Pageable pageable);
+  List<OprmRoutineResearchCycle> findPotentiallyContaminatedByTerm(
+      @Param("term") String term, Pageable pageable);
 }

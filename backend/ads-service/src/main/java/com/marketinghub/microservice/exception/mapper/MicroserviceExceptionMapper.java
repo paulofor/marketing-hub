@@ -7,7 +7,7 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface MicroserviceExceptionMapper {
-    @Mapping(target = "microserviceId", source = "microservice.id")
-    @Mapping(target = "microserviceName", source = "microservice.name")
-    MicroserviceExceptionDto toDto(MicroserviceExceptionLog entity);
+  @Mapping(target = "microserviceId", source = "microservice.id")
+  @Mapping(target = "microserviceName", source = "microservice.name")
+  MicroserviceExceptionDto toDto(MicroserviceExceptionLog entity);
 }

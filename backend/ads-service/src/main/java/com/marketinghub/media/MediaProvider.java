@@ -1,15 +1,13 @@
 package com.marketinghub.media;
 
-/**
- * Supported external providers for asset generation.
- */
+/** Supported external providers for asset generation. */
 public enum MediaProvider {
-    SYNTHESIA,
-    HEYGEN,
-    ELEVENLABS,
-    RUNWAY,
-    OPENAI,
-    WATERMARKER,
-    VIDEO_MODULE,
-    USER_UPLOAD
+  SYNTHESIA,
+  HEYGEN,
+  ELEVENLABS,
+  RUNWAY,
+  OPENAI,
+  WATERMARKER,
+  VIDEO_MODULE,
+  USER_UPLOAD
 }

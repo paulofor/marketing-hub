@@ -116,20 +116,27 @@ function calculatePotentialScore(
   const entries = getMetricEntries(metrics, monitor);
   const firstInteractionClicks =
     metrics?.firstInteractionClicks ??
-    (monitor?.pde.presenceMapClicks ?? 0) + (monitor?.pde.diagnosticClicks ?? 0);
+    (monitor?.pde.presenceMapClicks ?? 0) +
+      (monitor?.pde.diagnosticClicks ?? 0);
   const loginStarted = metrics?.loginStarted ?? monitor?.pde.loginStarted ?? 0;
-  const paywallViewed = metrics?.paywallViewed ?? monitor?.pde.paywallViewed ?? 0;
-  const checkoutIntent = metrics?.checkoutIntent ?? monitor?.pde.checkoutStarted ?? 0;
+  const paywallViewed =
+    metrics?.paywallViewed ?? monitor?.pde.paywallViewed ?? 0;
+  const checkoutIntent =
+    metrics?.checkoutIntent ?? monitor?.pde.checkoutStarted ?? 0;
   const subscriptionApproved =
     metrics?.subscriptionApproved ?? monitor?.pde.subscriptionApproved ?? 0;
   const averageVisibleMs = monitor?.pde.averageVisibleMsPerSession ?? 0;
 
   const volumeScore = clamp(sessions / 50, 0, 1) * 15;
   const engagementScore = clamp(averageVisibleMs / 60_000, 0, 1) * 20;
-  const interactionScore = clamp(dividePercent(firstInteractionClicks, entries) / 35, 0, 1) * 20;
-  const loginScore = clamp(dividePercent(loginStarted, entries) / 15, 0, 1) * 15;
-  const paywallScore = clamp(dividePercent(paywallViewed, entries) / 8, 0, 1) * 15;
-  const checkoutScore = clamp(dividePercent(checkoutIntent, entries) / 3, 0, 1) * 10;
+  const interactionScore =
+    clamp(dividePercent(firstInteractionClicks, entries) / 35, 0, 1) * 20;
+  const loginScore =
+    clamp(dividePercent(loginStarted, entries) / 15, 0, 1) * 15;
+  const paywallScore =
+    clamp(dividePercent(paywallViewed, entries) / 8, 0, 1) * 15;
+  const checkoutScore =
+    clamp(dividePercent(checkoutIntent, entries) / 3, 0, 1) * 10;
   const purchaseScore = subscriptionApproved > 0 ? 5 : 0;
 
   return Math.round(
@@ -151,6 +158,10 @@ function describePotential(score: number, sessions: number) {
   return "Baixo sinal";
 }
 
+function isPausedSlot(slot: PostDeployPdeProductionSlot) {
+  return slot.status === "PAUSED" || slot.status === "RETIRED";
+}
+
 export default function ProductPdeVersionsPage() {
   const { productId } = useParams();
   const productQuery = useProduct(productId);
@@ -163,7 +174,12 @@ export default function ProductPdeVersionsPage() {
   ) as number[];
   const monitorQueries = useQueries({
     queries: sourceExperimentIds.map((experimentId) => ({
-      queryKey: ["experiment", String(experimentId), "post-deploy-monitor", product?.slug],
+      queryKey: [
+        "experiment",
+        String(experimentId),
+        "post-deploy-monitor",
+        product?.slug,
+      ],
       enabled: Boolean(product?.slug),
       refetchInterval: 60_000,
       queryFn: async () => {
@@ -189,17 +205,25 @@ export default function ProductPdeVersionsPage() {
     const nextMonitor = next.sourceExperimentId
       ? monitorsByExperimentId.get(next.sourceExperimentId)
       : undefined;
-    const currentValidating = versionHasCommercialValidation(current, currentMonitor);
+    const currentValidating = versionHasCommercialValidation(
+      current,
+      currentMonitor,
+    );
     const nextValidating = versionHasCommercialValidation(next, nextMonitor);
     if (currentValidating !== nextValidating) {
       return currentValidating ? -1 : 1;
     }
-    return current.slotCode.localeCompare(next.slotCode, "pt-BR", { numeric: true });
+    return current.slotCode.localeCompare(next.slotCode, "pt-BR", {
+      numeric: true,
+    });
   });
+  const activeSlots = sortedSlots.filter((slot) => !isPausedSlot(slot));
+  const pausedSlots = sortedSlots.filter(isPausedSlot);
   const [form, setForm] = useState({
     slotCode: "v2",
     domain: "v2.clubemusa.com.br",
     experienceVersion: "musa-pde-entry-v5-estrada-desejo",
+    sourceExperimentId: "",
     status: "PLANNED" as PdeProductionSlotStatus,
     notes: "",
   });
@@ -239,13 +263,19 @@ export default function ProductPdeVersionsPage() {
                 slotCode: form.slotCode,
                 domain: form.domain,
                 experienceVersion: form.experienceVersion,
+                sourceExperimentId: form.sourceExperimentId
+                  ? Number(form.sourceExperimentId)
+                  : undefined,
                 status: form.status,
                 notes: form.notes,
               });
             }}
           >
             <div className="col-12 col-md-2">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-code">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-code"
+              >
                 Slot *
               </label>
               <input
@@ -253,13 +283,19 @@ export default function ProductPdeVersionsPage() {
                 className="form-control form-control-sm"
                 value={form.slotCode}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, slotCode: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    slotCode: event.target.value,
+                  }))
                 }
                 required
               />
             </div>
             <div className="col-12 col-md-3">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-domain">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-domain"
+              >
                 Domínio *
               </label>
               <input
@@ -267,13 +303,19 @@ export default function ProductPdeVersionsPage() {
                 className="form-control form-control-sm"
                 value={form.domain}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, domain: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    domain: event.target.value,
+                  }))
                 }
                 required
               />
             </div>
             <div className="col-12 col-md-3">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-version">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-version"
+              >
                 Versão PDE *
               </label>
               <input
@@ -290,7 +332,10 @@ export default function ProductPdeVersionsPage() {
               />
             </div>
             <div className="col-12 col-md-2">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-status">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-status"
+              >
                 Status
               </label>
               <select
@@ -312,6 +357,27 @@ export default function ProductPdeVersionsPage() {
               </select>
             </div>
             <div className="col-12 col-md-2">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-experiment"
+              >
+                Experimento origem
+              </label>
+              <input
+                id="pde-slot-experiment"
+                className="form-control form-control-sm"
+                type="number"
+                min="1"
+                value={form.sourceExperimentId}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    sourceExperimentId: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="col-12 col-md-2">
               <button
                 type="submit"
                 className="btn btn-primary btn-sm w-100"
@@ -321,7 +387,10 @@ export default function ProductPdeVersionsPage() {
               </button>
             </div>
             <div className="col-12">
-              <label className="form-label small fw-semibold" htmlFor="pde-slot-notes">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-notes"
+              >
                 Observação
               </label>
               <input
@@ -329,7 +398,10 @@ export default function ProductPdeVersionsPage() {
                 className="form-control form-control-sm"
                 value={form.notes}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, notes: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    notes: event.target.value,
+                  }))
                 }
               />
             </div>
@@ -341,125 +413,190 @@ export default function ProductPdeVersionsPage() {
         <div className="card-body">
           <h2 className="h6 mb-3">Versões cadastradas</h2>
           <p className="text-muted small mb-3">
-            Métricas priorizam sinais de potencial comercial: acesso e permanência
-            indicam atenção, mas interação, login, paywall, checkout e venda mostram
-            avanço real do desconhecimento para desejo de compra.
+            Métricas priorizam sinais de potencial comercial: acesso e
+            permanência indicam atenção, mas interação, login, paywall, checkout
+            e venda mostram avanço real do desconhecimento para desejo de
+            compra.
           </p>
-          <div className="table-responsive">
-            <table className="table table-sm align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Slot</th>
-                  <th>Status</th>
-                  <th>Versão PDE</th>
-                  <th>URL pública</th>
-                  <th>Validação</th>
-                  <th>Acesso</th>
-                  <th>Permanência</th>
-                  <th>Avanço no funil</th>
-                  <th>Score</th>
-                  <th>Ambiente alvo</th>
-                  <th>Experimento origem</th>
-                  <th className="text-end">Atualizado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {slots.length === 0 ? (
-                  <tr>
-                    <td colSpan={12} className="text-muted">
-                      Nenhuma versão PDE cadastrada para este produto.
-                    </td>
-                  </tr>
-                ) : (
-                  sortedSlots.map((slot) => {
-                    const monitor = slot.sourceExperimentId
-                      ? monitorsByExperimentId.get(slot.sourceExperimentId)
-                      : undefined;
-                    const metrics = findVersionMetrics(monitor, slot);
-                    const sessions = getMetricSessions(metrics, monitor);
-                    const entries = getMetricEntries(metrics, monitor);
-                    const firstInteractionClicks =
-                      metrics?.firstInteractionClicks ??
-                      (monitor?.pde.presenceMapClicks ?? 0) +
-                        (monitor?.pde.diagnosticClicks ?? 0);
-                    const loginStarted = metrics?.loginStarted ?? monitor?.pde.loginStarted ?? 0;
-                    const paywallViewed = metrics?.paywallViewed ?? monitor?.pde.paywallViewed ?? 0;
-                    const checkoutIntent =
-                      metrics?.checkoutIntent ?? monitor?.pde.checkoutStarted ?? 0;
-                    const subscriptionApproved =
-                      metrics?.subscriptionApproved ??
-                      monitor?.pde.subscriptionApproved ??
-                      0;
-                    const score = calculatePotentialScore(metrics, monitor);
-                    const validating = versionHasCommercialValidation(slot, monitor);
-
-                    return (
-                      <tr key={slot.id} className={validating ? "table-primary" : undefined}>
-                        <td className="fw-semibold">{slot.slotCode}</td>
-                        <td>{statusLabels[slot.status] ?? slot.status}</td>
-                        <td className="font-monospace small">{slot.experienceVersion}</td>
-                        <td>
-                          <a href={slot.publicUrl} target="_blank" rel="noreferrer">
-                            {slot.publicUrl}
-                          </a>
-                          <div className="small text-muted">{slot.domain}</div>
-                        </td>
-                        <td>
-                          {validating ? (
-                            <span className="badge text-bg-primary">Em validação</span>
-                          ) : slot.sourceExperimentId ? (
-                            <span className="badge text-bg-light">Sem tráfego</span>
-                          ) : (
-                            <span className="badge text-bg-secondary">Sem experimento</span>
-                          )}
-                        </td>
-                        <td>
-                          <div>{formatInteger(entries)} acessos</div>
-                          <div className="small text-muted">
-                            {formatInteger(sessions)} sessões
-                            {monitor?.pde.uniqueVisitors != null
-                              ? ` · ${formatInteger(monitor.pde.uniqueVisitors)} visitantes`
-                              : ""}
-                          </div>
-                        </td>
-                        <td>
-                          <div>{formatDuration(monitor?.pde.averageVisibleMsPerSession)}</div>
-                          <div className="small text-muted">
-                            Último evento {formatDate(monitor?.pde.lastEventAt)}
-                          </div>
-                        </td>
-                        <td>
-                          <div className="small">
-                            Interação: {formatInteger(firstInteractionClicks)} (
-                            {formatPercent(dividePercent(firstInteractionClicks, entries))})
-                          </div>
-                          <div className="small">
-                            Login: {formatInteger(loginStarted)} · Paywall:{" "}
-                            {formatInteger(paywallViewed)}
-                          </div>
-                          <div className="small">
-                            Checkout: {formatInteger(checkoutIntent)} · Vendas:{" "}
-                            {formatInteger(subscriptionApproved)}
-                          </div>
-                        </td>
-                        <td>
-                          <div className="fw-semibold">{score}/100</div>
-                          <div className="small text-muted">
-                            {describePotential(score, sessions)}
-                          </div>
-                        </td>
-                        <td>{slot.targetEnvironment}</td>
-                        <td>{slot.sourceExperimentId ?? "—"}</td>
-                        <td className="text-end">{formatDate(slot.updatedAt)}</td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+          {slots.length === 0 ? (
+            <div className="text-muted small">
+              Nenhuma versão PDE cadastrada para este produto.
+            </div>
+          ) : (
+            <>
+              <SlotTable
+                title="Versões ativas, prontas ou planejadas"
+                emptyMessage="Nenhuma versão ativa, pronta ou planejada."
+                slots={activeSlots}
+                monitorsByExperimentId={monitorsByExperimentId}
+              />
+              <SlotTable
+                title="Versões pausadas ou encerradas"
+                emptyMessage="Nenhuma versão pausada ou encerrada."
+                slots={pausedSlots}
+                monitorsByExperimentId={monitorsByExperimentId}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+function SlotTable({
+  title,
+  emptyMessage,
+  slots,
+  monitorsByExperimentId,
+}: {
+  title: string;
+  emptyMessage: string;
+  slots: PostDeployPdeProductionSlot[];
+  monitorsByExperimentId: Map<number, PostDeployMonitorResponse>;
+}) {
+  return (
+    <section className="mb-4">
+      <h3 className="h6 mb-2">{title}</h3>
+      <div className="table-responsive">
+        <table className="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Slot</th>
+              <th>Status</th>
+              <th>Versão PDE</th>
+              <th>URL pública</th>
+              <th>Validação</th>
+              <th>Acesso</th>
+              <th>Permanência</th>
+              <th>Avanço no funil</th>
+              <th>Score</th>
+              <th>Ambiente alvo</th>
+              <th>Experimento origem</th>
+              <th className="text-end">Atualizado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {slots.length === 0 ? (
+              <tr>
+                <td colSpan={12} className="text-muted">
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : (
+              slots.map((slot) => {
+                const monitor = slot.sourceExperimentId
+                  ? monitorsByExperimentId.get(slot.sourceExperimentId)
+                  : undefined;
+                const metrics = findVersionMetrics(monitor, slot);
+                const sessions = getMetricSessions(metrics, monitor);
+                const entries = getMetricEntries(metrics, monitor);
+                const firstInteractionClicks =
+                  metrics?.firstInteractionClicks ??
+                  (monitor?.pde.presenceMapClicks ?? 0) +
+                    (monitor?.pde.diagnosticClicks ?? 0);
+                const loginStarted =
+                  metrics?.loginStarted ?? monitor?.pde.loginStarted ?? 0;
+                const paywallViewed =
+                  metrics?.paywallViewed ?? monitor?.pde.paywallViewed ?? 0;
+                const checkoutIntent =
+                  metrics?.checkoutIntent ?? monitor?.pde.checkoutStarted ?? 0;
+                const subscriptionApproved =
+                  metrics?.subscriptionApproved ??
+                  monitor?.pde.subscriptionApproved ??
+                  0;
+                const score = calculatePotentialScore(metrics, monitor);
+                const validating = versionHasCommercialValidation(
+                  slot,
+                  monitor,
+                );
+
+                return (
+                  <tr
+                    key={slot.id}
+                    className={validating ? "table-primary" : undefined}
+                  >
+                    <td className="fw-semibold">{slot.slotCode}</td>
+                    <td>{statusLabels[slot.status] ?? slot.status}</td>
+                    <td>
+                      <div className="font-monospace small">
+                        {slot.experienceVersion}
+                      </div>
+                      {slot.notes && (
+                        <div className="small text-muted">{slot.notes}</div>
+                      )}
+                    </td>
+                    <td>
+                      <a href={slot.publicUrl} target="_blank" rel="noreferrer">
+                        {slot.publicUrl}
+                      </a>
+                      <div className="small text-muted">{slot.domain}</div>
+                    </td>
+                    <td>
+                      {validating ? (
+                        <span className="badge text-bg-primary">
+                          Em validação
+                        </span>
+                      ) : slot.sourceExperimentId ? (
+                        <span className="badge text-bg-light">Sem tráfego</span>
+                      ) : (
+                        <span className="badge text-bg-secondary">
+                          Sem experimento
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <div>{formatInteger(entries)} acessos</div>
+                      <div className="small text-muted">
+                        {formatInteger(sessions)} sessões
+                        {monitor?.pde.uniqueVisitors != null
+                          ? ` · ${formatInteger(monitor.pde.uniqueVisitors)} visitantes`
+                          : ""}
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        {formatDuration(
+                          monitor?.pde.averageVisibleMsPerSession,
+                        )}
+                      </div>
+                      <div className="small text-muted">
+                        Último evento {formatDate(monitor?.pde.lastEventAt)}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="small">
+                        Interação: {formatInteger(firstInteractionClicks)} (
+                        {formatPercent(
+                          dividePercent(firstInteractionClicks, entries),
+                        )}
+                        )
+                      </div>
+                      <div className="small">
+                        Login: {formatInteger(loginStarted)} · Paywall:{" "}
+                        {formatInteger(paywallViewed)}
+                      </div>
+                      <div className="small">
+                        Checkout: {formatInteger(checkoutIntent)} · Vendas:{" "}
+                        {formatInteger(subscriptionApproved)}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="fw-semibold">{score}/100</div>
+                      <div className="small text-muted">
+                        {describePotential(score, sessions)}
+                      </div>
+                    </td>
+                    <td>{slot.targetEnvironment}</td>
+                    <td>{slot.sourceExperimentId ?? "—"}</td>
+                    <td className="text-end">{formatDate(slot.updatedAt)}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

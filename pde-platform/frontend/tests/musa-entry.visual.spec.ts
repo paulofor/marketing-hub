@@ -196,10 +196,13 @@ test('exibe video no topo na versao v6 motivacional', async ({ page }) => {
 
   await page.goto('/');
 
+  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toBeVisible();
-  await expect(page.locator('video.public-hero-video')).toHaveAttribute('src', '/assets/musa-v5-video-explicativo.mp4');
+  await expect(page.locator('video.public-hero-video')).toHaveAttribute('src', '/assets/musa-v6-video-motivacional.mp4');
   await expect(page.getByRole('heading', { name: /Veja em poucos segundos/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Começar diagnóstico/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
 });
 
 test('mede reproducao real do video inicial MUSA', async ({ page }) => {

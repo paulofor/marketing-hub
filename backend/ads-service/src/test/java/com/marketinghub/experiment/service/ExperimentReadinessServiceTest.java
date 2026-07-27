@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
+import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
@@ -153,6 +154,64 @@ class ExperimentReadinessServiceTest {
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
+    /** Garante que criativo de vídeo sem áudio aprovado não libera publicação Meta. */
+    @Test
+    void shouldBlockVideoCreativeWithoutAudibleApprovedVideo() {
+        Long experimentId = 72L;
+        Experiment experiment = buildExperiment(experimentId, 82L);
+        experiment.setFollowUpActionUrl("https://example.com/landing/72");
+        completeCommercialContract(experiment);
+        Creative videoCreative = Creative.builder()
+                .id(501L)
+                .experiment(experiment)
+                .format("VIDEO")
+                .headline("Cliente some depois da manutencao")
+                .primaryText("Enxergar riscos e encaixes em 7 dias antes do cliente sumir")
+                .cta("SHOP_NOW")
+                .videoUrl("https://cdn.example/video-sem-som.mp4")
+                .status(CreativeStatus.READY)
+                .build();
+
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(experimentId, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.findByExperimentId(experimentId)).thenReturn(List.of(videoCreative));
+        when(experimentVideoAssetService.hasReadyApprovedAudibleVideoForPublication(
+                experimentId,
+                null,
+                "https://cdn.example/video-sem-som.mp4")).thenReturn(false);
+        mockPublishableSelection(experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("creativeApproval");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    /** Garante que copy sem conexão mínima com dor, promessa, recompensa ou CTA bloqueia campanha. */
+    @Test
+    void shouldBlockCreativeWithMisalignedCopy() {
+        Long experimentId = 73L;
+        Experiment experiment = buildExperiment(experimentId, 83L);
+        experiment.setFollowUpActionUrl("https://example.com/landing/73");
+        completeCommercialContract(experiment);
+        Creative imageCreative = Creative.builder()
+                .id(502L)
+                .experiment(experiment)
+                .format("IMAGE")
+                .headline("Oferta imperdivel")
+                .primaryText("Clique e veja novidades para mudar sua rotina")
+                .cta("LEARN_MORE")
+                .imageUrl("https://cdn.example/creative.png")
+                .status(CreativeStatus.READY)
+                .build();
+
+        when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(experimentId, CreativeStatus.READY)).thenReturn(true);
+        when(creativeRepository.findByExperimentId(experimentId)).thenReturn(List.of(imageCreative));
+        mockPublishableSelection(experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("creativeApproval");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
     }
 
     /** Garante que vídeo obrigatório sem aprovação bloqueia a campanha. */

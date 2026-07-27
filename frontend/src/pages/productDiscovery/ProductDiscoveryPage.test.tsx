@@ -99,8 +99,17 @@ describe("ProductDiscoveryPage", () => {
         name: /Ranking de maturidade comercial/i,
       }),
     ).toBeTruthy();
-    expect(await screen.findByText("Renda extra")).toBeTruthy();
-    expect(screen.getByText("Oportunidade promissora")).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", {
+        name: /Top 10 produtos com mais chance de sucesso/i,
+      }),
+    ).toBeTruthy();
+    expect((await screen.findAllByText("Renda extra")).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getAllByText("Oportunidade promissora").length).toBeGreaterThan(
+      0,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: /Criar ciclo/i }));
 

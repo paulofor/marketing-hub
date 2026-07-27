@@ -959,6 +959,8 @@ components:
         headline: { type: string, nullable: true }
         primaryText: { type: string, nullable: true }
         imageUrl: { type: string, nullable: true }
+        videoId: { type: string, nullable: true }
+        videoUrl: { type: string, nullable: true }
         description: { type: string, nullable: true }
         cta: { type: string, nullable: true }
         destinationUrl: { type: string, nullable: true }
@@ -968,7 +970,13 @@ components:
           type: string
           enum: [READY]
           description: O endpoint filtra e retorna apenas criativos aprovados para publicação.
-      required: [id, experimentId, status]
+        videoCreative:
+          type: boolean
+          description: Indica se o criativo depende de validação técnica de vídeo antes da Meta.
+        audibleApprovedVideo:
+          type: boolean
+          description: Indica que o vídeo vinculado está READY, APPROVED e com áudio confirmado para publicação paga.
+      required: [id, experimentId, status, videoCreative, audibleApprovedVideo]
     FacebookCampaignRecommendationSyncTarget:
       type: object
       properties:

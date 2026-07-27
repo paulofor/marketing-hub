@@ -46,6 +46,10 @@ function statusLabel(value?: string | null) {
   return value ? value.replace(/_/g, " ") : "Sem status";
 }
 
+function isRunningExperiment(experiment: ProductExperimentComparisonExperiment) {
+  return experiment.status?.toUpperCase() === "RUNNING";
+}
+
 export default function ProductExperimentComparisonPage() {
   const { productId } = useParams();
   const comparisonQuery = useProductExperimentComparison(productId);
@@ -70,6 +74,12 @@ export default function ProductExperimentComparisonPage() {
   }
 
   const experiments = comparison.experiments ?? [];
+  const sortedExperiments = [...experiments].sort((current, next) => {
+    const currentRunning = isRunningExperiment(current);
+    const nextRunning = isRunningExperiment(next);
+    if (currentRunning === nextRunning) return 0;
+    return currentRunning ? -1 : 1;
+  });
   const totals = experiments.reduce(
     (acc, experiment) => ({
       impressions: acc.impressions + (experiment.impressions ?? 0),
@@ -149,14 +159,22 @@ export default function ProductExperimentComparisonPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {experiments.map((experiment) => {
+                    {sortedExperiments.map((experiment) => {
+                      const running = isRunningExperiment(experiment);
                       const formAccess = findFunnelTotal(
                         experiment,
                         "ACESSO_FORM_LEAD",
                       );
                       const purchases = findFunnelTotal(experiment, "COMPRA");
                       return (
-                        <tr key={experiment.experimentId}>
+                        <tr
+                          className={
+                            running
+                              ? "product-comparison-table__row--running"
+                              : undefined
+                          }
+                          key={experiment.experimentId}
+                        >
                           <td>
                             <Link
                               className="fw-semibold"
@@ -171,7 +189,13 @@ export default function ProductExperimentComparisonPage() {
                             </small>
                           </td>
                           <td>
-                            <span className="badge text-bg-light border">
+                            <span
+                              className={
+                                running
+                                  ? "badge product-comparison-status product-comparison-status--running"
+                                  : "badge product-comparison-status text-bg-light border"
+                              }
+                            >
                               {statusLabel(experiment.status)}
                             </span>
                             <small className="d-block text-muted mt-1">
@@ -219,7 +243,7 @@ export default function ProductExperimentComparisonPage() {
           </div>
 
           <div className="row g-3">
-            {experiments.map((experiment) => (
+            {sortedExperiments.map((experiment) => (
               <div className="col-12 col-xl-6" key={experiment.experimentId}>
                 <section className="product-comparison-learning">
                   <h2>{experiment.name}</h2>

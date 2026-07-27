@@ -12,6 +12,7 @@ public record ProductFinancialSummaryResponse(
     BigDecimal exchangeRateBrlPerUsd,
     Instant monthStart,
     Instant yearStart,
+    List<ProductFinancialMonthlyResultResponse> monthlyResults,
     List<ProductFinancialLineResponse> costs,
     ProductFinancialLineResponse revenue,
     ProductFinancialLineResponse profit) {}

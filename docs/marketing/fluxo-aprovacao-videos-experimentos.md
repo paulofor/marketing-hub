@@ -13,6 +13,8 @@ Objetivo comercial: nenhum video gerado deve entrar em campanha, PDE ou pagina d
 7. Toda aprovacao ou reprovacao deve registrar data/hora da decisao e manter custo auditavel.
 8. Quando o audio for produzido separado, o custo total do video deve somar custo de video e custo de audio.
 9. O motivo de reprovacao deve ser usado como restricao da proxima geracao, refacao ou pos-producao.
+10. Antes da publicacao Meta, o worker deve bloquear qualquer criativo de video sem `audibleApprovedVideo=true` no contrato vindo do backend.
+11. Antes da publicacao Meta, o worker deve bloquear copy sem mensagem, headline, CTA ou aderencia minima a dor, promessa, recompensa ou CTA do experimento.
 
 ## Decisao de funil
 
@@ -30,6 +32,7 @@ Objetivo comercial: nenhum video gerado deve entrar em campanha, PDE ou pagina d
 - O audio, legenda e ritmo precisam estar claros para consumo rapido.
 - O video nao pode prometer resultado garantido, parecer luxo inacessivel ou gerar estranhamento visual.
 - O video precisa reduzir incerteza, risco e esforco percebido, nao apenas parecer bonito.
+- A copy do criativo precisa repetir sinais fortes do contrato comercial do experimento; copy generica ou desalinhada invalida o teste e deve bloquear gasto.
 
 ## Uso do motivo de reprovacao
 

@@ -26,6 +26,22 @@ describe("ProductFinancialPage", () => {
         exchangeRateBrlPerUsd: 5,
         monthStart: "2026-07-01T00:00:00Z",
         yearStart: "2026-01-01T00:00:00Z",
+        monthlyResults: [
+          {
+            monthStart: "2026-07-01T00:00:00Z",
+            monthLabel: "Julho 2026",
+            cost: { brl: 75, usd: 15 },
+            revenue: { brl: 67, usd: 13.4 },
+            profit: { brl: -8, usd: -1.6 },
+          },
+          {
+            monthStart: "2026-06-01T00:00:00Z",
+            monthLabel: "Junho 2026",
+            cost: { brl: 25, usd: 5 },
+            revenue: { brl: 120, usd: 24 },
+            profit: { brl: 95, usd: 19 },
+          },
+        ],
         costs: [
           {
             type: "VIDEO_PRODUCTION",
@@ -78,13 +94,21 @@ describe("ProductFinancialPage", () => {
     ).toBeTruthy();
     expect(await screen.findByText(/Método MUSA/i)).toBeTruthy();
     expect(screen.getByText(/R\$ 5 por US\$ 1/i)).toBeTruthy();
+    expect(screen.getByText("Resultado dos últimos 4 meses")).toBeTruthy();
+
+    const julyRow = screen.getByText("Julho 2026").closest("tr");
+    expect(julyRow).toBeTruthy();
+    expect(within(julyRow as HTMLElement).getByText("R$ 75,00")).toBeTruthy();
+    expect(within(julyRow as HTMLElement).getByText("$15.00")).toBeTruthy();
+    expect(within(julyRow as HTMLElement).getByText("R$ 67,00")).toBeTruthy();
+    expect(within(julyRow as HTMLElement).getByText("-R$ 8,00")).toBeTruthy();
 
     const videoRow = screen.getByText("Produção de vídeo").closest("tr");
     expect(videoRow).toBeTruthy();
     expect(within(videoRow as HTMLElement).getByText("$10.00")).toBeTruthy();
     expect(within(videoRow as HTMLElement).getByText("R$ 50,00")).toBeTruthy();
 
-    const profitRow = screen.getByText("Lucro").closest("tr");
+    const profitRow = screen.getByText("Receita menos custos").closest("tr");
     expect(profitRow).toBeTruthy();
     expect(within(profitRow as HTMLElement).getByText("$54.00")).toBeTruthy();
     expect(

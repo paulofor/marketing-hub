@@ -14,6 +14,14 @@ export interface ProductFinancialLine {
   source: string;
 }
 
+export interface ProductFinancialMonthlyResult {
+  monthStart: string;
+  monthLabel: string;
+  cost: ProductFinancialAmount;
+  revenue: ProductFinancialAmount;
+  profit: ProductFinancialAmount;
+}
+
 export interface ProductFinancialSummary {
   productId: number;
   productName?: string;
@@ -21,6 +29,7 @@ export interface ProductFinancialSummary {
   exchangeRateBrlPerUsd: number;
   monthStart: string;
   yearStart: string;
+  monthlyResults: ProductFinancialMonthlyResult[];
   costs: ProductFinancialLine[];
   revenue: ProductFinancialLine;
   profit: ProductFinancialLine;

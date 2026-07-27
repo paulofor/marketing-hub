@@ -21,12 +21,13 @@ import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
-import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
-import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
-import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonExperimentResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonFunnelStageResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialMonthlyResultResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoDecisionRuleResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanItemResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
@@ -51,9 +52,11 @@ import java.sql.Timestamp;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
-import java.util.Base64;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -336,6 +339,7 @@ public class ProductService {
         BRL_PER_USD,
         monthStart,
         yearStart,
+        buildMonthlyFinancialResults(product, marketNicheId),
         List.of(videoProduction, media, pdeProduction, otherCosts),
         revenue,
         profit);
@@ -624,6 +628,37 @@ public class ProductService {
         "Soma de lead_portal_purchase aprovado para experimentos do mesmo nicho do produto.");
   }
 
+  /** Consolida mês corrente e três meses anteriores com custo, receita e lucro. */
+  private List<ProductFinancialMonthlyResultResponse> buildMonthlyFinancialResults(
+      Product product, Long marketNicheId) {
+    YearMonth currentMonth = YearMonth.now(ZoneOffset.UTC);
+    List<ProductFinancialMonthlyResultResponse> results = new ArrayList<>();
+    for (int offset = 0; offset < 4; offset++) {
+      YearMonth month = currentMonth.minusMonths(offset);
+      Instant start = month.atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+      Instant end = month.plusMonths(1).atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+      ProductFinancialAmountResponse cost =
+          sumAmounts(
+              amountFromUsd(videoCostUsd(marketNicheId, start, end)),
+              amountFromBrl(mediaCostBrl(marketNicheId, start, end)),
+              amountFromBrl(productLevelPdeCostForPeriod(product, month)));
+      ProductFinancialAmountResponse revenue = amountFromBrl(revenueBrl(marketNicheId, start, end));
+      results.add(
+          new ProductFinancialMonthlyResultResponse(
+              start, formatMonthLabel(month), cost, revenue, subtract(revenue, cost)));
+    }
+    return results;
+  }
+
+  /** Formata o nome comercial do mês usado na tela financeira. */
+  private String formatMonthLabel(YearMonth month) {
+    String monthName = month.getMonth().getDisplayName(TextStyle.FULL, BRAZIL);
+    return monthName.substring(0, 1).toUpperCase(BRAZIL)
+        + monthName.substring(1)
+        + " "
+        + month.getYear();
+  }
+
   /** Converte um valor em dólares para o par BRL/USD usado pela tela. */
   private ProductFinancialAmountResponse amountFromUsd(BigDecimal usd) {
     BigDecimal normalizedUsd = normalizeMoney(usd);
@@ -703,6 +738,17 @@ public class ProductService {
   /** Retorna o custo de produção PDE registrado diretamente no produto. */
   private BigDecimal productLevelPdeCost(Product product) {
     return Optional.ofNullable(product.getAiCost()).orElse(BigDecimal.ZERO);
+  }
+
+  /** Retorna o custo PDE apenas no mês em que ele deve ser atribuído. */
+  private BigDecimal productLevelPdeCostForPeriod(Product product, YearMonth month) {
+    BigDecimal aiCost = productLevelPdeCost(product);
+    if (aiCost.compareTo(BigDecimal.ZERO) == 0) {
+      return BigDecimal.ZERO;
+    }
+    Instant referenceInstant = Optional.ofNullable(product.getCreatedAt()).orElse(Instant.now());
+    YearMonth costMonth = YearMonth.from(referenceInstant.atZone(ZoneOffset.UTC));
+    return costMonth.equals(month) ? aiCost : BigDecimal.ZERO;
   }
 
   /** Soma receitas aprovadas em reais por período para o nicho do produto. */

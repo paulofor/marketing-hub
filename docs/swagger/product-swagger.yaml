@@ -219,6 +219,11 @@ components:
         yearStart:
           type: string
           format: date-time
+        monthlyResults:
+          type: array
+          description: Mês corrente e três meses anteriores com custo, receita e lucro consolidados.
+          items:
+            $ref: "#/components/schemas/ProductFinancialMonthlyResult"
         costs:
           type: array
           items:
@@ -227,6 +232,21 @@ components:
           $ref: "#/components/schemas/ProductFinancialLine"
         profit:
           $ref: "#/components/schemas/ProductFinancialLine"
+    ProductFinancialMonthlyResult:
+      type: object
+      properties:
+        monthStart:
+          type: string
+          format: date-time
+        monthLabel:
+          type: string
+          example: Julho 2026
+        cost:
+          $ref: "#/components/schemas/ProductFinancialAmount"
+        revenue:
+          $ref: "#/components/schemas/ProductFinancialAmount"
+        profit:
+          $ref: "#/components/schemas/ProductFinancialAmount"
     ProductFinancialLine:
       type: object
       properties:

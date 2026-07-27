@@ -324,6 +324,35 @@ public class ExperimentVideoAssetService {
                 ExperimentVideoReviewStatus.APPROVED);
     }
 
+    /** Verifica se o vídeo de campanha possui áudio confirmado e aprovação humana antes de tráfego pago. */
+    @Transactional(readOnly = true)
+    public boolean hasReadyApprovedAudibleVideoForPublication(Long experimentId, String videoId, String videoUrl) {
+        if (experimentId == null || (!StringUtils.hasText(videoId) && !StringUtils.hasText(videoUrl))) {
+            return false;
+        }
+        String normalizedVideoId = normalizeText(videoId);
+        String normalizedVideoUrl = normalizeText(videoUrl);
+        return repository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
+                .filter(asset -> asset.getStatus() == ExperimentVideoStatus.READY)
+                .filter(asset -> asset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
+                .filter(asset -> Boolean.TRUE.equals(asset.getHasAudio()))
+                .anyMatch(asset -> matchesPublicationVideo(asset, normalizedVideoId, normalizedVideoUrl));
+    }
+
+    /** Confirma se o ativo aprovado corresponde ao vídeo que será enviado para a Meta. */
+    private boolean matchesPublicationVideo(ExperimentVideoAsset asset, String videoId, String videoUrl) {
+        String assetUrl = normalizeText(asset.getAssetUrl());
+        Long assetId = asset.getAsset() != null ? asset.getAsset().getId() : null;
+        return (StringUtils.hasText(videoUrl) && videoUrl.equals(assetUrl))
+                || (StringUtils.hasText(videoId) && videoId.equals(normalizeText(assetUrl)))
+                || (assetId != null && StringUtils.hasText(videoId) && videoId.equals(assetId.toString()));
+    }
+
+    /** Normaliza texto livre para comparações determinísticas de contrato. */
+    private String normalizeText(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
     /** Aplica os campos opcionais enviados na atualização do ativo de vídeo. */
     private void applyUpdate(ExperimentVideoAsset videoAsset, UpdateExperimentVideoAssetRequest request, Long experimentId) {
         if (request.slot() != null) {

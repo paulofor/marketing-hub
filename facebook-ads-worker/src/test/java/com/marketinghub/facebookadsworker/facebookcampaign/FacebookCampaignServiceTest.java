@@ -684,8 +684,8 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
-    // Garante que a campanha não é criada quando a Meta retorna público acima do máximo operacional.
-    void skipsCampaignCreationWhenReachValidationIsAboveMaximumWithObjectData() throws Exception {
+    // Garante que público acima do alerta operacional gera aviso, mas não bloqueia teste controlado.
+    void continuesCampaignCreationWhenReachValidationIsAboveWarningThresholdWithObjectData() throws Exception {
         reachEstimateResponseBody = "{\"data\":{\"users_lower_bound\":84000000,\"users_upper_bound\":98900000,\"estimate_ready\":true}}";
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-high\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -694,6 +694,16 @@ class FacebookCampaignServiceTest {
         backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(defaultManualTargetingPackageResponse());
+        facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
 
         service.createCampaignsFromExperiments();
 
@@ -716,22 +726,22 @@ class FacebookCampaignServiceTest {
             request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
                 && "POST".equals(request.getMethod())
         );
-        RecordedRequest failureStepRequest = takeBackendRequestMatching(
-            "publication job failure step",
+        RecordedRequest warningStepRequest = takeBackendRequestMatching(
+            "publication job warning step",
             request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
                 && "POST".equals(request.getMethod())
         );
-        JsonNode failureStepPayload = objectMapper.readTree(failureStepRequest.getBody().inputStream());
-        assertEquals("CAMPAIGN_REACH_VALIDATION_BLOCKED", failureStepPayload.get("stepName").asText());
-        assertTrue(failureStepPayload.get("errorMessage").asText().contains("Público amplo demais"));
-        RecordedRequest failedStatusRequest = takeBackendRequestMatching(
-            "failed status update",
-            request -> request.getPath() != null
-                && request.getPath().contains("/api/experiments/1/status?status=FAILED")
-                && "PATCH".equals(request.getMethod())
+        JsonNode warningStepPayload = objectMapper.readTree(warningStepRequest.getBody().inputStream());
+        assertEquals("CAMPAIGN_REACH_VALIDATION_WARNING", warningStepPayload.get("stepName").asText());
+        assertTrue(warningStepPayload.get("errorMessage").asText().contains("Público amplo para teste controlado"));
+        RecordedRequest campaignRequest = takeFacebookRequest("campaign creation");
+        assertEquals("/v23.0/act_1/campaigns", campaignRequest.getPath());
+        RecordedRequest campaignReport = takeBackendRequestMatching(
+            "campaign report",
+            request -> "/api/facebook-campaigns".equals(request.getPath()) && "POST".equals(request.getMethod())
         );
-        assertNotNull(failedStatusRequest);
-        assertEquals(1, facebook.getRequestCount());
+        JsonNode backendPayload = objectMapper.readTree(campaignReport.getBody().inputStream());
+        assertEquals("ACTIVE", backendPayload.get("status").asText());
     }
 
     @Test

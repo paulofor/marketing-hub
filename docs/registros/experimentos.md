@@ -5163,6 +5163,14 @@
 - regra canônica atualizada: `docs/canonical/facebook-campaign-publication-canon.v1.md` agora define que qualquer item aprovado em interesse, cargo ou comportamento atende o mínimo operacional de público.
 - validação: testes do backend e do `facebook-ads-worker` cobrem o cenário de publicação com interesse aprovado sem cargo.
 
+## 2026-07-26 — Publicação Facebook: teto de público amplo vira alerta
+
+- solicitação: revisar o limite máximo de público porque a Meta usa criativos, objetivo e sinais próprios para direcionar campanhas dentro de públicos grandes.
+- decisão: manter bloqueio para público pequeno abaixo de 200.000 pessoas, mas deixar alcance acima de 20.000.000 como alerta operacional, não como bloqueio automático.
+- causa-raiz tratada: o teto fixo de 20.000.000 confundia risco de público genérico com inviabilidade comercial, podendo impedir testes onde o criativo específico filtra a dor e a Meta encontra bolsões de conversão.
+- correção aplicada: o `facebook-ads-worker` passa a registrar `CAMPAIGN_REACH_VALIDATION_WARNING` para público amplo e seguir com publicação controlada; o cânone e a documentação do worker foram alinhados.
+- prevenção de recorrência: teste unitário cobre público acima do alerta continuando a criação da campanha, enquanto o bloqueio por público pequeno permanece preservado.
+
 ## 2026-06-19 — Correção da query de pacote de targeting Facebook
 
 - solicitação: corrigir a query que fazia o endpoint `/api/facebook-adsets/experiments/{experimentId}/targeting-package` retornar `404` para experimento com interesses aprovados.

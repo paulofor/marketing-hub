@@ -21,6 +21,7 @@ databaseChangeLog:
                 id BIGINT NOT NULL AUTO_INCREMENT,
                 product_id BIGINT NOT NULL,
                 link VARCHAR(1024) NOT NULL,
+                link_hash CHAR(64) NOT NULL,
                 original_title VARCHAR(512) NOT NULL,
                 portuguese_title VARCHAR(512) NOT NULL,
                 summary LONGTEXT NOT NULL,
@@ -30,7 +31,7 @@ databaseChangeLog:
                 CONSTRAINT pk_product_scientific_article PRIMARY KEY (id),
                 CONSTRAINT fk_product_scientific_article_product
                   FOREIGN KEY (product_id) REFERENCES product (id),
-                CONSTRAINT uq_product_scientific_article_link UNIQUE (product_id, link)
+                CONSTRAINT uq_product_scientific_article_link_hash UNIQUE (product_id, link_hash)
               );
               CREATE INDEX idx_product_scientific_article_product
                 ON product_scientific_article (product_id, id);
@@ -57,6 +58,7 @@ databaseChangeLog:
               INSERT INTO product_scientific_article (
                 product_id,
                 link,
+                link_hash,
                 original_title,
                 portuguese_title,
                 summary,
@@ -64,6 +66,7 @@ databaseChangeLog:
               )
               SELECT id,
                      'https://doi.org/10.1016/j.jesp.2012.02.008',
+                     SHA2('https://doi.org/10.1016/j.jesp.2012.02.008', 256),
                      'Enclothed cognition',
                      'Cognição vestida',
                      'O artigo propõe que a roupa pode influenciar processos psicológicos quando a pessoa atribui significado simbólico à peça e a usa no contexto da tarefa.',
@@ -71,6 +74,7 @@ databaseChangeLog:
                 FROM product
                WHERE slug = 'metodo-musa-7-dias'
               ON DUPLICATE KEY UPDATE
+                link = VALUES(link),
                 original_title = VALUES(original_title),
                 portuguese_title = VALUES(portuguese_title),
                 summary = VALUES(summary),
@@ -78,6 +82,7 @@ databaseChangeLog:
               INSERT INTO product_scientific_article (
                 product_id,
                 link,
+                link_hash,
                 original_title,
                 portuguese_title,
                 summary,
@@ -85,6 +90,7 @@ databaseChangeLog:
               )
               SELECT id,
                      'https://doi.org/10.1177/1948550615579462',
+                     SHA2('https://doi.org/10.1177/1948550615579462', 256),
                      'The Cognitive Consequences of Formal Clothing',
                      'As consequências cognitivas da roupa formal',
                      'O estudo relaciona roupa formal a mudanças em processamento cognitivo e percepção de poder situacional, indicando que formalidade visual pode alterar a forma como a pessoa se percebe e atua.',
@@ -92,6 +98,7 @@ databaseChangeLog:
                 FROM product
                WHERE slug = 'metodo-musa-7-dias'
               ON DUPLICATE KEY UPDATE
+                link = VALUES(link),
                 original_title = VALUES(original_title),
                 portuguese_title = VALUES(portuguese_title),
                 summary = VALUES(summary),
@@ -99,6 +106,7 @@ databaseChangeLog:
               INSERT INTO product_scientific_article (
                 product_id,
                 link,
+                link_hash,
                 original_title,
                 portuguese_title,
                 summary,
@@ -106,6 +114,7 @@ databaseChangeLog:
               )
               SELECT id,
                      'https://doi.org/10.1108/13612021311305128',
+                     SHA2('https://doi.org/10.1108/13612021311305128', 256),
                      'The influence of clothing on first impressions',
                      'A influência da roupa nas primeiras impressões',
                      'O artigo analisa como escolhas de vestimenta participam da formação de primeiras impressões em contextos sociais e profissionais.',
@@ -113,6 +122,7 @@ databaseChangeLog:
                 FROM product
                WHERE slug = 'metodo-musa-7-dias'
               ON DUPLICATE KEY UPDATE
+                link = VALUES(link),
                 original_title = VALUES(original_title),
                 portuguese_title = VALUES(portuguese_title),
                 summary = VALUES(summary),
@@ -120,6 +130,7 @@ databaseChangeLog:
               INSERT INTO product_scientific_article (
                 product_id,
                 link,
+                link_hash,
                 original_title,
                 portuguese_title,
                 summary,
@@ -127,6 +138,7 @@ databaseChangeLog:
               )
               SELECT id,
                      'https://doi.org/10.1177/10888683231157961',
+                     SHA2('https://doi.org/10.1177/10888683231157961', 256),
                      'Dress is a Fundamental Component of Person Perception',
                      'A roupa é um componente fundamental da percepção de pessoas',
                      'A revisão posiciona a roupa como componente relevante da percepção social, conectando vestimenta a julgamentos sobre pessoa, contexto e intenção.',
@@ -134,6 +146,7 @@ databaseChangeLog:
                 FROM product
                WHERE slug = 'metodo-musa-7-dias'
               ON DUPLICATE KEY UPDATE
+                link = VALUES(link),
                 original_title = VALUES(original_title),
                 portuguese_title = VALUES(portuguese_title),
                 summary = VALUES(summary),

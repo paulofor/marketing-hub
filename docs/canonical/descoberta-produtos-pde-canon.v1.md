@@ -175,6 +175,33 @@ Toda oportunidade aprovada deve gerar um dossie curto e auditavel com:
 - score final;
 - decisao: aprovar, pesquisar mais, rejeitar ou pedir revisao humana.
 
+## Separacao entre historico legado e maturidade PDE
+
+Historico de campanhas, paginas, criativos ou produtos antigos nao deve ser tratado como
+validacao positiva automatica para priorizar um novo PDE. Esse historico deve ser usado
+como aprendizado de mercado, linguagem, objecoes, canais, dores percebidas e motivos de
+fracasso ou sucesso, mas nao como prova de que a oportunidade PDE atual esta pronta para
+venda.
+
+Toda classificacao comercial deve separar explicitamente tres tipos de maturidade:
+
+- maturidade de pesquisa: qualidade, quantidade e independencia das evidencias sobre a
+  dor, escala, desatendimento e linguagem do publico;
+- maturidade de ativo legado: existencia de campanha, landing page, produto, criativo,
+  publico salvo, experimento ou material antigo relacionado ao nicho;
+- maturidade PDE: existencia de mecanismo plausivel, microexperiencia personalizada,
+  valor percebido rapido, prova de aplicabilidade, caminho de compra e criterios de
+  entrega compativeis com Produto Digital de Experiencia.
+
+A prioridade comercial deve ser sustentada pela maturidade PDE, nao pela maturidade de
+ativo legado. Quando houver varias tentativas anteriores sem sucesso em um nicho, esse
+historico deve aumentar o risco comercial do candidato ate que a nova proposta demonstre
+uma diferenca real de mecanismo, experiencia, promessa, prova de valor e distribuicao.
+
+Um nicho com muitos ativos antigos pode ser marcado como "candidato com aprendizado
+acumulado", mas so deve ser tratado como benchmark ou prioridade de execucao quando a
+validacao PDE atual superar os motivos historicos de baixa conversao.
+
 ## Gates de negocio
 
 O modulo deve ter pelo menos quatro gates:

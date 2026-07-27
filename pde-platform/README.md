@@ -56,6 +56,21 @@ Docker:
 docker compose -f pde-platform/docker-compose.yml up --build
 ```
 
+Validação local integrada v5/v6:
+
+```bash
+bash pde-platform/scripts/test-musa-local-integration.sh
+```
+
+Esse comando sobe um MySQL 5.7 local de teste, inicia o backend PDE na porta
+`8096`, inicia o frontend PDE na porta `57180` e roda Playwright nos hostnames
+versionados `v5.clubemusa.com.br` e `v6.clubemusa.com.br` sem interceptar
+`/api`. A validação confirma que o frontend conversa com o backend real pelo
+proxy, que cada hostname resolve sua `experienceVersion`, que o MP4 da v6 é
+servido como `video/mp4` e que eventos de vídeo entram no analytics persistido.
+Use `PDE_KEEP_LOCAL_DB=1` para manter o banco após o teste e inspecionar os
+dados gravados.
+
 Deploy de produção:
 
 - Defina `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` apontando para o MySQL do Marketing Hub antes de subir o backend PDE.

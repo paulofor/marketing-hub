@@ -174,10 +174,12 @@ const PUBLIC_DIAGNOSTIC_MAX_POLL_ATTEMPTS = 90;
 const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
 const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
+const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
 const MUSA_DEFAULT_HERO_VIDEO_URL = '/assets/musa-v5-video-explicativo.mp4';
 const MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS = new Set([
   'musa-pde-entry-v5-estrada-desejo',
   MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+  MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
 ]);
 
 const fallbackProduct: ProductExperience = {
@@ -545,7 +547,8 @@ function isMusaDesireRoadExperience(experienceVersion: string) {
 }
 
 function isMusaVideoExplainerExperience(experienceVersion: string) {
-  return experienceVersion === MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
+  return experienceVersion === MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION
+    || experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
 }
 
 const presenceBlockers: DiagnosticOption[] = [

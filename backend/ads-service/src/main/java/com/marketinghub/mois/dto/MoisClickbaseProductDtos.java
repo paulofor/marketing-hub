@@ -5,20 +5,17 @@ import java.util.List;
 
 public final class MoisClickbaseProductDtos {
 
-    private MoisClickbaseProductDtos() {}
+  private MoisClickbaseProductDtos() {}
 
-    public record ClickbaseCollectedProductResponse(
-            String jobId,
-            String referenceId,
-            String title,
-            String productUrl,
-            String producerName,
-            Integer successScore,
-            Instant collectedAt
-    ) {}
+  public record ClickbaseCollectedProductResponse(
+      String jobId,
+      String referenceId,
+      String title,
+      String productUrl,
+      String producerName,
+      Integer successScore,
+      Instant collectedAt) {}
 
-    public record ClickbaseCollectedProductListResponse(
-            String workspaceId,
-            List<ClickbaseCollectedProductResponse> items
-    ) {}
+  public record ClickbaseCollectedProductListResponse(
+      String workspaceId, List<ClickbaseCollectedProductResponse> items) {}
 }

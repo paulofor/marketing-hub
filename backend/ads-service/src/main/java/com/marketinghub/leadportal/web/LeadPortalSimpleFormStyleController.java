@@ -19,55 +19,56 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/lead-portal/simple-form-styles")
 public class LeadPortalSimpleFormStyleController {
 
-    private final LeadPortalSimpleFormStyleService service;
+  private final LeadPortalSimpleFormStyleService service;
 
-    public LeadPortalSimpleFormStyleController(LeadPortalSimpleFormStyleService service) {
-        this.service = service;
-    }
+  public LeadPortalSimpleFormStyleController(LeadPortalSimpleFormStyleService service) {
+    this.service = service;
+  }
 
-    @GetMapping
-    public List<LeadPortalSimpleFormStyleDto> list() {
-        return service.listAll().stream().map(this::toDto).toList();
-    }
+  @GetMapping
+  public List<LeadPortalSimpleFormStyleDto> list() {
+    return service.listAll().stream().map(this::toDto).toList();
+  }
 
-    @GetMapping("/{id}")
-    public LeadPortalSimpleFormStyleDto get(@PathVariable Long id) {
-        return toDto(service.get(id));
-    }
+  @GetMapping("/{id}")
+  public LeadPortalSimpleFormStyleDto get(@PathVariable Long id) {
+    return toDto(service.get(id));
+  }
 
-    @PostMapping
-    public LeadPortalSimpleFormStyleDto create(@Valid @RequestBody CreateLeadPortalSimpleFormStyleRequest request) {
-        return toDto(service.create(request));
-    }
+  @PostMapping
+  public LeadPortalSimpleFormStyleDto create(
+      @Valid @RequestBody CreateLeadPortalSimpleFormStyleRequest request) {
+    return toDto(service.create(request));
+  }
 
-    @PutMapping("/{id}")
-    public LeadPortalSimpleFormStyleDto update(@PathVariable Long id,
-                                               @Valid @RequestBody UpdateLeadPortalSimpleFormStyleRequest request) {
-        return toDto(service.update(id, request));
-    }
+  @PutMapping("/{id}")
+  public LeadPortalSimpleFormStyleDto update(
+      @PathVariable Long id, @Valid @RequestBody UpdateLeadPortalSimpleFormStyleRequest request) {
+    return toDto(service.update(id, request));
+  }
 
-    private LeadPortalSimpleFormStyleDto toDto(LeadPortalSimpleFormStyle style) {
-        LeadPortalSimpleFormStyleDto dto = new LeadPortalSimpleFormStyleDto();
-        dto.setId(style.getId());
-        dto.setName(style.getName());
-        dto.setSlug(style.getSlug());
-        dto.setDescription(style.getDescription());
-        dto.setTextModel(style.getTextModel());
-        dto.setTextPrompt(style.getTextPrompt());
-        dto.setTextParameters(style.getTextParameters());
-        dto.setImageModel(style.getImageModel());
-        dto.setImagePrompt(style.getImagePrompt());
-        dto.setImageNegativePrompt(style.getImageNegativePrompt());
-        dto.setImageParameters(style.getImageParameters());
-        dto.setImageBatchSize(style.getImageBatchSize());
-        dto.setImageAspectRatio(style.getImageAspectRatio());
-        dto.setPreviewImageUrl(style.getPreviewImageUrl());
-        dto.setDefinition(style.getDefinition());
-        dto.setGenerationCostUsd(style.getGenerationCostUsd());
-        dto.setGenerationStatus(style.getGenerationStatus());
-        dto.setGenerationError(style.getGenerationError());
-        dto.setCreatedAt(style.getCreatedAt());
-        dto.setUpdatedAt(style.getUpdatedAt());
-        return dto;
-    }
+  private LeadPortalSimpleFormStyleDto toDto(LeadPortalSimpleFormStyle style) {
+    LeadPortalSimpleFormStyleDto dto = new LeadPortalSimpleFormStyleDto();
+    dto.setId(style.getId());
+    dto.setName(style.getName());
+    dto.setSlug(style.getSlug());
+    dto.setDescription(style.getDescription());
+    dto.setTextModel(style.getTextModel());
+    dto.setTextPrompt(style.getTextPrompt());
+    dto.setTextParameters(style.getTextParameters());
+    dto.setImageModel(style.getImageModel());
+    dto.setImagePrompt(style.getImagePrompt());
+    dto.setImageNegativePrompt(style.getImageNegativePrompt());
+    dto.setImageParameters(style.getImageParameters());
+    dto.setImageBatchSize(style.getImageBatchSize());
+    dto.setImageAspectRatio(style.getImageAspectRatio());
+    dto.setPreviewImageUrl(style.getPreviewImageUrl());
+    dto.setDefinition(style.getDefinition());
+    dto.setGenerationCostUsd(style.getGenerationCostUsd());
+    dto.setGenerationStatus(style.getGenerationStatus());
+    dto.setGenerationError(style.getGenerationError());
+    dto.setCreatedAt(style.getCreatedAt());
+    dto.setUpdatedAt(style.getUpdatedAt());
+    return dto;
+  }
 }

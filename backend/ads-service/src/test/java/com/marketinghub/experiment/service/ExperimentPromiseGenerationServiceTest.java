@@ -31,73 +31,81 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Responsabilidade: validar o registro assíncrono de opções de promessa única para experimentos. */
+/**
+ * Responsabilidade: validar o registro assíncrono de opções de promessa única para experimentos.
+ */
 @ExtendWith(MockitoExtension.class)
 class ExperimentPromiseGenerationServiceTest {
-    @Mock
-    private MarketNicheRepository nicheRepository;
-    @Mock
-    private HypothesisRepository hypothesisRepository;
-    @Mock
-    private ExperimentPromiseGenerationRequestRepository requestRepository;
-    @Mock
-    private ExperimentRepository experimentRepository;
-    @Mock
-    private CostAttributionService costAttributionService;
-    @Spy
-    private ObjectMapper objectMapper = new ObjectMapper();
-    @InjectMocks
-    private ExperimentPromiseGenerationService service;
+  @Mock private MarketNicheRepository nicheRepository;
+  @Mock private HypothesisRepository hypothesisRepository;
+  @Mock private ExperimentPromiseGenerationRequestRepository requestRepository;
+  @Mock private ExperimentRepository experimentRepository;
+  @Mock private CostAttributionService costAttributionService;
+  @Spy private ObjectMapper objectMapper = new ObjectMapper();
+  @InjectMocks private ExperimentPromiseGenerationService service;
 
-    /** Deve bloquear geração sem nicho porque a IA precisa de contexto comercial mínimo. */
-    @Test
-    void shouldRejectRequestWithoutNiche() {
-        assertThatThrownBy(() -> service.generate(new GenerateExperimentPromiseOptionsRequest(
-                null, null, null, null, null, null, null, null)))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Selecione um nicho");
-    }
+  /** Deve bloquear geração sem nicho porque a IA precisa de contexto comercial mínimo. */
+  @Test
+  void shouldRejectRequestWithoutNiche() {
+    assertThatThrownBy(
+            () ->
+                service.generate(
+                    new GenerateExperimentPromiseOptionsRequest(
+                        null, null, null, null, null, null, null, null)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Selecione um nicho");
+  }
 
-    /** Deve bloquear geração sem hipótese porque a IA precisa do pipeline completo da hipótese. */
-    @Test
-    void shouldRejectRequestWithoutHypothesis() {
-        assertThatThrownBy(() -> service.generate(new GenerateExperimentPromiseOptionsRequest(
-                7L, null, null, null, null, null, null, null)))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Selecione uma hipótese");
-    }
+  /** Deve bloquear geração sem hipótese porque a IA precisa do pipeline completo da hipótese. */
+  @Test
+  void shouldRejectRequestWithoutHypothesis() {
+    assertThatThrownBy(
+            () ->
+                service.generate(
+                    new GenerateExperimentPromiseOptionsRequest(
+                        7L, null, null, null, null, null, null, null)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Selecione uma hipótese");
+  }
 
-    /** Deve registrar solicitação pendente sem acessar OpenAI diretamente pelo backend. */
-    @Test
-    void shouldRegisterPendingPromiseOptionsRequest() {
-        UUID hypothesisId = UUID.randomUUID();
-        MarketNiche niche = MarketNiche.builder()
-                .id(7L)
-                .name("Salões de beleza")
-                .description("Nicho de profissionais locais")
-                .promises("Promessa validada")
-                .offers("Oferta validada")
-                .build();
-        Hypothesis hypothesis = Hypothesis.builder()
-                .id(hypothesisId)
-                .title("Hipótese de agenda")
-                .problem("{\"summary\":\"Clientes somem depois do atendimento\",\"evidenceSignals\":[\"evidência extensa que não deve entrar no prompt\"]}")
-                .promise("Agenda mais previsível")
-                .mechanism("Régua de manutenção")
-                .uniqueMechanism("Fluxo de manutenção guiada")
-                .entrega("Mensagens prontas")
-                .frameworkJson("{\"pain\":\"clientes somem\"}")
-                .prompt("Prompt bruto antigo que não deve entrar")
-                .build();
-        when(nicheRepository.findById(7L)).thenReturn(Optional.of(niche));
-        when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
-        when(requestRepository.save(any())).thenAnswer(invocation -> {
-            ExperimentPromiseGenerationRequest saved = invocation.getArgument(0);
-            saved.setId(123L);
-            return saved;
-        });
+  /** Deve registrar solicitação pendente sem acessar OpenAI diretamente pelo backend. */
+  @Test
+  void shouldRegisterPendingPromiseOptionsRequest() {
+    UUID hypothesisId = UUID.randomUUID();
+    MarketNiche niche =
+        MarketNiche.builder()
+            .id(7L)
+            .name("Salões de beleza")
+            .description("Nicho de profissionais locais")
+            .promises("Promessa validada")
+            .offers("Oferta validada")
+            .build();
+    Hypothesis hypothesis =
+        Hypothesis.builder()
+            .id(hypothesisId)
+            .title("Hipótese de agenda")
+            .problem(
+                "{\"summary\":\"Clientes somem depois do atendimento\",\"evidenceSignals\":[\"evidência extensa que não deve entrar no prompt\"]}")
+            .promise("Agenda mais previsível")
+            .mechanism("Régua de manutenção")
+            .uniqueMechanism("Fluxo de manutenção guiada")
+            .entrega("Mensagens prontas")
+            .frameworkJson("{\"pain\":\"clientes somem\"}")
+            .prompt("Prompt bruto antigo que não deve entrar")
+            .build();
+    when(nicheRepository.findById(7L)).thenReturn(Optional.of(niche));
+    when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+    when(requestRepository.save(any()))
+        .thenAnswer(
+            invocation -> {
+              ExperimentPromiseGenerationRequest saved = invocation.getArgument(0);
+              saved.setId(123L);
+              return saved;
+            });
 
-        var response = service.generate(new GenerateExperimentPromiseOptionsRequest(
+    var response =
+        service.generate(
+            new GenerateExperimentPromiseOptionsRequest(
                 7L,
                 hypothesisId,
                 null,
@@ -107,156 +115,163 @@ class ExperimentPromiseGenerationServiceTest {
                 "cta digitado",
                 null));
 
-        assertThat(response.requestId()).isEqualTo(123L);
-        assertThat(response.status()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING.name());
-        assertThat(response.options()).isEmpty();
-        ArgumentCaptor<ExperimentPromiseGenerationRequest> requestCaptor = ArgumentCaptor.forClass(
-                ExperimentPromiseGenerationRequest.class);
-        verify(requestRepository).save(requestCaptor.capture());
-        ExperimentPromiseGenerationRequest persisted = requestCaptor.getValue();
-        assertThat(persisted.getPrompt())
-                .contains(
-                        "Nicho selecionado",
-                        "Hipótese selecionada",
-                        "Clientes somem depois do atendimento",
-                        "Tipo de experimento: Teste de nicho com isca digital")
-                .doesNotContain("evidência extensa", "Prompt bruto antigo", "dor digitada", "recompensa digitada");
-        assertThat(persisted.getPrompt().length()).isLessThan(8_000);
-        assertThat(persisted.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING);
-    }
+    assertThat(response.requestId()).isEqualTo(123L);
+    assertThat(response.status())
+        .isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING.name());
+    assertThat(response.options()).isEmpty();
+    ArgumentCaptor<ExperimentPromiseGenerationRequest> requestCaptor =
+        ArgumentCaptor.forClass(ExperimentPromiseGenerationRequest.class);
+    verify(requestRepository).save(requestCaptor.capture());
+    ExperimentPromiseGenerationRequest persisted = requestCaptor.getValue();
+    assertThat(persisted.getPrompt())
+        .contains(
+            "Nicho selecionado",
+            "Hipótese selecionada",
+            "Clientes somem depois do atendimento",
+            "Tipo de experimento: Teste de nicho com isca digital")
+        .doesNotContain(
+            "evidência extensa", "Prompt bruto antigo", "dor digitada", "recompensa digitada");
+    assertThat(persisted.getPrompt().length()).isLessThan(8_000);
+    assertThat(persisted.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING);
+  }
 
-    /** Deve orientar a IA como venda low-ticket quando a tela escolher produto low-ticket. */
-    @Test
-    void shouldBuildLowTicketPromptWhenExperimentTypeIsLowTicketProduct() {
-        UUID hypothesisId = UUID.randomUUID();
-        MarketNiche niche = MarketNiche.builder()
-                .id(8L)
-                .name("Manicure autônoma")
-                .build();
-        Hypothesis hypothesis = Hypothesis.builder()
-                .id(hypothesisId)
-                .title("Agenda blindada")
-                .problem("Cliente desmarca em cima da hora")
-                .promise("Agenda com menos buracos")
-                .build();
-        when(nicheRepository.findById(8L)).thenReturn(Optional.of(niche));
-        when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
-        when(requestRepository.save(any())).thenAnswer(invocation -> {
-            ExperimentPromiseGenerationRequest saved = invocation.getArgument(0);
-            saved.setId(124L);
-            return saved;
-        });
+  /** Deve orientar a IA como venda low-ticket quando a tela escolher produto low-ticket. */
+  @Test
+  void shouldBuildLowTicketPromptWhenExperimentTypeIsLowTicketProduct() {
+    UUID hypothesisId = UUID.randomUUID();
+    MarketNiche niche = MarketNiche.builder().id(8L).name("Manicure autônoma").build();
+    Hypothesis hypothesis =
+        Hypothesis.builder()
+            .id(hypothesisId)
+            .title("Agenda blindada")
+            .problem("Cliente desmarca em cima da hora")
+            .promise("Agenda com menos buracos")
+            .build();
+    when(nicheRepository.findById(8L)).thenReturn(Optional.of(niche));
+    when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+    when(requestRepository.save(any()))
+        .thenAnswer(
+            invocation -> {
+              ExperimentPromiseGenerationRequest saved = invocation.getArgument(0);
+              saved.setId(124L);
+              return saved;
+            });
 
-        service.generate(new GenerateExperimentPromiseOptionsRequest(
-                8L, hypothesisId, ExperimentType.LOW_TICKET_PRODUCT, null, null, null, null, null));
+    service.generate(
+        new GenerateExperimentPromiseOptionsRequest(
+            8L, hypothesisId, ExperimentType.LOW_TICKET_PRODUCT, null, null, null, null, null));
 
-        ArgumentCaptor<ExperimentPromiseGenerationRequest> requestCaptor = ArgumentCaptor.forClass(
-                ExperimentPromiseGenerationRequest.class);
-        verify(requestRepository).save(requestCaptor.capture());
-        assertThat(requestCaptor.getValue().getPrompt())
-                .contains(
-                        "Tipo de experimento: Produto low-ticket",
-                        "checkout e entrega paga",
-                        "Metrica central: compra, clique no checkout e compra aprovada",
-                        "freeReward deve ser prova/preview",
-                        "nao usar CTA de receber amostra",
-                        "page_view, checkout_click, purchase",
-                        "nao trate como teste de nicho")
-                .doesNotContain("Tipo de experimento: Teste de nicho com isca digital");
-    }
+    ArgumentCaptor<ExperimentPromiseGenerationRequest> requestCaptor =
+        ArgumentCaptor.forClass(ExperimentPromiseGenerationRequest.class);
+    verify(requestRepository).save(requestCaptor.capture());
+    assertThat(requestCaptor.getValue().getPrompt())
+        .contains(
+            "Tipo de experimento: Produto low-ticket",
+            "checkout e entrega paga",
+            "Metrica central: compra, clique no checkout e compra aprovada",
+            "freeReward deve ser prova/preview",
+            "nao usar CTA de receber amostra",
+            "page_view, checkout_click, purchase",
+            "nao trate como teste de nicho")
+        .doesNotContain("Tipo de experimento: Teste de nicho com isca digital");
+  }
 
-    /** Deve retornar o status persistido para a tela acompanhar a solicitação até a conclusão. */
-    @Test
-    void shouldGetPersistedPromiseOptionsRequestStatus() {
-        ExperimentPromiseGenerationRequest request = ExperimentPromiseGenerationRequest.builder()
-                .status(ExperimentPromiseGenerationRequestStatus.PROCESSING)
-                .build();
-        request.setId(456L);
-        when(requestRepository.findById(456L)).thenReturn(Optional.of(request));
+  /** Deve retornar o status persistido para a tela acompanhar a solicitação até a conclusão. */
+  @Test
+  void shouldGetPersistedPromiseOptionsRequestStatus() {
+    ExperimentPromiseGenerationRequest request =
+        ExperimentPromiseGenerationRequest.builder()
+            .status(ExperimentPromiseGenerationRequestStatus.PROCESSING)
+            .build();
+    request.setId(456L);
+    when(requestRepository.findById(456L)).thenReturn(Optional.of(request));
 
-        var response = service.get(456L);
+    var response = service.get(456L);
 
-        assertThat(response.requestId()).isEqualTo(456L);
-        assertThat(response.status()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PROCESSING.name());
-        assertThat(response.options()).isEmpty();
-    }
+    assertThat(response.requestId()).isEqualTo(456L);
+    assertThat(response.status())
+        .isEqualTo(ExperimentPromiseGenerationRequestStatus.PROCESSING.name());
+    assertThat(response.options()).isEmpty();
+  }
 
-    /** Deve retornar o rascunho mais recente pelo backend, sem depender de armazenamento no navegador. */
-    @Test
-    void shouldGetLatestDraftFromBackend() {
-        UUID hypothesisId = UUID.randomUUID();
-        MarketNiche niche = MarketNiche.builder()
-                .id(7L)
-                .name("Manicure")
-                .build();
-        Hypothesis hypothesis = Hypothesis.builder()
-                .id(hypothesisId)
-                .title("Agenda irregular")
-                .build();
-        ExperimentPromiseGenerationRequest request = ExperimentPromiseGenerationRequest.builder()
-                .niche(niche)
-                .hypothesis(hypothesis)
-                .status(ExperimentPromiseGenerationRequestStatus.PROCESSING)
-                .currentSinglePain("agenda quebra")
-                .currentFreeReward("mensagens prontas")
-                .currentFunnelPromise("organizar agenda")
-                .currentPrimaryCta("receber mensagens")
-                .build();
-        request.setId(789L);
-        when(requestRepository.findTop10ByStatusInOrderByCreatedAtDesc(List.of(
+  /**
+   * Deve retornar o rascunho mais recente pelo backend, sem depender de armazenamento no navegador.
+   */
+  @Test
+  void shouldGetLatestDraftFromBackend() {
+    UUID hypothesisId = UUID.randomUUID();
+    MarketNiche niche = MarketNiche.builder().id(7L).name("Manicure").build();
+    Hypothesis hypothesis = Hypothesis.builder().id(hypothesisId).title("Agenda irregular").build();
+    ExperimentPromiseGenerationRequest request =
+        ExperimentPromiseGenerationRequest.builder()
+            .niche(niche)
+            .hypothesis(hypothesis)
+            .status(ExperimentPromiseGenerationRequestStatus.PROCESSING)
+            .currentSinglePain("agenda quebra")
+            .currentFreeReward("mensagens prontas")
+            .currentFunnelPromise("organizar agenda")
+            .currentPrimaryCta("receber mensagens")
+            .build();
+    request.setId(789L);
+    when(requestRepository.findTop10ByStatusInOrderByCreatedAtDesc(
+            List.of(
                 ExperimentPromiseGenerationRequestStatus.PENDING,
                 ExperimentPromiseGenerationRequestStatus.PROCESSING,
-                ExperimentPromiseGenerationRequestStatus.COMPLETED))).thenReturn(List.of(request));
-        when(experimentRepository.existsByHypothesisRefAndStatusNot(hypothesis, ExperimentStatus.PLANNED)).thenReturn(false);
+                ExperimentPromiseGenerationRequestStatus.COMPLETED)))
+        .thenReturn(List.of(request));
+    when(experimentRepository.existsByHypothesisRefAndStatusNot(
+            hypothesis, ExperimentStatus.PLANNED))
+        .thenReturn(false);
 
-        var response = service.latestDraft();
+    var response = service.latestDraft();
 
-        assertThat(response).isPresent();
-        assertThat(response.get().requestId()).isEqualTo(789L);
-        assertThat(response.get().nicheId()).isEqualTo(7L);
-        assertThat(response.get().hypothesisId()).isEqualTo(hypothesisId);
-        assertThat(response.get().currentSinglePain()).isEqualTo("agenda quebra");
-    }
+    assertThat(response).isPresent();
+    assertThat(response.get().requestId()).isEqualTo(789L);
+    assertThat(response.get().nicheId()).isEqualTo(7L);
+    assertThat(response.get().hypothesisId()).isEqualTo(hypothesisId);
+    assertThat(response.get().currentSinglePain()).isEqualTo("agenda quebra");
+  }
 
-
-    /** Deve ocultar rascunho quando a hipótese já possui teste fora da criação. */
-    @Test
-    void shouldIgnoreDraftWhenHypothesisAlreadyHasRunningExperiment() {
-        UUID hypothesisId = UUID.randomUUID();
-        Hypothesis hypothesis = Hypothesis.builder()
-                .id(hypothesisId)
-                .title("Agenda irregular")
-                .build();
-        ExperimentPromiseGenerationRequest request = ExperimentPromiseGenerationRequest.builder()
-                .niche(MarketNiche.builder().id(7L).name("Manicure").build())
-                .hypothesis(hypothesis)
-                .status(ExperimentPromiseGenerationRequestStatus.COMPLETED)
-                .build();
-        request.setId(790L);
-        when(requestRepository.findTop10ByStatusInOrderByCreatedAtDesc(List.of(
+  /** Deve ocultar rascunho quando a hipótese já possui teste fora da criação. */
+  @Test
+  void shouldIgnoreDraftWhenHypothesisAlreadyHasRunningExperiment() {
+    UUID hypothesisId = UUID.randomUUID();
+    Hypothesis hypothesis = Hypothesis.builder().id(hypothesisId).title("Agenda irregular").build();
+    ExperimentPromiseGenerationRequest request =
+        ExperimentPromiseGenerationRequest.builder()
+            .niche(MarketNiche.builder().id(7L).name("Manicure").build())
+            .hypothesis(hypothesis)
+            .status(ExperimentPromiseGenerationRequestStatus.COMPLETED)
+            .build();
+    request.setId(790L);
+    when(requestRepository.findTop10ByStatusInOrderByCreatedAtDesc(
+            List.of(
                 ExperimentPromiseGenerationRequestStatus.PENDING,
                 ExperimentPromiseGenerationRequestStatus.PROCESSING,
-                ExperimentPromiseGenerationRequestStatus.COMPLETED))).thenReturn(List.of(request));
-        when(experimentRepository.existsByHypothesisRefAndStatusNot(hypothesis, ExperimentStatus.PLANNED)).thenReturn(true);
+                ExperimentPromiseGenerationRequestStatus.COMPLETED)))
+        .thenReturn(List.of(request));
+    when(experimentRepository.existsByHypothesisRefAndStatusNot(
+            hypothesis, ExperimentStatus.PLANNED))
+        .thenReturn(true);
 
-        var response = service.latestDraft();
+    var response = service.latestDraft();
 
-        assertThat(response).isEmpty();
-    }
+    assertThat(response).isEmpty();
+  }
 
-    /** Deve descartar o rascunho retomável para não manter atalho antigo após salvar o teste. */
-    @Test
-    void shouldDismissDraftAfterExperimentCreation() {
-        ExperimentPromiseGenerationRequest request = ExperimentPromiseGenerationRequest.builder()
-                .status(ExperimentPromiseGenerationRequestStatus.COMPLETED)
-                .build();
-        request.setId(987L);
-        when(requestRepository.findById(987L)).thenReturn(Optional.of(request));
+  /** Deve descartar o rascunho retomável para não manter atalho antigo após salvar o teste. */
+  @Test
+  void shouldDismissDraftAfterExperimentCreation() {
+    ExperimentPromiseGenerationRequest request =
+        ExperimentPromiseGenerationRequest.builder()
+            .status(ExperimentPromiseGenerationRequestStatus.COMPLETED)
+            .build();
+    request.setId(987L);
+    when(requestRepository.findById(987L)).thenReturn(Optional.of(request));
 
-        service.dismiss(987L);
+    service.dismiss(987L);
 
-        assertThat(request.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.DISMISSED);
-        assertThat(request.getFinishedAt()).isNotNull();
-    }
-
+    assertThat(request.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.DISMISSED);
+    assertThat(request.getFinishedAt()).isNotNull();
+  }
 }

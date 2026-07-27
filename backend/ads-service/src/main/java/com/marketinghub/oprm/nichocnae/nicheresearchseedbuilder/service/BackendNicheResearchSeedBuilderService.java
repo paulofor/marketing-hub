@@ -4,6 +4,7 @@ import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.CompleteNicheResearchSeedBuilderRequest;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.CompleteNicheResearchSeedBuilderResponse;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.NicheResearchQueryRequest;
@@ -11,7 +12,6 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.complete
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.detailStageExecution.NicheResearchSeedBuilderDetailResponse;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStageExecution.FailNicheResearchSeedBuilderRequest;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.pending.RecordNicheResearchSeedBuilderPending;
-import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
 import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
@@ -29,18 +29,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Responsável por persistir o seed operacional e as frases de pesquisa da etapa dois do OPRM nicho CNAE. */
+/**
+ * Responsável por persistir o seed operacional e as frases de pesquisa da etapa dois do OPRM nicho
+ * CNAE.
+ */
 @Service
 public class BackendNicheResearchSeedBuilderService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(BackendNicheResearchSeedBuilderService.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BackendNicheResearchSeedBuilderService.class);
   private static final String CYCLE_STATUS_RUNNING = "RUNNING";
   private static final String CYCLE_STATUS_FAILED = "FAILED";
   private static final String CURRENT_STAGE_SEED_BUILDER = "niche-research-seed-builder";
   private static final String CURRENT_STAGE_SOURCE_SEARCHER = "source-searcher";
   private static final String QUERY_STATUS_PENDING = "PENDING";
   private static final String RETRYABLE_LEGACY_CONTRACT_ERROR = "nicheName is required";
-  private static final String RETRYABLE_QUERY_GOAL_LENGTH_ERROR = "Data too long for column 'query_goal'";
-  private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
+  private static final String RETRYABLE_QUERY_GOAL_LENGTH_ERROR =
+      "Data too long for column 'query_goal'";
+  private static final String COMPLETE_STAGE_PATH_FRAGMENT =
+      "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
@@ -91,17 +97,21 @@ public class BackendNicheResearchSeedBuilderService {
     try {
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
       if (nicheResearchSeedRepository.existsByResearchCycleId(researchCycleId)) {
-        throw new IllegalStateException("Niche research seed already exists for cycle: " + researchCycleId);
+        throw new IllegalStateException(
+            "Niche research seed already exists for cycle: " + researchCycleId);
       }
 
       Instant now = Instant.now();
-      OprmNicheResearchSeed savedSeed = nicheResearchSeedRepository.save(createSeed(cycle, request, now));
-      List<OprmResearchQuery> savedQueries = researchQueryRepository.saveAll(createQueries(
-          cycle,
-          savedSeed.getId(),
-          request == null ? null : request.queries(),
-          normalizeCreatedBy(request == null ? null : request.createdBy()),
-          now));
+      OprmNicheResearchSeed savedSeed =
+          nicheResearchSeedRepository.save(createSeed(cycle, request, now));
+      List<OprmResearchQuery> savedQueries =
+          researchQueryRepository.saveAll(
+              createQueries(
+                  cycle,
+                  savedSeed.getId(),
+                  request == null ? null : request.queries(),
+                  normalizeCreatedBy(request == null ? null : request.createdBy()),
+                  now));
       reactivateCycleAfterSuccessfulCompletion(cycle);
       applyWinningSubnicheToCycle(cycle, savedSeed);
       cycle.setTotalQueries(savedQueries.size());
@@ -133,14 +143,20 @@ public class BackendNicheResearchSeedBuilderService {
       routineResearchCycleRepository.save(cycle);
     } catch (RuntimeException ex) {
       LOGGER.error(
-          "Erro ao registrar falha da etapa dois do OPRM nichocnae (researchCycleId={})", researchCycleId, ex);
+          "Erro ao registrar falha da etapa dois do OPRM nichocnae (researchCycleId={})",
+          researchCycleId,
+          ex);
       throw ex;
     }
   }
 
-  /** Monta a mensagem de falha preservando a causa técnica detalhada quando o coletor enviar essa informação. */
+  /**
+   * Monta a mensagem de falha preservando a causa técnica detalhada quando o coletor enviar essa
+   * informação.
+   */
   private String buildFailureMessage(FailNicheResearchSeedBuilderRequest request) {
-    String errorMessage = requiredText(request == null ? null : request.errorMessage(), "errorMessage");
+    String errorMessage =
+        requiredText(request == null ? null : request.errorMessage(), "errorMessage");
     String errorDetail = trimToNull(request.errorDetail());
     if (errorDetail == null || errorDetail.equals(errorMessage)) {
       return errorMessage;
@@ -152,16 +168,23 @@ public class BackendNicheResearchSeedBuilderService {
   @Transactional(readOnly = true)
   public NicheResearchSeedBuilderDetailResponse detail(Long researchCycleId) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-    CompleteNicheResearchSeedBuilderResponse seed = nicheResearchSeedRepository
-        .findByResearchCycleId(researchCycleId)
-        .map(foundSeed -> toResponse(
-            foundSeed, researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId)))
-        .orElse(null);
+    CompleteNicheResearchSeedBuilderResponse seed =
+        nicheResearchSeedRepository
+            .findByResearchCycleId(researchCycleId)
+            .map(
+                foundSeed ->
+                    toResponse(
+                        foundSeed,
+                        researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(
+                            researchCycleId)))
+            .orElse(null);
     return new NicheResearchSeedBuilderDetailResponse(
         cycle.getId(), cycle.getStatus(), cycle.getTotalQueries(), cycle.getErrorMessage(), seed);
   }
 
-  /** Reabre o ciclo quando uma falha retryável da etapa dois é concluída com sucesso após correção. */
+  /**
+   * Reabre o ciclo quando uma falha retryável da etapa dois é concluída com sucesso após correção.
+   */
   private void reactivateCycleAfterSuccessfulCompletion(OprmRoutineResearchCycle cycle) {
     if (CYCLE_STATUS_FAILED.equals(cycle.getStatus())) {
       cycle.setStatus(CYCLE_STATUS_RUNNING);
@@ -175,11 +198,15 @@ public class BackendNicheResearchSeedBuilderService {
   private OprmRoutineResearchCycle findCycle(Long researchCycleId) {
     return routineResearchCycleRepository
         .findById(researchCycleId)
-        .orElseThrow(() -> new EntityNotFoundException("Routine research cycle not found: " + researchCycleId));
+        .orElseThrow(
+            () ->
+                new EntityNotFoundException(
+                    "Routine research cycle not found: " + researchCycleId));
   }
 
   /**
-   * Mantém a conclusão da etapa dois tolerante a campos ausentes para não bloquear o pipeline por validação do modelo.
+   * Mantém a conclusão da etapa dois tolerante a campos ausentes para não bloquear o pipeline por
+   * validação do modelo.
    */
   private String textOrDefault(String value, String fallback) {
     return StringUtils.hasText(value) ? value.trim() : fallback;
@@ -187,24 +214,34 @@ public class BackendNicheResearchSeedBuilderService {
 
   /** Cria a entidade de seed do nicho usando o ciclo canônico como fonte dos dados CNAE. */
   private OprmNicheResearchSeed createSeed(
-      OprmRoutineResearchCycle cycle, CompleteNicheResearchSeedBuilderRequest request, Instant now) {
+      OprmRoutineResearchCycle cycle,
+      CompleteNicheResearchSeedBuilderRequest request,
+      Instant now) {
     String winningSubnicheName = resolveWinningSubnicheName(cycle, request);
     OprmNicheResearchSeed seed = new OprmNicheResearchSeed();
     seed.setResearchCycleId(cycle.getId());
     seed.setCnaeCode(cycle.getCnaeCode());
     seed.setCnaeDescription(cycle.getCnaeDescription());
     seed.setNicheName(winningSubnicheName);
-    seed.setBusinessType(textOrDefault(request == null ? null : request.businessType(), cycle.getCnaeDescription()));
-    seed.setOperationType(textOrDefault(
-        request == null ? null : request.operationType(), "Rotina operacional do CNAE " + cycle.getCnaeCode()));
+    seed.setBusinessType(
+        textOrDefault(request == null ? null : request.businessType(), cycle.getCnaeDescription()));
+    seed.setOperationType(
+        textOrDefault(
+            request == null ? null : request.operationType(),
+            "Rotina operacional do CNAE " + cycle.getCnaeCode()));
     seed.setCustomerType(
-        textOrDefault(request == null ? null : request.customerType(), "Clientes do profissional deste CNAE"));
+        textOrDefault(
+            request == null ? null : request.customerType(),
+            "Clientes do profissional deste CNAE"));
     seed.setCommercialObjects(
-        textOrDefault(request == null ? null : request.commercialObjects(), cycle.getCnaeDescription()));
-    seed.setInitialAssumptions(textOrDefault(
-        request == null ? null : request.initialAssumptions(),
-        "Seed gravado sem validação bloqueante; revisar evidências nas próximas etapas."));
-    seed.setConfidenceLevel(textOrDefault(request == null ? null : request.confidenceLevel(), "UNVALIDATED"));
+        textOrDefault(
+            request == null ? null : request.commercialObjects(), cycle.getCnaeDescription()));
+    seed.setInitialAssumptions(
+        textOrDefault(
+            request == null ? null : request.initialAssumptions(),
+            "Seed gravado sem validação bloqueante; revisar evidências nas próximas etapas."));
+    seed.setConfidenceLevel(
+        textOrDefault(request == null ? null : request.confidenceLevel(), "UNVALIDATED"));
     seed.setCreatedBy(normalizeCreatedBy(request == null ? null : request.createdBy()));
     seed.setCreatedAt(now);
     seed.setModel(trimToNull(request == null ? null : request.model()));
@@ -223,12 +260,19 @@ public class BackendNicheResearchSeedBuilderService {
       OprmRoutineResearchCycle cycle, CompleteNicheResearchSeedBuilderRequest request) {
     return textOrDefault(
         request == null ? null : request.nicheName(),
-        textOrDefault(cycle.getNicheName(), textOrDefault(cycle.getNeutralNicheName(), cycle.getCnaeDescription())));
+        textOrDefault(
+            cycle.getNicheName(),
+            textOrDefault(cycle.getNeutralNicheName(), cycle.getCnaeDescription())));
   }
 
-  /** Atualiza o ciclo para que todas as etapas posteriores pesquisem e materializem o subnicho vencedor. */
-  private void applyWinningSubnicheToCycle(OprmRoutineResearchCycle cycle, OprmNicheResearchSeed seed) {
-    String winningSubnicheName = requiredText(seed == null ? null : seed.getNicheName(), "winningSubnicheName");
+  /**
+   * Atualiza o ciclo para que todas as etapas posteriores pesquisem e materializem o subnicho
+   * vencedor.
+   */
+  private void applyWinningSubnicheToCycle(
+      OprmRoutineResearchCycle cycle, OprmNicheResearchSeed seed) {
+    String winningSubnicheName =
+        requiredText(seed == null ? null : seed.getNicheName(), "winningSubnicheName");
     if (!StringUtils.hasText(cycle.getOriginalNicheName())) {
       cycle.setOriginalNicheName(textOrDefault(cycle.getNicheName(), cycle.getCnaeDescription()));
     }
@@ -236,7 +280,9 @@ public class BackendNicheResearchSeedBuilderService {
     cycle.setNeutralNicheName(winningSubnicheName);
   }
 
-  /** Cria as entidades de query com status pendente para execução pela próxima etapa do pipeline. */
+  /**
+   * Cria as entidades de query com status pendente para execução pela próxima etapa do pipeline.
+   */
   private List<OprmResearchQuery> createQueries(
       OprmRoutineResearchCycle cycle,
       Long nicheResearchSeedId,
@@ -244,10 +290,14 @@ public class BackendNicheResearchSeedBuilderService {
       String createdBy,
       Instant now) {
     List<NicheResearchQueryRequest> safeQueryRequests =
-        queryRequests == null || queryRequests.isEmpty() ? List.of(defaultQueryRequest(cycle)) : queryRequests;
+        queryRequests == null || queryRequests.isEmpty()
+            ? List.of(defaultQueryRequest(cycle))
+            : queryRequests;
     return safeQueryRequests.stream()
         .map(queryRequest -> createQuery(cycle, nicheResearchSeedId, queryRequest, createdBy, now))
-        .sorted(Comparator.comparing(OprmResearchQuery::getPriority).thenComparing(OprmResearchQuery::getQueryText))
+        .sorted(
+            Comparator.comparing(OprmResearchQuery::getPriority)
+                .thenComparing(OprmResearchQuery::getQueryText))
         .toList();
   }
 
@@ -262,10 +312,13 @@ public class BackendNicheResearchSeedBuilderService {
     query.setResearchCycleId(cycle.getId());
     query.setNicheResearchSeedId(nicheResearchSeedId);
     query.setQueryText(
-        textOrDefault(queryRequest == null ? null : queryRequest.queryText(), defaultQueryText(cycle)));
-    query.setQueryGoal(textOrDefault(queryRequest == null ? null : queryRequest.queryGoal(), "ROUTINE_DISCOVERY"));
+        textOrDefault(
+            queryRequest == null ? null : queryRequest.queryText(), defaultQueryText(cycle)));
+    query.setQueryGoal(
+        textOrDefault(queryRequest == null ? null : queryRequest.queryGoal(), "ROUTINE_DISCOVERY"));
     query.setSourceGroup(trimToNull(queryRequest == null ? null : queryRequest.sourceGroup()));
-    query.setPriority(queryRequest == null || queryRequest.priority() == null ? 100 : queryRequest.priority());
+    query.setPriority(
+        queryRequest == null || queryRequest.priority() == null ? 100 : queryRequest.priority());
     query.setStatus(QUERY_STATUS_PENDING);
     query.setResultCount(0);
     query.setCreatedBy(createdBy);
@@ -276,23 +329,32 @@ public class BackendNicheResearchSeedBuilderService {
 
   /** Cria uma query mínima comercial-operacional quando o modelo não envia queries. */
   private NicheResearchQueryRequest defaultQueryRequest(OprmRoutineResearchCycle cycle) {
-    return new NicheResearchQueryRequest(defaultQueryText(cycle), "COMMERCIAL_OPERATION_DISCOVERY", "WEB", 100);
+    return new NicheResearchQueryRequest(
+        defaultQueryText(cycle), "COMMERCIAL_OPERATION_DISCOVERY", "WEB", 100);
   }
 
-  /** Monta texto de pesquisa padrão a partir do CNAE com foco em clientes, agenda, cobrança e retrabalho. */
+  /**
+   * Monta texto de pesquisa padrão a partir do CNAE com foco em clientes, agenda, cobrança e
+   * retrabalho.
+   */
   private String defaultQueryText(OprmRoutineResearchCycle cycle) {
     return "WhatsApp Instagram indicação agenda faltas preço cobrança materiais retrabalho Brasil "
         + cycle.getCnaeDescription();
   }
 
-  /** Converte um ciclo pendente no contrato interno de unidade de trabalho da etapa dois com aprendizado do gate anterior. */
+  /**
+   * Converte um ciclo pendente no contrato interno de unidade de trabalho da etapa dois com
+   * aprendizado do gate anterior.
+   */
   private RecordNicheResearchSeedBuilderPending toPending(OprmRoutineResearchCycle cycle) {
     OprmNicheResearchSeedBuilderModel configuredModel = resolveConfiguredOpenAiModel();
     OprmNicheRoutineCard previousCard = findPreviousCheckedCard(cycle);
-    String previousNotes = previousCard == null ? cycle.getErrorMessage() : previousCard.getQualityNotes();
-    String previousQualityStatus = previousCard == null
-        ? extractQualityNote(cycle.getErrorMessage(), "previousQualityStatus")
-        : previousCard.getQualityStatus();
+    String previousNotes =
+        previousCard == null ? cycle.getErrorMessage() : previousCard.getQualityNotes();
+    String previousQualityStatus =
+        previousCard == null
+            ? extractQualityNote(cycle.getErrorMessage(), "previousQualityStatus")
+            : previousCard.getQualityStatus();
     return new RecordNicheResearchSeedBuilderPending(
         cycle.getId(),
         cycle.getSourceNicheId(),
@@ -314,15 +376,22 @@ public class BackendNicheResearchSeedBuilderService {
         cycle.getCreatedAt());
   }
 
-  /** Lista subnichos já materializados no mesmo CNAE para impedir repetição de mercado na nova escolha. */
+  /**
+   * Lista subnichos já materializados no mesmo CNAE para impedir repetição de mercado na nova
+   * escolha.
+   */
   private List<String> existingSubnichesForCnae(OprmRoutineResearchCycle cycle) {
     return enrichedNicheGateway.listNeutralNicheNamesByCnae(cycle.getCnaeCode(), 50);
   }
 
-  /** Localiza o último bloqueio de qualidade do mesmo candidato para evitar repetir a causa dominante. */
+  /**
+   * Localiza o último bloqueio de qualidade do mesmo candidato para evitar repetir a causa
+   * dominante.
+   */
   private OprmNicheRoutineCard findPreviousCheckedCard(OprmRoutineResearchCycle cycle) {
     return routineCardRepository
-        .findLatestCheckedCardForLearning(cycle.getSourceNicheId(), cycle.getId(), PageRequest.of(0, 1))
+        .findLatestCheckedCardForLearning(
+            cycle.getSourceNicheId(), cycle.getId(), PageRequest.of(0, 1))
         .stream()
         .findFirst()
         .orElse(null);
@@ -344,7 +413,10 @@ public class BackendNicheResearchSeedBuilderService {
     return null;
   }
 
-  /** Compacta as notas do gate anterior para expor aprendizado operacional sem payload longo no prompt. */
+  /**
+   * Compacta as notas do gate anterior para expor aprendizado operacional sem payload longo no
+   * prompt.
+   */
   private String compactLearningNotes(String notes) {
     String trimmed = trimToNull(notes);
     if (trimmed == null) {
@@ -407,12 +479,17 @@ public class BackendNicheResearchSeedBuilderService {
         query.getUpdatedAt());
   }
 
-  /** Normaliza o autor do artefato para manter o contrato simples quando a origem não for informada. */
+  /**
+   * Normaliza o autor do artefato para manter o contrato simples quando a origem não for informada.
+   */
   private String normalizeCreatedBy(String createdBy) {
     return StringUtils.hasText(createdBy) ? createdBy.trim() : DEFAULT_CREATED_BY;
   }
 
-  /** Garante que um campo textual obrigatório exista e remove espaços laterais antes da persistência. */
+  /**
+   * Garante que um campo textual obrigatório exista e remove espaços laterais antes da
+   * persistência.
+   */
   private String requiredText(String value, String fieldName) {
     if (!StringUtils.hasText(value)) {
       throw new IllegalArgumentException(fieldName + " is required");
@@ -420,13 +497,17 @@ public class BackendNicheResearchSeedBuilderService {
     return value.trim();
   }
 
-  /** Calcula o custo padrão da chamada OpenAI sem bloquear a persistência quando o catálogo estiver incompleto. */
+  /**
+   * Calcula o custo padrão da chamada OpenAI sem bloquear a persistência quando o catálogo estiver
+   * incompleto.
+   */
   private BigDecimal estimateCostUsd(CompleteNicheResearchSeedBuilderRequest request) {
     if (request == null || !StringUtils.hasText(request.model())) {
       return null;
     }
     try {
-      return configurationGateway.estimateCostUsd(request.model(), request.inputTokens(), request.outputTokens());
+      return configurationGateway.estimateCostUsd(
+          request.model(), request.inputTokens(), request.outputTokens());
     } catch (RuntimeException ex) {
       LOGGER.warn(
           "Não foi possível calcular custo da etapa dois OPRM nichocnae (model={}, inputTokens={}, outputTokens={})",

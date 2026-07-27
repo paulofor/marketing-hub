@@ -31,38 +31,41 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Provides read access to Lead Portal image packages so that the operations team can
- * monitor the pipeline inside Marketing Hub.
+ * Provides read access to Lead Portal image packages so that the operations team can monitor the
+ * pipeline inside Marketing Hub.
  */
 @Service
 public class LeadPortalImagePackageService {
 
-    private static final Logger log = LoggerFactory.getLogger(LeadPortalImagePackageService.class);
+  private static final Logger log = LoggerFactory.getLogger(LeadPortalImagePackageService.class);
 
-    private static final String IMAGE_TYPE_ORIGINAL = "ORIGINAL";
-    private static final String IMAGE_TYPE_GENERATED = "GENERATED";
+  private static final String IMAGE_TYPE_ORIGINAL = "ORIGINAL";
+  private static final String IMAGE_TYPE_GENERATED = "GENERATED";
 
-    private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper;
-    private final LeadPortalIntegrationProperties integrationProperties;
-    private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
-    private final FileStorageService fileStorageService;
+  private final JdbcTemplate jdbcTemplate;
+  private final ObjectMapper objectMapper;
+  private final LeadPortalIntegrationProperties integrationProperties;
+  private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
+  private final FileStorageService fileStorageService;
 
-    public LeadPortalImagePackageService(
-            JdbcTemplate jdbcTemplate,
-            ObjectMapper objectMapper,
-            LeadPortalIntegrationProperties integrationProperties,
-            LeadPortalImagePackageStatusHistoryService statusHistoryService,
-            FileStorageService fileStorageService) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.objectMapper = objectMapper;
-        this.integrationProperties = integrationProperties;
-        this.statusHistoryService = statusHistoryService;
-        this.fileStorageService = fileStorageService;
-    }
+  public LeadPortalImagePackageService(
+      JdbcTemplate jdbcTemplate,
+      ObjectMapper objectMapper,
+      LeadPortalIntegrationProperties integrationProperties,
+      LeadPortalImagePackageStatusHistoryService statusHistoryService,
+      FileStorageService fileStorageService) {
+    this.jdbcTemplate = jdbcTemplate;
+    this.objectMapper = objectMapper;
+    this.integrationProperties = integrationProperties;
+    this.statusHistoryService = statusHistoryService;
+    this.fileStorageService = fileStorageService;
+  }
 
-    public List<LeadPortalImagePackageSummaryDto> listImagePackages(Collection<FlowSubmissionImagePackageStatus> statuses) {
-        StringBuilder sql = new StringBuilder("""
+  public List<LeadPortalImagePackageSummaryDto> listImagePackages(
+      Collection<FlowSubmissionImagePackageStatus> statuses) {
+    StringBuilder sql =
+        new StringBuilder(
+            """
                 SELECT
                     pack.id,
                     pack.submission_id,
@@ -103,20 +106,21 @@ public class LeadPortalImagePackageService {
                 LEFT JOIN image_generation_quality igq ON igq.id = pack.image_model_quality_id
                 """);
 
-        List<Object> params = new ArrayList<>();
-        if (statuses != null && !statuses.isEmpty()) {
-            sql.append(" WHERE pack.status IN (")
-                    .append(statuses.stream().map(s -> "?").collect(Collectors.joining(", ")))
-                    .append(")");
-            statuses.forEach(status -> params.add(status.name()));
-        }
-        sql.append(" ORDER BY pack.created_at DESC");
-
-        return jdbcTemplate.query(sql.toString(), params.toArray(), (rs, rowNum) -> mapSummary(rs));
+    List<Object> params = new ArrayList<>();
+    if (statuses != null && !statuses.isEmpty()) {
+      sql.append(" WHERE pack.status IN (")
+          .append(statuses.stream().map(s -> "?").collect(Collectors.joining(", ")))
+          .append(")");
+      statuses.forEach(status -> params.add(status.name()));
     }
+    sql.append(" ORDER BY pack.created_at DESC");
 
-    public LeadPortalImagePackageDetailDto getImagePackage(long id) {
-        String sql = """
+    return jdbcTemplate.query(sql.toString(), params.toArray(), (rs, rowNum) -> mapSummary(rs));
+  }
+
+  public LeadPortalImagePackageDetailDto getImagePackage(long id) {
+    String sql =
+        """
                 SELECT
                     pack.id,
                     pack.submission_id,
@@ -161,221 +165,242 @@ public class LeadPortalImagePackageService {
                 WHERE pack.id = ?
                 """;
 
-        DetailProjection projection;
-        try {
-            projection = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> mapDetailProjection(rs), id);
-        } catch (EmptyResultDataAccessException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pacote de imagem não encontrado");
-        }
-
-        LeadPortalImagePackageDetailDto.ImageReference originalImage = buildOriginalImage(projection);
-        List<LeadPortalImagePackageDetailDto.ImageReference> generatedImages = fetchGeneratedImages(id);
-
-        LeadPortalImagePackageSummaryDto summary = projection.summary();
-        LeadPortalImagePackageDetailDto.SubmissionInfo submissionInfo = new LeadPortalImagePackageDetailDto.SubmissionInfo(
-                projection.flowSlug(),
-                projection.name(),
-                projection.email(),
-                summary.phone(),
-                projection.imageQuestionKey());
-
-        List<LeadPortalImagePackageDetailDto.StatusHistoryEntry> history = statusHistoryService.listHistory(id).stream()
-                .map(entry -> new LeadPortalImagePackageDetailDto.StatusHistoryEntry(
-                        entry.status(),
-                        entry.failureReason(),
-                        entry.occurredAt()))
-                .toList();
-        LeadPortalImagePackageDetailDto.ZipExport sampleZip = buildSampleZip(
-                projection.zipObjectKey(), projection.zipGeneratedAt());
-
-        return new LeadPortalImagePackageDetailDto(
-                summary.id(),
-                summary.submissionId(),
-                summary.status(),
-                summary.lifecycleStatus(),
-                summary.prompt(),
-                summary.model(),
-                summary.plannedOutputs(),
-                summary.freeImages(),
-                summary.watermarkedImageCount(),
-                summary.failureReason(),
-                summary.createdAt(),
-                summary.updatedAt(),
-                summary.notifiedAt(),
-                summary.emailOpenedAt(),
-                summary.imagesViewedAt(),
-                history,
-                sampleZip,
-                submissionInfo,
-                originalImage,
-                generatedImages,
-                summary.imageModelId(),
-                summary.imageModelName(),
-                summary.imageModelQualityId(),
-                summary.imageModelQualityName(),
-                summary.imageOrientation(),
-                summary.imageWidth(),
-                summary.imageHeight(),
-                summary.imageUnitPriceUsd(),
-                summary.imageTotalPriceUsd(),
-                summary.imageCurrency());
+    DetailProjection projection;
+    try {
+      projection = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> mapDetailProjection(rs), id);
+    } catch (EmptyResultDataAccessException ex) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pacote de imagem não encontrado");
     }
 
-    @Transactional
-    public void retry(long packageId) {
-        Instant now = Instant.now();
-        int updated = jdbcTemplate.update(
-                "UPDATE flow_submission_image_package SET status = ?, updated_at = ? WHERE id = ? AND status = ?",
-                FlowSubmissionImagePackageStatus.RECEIVED.name(),
-                Timestamp.from(now),
-                packageId,
-                FlowSubmissionImagePackageStatus.FAILED.name());
-        if (updated == 0) {
-            FlowSubmissionImagePackageStatus current = findStatus(packageId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pacote de imagem não encontrado"));
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Pacote %d não pode ser reprocessado a partir do status %s".formatted(packageId, current));
-        } else {
-            statusHistoryService.recordStatusChange(
-                    packageId, FlowSubmissionImagePackageStatus.RECEIVED, null, now);
-        }
+    LeadPortalImagePackageDetailDto.ImageReference originalImage = buildOriginalImage(projection);
+    List<LeadPortalImagePackageDetailDto.ImageReference> generatedImages = fetchGeneratedImages(id);
+
+    LeadPortalImagePackageSummaryDto summary = projection.summary();
+    LeadPortalImagePackageDetailDto.SubmissionInfo submissionInfo =
+        new LeadPortalImagePackageDetailDto.SubmissionInfo(
+            projection.flowSlug(),
+            projection.name(),
+            projection.email(),
+            summary.phone(),
+            projection.imageQuestionKey());
+
+    List<LeadPortalImagePackageDetailDto.StatusHistoryEntry> history =
+        statusHistoryService.listHistory(id).stream()
+            .map(
+                entry ->
+                    new LeadPortalImagePackageDetailDto.StatusHistoryEntry(
+                        entry.status(), entry.failureReason(), entry.occurredAt()))
+            .toList();
+    LeadPortalImagePackageDetailDto.ZipExport sampleZip =
+        buildSampleZip(projection.zipObjectKey(), projection.zipGeneratedAt());
+
+    return new LeadPortalImagePackageDetailDto(
+        summary.id(),
+        summary.submissionId(),
+        summary.status(),
+        summary.lifecycleStatus(),
+        summary.prompt(),
+        summary.model(),
+        summary.plannedOutputs(),
+        summary.freeImages(),
+        summary.watermarkedImageCount(),
+        summary.failureReason(),
+        summary.createdAt(),
+        summary.updatedAt(),
+        summary.notifiedAt(),
+        summary.emailOpenedAt(),
+        summary.imagesViewedAt(),
+        history,
+        sampleZip,
+        submissionInfo,
+        originalImage,
+        generatedImages,
+        summary.imageModelId(),
+        summary.imageModelName(),
+        summary.imageModelQualityId(),
+        summary.imageModelQualityName(),
+        summary.imageOrientation(),
+        summary.imageWidth(),
+        summary.imageHeight(),
+        summary.imageUnitPriceUsd(),
+        summary.imageTotalPriceUsd(),
+        summary.imageCurrency());
+  }
+
+  @Transactional
+  public void retry(long packageId) {
+    Instant now = Instant.now();
+    int updated =
+        jdbcTemplate.update(
+            "UPDATE flow_submission_image_package SET status = ?, updated_at = ? WHERE id = ? AND status = ?",
+            FlowSubmissionImagePackageStatus.RECEIVED.name(),
+            Timestamp.from(now),
+            packageId,
+            FlowSubmissionImagePackageStatus.FAILED.name());
+    if (updated == 0) {
+      FlowSubmissionImagePackageStatus current =
+          findStatus(packageId)
+              .orElseThrow(
+                  () ->
+                      new ResponseStatusException(
+                          HttpStatus.NOT_FOUND, "Pacote de imagem não encontrado"));
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Pacote %d não pode ser reprocessado a partir do status %s"
+              .formatted(packageId, current));
+    } else {
+      statusHistoryService.recordStatusChange(
+          packageId, FlowSubmissionImagePackageStatus.RECEIVED, null, now);
+    }
+  }
+
+  private LeadPortalImagePackageSummaryDto mapSummary(ResultSet rs) throws SQLException {
+    Long id = rs.getLong("id");
+    UUID submissionId = mapSubmissionId(rs);
+    FlowSubmissionImagePackageStatus status = parseStatus(rs.getString("status"));
+    Instant createdAt = toInstant(rs.getTimestamp("created_at"));
+    Instant updatedAt = toInstant(rs.getTimestamp("updated_at"));
+    Integer plannedOutputs = getInteger(rs, "planned_outputs");
+    Integer freeImages = getInteger(rs, "free_images");
+    Integer generatedImageCount = getInteger(rs, "generated_count");
+    if (generatedImageCount == null) {
+      generatedImageCount = 0;
+    }
+    Integer watermarkedImageCount = getInteger(rs, "watermarked_count");
+    if (watermarkedImageCount == null) {
+      watermarkedImageCount = 0;
     }
 
-    private LeadPortalImagePackageSummaryDto mapSummary(ResultSet rs) throws SQLException {
-        Long id = rs.getLong("id");
-        UUID submissionId = mapSubmissionId(rs);
-        FlowSubmissionImagePackageStatus status = parseStatus(rs.getString("status"));
-        Instant createdAt = toInstant(rs.getTimestamp("created_at"));
-        Instant updatedAt = toInstant(rs.getTimestamp("updated_at"));
-        Integer plannedOutputs = getInteger(rs, "planned_outputs");
-        Integer freeImages = getInteger(rs, "free_images");
-        Integer generatedImageCount = getInteger(rs, "generated_count");
-        if (generatedImageCount == null) {
-            generatedImageCount = 0;
-        }
-        Integer watermarkedImageCount = getInteger(rs, "watermarked_count");
-        if (watermarkedImageCount == null) {
-            watermarkedImageCount = 0;
-        }
+    String answers = rs.getString("answers");
+    String phone = extractPhone(answers);
+    Long imageModelId = getLong(rs, "image_model_id");
+    Long imageModelQualityId = getLong(rs, "image_model_quality_id");
+    String imageModelName = rs.getString("image_model_name");
+    String imageModelQualityName = rs.getString("image_model_quality_name");
+    String imageOrientation = rs.getString("image_orientation");
+    Integer imageWidth = getInteger(rs, "image_width");
+    Integer imageHeight = getInteger(rs, "image_height");
+    java.math.BigDecimal imageUnitPriceUsd = rs.getBigDecimal("image_unit_price_usd");
+    java.math.BigDecimal imageTotalPriceUsd = rs.getBigDecimal("image_total_price_usd");
+    String imageCurrency = rs.getString("image_currency");
+    String zipObjectKey = rs.getString("zip_object_key");
+    Instant zipGeneratedAt = toInstant(rs.getTimestamp("zip_generated_at"));
+    Instant notifiedAt = toInstant(rs.getTimestamp("notified_at"));
+    Instant emailOpenedAt = toInstant(rs.getTimestamp("email_opened_at"));
+    Instant imagesViewedAt = toInstant(rs.getTimestamp("images_viewed_at"));
 
-        String answers = rs.getString("answers");
-        String phone = extractPhone(answers);
-        Long imageModelId = getLong(rs, "image_model_id");
-        Long imageModelQualityId = getLong(rs, "image_model_quality_id");
-        String imageModelName = rs.getString("image_model_name");
-        String imageModelQualityName = rs.getString("image_model_quality_name");
-        String imageOrientation = rs.getString("image_orientation");
-        Integer imageWidth = getInteger(rs, "image_width");
-        Integer imageHeight = getInteger(rs, "image_height");
-        java.math.BigDecimal imageUnitPriceUsd = rs.getBigDecimal("image_unit_price_usd");
-        java.math.BigDecimal imageTotalPriceUsd = rs.getBigDecimal("image_total_price_usd");
-        String imageCurrency = rs.getString("image_currency");
-        String zipObjectKey = rs.getString("zip_object_key");
-        Instant zipGeneratedAt = toInstant(rs.getTimestamp("zip_generated_at"));
-        Instant notifiedAt = toInstant(rs.getTimestamp("notified_at"));
-        Instant emailOpenedAt = toInstant(rs.getTimestamp("email_opened_at"));
-        Instant imagesViewedAt = toInstant(rs.getTimestamp("images_viewed_at"));
-
-        FlowSubmissionImagePackageLifecycleStatus lifecycleStatus = resolveLifecycleStatus(
-                status,
-                new LifecycleContext(zipObjectKey, zipGeneratedAt, notifiedAt, emailOpenedAt, imagesViewedAt, generatedImageCount, watermarkedImageCount));
-
-        return new LeadPortalImagePackageSummaryDto(
-                id,
-                submissionId,
-                rs.getString("flow_slug"),
-                rs.getString("name"),
-                rs.getString("email"),
-                phone,
-                status,
-                lifecycleStatus,
-                rs.getString("prompt"),
-                rs.getString("model"),
-                plannedOutputs,
-                freeImages,
-                generatedImageCount,
-                watermarkedImageCount,
-                createdAt,
-                updatedAt,
+    FlowSubmissionImagePackageLifecycleStatus lifecycleStatus =
+        resolveLifecycleStatus(
+            status,
+            new LifecycleContext(
+                zipObjectKey,
+                zipGeneratedAt,
                 notifiedAt,
                 emailOpenedAt,
                 imagesViewedAt,
-                rs.getString("failure_reason"),
-                imageModelId,
-                imageModelName,
-                imageModelQualityId,
-                imageModelQualityName,
-                imageOrientation,
-                imageWidth,
-                imageHeight,
-                imageUnitPriceUsd,
-                imageTotalPriceUsd,
-                imageCurrency);
+                generatedImageCount,
+                watermarkedImageCount));
+
+    return new LeadPortalImagePackageSummaryDto(
+        id,
+        submissionId,
+        rs.getString("flow_slug"),
+        rs.getString("name"),
+        rs.getString("email"),
+        phone,
+        status,
+        lifecycleStatus,
+        rs.getString("prompt"),
+        rs.getString("model"),
+        plannedOutputs,
+        freeImages,
+        generatedImageCount,
+        watermarkedImageCount,
+        createdAt,
+        updatedAt,
+        notifiedAt,
+        emailOpenedAt,
+        imagesViewedAt,
+        rs.getString("failure_reason"),
+        imageModelId,
+        imageModelName,
+        imageModelQualityId,
+        imageModelQualityName,
+        imageOrientation,
+        imageWidth,
+        imageHeight,
+        imageUnitPriceUsd,
+        imageTotalPriceUsd,
+        imageCurrency);
+  }
+
+  private DetailProjection mapDetailProjection(ResultSet rs) throws SQLException {
+    LeadPortalImagePackageSummaryDto summary = mapSummary(rs);
+    return new DetailProjection(
+        summary,
+        rs.getString("flow_slug"),
+        rs.getString("name"),
+        rs.getString("email"),
+        rs.getString("image_question_key"),
+        rs.getString("stored_file_name"),
+        toInstant(rs.getTimestamp("submission_created_at")),
+        rs.getString("zip_object_key"),
+        toInstant(rs.getTimestamp("zip_generated_at")));
+  }
+
+  private LeadPortalImagePackageDetailDto.ZipExport buildSampleZip(
+      String zipObjectKey, Instant zipGeneratedAt) {
+    if (!StringUtils.hasText(zipObjectKey)) {
+      return null;
     }
 
-    private DetailProjection mapDetailProjection(ResultSet rs) throws SQLException {
-        LeadPortalImagePackageSummaryDto summary = mapSummary(rs);
-        return new DetailProjection(
-                summary,
-                rs.getString("flow_slug"),
-                rs.getString("name"),
-                rs.getString("email"),
-                rs.getString("image_question_key"),
-                rs.getString("stored_file_name"),
-                toInstant(rs.getTimestamp("submission_created_at")),
-                rs.getString("zip_object_key"),
-                toInstant(rs.getTimestamp("zip_generated_at")));
+    String downloadUrl = fileStorageService.resolvePublicUrl(zipObjectKey).orElse(null);
+    return new LeadPortalImagePackageDetailDto.ZipExport(zipObjectKey, downloadUrl, zipGeneratedAt);
+  }
+
+  private LeadPortalImagePackageDetailDto.ImageReference buildOriginalImage(
+      DetailProjection projection) {
+    if (!StringUtils.hasText(projection.storedFileName())) {
+      return null;
     }
 
-    private LeadPortalImagePackageDetailDto.ZipExport buildSampleZip(String zipObjectKey, Instant zipGeneratedAt) {
-        if (!StringUtils.hasText(zipObjectKey)) {
-            return null;
-        }
-
-        String downloadUrl = fileStorageService.resolvePublicUrl(zipObjectKey).orElse(null);
-        return new LeadPortalImagePackageDetailDto.ZipExport(zipObjectKey, downloadUrl, zipGeneratedAt);
+    Optional<String> url = buildSubmissionImageUrl(projection.summary().submissionId());
+    if (url.isEmpty()) {
+      return null;
     }
 
-    private LeadPortalImagePackageDetailDto.ImageReference buildOriginalImage(DetailProjection projection) {
-        if (!StringUtils.hasText(projection.storedFileName())) {
-            return null;
-        }
+    return new LeadPortalImagePackageDetailDto.ImageReference(
+        IMAGE_TYPE_ORIGINAL,
+        url.get(),
+        url.get(),
+        IMAGE_TYPE_ORIGINAL,
+        null,
+        0,
+        null,
+        null,
+        projection.submissionCreatedAt(),
+        null,
+        projection.storedFileName(),
+        null);
+  }
 
-        Optional<String> url = buildSubmissionImageUrl(projection.summary().submissionId());
-        if (url.isEmpty()) {
-            return null;
-        }
-
-        return new LeadPortalImagePackageDetailDto.ImageReference(
-                IMAGE_TYPE_ORIGINAL,
-                url.get(),
-                url.get(),
-                IMAGE_TYPE_ORIGINAL,
-                null,
-                0,
-                null,
-                null,
-                projection.submissionCreatedAt(),
-                null,
-                projection.storedFileName(),
-                null);
+  private Optional<String> buildSubmissionImageUrl(UUID submissionId) {
+    if (submissionId == null) {
+      return Optional.empty();
     }
-
-    private Optional<String> buildSubmissionImageUrl(UUID submissionId) {
-        if (submissionId == null) {
-            return Optional.empty();
-        }
-        String baseUrl = integrationProperties.getBaseUrl();
-        if (!StringUtils.hasText(baseUrl)) {
-            return Optional.empty();
-        }
-        String normalized = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        return Optional.of(normalized + "/api/flows/submissions/" + submissionId + "/image");
+    String baseUrl = integrationProperties.getBaseUrl();
+    if (!StringUtils.hasText(baseUrl)) {
+      return Optional.empty();
     }
+    String normalized =
+        baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    return Optional.of(normalized + "/api/flows/submissions/" + submissionId + "/image");
+  }
 
-    private List<LeadPortalImagePackageDetailDto.ImageReference> fetchGeneratedImages(long packageId) {
-        String sql = """
+  private List<LeadPortalImagePackageDetailDto.ImageReference> fetchGeneratedImages(
+      long packageId) {
+    String sql =
+        """
                 SELECT
                     item.id,
                     item.asset_id,
@@ -403,197 +428,205 @@ public class LeadPortalImagePackageService {
                 ORDER BY item.position_index ASC, item.id ASC
                 """;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
-            LeadPortalImagePackageDetailDto.WatermarkReference watermark = null;
-            Long watermarkAssetId = getLong(rs, "watermark_asset_id");
-            Long optimizedAssetId = getLong(rs, "watermark_optimized_asset_id");
-            String watermarkStoredFileName = firstNonBlank(
-                    rs.getString("watermark_optimized_external_id"),
-                    rs.getString("watermark_optimized_url"),
-                    rs.getString("watermark_external_id"),
-                    rs.getString("watermark_url"));
-            Instant watermarkCreatedAt = firstNonNull(
-                    toInstant(rs.getTimestamp("watermark_optimized_created_at")),
-                    toInstant(rs.getTimestamp("watermark_created_at")));
-            String watermarkUrl = firstNonBlank(
-                    fileStorageService.resolvePublicUrl(watermarkStoredFileName).orElse(null),
-                    rs.getString("watermark_optimized_url"),
-                    rs.getString("watermark_url"));
-            Long resolvedAssetId = optimizedAssetId != null ? optimizedAssetId : watermarkAssetId;
-            if (resolvedAssetId != null || watermarkUrl != null || watermarkStoredFileName != null) {
-                watermark = new LeadPortalImagePackageDetailDto.WatermarkReference(
-                        resolvedAssetId,
-                        watermarkUrl,
-                        watermarkUrl,
-                        watermarkCreatedAt,
-                        watermarkStoredFileName);
-            }
-            return new LeadPortalImagePackageDetailDto.ImageReference(
-                    IMAGE_TYPE_GENERATED,
-                    rs.getString("url"),
-                    rs.getString("url"),
-                    rs.getString("access_type"),
-                    getLong(rs, "asset_id"),
-                    getInteger(rs, "position_index"),
-                    rs.getString("prompt"),
-                    rs.getString("model"),
-                    toInstant(rs.getTimestamp("created_at")),
-                    getLong(rs, "id"),
-                    rs.getString("external_id"),
-                    watermark);
-        }, packageId);
+    return jdbcTemplate.query(
+        sql,
+        (rs, rowNum) -> {
+          LeadPortalImagePackageDetailDto.WatermarkReference watermark = null;
+          Long watermarkAssetId = getLong(rs, "watermark_asset_id");
+          Long optimizedAssetId = getLong(rs, "watermark_optimized_asset_id");
+          String watermarkStoredFileName =
+              firstNonBlank(
+                  rs.getString("watermark_optimized_external_id"),
+                  rs.getString("watermark_optimized_url"),
+                  rs.getString("watermark_external_id"),
+                  rs.getString("watermark_url"));
+          Instant watermarkCreatedAt =
+              firstNonNull(
+                  toInstant(rs.getTimestamp("watermark_optimized_created_at")),
+                  toInstant(rs.getTimestamp("watermark_created_at")));
+          String watermarkUrl =
+              firstNonBlank(
+                  fileStorageService.resolvePublicUrl(watermarkStoredFileName).orElse(null),
+                  rs.getString("watermark_optimized_url"),
+                  rs.getString("watermark_url"));
+          Long resolvedAssetId = optimizedAssetId != null ? optimizedAssetId : watermarkAssetId;
+          if (resolvedAssetId != null || watermarkUrl != null || watermarkStoredFileName != null) {
+            watermark =
+                new LeadPortalImagePackageDetailDto.WatermarkReference(
+                    resolvedAssetId,
+                    watermarkUrl,
+                    watermarkUrl,
+                    watermarkCreatedAt,
+                    watermarkStoredFileName);
+          }
+          return new LeadPortalImagePackageDetailDto.ImageReference(
+              IMAGE_TYPE_GENERATED,
+              rs.getString("url"),
+              rs.getString("url"),
+              rs.getString("access_type"),
+              getLong(rs, "asset_id"),
+              getInteger(rs, "position_index"),
+              rs.getString("prompt"),
+              rs.getString("model"),
+              toInstant(rs.getTimestamp("created_at")),
+              getLong(rs, "id"),
+              rs.getString("external_id"),
+              watermark);
+        },
+        packageId);
+  }
+
+  private Optional<FlowSubmissionImagePackageStatus> findStatus(long packageId) {
+    return jdbcTemplate
+        .query(
+            "SELECT status FROM flow_submission_image_package WHERE id = ?",
+            (rs, rowNum) -> parseStatus(rs.getString("status")),
+            packageId)
+        .stream()
+        .findFirst();
+  }
+
+  private FlowSubmissionImagePackageStatus parseStatus(String raw) {
+    if (!StringUtils.hasText(raw)) {
+      return FlowSubmissionImagePackageStatus.RECEIVED;
+    }
+    try {
+      return FlowSubmissionImagePackageStatus.valueOf(raw);
+    } catch (IllegalArgumentException ex) {
+      log.warn("Status '{}' desconhecido para flow_submission_image_package", raw);
+      return FlowSubmissionImagePackageStatus.RECEIVED;
+    }
+  }
+
+  private FlowSubmissionImagePackageLifecycleStatus resolveLifecycleStatus(
+      FlowSubmissionImagePackageStatus baseStatus, LifecycleContext context) {
+    FlowSubmissionImagePackageLifecycleStatus defaultStatus =
+        FlowSubmissionImagePackageLifecycleStatus.fromBaseStatus(baseStatus);
+    if (context == null || baseStatus != FlowSubmissionImagePackageStatus.COMPLETED) {
+      return defaultStatus;
     }
 
-    private Optional<FlowSubmissionImagePackageStatus> findStatus(long packageId) {
-        return jdbcTemplate.query(
-                        "SELECT status FROM flow_submission_image_package WHERE id = ?",
-                        (rs, rowNum) -> parseStatus(rs.getString("status")),
-                        packageId)
-                .stream()
-                .findFirst();
+    boolean hasImages = context.generatedCount() != null && context.generatedCount() > 0;
+    boolean hasWatermarked =
+        context.watermarkedCount() != null
+            && context.watermarkedCount()
+                >= (context.generatedCount() == null ? 0 : context.generatedCount());
+    if (!hasImages || !hasWatermarked) {
+      return defaultStatus;
     }
 
-    private FlowSubmissionImagePackageStatus parseStatus(String raw) {
-        if (!StringUtils.hasText(raw)) {
-            return FlowSubmissionImagePackageStatus.RECEIVED;
-        }
-        try {
-            return FlowSubmissionImagePackageStatus.valueOf(raw);
-        } catch (IllegalArgumentException ex) {
-            log.warn("Status '{}' desconhecido para flow_submission_image_package", raw);
-            return FlowSubmissionImagePackageStatus.RECEIVED;
-        }
+    boolean zipReady =
+        StringUtils.hasText(context.zipObjectKey()) || context.zipGeneratedAt() != null;
+    if (!zipReady) {
+      return FlowSubmissionImagePackageLifecycleStatus.ZIP_GENERATING;
     }
-
-    private FlowSubmissionImagePackageLifecycleStatus resolveLifecycleStatus(
-            FlowSubmissionImagePackageStatus baseStatus,
-            LifecycleContext context) {
-        FlowSubmissionImagePackageLifecycleStatus defaultStatus =
-                FlowSubmissionImagePackageLifecycleStatus.fromBaseStatus(baseStatus);
-        if (context == null || baseStatus != FlowSubmissionImagePackageStatus.COMPLETED) {
-            return defaultStatus;
-        }
-
-        boolean hasImages = context.generatedCount() != null && context.generatedCount() > 0;
-        boolean hasWatermarked = context.watermarkedCount() != null
-                && context.watermarkedCount() >= (context.generatedCount() == null ? 0 : context.generatedCount());
-        if (!hasImages || !hasWatermarked) {
-            return defaultStatus;
-        }
-
-        boolean zipReady = StringUtils.hasText(context.zipObjectKey()) || context.zipGeneratedAt() != null;
-        if (!zipReady) {
-            return FlowSubmissionImagePackageLifecycleStatus.ZIP_GENERATING;
-        }
-        if (context.imagesViewedAt() != null) {
-            return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_IMAGES_VIEWED;
-        }
-        if (context.emailOpenedAt() != null) {
-            return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_OPENED;
-        }
-        if (context.notifiedAt() != null) {
-            return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_SENT;
-        }
-        return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_SENDING;
+    if (context.imagesViewedAt() != null) {
+      return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_IMAGES_VIEWED;
     }
-
-    private UUID mapSubmissionId(ResultSet rs) throws SQLException {
-        Object rawValue = rs.getObject("submission_id");
-        if (rawValue instanceof byte[] bytes) {
-            ByteBuffer buffer = ByteBuffer.wrap(bytes);
-            return new UUID(buffer.getLong(), buffer.getLong());
-        }
-        String submission = rs.getString("submission_id");
-        if (!StringUtils.hasText(submission)) {
-            return null;
-        }
-        try {
-            return UUID.fromString(submission);
-        } catch (IllegalArgumentException ex) {
-            log.warn("Valor de submission_id '{}' não pôde ser convertido para UUID", submission);
-            return null;
-        }
+    if (context.emailOpenedAt() != null) {
+      return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_OPENED;
     }
-
-    private Integer getInteger(ResultSet rs, String column) throws SQLException {
-        Object value = rs.getObject(column);
-        return value == null ? null : ((Number) value).intValue();
+    if (context.notifiedAt() != null) {
+      return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_SENT;
     }
+    return FlowSubmissionImagePackageLifecycleStatus.SAMPLE_EMAIL_SENDING;
+  }
 
-    private Long getLong(ResultSet rs, String column) throws SQLException {
-        Object value = rs.getObject(column);
-        return value == null ? null : ((Number) value).longValue();
+  private UUID mapSubmissionId(ResultSet rs) throws SQLException {
+    Object rawValue = rs.getObject("submission_id");
+    if (rawValue instanceof byte[] bytes) {
+      ByteBuffer buffer = ByteBuffer.wrap(bytes);
+      return new UUID(buffer.getLong(), buffer.getLong());
     }
-
-    private Instant toInstant(Timestamp timestamp) {
-        return timestamp == null ? null : timestamp.toInstant();
+    String submission = rs.getString("submission_id");
+    if (!StringUtils.hasText(submission)) {
+      return null;
     }
+    try {
+      return UUID.fromString(submission);
+    } catch (IllegalArgumentException ex) {
+      log.warn("Valor de submission_id '{}' não pôde ser convertido para UUID", submission);
+      return null;
+    }
+  }
 
-    private String firstNonBlank(String... values) {
-        if (values == null) {
-            return null;
+  private Integer getInteger(ResultSet rs, String column) throws SQLException {
+    Object value = rs.getObject(column);
+    return value == null ? null : ((Number) value).intValue();
+  }
+
+  private Long getLong(ResultSet rs, String column) throws SQLException {
+    Object value = rs.getObject(column);
+    return value == null ? null : ((Number) value).longValue();
+  }
+
+  private Instant toInstant(Timestamp timestamp) {
+    return timestamp == null ? null : timestamp.toInstant();
+  }
+
+  private String firstNonBlank(String... values) {
+    if (values == null) {
+      return null;
+    }
+    for (String value : values) {
+      if (StringUtils.hasText(value)) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  @SafeVarargs
+  private final <T> T firstNonNull(T... values) {
+    if (values == null) {
+      return null;
+    }
+    for (T value : values) {
+      if (value != null) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  private String extractPhone(String answersJson) {
+    if (!StringUtils.hasText(answersJson)) {
+      return null;
+    }
+    try {
+      JsonNode root = objectMapper.readTree(answersJson);
+      for (String key : List.of("phone", "telefone", "whatsapp")) {
+        JsonNode node = root.get(key);
+        if (node != null && node.isValueNode()) {
+          String value = node.asText().trim();
+          if (!value.isEmpty()) {
+            return value;
+          }
         }
-        for (String value : values) {
-            if (StringUtils.hasText(value)) {
-                return value;
-            }
-        }
-        return null;
+      }
+    } catch (JsonProcessingException e) {
+      log.warn("Failed to parse flow submission answers while extracting phone", e);
     }
+    return null;
+  }
 
-    @SafeVarargs
-    private final <T> T firstNonNull(T... values) {
-        if (values == null) {
-            return null;
-        }
-        for (T value : values) {
-            if (value != null) {
-                return value;
-            }
-        }
-        return null;
-    }
+  private record LifecycleContext(
+      String zipObjectKey,
+      Instant zipGeneratedAt,
+      Instant notifiedAt,
+      Instant emailOpenedAt,
+      Instant imagesViewedAt,
+      Integer generatedCount,
+      Integer watermarkedCount) {}
 
-    private String extractPhone(String answersJson) {
-        if (!StringUtils.hasText(answersJson)) {
-            return null;
-        }
-        try {
-            JsonNode root = objectMapper.readTree(answersJson);
-            for (String key : List.of("phone", "telefone", "whatsapp")) {
-                JsonNode node = root.get(key);
-                if (node != null && node.isValueNode()) {
-                    String value = node.asText().trim();
-                    if (!value.isEmpty()) {
-                        return value;
-                    }
-                }
-            }
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to parse flow submission answers while extracting phone", e);
-        }
-        return null;
-    }
-
-    private record LifecycleContext(
-            String zipObjectKey,
-            Instant zipGeneratedAt,
-            Instant notifiedAt,
-            Instant emailOpenedAt,
-            Instant imagesViewedAt,
-            Integer generatedCount,
-            Integer watermarkedCount) {
-    }
-
-    private record DetailProjection(
-            LeadPortalImagePackageSummaryDto summary,
-            String flowSlug,
-            String name,
-            String email,
-            String imageQuestionKey,
-            String storedFileName,
-            Instant submissionCreatedAt,
-            String zipObjectKey,
-            Instant zipGeneratedAt
-    ) {}
+  private record DetailProjection(
+      LeadPortalImagePackageSummaryDto summary,
+      String flowSlug,
+      String name,
+      String email,
+      String imageQuestionKey,
+      String storedFileName,
+      Instant submissionCreatedAt,
+      String zipObjectKey,
+      Instant zipGeneratedAt) {}
 }

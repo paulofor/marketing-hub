@@ -10,55 +10,53 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
-/**
- * Converte entidades {@link ExperimentLearning} em DTOs prontos para o frontend.
- */
+/** Converte entidades {@link ExperimentLearning} em DTOs prontos para o frontend. */
 @Component
 public class ExperimentLearningMapper {
-    private final ExperimentLearningJsonCodec codec;
+  private final ExperimentLearningJsonCodec codec;
 
-    public ExperimentLearningMapper(ExperimentLearningJsonCodec codec) {
-        this.codec = codec;
-    }
+  public ExperimentLearningMapper(ExperimentLearningJsonCodec codec) {
+    this.codec = codec;
+  }
 
-    public ExperimentLearningDto toDto(ExperimentLearning entity) {
-        if (entity == null) {
-            return null;
-        }
-        ExperimentLearningDto dto = new ExperimentLearningDto();
-        dto.setId(entity.getId());
-        dto.setExperimentId(entity.getExperiment().getId());
-        dto.setRequestId(entity.getRequest().getId());
-        dto.setNicheId(entity.getNiche().getId());
-        dto.setHypothesisId(resolveHypothesisId(entity));
-        dto.setStage(entity.getStage());
-        dto.setPrimaryMetric(entity.getPrimaryMetric());
-        dto.setMetricSignal(entity.getMetricSignal());
-        dto.setSummary(entity.getSummary());
-        dto.setWhatWorked(entity.getWhatWorked());
-        dto.setWhatBlocked(entity.getWhatBlocked());
-        dto.setNextTest(entity.getNextTest());
-        dto.setCompletedAt(entity.getCompletedAt());
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setInsights(safeInsights(entity));
-        dto.setSuggestions(safeSuggestions(entity));
-        dto.setOpenAiRequestPayload(safeOpenAiRequestPayload(entity));
-        return dto;
+  public ExperimentLearningDto toDto(ExperimentLearning entity) {
+    if (entity == null) {
+      return null;
     }
+    ExperimentLearningDto dto = new ExperimentLearningDto();
+    dto.setId(entity.getId());
+    dto.setExperimentId(entity.getExperiment().getId());
+    dto.setRequestId(entity.getRequest().getId());
+    dto.setNicheId(entity.getNiche().getId());
+    dto.setHypothesisId(resolveHypothesisId(entity));
+    dto.setStage(entity.getStage());
+    dto.setPrimaryMetric(entity.getPrimaryMetric());
+    dto.setMetricSignal(entity.getMetricSignal());
+    dto.setSummary(entity.getSummary());
+    dto.setWhatWorked(entity.getWhatWorked());
+    dto.setWhatBlocked(entity.getWhatBlocked());
+    dto.setNextTest(entity.getNextTest());
+    dto.setCompletedAt(entity.getCompletedAt());
+    dto.setCreatedAt(entity.getCreatedAt());
+    dto.setInsights(safeInsights(entity));
+    dto.setSuggestions(safeSuggestions(entity));
+    dto.setOpenAiRequestPayload(safeOpenAiRequestPayload(entity));
+    return dto;
+  }
 
-    public List<LearningInsightDto> safeInsights(ExperimentLearning entity) {
-        return codec.readInsights(entity.getInsightsJson());
-    }
+  public List<LearningInsightDto> safeInsights(ExperimentLearning entity) {
+    return codec.readInsights(entity.getInsightsJson());
+  }
 
-    public List<ExperimentLearningSuggestionDto> safeSuggestions(ExperimentLearning entity) {
-        return codec.readSuggestions(entity.getSuggestionsJson());
-    }
+  public List<ExperimentLearningSuggestionDto> safeSuggestions(ExperimentLearning entity) {
+    return codec.readSuggestions(entity.getSuggestionsJson());
+  }
 
-    public Map<String, Object> safeOpenAiRequestPayload(ExperimentLearning entity) {
-        return codec.readObject(entity.getOpenAiRequestPayloadJson());
-    }
+  public Map<String, Object> safeOpenAiRequestPayload(ExperimentLearning entity) {
+    return codec.readObject(entity.getOpenAiRequestPayloadJson());
+  }
 
-    private UUID resolveHypothesisId(ExperimentLearning entity) {
-        return entity.getHypothesis() != null ? entity.getHypothesis().getId() : null;
-    }
+  private UUID resolveHypothesisId(ExperimentLearning entity) {
+    return entity.getHypothesis() != null ? entity.getHypothesis().getId() : null;
+  }
 }

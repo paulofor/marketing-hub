@@ -2,6 +2,14 @@ package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossi
 
 import java.util.Map;
 
-/** Contrato de trabalho pendente entregue ao executor da etapa síntese final do dossiê do dossiê MOIS v1. */
-public record DossierDossierSynthesisPendingJob(String jobId, long stageExecutionId, long dossierId, String workspaceId, String stageName, Map<String, Object> input) {
-}
+/**
+ * Contrato de trabalho pendente entregue ao executor da etapa síntese final do dossiê do dossiê
+ * MOIS v1.
+ */
+public record DossierDossierSynthesisPendingJob(
+    String jobId,
+    long stageExecutionId,
+    long dossierId,
+    String workspaceId,
+    String stageName,
+    Map<String, Object> input) {}

@@ -5,16 +5,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-/**
- * Payload para reprocessar um job.
- */
+/** Payload para reprocessar um job. */
 @Data
 public class RetrySalesVideoJobRequest {
-    @NotBlank
-    private String requestedBy;
+  @NotBlank private String requestedBy;
 
-    @NotNull
-    private SalesVideoRetryReason reason;
+  @NotNull private SalesVideoRetryReason reason;
 
-    private String notes;
+  private String notes;
 }

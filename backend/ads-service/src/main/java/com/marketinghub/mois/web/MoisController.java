@@ -3,9 +3,9 @@ package com.marketinghub.mois.web;
 import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisClickbaseProductDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
+import com.marketinghub.mois.dto.MoisHotmartProductDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
-import com.marketinghub.mois.dto.MoisHotmartProductDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisClickbaseProductService;
 import com.marketinghub.mois.service.MoisCollectionPersistenceService;
@@ -32,267 +32,282 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class MoisController {
 
-    private final MoisModuleGateway gateway;
-    private final MoisCollectionPersistenceService collectionPersistenceService;
-    private final MoisHotmartProductService moisHotmartProductService;
-    private final MoisClickbaseProductService moisClickbaseProductService;
+  private final MoisModuleGateway gateway;
+  private final MoisCollectionPersistenceService collectionPersistenceService;
+  private final MoisHotmartProductService moisHotmartProductService;
+  private final MoisClickbaseProductService moisClickbaseProductService;
 
-    @PostMapping("/discovery-requests")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse createDiscoveryRequest(
-            @Valid @RequestBody MoisDiscoveryDtos.CreateDiscoveryRequest request
-    ) {
-        return gateway.createDiscoveryRequest(request);
+  @PostMapping("/discovery-requests")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse createDiscoveryRequest(
+      @Valid @RequestBody MoisDiscoveryDtos.CreateDiscoveryRequest request) {
+    return gateway.createDiscoveryRequest(request);
+  }
+
+  @GetMapping("/discovery-requests")
+  public MoisDiscoveryDtos.DiscoveryRequestListResponse listDiscoveryRequests(
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) String nicheName,
+      @RequestParam(required = false) String marketTheme) {
+    return gateway.listDiscoveryRequests(status, nicheName, marketTheme);
+  }
+
+  @GetMapping("/discovery-requests/{requestId}")
+  public MoisDiscoveryDtos.DiscoveryRequestDetailResponse getDiscoveryRequest(
+      @PathVariable String requestId) {
+    return gateway
+        .getDiscoveryRequest(requestId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "discovery request not found"));
+  }
+
+  @PostMapping("/discovery-requests/{requestId}/run")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public MoisDiscoveryDtos.AsyncAcceptedResponse runDiscoveryRequest(
+      @PathVariable String requestId) {
+    return gateway.runDiscoveryRequest(requestId);
+  }
+
+  @GetMapping("/workspaces/{workspaceId}/dashboard")
+  public MoisWorkspaceDtos.WorkspaceDashboardResponse getWorkspaceDashboard(
+      @PathVariable String workspaceId) {
+    return gateway.getDashboard(workspaceId);
+  }
+
+  @PostMapping("/references")
+  @ResponseStatus(HttpStatus.CREATED)
+  public MoisWorkspaceDtos.ReferenceResponse createReference(
+      @Valid @RequestBody MoisWorkspaceDtos.CreateReferenceRequest request) {
+    return gateway.createReference(request);
+  }
+
+  @GetMapping("/references")
+  public MoisWorkspaceDtos.ReferenceListResponse listReferences(@RequestParam String workspaceId) {
+    return gateway.listReferences(workspaceId);
+  }
+
+  @PostMapping("/references/{referenceId}/extractions")
+  public MoisWorkspaceDtos.ExtractionDraftResponse upsertExtractionDraft(
+      @PathVariable String referenceId,
+      @RequestBody MoisWorkspaceDtos.UpsertExtractionDraftRequest request) {
+    return gateway.upsertExtractionDraft(referenceId, request);
+  }
+
+  @GetMapping("/library/blocks")
+  public MoisWorkspaceDtos.LibraryBlockListResponse listLibraryBlocks(
+      @RequestParam(required = false) String workspaceId,
+      @RequestParam(required = false) String niche,
+      @RequestParam(required = false) String formatType) {
+    return gateway.listLibraryBlocks(workspaceId, niche, formatType);
+  }
+
+  @PostMapping("/library/blocks/{blockId}/favorite")
+  public MoisWorkspaceDtos.LibraryBlockActionResponse favoriteLibraryBlock(
+      @PathVariable String blockId) {
+    return gateway
+        .favoriteLibraryBlock(blockId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "library block not found"));
+  }
+
+  @PostMapping("/library/blocks/{blockId}/duplicate")
+  @ResponseStatus(HttpStatus.CREATED)
+  public MoisWorkspaceDtos.LibraryBlockActionResponse duplicateLibraryBlock(
+      @PathVariable String blockId) {
+    return gateway
+        .duplicateLibraryBlock(blockId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "library block not found"));
+  }
+
+  @PostMapping("/comparisons")
+  public MoisWorkspaceDtos.ComparisonResponse createComparison(
+      @Valid @RequestBody MoisWorkspaceDtos.CreateComparisonRequest request) {
+    return gateway.createComparison(request);
+  }
+
+  @PostMapping("/offers/build")
+  public MoisWorkspaceDtos.BuildOfferResponse buildOffer(
+      @Valid @RequestBody MoisWorkspaceDtos.BuildOfferRequest request) {
+    return gateway.buildOffer(request);
+  }
+
+  @PostMapping("/collection-jobs")
+  @ResponseStatus(HttpStatus.CREATED)
+  public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(
+      @Valid @RequestBody MoisWorkspaceDtos.CreateCollectionJobRequest request) {
+    return gateway.createCollectionJob(request);
+  }
+
+  @GetMapping("/collection-jobs")
+  public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(
+      @RequestParam(required = false) String workspaceId,
+      @RequestParam(required = false) String status) {
+    return new MoisWorkspaceDtos.CollectionJobListResponse(
+        collectionPersistenceService.listJobStates(workspaceId, status).items().stream()
+            .map(
+                com.marketinghub.mois.dto.MoisCollectionPersistenceDtos.CollectionJobStateResponse
+                    ::job)
+            .toList());
+  }
+
+  @GetMapping("/collection-jobs/{jobId}/references")
+  public MoisWorkspaceDtos.CollectedReferenceListResponse listCollectedReferencesByJob(
+      @PathVariable String jobId,
+      @RequestParam(required = false) String source,
+      @RequestParam(required = false) String niche,
+      @RequestParam(required = false) Integer minSuccessScore,
+      @RequestParam(required = false) String confidenceLevel) {
+    return gateway
+        .listCollectedReferencesByJob(jobId, source, niche, minSuccessScore, confidenceLevel)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collection job not found"));
+  }
+
+  @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/favorite")
+  public MoisWorkspaceDtos.CollectedReferenceActionResponse favoriteCollectedReference(
+      @PathVariable String jobId, @PathVariable String referenceId) {
+    return gateway
+        .favoriteCollectedReference(jobId, referenceId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+  }
+
+  @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/discard")
+  public MoisWorkspaceDtos.CollectedReferenceActionResponse discardCollectedReference(
+      @PathVariable String jobId, @PathVariable String referenceId) {
+    return gateway
+        .discardCollectedReference(jobId, referenceId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+  }
+
+  @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/import")
+  public MoisWorkspaceDtos.CollectedReferenceActionResponse importCollectedReference(
+      @PathVariable String jobId, @PathVariable String referenceId) {
+    return gateway
+        .importCollectedReference(jobId, referenceId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+  }
+
+  @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/import-and-start-extraction")
+  public MoisWorkspaceDtos.CollectedReferenceActionResponse importAndStartExtraction(
+      @PathVariable String jobId, @PathVariable String referenceId) {
+    return gateway
+        .importAndStartExtraction(jobId, referenceId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+  }
+
+  @GetMapping("/collection-jobs/{jobId}/references/{referenceId}/lineage")
+  public MoisWorkspaceDtos.CollectedReferenceLineageResponse getCollectedReferenceLineage(
+      @PathVariable String jobId, @PathVariable String referenceId) {
+    return gateway
+        .getCollectedReferenceLineage(jobId, referenceId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "collected reference lineage not found"));
+  }
+
+  @GetMapping("/workspaces/{workspaceId}/collection-ops/summary")
+  public MoisWorkspaceDtos.CollectionOpsSummaryResponse getCollectionOpsSummary(
+      @PathVariable String workspaceId) {
+    return gateway.getCollectionOpsSummary(workspaceId);
+  }
+
+  @GetMapping("/offers")
+  public MoisOfferDtos.OfferCardListResponse listOffers(
+      @RequestParam(required = false) String requestId,
+      @RequestParam(required = false) String nicheName,
+      @RequestParam(required = false) String sellerOrBrand) {
+    return gateway.listOffers(requestId, nicheName, sellerOrBrand);
+  }
+
+  @GetMapping("/offers/{offerId}")
+  public MoisOfferDtos.OfferCardResponse getOffer(@PathVariable String offerId) {
+    return gateway
+        .getOffer(offerId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "offer not found"));
+  }
+
+  @GetMapping("/insight-reports")
+  public MoisInsightDtos.InsightReportListResponse listInsightReports(
+      @RequestParam(required = false) String requestId,
+      @RequestParam(required = false) String nicheName,
+      @RequestParam(required = false) String category) {
+    return gateway.listInsightReports(requestId, nicheName, category);
+  }
+
+  @GetMapping("/insight-reports/{reportId}")
+  public MoisInsightDtos.InsightReportResponse getInsightReport(@PathVariable String reportId) {
+    return gateway
+        .getInsightReport(reportId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "insight report not found"));
+  }
+
+  @GetMapping("/insight-reports/{reportId}/executive-summary")
+  public MoisInsightDtos.InsightExecutiveSummaryResponse getInsightExecutiveSummary(
+      @PathVariable String reportId) {
+    return gateway
+        .getInsightExecutiveSummary(reportId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "insight report not found"));
+  }
+
+  @GetMapping("/artifacts/{artifactId}")
+  public MoisArtifactDtos.ArtifactEnvelopeResponse getArtifact(@PathVariable String artifactId) {
+    return gateway
+        .getArtifact(artifactId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "artifact not found"));
+  }
+
+  @GetMapping("/health")
+  public Map<String, String> health() {
+    return gateway.health();
+  }
+
+  /** Lista os produtos Hotmart da coleta mais recente para uso na tela administrativa. */
+  @GetMapping("/hotmart/products")
+  public MoisHotmartProductDtos.HotmartCollectedProductListResponse listHotmartProducts(
+      @RequestParam(defaultValue = "workspace-001") String workspaceId,
+      @RequestParam(defaultValue = "24") Integer limit) {
+    if (!StringUtils.hasText(workspaceId)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
     }
+    int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
+    return moisHotmartProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
+  }
 
-    @GetMapping("/discovery-requests")
-    public MoisDiscoveryDtos.DiscoveryRequestListResponse listDiscoveryRequests(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String nicheName,
-            @RequestParam(required = false) String marketTheme
-    ) {
-        return gateway.listDiscoveryRequests(status, nicheName, marketTheme);
+  /**
+   * Lista candidatos Hotmart ainda não processados pelo ciclo 2 para evitar repetição de coleta.
+   */
+  @GetMapping("/hotmart/products/cycle-2-candidates")
+  public MoisHotmartProductDtos.HotmartCollectedProductListResponse listHotmartCycleTwoCandidates(
+      @RequestParam(defaultValue = "workspace-001") String workspaceId,
+      @RequestParam(defaultValue = "400") Integer limit) {
+    if (!StringUtils.hasText(workspaceId)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
     }
+    int normalizedLimit = Math.max(1, Math.min(limit == null ? 400 : limit, 400));
+    return moisHotmartProductService.listCycleTwoCandidatesByWorkspace(
+        workspaceId, normalizedLimit);
+  }
 
-    @GetMapping("/discovery-requests/{requestId}")
-    public MoisDiscoveryDtos.DiscoveryRequestDetailResponse getDiscoveryRequest(@PathVariable String requestId) {
-        return gateway.getDiscoveryRequest(requestId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "discovery request not found"));
+  @GetMapping("/clickbase/products")
+  public MoisClickbaseProductDtos.ClickbaseCollectedProductListResponse listClickbaseProducts(
+      @RequestParam(defaultValue = "workspace-001") String workspaceId,
+      @RequestParam(defaultValue = "24") Integer limit) {
+    if (!StringUtils.hasText(workspaceId)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
     }
-
-    @PostMapping("/discovery-requests/{requestId}/run")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public MoisDiscoveryDtos.AsyncAcceptedResponse runDiscoveryRequest(@PathVariable String requestId) {
-        return gateway.runDiscoveryRequest(requestId);
-    }
-
-
-    @GetMapping("/workspaces/{workspaceId}/dashboard")
-    public MoisWorkspaceDtos.WorkspaceDashboardResponse getWorkspaceDashboard(@PathVariable String workspaceId) {
-        return gateway.getDashboard(workspaceId);
-    }
-
-    @PostMapping("/references")
-    @ResponseStatus(HttpStatus.CREATED)
-    public MoisWorkspaceDtos.ReferenceResponse createReference(
-            @Valid @RequestBody MoisWorkspaceDtos.CreateReferenceRequest request
-    ) {
-        return gateway.createReference(request);
-    }
-
-    @GetMapping("/references")
-    public MoisWorkspaceDtos.ReferenceListResponse listReferences(@RequestParam String workspaceId) {
-        return gateway.listReferences(workspaceId);
-    }
-
-    @PostMapping("/references/{referenceId}/extractions")
-    public MoisWorkspaceDtos.ExtractionDraftResponse upsertExtractionDraft(
-            @PathVariable String referenceId,
-            @RequestBody MoisWorkspaceDtos.UpsertExtractionDraftRequest request
-    ) {
-        return gateway.upsertExtractionDraft(referenceId, request);
-    }
-
-    @GetMapping("/library/blocks")
-    public MoisWorkspaceDtos.LibraryBlockListResponse listLibraryBlocks(
-            @RequestParam(required = false) String workspaceId,
-            @RequestParam(required = false) String niche,
-            @RequestParam(required = false) String formatType
-    ) {
-        return gateway.listLibraryBlocks(workspaceId, niche, formatType);
-    }
-
-    @PostMapping("/library/blocks/{blockId}/favorite")
-    public MoisWorkspaceDtos.LibraryBlockActionResponse favoriteLibraryBlock(@PathVariable String blockId) {
-        return gateway.favoriteLibraryBlock(blockId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "library block not found"));
-    }
-
-    @PostMapping("/library/blocks/{blockId}/duplicate")
-    @ResponseStatus(HttpStatus.CREATED)
-    public MoisWorkspaceDtos.LibraryBlockActionResponse duplicateLibraryBlock(@PathVariable String blockId) {
-        return gateway.duplicateLibraryBlock(blockId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "library block not found"));
-    }
-
-    @PostMapping("/comparisons")
-    public MoisWorkspaceDtos.ComparisonResponse createComparison(
-            @Valid @RequestBody MoisWorkspaceDtos.CreateComparisonRequest request
-    ) {
-        return gateway.createComparison(request);
-    }
-
-    @PostMapping("/offers/build")
-    public MoisWorkspaceDtos.BuildOfferResponse buildOffer(@Valid @RequestBody MoisWorkspaceDtos.BuildOfferRequest request) {
-        return gateway.buildOffer(request);
-    }
-
-    @PostMapping("/collection-jobs")
-    @ResponseStatus(HttpStatus.CREATED)
-    public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(
-            @Valid @RequestBody MoisWorkspaceDtos.CreateCollectionJobRequest request
-    ) {
-        return gateway.createCollectionJob(request);
-    }
-
-    @GetMapping("/collection-jobs")
-    public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(
-            @RequestParam(required = false) String workspaceId,
-            @RequestParam(required = false) String status
-    ) {
-        return new MoisWorkspaceDtos.CollectionJobListResponse(collectionPersistenceService
-                .listJobStates(workspaceId, status)
-                .items()
-                .stream()
-                .map(com.marketinghub.mois.dto.MoisCollectionPersistenceDtos.CollectionJobStateResponse::job)
-                .toList());
-    }
-
-    @GetMapping("/collection-jobs/{jobId}/references")
-    public MoisWorkspaceDtos.CollectedReferenceListResponse listCollectedReferencesByJob(
-            @PathVariable String jobId,
-            @RequestParam(required = false) String source,
-            @RequestParam(required = false) String niche,
-            @RequestParam(required = false) Integer minSuccessScore,
-            @RequestParam(required = false) String confidenceLevel
-    ) {
-        return gateway.listCollectedReferencesByJob(jobId, source, niche, minSuccessScore, confidenceLevel)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collection job not found"));
-    }
-
-    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/favorite")
-    public MoisWorkspaceDtos.CollectedReferenceActionResponse favoriteCollectedReference(
-            @PathVariable String jobId,
-            @PathVariable String referenceId
-    ) {
-        return gateway.favoriteCollectedReference(jobId, referenceId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
-    }
-
-    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/discard")
-    public MoisWorkspaceDtos.CollectedReferenceActionResponse discardCollectedReference(
-            @PathVariable String jobId,
-            @PathVariable String referenceId
-    ) {
-        return gateway.discardCollectedReference(jobId, referenceId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
-    }
-
-    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/import")
-    public MoisWorkspaceDtos.CollectedReferenceActionResponse importCollectedReference(
-            @PathVariable String jobId,
-            @PathVariable String referenceId
-    ) {
-        return gateway.importCollectedReference(jobId, referenceId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
-    }
-
-    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/import-and-start-extraction")
-    public MoisWorkspaceDtos.CollectedReferenceActionResponse importAndStartExtraction(
-            @PathVariable String jobId,
-            @PathVariable String referenceId
-    ) {
-        return gateway.importAndStartExtraction(jobId, referenceId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
-    }
-
-    @GetMapping("/collection-jobs/{jobId}/references/{referenceId}/lineage")
-    public MoisWorkspaceDtos.CollectedReferenceLineageResponse getCollectedReferenceLineage(
-            @PathVariable String jobId,
-            @PathVariable String referenceId
-    ) {
-        return gateway.getCollectedReferenceLineage(jobId, referenceId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference lineage not found"));
-    }
-
-    @GetMapping("/workspaces/{workspaceId}/collection-ops/summary")
-    public MoisWorkspaceDtos.CollectionOpsSummaryResponse getCollectionOpsSummary(@PathVariable String workspaceId) {
-        return gateway.getCollectionOpsSummary(workspaceId);
-    }
-
-    @GetMapping("/offers")
-    public MoisOfferDtos.OfferCardListResponse listOffers(
-            @RequestParam(required = false) String requestId,
-            @RequestParam(required = false) String nicheName,
-            @RequestParam(required = false) String sellerOrBrand
-    ) {
-        return gateway.listOffers(requestId, nicheName, sellerOrBrand);
-    }
-
-    @GetMapping("/offers/{offerId}")
-    public MoisOfferDtos.OfferCardResponse getOffer(@PathVariable String offerId) {
-        return gateway.getOffer(offerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "offer not found"));
-    }
-
-    @GetMapping("/insight-reports")
-    public MoisInsightDtos.InsightReportListResponse listInsightReports(
-            @RequestParam(required = false) String requestId,
-            @RequestParam(required = false) String nicheName,
-            @RequestParam(required = false) String category
-    ) {
-        return gateway.listInsightReports(requestId, nicheName, category);
-    }
-
-    @GetMapping("/insight-reports/{reportId}")
-    public MoisInsightDtos.InsightReportResponse getInsightReport(@PathVariable String reportId) {
-        return gateway.getInsightReport(reportId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "insight report not found"));
-    }
-
-    @GetMapping("/insight-reports/{reportId}/executive-summary")
-    public MoisInsightDtos.InsightExecutiveSummaryResponse getInsightExecutiveSummary(@PathVariable String reportId) {
-        return gateway.getInsightExecutiveSummary(reportId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "insight report not found"));
-    }
-
-    @GetMapping("/artifacts/{artifactId}")
-    public MoisArtifactDtos.ArtifactEnvelopeResponse getArtifact(@PathVariable String artifactId) {
-        return gateway.getArtifact(artifactId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "artifact not found"));
-    }
-
-    @GetMapping("/health")
-    public Map<String, String> health() {
-        return gateway.health();
-    }
-
-    /** Lista os produtos Hotmart da coleta mais recente para uso na tela administrativa. */
-    @GetMapping("/hotmart/products")
-    public MoisHotmartProductDtos.HotmartCollectedProductListResponse listHotmartProducts(
-            @RequestParam(defaultValue = "workspace-001") String workspaceId,
-            @RequestParam(defaultValue = "24") Integer limit
-    ) {
-        if (!StringUtils.hasText(workspaceId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
-        }
-        int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
-        return moisHotmartProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
-    }
-
-    /** Lista candidatos Hotmart ainda não processados pelo ciclo 2 para evitar repetição de coleta. */
-    @GetMapping("/hotmart/products/cycle-2-candidates")
-    public MoisHotmartProductDtos.HotmartCollectedProductListResponse listHotmartCycleTwoCandidates(
-            @RequestParam(defaultValue = "workspace-001") String workspaceId,
-            @RequestParam(defaultValue = "400") Integer limit
-    ) {
-        if (!StringUtils.hasText(workspaceId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
-        }
-        int normalizedLimit = Math.max(1, Math.min(limit == null ? 400 : limit, 400));
-        return moisHotmartProductService.listCycleTwoCandidatesByWorkspace(workspaceId, normalizedLimit);
-    }
-
-    @GetMapping("/clickbase/products")
-    public MoisClickbaseProductDtos.ClickbaseCollectedProductListResponse listClickbaseProducts(
-            @RequestParam(defaultValue = "workspace-001") String workspaceId,
-            @RequestParam(defaultValue = "24") Integer limit
-    ) {
-        if (!StringUtils.hasText(workspaceId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
-        }
-        int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
-        return moisClickbaseProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
-    }
-
+    int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
+    return moisClickbaseProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
+  }
 }

@@ -17,14 +17,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsável por expor os endpoints backend da etapa de ciclo da pesquisa de rotina de nicho CNAE. */
+/**
+ * Responsável por expor os endpoints backend da etapa de ciclo da pesquisa de rotina de nicho CNAE.
+ */
 @RestController
 @RequestMapping("/api")
 public class BackendRoutineResearchCycleController {
   private final BackendRoutineResearchCycleService executionService;
 
   /** Inicializa o controller com o serviço backend da etapa de ciclo da pesquisa de rotina. */
-  public BackendRoutineResearchCycleController(BackendRoutineResearchCycleService executionService) {
+  public BackendRoutineResearchCycleController(
+      BackendRoutineResearchCycleService executionService) {
     this.executionService = executionService;
   }
 
@@ -43,8 +46,8 @@ public class BackendRoutineResearchCycleController {
 
   /** Lista execuções do ciclo de pesquisa de rotina vinculadas ao CNAE informado. */
   @GetMapping("/oprm/nichocnae/cnaes/{cnaeCode}/routine-research-cycle/stage-executions")
-  public ResponseEntity<List<RoutineResearchCycleExecutionSummaryResponse>> listStageExecutionsByCnae(
-      @PathVariable String cnaeCode) {
+  public ResponseEntity<List<RoutineResearchCycleExecutionSummaryResponse>>
+      listStageExecutionsByCnae(@PathVariable String cnaeCode) {
     return ResponseEntity.ok(executionService.listStageExecutionsByCnae(cnaeCode));
   }
 
@@ -72,6 +75,8 @@ public class BackendRoutineResearchCycleController {
     headers.setContentDisposition(
         ContentDisposition.attachment().filename(filename, StandardCharsets.UTF_8).build());
     headers.setContentType(MediaType.parseMediaType("text/markdown; charset=UTF-8"));
-    return ResponseEntity.ok().headers(headers).body(executionService.buildMarkdownReport(researchCycleId));
+    return ResponseEntity.ok()
+        .headers(headers)
+        .body(executionService.buildMarkdownReport(researchCycleId));
   }
 }

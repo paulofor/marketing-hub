@@ -19,12 +19,12 @@ import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
-import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheMaterializationResult;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileDraft;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileSnapshot;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmMarketNicheSnapshot;
+import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
@@ -44,32 +44,58 @@ import org.springframework.data.domain.Pageable;
 
 /** Responsabilidade: validar a etapa final que alimenta nicho e nicho enriquecido no backend. */
 class BackendEnrichedNicheMaterializerServiceTest {
-  private final OprmRoutineResearchCycleRepository cycleRepository = mock(OprmRoutineResearchCycleRepository.class);
-  private final OprmNicheRoutineCardRepository cardRepository = mock(OprmNicheRoutineCardRepository.class);
-  private final OprmNicheCandidateRepository candidateRepository = mock(OprmNicheCandidateRepository.class);
-  private final OprmNicheResearchSeedRepository seedRepository = mock(OprmNicheResearchSeedRepository.class);
-  private final OprmResearchQueryRepository researchQueryRepository = mock(OprmResearchQueryRepository.class);
-  private final OprmSourceCandidateRepository sourceCandidateRepository = mock(OprmSourceCandidateRepository.class);
-  private final OprmSourceSnapshotRepository sourceSnapshotRepository = mock(OprmSourceSnapshotRepository.class);
-  private final OprmExtractedSignalRepository extractedSignalRepository = mock(OprmExtractedSignalRepository.class);
-  private final OprmEnrichedNicheGateway enrichedNicheGateway = mock(OprmEnrichedNicheGateway.class);
-  private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository = mock(OprmMeiAudienceProfileRepository.class);
-  private final OprmEnrichedNicheMetaSignalService metaSignalService = mock(OprmEnrichedNicheMetaSignalService.class);
-  private final OprmCurrencyConversionService currencyConversionService = mock(OprmCurrencyConversionService.class);
-  private final OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = new OprmEnrichedNicheMetaSignalService.MetaSignalPackage(
-      List.of("Salão de beleza"), List.of("Cabeleireiro"), List.of("Small business owners"));
-  private final BackendEnrichedNicheMaterializerService service = new BackendEnrichedNicheMaterializerService(
-      cycleRepository, cardRepository, candidateRepository, seedRepository, researchQueryRepository, sourceCandidateRepository,
-      sourceSnapshotRepository, extractedSignalRepository, enrichedNicheGateway, meiAudienceProfileRepository, metaSignalService,
-      currencyConversionService);
+  private final OprmRoutineResearchCycleRepository cycleRepository =
+      mock(OprmRoutineResearchCycleRepository.class);
+  private final OprmNicheRoutineCardRepository cardRepository =
+      mock(OprmNicheRoutineCardRepository.class);
+  private final OprmNicheCandidateRepository candidateRepository =
+      mock(OprmNicheCandidateRepository.class);
+  private final OprmNicheResearchSeedRepository seedRepository =
+      mock(OprmNicheResearchSeedRepository.class);
+  private final OprmResearchQueryRepository researchQueryRepository =
+      mock(OprmResearchQueryRepository.class);
+  private final OprmSourceCandidateRepository sourceCandidateRepository =
+      mock(OprmSourceCandidateRepository.class);
+  private final OprmSourceSnapshotRepository sourceSnapshotRepository =
+      mock(OprmSourceSnapshotRepository.class);
+  private final OprmExtractedSignalRepository extractedSignalRepository =
+      mock(OprmExtractedSignalRepository.class);
+  private final OprmEnrichedNicheGateway enrichedNicheGateway =
+      mock(OprmEnrichedNicheGateway.class);
+  private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository =
+      mock(OprmMeiAudienceProfileRepository.class);
+  private final OprmEnrichedNicheMetaSignalService metaSignalService =
+      mock(OprmEnrichedNicheMetaSignalService.class);
+  private final OprmCurrencyConversionService currencyConversionService =
+      mock(OprmCurrencyConversionService.class);
+  private final OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage =
+      new OprmEnrichedNicheMetaSignalService.MetaSignalPackage(
+          List.of("Salão de beleza"), List.of("Cabeleireiro"), List.of("Small business owners"));
+  private final BackendEnrichedNicheMaterializerService service =
+      new BackendEnrichedNicheMaterializerService(
+          cycleRepository,
+          cardRepository,
+          candidateRepository,
+          seedRepository,
+          researchQueryRepository,
+          sourceCandidateRepository,
+          sourceSnapshotRepository,
+          extractedSignalRepository,
+          enrichedNicheGateway,
+          meiAudienceProfileRepository,
+          metaSignalService,
+          currencyConversionService);
 
-  /** Deve publicar uma unidade de trabalho completa para o coletor materializar o nicho enriquecido. */
+  /**
+   * Deve publicar uma unidade de trabalho completa para o coletor materializar o nicho enriquecido.
+   */
   @Test
   void shouldListPendingMaterializationWithClosedPayload() {
     OprmNicheRoutineCard card = card();
     OprmRoutineResearchCycle cycle = cycle();
     OprmNicheCandidate candidate = candidate();
-    when(cardRepository.findPendingEnrichedNicheMaterialization(any(Pageable.class))).thenReturn(List.of(card));
+    when(cardRepository.findPendingEnrichedNicheMaterialization(any(Pageable.class)))
+        .thenReturn(List.of(card));
     when(meiAudienceProfileRepository.existsByResearchCycleId(1001L)).thenReturn(true);
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
@@ -99,26 +125,33 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
-    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(meiProfile()));
+    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.of(meiProfile()));
     when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
     when(seedRepository.sumCostUsdByResearchCycleId(1001L)).thenReturn(new BigDecimal("0.0473"));
-    when(currencyConversionService.usdToBrl(new BigDecimal("0.0473"))).thenReturn(new BigDecimal("0.24"));
+    when(currencyConversionService.usdToBrl(new BigDecimal("0.0473")))
+        .thenReturn(new BigDecimal("0.24"));
     when(enrichedNicheGateway.materialize(any(), any()))
         .thenReturn(new OprmEnrichedNicheMaterializationResult(200L, 300L, Instant.now()));
 
-    CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
-        1001L, 10L, "Persona", "Linguagem", "Gatilhos", "Objeções", "test"));
+    CompleteEnrichedNicheMaterializerResponse response =
+        service.complete(
+            1001L,
+            new CompleteEnrichedNicheMaterializerRequest(
+                1001L, 10L, "Persona", "Linguagem", "Gatilhos", "Objeções", "test"));
 
     assertThat(response.marketNicheId()).isEqualTo(200L);
     assertThat(response.enrichedNicheProfileId()).isEqualTo(300L);
     assertThat(cycle.getStatus()).isEqualTo("ENRICHED_NICHE_CREATED");
     assertThat(candidate.getMarketNicheId()).isEqualTo(200L);
     assertThat(candidate.getOfferIdea()).isNull();
-    ArgumentCaptor<OprmEnrichedNicheProfileDraft> profileCaptor = ArgumentCaptor.forClass(OprmEnrichedNicheProfileDraft.class);
+    ArgumentCaptor<OprmEnrichedNicheProfileDraft> profileCaptor =
+        ArgumentCaptor.forClass(OprmEnrichedNicheProfileDraft.class);
     verify(metaSignalService).buildReadableSignalSummary(metaSignalPackage);
     verify(enrichedNicheGateway).materialize(any(), profileCaptor.capture());
     assertThat(profileCaptor.getValue().personaDailyTasks()).contains("agenda");
-    assertThat(profileCaptor.getValue().researchReportMarkdown()).contains("Pesquisa OPRM NichoCNAE");
+    assertThat(profileCaptor.getValue().researchReportMarkdown())
+        .contains("Pesquisa OPRM NichoCNAE");
   }
 
   /** Deve permitir reprocessar o mesmo cartão criando novo perfil para o mesmo nicho existente. */
@@ -130,15 +163,25 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
-    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(meiProfile()));
+    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.of(meiProfile()));
     when(enrichedNicheGateway.findByCnaeAndNormalizedNeutralName("9602501", "salões pequenos"))
         .thenReturn(Optional.of(new OprmMarketNicheSnapshot(200L)));
     when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
     when(enrichedNicheGateway.materialize(any(), any()))
         .thenReturn(new OprmEnrichedNicheMaterializationResult(200L, 301L, Instant.now()));
 
-    CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
-        1001L, 10L, "Persona reprocessada", "Linguagem reprocessada", "Gatilhos", "Objeções", "test"));
+    CompleteEnrichedNicheMaterializerResponse response =
+        service.complete(
+            1001L,
+            new CompleteEnrichedNicheMaterializerRequest(
+                1001L,
+                10L,
+                "Persona reprocessada",
+                "Linguagem reprocessada",
+                "Gatilhos",
+                "Objeções",
+                "test"));
 
     assertThat(response.marketNicheId()).isEqualTo(200L);
     assertThat(response.enrichedNicheProfileId()).isEqualTo(301L);
@@ -146,7 +189,10 @@ class BackendEnrichedNicheMaterializerServiceTest {
     verify(enrichedNicheGateway).materialize(any(), any());
   }
 
-  /** Deve criar outro market_niche para subnicho diferente do mesmo CNAE, sem sobrescrever o nicho anterior do candidato. */
+  /**
+   * Deve criar outro market_niche para subnicho diferente do mesmo CNAE, sem sobrescrever o nicho
+   * anterior do candidato.
+   */
   @Test
   void shouldCreateAnotherMarketNicheForDifferentNeutralNameInSameCnae() {
     OprmRoutineResearchCycle cycle = cycle();
@@ -163,15 +209,20 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
-    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
-    when(enrichedNicheGateway.findByCnaeAndNormalizedNeutralName("9602501", "manicure autônoma domiciliar"))
+    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.of(profile));
+    when(enrichedNicheGateway.findByCnaeAndNormalizedNeutralName(
+            "9602501", "manicure autônoma domiciliar"))
         .thenReturn(Optional.empty());
     when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
     when(enrichedNicheGateway.materialize(any(), any()))
         .thenReturn(new OprmEnrichedNicheMaterializationResult(201L, 301L, Instant.now()));
 
-    CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
-        1001L, 10L, "Persona manicure", "Linguagem", "Gatilhos", "Objeções", "test"));
+    CompleteEnrichedNicheMaterializerResponse response =
+        service.complete(
+            1001L,
+            new CompleteEnrichedNicheMaterializerRequest(
+                1001L, 10L, "Persona manicure", "Linguagem", "Gatilhos", "Objeções", "test"));
 
     assertThat(response.marketNicheId()).isEqualTo(201L);
     assertThat(response.cycleStatus()).isEqualTo("ENRICHED_NICHE_CREATED");
@@ -180,7 +231,9 @@ class BackendEnrichedNicheMaterializerServiceTest {
     verify(enrichedNicheGateway).materialize(any(), any());
   }
 
-  /** Deve bloquear materialização quando o ciclo sintetizado não tem perfil MEI/autônomo aprovado. */
+  /**
+   * Deve bloquear materialização quando o ciclo sintetizado não tem perfil MEI/autônomo aprovado.
+   */
   @Test
   void shouldNotReleaseMaterializationWithoutMeiAudienceProfile() {
     OprmRoutineResearchCycle cycle = cycle();
@@ -190,10 +243,15 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
-    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.empty());
+    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
-        1001L, 10L, "Persona", "Linguagem", "Gatilhos", "Objeções", "test")))
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    1001L,
+                    new CompleteEnrichedNicheMaterializerRequest(
+                        1001L, 10L, "Persona", "Linguagem", "Gatilhos", "Objeções", "test")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("aguardando perfil MEI/autônomo");
 
@@ -205,7 +263,9 @@ class BackendEnrichedNicheMaterializerServiceTest {
   @Test
   void shouldDiagnoseHistoricalContamination() {
     OprmRoutineResearchCycle cycle = cycle();
-    when(cycleRepository.findPotentiallyContaminatedByTerm(org.mockito.ArgumentMatchers.eq("ia"), any(Pageable.class))).thenReturn(List.of(cycle));
+    when(cycleRepository.findPotentiallyContaminatedByTerm(
+            org.mockito.ArgumentMatchers.eq("ia"), any(Pageable.class)))
+        .thenReturn(List.of(cycle));
     when(enrichedNicheGateway.findPotentiallyContaminatedByTerm("ia", 10)).thenReturn(List.of());
 
     var diagnostic = service.diagnoseHistoricalContamination(10);
@@ -216,7 +276,6 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(diagnostic.items().getFirst().recommendation()).contains("novo ciclo neutro");
   }
 
-
   /** Deve gerar um documento Markdown com todo o pipeline processado e a conclusão final. */
   @Test
   void shouldBuildPipelineMarkdownByProfileId() {
@@ -225,12 +284,18 @@ class BackendEnrichedNicheMaterializerServiceTest {
     OprmNicheRoutineCard card = card();
     when(enrichedNicheGateway.requireProfileById(300L)).thenReturn(profileSnapshot());
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
-    when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(card));
+    when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.of(card));
     when(seedRepository.findByResearchCycleId(1001L)).thenReturn(Optional.of(seed()));
-    when(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(1001L)).thenReturn(List.of(researchQuery()));
-    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L)).thenReturn(List.of(sourceCandidate()));
-    when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(sourceSnapshot()));
-    when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(extractedSignal()));
+    when(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(1001L))
+        .thenReturn(List.of(researchQuery()));
+    when(sourceCandidateRepository
+            .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
+        .thenReturn(List.of(sourceCandidate()));
+    when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L))
+        .thenReturn(List.of(sourceSnapshot()));
+    when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(1001L))
+        .thenReturn(List.of(extractedSignal()));
 
     String markdown = service.buildPipelineMarkdownByProfileId(300L);
 
@@ -243,20 +308,25 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(markdown).contains("ENRICHED_NICHE_CREATED");
   }
 
-
   /** Deve gerar relatório Markdown por job mesmo quando ainda não existe perfil materializado. */
   @Test
   void shouldBuildPipelineMarkdownByResearchCycleIdWithoutProfile() {
     OprmRoutineResearchCycle cycle = cycle();
     cycle.setStatus("RUNNING");
     cycle.setTriggerSource("AUTO_QUALITY_REPROCESS");
-    cycle.setErrorMessage("Reexecução de etapas do mesmo job solicitada por AUTO_QUALITY_REPROCESS.");
-    when(enrichedNicheGateway.findLatestProfileByResearchCycleId(1001L)).thenReturn(Optional.empty());
+    cycle.setErrorMessage(
+        "Reexecução de etapas do mesmo job solicitada por AUTO_QUALITY_REPROCESS.");
+    when(enrichedNicheGateway.findLatestProfileByResearchCycleId(1001L))
+        .thenReturn(Optional.empty());
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
-    when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.empty());
+    when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.empty());
     when(seedRepository.findByResearchCycleId(1001L)).thenReturn(Optional.empty());
-    when(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(1001L)).thenReturn(List.of());
-    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L)).thenReturn(List.of());
+    when(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(1001L))
+        .thenReturn(List.of());
+    when(sourceCandidateRepository
+            .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
+        .thenReturn(List.of());
     when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of());
     when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of());
 
@@ -276,10 +346,12 @@ class BackendEnrichedNicheMaterializerServiceTest {
     card.setNicheName("IA para salões pequenos");
     card.setRoutineSummary("Rotina com agenda, atendimento e retorno de clientes.");
     card.setPainsSummary("Dores de falta de tempo e organização.");
-    card.setCustomerBehaviorSummary("Comportamento de clientes: indicação, retorno e desmarcações.");
+    card.setCustomerBehaviorSummary(
+        "Comportamento de clientes: indicação, retorno e desmarcações.");
     card.setChannelsSummary("Canais usados: WhatsApp e conversa direta.");
     card.setResultsSummary("Perguntas do profissional sobre encaixes e retornos de clientes.");
-    card.setMechanismOpportunitiesSummary("Contexto operacional e linguagem do nicho: agenda, encaixes, retorno e horários vagos.");
+    card.setMechanismOpportunitiesSummary(
+        "Contexto operacional e linguagem do nicho: agenda, encaixes, retorno e horários vagos.");
     card.setEvidenceSummary("Evidência em fontes de gestão para salões.");
     card.setSourceDomains("exemplo.com");
     card.setConfidenceScore(90);
@@ -432,5 +504,4 @@ class BackendEnrichedNicheMaterializerServiceTest {
         "# Relatório auditável",
         Instant.parse("2026-01-01T00:00:00Z"));
   }
-
 }

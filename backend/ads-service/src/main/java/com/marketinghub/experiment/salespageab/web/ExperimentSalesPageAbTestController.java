@@ -17,36 +17,38 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/sales-page-ab-tests")
 public class ExperimentSalesPageAbTestController {
-    private final ExperimentSalesPageAbTestService service;
+  private final ExperimentSalesPageAbTestService service;
 
-    /** Inicializa o controller com o servico de testes A/B de pagina de venda. */
-    public ExperimentSalesPageAbTestController(ExperimentSalesPageAbTestService service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com o servico de testes A/B de pagina de venda. */
+  public ExperimentSalesPageAbTestController(ExperimentSalesPageAbTestService service) {
+    this.service = service;
+  }
 
-    /** Lista os testes A/B cadastrados no experimento. */
-    @GetMapping
-    public List<ExperimentSalesPageAbTestDto> list(@PathVariable Long experimentId) {
-        return service.list(experimentId);
-    }
+  /** Lista os testes A/B cadastrados no experimento. */
+  @GetMapping
+  public List<ExperimentSalesPageAbTestDto> list(@PathVariable Long experimentId) {
+    return service.list(experimentId);
+  }
 
-    /** Lista os resultados rastreados dos testes A/B cadastrados no experimento. */
-    @GetMapping("/results")
-    public List<ExperimentSalesPageAbTestResultDto> results(@PathVariable Long experimentId) {
-        return service.results(experimentId);
-    }
+  /** Lista os resultados rastreados dos testes A/B cadastrados no experimento. */
+  @GetMapping("/results")
+  public List<ExperimentSalesPageAbTestResultDto> results(@PathVariable Long experimentId) {
+    return service.results(experimentId);
+  }
 
-    /** Cria o teste recomendado para Meta: tradicional contra video humano. */
-    @PostMapping("/meta-video-vs-traditional")
-    public ExperimentSalesPageAbTestDto createMetaVideoVsTraditional(@PathVariable Long experimentId) {
-        return service.createMetaVideoVsTraditional(experimentId);
-    }
+  /** Cria o teste recomendado para Meta: tradicional contra video humano. */
+  @PostMapping("/meta-video-vs-traditional")
+  public ExperimentSalesPageAbTestDto createMetaVideoVsTraditional(
+      @PathVariable Long experimentId) {
+    return service.createMetaVideoVsTraditional(experimentId);
+  }
 
-    /** Atualiza os dados operacionais de uma variante do teste A/B. */
-    @PatchMapping("/variants/{variantId}")
-    public ExperimentSalesPageAbTestDto updateVariant(@PathVariable Long experimentId,
-                                                      @PathVariable Long variantId,
-                                                      @RequestBody UpdateExperimentSalesPageAbVariantRequest request) {
-        return service.updateVariant(experimentId, variantId, request);
-    }
+  /** Atualiza os dados operacionais de uma variante do teste A/B. */
+  @PatchMapping("/variants/{variantId}")
+  public ExperimentSalesPageAbTestDto updateVariant(
+      @PathVariable Long experimentId,
+      @PathVariable Long variantId,
+      @RequestBody UpdateExperimentSalesPageAbVariantRequest request) {
+    return service.updateVariant(experimentId, variantId, request);
+  }
 }

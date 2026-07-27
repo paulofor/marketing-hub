@@ -1,17 +1,16 @@
 package com.marketinghub.prompt;
 
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "prompt_domain")
@@ -21,64 +20,61 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 public class PromptDomain {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String code;
+  @Column(nullable = false, unique = true, length = 100)
+  private String code;
 
-    @Column(nullable = false, length = 191)
-    private String name;
+  @Column(nullable = false, length = 191)
+  private String name;
 
-    @Column(length = 500)
-    private String description;
+  @Column(length = 500)
+  private String description;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 
-    @OneToMany(mappedBy = "domain", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @Builder.Default
-    private List<PromptDomainObject> objects = new ArrayList<>();
+  @OneToMany(
+      mappedBy = "domain",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
+  @Builder.Default
+  private List<PromptDomainObject> objects = new ArrayList<>();
 
-    public List<PromptDomainObjectType> getObjectTypes() {
-        return objects == null ? List.of() : objects.stream()
-                .map(PromptDomainObject::getObjectType)
-                .collect(Collectors.toList());
+  public List<PromptDomainObjectType> getObjectTypes() {
+    return objects == null
+        ? List.of()
+        : objects.stream().map(PromptDomainObject::getObjectType).collect(Collectors.toList());
+  }
+
+  public void setObjectTypes(List<PromptDomainObjectType> types) {
+    if (objects == null) {
+      objects = new ArrayList<>();
     }
-
-    public void setObjectTypes(List<PromptDomainObjectType> types) {
-        if (objects == null) {
-            objects = new ArrayList<>();
-        }
-        if (types == null) {
-            objects.clear();
-            return;
-        }
-        List<PromptDomainObjectType> desired = types.stream()
-                .filter(type -> type != null)
-                .distinct()
-                .toList();
-        if (desired.isEmpty()) {
-            objects.clear();
-            return;
-        }
-        objects.removeIf(object -> !desired.contains(object.getObjectType()));
-        List<PromptDomainObjectType> existing = objects.stream()
-                .map(PromptDomainObject::getObjectType)
-                .toList();
-        for (PromptDomainObjectType type : desired) {
-            if (existing.contains(type)) {
-                continue;
-            }
-            objects.add(PromptDomainObject.builder()
-                    .domain(this)
-                    .objectType(type)
-                    .build());
-        }
+    if (types == null) {
+      objects.clear();
+      return;
     }
+    List<PromptDomainObjectType> desired =
+        types.stream().filter(type -> type != null).distinct().toList();
+    if (desired.isEmpty()) {
+      objects.clear();
+      return;
+    }
+    objects.removeIf(object -> !desired.contains(object.getObjectType()));
+    List<PromptDomainObjectType> existing =
+        objects.stream().map(PromptDomainObject::getObjectType).toList();
+    for (PromptDomainObjectType type : desired) {
+      if (existing.contains(type)) {
+        continue;
+      }
+      objects.add(PromptDomainObject.builder().domain(this).objectType(type).build());
+    }
+  }
 }

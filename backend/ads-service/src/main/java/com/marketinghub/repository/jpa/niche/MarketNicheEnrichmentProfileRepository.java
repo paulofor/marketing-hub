@@ -9,12 +9,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Repositório responsável por persistir e consultar perfis enriquecidos de nichos. */
-public interface MarketNicheEnrichmentProfileRepository extends JpaRepository<MarketNicheEnrichmentProfile, Long> {
+public interface MarketNicheEnrichmentProfileRepository
+    extends JpaRepository<MarketNicheEnrichmentProfile, Long> {
   /** Busca o perfil enriquecido materializado para um ciclo de pesquisa de rotina. */
-  Optional<MarketNicheEnrichmentProfile> findFirstByResearchCycleIdOrderByIdDesc(Long researchCycleId);
+  Optional<MarketNicheEnrichmentProfile> findFirstByResearchCycleIdOrderByIdDesc(
+      Long researchCycleId);
 
   /** Busca perfis que já materializaram o mesmo CNAE com o mesmo nome neutro normalizado. */
-  @Query("""
+  @Query(
+      """
       select p from MarketNicheEnrichmentProfile p
       join fetch p.marketNiche n
       where p.cnaeCode = :cnaeCode
@@ -27,18 +30,19 @@ public interface MarketNicheEnrichmentProfileRepository extends JpaRepository<Ma
       Pageable pageable);
 
   /** Lista os nichos enriquecidos já materializados para um CNAE. */
-  @Query("""
+  @Query(
+      """
       select p from MarketNicheEnrichmentProfile p
       join fetch p.marketNiche n
       where p.cnaeCode = :cnaeCode
       order by p.createdAt desc, p.id desc
       """)
   List<MarketNicheEnrichmentProfile> findGeneratedByCnaeCode(
-      @Param("cnaeCode") String cnaeCode,
-      Pageable pageable);
+      @Param("cnaeCode") String cnaeCode, Pageable pageable);
 
   /** Lista o perfil enriquecido mais recente de cada nicho informado. */
-  @Query("""
+  @Query(
+      """
       select p from MarketNicheEnrichmentProfile p
       join fetch p.marketNiche n
       where n.id in :marketNicheIds
@@ -48,16 +52,18 @@ public interface MarketNicheEnrichmentProfileRepository extends JpaRepository<Ma
             and newer.id > p.id
         )
       """)
-  List<MarketNicheEnrichmentProfile> findLatestByMarketNicheIds(@Param("marketNicheIds") List<Long> marketNicheIds);
+  List<MarketNicheEnrichmentProfile> findLatestByMarketNicheIds(
+      @Param("marketNicheIds") List<Long> marketNicheIds);
 
   /** Lista perfis recentes cujo nome ou conteúdo principal ainda contém linguagem de solução. */
-  @Query("""
+  @Query(
+      """
       select p from MarketNicheEnrichmentProfile p
       join fetch p.marketNiche n
       where lower(coalesce(n.name, '')) like lower(concat('%', :term, '%'))
          or lower(coalesce(p.routineSummary, '')) like lower(concat('%', :term, '%'))
       order by p.createdAt desc, p.id desc
       """)
-  List<MarketNicheEnrichmentProfile> findPotentiallyContaminatedByTerm(@Param("term") String term, org.springframework.data.domain.Pageable pageable);
-
+  List<MarketNicheEnrichmentProfile> findPotentiallyContaminatedByTerm(
+      @Param("term") String term, org.springframework.data.domain.Pageable pageable);
 }

@@ -3,105 +3,106 @@ package com.marketinghub.leadportal;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-/**
- * Describes the questions and data capture flow that a lead will experience inside the portal.
- */
+/** Describes the questions and data capture flow that a lead will experience inside the portal. */
 @Entity
-@Table(name = "lead_portal_flow", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_lead_portal_flow_slug", columnNames = {"slug"})
-})
+@Table(
+    name = "lead_portal_flow",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uk_lead_portal_flow_slug",
+          columnNames = {"slug"})
+    })
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class LeadPortalFlow {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, length = 150)
-    private String name;
+  @Column(nullable = false, length = 150)
+  private String name;
 
-    @Column(nullable = false, length = 120)
-    private String slug;
+  @Column(nullable = false, length = 120)
+  private String slug;
 
-    @Column(columnDefinition = "LONGTEXT")
-    private String description;
+  @Column(columnDefinition = "LONGTEXT")
+  private String description;
 
-    @Column(length = 128)
-    private String model;
+  @Column(length = 128)
+  private String model;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String prompt;
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String prompt;
 
-    @Column(name = "image_prompt_model", length = 128)
-    private String imagePromptModel;
+  @Column(name = "image_prompt_model", length = 128)
+  private String imagePromptModel;
 
-    @Column(name = "image_prompt_template", columnDefinition = "LONGTEXT")
-    private String imagePromptTemplate;
+  @Column(name = "image_prompt_template", columnDefinition = "LONGTEXT")
+  private String imagePromptTemplate;
 
-    @Lob
-    @Column(name = "custom_form_html", columnDefinition = "LONGTEXT")
-    private String customFormHtml;
+  @Lob
+  @Column(name = "custom_form_html", columnDefinition = "LONGTEXT")
+  private String customFormHtml;
 
-    @Builder.Default
-    @Column(name = "schema_first", nullable = false)
-    private boolean schemaFirst = false;
+  @Builder.Default
+  @Column(name = "schema_first", nullable = false)
+  private boolean schemaFirst = false;
 
-    @Column(name = "image_prompt_batch_size")
-    private Integer imagePromptBatchSize;
+  @Column(name = "image_prompt_batch_size")
+  private Integer imagePromptBatchSize;
 
-    /** Custo estimado em USD para gerar este fluxo. */
-    @Column(name = "cost_usd", precision = 10, scale = 4)
-    private BigDecimal costUsd;
+  /** Custo estimado em USD para gerar este fluxo. */
+  @Column(name = "cost_usd", precision = 10, scale = 4)
+  private BigDecimal costUsd;
 
-    @Builder.Default
-    @Column(nullable = false)
-    private boolean approved = false;
+  @Builder.Default
+  @Column(nullable = false)
+  private boolean approved = false;
 
-    @Column(name = "approved_at")
-    private Instant approvedAt;
+  @Column(name = "approved_at")
+  private Instant approvedAt;
 
-    @Builder.Default
-    @OneToMany(mappedBy = "flow", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("position ASC")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<LeadPortalFlowQuestion> questions = new ArrayList<>();
+  @Builder.Default
+  @OneToMany(mappedBy = "flow", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("position ASC")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private List<LeadPortalFlowQuestion> questions = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "simple_form_style_id")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private LeadPortalSimpleFormStyle simpleFormStyle;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "simple_form_style_id")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private LeadPortalSimpleFormStyle simpleFormStyle;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "market_niche_id")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private MarketNiche marketNiche;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "market_niche_id")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private MarketNiche marketNiche;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_id")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Experiment experiment;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "experiment_id")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private Experiment experiment;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private Instant updatedAt;
 }

@@ -24,33 +24,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/oprm/jobs")
 @RequiredArgsConstructor
 public class OprmJobController {
-    private final OprmJobOrchestrationService service;
+  private final OprmJobOrchestrationService service;
 
-    @PostMapping
-    public OprmJobDetailResponseDto createJob(@Valid @RequestBody OprmCreateJobRequestDto request) {
-        return service.createJob(request);
-    }
+  @PostMapping
+  public OprmJobDetailResponseDto createJob(@Valid @RequestBody OprmCreateJobRequestDto request) {
+    return service.createJob(request);
+  }
 
-    @PostMapping("/claim")
-    public ResponseEntity<OprmJobClaimResponseDto> claim(@Valid @RequestBody OprmJobClaimRequestDto request) {
-        Optional<OprmJobClaimResponseDto> claimed = service.claimNextJob(request);
-        return claimed.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
-    }
+  @PostMapping("/claim")
+  public ResponseEntity<OprmJobClaimResponseDto> claim(
+      @Valid @RequestBody OprmJobClaimRequestDto request) {
+    Optional<OprmJobClaimResponseDto> claimed = service.claimNextJob(request);
+    return claimed.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
+  }
 
-    @GetMapping("/workspace/occupations")
-    public List<OprmWorkspaceOccupationSummaryDto> listWorkspaceOccupations() {
-        return service.listWorkspaceOccupations();
-    }
+  @GetMapping("/workspace/occupations")
+  public List<OprmWorkspaceOccupationSummaryDto> listWorkspaceOccupations() {
+    return service.listWorkspaceOccupations();
+  }
 
-    @GetMapping("/{jobId}")
-    public OprmJobDetailResponseDto detail(@PathVariable UUID jobId) {
-        return service.getJobDetail(jobId);
-    }
+  @GetMapping("/{jobId}")
+  public OprmJobDetailResponseDto detail(@PathVariable UUID jobId) {
+    return service.getJobDetail(jobId);
+  }
 
-    @PostMapping("/{jobId}/status")
-    public ResponseEntity<Void> updateStatus(@PathVariable UUID jobId,
-                                             @Valid @RequestBody OprmJobStatusUpdateRequestDto request) {
-        service.updateJobStatus(jobId, request);
-        return ResponseEntity.accepted().build();
-    }
+  @PostMapping("/{jobId}/status")
+  public ResponseEntity<Void> updateStatus(
+      @PathVariable UUID jobId, @Valid @RequestBody OprmJobStatusUpdateRequestDto request) {
+    service.updateJobStatus(jobId, request);
+    return ResponseEntity.accepted().build();
+  }
 }

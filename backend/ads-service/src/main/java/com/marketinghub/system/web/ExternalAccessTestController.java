@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/system")
 public class ExternalAccessTestController {
 
-    @GetMapping("/external-access-test")
-    public Map<String, String> externalAccessTest() {
-        return Map.of(
-                "status", "ok",
-                "message", "external access test endpoint is reachable",
-                "timestamp", Instant.now().toString());
-    }
+  @GetMapping("/external-access-test")
+  public Map<String, String> externalAccessTest() {
+    return Map.of(
+        "status", "ok",
+        "message", "external access test endpoint is reachable",
+        "timestamp", Instant.now().toString());
+  }
 }

@@ -4,9 +4,7 @@ import com.marketinghub.oprm.market.OprmCnpjImportRun;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-/**
- * Repositório JPA responsável pela persistência de OprmCnpjImportRun.
- */
+/** Repositório JPA responsável pela persistência de OprmCnpjImportRun. */
 public interface OprmCnpjImportRunRepository extends JpaRepository<OprmCnpjImportRun, Long> {
-    Optional<OprmCnpjImportRun> findFirstByStatusOrderByStartedAtDesc(String status);
+  Optional<OprmCnpjImportRun> findFirstByStatusOrderByStartedAtDesc(String status);
 }

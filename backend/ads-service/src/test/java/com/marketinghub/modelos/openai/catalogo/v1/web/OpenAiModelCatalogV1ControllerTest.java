@@ -16,22 +16,23 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar contratos administrativos do catálogo OpenAI expostos ao frontend. */
 class OpenAiModelCatalogV1ControllerTest {
 
-    /** Garante que o endpoint manual dispare a sincronização financeira de preços oficiais. */
-    @Test
-    void shouldTriggerManualPricingSync() {
-        OpenAiModelPricingSyncService pricingSyncService = mock(OpenAiModelPricingSyncService.class);
-        when(pricingSyncService.syncOfficialPricing()).thenReturn(35);
-        OpenAiModelCatalogV1Controller controller = new OpenAiModelCatalogV1Controller(
-                mock(OpenAiModelService.class),
-                mock(OpenAiModelMapper.class),
-                mock(OpenAiModelCatalogV1Service.class),
-                pricingSyncService);
+  /** Garante que o endpoint manual dispare a sincronização financeira de preços oficiais. */
+  @Test
+  void shouldTriggerManualPricingSync() {
+    OpenAiModelPricingSyncService pricingSyncService = mock(OpenAiModelPricingSyncService.class);
+    when(pricingSyncService.syncOfficialPricing()).thenReturn(35);
+    OpenAiModelCatalogV1Controller controller =
+        new OpenAiModelCatalogV1Controller(
+            mock(OpenAiModelService.class),
+            mock(OpenAiModelMapper.class),
+            mock(OpenAiModelCatalogV1Service.class),
+            pricingSyncService);
 
-        OpenAiModelPricingSyncResponse response = controller.syncPricing();
+    OpenAiModelPricingSyncResponse response = controller.syncPricing();
 
-        assertThat(response.modelsUpdated()).isEqualTo(35);
-        assertThat(response.source()).isEqualTo(OpenAiPricingPageClient.PRICING_PAGE_URL);
-        assertThat(response.syncedAt()).isNotNull();
-        verify(pricingSyncService).syncOfficialPricing();
-    }
+    assertThat(response.modelsUpdated()).isEqualTo(35);
+    assertThat(response.source()).isEqualTo(OpenAiPricingPageClient.PRICING_PAGE_URL);
+    assertThat(response.syncedAt()).isNotNull();
+    verify(pricingSyncService).syncOfficialPricing();
+  }
 }

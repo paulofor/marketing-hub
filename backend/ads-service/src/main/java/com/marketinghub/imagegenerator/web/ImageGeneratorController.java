@@ -13,16 +13,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/image-generator")
 public class ImageGeneratorController {
-    private final ImageGeneratorService service;
+  private final ImageGeneratorService service;
 
-    /** Inicializa o controller com o serviço de geração de imagens. */
-    public ImageGeneratorController(ImageGeneratorService service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com o serviço de geração de imagens. */
+  public ImageGeneratorController(ImageGeneratorService service) {
+    this.service = service;
+  }
 
-    /** Gera as imagens comparativas a partir do prompt informado pelo usuário. */
-    @PostMapping("/generations")
-    public ImageGeneratorResponse generate(@Valid @RequestBody ImageGeneratorRequest request) {
-        return service.generate(request);
-    }
+  /** Gera as imagens comparativas a partir do prompt informado pelo usuário. */
+  @PostMapping("/generations")
+  public ImageGeneratorResponse generate(@Valid @RequestBody ImageGeneratorRequest request) {
+    return service.generate(request);
+  }
 }

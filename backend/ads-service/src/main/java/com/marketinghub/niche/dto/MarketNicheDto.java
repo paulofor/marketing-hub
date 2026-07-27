@@ -1,54 +1,52 @@
 package com.marketinghub.niche.dto;
 
-import java.time.Instant;
 import java.math.BigDecimal;
+import java.time.Instant;
 import lombok.Data;
 
-/**
- * Data transfer object for {@link com.marketinghub.niche.MarketNiche}.
- */
+/** Data transfer object for {@link com.marketinghub.niche.MarketNiche}. */
 @Data
 public class MarketNicheDto {
-    private Long id;
-    private String name;
-    private String description;
-    private String facebookPixelId;
-    private String facebookPixelCode;
-    private Instant facebookPixelCreatedAt;
-    private Instant facebookPixelRequestedAt;
-    private String facebookPixelRequestStatus;
-    private String sourceCnaeCode;
-    private String sourceCnaeDescription;
-    private String interestCategory;
-    private String roleCategory;
-    private String demandVolume;
-    private String promises;
-    private String offers;
-    private BigDecimal cost;
-    private BigDecimal expense;
-    private BigDecimal totalCost;
-    private BigDecimal totalRevenue;
-    private String baseSegmentation;
-    private String interests;
-    private String demographicFilters;
-    private java.util.List<String> interestList;
-    private java.util.List<String> roleList;
-    private java.util.List<String> behaviorList;
-    private String extraTips;
-    private Integer hypothesesToGenerate;
-    private Integer interestsToGenerate;
-    private Integer jobTitlesToGenerate;
-    private Integer behaviorsToGenerate;
-    private Integer detailedDescriptionsToGenerate;
-    private String hypothesisModel;
-    private String interestModel;
-    private String jobTitleModel;
-    private String behaviorModel;
-    private String detailedDescriptionModel;
-    private Long differentiatedTechnologyId;
-    private Long hypothesisDetailedDescriptionId;
-    private Long chatDialogId;
-    private Long enrichedNicheProfileId;
-    private Instant createdAt;
-    private Instant updatedAt;
+  private Long id;
+  private String name;
+  private String description;
+  private String facebookPixelId;
+  private String facebookPixelCode;
+  private Instant facebookPixelCreatedAt;
+  private Instant facebookPixelRequestedAt;
+  private String facebookPixelRequestStatus;
+  private String sourceCnaeCode;
+  private String sourceCnaeDescription;
+  private String interestCategory;
+  private String roleCategory;
+  private String demandVolume;
+  private String promises;
+  private String offers;
+  private BigDecimal cost;
+  private BigDecimal expense;
+  private BigDecimal totalCost;
+  private BigDecimal totalRevenue;
+  private String baseSegmentation;
+  private String interests;
+  private String demographicFilters;
+  private java.util.List<String> interestList;
+  private java.util.List<String> roleList;
+  private java.util.List<String> behaviorList;
+  private String extraTips;
+  private Integer hypothesesToGenerate;
+  private Integer interestsToGenerate;
+  private Integer jobTitlesToGenerate;
+  private Integer behaviorsToGenerate;
+  private Integer detailedDescriptionsToGenerate;
+  private String hypothesisModel;
+  private String interestModel;
+  private String jobTitleModel;
+  private String behaviorModel;
+  private String detailedDescriptionModel;
+  private Long differentiatedTechnologyId;
+  private Long hypothesisDetailedDescriptionId;
+  private Long chatDialogId;
+  private Long enrichedNicheProfileId;
+  private Instant createdAt;
+  private Instant updatedAt;
 }

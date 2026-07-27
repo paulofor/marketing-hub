@@ -21,7 +21,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
- * Entidade que representa um pipeline operacional usado para organizar etapas de criação de produtos digitais.
+ * Entidade que representa um pipeline operacional usado para organizar etapas de criação de
+ * produtos digitais.
  */
 @Entity
 @Table(name = "pipeline")
@@ -30,34 +31,36 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Pipeline {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, length = 120)
-    private String name;
+  @Column(nullable = false, length = 120)
+  private String name;
 
-    @Column(nullable = false, unique = true, length = 80)
-    private String code;
+  @Column(nullable = false, unique = true, length = 80)
+  private String code;
 
-    @Column(nullable = false, length = 60)
-    private String module;
+  @Column(nullable = false, length = 60)
+  private String module;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+  @Column(columnDefinition = "TEXT")
+  private String description;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean active = true;
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean active = true;
 
-    @OneToMany(mappedBy = "pipeline", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @OrderBy("position ASC, id ASC")
-    @Builder.Default
-    private List<PipelineStage> stages = new ArrayList<>();
+  @OneToMany(
+      mappedBy = "pipeline",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @OrderBy("position ASC, id ASC")
+  @Builder.Default
+  private List<PipelineStage> stages = new ArrayList<>();
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

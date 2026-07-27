@@ -8,27 +8,28 @@ import com.marketinghub.salesvideo.service.SalesVideoExperimentAssetApprovalChec
 import java.util.List;
 import org.springframework.stereotype.Service;
 
-/**
- * Verifica compliance de publicação para assets de vídeo gerados pelo domínio de experimento.
- */
+/** Verifica compliance de publicação para assets de vídeo gerados pelo domínio de experimento. */
 @Service
-public class ExperimentVideoAssetApprovalChecker implements SalesVideoExperimentAssetApprovalChecker {
-    private final ExperimentVideoAssetRepository repository;
+public class ExperimentVideoAssetApprovalChecker
+    implements SalesVideoExperimentAssetApprovalChecker {
+  private final ExperimentVideoAssetRepository repository;
 
-    /** Inicializa a verificação usando a fonte canônica dos vídeos de experimento. */
-    public ExperimentVideoAssetApprovalChecker(ExperimentVideoAssetRepository repository) {
-        this.repository = repository;
-    }
+  /** Inicializa a verificação usando a fonte canônica dos vídeos de experimento. */
+  public ExperimentVideoAssetApprovalChecker(ExperimentVideoAssetRepository repository) {
+    this.repository = repository;
+  }
 
-    /** Retorna verdadeiro quando não existe vínculo pendente/reprovado para o asset informado. */
-    @Override
-    public boolean isApprovedForPublication(Long assetId) {
-        if (assetId == null) {
-            return true;
-        }
-        List<ExperimentVideoAsset> videoAssets = repository.findByAssetId(assetId);
-        return videoAssets.stream()
-                .noneMatch(videoAsset -> videoAsset.getStatus() != ExperimentVideoStatus.READY
-                        || videoAsset.getReviewStatus() != ExperimentVideoReviewStatus.APPROVED);
+  /** Retorna verdadeiro quando não existe vínculo pendente/reprovado para o asset informado. */
+  @Override
+  public boolean isApprovedForPublication(Long assetId) {
+    if (assetId == null) {
+      return true;
     }
+    List<ExperimentVideoAsset> videoAssets = repository.findByAssetId(assetId);
+    return videoAssets.stream()
+        .noneMatch(
+            videoAsset ->
+                videoAsset.getStatus() != ExperimentVideoStatus.READY
+                    || videoAsset.getReviewStatus() != ExperimentVideoReviewStatus.APPROVED);
+  }
 }

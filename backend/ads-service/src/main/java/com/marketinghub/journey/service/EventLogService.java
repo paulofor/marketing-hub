@@ -9,77 +9,85 @@ import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.repository.jpa.journey.EventLogRepository;
 import com.marketinghub.repository.jpa.journey.JourneyRepository;
 import com.marketinghub.repository.jpa.journey.JourneyStepRepository;
+import java.time.Instant;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.util.Map;
-
-/**
- * Service capturing canonical event logs for journeys.
- */
+/** Service capturing canonical event logs for journeys. */
 @Service
 public class EventLogService {
-    private final EventLogRepository eventLogRepository;
-    private final JourneyRepository journeyRepository;
-    private final JourneyStepRepository journeyStepRepository;
-    private final ObjectMapper objectMapper;
+  private final EventLogRepository eventLogRepository;
+  private final JourneyRepository journeyRepository;
+  private final JourneyStepRepository journeyStepRepository;
+  private final ObjectMapper objectMapper;
 
-    public EventLogService(EventLogRepository eventLogRepository,
-                           JourneyRepository journeyRepository,
-                           JourneyStepRepository journeyStepRepository,
-                           ObjectMapper objectMapper) {
-        this.eventLogRepository = eventLogRepository;
-        this.journeyRepository = journeyRepository;
-        this.journeyStepRepository = journeyStepRepository;
-        this.objectMapper = objectMapper;
+  public EventLogService(
+      EventLogRepository eventLogRepository,
+      JourneyRepository journeyRepository,
+      JourneyStepRepository journeyStepRepository,
+      ObjectMapper objectMapper) {
+    this.eventLogRepository = eventLogRepository;
+    this.journeyRepository = journeyRepository;
+    this.journeyStepRepository = journeyStepRepository;
+    this.objectMapper = objectMapper;
+  }
+
+  @Transactional
+  public EventLog record(EventLogRequest request) {
+    Journey journey = null;
+    if (request.journeyId() != null) {
+      journey =
+          journeyRepository
+              .findById(request.journeyId())
+              .orElseThrow(
+                  () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Journey not found"));
     }
 
-    @Transactional
-    public EventLog record(EventLogRequest request) {
-        Journey journey = null;
-        if (request.journeyId() != null) {
-            journey = journeyRepository.findById(request.journeyId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Journey not found"));
-        }
-
-        JourneyStep journeyStep = null;
-        if (request.journeyStepId() != null) {
-            journeyStep = journeyStepRepository.findById(request.journeyStepId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Journey step not found"));
-            if (journey != null && !journeyStep.getTemplate().getId().equals(journey.getTemplate().getId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Step does not belong to journey template");
-            }
-        }
-
-        Instant occurredAt = request.occurredAt() != null ? request.occurredAt() : Instant.now();
-        String metadata = serializeMetadata(request.metadata());
-
-        EventLog log = EventLog.builder()
-                .actorId(request.actorId())
-                .eventType(request.eventType())
-                .journey(journey)
-                .journeyStep(journeyStep)
-                .source(request.source())
-                .campaignId(request.campaignId())
-                .metadata(metadata)
-                .value(request.value())
-                .occurredAt(occurredAt)
-                .build();
-
-        return eventLogRepository.save(log);
+    JourneyStep journeyStep = null;
+    if (request.journeyStepId() != null) {
+      journeyStep =
+          journeyStepRepository
+              .findById(request.journeyStepId())
+              .orElseThrow(
+                  () ->
+                      new ResponseStatusException(HttpStatus.NOT_FOUND, "Journey step not found"));
+      if (journey != null
+          && !journeyStep.getTemplate().getId().equals(journey.getTemplate().getId())) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Step does not belong to journey template");
+      }
     }
 
-    private String serializeMetadata(Map<String, Object> metadata) {
-        if (metadata == null || metadata.isEmpty()) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(metadata);
-        } catch (JsonProcessingException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid metadata payload", e);
-        }
+    Instant occurredAt = request.occurredAt() != null ? request.occurredAt() : Instant.now();
+    String metadata = serializeMetadata(request.metadata());
+
+    EventLog log =
+        EventLog.builder()
+            .actorId(request.actorId())
+            .eventType(request.eventType())
+            .journey(journey)
+            .journeyStep(journeyStep)
+            .source(request.source())
+            .campaignId(request.campaignId())
+            .metadata(metadata)
+            .value(request.value())
+            .occurredAt(occurredAt)
+            .build();
+
+    return eventLogRepository.save(log);
+  }
+
+  private String serializeMetadata(Map<String, Object> metadata) {
+    if (metadata == null || metadata.isEmpty()) {
+      return null;
     }
+    try {
+      return objectMapper.writeValueAsString(metadata);
+    } catch (JsonProcessingException e) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid metadata payload", e);
+    }
+  }
 }

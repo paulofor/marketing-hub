@@ -35,57 +35,57 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExperimentSalesPageAbTest {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id", nullable = false)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "experiment_id", nullable = false)
-    @ToString.Exclude
-    private Experiment experiment;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "experiment_id", nullable = false)
+  @ToString.Exclude
+  private Experiment experiment;
 
-    @Column(name = "name", nullable = false, length = 191)
-    private String name;
+  @Column(name = "name", nullable = false, length = 191)
+  private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 32)
-    private ExperimentSalesPageAbTestStatus status;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false, length = 32)
+  private ExperimentSalesPageAbTestStatus status;
 
-    @Column(name = "hypothesis", nullable = false, length = 1024)
-    private String hypothesis;
+  @Column(name = "hypothesis", nullable = false, length = 1024)
+  private String hypothesis;
 
-    @Column(name = "primary_metric", nullable = false, length = 191)
-    private String primaryMetric;
+  @Column(name = "primary_metric", nullable = false, length = 191)
+  private String primaryMetric;
 
-    @Column(name = "secondary_metrics", length = 512)
-    private String secondaryMetrics;
+  @Column(name = "secondary_metrics", length = 512)
+  private String secondaryMetrics;
 
-    @Column(name = "winner_rule", nullable = false, length = 1024)
-    private String winnerRule;
+  @Column(name = "winner_rule", nullable = false, length = 1024)
+  private String winnerRule;
 
-    @Column(name = "minimum_runtime_days", nullable = false)
-    private Integer minimumRuntimeDays;
+  @Column(name = "minimum_runtime_days", nullable = false)
+  private Integer minimumRuntimeDays;
 
-    @Column(name = "minimum_sample_size", nullable = false)
-    private Integer minimumSampleSize;
+  @Column(name = "minimum_sample_size", nullable = false)
+  private Integer minimumSampleSize;
 
-    @Column(name = "meta_split_test_recommended", nullable = false)
-    private boolean metaSplitTestRecommended;
+  @Column(name = "meta_split_test_recommended", nullable = false)
+  private boolean metaSplitTestRecommended;
 
-    @Column(name = "notes", columnDefinition = "LONGTEXT")
-    private String notes;
+  @Column(name = "notes", columnDefinition = "LONGTEXT")
+  private String notes;
 
-    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @ToString.Exclude
-    private List<ExperimentSalesPageAbVariant> variants = new ArrayList<>();
+  @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  @ToString.Exclude
+  private List<ExperimentSalesPageAbVariant> variants = new ArrayList<>();
 
-    @Column(name = "created_at")
-    @CreationTimestamp
-    private Instant createdAt;
+  @Column(name = "created_at")
+  @CreationTimestamp
+  private Instant createdAt;
 
-    @Column(name = "updated_at")
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @Column(name = "updated_at")
+  @UpdateTimestamp
+  private Instant updatedAt;
 }

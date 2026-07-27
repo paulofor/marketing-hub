@@ -15,24 +15,18 @@ import org.springframework.stereotype.Component;
 @Setter
 public class LeadPortalProcessingGuardProperties {
 
-    /**
-     * Ativa/desativa a rotina automática de recuperação de pacotes presos em PROCESSING.
-     */
-    private boolean enabled = true;
+  /** Ativa/desativa a rotina automática de recuperação de pacotes presos em PROCESSING. */
+  private boolean enabled = true;
 
-    /**
-     * Tempo máximo permitido com status PROCESSING antes de reabrir ou falhar o pacote.
-     */
-    private Duration timeout = Duration.ofMinutes(30);
+  /** Tempo máximo permitido com status PROCESSING antes de reabrir ou falhar o pacote. */
+  private Duration timeout = Duration.ofMinutes(30);
 
-    /**
-     * Quantidade máxima de vezes que permitimos que o pacote entre em PROCESSING
-     * antes de marcá-lo como FAILED por timeout.
-     */
-    private int maxAttempts = 2;
+  /**
+   * Quantidade máxima de vezes que permitimos que o pacote entre em PROCESSING antes de marcá-lo
+   * como FAILED por timeout.
+   */
+  private int maxAttempts = 2;
 
-    /**
-     * Limite de pacotes processados por execução do scheduler.
-     */
-    private int batchSize = 20;
+  /** Limite de pacotes processados por execução do scheduler. */
+  private int batchSize = 20;
 }

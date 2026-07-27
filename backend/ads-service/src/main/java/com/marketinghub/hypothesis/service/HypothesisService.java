@@ -1,30 +1,30 @@
 package com.marketinghub.hypothesis.service;
 
+import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.creative.label.Angle;
-import com.marketinghub.repository.jpa.creative.label.AngleRepository;
-import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.deliverable.DeliverablePackage;
-import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
-import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
-import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.prompt.PromptAttributeDescription;
+import com.marketinghub.repository.jpa.creative.label.AngleRepository;
+import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.prompt.PromptAttributeDescriptionRepository;
-import com.marketinghub.cost.CostAttributionService;
-import com.marketinghub.finance.CurrencyConversionService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.text.Normalizer;
-import java.util.Locale;
-import java.util.UUID;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityNotFoundException;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,230 +33,244 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: aplicar as regras de criação, edição e status das hipóteses comerciais. */
 @Service
 public class HypothesisService {
-    private final HypothesisRepository repository;
-    private final MarketNicheRepository nicheRepository;
-    private final AngleRepository angleRepository;
-    private final PromptAttributeDescriptionRepository descriptionRepository;
-    private final EntityManager em;
-    private final HypothesisFrameworkMapperSupport frameworkMapperSupport;
-    private final CurrencyConversionService currencyConversionService;
-    private final CostAttributionService costAttributionService;
-    private final DeliverablePackageRepository deliverablePackageRepository;
+  private final HypothesisRepository repository;
+  private final MarketNicheRepository nicheRepository;
+  private final AngleRepository angleRepository;
+  private final PromptAttributeDescriptionRepository descriptionRepository;
+  private final EntityManager em;
+  private final HypothesisFrameworkMapperSupport frameworkMapperSupport;
+  private final CurrencyConversionService currencyConversionService;
+  private final CostAttributionService costAttributionService;
+  private final DeliverablePackageRepository deliverablePackageRepository;
 
-    public HypothesisService(HypothesisRepository repository,
-                             MarketNicheRepository nicheRepository,
-                             AngleRepository angleRepository,
-                             PromptAttributeDescriptionRepository descriptionRepository,
-                             EntityManager em,
-                             HypothesisFrameworkMapperSupport frameworkMapperSupport,
-                             CurrencyConversionService currencyConversionService,
-                             CostAttributionService costAttributionService,
-                             DeliverablePackageRepository deliverablePackageRepository) {
-        this.repository = repository;
-        this.nicheRepository = nicheRepository;
-        this.angleRepository = angleRepository;
-        this.descriptionRepository = descriptionRepository;
-        this.em = em;
-        this.frameworkMapperSupport = frameworkMapperSupport;
-        this.currencyConversionService = currencyConversionService;
-        this.costAttributionService = costAttributionService;
-        this.deliverablePackageRepository = deliverablePackageRepository;
-    }
+  public HypothesisService(
+      HypothesisRepository repository,
+      MarketNicheRepository nicheRepository,
+      AngleRepository angleRepository,
+      PromptAttributeDescriptionRepository descriptionRepository,
+      EntityManager em,
+      HypothesisFrameworkMapperSupport frameworkMapperSupport,
+      CurrencyConversionService currencyConversionService,
+      CostAttributionService costAttributionService,
+      DeliverablePackageRepository deliverablePackageRepository) {
+    this.repository = repository;
+    this.nicheRepository = nicheRepository;
+    this.angleRepository = angleRepository;
+    this.descriptionRepository = descriptionRepository;
+    this.em = em;
+    this.frameworkMapperSupport = frameworkMapperSupport;
+    this.currencyConversionService = currencyConversionService;
+    this.costAttributionService = costAttributionService;
+    this.deliverablePackageRepository = deliverablePackageRepository;
+  }
 
-    private MarketNiche attachNiche(Long id) {
-        if (id == null) return null;
-        if (!nicheRepository.existsById(id)) {
-            throw new EntityNotFoundException("MarketNiche not found: " + id);
-        }
-        return em.getReference(MarketNiche.class, id);
+  private MarketNiche attachNiche(Long id) {
+    if (id == null) return null;
+    if (!nicheRepository.existsById(id)) {
+      throw new EntityNotFoundException("MarketNiche not found: " + id);
     }
+    return em.getReference(MarketNiche.class, id);
+  }
 
-    private Angle attachAngle(Long id) {
-        if (id == null) return null;
-        if (!angleRepository.existsById(id)) {
-            throw new EntityNotFoundException("Angle not found: " + id);
-        }
-        return em.getReference(Angle.class, id);
+  private Angle attachAngle(Long id) {
+    if (id == null) return null;
+    if (!angleRepository.existsById(id)) {
+      throw new EntityNotFoundException("Angle not found: " + id);
     }
+    return em.getReference(Angle.class, id);
+  }
 
-    /** Valida os campos comerciais obrigatórios para criar uma hipótese. */
-    private void validate(CreateHypothesisRequest req) {
-        if (req.getProblem() == null || req.getProblem().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
-        }
-        if (req.getPersona() == null || req.getPersona().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
-        }
+  /** Valida os campos comerciais obrigatórios para criar uma hipótese. */
+  private void validate(CreateHypothesisRequest req) {
+    if (req.getProblem() == null || req.getProblem().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
     }
+    if (req.getPersona() == null || req.getPersona().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
+    }
+  }
 
-    /** Monta o título automático da hipótese com sigla do nicho e numeração sequencial. */
-    private String buildAutomaticHypothesisTitle(MarketNiche niche) {
-        String acronym = nicheAcronym(niche);
-        long nextNumber = repository.countByMarketNicheId(niche != null ? niche.getId() : null) + 1;
-        return "%s-H%03d".formatted(acronym, nextNumber);
-    }
+  /** Monta o título automático da hipótese com sigla do nicho e numeração sequencial. */
+  private String buildAutomaticHypothesisTitle(MarketNiche niche) {
+    String acronym = nicheAcronym(niche);
+    long nextNumber = repository.countByMarketNicheId(niche != null ? niche.getId() : null) + 1;
+    return "%s-H%03d".formatted(acronym, nextNumber);
+  }
 
-    /** Gera uma sigla estável a partir do nome do nicho ou usa GER quando o nicho ainda não foi informado. */
-    private String nicheAcronym(MarketNiche niche) {
-        if (niche == null || niche.getName() == null || niche.getName().isBlank()) {
-            return "GER";
-        }
-        String normalized = Normalizer.normalize(niche.getName(), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toUpperCase(Locale.ROOT);
-        StringBuilder acronym = new StringBuilder();
-        for (String word : normalized.split("[^A-Z0-9]+")) {
-            if (!word.isBlank()) {
-                acronym.append(word.charAt(0));
-            }
-            if (acronym.length() == 4) {
-                break;
-            }
-        }
-        if (acronym.isEmpty()) {
-            return "GER";
-        }
-        while (acronym.length() < 3) {
-            acronym.append('X');
-        }
-        return acronym.toString();
+  /**
+   * Gera uma sigla estável a partir do nome do nicho ou usa GER quando o nicho ainda não foi
+   * informado.
+   */
+  private String nicheAcronym(MarketNiche niche) {
+    if (niche == null || niche.getName() == null || niche.getName().isBlank()) {
+      return "GER";
     }
+    String normalized =
+        Normalizer.normalize(niche.getName(), Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "")
+            .toUpperCase(Locale.ROOT);
+    StringBuilder acronym = new StringBuilder();
+    for (String word : normalized.split("[^A-Z0-9]+")) {
+      if (!word.isBlank()) {
+        acronym.append(word.charAt(0));
+      }
+      if (acronym.length() == 4) {
+        break;
+      }
+    }
+    if (acronym.isEmpty()) {
+      return "GER";
+    }
+    while (acronym.length() < 3) {
+      acronym.append('X');
+    }
+    return acronym.toString();
+  }
 
-    private BigDecimal resolveTotalCostDelta(CreateHypothesisRequest req) {
-        if (req.getCost() != null) {
-            return currencyConversionService.normalizeBrl(req.getCost());
-        }
-        if (req.getCostUsd() != null) {
-            return currencyConversionService.usdToBrl(req.getCostUsd());
-        }
-        return null;
+  private BigDecimal resolveTotalCostDelta(CreateHypothesisRequest req) {
+    if (req.getCost() != null) {
+      return currencyConversionService.normalizeBrl(req.getCost());
     }
+    if (req.getCostUsd() != null) {
+      return currencyConversionService.usdToBrl(req.getCostUsd());
+    }
+    return null;
+  }
 
-    private Set<PromptAttributeDescription> attachPromptAttributeDescriptions(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) return new HashSet<>();
-        Set<PromptAttributeDescription> set = new HashSet<>();
-        for (Long id : ids) {
-            if (!descriptionRepository.existsById(id)) {
-                throw new EntityNotFoundException("PromptAttributeDescription not found: " + id);
-            }
-            set.add(em.getReference(PromptAttributeDescription.class, id));
-        }
-        return set;
+  private Set<PromptAttributeDescription> attachPromptAttributeDescriptions(List<Long> ids) {
+    if (ids == null || ids.isEmpty()) return new HashSet<>();
+    Set<PromptAttributeDescription> set = new HashSet<>();
+    for (Long id : ids) {
+      if (!descriptionRepository.existsById(id)) {
+        throw new EntityNotFoundException("PromptAttributeDescription not found: " + id);
+      }
+      set.add(em.getReference(PromptAttributeDescription.class, id));
     }
+    return set;
+  }
 
-    private DeliverablePackage resolveOfferPackage(Long offerPackageId, MarketNiche niche) {
-        if (offerPackageId == null) {
-            return null;
-        }
-        DeliverablePackage pack = deliverablePackageRepository.findById(offerPackageId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Offer package not found: " + offerPackageId));
-        Long packNicheId = null;
-        if (pack.getExperiment() != null && pack.getExperiment().getNiche() != null) {
-            packNicheId = pack.getExperiment().getNiche().getId();
-        } else if (pack.getHypothesis() != null && pack.getHypothesis().getMarketNiche() != null) {
-            packNicheId = pack.getHypothesis().getMarketNiche().getId();
-        }
-        if (niche == null || niche.getId() == null || packNicheId == null || !packNicheId.equals(niche.getId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Offer package must belong to the same niche as the hypothesis");
-        }
-        return pack;
+  private DeliverablePackage resolveOfferPackage(Long offerPackageId, MarketNiche niche) {
+    if (offerPackageId == null) {
+      return null;
     }
+    DeliverablePackage pack =
+        deliverablePackageRepository
+            .findById(offerPackageId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Offer package not found: " + offerPackageId));
+    Long packNicheId = null;
+    if (pack.getExperiment() != null && pack.getExperiment().getNiche() != null) {
+      packNicheId = pack.getExperiment().getNiche().getId();
+    } else if (pack.getHypothesis() != null && pack.getHypothesis().getMarketNiche() != null) {
+      packNicheId = pack.getHypothesis().getMarketNiche().getId();
+    }
+    if (niche == null
+        || niche.getId() == null
+        || packNicheId == null
+        || !packNicheId.equals(niche.getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Offer package must belong to the same niche as the hypothesis");
+    }
+    return pack;
+  }
 
-    /** Cria uma hipótese usando identificação automática por sigla do nicho e sequência numérica. */
-    @Transactional
-    public Hypothesis create(CreateHypothesisRequest req) {
-        validate(req);
-        MarketNiche niche = attachNiche(req.getMarketNicheId());
-        String automaticTitle = buildAutomaticHypothesisTitle(niche);
-        Hypothesis h = Hypothesis.builder()
-                .marketNiche(niche)
-                .title(automaticTitle)
-                .premiseAngle(attachAngle(req.getPremiseAngleId()))
-                .promise(req.getPromise())
-                .problem(req.getProblem())
-                .persona(req.getPersona())
-                .mechanism(req.getMechanism())
-                .uniqueMechanism(req.getUniqueMechanism())
-                .entrega(req.getEntrega())
-                .successRule(req.getSuccessRule())
-                .imageFilterTitle(req.getImageFilterTitle())
-                .prompt(req.getPrompt())
-                .model(req.getModel())
-                .costUsd(req.getCostUsd())
-                .cost(req.getCost())
-                .totalCost(resolveTotalCostDelta(req))
-                .expense(req.getExpense())
-                .promptAttributeDescriptions(attachPromptAttributeDescriptions(req.getPromptAttributeDescriptionIds()))
-                .generatedAt(Instant.now())
-                .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
-                .price(req.getPrice())
-                .kpiTargetCpl(req.getKpiTargetCpl())
-                .productAiSubtype(req.getProductAiSubtype())
-                .build();
-        h.setOfferPackage(resolveOfferPackage(req.getOfferPackageId(), h.getMarketNiche()));
-        frameworkMapperSupport.applyPartial(h, req.getFramework());
-        Hypothesis saved = repository.save(h);
-        BigDecimal delta = resolveTotalCostDelta(req);
-        if (delta != null) {
-            costAttributionService.addCostToNiche(saved.getMarketNiche(), delta);
-        }
-        return saved;
+  /** Cria uma hipótese usando identificação automática por sigla do nicho e sequência numérica. */
+  @Transactional
+  public Hypothesis create(CreateHypothesisRequest req) {
+    validate(req);
+    MarketNiche niche = attachNiche(req.getMarketNicheId());
+    String automaticTitle = buildAutomaticHypothesisTitle(niche);
+    Hypothesis h =
+        Hypothesis.builder()
+            .marketNiche(niche)
+            .title(automaticTitle)
+            .premiseAngle(attachAngle(req.getPremiseAngleId()))
+            .promise(req.getPromise())
+            .problem(req.getProblem())
+            .persona(req.getPersona())
+            .mechanism(req.getMechanism())
+            .uniqueMechanism(req.getUniqueMechanism())
+            .entrega(req.getEntrega())
+            .successRule(req.getSuccessRule())
+            .imageFilterTitle(req.getImageFilterTitle())
+            .prompt(req.getPrompt())
+            .model(req.getModel())
+            .costUsd(req.getCostUsd())
+            .cost(req.getCost())
+            .totalCost(resolveTotalCostDelta(req))
+            .expense(req.getExpense())
+            .promptAttributeDescriptions(
+                attachPromptAttributeDescriptions(req.getPromptAttributeDescriptionIds()))
+            .generatedAt(Instant.now())
+            .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
+            .price(req.getPrice())
+            .kpiTargetCpl(req.getKpiTargetCpl())
+            .productAiSubtype(req.getProductAiSubtype())
+            .build();
+    h.setOfferPackage(resolveOfferPackage(req.getOfferPackageId(), h.getMarketNiche()));
+    frameworkMapperSupport.applyPartial(h, req.getFramework());
+    Hypothesis saved = repository.save(h);
+    BigDecimal delta = resolveTotalCostDelta(req);
+    if (delta != null) {
+      costAttributionService.addCostToNiche(saved.getMarketNiche(), delta);
     }
+    return saved;
+  }
 
-    public Iterable<Hypothesis> listByMarketNiche(Long marketNicheId, HypothesisStatus status) {
-        if (status == null) {
-            return repository.findByMarketNicheId(marketNicheId);
-        }
-        return repository.findByMarketNicheIdAndStatus(marketNicheId, status);
+  public Iterable<Hypothesis> listByMarketNiche(Long marketNicheId, HypothesisStatus status) {
+    if (status == null) {
+      return repository.findByMarketNicheId(marketNicheId);
     }
+    return repository.findByMarketNicheIdAndStatus(marketNicheId, status);
+  }
 
-    public Iterable<Hypothesis> list(HypothesisStatus status) {
-        if (status == null) {
-            return repository.findAll();
-        }
-        return repository.findByStatus(status);
+  public Iterable<Hypothesis> list(HypothesisStatus status) {
+    if (status == null) {
+      return repository.findAll();
     }
+    return repository.findByStatus(status);
+  }
 
-    @Transactional
-    public Hypothesis updateStatus(UUID id, HypothesisStatus status) {
-        Hypothesis h = repository.findById(id).orElseThrow();
-        h.setStatus(status);
-        return h;
-    }
+  @Transactional
+  public Hypothesis updateStatus(UUID id, HypothesisStatus status) {
+    Hypothesis h = repository.findById(id).orElseThrow();
+    h.setStatus(status);
+    return h;
+  }
 
-    private void validate(UpdateHypothesisRequest req) {
-        if (req.getTitle() == null || req.getTitle().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
-        }
-        if (req.getPersona() == null || req.getPersona().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
-        }
+  private void validate(UpdateHypothesisRequest req) {
+    if (req.getTitle() == null || req.getTitle().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
     }
+    if (req.getPersona() == null || req.getPersona().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
+    }
+  }
 
-    @Transactional
-    public Hypothesis update(UUID id, UpdateHypothesisRequest req) {
-        validate(req);
-        Hypothesis h = repository.findById(id).orElseThrow();
-        h.setTitle(req.getTitle());
-        h.setPremiseAngle(attachAngle(req.getPremiseAngleId()));
-        h.setPromise(req.getPromise());
-        h.setProblem(req.getProblem());
-        h.setPersona(req.getPersona());
-        h.setMechanism(req.getMechanism());
-        h.setUniqueMechanism(req.getUniqueMechanism());
-        h.setEntrega(req.getEntrega());
-        h.setSuccessRule(req.getSuccessRule());
-        h.setImageFilterTitle(req.getImageFilterTitle());
-        h.setCost(req.getCost());
-        h.setExpense(req.getExpense());
-        h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));
-        h.setPrice(req.getPrice());
-        h.setKpiTargetCpl(req.getKpiTargetCpl());
-        h.setProductAiSubtype(req.getProductAiSubtype());
-        h.setOfferPackage(resolveOfferPackage(req.getOfferPackageId(), h.getMarketNiche()));
-        frameworkMapperSupport.applyPartial(h, req.getFramework());
-        return h;
-    }
+  @Transactional
+  public Hypothesis update(UUID id, UpdateHypothesisRequest req) {
+    validate(req);
+    Hypothesis h = repository.findById(id).orElseThrow();
+    h.setTitle(req.getTitle());
+    h.setPremiseAngle(attachAngle(req.getPremiseAngleId()));
+    h.setPromise(req.getPromise());
+    h.setProblem(req.getProblem());
+    h.setPersona(req.getPersona());
+    h.setMechanism(req.getMechanism());
+    h.setUniqueMechanism(req.getUniqueMechanism());
+    h.setEntrega(req.getEntrega());
+    h.setSuccessRule(req.getSuccessRule());
+    h.setImageFilterTitle(req.getImageFilterTitle());
+    h.setCost(req.getCost());
+    h.setExpense(req.getExpense());
+    h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));
+    h.setPrice(req.getPrice());
+    h.setKpiTargetCpl(req.getKpiTargetCpl());
+    h.setProductAiSubtype(req.getProductAiSubtype());
+    h.setOfferPackage(resolveOfferPackage(req.getOfferPackageId(), h.getMarketNiche()));
+    frameworkMapperSupport.applyPartial(h, req.getFramework());
+    return h;
+  }
 }

@@ -20,7 +20,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
- * Entidade que guarda somente a configuração operacional editável de uma etapa definida no contrato canônico.
+ * Entidade que guarda somente a configuração operacional editável de uma etapa definida no contrato
+ * canônico.
  */
 @Entity
 @Table(name = "pipeline_stage_config")
@@ -29,31 +30,29 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PipelineStageConfig {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "pipeline_stage_definition_id", nullable = false, unique = true)
-    private PipelineStageDefinitionEntity pipelineStageDefinition;
+  @OneToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "pipeline_stage_definition_id", nullable = false, unique = true)
+  private PipelineStageDefinitionEntity pipelineStageDefinition;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean active = true;
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean active = true;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "openai_model_id")
-    private OpenAiModel openAiModel;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "openai_model_id")
+  private OpenAiModel openAiModel;
 
-    @Column(columnDefinition = "TEXT")
-    private String descriptionOverride;
+  @Column(columnDefinition = "TEXT")
+  private String descriptionOverride;
 
-    @Column(length = 120)
-    private String updatedBy;
+  @Column(length = 120)
+  private String updatedBy;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

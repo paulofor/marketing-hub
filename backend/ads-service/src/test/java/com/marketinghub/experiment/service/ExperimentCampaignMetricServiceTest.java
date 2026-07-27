@@ -31,170 +31,170 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Testa a sincronização de métricas de campanha com o marco comercial real do funil.
- */
+/** Testa a sincronização de métricas de campanha com o marco comercial real do funil. */
 @ExtendWith(MockitoExtension.class)
 class ExperimentCampaignMetricServiceTest {
 
-    @Mock
-    private ExperimentCampaignMetricRepository repository;
+  @Mock private ExperimentCampaignMetricRepository repository;
 
-    @Mock
-    private FacebookAdsCampaignRepository campaignRepository;
+  @Mock private FacebookAdsCampaignRepository campaignRepository;
 
-    @Mock
-    private CostAttributionService costAttributionService;
+  @Mock private CostAttributionService costAttributionService;
 
-    @Mock
-    private ExperimentRepository experimentRepository;
+  @Mock private ExperimentRepository experimentRepository;
 
-    @Mock
-    private ExperimentFunnelEventRepository funnelEventRepository;
+  @Mock private ExperimentFunnelEventRepository funnelEventRepository;
 
-    @Mock
-    private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
+  @Mock private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
 
-    private ExperimentCampaignMetricService service;
+  private ExperimentCampaignMetricService service;
 
-    /** Monta o serviço real com repositórios controlados por mock. */
-    @BeforeEach
-    void setUp() {
-        service = new ExperimentCampaignMetricService(
-                repository,
-                campaignRepository,
-                costAttributionService,
-                experimentRepository,
-                funnelEventRepository,
-                landingAnalyticsEventRepository,
-                "");
-    }
+  /** Monta o serviço real com repositórios controlados por mock. */
+  @BeforeEach
+  void setUp() {
+    service =
+        new ExperimentCampaignMetricService(
+            repository,
+            campaignRepository,
+            costAttributionService,
+            experimentRepository,
+            funnelEventRepository,
+            landingAnalyticsEventRepository,
+            "");
+  }
 
-    /**
-     * Garante que o primeiro recebimento de impressões remove eventos de teste antes de salvar a métrica real.
-     */
-    @Test
-    void upsertResetsFunnelWhenImpressionsStart() {
-        Experiment experiment = Experiment.builder().id(41L).build();
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("campaign-1");
-        campaign.setExperiment(experiment);
-        ExperimentCampaignMetric savedMetric = ExperimentCampaignMetric.builder().experiment(experiment).build();
+  /**
+   * Garante que o primeiro recebimento de impressões remove eventos de teste antes de salvar a
+   * métrica real.
+   */
+  @Test
+  void upsertResetsFunnelWhenImpressionsStart() {
+    Experiment experiment = Experiment.builder().id(41L).build();
+    FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+    campaign.setId("campaign-1");
+    campaign.setExperiment(experiment);
+    ExperimentCampaignMetric savedMetric =
+        ExperimentCampaignMetric.builder().experiment(experiment).build();
 
-        when(campaignRepository.findById("campaign-1")).thenReturn(Optional.of(campaign));
-        when(repository.findByExperiment(experiment)).thenReturn(Optional.empty());
-        when(repository.save(any(ExperimentCampaignMetric.class))).thenReturn(savedMetric);
+    when(campaignRepository.findById("campaign-1")).thenReturn(Optional.of(campaign));
+    when(repository.findByExperiment(experiment)).thenReturn(Optional.empty());
+    when(repository.save(any(ExperimentCampaignMetric.class))).thenReturn(savedMetric);
 
-        service.upsert(
-                "campaign-1",
-                LocalDate.parse("2026-06-24"),
-                LocalDate.parse("2026-06-24"),
-                10L,
-                194L,
-                3L,
-                0L,
-                new BigDecimal("1.10"));
+    service.upsert(
+        "campaign-1",
+        LocalDate.parse("2026-06-24"),
+        LocalDate.parse("2026-06-24"),
+        10L,
+        194L,
+        3L,
+        0L,
+        new BigDecimal("1.10"));
 
-        InOrder inOrder = inOrder(
-                landingAnalyticsEventRepository,
-                funnelEventRepository,
-                experimentRepository,
-                repository);
-        inOrder.verify(landingAnalyticsEventRepository).deleteByExperimentId(41L);
-        inOrder.verify(funnelEventRepository).deleteByExperimentIdAndSource(
-                41L,
-                ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);
-        inOrder.verify(funnelEventRepository).deleteByExperimentId(41L);
-        inOrder.verify(experimentRepository).save(experiment);
-        inOrder.verify(repository).save(any(ExperimentCampaignMetric.class));
-        assertThat(experiment.getFunnelResetAt()).isNotNull();
-    }
+    InOrder inOrder =
+        inOrder(
+            landingAnalyticsEventRepository,
+            funnelEventRepository,
+            experimentRepository,
+            repository);
+    inOrder.verify(landingAnalyticsEventRepository).deleteByExperimentId(41L);
+    inOrder
+        .verify(funnelEventRepository)
+        .deleteByExperimentIdAndSource(
+            41L, ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);
+    inOrder.verify(funnelEventRepository).deleteByExperimentId(41L);
+    inOrder.verify(experimentRepository).save(experiment);
+    inOrder.verify(repository).save(any(ExperimentCampaignMetric.class));
+    assertThat(experiment.getFunnelResetAt()).isNotNull();
+  }
 
-    /**
-     * Garante que uma métrica que já tinha impressões não limpa novamente o funil em sincronizações posteriores.
-     */
-    @Test
-    void upsertDoesNotResetFunnelWhenMetricAlreadyHadImpressions() {
-        Experiment experiment = Experiment.builder()
-                .id(41L)
-                .funnelResetAt(Instant.parse("2026-06-24T00:00:00Z"))
-                .build();
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("campaign-1");
-        campaign.setExperiment(experiment);
-        ExperimentCampaignMetric existingMetric = ExperimentCampaignMetric.builder()
-                .experiment(experiment)
-                .impressions(100L)
-                .spend(BigDecimal.ZERO)
-                .build();
+  /**
+   * Garante que uma métrica que já tinha impressões não limpa novamente o funil em sincronizações
+   * posteriores.
+   */
+  @Test
+  void upsertDoesNotResetFunnelWhenMetricAlreadyHadImpressions() {
+    Experiment experiment =
+        Experiment.builder().id(41L).funnelResetAt(Instant.parse("2026-06-24T00:00:00Z")).build();
+    FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+    campaign.setId("campaign-1");
+    campaign.setExperiment(experiment);
+    ExperimentCampaignMetric existingMetric =
+        ExperimentCampaignMetric.builder()
+            .experiment(experiment)
+            .impressions(100L)
+            .spend(BigDecimal.ZERO)
+            .build();
 
-        when(campaignRepository.findById("campaign-1")).thenReturn(Optional.of(campaign));
-        when(repository.findByExperiment(experiment)).thenReturn(Optional.of(existingMetric));
-        when(repository.save(existingMetric)).thenReturn(existingMetric);
+    when(campaignRepository.findById("campaign-1")).thenReturn(Optional.of(campaign));
+    when(repository.findByExperiment(experiment)).thenReturn(Optional.of(existingMetric));
+    when(repository.save(existingMetric)).thenReturn(existingMetric);
 
-        service.upsert(
-                "campaign-1",
-                LocalDate.parse("2026-06-24"),
-                LocalDate.parse("2026-06-24"),
-                10L,
-                194L,
-                3L,
-                0L,
-                BigDecimal.ZERO);
+    service.upsert(
+        "campaign-1",
+        LocalDate.parse("2026-06-24"),
+        LocalDate.parse("2026-06-24"),
+        10L,
+        194L,
+        3L,
+        0L,
+        BigDecimal.ZERO);
 
-        verify(landingAnalyticsEventRepository, never()).deleteByExperimentId(41L);
-        verify(funnelEventRepository, never()).deleteByExperimentId(any());
-        verify(experimentRepository, never()).save(experiment);
-    }
+    verify(landingAnalyticsEventRepository, never()).deleteByExperimentId(41L);
+    verify(funnelEventRepository, never()).deleteByExperimentId(any());
+    verify(experimentRepository, never()).save(experiment);
+  }
 
-    /**
-     * Garante que campanha do Clube MUSA tambem limpa analytics PDE antes de salvar a primeira metrica real.
-     */
-    @Test
-    void upsertResetsPdeAnalyticsForClubMusaWhenImpressionsStart() throws IOException {
-        AtomicInteger resetCalls = new AtomicInteger();
-        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-        server.createContext("/reset", exchange -> {
-            resetCalls.incrementAndGet();
-            exchange.sendResponseHeaders(200, -1);
-            exchange.close();
+  /**
+   * Garante que campanha do Clube MUSA tambem limpa analytics PDE antes de salvar a primeira
+   * metrica real.
+   */
+  @Test
+  void upsertResetsPdeAnalyticsForClubMusaWhenImpressionsStart() throws IOException {
+    AtomicInteger resetCalls = new AtomicInteger();
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    server.createContext(
+        "/reset",
+        exchange -> {
+          resetCalls.incrementAndGet();
+          exchange.sendResponseHeaders(200, -1);
+          exchange.close();
         });
-        server.start();
-        try {
-            service = new ExperimentCampaignMetricService(
-                    repository,
-                    campaignRepository,
-                    costAttributionService,
-                    experimentRepository,
-                    funnelEventRepository,
-                    landingAnalyticsEventRepository,
-                    "http://localhost:" + server.getAddress().getPort() + "/reset");
-            Experiment experiment = Experiment.builder()
-                    .id(67L)
-                    .followUpActionUrl("https://clubemusa.com.br")
-                    .build();
-            FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-            campaign.setId("campaign-musa");
-            campaign.setExperiment(experiment);
-            ExperimentCampaignMetric savedMetric = ExperimentCampaignMetric.builder().experiment(experiment).build();
+    server.start();
+    try {
+      service =
+          new ExperimentCampaignMetricService(
+              repository,
+              campaignRepository,
+              costAttributionService,
+              experimentRepository,
+              funnelEventRepository,
+              landingAnalyticsEventRepository,
+              "http://localhost:" + server.getAddress().getPort() + "/reset");
+      Experiment experiment =
+          Experiment.builder().id(67L).followUpActionUrl("https://clubemusa.com.br").build();
+      FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+      campaign.setId("campaign-musa");
+      campaign.setExperiment(experiment);
+      ExperimentCampaignMetric savedMetric =
+          ExperimentCampaignMetric.builder().experiment(experiment).build();
 
-            when(campaignRepository.findById("campaign-musa")).thenReturn(Optional.of(campaign));
-            when(repository.findByExperiment(experiment)).thenReturn(Optional.empty());
-            when(repository.save(any(ExperimentCampaignMetric.class))).thenReturn(savedMetric);
+      when(campaignRepository.findById("campaign-musa")).thenReturn(Optional.of(campaign));
+      when(repository.findByExperiment(experiment)).thenReturn(Optional.empty());
+      when(repository.save(any(ExperimentCampaignMetric.class))).thenReturn(savedMetric);
 
-            service.upsert(
-                    "campaign-musa",
-                    LocalDate.parse("2026-07-20"),
-                    LocalDate.parse("2026-07-20"),
-                    10L,
-                    1L,
-                    0L,
-                    0L,
-                    BigDecimal.ZERO);
+      service.upsert(
+          "campaign-musa",
+          LocalDate.parse("2026-07-20"),
+          LocalDate.parse("2026-07-20"),
+          10L,
+          1L,
+          0L,
+          0L,
+          BigDecimal.ZERO);
 
-            assertThat(resetCalls).hasValue(1);
-        } finally {
-            server.stop(0);
-        }
+      assertThat(resetCalls).hasValue(1);
+    } finally {
+      server.stop(0);
     }
+  }
 }

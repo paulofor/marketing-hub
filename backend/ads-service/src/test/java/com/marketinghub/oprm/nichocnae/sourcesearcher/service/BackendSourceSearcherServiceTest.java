@@ -42,8 +42,8 @@ class BackendSourceSearcherServiceTest {
   /** Deve listar queries pendentes em ordem operacional para execução pelo provedor de busca. */
   @Test
   void listPendingUsesResearchQueryPendingFilter() {
-    when(researchQueryRepository
-            .findPendingByStatusAndCycleStage(eq("PENDING"), eq("source-searcher"), any(Pageable.class)))
+    when(researchQueryRepository.findPendingByStatusAndCycleStage(
+            eq("PENDING"), eq("source-searcher"), any(Pageable.class)))
         .thenReturn(List.of(query()));
 
     var result = service.listPending();
@@ -60,17 +60,20 @@ class BackendSourceSearcherServiceTest {
     OprmRoutineResearchCycle cycle = cycle();
     when(researchQueryRepository.findById(2001L)).thenReturn(Optional.of(query));
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
-    when(sourceCandidateRepository.existsByResearchQueryIdAndSourceUrl(eq(2001L), any())).thenReturn(false);
+    when(sourceCandidateRepository.existsByResearchQueryIdAndSourceUrl(eq(2001L), any()))
+        .thenReturn(false);
     when(sourceCandidateRepository.saveAll(any()))
-        .thenAnswer(invocation -> {
-          @SuppressWarnings("unchecked")
-          List<OprmSourceCandidate> candidates = invocation.getArgument(0);
-          for (int i = 0; i < candidates.size(); i++) {
-            candidates.get(i).setId((long) i + 10);
-          }
-          return candidates;
-        });
-    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
+        .thenAnswer(
+            invocation -> {
+              @SuppressWarnings("unchecked")
+              List<OprmSourceCandidate> candidates = invocation.getArgument(0);
+              for (int i = 0; i < candidates.size(); i++) {
+                candidates.get(i).setId((long) i + 10);
+              }
+              return candidates;
+            });
+    when(sourceCandidateRepository
+            .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
         .thenAnswer(invocation -> List.of(candidate(10L, 1), candidate(11L, 2)));
 
     CompleteSourceSearcherResponse response = service.complete(2001L, validRequest());
@@ -78,26 +81,35 @@ class BackendSourceSearcherServiceTest {
     assertThat(response.queryStatus()).isEqualTo("COMPLETED");
     assertThat(response.resultCount()).isEqualTo(2);
     assertThat(response.cycleTotalSourceCandidates()).isEqualTo(2);
-    assertThat(response.candidates()).extracting("status").containsExactly("FOUND", "CONTAMINATION_RISK");
+    assertThat(response.candidates())
+        .extracting("status")
+        .containsExactly("FOUND", "CONTAMINATION_RISK");
     assertThat(response.candidates()).extracting("relevanceScore").containsExactly(90, 10);
-    assertThat(response.candidates()).extracting("sourceIntent").containsExactly("ROUTINE_REPORT", "COMMERCIAL_PAGE_RISK");
+    assertThat(response.candidates())
+        .extracting("sourceIntent")
+        .containsExactly("ROUTINE_REPORT", "COMMERCIAL_PAGE_RISK");
     assertThat(response.candidates()).extracting("routineEvidenceScore").containsExactly(90, 10);
     assertThat(response.candidates()).extracting("commercialPageRisk").containsExactly(false, true);
-    assertThat(response.candidates()).extracting("solutionLanguageRisk").containsExactly(false, true);
+    assertThat(response.candidates())
+        .extracting("solutionLanguageRisk")
+        .containsExactly(false, true);
 
     @SuppressWarnings("unchecked")
     ArgumentCaptor<List<OprmSourceCandidate>> candidateCaptor = ArgumentCaptor.forClass(List.class);
     verify(sourceCandidateRepository).saveAll(candidateCaptor.capture());
     OprmSourceCandidate firstSavedCandidate = candidateCaptor.getValue().getFirst();
-    assertThat(firstSavedCandidate.getSourceClassificationType()).isEqualTo("BRAZILIAN_OFFICIAL_SOURCE");
+    assertThat(firstSavedCandidate.getSourceClassificationType())
+        .isEqualTo("BRAZILIAN_OFFICIAL_SOURCE");
     assertThat(firstSavedCandidate.getSourceFreshnessScore()).isEqualTo(100);
     assertThat(firstSavedCandidate.getOutdatedSourceRisk()).isFalse();
     assertThat(firstSavedCandidate.getBrazilRelevanceScore()).isEqualTo(95);
     assertThat(firstSavedCandidate.getAutonomousProfessionalEvidenceScore()).isEqualTo(90);
     assertThat(firstSavedCandidate.getStructuredBusinessDriftRisk()).isFalse();
-    assertThat(firstSavedCandidate.getPublishedAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+    assertThat(firstSavedCandidate.getPublishedAt())
+        .isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
 
-    ArgumentCaptor<OprmResearchQuery> queryCaptor = ArgumentCaptor.forClass(OprmResearchQuery.class);
+    ArgumentCaptor<OprmResearchQuery> queryCaptor =
+        ArgumentCaptor.forClass(OprmResearchQuery.class);
     verify(researchQueryRepository).save(queryCaptor.capture());
     assertThat(queryCaptor.getValue().getStatus()).isEqualTo("COMPLETED");
     assertThat(queryCaptor.getValue().getResultCount()).isEqualTo(2);
@@ -110,27 +122,30 @@ class BackendSourceSearcherServiceTest {
     OprmRoutineResearchCycle cycle = cycle();
     when(researchQueryRepository.findById(2001L)).thenReturn(Optional.of(query));
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
-    when(sourceCandidateRepository.existsByResearchQueryIdAndSourceUrl(eq(2001L), any())).thenReturn(false);
+    when(sourceCandidateRepository.existsByResearchQueryIdAndSourceUrl(eq(2001L), any()))
+        .thenReturn(false);
     when(sourceCandidateRepository.saveAll(any()))
         .thenAnswer(invocation -> invocation.getArgument(0));
-    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
+    when(sourceCandidateRepository
+            .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
         .thenAnswer(invocation -> List.of());
 
-    CompleteSourceSearcherRequest request = new CompleteSourceSearcherRequest(
-        "BRAVE_SEARCH",
-        List.of(
-            new SourceCandidateRequest(
-                "https://blog.example.com/ferramenta-agenda",
-                "Ferramenta para automatizar agenda de manicure",
-                "Veja a solução para organizar clientes e vender mais.",
-                "blog.example.com",
-                "PUBLIC_CONTENT",
-                1,
-                null,
-                "PRACTICAL_GUIDE",
-                78,
-                false,
-                true)));
+    CompleteSourceSearcherRequest request =
+        new CompleteSourceSearcherRequest(
+            "BRAVE_SEARCH",
+            List.of(
+                new SourceCandidateRequest(
+                    "https://blog.example.com/ferramenta-agenda",
+                    "Ferramenta para automatizar agenda de manicure",
+                    "Veja a solução para organizar clientes e vender mais.",
+                    "blog.example.com",
+                    "PUBLIC_CONTENT",
+                    1,
+                    null,
+                    "PRACTICAL_GUIDE",
+                    78,
+                    false,
+                    true)));
 
     CompleteSourceSearcherResponse response = service.complete(2001L, request);
 
@@ -139,7 +154,8 @@ class BackendSourceSearcherServiceTest {
     assertThat(response.candidates().getFirst().routineEvidenceScore()).isEqualTo(20);
     assertThat(response.candidates().getFirst().solutionLanguageRisk()).isTrue();
     assertThat(response.candidates().getFirst().rejectionReason())
-        .isEqualTo("Fonte com linguagem de solução; registrada apenas como risco e não usada na coleta de rotina.");
+        .isEqualTo(
+            "Fonte com linguagem de solução; registrada apenas como risco e não usada na coleta de rotina.");
   }
 
   /** Deve rejeitar resultados com URL duplicada para evitar fontes repetidas na mesma query. */
@@ -147,11 +163,34 @@ class BackendSourceSearcherServiceTest {
   void completeRejectsDuplicatedUrlsInPayload() {
     when(researchQueryRepository.findById(2001L)).thenReturn(Optional.of(query()));
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle()));
-    CompleteSourceSearcherRequest request = new CompleteSourceSearcherRequest(
-        "BRAVE_SEARCH",
-        List.of(
-            new SourceCandidateRequest("https://exemplo.com/a", "A", "Resumo", "exemplo.com", null, 1, null, null, null, false, false),
-            new SourceCandidateRequest("https://exemplo.com/a", "A", "Resumo", "exemplo.com", null, 2, null, null, null, false, false)));
+    CompleteSourceSearcherRequest request =
+        new CompleteSourceSearcherRequest(
+            "BRAVE_SEARCH",
+            List.of(
+                new SourceCandidateRequest(
+                    "https://exemplo.com/a",
+                    "A",
+                    "Resumo",
+                    "exemplo.com",
+                    null,
+                    1,
+                    null,
+                    null,
+                    null,
+                    false,
+                    false),
+                new SourceCandidateRequest(
+                    "https://exemplo.com/a",
+                    "A",
+                    "Resumo",
+                    "exemplo.com",
+                    null,
+                    2,
+                    null,
+                    null,
+                    null,
+                    false,
+                    false)));
 
     assertThatThrownBy(() -> service.complete(2001L, request))
         .isInstanceOf(IllegalArgumentException.class)
@@ -159,7 +198,9 @@ class BackendSourceSearcherServiceTest {
     verify(sourceCandidateRepository, never()).saveAll(any());
   }
 
-  /** Deve marcar apenas a query como falha quando o provedor de busca não consegue executar a frase. */
+  /**
+   * Deve marcar apenas a query como falha quando o provedor de busca não consegue executar a frase.
+   */
   @Test
   void failMarksQueryAsFailed() {
     OprmResearchQuery query = query();
@@ -167,13 +208,12 @@ class BackendSourceSearcherServiceTest {
 
     service.fail(2001L, new FailSourceSearcherRequest("Brave Search indisponível"));
 
-    ArgumentCaptor<OprmResearchQuery> queryCaptor = ArgumentCaptor.forClass(OprmResearchQuery.class);
+    ArgumentCaptor<OprmResearchQuery> queryCaptor =
+        ArgumentCaptor.forClass(OprmResearchQuery.class);
     verify(researchQueryRepository).save(queryCaptor.capture());
     assertThat(queryCaptor.getValue().getStatus()).isEqualTo("FAILED");
     assertThat(queryCaptor.getValue().getErrorMessage()).isEqualTo("Brave Search indisponível");
   }
-
-
 
   /** Deve resumir a última execução da etapa três para alimentar o card da tela do pipeline. */
   @Test
@@ -188,7 +228,8 @@ class BackendSourceSearcherServiceTest {
     failedQuery.setErrorMessage("Busca indisponível");
     failedQuery.setUpdatedAt(Instant.parse("2026-06-02T11:05:00Z"));
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle()));
-    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
+    when(sourceCandidateRepository
+            .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
         .thenReturn(List.of(candidate(10L, 1)));
     when(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(1001L))
         .thenReturn(List.of(completedQuery, failedQuery));

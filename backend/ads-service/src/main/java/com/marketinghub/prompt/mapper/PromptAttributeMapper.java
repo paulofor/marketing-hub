@@ -8,7 +8,7 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface PromptAttributeMapper {
-    @Mapping(target = "name", source = "attr.name")
-    @Mapping(target = "description", source = "desc.description")
-    PromptAttributeDto toDto(PromptAttribute attr, PromptAttributeDescription desc);
+  @Mapping(target = "name", source = "attr.name")
+  @Mapping(target = "description", source = "desc.description")
+  PromptAttributeDto toDto(PromptAttribute attr, PromptAttributeDescription desc);
 }

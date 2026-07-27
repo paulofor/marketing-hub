@@ -2,42 +2,39 @@ package com.marketinghub.leadportal.dto;
 
 import com.marketinghub.leadportal.FlowSubmissionImagePackageLifecycleStatus;
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
-import java.time.Instant;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Summary information about image packages generated from Lead Portal submissions.
- */
+/** Summary information about image packages generated from Lead Portal submissions. */
 public record LeadPortalImagePackageSummaryDto(
-        Long id,
-        UUID submissionId,
-        String flowSlug,
-        String name,
-        String email,
-        String phone,
-        FlowSubmissionImagePackageStatus status,
-        FlowSubmissionImagePackageLifecycleStatus lifecycleStatus,
-        String prompt,
-        String model,
-        Integer plannedOutputs,
-        Integer freeImages,
-        Integer generatedImageCount,
-        Integer watermarkedImageCount,
-        Instant createdAt,
-        Instant updatedAt,
-        Instant notifiedAt,
-        Instant emailOpenedAt,
-        Instant imagesViewedAt,
-        String failureReason,
-        Long imageModelId,
-        String imageModelName,
-        Long imageModelQualityId,
-        String imageModelQualityName,
-        String imageOrientation,
-        Integer imageWidth,
-        Integer imageHeight,
-        BigDecimal imageUnitPriceUsd,
-        BigDecimal imageTotalPriceUsd,
-        String imageCurrency
-) {}
+    Long id,
+    UUID submissionId,
+    String flowSlug,
+    String name,
+    String email,
+    String phone,
+    FlowSubmissionImagePackageStatus status,
+    FlowSubmissionImagePackageLifecycleStatus lifecycleStatus,
+    String prompt,
+    String model,
+    Integer plannedOutputs,
+    Integer freeImages,
+    Integer generatedImageCount,
+    Integer watermarkedImageCount,
+    Instant createdAt,
+    Instant updatedAt,
+    Instant notifiedAt,
+    Instant emailOpenedAt,
+    Instant imagesViewedAt,
+    String failureReason,
+    Long imageModelId,
+    String imageModelName,
+    Long imageModelQualityId,
+    String imageModelQualityName,
+    String imageOrientation,
+    Integer imageWidth,
+    Integer imageHeight,
+    BigDecimal imageUnitPriceUsd,
+    BigDecimal imageTotalPriceUsd,
+    String imageCurrency) {}

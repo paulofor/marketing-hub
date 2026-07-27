@@ -6,20 +6,24 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Repositório JPA responsável pela auditoria do pipeline de geração de anúncios. */
-public interface PipelineGeracaoAnunciosRepository extends JpaRepository<PipelineGeracaoAnuncios, Long> {
-    /** Lista auditorias vinculadas a um job interno em ordem cronológica. */
-    List<PipelineGeracaoAnuncios> findByJobIdOrderByDataHoraAsc(String jobId);
+public interface PipelineGeracaoAnunciosRepository
+    extends JpaRepository<PipelineGeracaoAnuncios, Long> {
+  /** Lista auditorias vinculadas a um job interno em ordem cronológica. */
+  List<PipelineGeracaoAnuncios> findByJobIdOrderByDataHoraAsc(String jobId);
 
-    /** Lista auditorias vinculadas a uma etapa em ordem cronológica. */
-    List<PipelineGeracaoAnuncios> findByCodigoEtapaOrderByDataHoraAsc(String codigoEtapa);
+  /** Lista auditorias vinculadas a uma etapa em ordem cronológica. */
+  List<PipelineGeracaoAnuncios> findByCodigoEtapaOrderByDataHoraAsc(String codigoEtapa);
 
-    /** Verifica se já existe auditoria vinculada a um identificador externo. */
-    boolean existsByIdExterno(String idExterno);
+  /** Verifica se já existe auditoria vinculada a um identificador externo. */
+  boolean existsByIdExterno(String idExterno);
 
-    /** Busca a auditoria mais recente de uma etapa vinculada a um identificador externo. */
-    Optional<PipelineGeracaoAnuncios> findTopByIdExternoAndCodigoEtapaOrderByDataHoraDesc(String idExterno, String codigoEtapa);
+  /** Busca a auditoria mais recente de uma etapa vinculada a um identificador externo. */
+  Optional<PipelineGeracaoAnuncios> findTopByIdExternoAndCodigoEtapaOrderByDataHoraDesc(
+      String idExterno, String codigoEtapa);
 
-    /** Lista auditorias por etapa, identificador externo e conjunto de status em ordem mais recente. */
-    List<PipelineGeracaoAnuncios> findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(
-            String codigoEtapa, String idExterno, List<String> status);
+  /**
+   * Lista auditorias por etapa, identificador externo e conjunto de status em ordem mais recente.
+   */
+  List<PipelineGeracaoAnuncios> findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(
+      String codigoEtapa, String idExterno, List<String> status);
 }

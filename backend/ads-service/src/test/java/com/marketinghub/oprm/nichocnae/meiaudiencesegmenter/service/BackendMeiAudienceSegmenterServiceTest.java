@@ -21,21 +21,31 @@ import org.springframework.data.domain.Pageable;
 
 /** Testes responsáveis por validar a fila backend da etapa de segmentação MEI/autônomo. */
 class BackendMeiAudienceSegmenterServiceTest {
-  private final OprmRoutineResearchCycleRepository cycleRepository = mock(OprmRoutineResearchCycleRepository.class);
-  private final OprmNicheRoutineCardRepository routineCardRepository = mock(OprmNicheRoutineCardRepository.class);
-  private final OprmExtractedSignalRepository extractedSignalRepository = mock(OprmExtractedSignalRepository.class);
-  private final OprmSourceSnapshotRepository sourceSnapshotRepository = mock(OprmSourceSnapshotRepository.class);
-  private final BackendMeiAudienceProfileService profileService = mock(BackendMeiAudienceProfileService.class);
-  private final MeiAudienceSegmenterConfigurationGateway configurationGateway = mock(MeiAudienceSegmenterConfigurationGateway.class);
-  private final BackendMeiAudienceSegmenterService service = new BackendMeiAudienceSegmenterService(
-      cycleRepository,
-      routineCardRepository,
-      extractedSignalRepository,
-      sourceSnapshotRepository,
-      profileService,
-      configurationGateway);
+  private final OprmRoutineResearchCycleRepository cycleRepository =
+      mock(OprmRoutineResearchCycleRepository.class);
+  private final OprmNicheRoutineCardRepository routineCardRepository =
+      mock(OprmNicheRoutineCardRepository.class);
+  private final OprmExtractedSignalRepository extractedSignalRepository =
+      mock(OprmExtractedSignalRepository.class);
+  private final OprmSourceSnapshotRepository sourceSnapshotRepository =
+      mock(OprmSourceSnapshotRepository.class);
+  private final BackendMeiAudienceProfileService profileService =
+      mock(BackendMeiAudienceProfileService.class);
+  private final MeiAudienceSegmenterConfigurationGateway configurationGateway =
+      mock(MeiAudienceSegmenterConfigurationGateway.class);
+  private final BackendMeiAudienceSegmenterService service =
+      new BackendMeiAudienceSegmenterService(
+          cycleRepository,
+          routineCardRepository,
+          extractedSignalRepository,
+          sourceSnapshotRepository,
+          profileService,
+          configurationGateway);
 
-  /** Garante que o serviço não exponha cartões caso a consulta retorne ciclo fora do status elegível. */
+  /**
+   * Garante que o serviço não exponha cartões caso a consulta retorne ciclo fora do status
+   * elegível.
+   */
   @Test
   void listPendingShouldRevalidateEligibleCycleBeforeExposingQueue() {
     OprmNicheRoutineCard failedCard = card(10L, 1L);
@@ -46,7 +56,8 @@ class BackendMeiAudienceSegmenterServiceTest {
     when(cycleRepository.findById(20L)).thenReturn(Optional.of(cycle(20L, "ROUTINE_SYNTHESIZED")));
     when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(20L)).thenReturn(List.of());
     when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(20L)).thenReturn(List.of());
-    when(configurationGateway.findConfiguredModel()).thenReturn(Optional.of(new MeiAudienceSegmenterModel("gpt-5.4", "GPT-5.4")));
+    when(configurationGateway.findConfiguredModel())
+        .thenReturn(Optional.of(new MeiAudienceSegmenterModel("gpt-5.4", "GPT-5.4")));
 
     assertThat(service.listPending())
         .extracting(pending -> pending.researchCycleId())
@@ -54,7 +65,10 @@ class BackendMeiAudienceSegmenterServiceTest {
     assertThat(service.listPending().get(0).openAiModelCode()).isEqualTo("gpt-5.4");
   }
 
-  /** Garante que cartão vazio não avance para segmentação e peça nova pesquisa com motivo operacional. */
+  /**
+   * Garante que cartão vazio não avance para segmentação e peça nova pesquisa com motivo
+   * operacional.
+   */
   @Test
   void listPendingShouldMarkEmptyRoutineCardAsNeedingMoreResearch() {
     OprmNicheRoutineCard emptyCard = card(30L, 3L);
@@ -62,7 +76,8 @@ class BackendMeiAudienceSegmenterServiceTest {
     emptyCard.setDifficultyEvidenceScore(0);
     emptyCard.setOperationalPainsSummary("Sem evidência suficiente para afirmar dor prática.");
     OprmRoutineResearchCycle cycle = cycle(30L, "ROUTINE_SYNTHESIZED");
-    when(routineCardRepository.findPendingMeiAudienceSegmentation(any(Pageable.class))).thenReturn(List.of(emptyCard));
+    when(routineCardRepository.findPendingMeiAudienceSegmentation(any(Pageable.class)))
+        .thenReturn(List.of(emptyCard));
     when(cycleRepository.findById(30L)).thenReturn(Optional.of(cycle));
 
     assertThat(service.listPending()).isEmpty();

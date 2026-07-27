@@ -1,12 +1,14 @@
 package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.ads.FacebookAccount;
-import com.marketinghub.ads.FacebookTokenRenewalStatus;
 import com.marketinghub.ads.FacebookTokenDiagnosticsService;
+import com.marketinghub.ads.FacebookTokenRenewalStatus;
 import com.marketinghub.ads.FacebookTokenRevalidationService;
 import com.marketinghub.ads.FacebookWorkerValidationError;
-
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,488 +16,485 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-
-/**
- * Agrupa endpoints de conta Facebook usados pela UI e pelo worker de Facebook Ads.
- */
+/** Agrupa endpoints de conta Facebook usados pela UI e pelo worker de Facebook Ads. */
 @RestController
 @RequestMapping("/api/accounts/facebook")
 public class FacebookAccountController {
-    private static final Logger log = LoggerFactory.getLogger(FacebookAccountController.class);
-    private final FacebookAccountRepository repository;
-    private final FacebookTokenRevalidationService tokenRevalidationService;
-    private final FacebookTokenDiagnosticsService tokenDiagnosticsService;
+  private static final Logger log = LoggerFactory.getLogger(FacebookAccountController.class);
+  private final FacebookAccountRepository repository;
+  private final FacebookTokenRevalidationService tokenRevalidationService;
+  private final FacebookTokenDiagnosticsService tokenDiagnosticsService;
 
-    public FacebookAccountController(
-        FacebookAccountRepository repository,
-        FacebookTokenRevalidationService tokenRevalidationService,
-        FacebookTokenDiagnosticsService tokenDiagnosticsService
-    ) {
-        this.repository = repository;
-        this.tokenRevalidationService = tokenRevalidationService;
-        this.tokenDiagnosticsService = tokenDiagnosticsService;
+  public FacebookAccountController(
+      FacebookAccountRepository repository,
+      FacebookTokenRevalidationService tokenRevalidationService,
+      FacebookTokenDiagnosticsService tokenDiagnosticsService) {
+    this.repository = repository;
+    this.tokenRevalidationService = tokenRevalidationService;
+    this.tokenDiagnosticsService = tokenDiagnosticsService;
+  }
+
+  @GetMapping
+  // Executa a operação findAll da integração Facebook Ads.
+  public List<FacebookAccount> findAll() {
+    return repository.findAll();
+  }
+
+  @PostMapping
+  // Executa a operação create da integração Facebook Ads.
+  public FacebookAccount create(@RequestBody FacebookAccount account) {
+    normalizeAccount(account);
+    if (account.getAccessToken() == null) {
+      account.setTokenExpiresAt(null);
+      account.setTokenLastRefreshedAt(null);
+      account.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
+      account.setTokenRenewalLastAttemptAt(null);
+      account.setTokenRenewedAt(null);
+      account.setTokenRenewalLastError(null);
+    } else if (account.getTokenLastRefreshedAt() == null) {
+      account.setTokenLastRefreshedAt(LocalDateTime.now());
+    }
+    if (account.getTokenRenewalStatus() == null || account.getTokenRenewalStatus().isBlank()) {
+      account.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
+    }
+    if (!account.isTokenRenewalEnabled()) {
+      account.setTokenRenewalEnabled(false);
+    }
+    FacebookAccount saved = repository.save(account);
+    enforceSingleWorkerEnabled(saved);
+    return saved;
+  }
+
+  @PutMapping("/{id}")
+  // Executa a operação update da integração Facebook Ads.
+  public FacebookAccount update(@PathVariable Long id, @RequestBody FacebookAccount account) {
+    FacebookAccount persisted = repository.findById(id).orElseThrow();
+    normalizeAccount(account);
+
+    persisted.setName(account.getName());
+    persisted.setCurrency(account.getCurrency());
+    persisted.setAuthorizedUserId(account.getAuthorizedUserId());
+    persisted.setAuthorizedUserName(account.getAuthorizedUserName());
+    persisted.setAuthorizedUserEmail(account.getAuthorizedUserEmail());
+    persisted.setAppId(account.getAppId());
+    persisted.setAdAccountId(account.getAdAccountId());
+    persisted.setDefaultWebsiteUrl(account.getDefaultWebsiteUrl());
+    persisted.setDefaultCreativeMessageTemplate(account.getDefaultCreativeMessageTemplate());
+    persisted.setDefaultCallToActionType(account.getDefaultCallToActionType());
+    persisted.setAdSetDailyBudget(account.getAdSetDailyBudget());
+    persisted.setAdSetBillingEvent(account.getAdSetBillingEvent());
+    persisted.setAdSetOptimizationGoal(account.getAdSetOptimizationGoal());
+    persisted.setAdSetDestinationType(account.getAdSetDestinationType());
+    persisted.setAdSetBidStrategy(account.getAdSetBidStrategy());
+    persisted.setAdSetBidAmount(account.getAdSetBidAmount());
+    persisted.setAdSetTargetCountry(account.getAdSetTargetCountry());
+    persisted.setTokenRenewalEnabled(account.isTokenRenewalEnabled());
+    persisted.setWorkerEnabled(account.isWorkerEnabled());
+
+    if (account.isDefaultPageIdProvided()) {
+      persisted.setDefaultPageId(account.getDefaultPageId());
+    }
+    if (account.isDefaultInstagramActorIdProvided()) {
+      persisted.setDefaultInstagramActorId(account.getDefaultInstagramActorId());
+    }
+    if (account.isDefaultLeadGenFormIdProvided()) {
+      persisted.setDefaultLeadGenFormId(account.getDefaultLeadGenFormId());
     }
 
-    @GetMapping
-    // Executa a operação findAll da integração Facebook Ads.
-    public List<FacebookAccount> findAll() {
-        return repository.findAll();
+    if (account.isPixelOwnerBusinessIdProvided()) {
+      persisted.setPixelOwnerBusinessId(account.getPixelOwnerBusinessId());
     }
 
-    @PostMapping
-    // Executa a operação create da integração Facebook Ads.
-    public FacebookAccount create(@RequestBody FacebookAccount account) {
-        normalizeAccount(account);
-        if (account.getAccessToken() == null) {
-            account.setTokenExpiresAt(null);
-            account.setTokenLastRefreshedAt(null);
-            account.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
-            account.setTokenRenewalLastAttemptAt(null);
-            account.setTokenRenewedAt(null);
-            account.setTokenRenewalLastError(null);
-        } else if (account.getTokenLastRefreshedAt() == null) {
-            account.setTokenLastRefreshedAt(LocalDateTime.now());
+    if (account.isAccessTokenProvided()) {
+      String newToken = account.getAccessToken();
+      if (newToken == null) {
+        persisted.setAccessToken(null);
+        persisted.setTokenExpiresAt(null);
+        persisted.setTokenLastRefreshedAt(null);
+        persisted.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
+        persisted.setTokenRenewalLastAttemptAt(null);
+        persisted.setTokenRenewedAt(null);
+        persisted.setTokenRenewalLastError(null);
+      } else {
+        if (!newToken.equals(persisted.getAccessToken())) {
+          persisted.setTokenLastRefreshedAt(LocalDateTime.now());
         }
-        if (account.getTokenRenewalStatus() == null || account.getTokenRenewalStatus().isBlank()) {
-            account.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
-        }
-        if (!account.isTokenRenewalEnabled()) {
-            account.setTokenRenewalEnabled(false);
-        }
-        FacebookAccount saved = repository.save(account);
-        enforceSingleWorkerEnabled(saved);
-        return saved;
+        persisted.setAccessToken(newToken);
+        persisted.setTokenExpiresAt(account.getTokenExpiresAt());
+      }
     }
 
-    @PutMapping("/{id}")
-    // Executa a operação update da integração Facebook Ads.
-    public FacebookAccount update(@PathVariable Long id, @RequestBody FacebookAccount account) {
-        FacebookAccount persisted = repository.findById(id).orElseThrow();
-        normalizeAccount(account);
-
-        persisted.setName(account.getName());
-        persisted.setCurrency(account.getCurrency());
-        persisted.setAuthorizedUserId(account.getAuthorizedUserId());
-        persisted.setAuthorizedUserName(account.getAuthorizedUserName());
-        persisted.setAuthorizedUserEmail(account.getAuthorizedUserEmail());
-        persisted.setAppId(account.getAppId());
-        persisted.setAdAccountId(account.getAdAccountId());
-        persisted.setDefaultWebsiteUrl(account.getDefaultWebsiteUrl());
-        persisted.setDefaultCreativeMessageTemplate(account.getDefaultCreativeMessageTemplate());
-        persisted.setDefaultCallToActionType(account.getDefaultCallToActionType());
-        persisted.setAdSetDailyBudget(account.getAdSetDailyBudget());
-        persisted.setAdSetBillingEvent(account.getAdSetBillingEvent());
-        persisted.setAdSetOptimizationGoal(account.getAdSetOptimizationGoal());
-        persisted.setAdSetDestinationType(account.getAdSetDestinationType());
-        persisted.setAdSetBidStrategy(account.getAdSetBidStrategy());
-        persisted.setAdSetBidAmount(account.getAdSetBidAmount());
-        persisted.setAdSetTargetCountry(account.getAdSetTargetCountry());
-        persisted.setTokenRenewalEnabled(account.isTokenRenewalEnabled());
-        persisted.setWorkerEnabled(account.isWorkerEnabled());
-
-        if (account.isDefaultPageIdProvided()) {
-            persisted.setDefaultPageId(account.getDefaultPageId());
-        }
-        if (account.isDefaultInstagramActorIdProvided()) {
-            persisted.setDefaultInstagramActorId(account.getDefaultInstagramActorId());
-        }
-        if (account.isDefaultLeadGenFormIdProvided()) {
-            persisted.setDefaultLeadGenFormId(account.getDefaultLeadGenFormId());
-        }
-
-        if (account.isPixelOwnerBusinessIdProvided()) {
-            persisted.setPixelOwnerBusinessId(account.getPixelOwnerBusinessId());
-        }
-
-        if (account.isAccessTokenProvided()) {
-            String newToken = account.getAccessToken();
-            if (newToken == null) {
-                persisted.setAccessToken(null);
-                persisted.setTokenExpiresAt(null);
-                persisted.setTokenLastRefreshedAt(null);
-                persisted.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
-                persisted.setTokenRenewalLastAttemptAt(null);
-                persisted.setTokenRenewedAt(null);
-                persisted.setTokenRenewalLastError(null);
-            } else {
-                if (!newToken.equals(persisted.getAccessToken())) {
-                    persisted.setTokenLastRefreshedAt(LocalDateTime.now());
-                }
-                persisted.setAccessToken(newToken);
-                persisted.setTokenExpiresAt(account.getTokenExpiresAt());
-            }
-        }
-
-        if (account.isSystemUserAccessTokenProvided()) {
-            persisted.setSystemUserAccessToken(account.getSystemUserAccessToken());
-        }
-
-        if (account.isAppSecretProvided()) {
-            persisted.overwriteAppSecret(account.getAppSecret());
-        }
-
-        if (account.getTokenRenewalStatus() != null) {
-            persisted.setTokenRenewalStatus(account.getTokenRenewalStatus());
-        }
-        
-        FacebookAccount updated = repository.save(persisted);
-        enforceSingleWorkerEnabled(updated);
-        return updated;
+    if (account.isSystemUserAccessTokenProvided()) {
+      persisted.setSystemUserAccessToken(account.getSystemUserAccessToken());
     }
 
-    @GetMapping("/worker-config")
-    // Executa a operação workerConfiguration da integração Facebook Ads.
-    public FacebookWorkerConfiguration workerConfiguration() {
-        FacebookAccount account = repository
-            .findFirstByWorkerEnabledTrue()
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Facebook worker configuration not found"));
-        validateWorkerConfiguration(account);
-        return toWorkerConfiguration(account);
+    if (account.isAppSecretProvided()) {
+      persisted.overwriteAppSecret(account.getAppSecret());
     }
 
-    @GetMapping("/renewal/eligible")
-    // Executa a operação findEligibleForRenewal da integração Facebook Ads.
-    public List<FacebookAccountRenewalCandidate> findEligibleForRenewal() {
-        return repository
-            .findAll()
-            .stream()
-            .filter(FacebookAccount::isTokenRenewalEnabled)
-            .filter(account -> account.getAccessToken() != null && !account.getAccessToken().isBlank())
-            .filter(account -> account.getAppId() != null && !account.getAppId().isBlank())
-            .filter(account -> account.getAppSecret() != null && !account.getAppSecret().isBlank())
-            .filter(FacebookAccount::isTokenRenewalRequired)
-            .map(account -> new FacebookAccountRenewalCandidate(
-                account.getId(),
-                account.getName(),
-                account.getAppId(),
-                account.getAppSecret(),
-                account.getAccessToken(),
-                account.getTokenExpiresAt(),
-                account.getTokenRenewalStatus(),
-                account.getTokenRenewalLastAttemptAt(),
-                account.getTokenRenewalLastError()
-            ))
-            .collect(Collectors.toList());
+    if (account.getTokenRenewalStatus() != null) {
+      persisted.setTokenRenewalStatus(account.getTokenRenewalStatus());
     }
 
-    @PostMapping("/{id}/token/renewal")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public FacebookAccount registerRenewal(
-        @PathVariable Long id,
-        @RequestBody FacebookTokenRenewalRequest request
-    ) {
-        FacebookAccount account = repository.findById(id).orElseThrow();
-        LocalDateTime attemptedAt = request.attemptedAt() != null ? request.attemptedAt() : LocalDateTime.now();
-        account.setTokenRenewalLastAttemptAt(attemptedAt);
-        account.setTokenRenewalStatus(request.status().name());
+    FacebookAccount updated = repository.save(persisted);
+    enforceSingleWorkerEnabled(updated);
+    return updated;
+  }
 
-        if (request.status() == FacebookTokenRenewalStatus.SUCCESS) {
-            if (request.accessToken() == null || request.accessToken().isBlank()) {
-                throw new IllegalArgumentException("Renewal requires a non-empty access token");
-            }
-            account.setAccessToken(request.accessToken());
-            account.setTokenExpiresAt(request.tokenExpiresAt());
-            LocalDateTime refreshedAt = request.renewedAt() != null ? request.renewedAt() : attemptedAt;
-            account.setTokenLastRefreshedAt(refreshedAt);
-            account.setTokenRenewedAt(refreshedAt);
-            account.setTokenRenewalLastError(null);
-        } else if (request.status() == FacebookTokenRenewalStatus.FAILED) {
-            account.setTokenRenewalLastError(trimToNull(request.errorMessage()));
-        }
-
-        return repository.save(account);
-    }
-
-    @PostMapping("/{id}/token/revalidation")
-    // Executa a operação revalidateToken da integração Facebook Ads.
-    public FacebookTokenRevalidationResponse revalidateToken(@PathVariable Long id) {
-        FacebookAccount account = repository.findById(id).orElseThrow();
-        validateRevalidationPrerequisites(account);
-        FacebookTokenRevalidationService.RevalidationResult result = tokenRevalidationService.revalidate(account);
-        return new FacebookTokenRevalidationResponse(
-            result.status(),
-            result.accessToken(),
-            result.tokenExpiresAt(),
-            result.renewedAt(),
-            result.attemptedAt(),
-            result.errorMessage()
-        );
-    }
-
-    @PostMapping("/{id}/token/diagnostics")
-    // Executa a operação diagnoseToken da integração Facebook Ads.
-    public FacebookTokenDiagnosticsService.FacebookTokenDiagnosticResponse diagnoseToken(@PathVariable Long id) {
-        FacebookAccount account = repository.findById(id).orElseThrow();
-        return tokenDiagnosticsService.diagnose(account);
-    }
-
-    @PostMapping("/{id}/token/video-upload-test")
-    // Executa a operação testVideoUpload da integração Facebook Ads.
-    public FacebookTokenDiagnosticsService.FacebookVideoUploadTestResponse testVideoUpload(@PathVariable Long id) {
-        FacebookAccount account = repository.findById(id).orElseThrow();
-        return tokenDiagnosticsService.testVideoUpload(account);
-    }
-
-    @DeleteMapping("/{id}")
-    // Executa a operação delete da integração Facebook Ads.
-    public void delete(@PathVariable Long id) {
-        repository.deleteById(id);
-    }
-
-    // Executa a operação normalizeAccount da integração Facebook Ads.
-    private void normalizeAccount(FacebookAccount account) {
-        account.setName(trim(account.getName()));
-        account.setCurrency(trim(account.getCurrency()));
-        account.setAccessToken(trimToNull(account.getAccessToken()));
-        account.setSystemUserAccessToken(trimToNull(account.getSystemUserAccessToken()));
-        account.setAuthorizedUserId(trimToNull(account.getAuthorizedUserId()));
-        account.setAuthorizedUserName(trimToNull(account.getAuthorizedUserName()));
-        account.setAuthorizedUserEmail(trimToNull(account.getAuthorizedUserEmail()));
-        account.setAppId(trimToNull(account.getAppId()));
-        account.setAdAccountId(trimToNull(account.getAdAccountId()));
-        account.setDefaultPageId(trimToNull(account.getDefaultPageId()));
-        account.setDefaultWebsiteUrl(trimToNull(account.getDefaultWebsiteUrl()));
-        account.setDefaultLeadGenFormId(trimToNull(account.getDefaultLeadGenFormId()));
-        account.setDefaultInstagramActorId(trimToNull(account.getDefaultInstagramActorId()));
-        account.setDefaultCreativeMessageTemplate(trimToNull(account.getDefaultCreativeMessageTemplate()));
-        account.setDefaultCallToActionType(trimToNull(account.getDefaultCallToActionType()));
-        account.setPixelOwnerBusinessId(trimToNull(account.getPixelOwnerBusinessId()));
-        account.setAdSetDailyBudget(trimToNull(account.getAdSetDailyBudget()));
-        account.setAdSetBillingEvent(trimToNull(account.getAdSetBillingEvent()));
-        account.setAdSetOptimizationGoal(trimToNull(account.getAdSetOptimizationGoal()));
-        account.setAdSetDestinationType(trimToNull(account.getAdSetDestinationType()));
-        account.setAdSetBidStrategy(trimToNull(account.getAdSetBidStrategy()));
-        account.setAdSetBidAmount(trimToNull(account.getAdSetBidAmount()));
-        account.setAdSetTargetCountry(trimToNull(account.getAdSetTargetCountry()));
-        if (account.isAppSecretProvided()) {
-            account.overwriteAppSecret(trimToNull(account.getAppSecret()));
-        }
-        account.setTokenRenewalLastError(trimToNull(account.getTokenRenewalLastError()));
-        if (account.getTokenRenewalStatus() != null) {
-            String normalizedStatus = account.getTokenRenewalStatus().trim().toUpperCase();
-            try {
-                account.setTokenRenewalStatus(FacebookTokenRenewalStatus.valueOf(normalizedStatus).name());
-            } catch (IllegalArgumentException ex) {
-                account.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
-            }
-        }
-    }
-
-    // Executa a operação enforceSingleWorkerEnabled da integração Facebook Ads.
-    private void enforceSingleWorkerEnabled(FacebookAccount saved) {
-        if (!saved.isWorkerEnabled()) {
-            return;
-        }
+  @GetMapping("/worker-config")
+  // Executa a operação workerConfiguration da integração Facebook Ads.
+  public FacebookWorkerConfiguration workerConfiguration() {
+    FacebookAccount account =
         repository
-            .findAll()
-            .stream()
-            .filter(other -> !other.getId().equals(saved.getId()))
-            .filter(FacebookAccount::isWorkerEnabled)
-            .forEach(other -> {
-                other.setWorkerEnabled(false);
-                repository.save(other);
-            });
+            .findFirstByWorkerEnabledTrue()
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Facebook worker configuration not found"));
+    validateWorkerConfiguration(account);
+    return toWorkerConfiguration(account);
+  }
+
+  @GetMapping("/renewal/eligible")
+  // Executa a operação findEligibleForRenewal da integração Facebook Ads.
+  public List<FacebookAccountRenewalCandidate> findEligibleForRenewal() {
+    return repository.findAll().stream()
+        .filter(FacebookAccount::isTokenRenewalEnabled)
+        .filter(account -> account.getAccessToken() != null && !account.getAccessToken().isBlank())
+        .filter(account -> account.getAppId() != null && !account.getAppId().isBlank())
+        .filter(account -> account.getAppSecret() != null && !account.getAppSecret().isBlank())
+        .filter(FacebookAccount::isTokenRenewalRequired)
+        .map(
+            account ->
+                new FacebookAccountRenewalCandidate(
+                    account.getId(),
+                    account.getName(),
+                    account.getAppId(),
+                    account.getAppSecret(),
+                    account.getAccessToken(),
+                    account.getTokenExpiresAt(),
+                    account.getTokenRenewalStatus(),
+                    account.getTokenRenewalLastAttemptAt(),
+                    account.getTokenRenewalLastError()))
+        .collect(Collectors.toList());
+  }
+
+  @PostMapping("/{id}/token/renewal")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public FacebookAccount registerRenewal(
+      @PathVariable Long id, @RequestBody FacebookTokenRenewalRequest request) {
+    FacebookAccount account = repository.findById(id).orElseThrow();
+    LocalDateTime attemptedAt =
+        request.attemptedAt() != null ? request.attemptedAt() : LocalDateTime.now();
+    account.setTokenRenewalLastAttemptAt(attemptedAt);
+    account.setTokenRenewalStatus(request.status().name());
+
+    if (request.status() == FacebookTokenRenewalStatus.SUCCESS) {
+      if (request.accessToken() == null || request.accessToken().isBlank()) {
+        throw new IllegalArgumentException("Renewal requires a non-empty access token");
+      }
+      account.setAccessToken(request.accessToken());
+      account.setTokenExpiresAt(request.tokenExpiresAt());
+      LocalDateTime refreshedAt = request.renewedAt() != null ? request.renewedAt() : attemptedAt;
+      account.setTokenLastRefreshedAt(refreshedAt);
+      account.setTokenRenewedAt(refreshedAt);
+      account.setTokenRenewalLastError(null);
+    } else if (request.status() == FacebookTokenRenewalStatus.FAILED) {
+      account.setTokenRenewalLastError(trimToNull(request.errorMessage()));
     }
 
-    // Executa a operação toWorkerConfiguration da integração Facebook Ads.
-    private FacebookWorkerConfiguration toWorkerConfiguration(FacebookAccount account) {
-        String creativeMessageTemplate = StringUtils.hasText(account.getDefaultCreativeMessageTemplate())
+    return repository.save(account);
+  }
+
+  @PostMapping("/{id}/token/revalidation")
+  // Executa a operação revalidateToken da integração Facebook Ads.
+  public FacebookTokenRevalidationResponse revalidateToken(@PathVariable Long id) {
+    FacebookAccount account = repository.findById(id).orElseThrow();
+    validateRevalidationPrerequisites(account);
+    FacebookTokenRevalidationService.RevalidationResult result =
+        tokenRevalidationService.revalidate(account);
+    return new FacebookTokenRevalidationResponse(
+        result.status(),
+        result.accessToken(),
+        result.tokenExpiresAt(),
+        result.renewedAt(),
+        result.attemptedAt(),
+        result.errorMessage());
+  }
+
+  @PostMapping("/{id}/token/diagnostics")
+  // Executa a operação diagnoseToken da integração Facebook Ads.
+  public FacebookTokenDiagnosticsService.FacebookTokenDiagnosticResponse diagnoseToken(
+      @PathVariable Long id) {
+    FacebookAccount account = repository.findById(id).orElseThrow();
+    return tokenDiagnosticsService.diagnose(account);
+  }
+
+  @PostMapping("/{id}/token/video-upload-test")
+  // Executa a operação testVideoUpload da integração Facebook Ads.
+  public FacebookTokenDiagnosticsService.FacebookVideoUploadTestResponse testVideoUpload(
+      @PathVariable Long id) {
+    FacebookAccount account = repository.findById(id).orElseThrow();
+    return tokenDiagnosticsService.testVideoUpload(account);
+  }
+
+  @DeleteMapping("/{id}")
+  // Executa a operação delete da integração Facebook Ads.
+  public void delete(@PathVariable Long id) {
+    repository.deleteById(id);
+  }
+
+  // Executa a operação normalizeAccount da integração Facebook Ads.
+  private void normalizeAccount(FacebookAccount account) {
+    account.setName(trim(account.getName()));
+    account.setCurrency(trim(account.getCurrency()));
+    account.setAccessToken(trimToNull(account.getAccessToken()));
+    account.setSystemUserAccessToken(trimToNull(account.getSystemUserAccessToken()));
+    account.setAuthorizedUserId(trimToNull(account.getAuthorizedUserId()));
+    account.setAuthorizedUserName(trimToNull(account.getAuthorizedUserName()));
+    account.setAuthorizedUserEmail(trimToNull(account.getAuthorizedUserEmail()));
+    account.setAppId(trimToNull(account.getAppId()));
+    account.setAdAccountId(trimToNull(account.getAdAccountId()));
+    account.setDefaultPageId(trimToNull(account.getDefaultPageId()));
+    account.setDefaultWebsiteUrl(trimToNull(account.getDefaultWebsiteUrl()));
+    account.setDefaultLeadGenFormId(trimToNull(account.getDefaultLeadGenFormId()));
+    account.setDefaultInstagramActorId(trimToNull(account.getDefaultInstagramActorId()));
+    account.setDefaultCreativeMessageTemplate(
+        trimToNull(account.getDefaultCreativeMessageTemplate()));
+    account.setDefaultCallToActionType(trimToNull(account.getDefaultCallToActionType()));
+    account.setPixelOwnerBusinessId(trimToNull(account.getPixelOwnerBusinessId()));
+    account.setAdSetDailyBudget(trimToNull(account.getAdSetDailyBudget()));
+    account.setAdSetBillingEvent(trimToNull(account.getAdSetBillingEvent()));
+    account.setAdSetOptimizationGoal(trimToNull(account.getAdSetOptimizationGoal()));
+    account.setAdSetDestinationType(trimToNull(account.getAdSetDestinationType()));
+    account.setAdSetBidStrategy(trimToNull(account.getAdSetBidStrategy()));
+    account.setAdSetBidAmount(trimToNull(account.getAdSetBidAmount()));
+    account.setAdSetTargetCountry(trimToNull(account.getAdSetTargetCountry()));
+    if (account.isAppSecretProvided()) {
+      account.overwriteAppSecret(trimToNull(account.getAppSecret()));
+    }
+    account.setTokenRenewalLastError(trimToNull(account.getTokenRenewalLastError()));
+    if (account.getTokenRenewalStatus() != null) {
+      String normalizedStatus = account.getTokenRenewalStatus().trim().toUpperCase();
+      try {
+        account.setTokenRenewalStatus(FacebookTokenRenewalStatus.valueOf(normalizedStatus).name());
+      } catch (IllegalArgumentException ex) {
+        account.setTokenRenewalStatus(FacebookTokenRenewalStatus.NEVER_ATTEMPTED.name());
+      }
+    }
+  }
+
+  // Executa a operação enforceSingleWorkerEnabled da integração Facebook Ads.
+  private void enforceSingleWorkerEnabled(FacebookAccount saved) {
+    if (!saved.isWorkerEnabled()) {
+      return;
+    }
+    repository.findAll().stream()
+        .filter(other -> !other.getId().equals(saved.getId()))
+        .filter(FacebookAccount::isWorkerEnabled)
+        .forEach(
+            other -> {
+              other.setWorkerEnabled(false);
+              repository.save(other);
+            });
+  }
+
+  // Executa a operação toWorkerConfiguration da integração Facebook Ads.
+  private FacebookWorkerConfiguration toWorkerConfiguration(FacebookAccount account) {
+    String creativeMessageTemplate =
+        StringUtils.hasText(account.getDefaultCreativeMessageTemplate())
             ? account.getDefaultCreativeMessageTemplate()
             : "%s";
-        String callToAction = StringUtils.hasText(account.getDefaultCallToActionType())
+    String callToAction =
+        StringUtils.hasText(account.getDefaultCallToActionType())
             ? account.getDefaultCallToActionType()
             : "LEARN_MORE";
-        return new FacebookWorkerConfiguration(
-            account.getId(),
-            account.getAdAccountId(),
-            account.getAccessToken(),
-            account.getSystemUserAccessToken(),
-            account.getPixelOwnerBusinessId(),
-            account.getAppId(),
-            account.getAppSecret(),
-            account.getDefaultPageId(),
-            account.getDefaultInstagramActorId(),
-            account.getDefaultWebsiteUrl(),
-            account.getDefaultLeadGenFormId(),
-            creativeMessageTemplate,
-            callToAction,
-            account.getAdSetDailyBudget(),
-            account.getAdSetBillingEvent(),
-            account.getAdSetOptimizationGoal(),
-            account.getAdSetDestinationType(),
-            account.getAdSetBidStrategy(),
-            account.getAdSetBidAmount(),
-            account.getAdSetTargetCountry()
-        );
+    return new FacebookWorkerConfiguration(
+        account.getId(),
+        account.getAdAccountId(),
+        account.getAccessToken(),
+        account.getSystemUserAccessToken(),
+        account.getPixelOwnerBusinessId(),
+        account.getAppId(),
+        account.getAppSecret(),
+        account.getDefaultPageId(),
+        account.getDefaultInstagramActorId(),
+        account.getDefaultWebsiteUrl(),
+        account.getDefaultLeadGenFormId(),
+        creativeMessageTemplate,
+        callToAction,
+        account.getAdSetDailyBudget(),
+        account.getAdSetBillingEvent(),
+        account.getAdSetOptimizationGoal(),
+        account.getAdSetDestinationType(),
+        account.getAdSetBidStrategy(),
+        account.getAdSetBidAmount(),
+        account.getAdSetTargetCountry());
+  }
+
+  // Executa a operação validateWorkerConfiguration da integração Facebook Ads.
+  private void validateWorkerConfiguration(FacebookAccount account) {
+    requireField(
+        account,
+        account.getAccessToken(),
+        "access token",
+        FacebookWorkerValidationError.ACCESS_TOKEN_MISSING);
+    requireField(
+        account,
+        account.getAdAccountId(),
+        "ad account id",
+        FacebookWorkerValidationError.AD_ACCOUNT_ID_MISSING);
+    if (!StringUtils.hasText(account.getDefaultWebsiteUrl())
+        && !StringUtils.hasText(account.getDefaultLeadGenFormId())) {
+      log.warn(
+          "Facebook worker configuration for account id={} name='{}' is missing both default website URL and default lead form ID; creatives without overrides will be skipped.",
+          account.getId(),
+          StringUtils.hasText(account.getName()) ? account.getName() : "(unnamed)");
     }
+    requireField(
+        account,
+        account.getAdSetDailyBudget(),
+        "ad set daily budget",
+        FacebookWorkerValidationError.AD_SET_DAILY_BUDGET_MISSING);
+    requireField(
+        account,
+        account.getAdSetBillingEvent(),
+        "ad set billing event",
+        FacebookWorkerValidationError.AD_SET_BILLING_EVENT_MISSING);
+    requireField(
+        account,
+        account.getAdSetOptimizationGoal(),
+        "ad set optimization goal",
+        FacebookWorkerValidationError.AD_SET_OPTIMIZATION_GOAL_MISSING);
+    requireField(
+        account,
+        account.getAdSetDestinationType(),
+        "ad set destination type",
+        FacebookWorkerValidationError.AD_SET_DESTINATION_TYPE_MISSING);
+    requireField(
+        account,
+        account.getAdSetTargetCountry(),
+        "target country",
+        FacebookWorkerValidationError.TARGET_COUNTRY_MISSING);
+    recordWorkerValidationSuccess(account);
+  }
 
-    // Executa a operação validateWorkerConfiguration da integração Facebook Ads.
-    private void validateWorkerConfiguration(FacebookAccount account) {
-        requireField(account, account.getAccessToken(), "access token", FacebookWorkerValidationError.ACCESS_TOKEN_MISSING);
-        requireField(account, account.getAdAccountId(), "ad account id", FacebookWorkerValidationError.AD_ACCOUNT_ID_MISSING);
-        if (!StringUtils.hasText(account.getDefaultWebsiteUrl()) && !StringUtils.hasText(account.getDefaultLeadGenFormId())) {
-            log.warn(
-                "Facebook worker configuration for account id={} name='{}' is missing both default website URL and default lead form ID; creatives without overrides will be skipped.",
-                account.getId(),
-                StringUtils.hasText(account.getName()) ? account.getName() : "(unnamed)"
-            );
-        }
-        requireField(
-            account,
-            account.getAdSetDailyBudget(),
-            "ad set daily budget",
-            FacebookWorkerValidationError.AD_SET_DAILY_BUDGET_MISSING
-        );
-        requireField(
-            account,
-            account.getAdSetBillingEvent(),
-            "ad set billing event",
-            FacebookWorkerValidationError.AD_SET_BILLING_EVENT_MISSING
-        );
-        requireField(
-            account,
-            account.getAdSetOptimizationGoal(),
-            "ad set optimization goal",
-            FacebookWorkerValidationError.AD_SET_OPTIMIZATION_GOAL_MISSING
-        );
-        requireField(
-            account,
-            account.getAdSetDestinationType(),
-            "ad set destination type",
-            FacebookWorkerValidationError.AD_SET_DESTINATION_TYPE_MISSING
-        );
-        requireField(
-            account,
-            account.getAdSetTargetCountry(),
-            "target country",
-            FacebookWorkerValidationError.TARGET_COUNTRY_MISSING
-        );
-        recordWorkerValidationSuccess(account);
+  private void requireField(
+      FacebookAccount account,
+      String value,
+      String fieldDescription,
+      FacebookWorkerValidationError error) {
+    if (StringUtils.hasText(value)) {
+      return;
     }
+    log.warn(
+        "Facebook worker configuration validation failed for account id={} name='{}': missing {} (code={}).",
+        account.getId(),
+        StringUtils.hasText(account.getName()) ? account.getName() : "(unnamed)",
+        fieldDescription,
+        error.code());
+    recordWorkerValidationFailure(account, error);
+    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.apiMessage());
+  }
 
-    private void requireField(
-        FacebookAccount account,
-        String value,
-        String fieldDescription,
-        FacebookWorkerValidationError error
-    ) {
-        if (StringUtils.hasText(value)) {
-            return;
-        }
-        log.warn(
-            "Facebook worker configuration validation failed for account id={} name='{}': missing {} (code={}).",
-            account.getId(),
-            StringUtils.hasText(account.getName()) ? account.getName() : "(unnamed)",
-            fieldDescription,
-            error.code()
-        );
-        recordWorkerValidationFailure(account, error);
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.apiMessage());
+  // Executa a operação recordWorkerValidationFailure da integração Facebook Ads.
+  private void recordWorkerValidationFailure(
+      FacebookAccount account, FacebookWorkerValidationError error) {
+    LocalDateTime now = LocalDateTime.now();
+    account.setWorkerLastValidationAt(now);
+    account.setWorkerLastValidationErrorCode(error.code());
+    account.setWorkerLastValidationErrorDetail(error.apiMessage());
+    repository.save(account);
+  }
+
+  // Executa a operação recordWorkerValidationSuccess da integração Facebook Ads.
+  private void recordWorkerValidationSuccess(FacebookAccount account) {
+    LocalDateTime now = LocalDateTime.now();
+    account.setWorkerLastValidationAt(now);
+    if (account.getWorkerLastValidationErrorCode() != null
+        || account.getWorkerLastValidationErrorDetail() != null) {
+      account.setWorkerLastValidationErrorCode(null);
+      account.setWorkerLastValidationErrorDetail(null);
     }
+    repository.save(account);
+  }
 
-    // Executa a operação recordWorkerValidationFailure da integração Facebook Ads.
-    private void recordWorkerValidationFailure(FacebookAccount account, FacebookWorkerValidationError error) {
-        LocalDateTime now = LocalDateTime.now();
-        account.setWorkerLastValidationAt(now);
-        account.setWorkerLastValidationErrorCode(error.code());
-        account.setWorkerLastValidationErrorDetail(error.apiMessage());
-        repository.save(account);
+  // Executa a operação trim da integração Facebook Ads.
+  private static String trim(String value) {
+    return value == null ? null : value.trim();
+  }
+
+  // Executa a operação trimToNull da integração Facebook Ads.
+  private static String trimToNull(String value) {
+    if (value == null) {
+      return null;
     }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
+  }
 
-    // Executa a operação recordWorkerValidationSuccess da integração Facebook Ads.
-    private void recordWorkerValidationSuccess(FacebookAccount account) {
-        LocalDateTime now = LocalDateTime.now();
-        account.setWorkerLastValidationAt(now);
-        if (
-            account.getWorkerLastValidationErrorCode() != null ||
-            account.getWorkerLastValidationErrorDetail() != null
-        ) {
-            account.setWorkerLastValidationErrorCode(null);
-            account.setWorkerLastValidationErrorDetail(null);
-        }
-        repository.save(account);
+  // Executa a operação validateRevalidationPrerequisites da integração Facebook Ads.
+  private void validateRevalidationPrerequisites(FacebookAccount account) {
+    if (!StringUtils.hasText(account.getAccessToken())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Conta sem token configurado para gerar um novo acesso");
     }
-
-    // Executa a operação trim da integração Facebook Ads.
-    private static String trim(String value) {
-        return value == null ? null : value.trim();
+    if (!StringUtils.hasText(account.getAppId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Informe o App ID antes de gerar um novo token");
     }
-
-    // Executa a operação trimToNull da integração Facebook Ads.
-    private static String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
+    if (!StringUtils.hasText(account.getAppSecret())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Informe o App Secret antes de gerar um novo token");
     }
+  }
 
-    // Executa a operação validateRevalidationPrerequisites da integração Facebook Ads.
-    private void validateRevalidationPrerequisites(FacebookAccount account) {
-        if (!StringUtils.hasText(account.getAccessToken())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conta sem token configurado para gerar um novo acesso");
-        }
-        if (!StringUtils.hasText(account.getAppId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o App ID antes de gerar um novo token");
-        }
-        if (!StringUtils.hasText(account.getAppSecret())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o App Secret antes de gerar um novo token");
-        }
-    }
+  public record FacebookAccountRenewalCandidate(
+      Long id,
+      String name,
+      String appId,
+      String appSecret,
+      String accessToken,
+      LocalDateTime tokenExpiresAt,
+      String tokenRenewalStatus,
+      LocalDateTime tokenRenewalLastAttemptAt,
+      String tokenRenewalLastError) {}
 
-    public record FacebookAccountRenewalCandidate(
-        Long id,
-        String name,
-        String appId,
-        String appSecret,
-        String accessToken,
-        LocalDateTime tokenExpiresAt,
-        String tokenRenewalStatus,
-        LocalDateTime tokenRenewalLastAttemptAt,
-        String tokenRenewalLastError
-    ) {}
+  public record FacebookTokenRenewalRequest(
+      FacebookTokenRenewalStatus status,
+      String accessToken,
+      LocalDateTime tokenExpiresAt,
+      LocalDateTime renewedAt,
+      LocalDateTime attemptedAt,
+      String errorMessage) {}
 
-    public record FacebookTokenRenewalRequest(
-        FacebookTokenRenewalStatus status,
-        String accessToken,
-        LocalDateTime tokenExpiresAt,
-        LocalDateTime renewedAt,
-        LocalDateTime attemptedAt,
-        String errorMessage
-    ) {}
+  public record FacebookTokenRevalidationResponse(
+      FacebookTokenRenewalStatus status,
+      String accessToken,
+      LocalDateTime tokenExpiresAt,
+      LocalDateTime renewedAt,
+      LocalDateTime attemptedAt,
+      String errorMessage) {}
 
-    public record FacebookTokenRevalidationResponse(
-        FacebookTokenRenewalStatus status,
-        String accessToken,
-        LocalDateTime tokenExpiresAt,
-        LocalDateTime renewedAt,
-        LocalDateTime attemptedAt,
-        String errorMessage
-    ) {}
-
-    public record FacebookWorkerConfiguration(
-        Long accountId,
-        String adAccountId,
-        String accessToken,
-        String systemUserAccessToken,
-        String pixelOwnerBusinessId,
-        String appId,
-        String appSecret,
-        String defaultPageId,
-        String defaultInstagramActorId,
-        String defaultWebsiteUrl,
-        String defaultLeadGenFormId,
-        String defaultCreativeMessageTemplate,
-        String defaultCallToActionType,
-        String adSetDailyBudget,
-        String adSetBillingEvent,
-        String adSetOptimizationGoal,
-        String adSetDestinationType,
-        String adSetBidStrategy,
-        String adSetBidAmount,
-        String adSetTargetCountry
-    ) {}
+  public record FacebookWorkerConfiguration(
+      Long accountId,
+      String adAccountId,
+      String accessToken,
+      String systemUserAccessToken,
+      String pixelOwnerBusinessId,
+      String appId,
+      String appSecret,
+      String defaultPageId,
+      String defaultInstagramActorId,
+      String defaultWebsiteUrl,
+      String defaultLeadGenFormId,
+      String defaultCreativeMessageTemplate,
+      String defaultCallToActionType,
+      String adSetDailyBudget,
+      String adSetBillingEvent,
+      String adSetOptimizationGoal,
+      String adSetDestinationType,
+      String adSetBidStrategy,
+      String adSetBidAmount,
+      String adSetTargetCountry) {}
 }

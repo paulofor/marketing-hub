@@ -5,8 +5,8 @@ import java.util.List;
 
 /** Representa as listas de jobs v2 abertos e encerrados para um CNAE. */
 public record CandidateGeneratorCnaeJobsResponse(
-        String cnaeCode,
-        BigDecimal cnaeAiCostUsd,
-        Boolean cnaeUsedAi,
-        List<CandidateGeneratorCnaeJobSummary> openJobs,
-        List<CandidateGeneratorCnaeJobSummary> completedJobs) {}
+    String cnaeCode,
+    BigDecimal cnaeAiCostUsd,
+    Boolean cnaeUsedAi,
+    List<CandidateGeneratorCnaeJobSummary> openJobs,
+    List<CandidateGeneratorCnaeJobSummary> completedJobs) {}

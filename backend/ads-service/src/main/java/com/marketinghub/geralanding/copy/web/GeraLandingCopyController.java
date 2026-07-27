@@ -143,7 +143,8 @@ public class GeraLandingCopyController {
   @GetMapping("/experiments/{experimentId}/geralanding/copy/stage-executions/{idJob}")
   public ResponseEntity<RecordBackendCopyDetalheDto> detailStageExecution(
       @PathVariable Long experimentId, @PathVariable String idJob) {
-    RecordBackendCopyDetalheDto response = executionService.getStageExecutionDetail(experimentId, idJob);
+    RecordBackendCopyDetalheDto response =
+        executionService.getStageExecutionDetail(experimentId, idJob);
     return ResponseEntity.ok(response);
   }
 }

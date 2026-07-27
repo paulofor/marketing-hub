@@ -11,27 +11,27 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class FacebookAdsAdTrackingUtm {
-    @Id
-    @Column(name = "ad_id", length = 36, columnDefinition = "CHAR(36)")
-    private String adId;
+  @Id
+  @Column(name = "ad_id", length = 36, columnDefinition = "CHAR(36)")
+  private String adId;
 
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "ad_id", columnDefinition = "CHAR(36)")
-    private FacebookAdsAd ad;
+  @OneToOne
+  @MapsId
+  @JoinColumn(name = "ad_id", columnDefinition = "CHAR(36)")
+  private FacebookAdsAd ad;
 
-    @Column(name = "utm_source")
-    private String utmSource;
+  @Column(name = "utm_source")
+  private String utmSource;
 
-    @Column(name = "utm_medium")
-    private String utmMedium;
+  @Column(name = "utm_medium")
+  private String utmMedium;
 
-    @Column(name = "utm_campaign")
-    private String utmCampaign;
+  @Column(name = "utm_campaign")
+  private String utmCampaign;
 
-    @Column(name = "utm_content")
-    private String utmContent;
+  @Column(name = "utm_content")
+  private String utmContent;
 
-    @Column(name = "utm_term")
-    private String utmTerm;
+  @Column(name = "utm_term")
+  private String utmTerm;
 }

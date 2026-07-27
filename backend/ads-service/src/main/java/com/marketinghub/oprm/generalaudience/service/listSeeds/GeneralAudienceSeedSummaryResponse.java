@@ -6,13 +6,11 @@ import java.time.Instant;
 
 /** Contrato de saída resumido para seleção e listagem de sementes de público geral. */
 public record GeneralAudienceSeedSummaryResponse(
-        Long id,
-        String name,
-        String marketContext,
-        String country,
-        String language,
-        OprmGeneralAudienceSeedType seedType,
-        OprmGeneralAudienceSeedStatus status,
-        Instant updatedAt
-) {
-}
+    Long id,
+    String name,
+    String marketContext,
+    String country,
+    String language,
+    OprmGeneralAudienceSeedType seedType,
+    OprmGeneralAudienceSeedStatus status,
+    Instant updatedAt) {}

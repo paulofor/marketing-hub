@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/fashion-chat")
 public class FashionChatController {
-    private final FashionChatMessageService service;
+  private final FashionChatMessageService service;
 
-    /** Inicializa o controller com o serviço de conversa do Chat Moda. */
-    public FashionChatController(FashionChatMessageService service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com o serviço de conversa do Chat Moda. */
+  public FashionChatController(FashionChatMessageService service) {
+    this.service = service;
+  }
 
-    /** Recebe a pergunta da tela e devolve a resposta gerada pelo executor. */
-    @PostMapping("/messages")
-    public FashionChatMessageResponse answer(@RequestBody FashionChatMessageRequest request) {
-        return service.answer(request);
-    }
+  /** Recebe a pergunta da tela e devolve a resposta gerada pelo executor. */
+  @PostMapping("/messages")
+  public FashionChatMessageResponse answer(@RequestBody FashionChatMessageRequest request) {
+    return service.answer(request);
+  }
 }

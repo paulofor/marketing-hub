@@ -21,17 +21,17 @@ import com.marketinghub.salesvideo.dto.JobHeartbeatRequest;
 import com.marketinghub.salesvideo.dto.JobProgressRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotHistoryDto;
-import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoMontageRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
+import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.RetrySalesVideoJobRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoConversionEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
-import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
 import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
@@ -44,226 +44,233 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Fachada única do módulo Avatar Sales Video no backend.
- */
+/** Fachada única do módulo Avatar Sales Video no backend. */
 @Service
 public class SalesVideoService {
-    private final SalesVideoProfileService profileService;
-    private final SalesVideoJobService jobService;
-    private final LandingVideoSlotService slotService;
-    private final SalesVideoAssetService assetService;
-    private final SalesVideoCommercialInsightsService commercialInsightsService;
-    private final VideoProjectService videoProjectService;
+  private final SalesVideoProfileService profileService;
+  private final SalesVideoJobService jobService;
+  private final LandingVideoSlotService slotService;
+  private final SalesVideoAssetService assetService;
+  private final SalesVideoCommercialInsightsService commercialInsightsService;
+  private final VideoProjectService videoProjectService;
 
-    /** Inicializa a fachada com os componentes internos do módulo de vídeo. */
-    public SalesVideoService(SalesVideoProfileService profileService,
-                             SalesVideoJobService jobService,
-                             LandingVideoSlotService slotService,
-                             SalesVideoAssetService assetService,
-                             SalesVideoCommercialInsightsService commercialInsightsService,
-                             VideoProjectService videoProjectService) {
-        this.profileService = profileService;
-        this.jobService = jobService;
-        this.slotService = slotService;
-        this.assetService = assetService;
-        this.commercialInsightsService = commercialInsightsService;
-        this.videoProjectService = videoProjectService;
-    }
+  /** Inicializa a fachada com os componentes internos do módulo de vídeo. */
+  public SalesVideoService(
+      SalesVideoProfileService profileService,
+      SalesVideoJobService jobService,
+      LandingVideoSlotService slotService,
+      SalesVideoAssetService assetService,
+      SalesVideoCommercialInsightsService commercialInsightsService,
+      VideoProjectService videoProjectService) {
+    this.profileService = profileService;
+    this.jobService = jobService;
+    this.slotService = slotService;
+    this.assetService = assetService;
+    this.commercialInsightsService = commercialInsightsService;
+    this.videoProjectService = videoProjectService;
+  }
 
-    /** Lista projetos editáveis de vídeo do tenant atual. */
-    public List<VideoProjectDto> listVideoProjects() {
-        return videoProjectService.listProjects();
-    }
+  /** Lista projetos editáveis de vídeo do tenant atual. */
+  public List<VideoProjectDto> listVideoProjects() {
+    return videoProjectService.listProjects();
+  }
 
-    /** Cria um projeto editável de vídeo no estúdio. */
-    public VideoProjectDto createVideoProject(CreateVideoProjectRequest request) {
-        return videoProjectService.createProject(request);
-    }
+  /** Cria um projeto editável de vídeo no estúdio. */
+  public VideoProjectDto createVideoProject(CreateVideoProjectRequest request) {
+    return videoProjectService.createProject(request);
+  }
 
-    /** Consulta um projeto editável de vídeo. */
-    public VideoProjectDto getVideoProject(Long projectId) {
-        return videoProjectService.getProject(projectId);
-    }
+  /** Consulta um projeto editável de vídeo. */
+  public VideoProjectDto getVideoProject(Long projectId) {
+    return videoProjectService.getProject(projectId);
+  }
 
-    /** Atualiza um projeto editável de vídeo. */
-    public VideoProjectDto updateVideoProject(Long projectId, UpdateVideoProjectRequest request) {
-        return videoProjectService.updateProject(projectId, request);
-    }
+  /** Atualiza um projeto editável de vídeo. */
+  public VideoProjectDto updateVideoProject(Long projectId, UpdateVideoProjectRequest request) {
+    return videoProjectService.updateProject(projectId, request);
+  }
 
-    /** Cria um perfil de vídeo para o produto informado. */
-    public SalesVideoProfileDto createProfile(Long productId, CreateSalesVideoProfileRequest request) {
-        return profileService.createProfile(productId, request);
-    }
+  /** Cria um perfil de vídeo para o produto informado. */
+  public SalesVideoProfileDto createProfile(
+      Long productId, CreateSalesVideoProfileRequest request) {
+    return profileService.createProfile(productId, request);
+  }
 
-    /** Lista os perfis de vídeo de um produto. */
-    public List<SalesVideoProfileDto> listProfiles(Long productId) {
-        return profileService.listProfiles(productId);
-    }
+  /** Lista os perfis de vídeo de um produto. */
+  public List<SalesVideoProfileDto> listProfiles(Long productId) {
+    return profileService.listProfiles(productId);
+  }
 
-    /** Consulta um perfil de vídeo pelo identificador. */
-    public SalesVideoProfileDto getProfile(Long profileId) {
-        return profileService.getProfile(profileId);
-    }
+  /** Consulta um perfil de vídeo pelo identificador. */
+  public SalesVideoProfileDto getProfile(Long profileId) {
+    return profileService.getProfile(profileId);
+  }
 
-    /** Lista as versões de script do perfil. */
-    public List<SalesVideoScriptDto> listScripts(Long profileId) {
-        return profileService.listScripts(profileId);
-    }
+  /** Lista as versões de script do perfil. */
+  public List<SalesVideoScriptDto> listScripts(Long profileId) {
+    return profileService.listScripts(profileId);
+  }
 
-    /** Solicita a geração automática de script. */
-    public SalesVideoJobDto requestScriptGeneration(Long profileId, GenerateSalesVideoScriptRequest request) {
-        return profileService.requestScriptGeneration(profileId, request);
-    }
+  /** Solicita a geração automática de script. */
+  public SalesVideoJobDto requestScriptGeneration(
+      Long profileId, GenerateSalesVideoScriptRequest request) {
+    return profileService.requestScriptGeneration(profileId, request);
+  }
 
-    /** Aprova manualmente uma versão de script. */
-    public SalesVideoScriptDto approveScript(Long profileId, ApproveSalesVideoScriptRequest request) {
-        return profileService.approveScript(profileId, request);
-    }
+  /** Aprova manualmente uma versão de script. */
+  public SalesVideoScriptDto approveScript(Long profileId, ApproveSalesVideoScriptRequest request) {
+    return profileService.approveScript(profileId, request);
+  }
 
-    /** Solicita a renderização do vídeo aprovado. */
-    public SalesVideoJobDto requestRender(Long profileId, RequestVideoRenderRequest request) {
-        return profileService.requestRender(profileId, request);
-    }
+  /** Solicita a renderização do vídeo aprovado. */
+  public SalesVideoJobDto requestRender(Long profileId, RequestVideoRenderRequest request) {
+    return profileService.requestRender(profileId, request);
+  }
 
-    /** Atualiza o checklist de compliance do perfil. */
-    public SalesVideoProfileDto updateCompliance(Long profileId, UpdateSalesVideoComplianceRequest request) {
-        return profileService.updateCompliance(profileId, request);
-    }
+  /** Atualiza o checklist de compliance do perfil. */
+  public SalesVideoProfileDto updateCompliance(
+      Long profileId, UpdateSalesVideoComplianceRequest request) {
+    return profileService.updateCompliance(profileId, request);
+  }
 
-    /** Consulta o rollout de vídeo do tenant atual. */
-    public SalesVideoRolloutStatusDto getTenantRolloutStatus() {
-        return profileService.getTenantRolloutStatus();
-    }
+  /** Consulta o rollout de vídeo do tenant atual. */
+  public SalesVideoRolloutStatusDto getTenantRolloutStatus() {
+    return profileService.getTenantRolloutStatus();
+  }
 
-    /** Consulta o rollout de vídeo de um perfil. */
-    public SalesVideoRolloutStatusDto getProfileRolloutStatus(Long profileId) {
-        return profileService.getRolloutStatus(profileId);
-    }
+  /** Consulta o rollout de vídeo de um perfil. */
+  public SalesVideoRolloutStatusDto getProfileRolloutStatus(Long profileId) {
+    return profileService.getRolloutStatus(profileId);
+  }
 
-    /** Lista jobs filtrados por provider, status e tipo. */
-    public List<SalesVideoJobDto> findJobs(SalesVideoProviderFamily providerFamily,
-                                           SalesVideoStatus status,
-                                           SalesVideoJobType jobType,
-                                           int limit) {
-        return jobService.findJobs(providerFamily, status, jobType, limit);
-    }
+  /** Lista jobs filtrados por provider, status e tipo. */
+  public List<SalesVideoJobDto> findJobs(
+      SalesVideoProviderFamily providerFamily,
+      SalesVideoStatus status,
+      SalesVideoJobType jobType,
+      int limit) {
+    return jobService.findJobs(providerFamily, status, jobType, limit);
+  }
 
-    /** Lista os jobs de um perfil. */
-    public List<SalesVideoJobDto> listJobsByProfile(Long profileId) {
-        return jobService.listJobsByProfile(profileId);
-    }
+  /** Lista os jobs de um perfil. */
+  public List<SalesVideoJobDto> listJobsByProfile(Long profileId) {
+    return jobService.listJobsByProfile(profileId);
+  }
 
-    /** Lista todos os jobs de vídeo de um produto. */
-    public List<SalesVideoJobDto> listJobsByProduct(Long productId) {
-        return jobService.listJobsByProduct(productId);
-    }
+  /** Lista todos os jobs de vídeo de um produto. */
+  public List<SalesVideoJobDto> listJobsByProduct(Long productId) {
+    return jobService.listJobsByProduct(productId);
+  }
 
-    /** Consulta um job pelo identificador. */
-    public SalesVideoJobDto getJob(Long jobId) {
-        return jobService.getJob(jobId);
-    }
+  /** Consulta um job pelo identificador. */
+  public SalesVideoJobDto getJob(Long jobId) {
+    return jobService.getJob(jobId);
+  }
 
-    /** Lista a timeline de eventos de um job. */
-    public List<SalesVideoJobEventDto> getJobEvents(Long jobId) {
-        return jobService.getJobEvents(jobId);
-    }
+  /** Lista a timeline de eventos de um job. */
+  public List<SalesVideoJobEventDto> getJobEvents(Long jobId) {
+    return jobService.getJobEvents(jobId);
+  }
 
-    /** Reprocessa um job elegível. */
-    public SalesVideoJobDto retry(Long jobId, RetrySalesVideoJobRequest request) {
-        return jobService.retry(jobId, request);
-    }
+  /** Reprocessa um job elegível. */
+  public SalesVideoJobDto retry(Long jobId, RetrySalesVideoJobRequest request) {
+    return jobService.retry(jobId, request);
+  }
 
-    /** Solicita pós-produção de um vídeo bruto já renderizado. */
-    public SalesVideoJobDto requestPostProduction(Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
-        return jobService.requestPostProduction(sourceJobId, request);
-    }
+  /** Solicita pós-produção de um vídeo bruto já renderizado. */
+  public SalesVideoJobDto requestPostProduction(
+      Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
+    return jobService.requestPostProduction(sourceJobId, request);
+  }
 
-    /** Solicita montagem de múltiplos clipes prontos em um vídeo único. */
-    public SalesVideoJobDto requestMontage(RequestSalesVideoMontageRequest request) {
-        return jobService.requestMontage(request);
-    }
+  /** Solicita montagem de múltiplos clipes prontos em um vídeo único. */
+  public SalesVideoJobDto requestMontage(RequestSalesVideoMontageRequest request) {
+    return jobService.requestMontage(request);
+  }
 
-    /** Faz claim operacional de um job por um worker. */
-    public SalesVideoJobDto claimJob(Long jobId, JobClaimRequest request) {
-        return jobService.claimJob(jobId, request);
-    }
+  /** Faz claim operacional de um job por um worker. */
+  public SalesVideoJobDto claimJob(Long jobId, JobClaimRequest request) {
+    return jobService.claimJob(jobId, request);
+  }
 
-    /** Registra heartbeat operacional de um job. */
-    public SalesVideoJobDto heartbeat(Long jobId, JobHeartbeatRequest request) {
-        return jobService.heartbeat(jobId, request);
-    }
+  /** Registra heartbeat operacional de um job. */
+  public SalesVideoJobDto heartbeat(Long jobId, JobHeartbeatRequest request) {
+    return jobService.heartbeat(jobId, request);
+  }
 
-    /** Registra progresso operacional de um job. */
-    public SalesVideoJobDto progress(Long jobId, JobProgressRequest request) {
-        return jobService.progress(jobId, request);
-    }
+  /** Registra progresso operacional de um job. */
+  public SalesVideoJobDto progress(Long jobId, JobProgressRequest request) {
+    return jobService.progress(jobId, request);
+  }
 
-    /** Conclui um job com sucesso. */
-    public SalesVideoJobDto complete(Long jobId, JobCompletionRequest request) {
-        return jobService.complete(jobId, request);
-    }
+  /** Conclui um job com sucesso. */
+  public SalesVideoJobDto complete(Long jobId, JobCompletionRequest request) {
+    return jobService.complete(jobId, request);
+  }
 
-    /** Marca um job como falho. */
-    public SalesVideoJobDto fail(Long jobId, JobFailureRequest request) {
-        return jobService.fail(jobId, request);
-    }
+  /** Marca um job como falho. */
+  public SalesVideoJobDto fail(Long jobId, JobFailureRequest request) {
+    return jobService.fail(jobId, request);
+  }
 
-    /** Marca um job expirado como falho. */
-    public SalesVideoJobDto expire(Long jobId, JobExpirationRequest request) {
-        return jobService.expire(jobId, request);
-    }
+  /** Marca um job expirado como falho. */
+  public SalesVideoJobDto expire(Long jobId, JobExpirationRequest request) {
+    return jobService.expire(jobId, request);
+  }
 
-    /** Armazena um asset final ou auxiliar de vídeo. */
-    public Asset storeAsset(MultipartFile file, AssetType assetType, MediaProvider provider, String metadata)
-            throws IOException {
-        return assetService.store(file, assetType, provider, metadata);
-    }
+  /** Armazena um asset final ou auxiliar de vídeo. */
+  public Asset storeAsset(
+      MultipartFile file, AssetType assetType, MediaProvider provider, String metadata)
+      throws IOException {
+    return assetService.store(file, assetType, provider, metadata);
+  }
 
-    /** Lista slots de vídeo de uma landing page. */
-    public List<LandingVideoSlotDto> listSlots(Long landingId) {
-        return slotService.list(landingId);
-    }
+  /** Lista slots de vídeo de uma landing page. */
+  public List<LandingVideoSlotDto> listSlots(Long landingId) {
+    return slotService.list(landingId);
+  }
 
-    /** Cria um slot de vídeo na landing page. */
-    public LandingVideoSlotDto createSlot(Long landingId, CreateLandingVideoSlotRequest request) {
-        return slotService.create(landingId, request);
-    }
+  /** Cria um slot de vídeo na landing page. */
+  public LandingVideoSlotDto createSlot(Long landingId, CreateLandingVideoSlotRequest request) {
+    return slotService.create(landingId, request);
+  }
 
-    /** Atualiza a configuração de um slot de vídeo. */
-    public LandingVideoSlotDto updateSlot(Long landingId, Long slotId, UpdateLandingVideoSlotRequest request) {
-        return slotService.update(landingId, slotId, request);
-    }
+  /** Atualiza a configuração de um slot de vídeo. */
+  public LandingVideoSlotDto updateSlot(
+      Long landingId, Long slotId, UpdateLandingVideoSlotRequest request) {
+    return slotService.update(landingId, slotId, request);
+  }
 
-    /** Lista o histórico de alterações de um slot de vídeo. */
-    public List<LandingVideoSlotHistoryDto> slotHistory(Long landingId, Long slotId) {
-        return slotService.history(landingId, slotId);
-    }
+  /** Lista o histórico de alterações de um slot de vídeo. */
+  public List<LandingVideoSlotHistoryDto> slotHistory(Long landingId, Long slotId) {
+    return slotService.history(landingId, slotId);
+  }
 
-    /** Cria um playbook comercial para o perfil de vídeo. */
-    public SalesVideoCommercialPlaybookDto createPlaybook(Long profileId,
-                                                          CreateSalesVideoCommercialPlaybookRequest request) {
-        return commercialInsightsService.createPlaybook(profileId, request);
-    }
+  /** Cria um playbook comercial para o perfil de vídeo. */
+  public SalesVideoCommercialPlaybookDto createPlaybook(
+      Long profileId, CreateSalesVideoCommercialPlaybookRequest request) {
+    return commercialInsightsService.createPlaybook(profileId, request);
+  }
 
-    /** Lista os playbooks comerciais do perfil. */
-    public List<SalesVideoCommercialPlaybookDto> listPlaybooks(Long profileId) {
-        return commercialInsightsService.listPlaybooks(profileId);
-    }
+  /** Lista os playbooks comerciais do perfil. */
+  public List<SalesVideoCommercialPlaybookDto> listPlaybooks(Long profileId) {
+    return commercialInsightsService.listPlaybooks(profileId);
+  }
 
-    /** Registra evento comercial ou conversão associada ao vídeo. */
-    public SalesVideoConversionEventDto createConversionEvent(Long profileId,
-                                                              CreateSalesVideoConversionEventRequest request) {
-        return commercialInsightsService.createConversionEvent(profileId, request);
-    }
+  /** Registra evento comercial ou conversão associada ao vídeo. */
+  public SalesVideoConversionEventDto createConversionEvent(
+      Long profileId, CreateSalesVideoConversionEventRequest request) {
+    return commercialInsightsService.createConversionEvent(profileId, request);
+  }
 
-    /** Resume a performance comercial do perfil em uma janela de tempo. */
-    public SalesVideoPerformanceSummaryDto summarizePerformance(Long profileId, Instant from, Instant to) {
-        return commercialInsightsService.summarizePerformance(profileId, from, to);
-    }
+  /** Resume a performance comercial do perfil em uma janela de tempo. */
+  public SalesVideoPerformanceSummaryDto summarizePerformance(
+      Long profileId, Instant from, Instant to) {
+    return commercialInsightsService.summarizePerformance(profileId, from, to);
+  }
 
-    /** Resume a pontuação global dos provedores de vídeo do tenant atual. */
-    public List<SalesVideoProviderScoreDto> summarizeProviderScores() {
-        return commercialInsightsService.summarizeProviderScores();
-    }
+  /** Resume a pontuação global dos provedores de vídeo do tenant atual. */
+  public List<SalesVideoProviderScoreDto> summarizeProviderScores() {
+    return commercialInsightsService.summarizeProviderScores();
+  }
 }

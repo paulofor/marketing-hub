@@ -22,25 +22,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsável por iniciar a etapa landing-page-deliverables no GeraLanding e expor consultas/callbacks da etapa. */
+/**
+ * Responsável por iniciar a etapa landing-page-deliverables no GeraLanding e expor
+ * consultas/callbacks da etapa.
+ */
 @RestController
 @RequestMapping("/api")
 public class GeraLandingDeliverablesController {
-  private static final Logger LOGGER = LoggerFactory.getLogger(GeraLandingDeliverablesController.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(GeraLandingDeliverablesController.class);
   private static final String STAGE_CODE = "landing-page-deliverables";
 
   private final GeraLandingDeliverablesStageService stageService;
   private final GeraLandingDeliverablesStageExecutionService executionService;
 
   /** Inicializa o controller com os serviços de início e execução da etapa deliverables. */
-  public GeraLandingDeliverablesController(GeraLandingDeliverablesStageService stageService, GeraLandingDeliverablesStageExecutionService executionService) {
+  public GeraLandingDeliverablesController(
+      GeraLandingDeliverablesStageService stageService,
+      GeraLandingDeliverablesStageExecutionService executionService) {
     this.stageService = stageService;
     this.executionService = executionService;
   }
 
   /** Registra uma execução inicial da etapa landing-page-deliverables. */
   @PostMapping("/experiments/{experimentId}/geralanding/deliverables/start")
-  public ResponseEntity<GeraLandingDeliverablesStartResponse> start(@PathVariable Long experimentId) {
+  public ResponseEntity<GeraLandingDeliverablesStartResponse> start(
+      @PathVariable Long experimentId) {
     GeraLandingDeliverablesStartResponse response = stageService.start(experimentId);
     return ResponseEntity.accepted().body(response);
   }
@@ -61,9 +68,13 @@ public class GeraLandingDeliverablesController {
     return executionService.listPending(STAGE_CODE);
   }
 
-  /** Marca uma execução como em processamento para evitar recaptura enquanto o Worker AI chama a OpenAI. */
+  /**
+   * Marca uma execução como em processamento para evitar recaptura enquanto o Worker AI chama a
+   * OpenAI.
+   */
   @PostMapping("/internal/geralanding/deliverables/stage-executions/{idJob}/running")
-  public ResponseEntity<Void> running(@PathVariable String idJob, @RequestBody(required = false) RecebeDispatchRequest payload) {
+  public ResponseEntity<Void> running(
+      @PathVariable String idJob, @RequestBody(required = false) RecebeDispatchRequest payload) {
     LOGGER.info(
         "[GeraLanding][Deliverables] Marcando execução em processamento idJob={} experimentId={} stageCode={}",
         idJob,

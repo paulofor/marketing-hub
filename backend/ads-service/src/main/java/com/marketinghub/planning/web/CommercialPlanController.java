@@ -29,78 +29,87 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/planning/commercial-plans")
 public class CommercialPlanController {
-    private final CommercialPlanService service;
-    private final CommercialPlanWeeklyExperimentService weeklyExperimentService;
-    private final CommercialPlanMapper mapper;
+  private final CommercialPlanService service;
+  private final CommercialPlanWeeklyExperimentService weeklyExperimentService;
+  private final CommercialPlanMapper mapper;
 
-    public CommercialPlanController(
-            CommercialPlanService service,
-            CommercialPlanWeeklyExperimentService weeklyExperimentService,
-            CommercialPlanMapper mapper) {
-        this.service = service;
-        this.weeklyExperimentService = weeklyExperimentService;
-        this.mapper = mapper;
-    }
+  public CommercialPlanController(
+      CommercialPlanService service,
+      CommercialPlanWeeklyExperimentService weeklyExperimentService,
+      CommercialPlanMapper mapper) {
+    this.service = service;
+    this.weeklyExperimentService = weeklyExperimentService;
+    this.mapper = mapper;
+  }
 
-    /** Cria um plano comercial de primeira venda. */
-    @PostMapping
-    public CommercialPlanDto create(@RequestBody CreateCommercialPlanRequest request) {
-        var plan = service.create(request);
-        return mapper.toDto(plan, service.listMilestones(plan.getId()), service.listSimulations(plan.getId()));
-    }
+  /** Cria um plano comercial de primeira venda. */
+  @PostMapping
+  public CommercialPlanDto create(@RequestBody CreateCommercialPlanRequest request) {
+    var plan = service.create(request);
+    return mapper.toDto(
+        plan, service.listMilestones(plan.getId()), service.listSimulations(plan.getId()));
+  }
 
-    /** Lista planos comerciais com filtro opcional por status. */
-    @GetMapping
-    public List<CommercialPlanDto> list(@RequestParam(required = false) CommercialPlanStatus status) {
-        return service.list(status).stream()
-                .map(plan -> mapper.toDto(plan, service.listMilestones(plan.getId()), service.listSimulations(plan.getId())))
-                .toList();
-    }
+  /** Lista planos comerciais com filtro opcional por status. */
+  @GetMapping
+  public List<CommercialPlanDto> list(@RequestParam(required = false) CommercialPlanStatus status) {
+    return service.list(status).stream()
+        .map(
+            plan ->
+                mapper.toDto(
+                    plan,
+                    service.listMilestones(plan.getId()),
+                    service.listSimulations(plan.getId())))
+        .toList();
+  }
 
-    /** Busca o detalhe de um plano comercial. */
-    @GetMapping("/{id}")
-    public CommercialPlanDto get(@PathVariable Long id) {
-        return mapper.toDto(service.getPlan(id), service.listMilestones(id), service.listSimulations(id));
-    }
+  /** Busca o detalhe de um plano comercial. */
+  @GetMapping("/{id}")
+  public CommercialPlanDto get(@PathVariable Long id) {
+    return mapper.toDto(
+        service.getPlan(id), service.listMilestones(id), service.listSimulations(id));
+  }
 
-    /** Lista os experimentos de cada semana do mes de referencia e os objetivos planejados para a semana seguinte. */
-    @GetMapping("/{id}/weeks")
-    public List<CommercialPlanWeekDto> listWeeks(
-            @PathVariable Long id,
-            @RequestParam(required = false) String referenceMonth) {
-        return weeklyExperimentService.listWeeks(id, referenceMonth);
-    }
+  /**
+   * Lista os experimentos de cada semana do mes de referencia e os objetivos planejados para a
+   * semana seguinte.
+   */
+  @GetMapping("/{id}/weeks")
+  public List<CommercialPlanWeekDto> listWeeks(
+      @PathVariable Long id, @RequestParam(required = false) String referenceMonth) {
+    return weeklyExperimentService.listWeeks(id, referenceMonth);
+  }
 
-    /** Atualiza os objetivos planejados para a semana seguinte ao card informado. */
-    @PutMapping("/{id}/weeks/{weekNumber}/objectives")
-    public List<CommercialPlanWeekObjectiveDto> updateWeekObjectives(
-            @PathVariable Long id,
-            @PathVariable Integer weekNumber,
-            @RequestBody UpdateCommercialPlanWeekObjectivesRequest request) {
-        return weeklyExperimentService.updateObjectives(id, weekNumber, request);
-    }
+  /** Atualiza os objetivos planejados para a semana seguinte ao card informado. */
+  @PutMapping("/{id}/weeks/{weekNumber}/objectives")
+  public List<CommercialPlanWeekObjectiveDto> updateWeekObjectives(
+      @PathVariable Long id,
+      @PathVariable Integer weekNumber,
+      @RequestBody UpdateCommercialPlanWeekObjectivesRequest request) {
+    return weeklyExperimentService.updateObjectives(id, weekNumber, request);
+  }
 
-    /** Atualiza um plano comercial existente. */
-    @PutMapping("/{id}")
-    public CommercialPlanDto update(@PathVariable Long id, @RequestBody UpdateCommercialPlanRequest request) {
-        var plan = service.update(id, request);
-        return mapper.toDto(plan, service.listMilestones(id), service.listSimulations(id));
-    }
+  /** Atualiza um plano comercial existente. */
+  @PutMapping("/{id}")
+  public CommercialPlanDto update(
+      @PathVariable Long id, @RequestBody UpdateCommercialPlanRequest request) {
+    var plan = service.update(id, request);
+    return mapper.toDto(plan, service.listMilestones(id), service.listSimulations(id));
+  }
 
-    /** Atualiza um marco comercial do plano. */
-    @PatchMapping("/{planId}/milestones/{milestoneId}")
-    public CommercialPlanMilestoneDto updateMilestone(
-            @PathVariable Long planId,
-            @PathVariable Long milestoneId,
-            @RequestBody UpdateCommercialPlanMilestoneRequest request) {
-        return mapper.toMilestoneDto(service.updateMilestone(planId, milestoneId, request));
-    }
+  /** Atualiza um marco comercial do plano. */
+  @PatchMapping("/{planId}/milestones/{milestoneId}")
+  public CommercialPlanMilestoneDto updateMilestone(
+      @PathVariable Long planId,
+      @PathVariable Long milestoneId,
+      @RequestBody UpdateCommercialPlanMilestoneRequest request) {
+    return mapper.toMilestoneDto(service.updateMilestone(planId, milestoneId, request));
+  }
 
-    /** Gera uma simulacao manual assistida para o plano. */
-    @PostMapping("/{planId}/simulations")
-    public CommercialPlanSimulationDto simulate(
-            @PathVariable Long planId,
-            @RequestBody CreateCommercialPlanSimulationRequest request) {
-        return mapper.toSimulationDto(service.simulate(planId, request));
-    }
+  /** Gera uma simulacao manual assistida para o plano. */
+  @PostMapping("/{planId}/simulations")
+  public CommercialPlanSimulationDto simulate(
+      @PathVariable Long planId, @RequestBody CreateCommercialPlanSimulationRequest request) {
+    return mapper.toSimulationDto(service.simulate(planId, request));
+  }
 }

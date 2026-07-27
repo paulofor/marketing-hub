@@ -16,16 +16,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Endpoints relacionados à configuração do prompt de geração de imagens do Lead Portal.
- */
+/** Endpoints relacionados à configuração do prompt de geração de imagens do Lead Portal. */
 @RestController
 @RequestMapping("/api/lead-portal/image-prompts")
 public class LeadPortalImagePromptController {
 
-    private static final String DEFAULT_IMAGE_MODEL = "gpt-image-1";
-    private static final int DEFAULT_BATCH_SIZE = 6;
-    private static final String DEFAULT_TEMPLATE = """
+  private static final String DEFAULT_IMAGE_MODEL = "gpt-image-1";
+  private static final int DEFAULT_BATCH_SIZE = 6;
+  private static final String DEFAULT_TEMPLATE =
+"""
 Gere materiais de divulgação premium em português para {{profissional}}, um(a) {{atividade}} que atua em {{local}}.
 Requisitos obrigatórios:
 1. Visual bonito, atraente e com atmosfera profissional, destacando o universo de {{atividade}}.
@@ -38,52 +37,68 @@ Dados coletados no formulário. Use-os para definir copy, cenário, elementos vi
 {{dados_json}}
 """;
 
-    private final LeadPortalFlowService flowService;
-    private final LeadPortalFlowMapper mapper;
-    private final LeadPortalPublicUrlResolver publicUrlResolver;
+  private final LeadPortalFlowService flowService;
+  private final LeadPortalFlowMapper mapper;
+  private final LeadPortalPublicUrlResolver publicUrlResolver;
 
-    public LeadPortalImagePromptController(
-            LeadPortalFlowService flowService,
-            LeadPortalFlowMapper mapper,
-            LeadPortalPublicUrlResolver publicUrlResolver) {
-        this.flowService = flowService;
-        this.mapper = mapper;
-        this.publicUrlResolver = publicUrlResolver;
-    }
+  public LeadPortalImagePromptController(
+      LeadPortalFlowService flowService,
+      LeadPortalFlowMapper mapper,
+      LeadPortalPublicUrlResolver publicUrlResolver) {
+    this.flowService = flowService;
+    this.mapper = mapper;
+    this.publicUrlResolver = publicUrlResolver;
+  }
 
-    @GetMapping("/metadata")
-    public LeadPortalImagePromptMetadataDto metadata() {
-        return new LeadPortalImagePromptMetadataDto(
-                DEFAULT_TEMPLATE,
-                DEFAULT_IMAGE_MODEL,
-                DEFAULT_BATCH_SIZE,
-                placeholderCatalog());
-    }
+  @GetMapping("/metadata")
+  public LeadPortalImagePromptMetadataDto metadata() {
+    return new LeadPortalImagePromptMetadataDto(
+        DEFAULT_TEMPLATE, DEFAULT_IMAGE_MODEL, DEFAULT_BATCH_SIZE, placeholderCatalog());
+  }
 
-    @PutMapping("/{flowId}")
-    public LeadPortalFlowDto update(
-            @PathVariable("flowId") Long flowId,
-            @RequestBody UpdateLeadPortalImagePromptRequest request) {
-        LeadPortalFlow updated = flowService.updateImagePrompt(flowId, request);
-        LeadPortalFlowDto dto = mapper.toDto(updated);
-        dto.setPublicUrl(publicUrlResolver.resolve(updated));
-        return dto;
-    }
+  @PutMapping("/{flowId}")
+  public LeadPortalFlowDto update(
+      @PathVariable("flowId") Long flowId,
+      @RequestBody UpdateLeadPortalImagePromptRequest request) {
+    LeadPortalFlow updated = flowService.updateImagePrompt(flowId, request);
+    LeadPortalFlowDto dto = mapper.toDto(updated);
+    dto.setPublicUrl(publicUrlResolver.resolve(updated));
+    return dto;
+  }
 
-    private List<LeadPortalImagePromptPlaceholderDto> placeholderCatalog() {
-        return List.of(
-                new LeadPortalImagePromptPlaceholderDto("{{profissional}}", "Nome informado no formulário.", "Pablito"),
-                new LeadPortalImagePromptPlaceholderDto("{{nome}}", "Alias direto para o campo de nome do formulário.", "Pablito"),
-                new LeadPortalImagePromptPlaceholderDto("{{atividade}}", "Profissão derivada do slug do fluxo simples.", "personal trainer"),
-                new LeadPortalImagePromptPlaceholderDto("{{studio}}", "Nome do estúdio ou empresa.", "Studio Pablito"),
-                new LeadPortalImagePromptPlaceholderDto("{{local}}", "Cidade/bairro onde o profissional atende.", "Niterói - RJ"),
-                new LeadPortalImagePromptPlaceholderDto("{{contato}}", "Resumo do melhor canal de contato.", "WhatsApp: (21) 99290-2732"),
-                new LeadPortalImagePromptPlaceholderDto("{{servicos}}", "Lista resumida dos serviços principais.", "Treinos funcionais, HIIT"),
-                new LeadPortalImagePromptPlaceholderDto("{{batch_size}}", "Quantidade final de imagens que será solicitada ao worker.", String.valueOf(DEFAULT_BATCH_SIZE)),
-                new LeadPortalImagePromptPlaceholderDto("{{dados_json}}", "Bloco JSON com todas as respostas saneadas.", "{\\n  \"atividade\": \"personal trainer\"... }"),
-                new LeadPortalImagePromptPlaceholderDto("{{respostas.whatsapp}}", "Qualquer resposta individual usando o prefixo respostas.", "(21) 99290-2732"),
-                new LeadPortalImagePromptPlaceholderDto("{{resposta.instagram}}", "Respostas enviadas com o prefixo resposta.", "@meuteste"),
-                new LeadPortalImagePromptPlaceholderDto("{{resposta.especialidade}}", "Outro exemplo de campo personalizado com prefixo resposta.", "Alongamento")
-        );
-    }
+  private List<LeadPortalImagePromptPlaceholderDto> placeholderCatalog() {
+    return List.of(
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{profissional}}", "Nome informado no formulário.", "Pablito"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{nome}}", "Alias direto para o campo de nome do formulário.", "Pablito"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{atividade}}", "Profissão derivada do slug do fluxo simples.", "personal trainer"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{studio}}", "Nome do estúdio ou empresa.", "Studio Pablito"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{local}}", "Cidade/bairro onde o profissional atende.", "Niterói - RJ"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{contato}}", "Resumo do melhor canal de contato.", "WhatsApp: (21) 99290-2732"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{servicos}}", "Lista resumida dos serviços principais.", "Treinos funcionais, HIIT"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{batch_size}}",
+            "Quantidade final de imagens que será solicitada ao worker.",
+            String.valueOf(DEFAULT_BATCH_SIZE)),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{dados_json}}",
+            "Bloco JSON com todas as respostas saneadas.",
+            "{\\n  \"atividade\": \"personal trainer\"... }"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{respostas.whatsapp}}",
+            "Qualquer resposta individual usando o prefixo respostas.",
+            "(21) 99290-2732"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{resposta.instagram}}", "Respostas enviadas com o prefixo resposta.", "@meuteste"),
+        new LeadPortalImagePromptPlaceholderDto(
+            "{{resposta.especialidade}}",
+            "Outro exemplo de campo personalizado com prefixo resposta.",
+            "Alongamento"));
+  }
 }

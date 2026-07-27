@@ -6,5 +6,5 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface DifferentiatedTechnologyMapper {
-    DifferentiatedTechnologyDto toDto(DifferentiatedTechnology technology);
+  DifferentiatedTechnologyDto toDto(DifferentiatedTechnology technology);
 }

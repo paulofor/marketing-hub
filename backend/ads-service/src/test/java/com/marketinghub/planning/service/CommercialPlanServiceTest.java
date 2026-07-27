@@ -31,52 +31,50 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /** Responsabilidade: validar as regras centrais do servico de planejamento comercial. */
 @ExtendWith(MockitoExtension.class)
 class CommercialPlanServiceTest {
-    @Mock
-    private CommercialPlanRepository planRepository;
+  @Mock private CommercialPlanRepository planRepository;
 
-    @Mock
-    private CommercialPlanMilestoneRepository milestoneRepository;
+  @Mock private CommercialPlanMilestoneRepository milestoneRepository;
 
-    @Mock
-    private CommercialPlanSimulationRepository simulationRepository;
+  @Mock private CommercialPlanSimulationRepository simulationRepository;
 
-    @Mock
-    private MarketNicheRepository nicheRepository;
+  @Mock private MarketNicheRepository nicheRepository;
 
-    @Mock
-    private HypothesisRepository hypothesisRepository;
+  @Mock private HypothesisRepository hypothesisRepository;
 
-    @Mock
-    private ExperimentRepository experimentRepository;
+  @Mock private ExperimentRepository experimentRepository;
 
-    @Mock
-    private CommercialPlanExecutionSyncService executionSyncService;
+  @Mock private CommercialPlanExecutionSyncService executionSyncService;
 
-    private CommercialPlanService service;
+  private CommercialPlanService service;
 
-    /** Prepara o servico com repositorios simulados antes de cada teste. */
-    @BeforeEach
-    void setUp() {
-        service = new CommercialPlanService(
-                planRepository,
-                milestoneRepository,
-                simulationRepository,
-                nicheRepository,
-                hypothesisRepository,
-                experimentRepository,
-                executionSyncService);
-    }
+  /** Prepara o servico com repositorios simulados antes de cada teste. */
+  @BeforeEach
+  void setUp() {
+    service =
+        new CommercialPlanService(
+            planRepository,
+            milestoneRepository,
+            simulationRepository,
+            nicheRepository,
+            hypothesisRepository,
+            experimentRepository,
+            executionSyncService);
+  }
 
-    /** Deve bloquear planos sem os gates comerciais minimos. */
-    @Test
-    void createBlocksPlanWhenCommercialGateIsIncomplete() {
-        when(planRepository.save(any(CommercialPlan.class))).thenAnswer(invocation -> {
-            CommercialPlan plan = invocation.getArgument(0);
-            plan.setId(10L);
-            return plan;
-        });
+  /** Deve bloquear planos sem os gates comerciais minimos. */
+  @Test
+  void createBlocksPlanWhenCommercialGateIsIncomplete() {
+    when(planRepository.save(any(CommercialPlan.class)))
+        .thenAnswer(
+            invocation -> {
+              CommercialPlan plan = invocation.getArgument(0);
+              plan.setId(10L);
+              return plan;
+            });
 
-        CommercialPlan plan = service.create(new CreateCommercialPlanRequest(
+    CommercialPlan plan =
+        service.create(
+            new CreateCommercialPlanRequest(
                 "Primeira venda",
                 null,
                 null,
@@ -100,42 +98,45 @@ class CommercialPlanServiceTest {
                 null,
                 null));
 
-        assertThat(plan.getStatus()).isEqualTo(CommercialPlanStatus.BLOCKED);
-        assertThat(plan.getTargetRevenue()).isEqualByComparingTo("27");
-        assertThat(plan.getOperationalRevenueTarget()).isEqualByComparingTo("81");
-        assertThat(plan.getExperimentsToCreate()).isEqualTo(2);
-        assertThat(plan.getExperimentsToPublish()).isEqualTo(3);
-        verify(milestoneRepository, times(9)).save(any());
-    }
+    assertThat(plan.getStatus()).isEqualTo(CommercialPlanStatus.BLOCKED);
+    assertThat(plan.getTargetRevenue()).isEqualByComparingTo("27");
+    assertThat(plan.getOperationalRevenueTarget()).isEqualByComparingTo("81");
+    assertThat(plan.getExperimentsToCreate()).isEqualTo(2);
+    assertThat(plan.getExperimentsToPublish()).isEqualTo(3);
+    verify(milestoneRepository, times(9)).save(any());
+  }
 
-    /** Deve registrar simulacao corretiva quando o plano ainda tem lacuna comercial. */
-    @Test
-    void simulateRecommendsCorrectionWhenPlanHasCommercialGap() {
-        CommercialPlan plan = CommercialPlan.builder()
-                .id(20L)
-                .name("Plano com lacuna")
-                .commercialObjective("Validar primeira venda")
-                .mainPain("Agenda vulneravel")
-                .mainOffer("Kit low-ticket")
-                .mainMetric("Venda")
-                .successCriteria("1 venda")
-                .stopCriteria("100 acessos sem envio")
-                .deadline(LocalDate.now().plusDays(14))
-                .build();
-        when(planRepository.findById(20L)).thenReturn(Optional.of(plan));
-        when(milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(20L)).thenReturn(List.of());
-        when(simulationRepository.save(any(CommercialPlanSimulation.class))).thenAnswer(invocation -> {
-            CommercialPlanSimulation simulation = invocation.getArgument(0);
-            simulation.setId(30L);
-            return simulation;
-        });
+  /** Deve registrar simulacao corretiva quando o plano ainda tem lacuna comercial. */
+  @Test
+  void simulateRecommendsCorrectionWhenPlanHasCommercialGap() {
+    CommercialPlan plan =
+        CommercialPlan.builder()
+            .id(20L)
+            .name("Plano com lacuna")
+            .commercialObjective("Validar primeira venda")
+            .mainPain("Agenda vulneravel")
+            .mainOffer("Kit low-ticket")
+            .mainMetric("Venda")
+            .successCriteria("1 venda")
+            .stopCriteria("100 acessos sem envio")
+            .deadline(LocalDate.now().plusDays(14))
+            .build();
+    when(planRepository.findById(20L)).thenReturn(Optional.of(plan));
+    when(milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(20L)).thenReturn(List.of());
+    when(simulationRepository.save(any(CommercialPlanSimulation.class)))
+        .thenAnswer(
+            invocation -> {
+              CommercialPlanSimulation simulation = invocation.getArgument(0);
+              simulation.setId(30L);
+              return simulation;
+            });
 
-        CommercialPlanSimulation simulation = service.simulate(
-                20L,
-                new CreateCommercialPlanSimulationRequest("Decisao antes de publicar."));
+    CommercialPlanSimulation simulation =
+        service.simulate(
+            20L, new CreateCommercialPlanSimulationRequest("Decisao antes de publicar."));
 
-        assertThat(simulation.getRecommendation()).isEqualTo(CommercialPlanRecommendation.CORRECT);
-        assertThat(simulation.getBestNextAction()).contains("Completar objetivo");
-        verify(planRepository, times(2)).save(plan);
-    }
+    assertThat(simulation.getRecommendation()).isEqualTo(CommercialPlanRecommendation.CORRECT);
+    assertThat(simulation.getBestNextAction()).contains("Completar objetivo");
+    verify(planRepository, times(2)).save(plan);
+  }
 }

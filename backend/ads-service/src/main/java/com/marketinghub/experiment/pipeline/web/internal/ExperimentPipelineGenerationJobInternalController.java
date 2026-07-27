@@ -20,38 +20,44 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/experiment-pipeline/jobs")
 public class ExperimentPipelineGenerationJobInternalController {
-    private final ExperimentPipelineGenerationService service;
+  private final ExperimentPipelineGenerationService service;
 
-    public ExperimentPipelineGenerationJobInternalController(ExperimentPipelineGenerationService service) {
-        this.service = service;
-    }
+  public ExperimentPipelineGenerationJobInternalController(
+      ExperimentPipelineGenerationService service) {
+    this.service = service;
+  }
 
-    @GetMapping("/pending")
-    public List<ExperimentPipelineGenerationJobDto> listPending(@RequestParam(value = "limit", defaultValue = "10") Integer limit) {
-        return service.listPendingJobs(limit != null ? limit : 10);
-    }
+  @GetMapping("/pending")
+  public List<ExperimentPipelineGenerationJobDto> listPending(
+      @RequestParam(value = "limit", defaultValue = "10") Integer limit) {
+    return service.listPendingJobs(limit != null ? limit : 10);
+  }
 
-    @PostMapping("/{jobId}/claim")
-    public ExperimentPipelineGenerationJobDto claim(@PathVariable UUID jobId,
-                                                    @Valid @RequestBody ExperimentPipelineGenerationJobClaimRequest request) {
-        return service.claimJob(jobId, request.workerId());
-    }
+  @PostMapping("/{jobId}/claim")
+  public ExperimentPipelineGenerationJobDto claim(
+      @PathVariable UUID jobId,
+      @Valid @RequestBody ExperimentPipelineGenerationJobClaimRequest request) {
+    return service.claimJob(jobId, request.workerId());
+  }
 
-    @PostMapping("/{jobId}/complete")
-    public void complete(@PathVariable UUID jobId,
-                         @Valid @RequestBody ExperimentPipelineGenerationJobCompletionRequest request) {
-        service.completeJob(jobId, request);
-    }
+  @PostMapping("/{jobId}/complete")
+  public void complete(
+      @PathVariable UUID jobId,
+      @Valid @RequestBody ExperimentPipelineGenerationJobCompletionRequest request) {
+    service.completeJob(jobId, request);
+  }
 
-    @PostMapping("/{jobId}/fail")
-    public void fail(@PathVariable UUID jobId,
-                     @Valid @RequestBody ExperimentPipelineGenerationJobFailureRequest request) {
-        service.failJob(jobId, request.errorMessage());
-    }
+  @PostMapping("/{jobId}/fail")
+  public void fail(
+      @PathVariable UUID jobId,
+      @Valid @RequestBody ExperimentPipelineGenerationJobFailureRequest request) {
+    service.failJob(jobId, request.errorMessage());
+  }
 
-    @PostMapping("/{jobId}/stage")
-    public void updateStage(@PathVariable UUID jobId,
-                            @Valid @RequestBody ExperimentPipelineGenerationJobStageUpdateRequest request) {
-        service.updateJobStage(jobId, request.stage());
-    }
+  @PostMapping("/{jobId}/stage")
+  public void updateStage(
+      @PathVariable UUID jobId,
+      @Valid @RequestBody ExperimentPipelineGenerationJobStageUpdateRequest request) {
+    service.updateJobStage(jobId, request.stage());
+  }
 }

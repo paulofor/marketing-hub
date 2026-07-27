@@ -1,6 +1,5 @@
 package com.marketinghub.repository.jpa.oprm.market;
 
-import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprm.market.OprmMarketSizeByCnae;
 import com.marketinghub.oprm.market.OprmMarketSizeByCnaeId;
 import com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto;
@@ -11,14 +10,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/**
- * Repositório responsável por consultar e paginar os agregados de tamanho de mercado por CNAE.
- */
-public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarketSizeByCnae, OprmMarketSizeByCnaeId> {
-    /**
-     * Retorna o ranking paginado dos CNAEs no snapshot mais recente, ordenado por score OPRM decrescente.
-     */
-    @Query("""
+/** Repositório responsável por consultar e paginar os agregados de tamanho de mercado por CNAE. */
+public interface OprmMarketSizeByCnaeRepository
+    extends JpaRepository<OprmMarketSizeByCnae, OprmMarketSizeByCnaeId> {
+  /**
+   * Retorna o ranking paginado dos CNAEs no snapshot mais recente, ordenado por score OPRM
+   * decrescente.
+   */
+  @Query(
+      """
             select new com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto(
                 ms.id.snapshotDate,
                 ms.id.cnaeCode,
@@ -58,12 +58,11 @@ public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarket
             where ms.id.snapshotDate = (select max(m2.id.snapshotDate) from OprmMarketSizeByCnae m2)
             order by sc.opportunityScore desc, ms.id.cnaeCode asc
             """)
-    List<OprmTopCnaeMarketVolumeDto> findTopByLatestSnapshot(Pageable pageable);
+  List<OprmTopCnaeMarketVolumeDto> findTopByLatestSnapshot(Pageable pageable);
 
-    /**
-     * Retorna o volume do CNAE informado no snapshot mais recente com score OPRM quando existir.
-     */
-    @Query("""
+  /** Retorna o volume do CNAE informado no snapshot mais recente com score OPRM quando existir. */
+  @Query(
+      """
             select new com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto(
                 ms.id.snapshotDate,
                 ms.id.cnaeCode,
@@ -103,5 +102,6 @@ public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarket
             where ms.id.snapshotDate = (select max(m2.id.snapshotDate) from OprmMarketSizeByCnae m2)
               and ms.id.cnaeCode = :cnaeCode
             """)
-    Optional<OprmTopCnaeMarketVolumeDto> findLatestSnapshotByCnaeCode(@Param("cnaeCode") String cnaeCode);
+  Optional<OprmTopCnaeMarketVolumeDto> findLatestSnapshotByCnaeCode(
+      @Param("cnaeCode") String cnaeCode);
 }

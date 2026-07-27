@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component;
 /** Agenda a proteção que impede ciclos OPRM NichoCNAE parados de aparecerem como saudáveis. */
 @Component
 public class BackendRoutineResearchCycleStallGuardScheduler {
-  private static final Logger LOGGER = LoggerFactory.getLogger(BackendRoutineResearchCycleStallGuardScheduler.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BackendRoutineResearchCycleStallGuardScheduler.class);
 
   private final BackendRoutineResearchCycleStallGuardService stallGuardService;
 
@@ -24,7 +25,8 @@ public class BackendRoutineResearchCycleStallGuardScheduler {
   public void markStalledCycles() {
     int stalledCount = stallGuardService.markRunningCyclesWithoutProgressAsStalled(Instant.now());
     if (stalledCount > 0) {
-      LOGGER.warn("Varredura de ciclos parados OPRM NichoCNAE concluída (stalledCount={})", stalledCount);
+      LOGGER.warn(
+          "Varredura de ciclos parados OPRM NichoCNAE concluída (stalledCount={})", stalledCount);
     }
   }
 }

@@ -16,25 +16,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/framework-images")
 public class FrameworkImageGenerationController {
-    private final FrameworkImageGenerationService service;
+  private final FrameworkImageGenerationService service;
 
-    public FrameworkImageGenerationController(FrameworkImageGenerationService service) {
-        this.service = service;
-    }
+  public FrameworkImageGenerationController(FrameworkImageGenerationService service) {
+    this.service = service;
+  }
 
-    @PostMapping("/generate")
-    @ResponseStatus(HttpStatus.CREATED)
-    public List<FrameworkImageGenerationJobDto> generate(@PathVariable Long experimentId) {
-        return service.enqueueJobsForExperiment(experimentId);
-    }
+  @PostMapping("/generate")
+  @ResponseStatus(HttpStatus.CREATED)
+  public List<FrameworkImageGenerationJobDto> generate(@PathVariable Long experimentId) {
+    return service.enqueueJobsForExperiment(experimentId);
+  }
 
-    @GetMapping
-    public List<FrameworkImageGenerationItemStatusDto> list(@PathVariable Long experimentId) {
-        return service.listJobsByExperiment(experimentId);
-    }
+  @GetMapping
+  public List<FrameworkImageGenerationItemStatusDto> list(@PathVariable Long experimentId) {
+    return service.listJobsByExperiment(experimentId);
+  }
 
-    @GetMapping("/summary")
-    public FrameworkImageGenerationSummaryDto summary(@PathVariable Long experimentId) {
-        return service.summarizeJobsByExperiment(experimentId);
-    }
+  @GetMapping("/summary")
+  public FrameworkImageGenerationSummaryDto summary(@PathVariable Long experimentId) {
+    return service.summarizeJobsByExperiment(experimentId);
+  }
 }

@@ -10,24 +10,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Exposes the experiment playbook so the frontend can guide operators when defining stage/variables.
+ * Exposes the experiment playbook so the frontend can guide operators when defining
+ * stage/variables.
  */
 @RestController
 @RequestMapping("/api/experiment-playbook")
 public class ExperimentPlaybookController {
-    private final ExperimentPlaybookService service;
+  private final ExperimentPlaybookService service;
 
-    public ExperimentPlaybookController(ExperimentPlaybookService service) {
-        this.service = service;
-    }
+  public ExperimentPlaybookController(ExperimentPlaybookService service) {
+    this.service = service;
+  }
 
-    @GetMapping
-    public List<ExperimentPlaybookStageDto> list() {
-        return service.list();
-    }
+  @GetMapping
+  public List<ExperimentPlaybookStageDto> list() {
+    return service.list();
+  }
 
-    @GetMapping("/{stage}")
-    public ExperimentPlaybookStageDto get(@PathVariable ExperimentStage stage) {
-        return service.get(stage);
-    }
+  @GetMapping("/{stage}")
+  public ExperimentPlaybookStageDto get(@PathVariable ExperimentStage stage) {
+    return service.get(stage);
+  }
 }

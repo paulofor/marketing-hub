@@ -2,13 +2,16 @@ package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.share
 
 import com.marketinghub.moissaleslibraryworker.pipelines.shared.service.OpenAiTextResponseExtractor;
 
-/** Utilitário responsável por extrair a resposta funcional limpa dos envelopes OpenAI do dossiê de produto. */
+/**
+ * Utilitário responsável por extrair a resposta funcional limpa dos envelopes OpenAI do dossiê de
+ * produto.
+ */
 public final class DossierOpenAiTextResponseExtractor {
-    /** Impede instanciação porque o extrator não mantém estado por execução. */
-    private DossierOpenAiTextResponseExtractor() {}
+  /** Impede instanciação porque o extrator não mantém estado por execução. */
+  private DossierOpenAiTextResponseExtractor() {}
 
-    /** Delega a extração para o utilitário compartilhado entre pipelines MOIS. */
-    public static String extract(String rawResponse) {
-        return OpenAiTextResponseExtractor.extract(rawResponse);
-    }
+  /** Delega a extração para o utilitário compartilhado entre pipelines MOIS. */
+  public static String extract(String rawResponse) {
+    return OpenAiTextResponseExtractor.extract(rawResponse);
+  }
 }

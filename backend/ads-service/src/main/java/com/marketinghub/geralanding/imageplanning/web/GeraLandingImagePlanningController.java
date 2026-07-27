@@ -21,11 +21,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsável por expor os endpoints de backend da etapa landing-page-image-planning no GeraLanding. */
+/**
+ * Responsável por expor os endpoints de backend da etapa landing-page-image-planning no
+ * GeraLanding.
+ */
 @RestController
 @RequestMapping("/api")
 public class GeraLandingImagePlanningController {
-  private static final Logger LOGGER = LoggerFactory.getLogger(GeraLandingImagePlanningController.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(GeraLandingImagePlanningController.class);
   private static final String STAGE_CODE = "landing-page-image-planning";
 
   private final BackendImagePlanningService executionService;
@@ -37,7 +41,8 @@ public class GeraLandingImagePlanningController {
 
   /** Registra uma execução inicial da etapa landing-page-image-planning. */
   @PostMapping("/experiments/{experimentId}/geralanding/image-prompts/start")
-  public ResponseEntity<GeraLandingImagePlanningStartResponse> start(@PathVariable Long experimentId) {
+  public ResponseEntity<GeraLandingImagePlanningStartResponse> start(
+      @PathVariable Long experimentId) {
     GeraLandingImagePlanningStartResponse response = executionService.start(experimentId);
     return ResponseEntity.accepted().body(response);
   }
@@ -52,7 +57,9 @@ public class GeraLandingImagePlanningController {
     return ResponseEntity.ok(response);
   }
 
-  /** Lista os jobs pendentes iniciados da etapa image planning para processamento pelo Worker AI. */
+  /**
+   * Lista os jobs pendentes iniciados da etapa image planning para processamento pelo Worker AI.
+   */
   @GetMapping("/internal/geralanding/image-prompts/stage-executions/pending")
   public List<RecordImagePlanningPending> pending() {
     return executionService.listPending(STAGE_CODE);

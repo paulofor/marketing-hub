@@ -14,33 +14,32 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 @Configuration
 public class StorageConfig {
 
-    @Bean
-    public S3Client leadPortalS3Client(StorageProperties properties) {
-        S3Configuration s3Configuration = S3Configuration.builder()
-                .pathStyleAccessEnabled(true)
-                .build();
+  @Bean
+  public S3Client leadPortalS3Client(StorageProperties properties) {
+    S3Configuration s3Configuration =
+        S3Configuration.builder().pathStyleAccessEnabled(true).build();
 
-        S3ClientBuilder builder = S3Client.builder()
-                .region(Region.of(properties.getRegion()))
-                .serviceConfiguration(s3Configuration);
+    S3ClientBuilder builder =
+        S3Client.builder()
+            .region(Region.of(properties.getRegion()))
+            .serviceConfiguration(s3Configuration);
 
-        if (isBlank(properties.getAccessKeyId()) || isBlank(properties.getSecretAccessKey())) {
-            builder = builder.credentialsProvider(AnonymousCredentialsProvider.create());
-        } else {
-            AwsBasicCredentials credentials = AwsBasicCredentials.create(
-                    properties.getAccessKeyId(),
-                    properties.getSecretAccessKey());
-            builder = builder.credentialsProvider(StaticCredentialsProvider.create(credentials));
-        }
-
-        if (properties.getEndpoint() != null && !properties.getEndpoint().isBlank()) {
-            builder = builder.endpointOverride(URI.create(properties.getEndpoint()));
-        }
-
-        return builder.build();
+    if (isBlank(properties.getAccessKeyId()) || isBlank(properties.getSecretAccessKey())) {
+      builder = builder.credentialsProvider(AnonymousCredentialsProvider.create());
+    } else {
+      AwsBasicCredentials credentials =
+          AwsBasicCredentials.create(properties.getAccessKeyId(), properties.getSecretAccessKey());
+      builder = builder.credentialsProvider(StaticCredentialsProvider.create(credentials));
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+    if (properties.getEndpoint() != null && !properties.getEndpoint().isBlank()) {
+      builder = builder.endpointOverride(URI.create(properties.getEndpoint()));
     }
+
+    return builder.build();
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
+  }
 }

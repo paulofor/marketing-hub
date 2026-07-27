@@ -32,48 +32,60 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class OprmArtifactService {
-    private final OprmArtifactRepository artifactRepository;
-    private final OprmJobRepository jobRepository;
-    private final ObjectMapper objectMapper;
+  private final OprmArtifactRepository artifactRepository;
+  private final OprmJobRepository jobRepository;
+  private final ObjectMapper objectMapper;
 
-    @Transactional
-    public OprmArtifactPublishResponseDto publishArtifact(OprmArtifactPublishRequestDto request) {
-        OprmArtifact duplicatedArtifact = artifactRepository.findByIdempotencyKey(request.idempotencyKey()).orElse(null);
-        if (duplicatedArtifact != null) {
-            log.info("oprm-artifact-duplicate idempotencyKey={} artifactId={} correlationId={}",
-                    request.idempotencyKey(), duplicatedArtifact.getArtifactId(), duplicatedArtifact.getCorrelationId());
-            return new OprmArtifactPublishResponseDto(
-                    duplicatedArtifact.getArtifactId(),
-                    duplicatedArtifact.getArtifactType(),
-                    duplicatedArtifact.getArtifactVersion(),
-                    duplicatedArtifact.getCreatedAt().toString(),
-                    duplicatedArtifact.getArtifactStatus().name(),
-                    true
-            );
-        }
+  @Transactional
+  public OprmArtifactPublishResponseDto publishArtifact(OprmArtifactPublishRequestDto request) {
+    OprmArtifact duplicatedArtifact =
+        artifactRepository.findByIdempotencyKey(request.idempotencyKey()).orElse(null);
+    if (duplicatedArtifact != null) {
+      log.info(
+          "oprm-artifact-duplicate idempotencyKey={} artifactId={} correlationId={}",
+          request.idempotencyKey(),
+          duplicatedArtifact.getArtifactId(),
+          duplicatedArtifact.getCorrelationId());
+      return new OprmArtifactPublishResponseDto(
+          duplicatedArtifact.getArtifactId(),
+          duplicatedArtifact.getArtifactType(),
+          duplicatedArtifact.getArtifactVersion(),
+          duplicatedArtifact.getCreatedAt().toString(),
+          duplicatedArtifact.getArtifactStatus().name(),
+          true);
+    }
 
-        UUID jobId;
-        try {
-            jobId = UUID.fromString(request.jobId());
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "jobId must be a valid UUID");
-        }
+    UUID jobId;
+    try {
+      jobId = UUID.fromString(request.jobId());
+    } catch (IllegalArgumentException exception) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "jobId must be a valid UUID");
+    }
 
-        OprmJob job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "OPRM job not found"));
+    OprmJob job =
+        jobRepository
+            .findById(jobId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.UNPROCESSABLE_ENTITY, "OPRM job not found"));
 
-        OprmArtifactEnvelopeDto artifactEnvelope = request.artifact();
-        if (!request.correlationId().equals(artifactEnvelope.correlationId())) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "correlationId from request must match artifact envelope");
-        }
+    OprmArtifactEnvelopeDto artifactEnvelope = request.artifact();
+    if (!request.correlationId().equals(artifactEnvelope.correlationId())) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "correlationId from request must match artifact envelope");
+    }
 
-        if (artifactEnvelope.sourceRefs().isEmpty() && artifactEnvelope.inputRefs().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "artifact lineage requires sourceRefs or inputRefs");
-        }
+    if (artifactEnvelope.sourceRefs().isEmpty() && artifactEnvelope.inputRefs().isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "artifact lineage requires sourceRefs or inputRefs");
+    }
 
-        OprmArtifact saved = artifactRepository.save(OprmArtifact.builder()
+    OprmArtifact saved =
+        artifactRepository.save(
+            OprmArtifact.builder()
                 .job(job)
                 .artifactId(artifactEnvelope.artifactId())
                 .artifactType(artifactEnvelope.artifactType())
@@ -93,222 +105,216 @@ public class OprmArtifactService {
                 .confidenceScore(toBigDecimal(artifactEnvelope.confidenceScore()))
                 .idempotencyKey(request.idempotencyKey())
                 .build());
-        log.info("oprm-artifact-published jobId={} artifactId={} artifactType={} artifactVersion={} correlationId={} status={}",
-                jobId, saved.getArtifactId(), saved.getArtifactType(), saved.getArtifactVersion(),
-                saved.getCorrelationId(), saved.getArtifactStatus());
+    log.info(
+        "oprm-artifact-published jobId={} artifactId={} artifactType={} artifactVersion={} correlationId={} status={}",
+        jobId,
+        saved.getArtifactId(),
+        saved.getArtifactType(),
+        saved.getArtifactVersion(),
+        saved.getCorrelationId(),
+        saved.getArtifactStatus());
 
-        return new OprmArtifactPublishResponseDto(
-                saved.getArtifactId(),
-                saved.getArtifactType(),
-                saved.getArtifactVersion(),
-                saved.getCreatedAt().toString(),
-                saved.getArtifactStatus().name(),
-                false
-        );
+    return new OprmArtifactPublishResponseDto(
+        saved.getArtifactId(),
+        saved.getArtifactType(),
+        saved.getArtifactVersion(),
+        saved.getCreatedAt().toString(),
+        saved.getArtifactStatus().name(),
+        false);
+  }
+
+  @Transactional(readOnly = true)
+  public List<OprmArtifactSummaryDto> listArtifacts(
+      String correlationId, String occupationSeedRef, OprmArtifactStatus status) {
+    if (correlationId != null && !correlationId.isBlank()) {
+      return artifactRepository.findByCorrelationIdOrderByCreatedAtDesc(correlationId).stream()
+          .map(this::toSummary)
+          .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<OprmArtifactSummaryDto> listArtifacts(String correlationId,
-                                                      String occupationSeedRef,
-                                                      OprmArtifactStatus status) {
-        if (correlationId != null && !correlationId.isBlank()) {
-            return artifactRepository.findByCorrelationIdOrderByCreatedAtDesc(correlationId)
-                    .stream()
-                    .map(this::toSummary)
-                    .toList();
-        }
-
-        if (occupationSeedRef != null && !occupationSeedRef.isBlank()) {
-            List<OprmArtifact> artifacts = status == null
-                    ? artifactRepository.findByOccupationSeedRefOrderByCreatedAtDesc(occupationSeedRef)
-                    : artifactRepository.findByOccupationSeedRefAndArtifactStatusOrderByCreatedAtDesc(occupationSeedRef, status);
-            return artifacts.stream().map(this::toSummary).toList();
-        }
-
-        return artifactRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .map(this::toSummary)
-                .toList();
+    if (occupationSeedRef != null && !occupationSeedRef.isBlank()) {
+      List<OprmArtifact> artifacts =
+          status == null
+              ? artifactRepository.findByOccupationSeedRefOrderByCreatedAtDesc(occupationSeedRef)
+              : artifactRepository.findByOccupationSeedRefAndArtifactStatusOrderByCreatedAtDesc(
+                  occupationSeedRef, status);
+      return artifacts.stream().map(this::toSummary).toList();
     }
 
+    return artifactRepository.findAllByOrderByCreatedAtDesc().stream()
+        .map(this::toSummary)
+        .toList();
+  }
 
-    @Transactional(readOnly = true)
-    public OprmRoutineWorkspaceResponseDto getRoutineWorkspace(String occupationSeedRef) {
-        OprmArtifact routineCardArtifact = artifactRepository
-                .findFirstByOccupationSeedRefAndArtifactTypeOrderByCreatedAtDesc(
-                        occupationSeedRef,
-                        "occupationPersonaRoutineCard"
-                )
-                .orElse(null);
+  @Transactional(readOnly = true)
+  public OprmRoutineWorkspaceResponseDto getRoutineWorkspace(String occupationSeedRef) {
+    OprmArtifact routineCardArtifact =
+        artifactRepository
+            .findFirstByOccupationSeedRefAndArtifactTypeOrderByCreatedAtDesc(
+                occupationSeedRef, "occupationPersonaRoutineCard")
+            .orElse(null);
 
-        OprmArtifact frameworkInputArtifact = artifactRepository
-                .findFirstByOccupationSeedRefAndArtifactTypeOrderByCreatedAtDesc(
-                        occupationSeedRef,
-                        "dorResultadoOfertaMecanismoProvaInput"
-                )
-                .orElse(null);
+    OprmArtifact frameworkInputArtifact =
+        artifactRepository
+            .findFirstByOccupationSeedRefAndArtifactTypeOrderByCreatedAtDesc(
+                occupationSeedRef, "dorResultadoOfertaMecanismoProvaInput")
+            .orElse(null);
 
-        if (routineCardArtifact == null && frameworkInputArtifact == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM workspace routine not found");
-        }
-
-        Map<String, Object> routinePayload = readPayload(routineCardArtifact);
-        Map<String, Object> frameworkPayload = readPayload(frameworkInputArtifact);
-
-        List<Map<String, Object>> painSignals = readSignalList(frameworkPayload.get("painSignals"));
-        if (painSignals.isEmpty()) {
-            painSignals = readSignalList(routinePayload.get("painSignals"));
-        }
-
-        return new OprmRoutineWorkspaceResponseDto(
-                occupationSeedRef,
-                frameworkInputArtifact != null
-                        ? frameworkInputArtifact.getCorrelationId()
-                        : routineCardArtifact != null ? routineCardArtifact.getCorrelationId() : null,
-                routinePayload.isEmpty() ? null : routinePayload,
-                frameworkPayload.isEmpty() ? null : frameworkPayload,
-                painSignals,
-                readSignalList(frameworkPayload.get("desiredOutcomeSignals")),
-                readSignalList(frameworkPayload.get("mechanismOpportunitySignals"))
-        );
+    if (routineCardArtifact == null && frameworkInputArtifact == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM workspace routine not found");
     }
 
+    Map<String, Object> routinePayload = readPayload(routineCardArtifact);
+    Map<String, Object> frameworkPayload = readPayload(frameworkInputArtifact);
 
-    @Transactional(readOnly = true)
-    public OprmInsightsWorkspaceResponseDto getInsightsWorkspace(String occupationSeedRef) {
-        List<OprmArtifact> artifacts = artifactRepository.findByOccupationSeedRefOrderByCreatedAtDesc(occupationSeedRef);
-        if (artifacts.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM workspace insights not found");
-        }
-
-        OprmArtifact routineCardArtifact = findLatestArtifactByType(artifacts, "occupationPersonaRoutineCard");
-        OprmArtifact feedbackArtifact = findLatestArtifactByType(artifacts, "occupationFeedbackLoopSnapshot");
-
-        Map<String, Object> routinePayload = readPayload(routineCardArtifact);
-        Map<String, Object> routineLineage = readJsonMap(routineCardArtifact == null ? null : routineCardArtifact.getLineageJson());
-        List<Map<String, Object>> feedbackSnapshots = artifacts.stream()
-                .filter(artifact -> "occupationFeedbackLoopSnapshot".equals(artifact.getArtifactType()))
-                .map(this::readPayload)
-                .toList();
-
-        Map<String, Object> latestFeedback = readPayload(feedbackArtifact);
-        Map<String, Object> previousFeedback = feedbackSnapshots.size() > 1 ? feedbackSnapshots.get(1) : Map.of();
-
-        List<Map<String, Object>> sources = readSignalList(routinePayload.get("sourceRefs"));
-        if (sources.isEmpty()) {
-            sources = readSignalList(routineLineage.get("sourceRefs"));
-        }
-
-        List<Map<String, Object>> excerpts = readSignalList(routinePayload.get("evidenceExcerpts"));
-
-        List<OprmArtifactSummaryDto> timeline = artifacts.stream()
-                .limit(20)
-                .map(this::toSummary)
-                .toList();
-
-        Map<String, Object> feedbackComparison = new java.util.LinkedHashMap<>();
-        feedbackComparison.put("latestConfidence", latestFeedback.get("recalibratedConfidenceScore"));
-        feedbackComparison.put("previousConfidence", previousFeedback.get("recalibratedConfidenceScore"));
-        feedbackComparison.put("latestGeneratedAt", latestFeedback.get("generatedAt"));
-        feedbackComparison.put("previousGeneratedAt", previousFeedback.get("generatedAt"));
-
-        return new OprmInsightsWorkspaceResponseDto(
-                occupationSeedRef,
-                feedbackArtifact != null
-                        ? feedbackArtifact.getCorrelationId()
-                        : routineCardArtifact != null ? routineCardArtifact.getCorrelationId() : null,
-                timeline,
-                sources,
-                excerpts,
-                routineLineage,
-                feedbackSnapshots,
-                feedbackComparison
-        );
+    List<Map<String, Object>> painSignals = readSignalList(frameworkPayload.get("painSignals"));
+    if (painSignals.isEmpty()) {
+      painSignals = readSignalList(routinePayload.get("painSignals"));
     }
 
-    private OprmArtifact findLatestArtifactByType(List<OprmArtifact> artifacts, String artifactType) {
-        return artifacts.stream()
-                .filter(artifact -> artifactType.equals(artifact.getArtifactType()))
-                .findFirst()
-                .orElse(null);
+    return new OprmRoutineWorkspaceResponseDto(
+        occupationSeedRef,
+        frameworkInputArtifact != null
+            ? frameworkInputArtifact.getCorrelationId()
+            : routineCardArtifact != null ? routineCardArtifact.getCorrelationId() : null,
+        routinePayload.isEmpty() ? null : routinePayload,
+        frameworkPayload.isEmpty() ? null : frameworkPayload,
+        painSignals,
+        readSignalList(frameworkPayload.get("desiredOutcomeSignals")),
+        readSignalList(frameworkPayload.get("mechanismOpportunitySignals")));
+  }
+
+  @Transactional(readOnly = true)
+  public OprmInsightsWorkspaceResponseDto getInsightsWorkspace(String occupationSeedRef) {
+    List<OprmArtifact> artifacts =
+        artifactRepository.findByOccupationSeedRefOrderByCreatedAtDesc(occupationSeedRef);
+    if (artifacts.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM workspace insights not found");
     }
 
-    private OprmArtifactSummaryDto toSummary(OprmArtifact artifact) {
-        return new OprmArtifactSummaryDto(
-                artifact.getArtifactId(),
-                artifact.getArtifactType(),
-                artifact.getArtifactVersion(),
-                artifact.getArtifactStatus(),
-                artifact.getOccupationSeedRef(),
-                artifact.getCorrelationId(),
-                artifact.getCreatedAt().toString()
-        );
+    OprmArtifact routineCardArtifact =
+        findLatestArtifactByType(artifacts, "occupationPersonaRoutineCard");
+    OprmArtifact feedbackArtifact =
+        findLatestArtifactByType(artifacts, "occupationFeedbackLoopSnapshot");
+
+    Map<String, Object> routinePayload = readPayload(routineCardArtifact);
+    Map<String, Object> routineLineage =
+        readJsonMap(routineCardArtifact == null ? null : routineCardArtifact.getLineageJson());
+    List<Map<String, Object>> feedbackSnapshots =
+        artifacts.stream()
+            .filter(artifact -> "occupationFeedbackLoopSnapshot".equals(artifact.getArtifactType()))
+            .map(this::readPayload)
+            .toList();
+
+    Map<String, Object> latestFeedback = readPayload(feedbackArtifact);
+    Map<String, Object> previousFeedback =
+        feedbackSnapshots.size() > 1 ? feedbackSnapshots.get(1) : Map.of();
+
+    List<Map<String, Object>> sources = readSignalList(routinePayload.get("sourceRefs"));
+    if (sources.isEmpty()) {
+      sources = readSignalList(routineLineage.get("sourceRefs"));
     }
 
+    List<Map<String, Object>> excerpts = readSignalList(routinePayload.get("evidenceExcerpts"));
 
-    private Map<String, Object> readPayload(OprmArtifact artifact) {
-        if (artifact == null) {
-            return Collections.emptyMap();
-        }
+    List<OprmArtifactSummaryDto> timeline =
+        artifacts.stream().limit(20).map(this::toSummary).toList();
 
-        try {
-            return objectMapper.readValue(artifact.getPayloadJson(), new TypeReference<>() {
-            });
-        } catch (JsonProcessingException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "unable to parse persisted OPRM artifact payload"
-            );
-        }
+    Map<String, Object> feedbackComparison = new java.util.LinkedHashMap<>();
+    feedbackComparison.put("latestConfidence", latestFeedback.get("recalibratedConfidenceScore"));
+    feedbackComparison.put(
+        "previousConfidence", previousFeedback.get("recalibratedConfidenceScore"));
+    feedbackComparison.put("latestGeneratedAt", latestFeedback.get("generatedAt"));
+    feedbackComparison.put("previousGeneratedAt", previousFeedback.get("generatedAt"));
+
+    return new OprmInsightsWorkspaceResponseDto(
+        occupationSeedRef,
+        feedbackArtifact != null
+            ? feedbackArtifact.getCorrelationId()
+            : routineCardArtifact != null ? routineCardArtifact.getCorrelationId() : null,
+        timeline,
+        sources,
+        excerpts,
+        routineLineage,
+        feedbackSnapshots,
+        feedbackComparison);
+  }
+
+  private OprmArtifact findLatestArtifactByType(List<OprmArtifact> artifacts, String artifactType) {
+    return artifacts.stream()
+        .filter(artifact -> artifactType.equals(artifact.getArtifactType()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private OprmArtifactSummaryDto toSummary(OprmArtifact artifact) {
+    return new OprmArtifactSummaryDto(
+        artifact.getArtifactId(),
+        artifact.getArtifactType(),
+        artifact.getArtifactVersion(),
+        artifact.getArtifactStatus(),
+        artifact.getOccupationSeedRef(),
+        artifact.getCorrelationId(),
+        artifact.getCreatedAt().toString());
+  }
+
+  private Map<String, Object> readPayload(OprmArtifact artifact) {
+    if (artifact == null) {
+      return Collections.emptyMap();
     }
 
+    try {
+      return objectMapper.readValue(artifact.getPayloadJson(), new TypeReference<>() {});
+    } catch (JsonProcessingException exception) {
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "unable to parse persisted OPRM artifact payload");
+    }
+  }
 
-    private Map<String, Object> readJsonMap(String rawJson) {
-        if (rawJson == null || rawJson.isBlank()) {
-            return Map.of();
-        }
-
-        try {
-            return objectMapper.readValue(rawJson, new TypeReference<>() {
-            });
-        } catch (JsonProcessingException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "unable to parse persisted OPRM artifact lineage"
-            );
-        }
+  private Map<String, Object> readJsonMap(String rawJson) {
+    if (rawJson == null || rawJson.isBlank()) {
+      return Map.of();
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> readSignalList(Object rawValue) {
-        if (!(rawValue instanceof List<?> list)) {
-            return List.of();
-        }
+    try {
+      return objectMapper.readValue(rawJson, new TypeReference<>() {});
+    } catch (JsonProcessingException exception) {
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "unable to parse persisted OPRM artifact lineage");
+    }
+  }
 
-        return list.stream()
-                .filter(item -> item instanceof Map<?, ?>)
-                .map(item -> (Map<String, Object>) item)
-                .toList();
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> readSignalList(Object rawValue) {
+    if (!(rawValue instanceof List<?> list)) {
+      return List.of();
     }
 
-    private Instant parseCreatedAt(String createdAt) {
-        try {
-            return Instant.parse(createdAt);
-        } catch (DateTimeParseException exception) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "artifact.createdAt must use ISO-8601");
-        }
-    }
+    return list.stream()
+        .filter(item -> item instanceof Map<?, ?>)
+        .map(item -> (Map<String, Object>) item)
+        .toList();
+  }
 
-    private String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException exception) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "unable to serialize artifact payload for persistence");
-        }
+  private Instant parseCreatedAt(String createdAt) {
+    try {
+      return Instant.parse(createdAt);
+    } catch (DateTimeParseException exception) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "artifact.createdAt must use ISO-8601");
     }
+  }
 
-    private BigDecimal toBigDecimal(Double value) {
-        return value == null ? null : BigDecimal.valueOf(value);
+  private String toJson(Object value) {
+    try {
+      return objectMapper.writeValueAsString(value);
+    } catch (JsonProcessingException exception) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "unable to serialize artifact payload for persistence");
     }
+  }
+
+  private BigDecimal toBigDecimal(Double value) {
+    return value == null ? null : BigDecimal.valueOf(value);
+  }
 }

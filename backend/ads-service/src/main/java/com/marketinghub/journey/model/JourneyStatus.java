@@ -1,12 +1,10 @@
 package com.marketinghub.journey.model;
 
-/**
- * Operational status for a journey instance.
- */
+/** Operational status for a journey instance. */
 public enum JourneyStatus {
-    DRAFT,
-    ACTIVE,
-    PAUSED,
-    COMPLETED,
-    ARCHIVED
+  DRAFT,
+  ACTIVE,
+  PAUSED,
+  COMPLETED,
+  ARCHIVED
 }

@@ -6,9 +6,10 @@ import lombok.Data;
 
 @Data
 public class CreateAngleRequest {
-    @NotBlank
-    @Size(max = 60)
-    private String name;
-    private String description;
-    private String frameType;
+  @NotBlank
+  @Size(max = 60)
+  private String name;
+
+  private String description;
+  private String frameType;
 }

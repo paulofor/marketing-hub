@@ -1,86 +1,79 @@
 package com.marketinghub.niche;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
-import com.marketinghub.repository.jpa.niche.description.NicheDetailedDescriptionRepository;
-import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
-import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.niche.service.MarketNicheService;
-import com.marketinghub.targeting.service.TargetingElementSyncService;
 import com.marketinghub.repository.jpa.chat.ChatDialogRepository;
 import com.marketinghub.repository.jpa.differentiatedtechnology.DifferentiatedTechnologyRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.description.NicheDetailedDescriptionRepository;
+import com.marketinghub.targeting.service.TargetingElementSyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 @DataJpaTest
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 /** Testes de persistência e atualização do serviço de nichos de mercado. */
 class MarketNicheServiceTest {
 
-    @Autowired
-    MarketNicheRepository repository;
+  @Autowired MarketNicheRepository repository;
 
-    @Autowired
-    MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+  @Autowired MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
 
-    MarketNicheService service;
+  MarketNicheService service;
 
-    /** Prepara o serviço com repositórios reais de nicho e dependências externas mockadas. */
-    @BeforeEach
-    void setup() {
-        ChatDialogRepository chatRepo = mock(ChatDialogRepository.class);
-        DifferentiatedTechnologyRepository differentiatedTechnologyRepository =
-                mock(DifferentiatedTechnologyRepository.class);
-        NicheDetailedDescriptionRepository detailedDescriptionRepository =
-                mock(NicheDetailedDescriptionRepository.class);
-        TargetingElementSyncService targetingElementSyncService =
-                mock(TargetingElementSyncService.class);
-        service = new MarketNicheService(
-                repository,
-                enrichmentProfileRepository,
-                chatRepo,
-                differentiatedTechnologyRepository,
-                detailedDescriptionRepository,
-                targetingElementSyncService);
-    }
+  /** Prepara o serviço com repositórios reais de nicho e dependências externas mockadas. */
+  @BeforeEach
+  void setup() {
+    ChatDialogRepository chatRepo = mock(ChatDialogRepository.class);
+    DifferentiatedTechnologyRepository differentiatedTechnologyRepository =
+        mock(DifferentiatedTechnologyRepository.class);
+    NicheDetailedDescriptionRepository detailedDescriptionRepository =
+        mock(NicheDetailedDescriptionRepository.class);
+    TargetingElementSyncService targetingElementSyncService =
+        mock(TargetingElementSyncService.class);
+    service =
+        new MarketNicheService(
+            repository,
+            enrichmentProfileRepository,
+            chatRepo,
+            differentiatedTechnologyRepository,
+            detailedDescriptionRepository,
+            targetingElementSyncService);
+  }
 
-    /** Valida que a atualização administrativa persiste a quantidade pendente de hipóteses. */
-    @Test
-    void updatePersistsHypothesesToGenerate() {
-        MarketNiche niche = MarketNiche.builder()
-                .name("Fitness")
-                .hypothesesToGenerate(1)
-                .build();
-        repository.save(niche);
+  /** Valida que a atualização administrativa persiste a quantidade pendente de hipóteses. */
+  @Test
+  void updatePersistsHypothesesToGenerate() {
+    MarketNiche niche = MarketNiche.builder().name("Fitness").hypothesesToGenerate(1).build();
+    repository.save(niche);
 
-        CreateMarketNicheRequest req = new CreateMarketNicheRequest();
-        req.setName("Fitness");
-        req.setHypothesesToGenerate(5);
+    CreateMarketNicheRequest req = new CreateMarketNicheRequest();
+    req.setName("Fitness");
+    req.setHypothesesToGenerate(5);
 
-        service.update(niche.getId(), req);
+    service.update(niche.getId(), req);
 
-        MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
-        assertThat(updated.getHypothesesToGenerate()).isEqualTo(5);
-    }
+    MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
+    assertThat(updated.getHypothesesToGenerate()).isEqualTo(5);
+  }
 
-    /** Valida que a solicitação direta de hipóteses atualiza quantidade e modelo. */
-    @Test
-    void requestHypothesesUpdatesQuantity() {
-        MarketNiche niche = MarketNiche.builder()
-                .name("Fitness")
-                .hypothesesToGenerate(1)
-                .build();
-        repository.save(niche);
+  /** Valida que a solicitação direta de hipóteses atualiza quantidade e modelo. */
+  @Test
+  void requestHypothesesUpdatesQuantity() {
+    MarketNiche niche = MarketNiche.builder().name("Fitness").hypothesesToGenerate(1).build();
+    repository.save(niche);
 
-        service.requestHypotheses(niche.getId(), 4, "gpt-4o", null, null);
+    service.requestHypotheses(niche.getId(), 4, "gpt-4o", null, null);
 
-        MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
-        assertThat(updated.getHypothesesToGenerate()).isEqualTo(4);
-        assertThat(updated.getHypothesisModel()).isEqualTo("gpt-4o");
-    }
+    MarketNiche updated = repository.findById(niche.getId()).orElseThrow();
+    assertThat(updated.getHypothesesToGenerate()).isEqualTo(4);
+    assertThat(updated.getHypothesisModel()).isEqualTo("gpt-4o");
+  }
 }

@@ -16,13 +16,13 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnos
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.failStageExecution.FailEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.generatedByCnae.GeneratedEnrichedNicheByCnaeResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
-import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheMaterializationResult;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileDraft;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileSnapshot;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmMarketNicheDraft;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmMarketNicheSnapshot;
+import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
@@ -49,7 +49,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Serviço backend da etapa final que alimenta as tabelas de nicho e nicho enriquecido a partir do NichoCNAE. */
+/**
+ * Serviço backend da etapa final que alimenta as tabelas de nicho e nicho enriquecido a partir do
+ * NichoCNAE.
+ */
 @Service
 public class BackendEnrichedNicheMaterializerService {
   private static final int MAX_PENDING = 10;
@@ -57,10 +60,23 @@ public class BackendEnrichedNicheMaterializerService {
   private static final String ENRICHED_STATUS = "ENRICHED_NICHE_CREATED";
   private static final String ENRICHED_UPDATED_STATUS = "ENRICHED_NICHE_UPDATED";
   private static final String FAILED_STATUS = "ENRICHED_NICHE_FAILED";
-  private static final String CURRENT_STAGE_ENRICHED_NICHE_MATERIALIZER = "enriched-niche-materializer";
-  private static final String HISTORICAL_RESEARCH_RECOMMENDATION = "Preferir novo ciclo neutro em vez de editar manualmente o texto antigo.";
-  private static final List<String> SOLUTION_LANGUAGE_TERMS = List.of(
-      "ia", "inteligência artificial", "automação", "software", "sistema", "app", "ferramenta", "curso", "template", "oferta", "landing page");
+  private static final String CURRENT_STAGE_ENRICHED_NICHE_MATERIALIZER =
+      "enriched-niche-materializer";
+  private static final String HISTORICAL_RESEARCH_RECOMMENDATION =
+      "Preferir novo ciclo neutro em vez de editar manualmente o texto antigo.";
+  private static final List<String> SOLUTION_LANGUAGE_TERMS =
+      List.of(
+          "ia",
+          "inteligência artificial",
+          "automação",
+          "software",
+          "sistema",
+          "app",
+          "ferramenta",
+          "curso",
+          "template",
+          "oferta",
+          "landing page");
 
   private final OprmRoutineResearchCycleRepository cycleRepository;
   private final OprmNicheRoutineCardRepository routineCardRepository;
@@ -103,10 +119,14 @@ public class BackendEnrichedNicheMaterializerService {
     this.currencyConversionService = currencyConversionService;
   }
 
-  /** Lista cartões aprovados pelo gate que ainda precisam materializar nicho e nicho enriquecido. */
+  /**
+   * Lista cartões aprovados pelo gate que ainda precisam materializar nicho e nicho enriquecido.
+   */
   @Transactional(readOnly = true)
   public List<RecordEnrichedNicheMaterializerPending> listPending() {
-    return routineCardRepository.findPendingEnrichedNicheMaterialization(PageRequest.of(0, MAX_PENDING)).stream()
+    return routineCardRepository
+        .findPendingEnrichedNicheMaterialization(PageRequest.of(0, MAX_PENDING))
+        .stream()
         .filter(this::hasMeiAudienceProfileForPending)
         .map(this::toPending)
         .toList();
@@ -114,34 +134,45 @@ public class BackendEnrichedNicheMaterializerService {
 
   /** Alimenta a tabela de nicho e a tabela de nicho enriquecido para o ciclo informado. */
   @Transactional
-  public CompleteEnrichedNicheMaterializerResponse complete(Long researchCycleId, CompleteEnrichedNicheMaterializerRequest request) {
+  public CompleteEnrichedNicheMaterializerResponse complete(
+      Long researchCycleId, CompleteEnrichedNicheMaterializerRequest request) {
     validateCompletionRequest(researchCycleId, request);
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-    OprmNicheRoutineCard card = routineCardRepository.findById(request.routineCardId())
-        .orElseThrow(() -> new EntityNotFoundException("Routine card not found: " + request.routineCardId()));
+    OprmNicheRoutineCard card =
+        routineCardRepository
+            .findById(request.routineCardId())
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException(
+                        "Routine card not found: " + request.routineCardId()));
     if (!researchCycleId.equals(card.getResearchCycleId())) {
       throw new IllegalArgumentException("routineCardId does not belong to researchCycleId");
     }
     if (!Boolean.TRUE.equals(card.getReadyForHypothesis())) {
       throw new IllegalArgumentException("routine card is not approved by quality gate");
     }
-    OprmNicheCandidate candidate = nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
+    OprmNicheCandidate candidate =
+        nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
     OprmMeiAudienceProfile meiAudienceProfile = requireApprovedMeiAudienceProfile(cycle);
-    OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = metaSignalService.buildSignalPackage(cycle, card);
-    Optional<OprmMarketNicheSnapshot> existingMarketNicheByCnaeAndNeutralName = findExistingMarketNicheByCnaeAndNeutralName(cycle);
-    boolean existingMatchedByCnaeAndNeutralName = existingMarketNicheByCnaeAndNeutralName.isPresent();
-    OprmMarketNicheDraft marketNicheDraft = buildMarketNicheDraft(
-        existingMarketNicheByCnaeAndNeutralName.map(OprmMarketNicheSnapshot::marketNicheId).orElse(null),
-        card,
-        cycle,
-        metaSignalPackage);
+    OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage =
+        metaSignalService.buildSignalPackage(cycle, card);
+    Optional<OprmMarketNicheSnapshot> existingMarketNicheByCnaeAndNeutralName =
+        findExistingMarketNicheByCnaeAndNeutralName(cycle);
+    boolean existingMatchedByCnaeAndNeutralName =
+        existingMarketNicheByCnaeAndNeutralName.isPresent();
+    OprmMarketNicheDraft marketNicheDraft =
+        buildMarketNicheDraft(
+            existingMarketNicheByCnaeAndNeutralName
+                .map(OprmMarketNicheSnapshot::marketNicheId)
+                .orElse(null),
+            card,
+            cycle,
+            metaSignalPackage);
     OprmEnrichedNicheProfileDraft profileDraft = buildProfileDraft(card, cycle, candidate, request);
-    OprmEnrichedNicheMaterializationResult materialization = enrichedNicheGateway.materialize(marketNicheDraft, profileDraft);
+    OprmEnrichedNicheMaterializationResult materialization =
+        enrichedNicheGateway.materialize(marketNicheDraft, profileDraft);
     updateCycleAndCandidate(
-        cycle,
-        candidate,
-        materialization.marketNicheId(),
-        existingMatchedByCnaeAndNeutralName);
+        cycle, candidate, materialization.marketNicheId(), existingMatchedByCnaeAndNeutralName);
     return new CompleteEnrichedNicheMaterializerResponse(
         researchCycleId,
         card.getId(),
@@ -158,7 +189,10 @@ public class BackendEnrichedNicheMaterializerService {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
     cycle.setStatus(FAILED_STATUS);
     cycle.setCurrentStageCode(CURRENT_STAGE_ENRICHED_NICHE_MATERIALIZER);
-    cycle.setErrorMessage(defaultText(request == null ? null : request.errorMessage(), "Falha na materialização de nicho enriquecido"));
+    cycle.setErrorMessage(
+        defaultText(
+            request == null ? null : request.errorMessage(),
+            "Falha na materialização de nicho enriquecido"));
     cycle.setFinishedAt(Instant.now());
     cycle.setUpdatedAt(Instant.now());
     cycleRepository.save(cycle);
@@ -168,54 +202,79 @@ public class BackendEnrichedNicheMaterializerService {
   @Transactional(readOnly = true)
   public EnrichedNicheMaterializerDetailResponse detail(Long researchCycleId) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-    OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).orElse(null);
-    OprmEnrichedNicheProfileSnapshot profile = enrichedNicheGateway.findLatestProfileByResearchCycleId(researchCycleId).orElse(null);
+    OprmNicheRoutineCard card =
+        routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).orElse(null);
+    OprmEnrichedNicheProfileSnapshot profile =
+        enrichedNicheGateway.findLatestProfileByResearchCycleId(researchCycleId).orElse(null);
     return buildDetailResponse(cycle, card, profile);
   }
 
-  /** Retorna o detalhe de um perfil enriquecido materializado a partir do identificador do perfil. */
+  /**
+   * Retorna o detalhe de um perfil enriquecido materializado a partir do identificador do perfil.
+   */
   @Transactional(readOnly = true)
   public EnrichedNicheMaterializerDetailResponse detailByProfileId(Long profileId) {
     OprmEnrichedNicheProfileSnapshot profile = enrichedNicheGateway.requireProfileById(profileId);
     OprmRoutineResearchCycle cycle = findCycle(profile.researchCycleId());
-    OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(profile.researchCycleId()).orElse(null);
+    OprmNicheRoutineCard card =
+        routineCardRepository
+            .findFirstByResearchCycleIdOrderByIdDesc(profile.researchCycleId())
+            .orElse(null);
     return buildDetailResponse(cycle, card, profile);
   }
 
   /** Lista os nichos enriquecidos já gerados para o CNAE informado. */
   @Transactional(readOnly = true)
-  public List<GeneratedEnrichedNicheByCnaeResponse> listGeneratedByCnae(String cnaeCode, int limit) {
+  public List<GeneratedEnrichedNicheByCnaeResponse> listGeneratedByCnae(
+      String cnaeCode, int limit) {
     int boundedLimit = Math.max(1, Math.min(limit, 100));
     return enrichedNicheGateway.listGeneratedByCnae(cnaeCode, boundedLimit).stream()
         .map(this::toGeneratedByCnaeResponse)
         .toList();
   }
 
-  /** Gera o documento Markdown de auditoria do pipeline completo a partir do perfil enriquecido final. */
+  /**
+   * Gera o documento Markdown de auditoria do pipeline completo a partir do perfil enriquecido
+   * final.
+   */
   @Transactional(readOnly = true)
   public String buildPipelineMarkdownByProfileId(Long profileId) {
     OprmEnrichedNicheProfileSnapshot profile = enrichedNicheGateway.requireProfileById(profileId);
     return buildPipelineMarkdownForCycle(profile.researchCycleId(), profile);
   }
 
-  /** Gera o documento Markdown de auditoria do job mesmo quando ele ainda não materializou perfil final. */
+  /**
+   * Gera o documento Markdown de auditoria do job mesmo quando ele ainda não materializou perfil
+   * final.
+   */
   @Transactional(readOnly = true)
   public String buildPipelineMarkdownByResearchCycleId(Long researchCycleId) {
-    OprmEnrichedNicheProfileSnapshot profile = enrichedNicheGateway.findLatestProfileByResearchCycleId(researchCycleId).orElse(null);
+    OprmEnrichedNicheProfileSnapshot profile =
+        enrichedNicheGateway.findLatestProfileByResearchCycleId(researchCycleId).orElse(null);
     return buildPipelineMarkdownForCycle(researchCycleId, profile);
   }
 
   /** Consolida os artefatos atuais de um job OPRM para download operacional. */
-  private String buildPipelineMarkdownForCycle(Long researchCycleId, OprmEnrichedNicheProfileSnapshot profile) {
+  private String buildPipelineMarkdownForCycle(
+      Long researchCycleId, OprmEnrichedNicheProfileSnapshot profile) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-    OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).orElse(null);
+    OprmNicheRoutineCard card =
+        routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).orElse(null);
     OprmNicheResearchSeed seed = seedRepository.findByResearchCycleId(researchCycleId).orElse(null);
-    List<OprmResearchQuery> queries = safeList(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId));
-    List<OprmSourceCandidate> candidates = safeList(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(
-        researchCycleId));
-    List<OprmSourceSnapshot> snapshots = safeList(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId));
-    List<OprmExtractedSignal> signals = safeList(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId));
-    return buildPipelineMarkdown(profile, cycle, card, seed, queries, candidates, snapshots, signals);
+    List<OprmResearchQuery> queries =
+        safeList(
+            researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId));
+    List<OprmSourceCandidate> candidates =
+        safeList(
+            sourceCandidateRepository
+                .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(
+                    researchCycleId));
+    List<OprmSourceSnapshot> snapshots =
+        safeList(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId));
+    List<OprmExtractedSignal> signals =
+        safeList(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId));
+    return buildPipelineMarkdown(
+        profile, cycle, card, seed, queries, candidates, snapshots, signals);
   }
 
   /** Garante coleção vazia quando algum repositório mockado ou legado retornar nulo. */
@@ -223,28 +282,42 @@ public class BackendEnrichedNicheMaterializerService {
     return items == null ? List.of() : items;
   }
 
-  /** Localiza ciclos e perfis históricos com termos de solução para orientar reprocessamento neutro. */
+  /**
+   * Localiza ciclos e perfis históricos com termos de solução para orientar reprocessamento neutro.
+   */
   @Transactional(readOnly = true)
   public ContaminatedNicheDiagnosticResponse diagnoseHistoricalContamination(int limit) {
     int boundedLimit = Math.max(1, Math.min(limit, 50));
     Map<String, ContaminatedNicheDiagnosticItem> uniqueItems = new LinkedHashMap<>();
     for (String term : SOLUTION_LANGUAGE_TERMS) {
-      cycleRepository.findPotentiallyContaminatedByTerm(term, PageRequest.of(0, boundedLimit)).forEach(cycle ->
-          uniqueItems.putIfAbsent("CYCLE:" + cycle.getId(), toCycleDiagnosticItem(cycle, term)));
-      enrichedNicheGateway.findPotentiallyContaminatedByTerm(term, boundedLimit).forEach(profile ->
-          uniqueItems.putIfAbsent("PROFILE:" + profile.profileId(), toProfileDiagnosticItem(profile, term)));
+      cycleRepository
+          .findPotentiallyContaminatedByTerm(term, PageRequest.of(0, boundedLimit))
+          .forEach(
+              cycle ->
+                  uniqueItems.putIfAbsent(
+                      "CYCLE:" + cycle.getId(), toCycleDiagnosticItem(cycle, term)));
+      enrichedNicheGateway
+          .findPotentiallyContaminatedByTerm(term, boundedLimit)
+          .forEach(
+              profile ->
+                  uniqueItems.putIfAbsent(
+                      "PROFILE:" + profile.profileId(), toProfileDiagnosticItem(profile, term)));
     }
-    List<ContaminatedNicheDiagnosticItem> items = new ArrayList<>(uniqueItems.values()).stream()
-        .limit(boundedLimit)
-        .toList();
-    int totalCycles = (int) items.stream().filter(item -> "CYCLE".equals(item.recordType())).count();
-    int totalProfiles = (int) items.stream().filter(item -> "PROFILE".equals(item.recordType())).count();
-    return new ContaminatedNicheDiagnosticResponse(Instant.now(), totalCycles, totalProfiles, items);
+    List<ContaminatedNicheDiagnosticItem> items =
+        new ArrayList<>(uniqueItems.values()).stream().limit(boundedLimit).toList();
+    int totalCycles =
+        (int) items.stream().filter(item -> "CYCLE".equals(item.recordType())).count();
+    int totalProfiles =
+        (int) items.stream().filter(item -> "PROFILE".equals(item.recordType())).count();
+    return new ContaminatedNicheDiagnosticResponse(
+        Instant.now(), totalCycles, totalProfiles, items);
   }
 
   /** Monta o DTO público de detalhe combinando ciclo, card e perfil enriquecido. */
   private EnrichedNicheMaterializerDetailResponse buildDetailResponse(
-      OprmRoutineResearchCycle cycle, OprmNicheRoutineCard card, OprmEnrichedNicheProfileSnapshot profile) {
+      OprmRoutineResearchCycle cycle,
+      OprmNicheRoutineCard card,
+      OprmEnrichedNicheProfileSnapshot profile) {
     return new EnrichedNicheMaterializerDetailResponse(
         cycle.getId(),
         cycle.getStatus(),
@@ -259,21 +332,32 @@ public class BackendEnrichedNicheMaterializerService {
         cycle.getCnaeCode(),
         card == null ? null : card.getQualityStatus(),
         profile == null ? null : profile.routineSummary(),
-        profile == null ? (card == null ? null : buildPersonaDailyTasks(card)) : profile.personaDailyTasks(),
+        profile == null
+            ? (card == null ? null : buildPersonaDailyTasks(card))
+            : profile.personaDailyTasks(),
         card == null ? null : card.getPainsSummary(),
         card == null ? null : card.getResultsSummary(),
         card == null ? null : card.getMechanismOpportunitiesSummary(),
         profile == null ? null : profile.evidenceSummary(),
         profile == null ? null : profile.sourceDomains(),
-        profile == null ? scoreOrZero(card == null ? null : card.getRoutineEvidenceScore()) : profile.routineEvidenceScore(),
-        profile == null ? scoreOrZero(card == null ? null : card.getDifficultyEvidenceScore()) : profile.difficultyEvidenceScore(),
-        profile == null ? scoreOrZero(card == null ? null : card.getSourceDiversityScore()) : profile.sourceDiversityScore(),
-        profile == null ? scoreOrZero(card == null ? null : card.getSolutionLanguageRiskScore()) : profile.solutionLanguageRiskScore(),
+        profile == null
+            ? scoreOrZero(card == null ? null : card.getRoutineEvidenceScore())
+            : profile.routineEvidenceScore(),
+        profile == null
+            ? scoreOrZero(card == null ? null : card.getDifficultyEvidenceScore())
+            : profile.difficultyEvidenceScore(),
+        profile == null
+            ? scoreOrZero(card == null ? null : card.getSourceDiversityScore())
+            : profile.sourceDiversityScore(),
+        profile == null
+            ? scoreOrZero(card == null ? null : card.getSolutionLanguageRiskScore())
+            : profile.solutionLanguageRiskScore(),
         profile == null ? null : profile.createdAt());
   }
 
   /** Converte o perfil enriquecido em resumo para a lista de nichos do CNAE. */
-  private GeneratedEnrichedNicheByCnaeResponse toGeneratedByCnaeResponse(OprmEnrichedNicheProfileSnapshot profile) {
+  private GeneratedEnrichedNicheByCnaeResponse toGeneratedByCnaeResponse(
+      OprmEnrichedNicheProfileSnapshot profile) {
     return new GeneratedEnrichedNicheByCnaeResponse(
         profile.profileId(),
         profile.marketNicheId(),
@@ -288,7 +372,10 @@ public class BackendEnrichedNicheMaterializerService {
         profile.createdAt());
   }
 
-  /** Confirma se a pendência final tem perfil MEI/autônomo do próprio ciclo antes de expor ao coletor. */
+  /**
+   * Confirma se a pendência final tem perfil MEI/autônomo do próprio ciclo antes de expor ao
+   * coletor.
+   */
   private boolean hasMeiAudienceProfileForPending(OprmNicheRoutineCard card) {
     return meiAudienceProfileRepository.existsByResearchCycleId(card.getResearchCycleId());
   }
@@ -296,7 +383,8 @@ public class BackendEnrichedNicheMaterializerService {
   /** Converte cartão aprovado em unidade de trabalho completa para o coletor OPRM. */
   private RecordEnrichedNicheMaterializerPending toPending(OprmNicheRoutineCard card) {
     OprmRoutineResearchCycle cycle = findCycle(card.getResearchCycleId());
-    OprmNicheCandidate candidate = nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
+    OprmNicheCandidate candidate =
+        nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
     return new RecordEnrichedNicheMaterializerPending(
         card.getId(),
         cycle.getId(),
@@ -327,11 +415,16 @@ public class BackendEnrichedNicheMaterializerService {
         card.getQualityCheckedAt());
   }
 
-  /** Exige perfil MEI/autônomo do próprio ciclo para impedir mistura entre subnichos do mesmo CNAE. */
+  /**
+   * Exige perfil MEI/autônomo do próprio ciclo para impedir mistura entre subnichos do mesmo CNAE.
+   */
   private OprmMeiAudienceProfile requireApprovedMeiAudienceProfile(OprmRoutineResearchCycle cycle) {
-    return meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(cycle.getId())
-        .orElseThrow(() -> new IllegalStateException(
-            "Ciclo OPRM aguardando perfil MEI/autônomo aprovado antes da materialização final"));
+    return meiAudienceProfileRepository
+        .findFirstByResearchCycleIdOrderByIdDesc(cycle.getId())
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Ciclo OPRM aguardando perfil MEI/autônomo aprovado antes da materialização final"));
   }
 
   /** Monta o contrato do nicho base que será materializado fora do pacote OPRM. */
@@ -357,7 +450,9 @@ public class BackendEnrichedNicheMaterializerService {
         metaSignalPackage == null ? List.of() : metaSignalPackage.interests(),
         metaSignalPackage == null ? List.of() : metaSignalPackage.roles(),
         metaSignalPackage == null ? List.of() : metaSignalPackage.behaviors(),
-        metaSignalPackage == null ? null : metaSignalService.buildReadableSignalSummary(metaSignalPackage),
+        metaSignalPackage == null
+            ? null
+            : metaSignalService.buildReadableSignalSummary(metaSignalPackage),
         buildExtraTips(card),
         identificationCostBrl);
   }
@@ -374,13 +469,18 @@ public class BackendEnrichedNicheMaterializerService {
     return value == null ? BigDecimal.ZERO : value;
   }
 
-  /** Localiza nicho já vinculado ao mesmo CNAE e ao mesmo nome neutro, permitindo vários nichos diferentes no mesmo CNAE. */
-  private Optional<OprmMarketNicheSnapshot> findExistingMarketNicheByCnaeAndNeutralName(OprmRoutineResearchCycle cycle) {
+  /**
+   * Localiza nicho já vinculado ao mesmo CNAE e ao mesmo nome neutro, permitindo vários nichos
+   * diferentes no mesmo CNAE.
+   */
+  private Optional<OprmMarketNicheSnapshot> findExistingMarketNicheByCnaeAndNeutralName(
+      OprmRoutineResearchCycle cycle) {
     String normalizedNeutralName = normalizeLookupText(neutralNicheName(cycle));
     if (!StringUtils.hasText(cycle.getCnaeCode()) || !StringUtils.hasText(normalizedNeutralName)) {
       return Optional.empty();
     }
-    return enrichedNicheGateway.findByCnaeAndNormalizedNeutralName(cycle.getCnaeCode().trim(), normalizedNeutralName);
+    return enrichedNicheGateway.findByCnaeAndNormalizedNeutralName(
+        cycle.getCnaeCode().trim(), normalizedNeutralName);
   }
 
   /** Normaliza texto para comparação canônica simples com a consulta do banco. */
@@ -389,11 +489,14 @@ public class BackendEnrichedNicheMaterializerService {
   }
 
   /** Monta descrição legível do nicho sem criar hipótese ou oferta. */
-  private String buildMarketNicheDescription(OprmNicheRoutineCard card, OprmRoutineResearchCycle cycle) {
-    return String.join("\n\n",
+  private String buildMarketNicheDescription(
+      OprmNicheRoutineCard card, OprmRoutineResearchCycle cycle) {
+    return String.join(
+        "\n\n",
         "Nicho materializado pelo OPRM NichoCNAE.",
         "CNAE: " + cycle.getCnaeCode() + " - " + cycle.getCnaeDescription(),
-        "Nome original recebido para auditoria: " + defaultText(cycle.getOriginalNicheName(), cycle.getNicheName()),
+        "Nome original recebido para auditoria: "
+            + defaultText(cycle.getOriginalNicheName(), cycle.getNicheName()),
         "Nome neutro pesquisado: " + neutralNicheName(cycle),
         "Rotina observada:\n" + card.getRoutineSummary(),
         "Tarefas diárias da persona:\n" + buildPersonaDailyTasks(card),
@@ -426,12 +529,16 @@ public class BackendEnrichedNicheMaterializerService {
     appendTextBlock(markdown, "Reexecuções e observações do job", cycle.getErrorMessage());
     markdown.append("\n");
 
-    appendSection(markdown, "1. Abertura do ciclo", "O ciclo iniciou a pesquisa de rotina real do nicho, preservando o nome original apenas para auditoria e usando nome neutro para evitar contaminação por solução.");
+    appendSection(
+        markdown,
+        "1. Abertura do ciclo",
+        "O ciclo iniciou a pesquisa de rotina real do nicho, preservando o nome original apenas para auditoria e usando nome neutro para evitar contaminação por solução.");
     appendKeyValue(markdown, "Nome original", cycle.getOriginalNicheName());
     appendKeyValue(markdown, "Nome neutro", cycle.getNeutralNicheName());
     appendKeyValue(markdown, "Modo de pesquisa", cycle.getResearchMode());
     appendKeyValue(markdown, "Score OPRM", cycle.getSourceScore());
-    appendKeyValue(markdown, "Risco inicial de linguagem de solução", cycle.getSolutionLanguageRiskScore());
+    appendKeyValue(
+        markdown, "Risco inicial de linguagem de solução", cycle.getSolutionLanguageRiskScore());
     appendKeyValue(markdown, "Início", cycle.getStartedAt());
     appendKeyValue(markdown, "Fim", cycle.getFinishedAt());
 
@@ -441,13 +548,17 @@ public class BackendEnrichedNicheMaterializerService {
     appendSnapshotsSection(markdown, snapshots);
     appendSignalsSection(markdown, signals);
     appendRoutineCardSection(markdown, card);
-    appendFinalConclusionSection(markdown, profile, cycle, card, queries, candidates, snapshots, signals);
+    appendFinalConclusionSection(
+        markdown, profile, cycle, card, queries, candidates, snapshots, signals);
     return markdown.toString();
   }
 
   /** Adiciona a seção de seed operacional quando a etapa inicial foi persistida. */
   private void appendSeedSection(StringBuilder markdown, OprmNicheResearchSeed seed) {
-    appendSection(markdown, "2. Seed de pesquisa", "Perfil operacional usado para orientar as buscas sem criar oferta ou hipótese comercial.");
+    appendSection(
+        markdown,
+        "2. Seed de pesquisa",
+        "Perfil operacional usado para orientar as buscas sem criar oferta ou hipótese comercial.");
     if (seed == null) {
       markdown.append("Seed não encontrado para este ciclo.\n");
       return;
@@ -462,69 +573,127 @@ public class BackendEnrichedNicheMaterializerService {
 
   /** Adiciona a seção de queries processadas pela busca de fontes. */
   private void appendQueriesSection(StringBuilder markdown, List<OprmResearchQuery> queries) {
-    appendSection(markdown, "3. Frases de pesquisa processadas", "Consultas executáveis usadas para procurar rotina, dificuldades, perguntas, linguagem e contexto operacional.");
+    appendSection(
+        markdown,
+        "3. Frases de pesquisa processadas",
+        "Consultas executáveis usadas para procurar rotina, dificuldades, perguntas, linguagem e contexto operacional.");
     appendKeyValue(markdown, "Total de queries", queries.size());
-    queries.forEach(query -> markdown
-        .append("- #").append(query.getId())
-        .append(" · ").append(markdownText(query.getQueryGoal()))
-        .append(" · prioridade ").append(valueText(query.getPriority()))
-        .append(" · status ").append(markdownText(query.getStatus()))
-        .append(" · resultados ").append(valueText(query.getResultCount()))
-        .append("\n  - Query: ").append(markdownText(query.getQueryText()))
-        .append("\n"));
+    queries.forEach(
+        query ->
+            markdown
+                .append("- #")
+                .append(query.getId())
+                .append(" · ")
+                .append(markdownText(query.getQueryGoal()))
+                .append(" · prioridade ")
+                .append(valueText(query.getPriority()))
+                .append(" · status ")
+                .append(markdownText(query.getStatus()))
+                .append(" · resultados ")
+                .append(valueText(query.getResultCount()))
+                .append("\n  - Query: ")
+                .append(markdownText(query.getQueryText()))
+                .append("\n"));
   }
 
   /** Adiciona a seção de fontes candidatas encontradas na pesquisa. */
-  private void appendCandidatesSection(StringBuilder markdown, List<OprmSourceCandidate> candidates) {
-    appendSection(markdown, "4. Fontes candidatas encontradas", "Fontes localizadas pela busca antes da coleta curta de evidências.");
+  private void appendCandidatesSection(
+      StringBuilder markdown, List<OprmSourceCandidate> candidates) {
+    appendSection(
+        markdown,
+        "4. Fontes candidatas encontradas",
+        "Fontes localizadas pela busca antes da coleta curta de evidências.");
     appendKeyValue(markdown, "Total de fontes candidatas", candidates.size());
-    appendCounts(markdown, "Por status", candidates.stream().map(OprmSourceCandidate::getStatus).toList());
-    candidates.forEach(candidate -> markdown
-        .append("- #").append(candidate.getId())
-        .append(" · ").append(markdownText(candidate.getSourceDomain()))
-        .append(" · status ").append(markdownText(candidate.getStatus()))
-        .append(" · intenção ").append(markdownText(candidate.getSourceIntent()))
-        .append(" · score rotina ").append(valueText(candidate.getRoutineEvidenceScore()))
-        .append("\n  - Título: ").append(markdownText(candidate.getSourceTitle()))
-        .append("\n  - URL: ").append(markdownText(candidate.getSourceUrl()))
-        .append("\n  - Snippet: ").append(markdownText(candidate.getSourceSnippet()))
-        .append("\n"));
+    appendCounts(
+        markdown, "Por status", candidates.stream().map(OprmSourceCandidate::getStatus).toList());
+    candidates.forEach(
+        candidate ->
+            markdown
+                .append("- #")
+                .append(candidate.getId())
+                .append(" · ")
+                .append(markdownText(candidate.getSourceDomain()))
+                .append(" · status ")
+                .append(markdownText(candidate.getStatus()))
+                .append(" · intenção ")
+                .append(markdownText(candidate.getSourceIntent()))
+                .append(" · score rotina ")
+                .append(valueText(candidate.getRoutineEvidenceScore()))
+                .append("\n  - Título: ")
+                .append(markdownText(candidate.getSourceTitle()))
+                .append("\n  - URL: ")
+                .append(markdownText(candidate.getSourceUrl()))
+                .append("\n  - Snippet: ")
+                .append(markdownText(candidate.getSourceSnippet()))
+                .append("\n"));
   }
 
   /** Adiciona a seção de snapshots curtos coletados das fontes selecionadas. */
   private void appendSnapshotsSection(StringBuilder markdown, List<OprmSourceSnapshot> snapshots) {
-    appendSection(markdown, "5. Evidências curtas coletadas", "Trechos curtos e metadados coletados das fontes selecionadas para extração de sinais.");
+    appendSection(
+        markdown,
+        "5. Evidências curtas coletadas",
+        "Trechos curtos e metadados coletados das fontes selecionadas para extração de sinais.");
     appendKeyValue(markdown, "Total de snapshots", snapshots.size());
-    appendCounts(markdown, "Por intenção da fonte", snapshots.stream().map(OprmSourceSnapshot::getSourceIntent).toList());
-    snapshots.forEach(snapshot -> markdown
-        .append("- #").append(snapshot.getId())
-        .append(" · ").append(markdownText(snapshot.getSourceDomain()))
-        .append(" · fetch ").append(markdownText(snapshot.getFetchStatus()))
-        .append(" · extração ").append(markdownText(snapshot.getSignalExtractionStatus()))
-        .append(" · score rotina ").append(valueText(snapshot.getRoutineEvidenceScore()))
-        .append("\n  - Título: ").append(markdownText(snapshot.getSourceTitle()))
-        .append("\n  - Trecho: ").append(markdownText(snapshot.getShortExcerpt()))
-        .append("\n"));
+    appendCounts(
+        markdown,
+        "Por intenção da fonte",
+        snapshots.stream().map(OprmSourceSnapshot::getSourceIntent).toList());
+    snapshots.forEach(
+        snapshot ->
+            markdown
+                .append("- #")
+                .append(snapshot.getId())
+                .append(" · ")
+                .append(markdownText(snapshot.getSourceDomain()))
+                .append(" · fetch ")
+                .append(markdownText(snapshot.getFetchStatus()))
+                .append(" · extração ")
+                .append(markdownText(snapshot.getSignalExtractionStatus()))
+                .append(" · score rotina ")
+                .append(valueText(snapshot.getRoutineEvidenceScore()))
+                .append("\n  - Título: ")
+                .append(markdownText(snapshot.getSourceTitle()))
+                .append("\n  - Trecho: ")
+                .append(markdownText(snapshot.getShortExcerpt()))
+                .append("\n"));
   }
 
   /** Adiciona a seção de sinais estruturados extraídos das evidências. */
   private void appendSignalsSection(StringBuilder markdown, List<OprmExtractedSignal> signals) {
-    appendSection(markdown, "6. Sinais extraídos", "Sinais classificados que sustentaram a síntese da rotina, dificuldades, perguntas e linguagem pública.");
+    appendSection(
+        markdown,
+        "6. Sinais extraídos",
+        "Sinais classificados que sustentaram a síntese da rotina, dificuldades, perguntas e linguagem pública.");
     appendKeyValue(markdown, "Total de sinais", signals.size());
-    appendCounts(markdown, "Por tipo de sinal", signals.stream().map(OprmExtractedSignal::getSignalType).toList());
-    signals.forEach(signal -> markdown
-        .append("- #").append(signal.getId())
-        .append(" · ").append(markdownText(signal.getSignalType()))
-        .append(" · ").append(markdownText(signal.getSourceDomain()))
-        .append(" · confiança ").append(valueText(signal.getConfidenceScore()))
-        .append("%\n  - Sinal: ").append(markdownText(signal.getSignalText()))
-        .append("\n  - Evidência: ").append(markdownText(signal.getEvidenceExcerpt()))
-        .append("\n"));
+    appendCounts(
+        markdown,
+        "Por tipo de sinal",
+        signals.stream().map(OprmExtractedSignal::getSignalType).toList());
+    signals.forEach(
+        signal ->
+            markdown
+                .append("- #")
+                .append(signal.getId())
+                .append(" · ")
+                .append(markdownText(signal.getSignalType()))
+                .append(" · ")
+                .append(markdownText(signal.getSourceDomain()))
+                .append(" · confiança ")
+                .append(valueText(signal.getConfidenceScore()))
+                .append("%\n  - Sinal: ")
+                .append(markdownText(signal.getSignalText()))
+                .append("\n  - Evidência: ")
+                .append(markdownText(signal.getEvidenceExcerpt()))
+                .append("\n"));
   }
 
   /** Adiciona a seção do cartão sintetizado e da decisão do gate de qualidade. */
   private void appendRoutineCardSection(StringBuilder markdown, OprmNicheRoutineCard card) {
-    appendSection(markdown, "7. Síntese da rotina e gate de qualidade", "Card consolidado com a decisão de qualidade antes da materialização do nicho enriquecido.");
+    appendSection(
+        markdown,
+        "7. Síntese da rotina e gate de qualidade",
+        "Card consolidado com a decisão de qualidade antes da materialização do nicho enriquecido.");
     if (card == null) {
       markdown.append("Cartão de rotina não encontrado para este ciclo.\n");
       return;
@@ -533,14 +702,16 @@ public class BackendEnrichedNicheMaterializerService {
     appendKeyValue(markdown, "Status de qualidade", card.getQualityStatus());
     appendKeyValue(markdown, "Aprovado para materialização", card.getReadyForHypothesis());
     appendKeyValue(markdown, "Score de evidência de rotina", card.getRoutineEvidenceScore());
-    appendKeyValue(markdown, "Score de evidência de dificuldade", card.getDifficultyEvidenceScore());
+    appendKeyValue(
+        markdown, "Score de evidência de dificuldade", card.getDifficultyEvidenceScore());
     appendKeyValue(markdown, "Diversidade de fontes", card.getSourceDiversityScore());
     appendKeyValue(markdown, "Risco de linguagem de solução", card.getSolutionLanguageRiskScore());
     appendTextBlock(markdown, "Rotina observada", card.getRoutineSummary());
     appendTextBlock(markdown, "Tarefas diárias da persona", buildPersonaDailyTasks(card));
     appendTextBlock(markdown, "Dores observadas", card.getPainsSummary());
     appendTextBlock(markdown, "Perguntas/resultados observados", card.getResultsSummary());
-    appendTextBlock(markdown, "Contexto operacional e linguagem", card.getMechanismOpportunitiesSummary());
+    appendTextBlock(
+        markdown, "Contexto operacional e linguagem", card.getMechanismOpportunitiesSummary());
     appendTextBlock(markdown, "Evidências consolidadas", card.getEvidenceSummary());
   }
 
@@ -554,7 +725,10 @@ public class BackendEnrichedNicheMaterializerService {
       List<OprmSourceCandidate> candidates,
       List<OprmSourceSnapshot> snapshots,
       List<OprmExtractedSignal> signals) {
-    appendSection(markdown, "8. Conclusão final do nicho enriquecido", "Resultado final materializado para uso nas próximas etapas, ainda sem criar hipótese, oferta ou campanha.");
+    appendSection(
+        markdown,
+        "8. Conclusão final do nicho enriquecido",
+        "Resultado final materializado para uso nas próximas etapas, ainda sem criar hipótese, oferta ou campanha.");
     appendKeyValue(markdown, "Status atual", cycle.getStatus());
     appendKeyValue(markdown, "Perfil enriquecido", profile == null ? null : profile.profileId());
     appendKeyValue(markdown, "Nicho operacional", profile == null ? null : profile.marketNicheId());
@@ -564,17 +738,34 @@ public class BackendEnrichedNicheMaterializerService {
     appendKeyValue(markdown, "Evidências curtas processadas", snapshots.size());
     appendKeyValue(markdown, "Sinais processados", signals.size());
     appendTextBlock(markdown, "Rotina final", profile == null ? null : profile.routineSummary());
-    appendTextBlock(markdown, "Tarefas diárias finais da persona", profile == null ? (card == null ? null : buildPersonaDailyTasks(card)) : profile.personaDailyTasks());
-    appendTextBlock(markdown, "Dores observadas no cartão de rotina", card == null ? null : card.getPainsSummary());
-    appendTextBlock(markdown, "Perguntas/resultados observados no cartão de rotina", card == null ? null : card.getResultsSummary());
-    appendTextBlock(markdown, "Contexto operacional observado no cartão de rotina", card == null ? null : card.getMechanismOpportunitiesSummary());
-    appendTextBlock(markdown, "Evidências finais", profile == null ? null : profile.evidenceSummary());
+    appendTextBlock(
+        markdown,
+        "Tarefas diárias finais da persona",
+        profile == null
+            ? (card == null ? null : buildPersonaDailyTasks(card))
+            : profile.personaDailyTasks());
+    appendTextBlock(
+        markdown,
+        "Dores observadas no cartão de rotina",
+        card == null ? null : card.getPainsSummary());
+    appendTextBlock(
+        markdown,
+        "Perguntas/resultados observados no cartão de rotina",
+        card == null ? null : card.getResultsSummary());
+    appendTextBlock(
+        markdown,
+        "Contexto operacional observado no cartão de rotina",
+        card == null ? null : card.getMechanismOpportunitiesSummary());
+    appendTextBlock(
+        markdown, "Evidências finais", profile == null ? null : profile.evidenceSummary());
     String quality = card == null ? "sem card de qualidade localizado" : card.getQualityStatus();
-    markdown.append("\n**Decisão operacional:** o job está em `")
+    markdown
+        .append("\n**Decisão operacional:** o job está em `")
         .append(markdownText(cycle.getStatus()))
         .append("` com qualidade `")
         .append(markdownText(quality))
-        .append("`. Use este documento como auditoria da pesquisa de rotina real antes de avançar para hipótese, mecanismo, prova e oferta.\n");
+        .append(
+            "`. Use este documento como auditoria da pesquisa de rotina real antes de avançar para hipótese, mecanismo, prova e oferta.\n");
   }
 
   /** Adiciona cabeçalho de seção com explicação curta de negócio. */
@@ -585,7 +776,12 @@ public class BackendEnrichedNicheMaterializerService {
 
   /** Adiciona campo simples ao documento Markdown. */
   private void appendKeyValue(StringBuilder markdown, String label, Object value) {
-    markdown.append("- **").append(markdownText(label)).append(":** ").append(markdownText(valueText(value))).append("\n");
+    markdown
+        .append("- **")
+        .append(markdownText(label))
+        .append(":** ")
+        .append(markdownText(valueText(value)))
+        .append("\n");
   }
 
   /** Adiciona bloco textual preservando quebras de linha úteis para auditoria. */
@@ -596,17 +792,21 @@ public class BackendEnrichedNicheMaterializerService {
 
   /** Adiciona contagens agrupadas de valores processados. */
   private void appendCounts(StringBuilder markdown, String label, List<String> values) {
-    Map<String, Long> counts = values.stream()
-        .filter(Objects::nonNull)
-        .map(this::defaultGroupText)
-        .collect(Collectors.groupingBy(Function.identity(), LinkedHashMap::new, Collectors.counting()));
+    Map<String, Long> counts =
+        values.stream()
+            .filter(Objects::nonNull)
+            .map(this::defaultGroupText)
+            .collect(
+                Collectors.groupingBy(
+                    Function.identity(), LinkedHashMap::new, Collectors.counting()));
     if (counts.isEmpty()) {
       return;
     }
     markdown.append("- **").append(markdownText(label)).append(":** ");
-    markdown.append(counts.entrySet().stream()
-        .map(entry -> markdownText(entry.getKey()) + " (" + entry.getValue() + ")")
-        .collect(Collectors.joining(", ")));
+    markdown.append(
+        counts.entrySet().stream()
+            .map(entry -> markdownText(entry.getKey()) + " (" + entry.getValue() + ")")
+            .collect(Collectors.joining(", ")));
     markdown.append("\n");
   }
 
@@ -634,7 +834,8 @@ public class BackendEnrichedNicheMaterializerService {
 
   /** Monta dicas operacionais de uso do nicho para próximas etapas sem acionar hipótese. */
   private String buildExtraTips(OprmNicheRoutineCard card) {
-    return String.join("\n\n",
+    return String.join(
+        "\n\n",
         "Use este registro como auditoria de rotina real antes de qualquer fluxo posterior de hipótese.",
         "Status de qualidade da rotina: " + card.getQualityStatus(),
         "Especificidade: " + card.getSpecificityScore() + "%",
@@ -642,7 +843,9 @@ public class BackendEnrichedNicheMaterializerService {
         "Duplicação: " + card.getDuplicationScore() + "%");
   }
 
-  /** Cria o contrato do perfil enriquecido com whitelist dos campos funcionais do contrato final. */
+  /**
+   * Cria o contrato do perfil enriquecido com whitelist dos campos funcionais do contrato final.
+   */
   private OprmEnrichedNicheProfileDraft buildProfileDraft(
       OprmNicheRoutineCard card,
       OprmRoutineResearchCycle cycle,
@@ -723,9 +926,13 @@ public class BackendEnrichedNicheMaterializerService {
     }
   }
 
-  /** Preserva apenas o bloco de contexto/linguagem quando ele foi sintetizado como pesquisa de rotina real. */
+  /**
+   * Preserva apenas o bloco de contexto/linguagem quando ele foi sintetizado como pesquisa de
+   * rotina real.
+   */
   private String materializableOperationalContext(OprmNicheRoutineCard card) {
-    String context = requiredText(card.getMechanismOpportunitiesSummary(), "operationalContextSummary");
+    String context =
+        requiredText(card.getMechanismOpportunitiesSummary(), "operationalContextSummary");
     String normalized = context.toLowerCase(java.util.Locale.ROOT);
     if (normalized.contains("contexto operacional") || normalized.contains("linguagem do nicho")) {
       return context.trim();
@@ -738,11 +945,18 @@ public class BackendEnrichedNicheMaterializerService {
     return value == null ? 0 : Math.max(0, Math.min(100, value));
   }
 
-  /** Atualiza ciclo e candidato para indicar criação ou revisão, preservando múltiplos nichos possíveis por CNAE. */
+  /**
+   * Atualiza ciclo e candidato para indicar criação ou revisão, preservando múltiplos nichos
+   * possíveis por CNAE.
+   */
   private void updateCycleAndCandidate(
-      OprmRoutineResearchCycle cycle, OprmNicheCandidate candidate, Long marketNicheId, boolean existingMatchedByCnaeAndNeutralName) {
+      OprmRoutineResearchCycle cycle,
+      OprmNicheCandidate candidate,
+      Long marketNicheId,
+      boolean existingMatchedByCnaeAndNeutralName) {
     Instant now = Instant.now();
-    cycle.setStatus(existingMatchedByCnaeAndNeutralName ? ENRICHED_UPDATED_STATUS : ENRICHED_STATUS);
+    cycle.setStatus(
+        existingMatchedByCnaeAndNeutralName ? ENRICHED_UPDATED_STATUS : ENRICHED_STATUS);
     cycle.setCurrentStageCode(null);
     cycle.setFinishedAt(now);
     cycle.setUpdatedAt(now);
@@ -767,7 +981,8 @@ public class BackendEnrichedNicheMaterializerService {
   }
 
   /** Converte um ciclo contaminado em item de diagnóstico operacional. */
-  private ContaminatedNicheDiagnosticItem toCycleDiagnosticItem(OprmRoutineResearchCycle cycle, String matchedTerm) {
+  private ContaminatedNicheDiagnosticItem toCycleDiagnosticItem(
+      OprmRoutineResearchCycle cycle, String matchedTerm) {
     return new ContaminatedNicheDiagnosticItem(
         "CYCLE",
         cycle.getId(),
@@ -783,7 +998,8 @@ public class BackendEnrichedNicheMaterializerService {
   }
 
   /** Converte um perfil contaminado em item de diagnóstico operacional. */
-  private ContaminatedNicheDiagnosticItem toProfileDiagnosticItem(OprmEnrichedNicheProfileSnapshot profile, String matchedTerm) {
+  private ContaminatedNicheDiagnosticItem toProfileDiagnosticItem(
+      OprmEnrichedNicheProfileSnapshot profile, String matchedTerm) {
     return new ContaminatedNicheDiagnosticItem(
         "PROFILE",
         profile.profileId(),
@@ -805,12 +1021,17 @@ public class BackendEnrichedNicheMaterializerService {
 
   /** Localiza o ciclo de pesquisa de rotina ou falha com erro contratual claro. */
   private OprmRoutineResearchCycle findCycle(Long researchCycleId) {
-    return cycleRepository.findById(researchCycleId)
-        .orElseThrow(() -> new EntityNotFoundException("Routine research cycle not found: " + researchCycleId));
+    return cycleRepository
+        .findById(researchCycleId)
+        .orElseThrow(
+            () ->
+                new EntityNotFoundException(
+                    "Routine research cycle not found: " + researchCycleId));
   }
 
   /** Valida o payload de conclusão da etapa final. */
-  private void validateCompletionRequest(Long researchCycleId, CompleteEnrichedNicheMaterializerRequest request) {
+  private void validateCompletionRequest(
+      Long researchCycleId, CompleteEnrichedNicheMaterializerRequest request) {
     if (researchCycleId == null) {
       throw new IllegalArgumentException("researchCycleId is required");
     }

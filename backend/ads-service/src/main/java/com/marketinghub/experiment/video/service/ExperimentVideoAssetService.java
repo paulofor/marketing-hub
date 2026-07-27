@@ -11,9 +11,9 @@ import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
-import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
-import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
+import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
+import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.media.Asset;
 import com.marketinghub.product.Product;
@@ -41,8 +41,8 @@ import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.service.SalesVideoJobService;
-import com.marketinghub.salesvideo.service.SalesVideoProviderDurationPolicy;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
+import com.marketinghub.salesvideo.service.SalesVideoProviderDurationPolicy;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -56,639 +56,695 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Gerencia vídeos como ativos comerciais rastreáveis dentro de um experimento.
- */
+/** Gerencia vídeos como ativos comerciais rastreáveis dentro de um experimento. */
 @Service
 public class ExperimentVideoAssetService {
-    private static final int LANDING_HERO_LUMA_TARGET_SECONDS = 30;
-    private static final String POST_PRODUCTION_PROVIDER = "MUSA_POST_PRODUCTION";
-    private static final String MUSA_STABLE_VISUAL_DIRECTIVES = """
+  private static final int LANDING_HERO_LUMA_TARGET_SECONDS = 30;
+  private static final String POST_PRODUCTION_PROVIDER = "MUSA_POST_PRODUCTION";
+  private static final String MUSA_STABLE_VISUAL_DIRECTIVES =
+      """
             Vertical 9:16 realistic mobile video for Metodo MUSA. Brazilian urban adult woman, real and relatable,
             elegant but accessible, in a bright everyday wardrobe environment. Sharp image, crisp focus on face and
             hands, stable exposure, locked white balance, constant soft natural daylight, no haze, no blur, no dreamy
             filter, no flickering, no exposure shift, no lighting oscillation, no distorted hands, no embedded text,
             no logo, no luxury ostentation and no sensualized pose.
             """;
-    private static final String MUSA_REFERENCE_IMAGE_PROMPT = """
+  private static final String MUSA_REFERENCE_IMAGE_PROMPT =
+      """
             Quadro-base MUSA anti-oscilacao: mulher brasileira adulta em quarto claro, organizando roupa diante de
             guarda-roupa realista com luz natural constante, exposicao travada, foco nitido, pele real, postura
             respeitosa, peca-sinal discreta e presenca elegante acessivel. Sem haze, sem filtro leitoso, sem blur,
             sem texto embutido, sem logo e sem sensualizacao.
             """;
 
-    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
-            .findAndAddModules()
+  private static final ObjectMapper OBJECT_MAPPER =
+      JsonMapper.builder().findAndAddModules().build();
+
+  private final ExperimentVideoAssetRepository repository;
+  private final ExperimentRepository experimentRepository;
+  private final SalesVideoProfileRepository profileRepository;
+  private final SalesVideoJobRepository jobRepository;
+  private final AssetRepository assetRepository;
+  private final LandingVideoSlotRepository landingVideoSlotRepository;
+  private final ProductRepository productRepository;
+  private final LandingPageRepository landingPageRepository;
+  private final SalesVideoService salesVideoService;
+  private final SalesVideoJobService salesVideoJobService;
+  private final SalesVideoProductionCostCalculator costCalculator;
+
+  /** Inicializa o serviço com os repositórios dos vínculos de experimento e vídeo. */
+  public ExperimentVideoAssetService(
+      ExperimentVideoAssetRepository repository,
+      ExperimentRepository experimentRepository,
+      SalesVideoProfileRepository profileRepository,
+      SalesVideoJobRepository jobRepository,
+      AssetRepository assetRepository,
+      LandingVideoSlotRepository landingVideoSlotRepository,
+      ProductRepository productRepository,
+      LandingPageRepository landingPageRepository,
+      SalesVideoService salesVideoService,
+      SalesVideoJobService salesVideoJobService,
+      SalesVideoProductionCostCalculator costCalculator) {
+    this.repository = repository;
+    this.experimentRepository = experimentRepository;
+    this.profileRepository = profileRepository;
+    this.jobRepository = jobRepository;
+    this.assetRepository = assetRepository;
+    this.landingVideoSlotRepository = landingVideoSlotRepository;
+    this.productRepository = productRepository;
+    this.landingPageRepository = landingPageRepository;
+    this.salesVideoService = salesVideoService;
+    this.salesVideoJobService = salesVideoJobService;
+    this.costCalculator = costCalculator;
+  }
+
+  /** Lista todos os vídeos registrados para um experimento. */
+  @Transactional(readOnly = true)
+  public List<ExperimentVideoAssetDto> list(Long experimentId) {
+    ensureExperiment(experimentId);
+    return repository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
+        .map(this::toDto)
+        .toList();
+  }
+
+  /** Lista todos os vídeos registrados para acompanhamento operacional. */
+  @Transactional(readOnly = true)
+  public List<ExperimentVideoAssetDto> listAll() {
+    return repository.findAllByOrderByCreatedAtDesc().stream().map(this::toDto).toList();
+  }
+
+  /** Cria um vídeo de experimento com seus vínculos opcionais validados. */
+  @Transactional
+  public ExperimentVideoAssetDto create(
+      Long experimentId, CreateExperimentVideoAssetRequest request) {
+    Experiment experiment = ensureExperiment(experimentId);
+    validateProviderDuration(request.provider(), request.durationSeconds());
+    ExperimentVideoAsset videoAsset =
+        ExperimentVideoAsset.builder()
+            .experiment(experiment)
+            .slot(request.slot())
+            .objective(request.objective())
+            .primaryMetric(request.primaryMetric())
+            .script(request.script())
+            .prompt(request.prompt())
+            .provider(request.provider())
+            .model(request.model())
+            .status(request.status() == null ? ExperimentVideoStatus.PLANNED : request.status())
+            .assetUrl(request.assetUrl())
+            .thumbnailUrl(request.thumbnailUrl())
+            .durationSeconds(request.durationSeconds())
+            .hasAudio(request.hasAudio())
+            .aspectRatio(request.aspectRatio())
+            .visualSourceType(normalizeOptionalText(request.visualSourceType()))
+            .visualSourceKey(normalizeVisualSourceKey(request.visualSourceKey()))
+            .visualSourceDescription(normalizeOptionalText(request.visualSourceDescription()))
+            .visualSimilarityOverrideReason(
+                normalizeOptionalText(request.visualSimilarityOverrideReason()))
+            .requestJson(request.requestJson())
+            .responseJson(request.responseJson())
+            .cost(
+                resolveCost(
+                    request.cost(),
+                    request.provider(),
+                    request.model(),
+                    request.durationSeconds(),
+                    null))
+            .audioCost(request.audioCost())
+            .reviewStatus(
+                request.reviewStatus() == null
+                    ? ExperimentVideoReviewStatus.PENDING
+                    : request.reviewStatus())
+            .requiredForRelease(request.requiredForRelease())
+            .salesVideoProfile(resolveProfile(request.salesVideoProfileId()))
+            .salesVideoJob(resolveJob(request.salesVideoJobId()))
+            .asset(resolveAsset(request.assetId()))
+            .landingVideoSlot(resolveLandingVideoSlot(experimentId, request.landingVideoSlotId()))
             .build();
-
-    private final ExperimentVideoAssetRepository repository;
-    private final ExperimentRepository experimentRepository;
-    private final SalesVideoProfileRepository profileRepository;
-    private final SalesVideoJobRepository jobRepository;
-    private final AssetRepository assetRepository;
-    private final LandingVideoSlotRepository landingVideoSlotRepository;
-    private final ProductRepository productRepository;
-    private final LandingPageRepository landingPageRepository;
-    private final SalesVideoService salesVideoService;
-    private final SalesVideoJobService salesVideoJobService;
-    private final SalesVideoProductionCostCalculator costCalculator;
-
-    /** Inicializa o serviço com os repositórios dos vínculos de experimento e vídeo. */
-    public ExperimentVideoAssetService(ExperimentVideoAssetRepository repository,
-                                       ExperimentRepository experimentRepository,
-                                       SalesVideoProfileRepository profileRepository,
-                                       SalesVideoJobRepository jobRepository,
-                                       AssetRepository assetRepository,
-                                       LandingVideoSlotRepository landingVideoSlotRepository,
-                                       ProductRepository productRepository,
-                                       LandingPageRepository landingPageRepository,
-                                       SalesVideoService salesVideoService,
-                                       SalesVideoJobService salesVideoJobService,
-                                       SalesVideoProductionCostCalculator costCalculator) {
-        this.repository = repository;
-        this.experimentRepository = experimentRepository;
-        this.profileRepository = profileRepository;
-        this.jobRepository = jobRepository;
-        this.assetRepository = assetRepository;
-        this.landingVideoSlotRepository = landingVideoSlotRepository;
-        this.productRepository = productRepository;
-        this.landingPageRepository = landingPageRepository;
-        this.salesVideoService = salesVideoService;
-        this.salesVideoJobService = salesVideoJobService;
-        this.costCalculator = costCalculator;
+    if (videoAsset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED) {
+      validateVisualSourceDiversityForApproval(videoAsset);
     }
+    return toDto(repository.save(videoAsset));
+  }
 
-    /** Lista todos os vídeos registrados para um experimento. */
-    @Transactional(readOnly = true)
-    public List<ExperimentVideoAssetDto> list(Long experimentId) {
-        ensureExperiment(experimentId);
-        return repository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
-                .map(this::toDto)
-                .toList();
+  /** Orquestra pelo Marketing Hub a criação de vídeo VEO para um experimento. */
+  @Transactional
+  public ExperimentVideoAssetDto requestVeoRender(
+      Long experimentId, RequestExperimentVeoVideoRequest request) {
+    Experiment experiment = ensureExperiment(experimentId);
+    String providerName = Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO");
+    validateProviderDuration(providerName, request.targetDurationSeconds());
+    Product product = resolveOrCreateProduct(experiment);
+    Long landingPageId = resolveLandingPageId(experimentId);
+
+    CreateSalesVideoProfileRequest profileRequest = new CreateSalesVideoProfileRequest();
+    profileRequest.setVideoKind(SalesVideoKind.HERO);
+    profileRequest.setTitle(request.title().trim());
+    profileRequest.setPersonaName(trimToNull(request.personaName()));
+    profileRequest.setPersonaStyle(trimToNull(request.personaStyle()));
+    profileRequest.setVoiceStyle(trimToNull(request.voiceStyle()));
+    profileRequest.setLanguage(Optional.ofNullable(trimToNull(request.language())).orElse("pt-BR"));
+    profileRequest.setTargetDurationSeconds(request.targetDurationSeconds());
+    profileRequest.setLandingPageId(landingPageId);
+    SalesVideoProfileDto profile = salesVideoService.createProfile(product.getId(), profileRequest);
+
+    ApproveSalesVideoScriptRequest scriptRequest = new ApproveSalesVideoScriptRequest();
+    scriptRequest.setScriptText(request.scriptText().trim());
+    scriptRequest.setHookText(trimToNull(request.hookText()));
+    scriptRequest.setCtaText(trimToNull(request.ctaText()));
+    scriptRequest.setCaptionText(trimToNull(request.captionText()));
+    scriptRequest.setApprovedBy(request.requestedBy().trim());
+    salesVideoService.approveScript(profile.getId(), scriptRequest);
+
+    RequestVideoRenderRequest renderRequest = new RequestVideoRenderRequest();
+    renderRequest.setRequestedBy(request.requestedBy().trim());
+    renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+    renderRequest.setProviderName(providerName);
+    renderRequest.setExecutionMode(request.executionMode());
+    renderRequest.setMetadataJson(buildVeoRenderMetadata(experimentId, request));
+    SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
+    BigDecimal estimatedCost =
+        costCalculator.estimateUsd(
+            providerName, providerName, request.targetDurationSeconds(), "720p");
+
+    ExperimentVideoAsset videoAsset =
+        ExperimentVideoAsset.builder()
+            .experiment(experiment)
+            .slot(request.slot())
+            .objective(request.objective().trim())
+            .primaryMetric(request.primaryMetric().trim())
+            .script(request.scriptText().trim())
+            .prompt(buildVeoPromptSnapshot(request))
+            .provider("VEO")
+            .model(providerName)
+            .status(ExperimentVideoStatus.GENERATING)
+            .durationSeconds(request.targetDurationSeconds())
+            .cost(estimatedCost)
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .requiredForRelease(request.requiredForRelease())
+            .salesVideoProfile(resolveProfile(profile.getId()))
+            .salesVideoJob(resolveJob(job.getId()))
+            .build();
+    return toDto(repository.save(videoAsset));
+  }
+
+  /** Bloqueia pedidos acima do limite operacional do provider de vídeo. */
+  private void validateProviderDuration(String providerName, Integer targetDurationSeconds) {
+    SalesVideoProviderDurationPolicy.validate(providerName, targetDurationSeconds)
+        .ifPresent(
+            message -> {
+              throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+            });
+  }
+
+  /** Cria jobs de render para ativos planejados e preserva o vínculo original do experimento. */
+  @Transactional
+  public List<ExperimentVideoAssetDto> requestPlannedRenders(
+      Long experimentId, RequestPlannedExperimentVideoRenderRequest request) {
+    Experiment experiment = ensureExperiment(experimentId);
+    Product product = resolveOrCreateProduct(experiment);
+    Long landingPageId = resolveLandingPageId(experimentId);
+    List<ExperimentVideoAsset> plannedAssets =
+        repository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
+            .filter(this::requiresRenderJob)
+            .toList();
+    if (plannedAssets.isEmpty()) {
+      return List.of();
     }
+    return plannedAssets.stream()
+        .map(
+            videoAsset -> requestRenderForPlannedAsset(videoAsset, product, landingPageId, request))
+        .map(repository::save)
+        .map(this::toDto)
+        .toList();
+  }
 
-    /** Lista todos os vídeos registrados para acompanhamento operacional. */
-    @Transactional(readOnly = true)
-    public List<ExperimentVideoAssetDto> listAll() {
-        return repository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::toDto)
-                .toList();
+  /** Cria jobs de pós-produção para ativos prontos sem perder o vídeo bruto usado como fonte. */
+  @Transactional
+  public List<ExperimentVideoAssetDto> requestPostProduction(
+      Long experimentId, RequestExperimentVideoPostProductionRequest request) {
+    ensureExperiment(experimentId);
+    List<ExperimentVideoAsset> assets =
+        repository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
+            .filter(this::requiresPostProductionJob)
+            .toList();
+    if (assets.isEmpty()) {
+      return List.of();
     }
+    return assets.stream()
+        .map(videoAsset -> requestPostProductionForReadyAsset(videoAsset, request))
+        .map(repository::save)
+        .map(this::toDto)
+        .toList();
+  }
 
-    /** Cria um vídeo de experimento com seus vínculos opcionais validados. */
-    @Transactional
-    public ExperimentVideoAssetDto create(Long experimentId, CreateExperimentVideoAssetRequest request) {
-        Experiment experiment = ensureExperiment(experimentId);
-        validateProviderDuration(request.provider(), request.durationSeconds());
-        ExperimentVideoAsset videoAsset = ExperimentVideoAsset.builder()
-                .experiment(experiment)
-                .slot(request.slot())
-                .objective(request.objective())
-                .primaryMetric(request.primaryMetric())
-                .script(request.script())
-                .prompt(request.prompt())
-                .provider(request.provider())
-                .model(request.model())
-                .status(request.status() == null ? ExperimentVideoStatus.PLANNED : request.status())
-                .assetUrl(request.assetUrl())
-                .thumbnailUrl(request.thumbnailUrl())
-                .durationSeconds(request.durationSeconds())
-                .hasAudio(request.hasAudio())
-                .aspectRatio(request.aspectRatio())
-                .visualSourceType(normalizeOptionalText(request.visualSourceType()))
-                .visualSourceKey(normalizeVisualSourceKey(request.visualSourceKey()))
-                .visualSourceDescription(normalizeOptionalText(request.visualSourceDescription()))
-                .visualSimilarityOverrideReason(normalizeOptionalText(request.visualSimilarityOverrideReason()))
-                .requestJson(request.requestJson())
-                .responseJson(request.responseJson())
-                .cost(resolveCost(request.cost(), request.provider(), request.model(), request.durationSeconds(), null))
-                .audioCost(request.audioCost())
-                .reviewStatus(request.reviewStatus() == null ? ExperimentVideoReviewStatus.PENDING : request.reviewStatus())
-                .requiredForRelease(request.requiredForRelease())
-                .salesVideoProfile(resolveProfile(request.salesVideoProfileId()))
-                .salesVideoJob(resolveJob(request.salesVideoJobId()))
-                .asset(resolveAsset(request.assetId()))
-                .landingVideoSlot(resolveLandingVideoSlot(experimentId, request.landingVideoSlotId()))
-                .build();
-        if (videoAsset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED) {
-            validateVisualSourceDiversityForApproval(videoAsset);
-        }
-        return toDto(repository.save(videoAsset));
+  /** Atualiza um vídeo de experimento sem perder os campos não enviados. */
+  @Transactional
+  public ExperimentVideoAssetDto update(
+      Long experimentId, Long videoAssetId, UpdateExperimentVideoAssetRequest request) {
+    ensureExperiment(experimentId);
+    ExperimentVideoAsset videoAsset =
+        repository
+            .findById(videoAssetId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "video asset not found"));
+    if (videoAsset.getExperiment() == null
+        || !experimentId.equals(videoAsset.getExperiment().getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "video asset not found for experiment");
     }
+    applyUpdate(videoAsset, request, experimentId);
+    return toDto(repository.save(videoAsset));
+  }
 
-    /** Orquestra pelo Marketing Hub a criação de vídeo VEO para um experimento. */
-    @Transactional
-    public ExperimentVideoAssetDto requestVeoRender(Long experimentId, RequestExperimentVeoVideoRequest request) {
-        Experiment experiment = ensureExperiment(experimentId);
-        String providerName = Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO");
-        validateProviderDuration(providerName, request.targetDurationSeconds());
-        Product product = resolveOrCreateProduct(experiment);
-        Long landingPageId = resolveLandingPageId(experimentId);
-
-        CreateSalesVideoProfileRequest profileRequest = new CreateSalesVideoProfileRequest();
-        profileRequest.setVideoKind(SalesVideoKind.HERO);
-        profileRequest.setTitle(request.title().trim());
-        profileRequest.setPersonaName(trimToNull(request.personaName()));
-        profileRequest.setPersonaStyle(trimToNull(request.personaStyle()));
-        profileRequest.setVoiceStyle(trimToNull(request.voiceStyle()));
-        profileRequest.setLanguage(Optional.ofNullable(trimToNull(request.language())).orElse("pt-BR"));
-        profileRequest.setTargetDurationSeconds(request.targetDurationSeconds());
-        profileRequest.setLandingPageId(landingPageId);
-        SalesVideoProfileDto profile = salesVideoService.createProfile(product.getId(), profileRequest);
-
-        ApproveSalesVideoScriptRequest scriptRequest = new ApproveSalesVideoScriptRequest();
-        scriptRequest.setScriptText(request.scriptText().trim());
-        scriptRequest.setHookText(trimToNull(request.hookText()));
-        scriptRequest.setCtaText(trimToNull(request.ctaText()));
-        scriptRequest.setCaptionText(trimToNull(request.captionText()));
-        scriptRequest.setApprovedBy(request.requestedBy().trim());
-        salesVideoService.approveScript(profile.getId(), scriptRequest);
-
-        RequestVideoRenderRequest renderRequest = new RequestVideoRenderRequest();
-        renderRequest.setRequestedBy(request.requestedBy().trim());
-        renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
-        renderRequest.setProviderName(providerName);
-        renderRequest.setExecutionMode(request.executionMode());
-        renderRequest.setMetadataJson(buildVeoRenderMetadata(experimentId, request));
-        SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
-        BigDecimal estimatedCost = costCalculator.estimateUsd(
-                providerName,
-                providerName,
-                request.targetDurationSeconds(),
-                "720p");
-
-        ExperimentVideoAsset videoAsset = ExperimentVideoAsset.builder()
-                .experiment(experiment)
-                .slot(request.slot())
-                .objective(request.objective().trim())
-                .primaryMetric(request.primaryMetric().trim())
-                .script(request.scriptText().trim())
-                .prompt(buildVeoPromptSnapshot(request))
-                .provider("VEO")
-                .model(providerName)
-                .status(ExperimentVideoStatus.GENERATING)
-                .durationSeconds(request.targetDurationSeconds())
-                .cost(estimatedCost)
-                .reviewStatus(ExperimentVideoReviewStatus.PENDING)
-                .requiredForRelease(request.requiredForRelease())
-                .salesVideoProfile(resolveProfile(profile.getId()))
-                .salesVideoJob(resolveJob(job.getId()))
-                .build();
-        return toDto(repository.save(videoAsset));
+  /** Verifica se existe vídeo obrigatório ainda sem status READY e revisão APPROVED. */
+  @Transactional(readOnly = true)
+  public boolean hasRequiredVideoBlockingRelease(Long experimentId) {
+    if (experimentId == null) {
+      return false;
     }
+    return repository.existsRequiredReleaseBlocker(
+        experimentId, ExperimentVideoStatus.READY, ExperimentVideoReviewStatus.APPROVED);
+  }
 
-    /** Bloqueia pedidos acima do limite operacional do provider de vídeo. */
-    private void validateProviderDuration(String providerName, Integer targetDurationSeconds) {
-        SalesVideoProviderDurationPolicy.validate(providerName, targetDurationSeconds)
-                .ifPresent(message -> {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
-                });
+  /** Verifica se existe vídeo pronto e aprovado para uma pagina/funil que depende de vídeo. */
+  @Transactional(readOnly = true)
+  public boolean hasReadyApprovedVideo(Long experimentId) {
+    if (experimentId == null) {
+      return false;
     }
+    return repository.existsByExperimentIdAndStatusAndReviewStatus(
+        experimentId, ExperimentVideoStatus.READY, ExperimentVideoReviewStatus.APPROVED);
+  }
 
-    /** Cria jobs de render para ativos planejados e preserva o vínculo original do experimento. */
-    @Transactional
-    public List<ExperimentVideoAssetDto> requestPlannedRenders(
-            Long experimentId,
-            RequestPlannedExperimentVideoRenderRequest request) {
-        Experiment experiment = ensureExperiment(experimentId);
-        Product product = resolveOrCreateProduct(experiment);
-        Long landingPageId = resolveLandingPageId(experimentId);
-        List<ExperimentVideoAsset> plannedAssets = repository.findByExperimentIdOrderByCreatedAtDesc(experimentId)
-                .stream()
-                .filter(this::requiresRenderJob)
-                .toList();
-        if (plannedAssets.isEmpty()) {
-            return List.of();
-        }
-        return plannedAssets.stream()
-                .map(videoAsset -> requestRenderForPlannedAsset(videoAsset, product, landingPageId, request))
-                .map(repository::save)
-                .map(this::toDto)
-                .toList();
+  /**
+   * Verifica se o vídeo de campanha possui áudio confirmado e aprovação humana antes de tráfego
+   * pago.
+   */
+  @Transactional(readOnly = true)
+  public boolean hasReadyApprovedAudibleVideoForPublication(
+      Long experimentId, String videoId, String videoUrl) {
+    if (experimentId == null || (!StringUtils.hasText(videoId) && !StringUtils.hasText(videoUrl))) {
+      return false;
     }
+    String normalizedVideoId = normalizeText(videoId);
+    String normalizedVideoUrl = normalizeText(videoUrl);
+    return repository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
+        .filter(asset -> asset.getStatus() == ExperimentVideoStatus.READY)
+        .filter(asset -> asset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
+        .filter(asset -> Boolean.TRUE.equals(asset.getHasAudio()))
+        .anyMatch(asset -> matchesPublicationVideo(asset, normalizedVideoId, normalizedVideoUrl));
+  }
 
-    /** Cria jobs de pós-produção para ativos prontos sem perder o vídeo bruto usado como fonte. */
-    @Transactional
-    public List<ExperimentVideoAssetDto> requestPostProduction(
-            Long experimentId,
-            RequestExperimentVideoPostProductionRequest request) {
-        ensureExperiment(experimentId);
-        List<ExperimentVideoAsset> assets = repository.findByExperimentIdOrderByCreatedAtDesc(experimentId)
-                .stream()
-                .filter(this::requiresPostProductionJob)
-                .toList();
-        if (assets.isEmpty()) {
-            return List.of();
-        }
-        return assets.stream()
-                .map(videoAsset -> requestPostProductionForReadyAsset(videoAsset, request))
-                .map(repository::save)
-                .map(this::toDto)
-                .toList();
+  /** Confirma se o ativo aprovado corresponde ao vídeo que será enviado para a Meta. */
+  private boolean matchesPublicationVideo(
+      ExperimentVideoAsset asset, String videoId, String videoUrl) {
+    String assetUrl = normalizeText(asset.getAssetUrl());
+    Long assetId = asset.getAsset() != null ? asset.getAsset().getId() : null;
+    return (StringUtils.hasText(videoUrl) && videoUrl.equals(assetUrl))
+        || (StringUtils.hasText(videoId) && videoId.equals(normalizeText(assetUrl)))
+        || (assetId != null && StringUtils.hasText(videoId) && videoId.equals(assetId.toString()));
+  }
+
+  /** Normaliza texto livre para comparações determinísticas de contrato. */
+  private String normalizeText(String value) {
+    return StringUtils.hasText(value) ? value.trim() : null;
+  }
+
+  /** Aplica os campos opcionais enviados na atualização do ativo de vídeo. */
+  private void applyUpdate(
+      ExperimentVideoAsset videoAsset,
+      UpdateExperimentVideoAssetRequest request,
+      Long experimentId) {
+    if (request.slot() != null) {
+      videoAsset.setSlot(request.slot());
     }
-
-    /** Atualiza um vídeo de experimento sem perder os campos não enviados. */
-    @Transactional
-    public ExperimentVideoAssetDto update(Long experimentId, Long videoAssetId, UpdateExperimentVideoAssetRequest request) {
-        ensureExperiment(experimentId);
-        ExperimentVideoAsset videoAsset = repository.findById(videoAssetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "video asset not found"));
-        if (videoAsset.getExperiment() == null || !experimentId.equals(videoAsset.getExperiment().getId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "video asset not found for experiment");
-        }
-        applyUpdate(videoAsset, request, experimentId);
-        return toDto(repository.save(videoAsset));
+    if (request.objective() != null) {
+      videoAsset.setObjective(request.objective());
     }
-
-    /** Verifica se existe vídeo obrigatório ainda sem status READY e revisão APPROVED. */
-    @Transactional(readOnly = true)
-    public boolean hasRequiredVideoBlockingRelease(Long experimentId) {
-        if (experimentId == null) {
-            return false;
-        }
-        return repository.existsRequiredReleaseBlocker(
-                experimentId,
-                ExperimentVideoStatus.READY,
-                ExperimentVideoReviewStatus.APPROVED);
+    if (request.primaryMetric() != null) {
+      videoAsset.setPrimaryMetric(request.primaryMetric());
     }
-
-    /** Verifica se existe vídeo pronto e aprovado para uma pagina/funil que depende de vídeo. */
-    @Transactional(readOnly = true)
-    public boolean hasReadyApprovedVideo(Long experimentId) {
-        if (experimentId == null) {
-            return false;
-        }
-        return repository.existsByExperimentIdAndStatusAndReviewStatus(
-                experimentId,
-                ExperimentVideoStatus.READY,
-                ExperimentVideoReviewStatus.APPROVED);
+    if (request.script() != null) {
+      videoAsset.setScript(request.script());
     }
-
-    /** Verifica se o vídeo de campanha possui áudio confirmado e aprovação humana antes de tráfego pago. */
-    @Transactional(readOnly = true)
-    public boolean hasReadyApprovedAudibleVideoForPublication(Long experimentId, String videoId, String videoUrl) {
-        if (experimentId == null || (!StringUtils.hasText(videoId) && !StringUtils.hasText(videoUrl))) {
-            return false;
-        }
-        String normalizedVideoId = normalizeText(videoId);
-        String normalizedVideoUrl = normalizeText(videoUrl);
-        return repository.findByExperimentIdOrderByCreatedAtDesc(experimentId).stream()
-                .filter(asset -> asset.getStatus() == ExperimentVideoStatus.READY)
-                .filter(asset -> asset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
-                .filter(asset -> Boolean.TRUE.equals(asset.getHasAudio()))
-                .anyMatch(asset -> matchesPublicationVideo(asset, normalizedVideoId, normalizedVideoUrl));
+    if (request.prompt() != null) {
+      videoAsset.setPrompt(request.prompt());
     }
-
-    /** Confirma se o ativo aprovado corresponde ao vídeo que será enviado para a Meta. */
-    private boolean matchesPublicationVideo(ExperimentVideoAsset asset, String videoId, String videoUrl) {
-        String assetUrl = normalizeText(asset.getAssetUrl());
-        Long assetId = asset.getAsset() != null ? asset.getAsset().getId() : null;
-        return (StringUtils.hasText(videoUrl) && videoUrl.equals(assetUrl))
-                || (StringUtils.hasText(videoId) && videoId.equals(normalizeText(assetUrl)))
-                || (assetId != null && StringUtils.hasText(videoId) && videoId.equals(assetId.toString()));
+    if (request.provider() != null) {
+      videoAsset.setProvider(request.provider());
     }
-
-    /** Normaliza texto livre para comparações determinísticas de contrato. */
-    private String normalizeText(String value) {
-        return StringUtils.hasText(value) ? value.trim() : null;
+    if (request.model() != null) {
+      videoAsset.setModel(request.model());
     }
-
-    /** Aplica os campos opcionais enviados na atualização do ativo de vídeo. */
-    private void applyUpdate(ExperimentVideoAsset videoAsset, UpdateExperimentVideoAssetRequest request, Long experimentId) {
-        if (request.slot() != null) {
-            videoAsset.setSlot(request.slot());
-        }
-        if (request.objective() != null) {
-            videoAsset.setObjective(request.objective());
-        }
-        if (request.primaryMetric() != null) {
-            videoAsset.setPrimaryMetric(request.primaryMetric());
-        }
-        if (request.script() != null) {
-            videoAsset.setScript(request.script());
-        }
-        if (request.prompt() != null) {
-            videoAsset.setPrompt(request.prompt());
-        }
-        if (request.provider() != null) {
-            videoAsset.setProvider(request.provider());
-        }
-        if (request.model() != null) {
-            videoAsset.setModel(request.model());
-        }
-        if (request.status() != null) {
-            videoAsset.setStatus(request.status());
-        }
-        if (request.assetUrl() != null) {
-            videoAsset.setAssetUrl(request.assetUrl());
-        }
-        if (request.thumbnailUrl() != null) {
-            videoAsset.setThumbnailUrl(request.thumbnailUrl());
-        }
-        if (request.durationSeconds() != null) {
-            videoAsset.setDurationSeconds(request.durationSeconds());
-        }
-        validateProviderDuration(videoAsset.getProvider(), videoAsset.getDurationSeconds());
-        if (request.hasAudio() != null) {
-            videoAsset.setHasAudio(request.hasAudio());
-        }
-        if (request.aspectRatio() != null) {
-            videoAsset.setAspectRatio(request.aspectRatio());
-        }
-        if (request.visualSourceType() != null) {
-            videoAsset.setVisualSourceType(normalizeOptionalText(request.visualSourceType()));
-        }
-        if (request.visualSourceKey() != null) {
-            videoAsset.setVisualSourceKey(normalizeVisualSourceKey(request.visualSourceKey()));
-        }
-        if (request.visualSourceDescription() != null) {
-            videoAsset.setVisualSourceDescription(normalizeOptionalText(request.visualSourceDescription()));
-        }
-        if (request.visualSimilarityOverrideReason() != null) {
-            videoAsset.setVisualSimilarityOverrideReason(normalizeOptionalText(request.visualSimilarityOverrideReason()));
-        }
-        if (request.requestJson() != null) {
-            videoAsset.setRequestJson(request.requestJson());
-        }
-        if (request.responseJson() != null) {
-            videoAsset.setResponseJson(request.responseJson());
-        }
-        if (request.cost() != null) {
-            videoAsset.setCost(request.cost());
-        } else if (request.durationSeconds() != null || request.provider() != null || request.model() != null) {
-            BigDecimal estimatedCost = resolveCost(
-                    null,
-                    videoAsset.getProvider(),
-                    videoAsset.getModel(),
-                    videoAsset.getDurationSeconds(),
-                    null);
-            if (estimatedCost != null) {
-                videoAsset.setCost(estimatedCost);
-            }
-        }
-        if (request.audioCost() != null) {
-            videoAsset.setAudioCost(request.audioCost());
-        }
-        if (request.reviewStatus() != null) {
-            applyReviewUpdate(videoAsset, request);
-        }
-        if (request.requiredForRelease() != null) {
-            videoAsset.setRequiredForRelease(request.requiredForRelease());
-        }
-        if (request.salesVideoProfileId() != null) {
-            videoAsset.setSalesVideoProfile(resolveProfile(request.salesVideoProfileId()));
-        }
-        if (request.salesVideoJobId() != null) {
-            videoAsset.setSalesVideoJob(resolveJob(request.salesVideoJobId()));
-        }
-        if (request.assetId() != null) {
-            videoAsset.setAsset(resolveAsset(request.assetId()));
-        }
-        if (request.landingVideoSlotId() != null) {
-            videoAsset.setLandingVideoSlot(resolveLandingVideoSlot(experimentId, request.landingVideoSlotId()));
-        }
+    if (request.status() != null) {
+      videoAsset.setStatus(request.status());
     }
-
-    /** Aplica aprovação ou reprovação humana mantendo motivo auditável para nova criação. */
-    private void applyReviewUpdate(ExperimentVideoAsset videoAsset, UpdateExperimentVideoAssetRequest request) {
-        ExperimentVideoReviewStatus newStatus = request.reviewStatus();
-        if (newStatus == ExperimentVideoReviewStatus.REJECTED && !StringUtils.hasText(request.rejectionReason())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "rejectionReason is required when rejecting a video asset");
-        }
-        if (newStatus == ExperimentVideoReviewStatus.APPROVED && !Boolean.TRUE.equals(videoAsset.getHasAudio())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "video asset must pass audio quality check before human approval");
-        }
-        if (newStatus == ExperimentVideoReviewStatus.APPROVED) {
-            validateVisualSourceDiversityForApproval(videoAsset);
-        }
-        videoAsset.setReviewStatus(newStatus);
-        videoAsset.setReviewedBy(StringUtils.hasText(request.reviewedBy()) ? request.reviewedBy().trim() : null);
-        videoAsset.setReviewedAt(Instant.now());
-        if (newStatus == ExperimentVideoReviewStatus.REJECTED) {
-            videoAsset.setRejectionReason(request.rejectionReason().trim());
-        } else if (newStatus == ExperimentVideoReviewStatus.APPROVED) {
-            videoAsset.setRejectionReason(null);
-        } else if (request.rejectionReason() != null) {
-            videoAsset.setRejectionReason(StringUtils.hasText(request.rejectionReason())
-                    ? request.rejectionReason().trim()
-                    : null);
-        }
+    if (request.assetUrl() != null) {
+      videoAsset.setAssetUrl(request.assetUrl());
     }
-
-    /** Bloqueia aprovação quando anúncio e hero usam a mesma origem visual sem justificativa explícita. */
-    private void validateVisualSourceDiversityForApproval(ExperimentVideoAsset videoAsset) {
-        if (videoAsset.getExperiment() == null || videoAsset.getExperiment().getId() == null) {
-            return;
-        }
-        String visualSourceKey = normalizeVisualSourceKey(videoAsset.getVisualSourceKey());
-        if (visualSourceKey == null || !isAdOrHero(videoAsset.getSlot())) {
-            return;
-        }
-        boolean hasConflictingSlot = repository.findByExperimentIdAndVisualSourceKey(
-                        videoAsset.getExperiment().getId(),
-                        visualSourceKey)
-                .stream()
-                .filter(candidate -> videoAsset.getId() == null || !videoAsset.getId().equals(candidate.getId()))
-                .filter(candidate -> candidate.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
-                .anyMatch(candidate -> isAdHeroPair(videoAsset.getSlot(), candidate.getSlot()));
-        if (hasConflictingSlot && !StringUtils.hasText(videoAsset.getVisualSimilarityOverrideReason())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Aprovacao bloqueada: video de campanha e hero do PDE usam a mesma origem visual. "
-                            + "Informe visualSimilarityOverrideReason ou gere uma variacao visual distinta.");
-        }
+    if (request.thumbnailUrl() != null) {
+      videoAsset.setThumbnailUrl(request.thumbnailUrl());
     }
-
-    /** Identifica slots principais que nao devem repetir a mesma origem visual sem controle. */
-    private boolean isAdOrHero(ExperimentVideoSlot slot) {
-        return slot == ExperimentVideoSlot.AD || slot == ExperimentVideoSlot.LANDING_HERO;
+    if (request.durationSeconds() != null) {
+      videoAsset.setDurationSeconds(request.durationSeconds());
     }
-
-    /** Identifica colisao entre o video de campanha e o video hero da pagina. */
-    private boolean isAdHeroPair(ExperimentVideoSlot currentSlot, ExperimentVideoSlot candidateSlot) {
-        return (currentSlot == ExperimentVideoSlot.AD && candidateSlot == ExperimentVideoSlot.LANDING_HERO)
-                || (currentSlot == ExperimentVideoSlot.LANDING_HERO && candidateSlot == ExperimentVideoSlot.AD);
+    validateProviderDuration(videoAsset.getProvider(), videoAsset.getDurationSeconds());
+    if (request.hasAudio() != null) {
+      videoAsset.setHasAudio(request.hasAudio());
     }
-
-    /** Busca o experimento alvo ou falha com resposta HTTP clara. */
-    private Experiment ensureExperiment(Long experimentId) {
-        return experimentRepository.findById(experimentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "experiment not found"));
+    if (request.aspectRatio() != null) {
+      videoAsset.setAspectRatio(request.aspectRatio());
     }
+    if (request.visualSourceType() != null) {
+      videoAsset.setVisualSourceType(normalizeOptionalText(request.visualSourceType()));
+    }
+    if (request.visualSourceKey() != null) {
+      videoAsset.setVisualSourceKey(normalizeVisualSourceKey(request.visualSourceKey()));
+    }
+    if (request.visualSourceDescription() != null) {
+      videoAsset.setVisualSourceDescription(
+          normalizeOptionalText(request.visualSourceDescription()));
+    }
+    if (request.visualSimilarityOverrideReason() != null) {
+      videoAsset.setVisualSimilarityOverrideReason(
+          normalizeOptionalText(request.visualSimilarityOverrideReason()));
+    }
+    if (request.requestJson() != null) {
+      videoAsset.setRequestJson(request.requestJson());
+    }
+    if (request.responseJson() != null) {
+      videoAsset.setResponseJson(request.responseJson());
+    }
+    if (request.cost() != null) {
+      videoAsset.setCost(request.cost());
+    } else if (request.durationSeconds() != null
+        || request.provider() != null
+        || request.model() != null) {
+      BigDecimal estimatedCost =
+          resolveCost(
+              null,
+              videoAsset.getProvider(),
+              videoAsset.getModel(),
+              videoAsset.getDurationSeconds(),
+              null);
+      if (estimatedCost != null) {
+        videoAsset.setCost(estimatedCost);
+      }
+    }
+    if (request.audioCost() != null) {
+      videoAsset.setAudioCost(request.audioCost());
+    }
+    if (request.reviewStatus() != null) {
+      applyReviewUpdate(videoAsset, request);
+    }
+    if (request.requiredForRelease() != null) {
+      videoAsset.setRequiredForRelease(request.requiredForRelease());
+    }
+    if (request.salesVideoProfileId() != null) {
+      videoAsset.setSalesVideoProfile(resolveProfile(request.salesVideoProfileId()));
+    }
+    if (request.salesVideoJobId() != null) {
+      videoAsset.setSalesVideoJob(resolveJob(request.salesVideoJobId()));
+    }
+    if (request.assetId() != null) {
+      videoAsset.setAsset(resolveAsset(request.assetId()));
+    }
+    if (request.landingVideoSlotId() != null) {
+      videoAsset.setLandingVideoSlot(
+          resolveLandingVideoSlot(experimentId, request.landingVideoSlotId()));
+    }
+  }
 
-    /** Reusa o produto operacional do nicho ou cria um mínimo para suportar o vídeo. */
-    private Product resolveOrCreateProduct(Experiment experiment) {
-        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
-        if (nicheId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experiment niche not found");
-        }
-        return productRepository.findFirstByMarketNiche_IdOrderByCreatedAtDesc(nicheId)
-                .orElseGet(() -> productRepository.save(Product.builder()
+  /** Aplica aprovação ou reprovação humana mantendo motivo auditável para nova criação. */
+  private void applyReviewUpdate(
+      ExperimentVideoAsset videoAsset, UpdateExperimentVideoAssetRequest request) {
+    ExperimentVideoReviewStatus newStatus = request.reviewStatus();
+    if (newStatus == ExperimentVideoReviewStatus.REJECTED
+        && !StringUtils.hasText(request.rejectionReason())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "rejectionReason is required when rejecting a video asset");
+    }
+    if (newStatus == ExperimentVideoReviewStatus.APPROVED
+        && !Boolean.TRUE.equals(videoAsset.getHasAudio())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "video asset must pass audio quality check before human approval");
+    }
+    if (newStatus == ExperimentVideoReviewStatus.APPROVED) {
+      validateVisualSourceDiversityForApproval(videoAsset);
+    }
+    videoAsset.setReviewStatus(newStatus);
+    videoAsset.setReviewedBy(
+        StringUtils.hasText(request.reviewedBy()) ? request.reviewedBy().trim() : null);
+    videoAsset.setReviewedAt(Instant.now());
+    if (newStatus == ExperimentVideoReviewStatus.REJECTED) {
+      videoAsset.setRejectionReason(request.rejectionReason().trim());
+    } else if (newStatus == ExperimentVideoReviewStatus.APPROVED) {
+      videoAsset.setRejectionReason(null);
+    } else if (request.rejectionReason() != null) {
+      videoAsset.setRejectionReason(
+          StringUtils.hasText(request.rejectionReason()) ? request.rejectionReason().trim() : null);
+    }
+  }
+
+  /**
+   * Bloqueia aprovação quando anúncio e hero usam a mesma origem visual sem justificativa
+   * explícita.
+   */
+  private void validateVisualSourceDiversityForApproval(ExperimentVideoAsset videoAsset) {
+    if (videoAsset.getExperiment() == null || videoAsset.getExperiment().getId() == null) {
+      return;
+    }
+    String visualSourceKey = normalizeVisualSourceKey(videoAsset.getVisualSourceKey());
+    if (visualSourceKey == null || !isAdOrHero(videoAsset.getSlot())) {
+      return;
+    }
+    boolean hasConflictingSlot =
+        repository
+            .findByExperimentIdAndVisualSourceKey(
+                videoAsset.getExperiment().getId(), visualSourceKey)
+            .stream()
+            .filter(
+                candidate ->
+                    videoAsset.getId() == null || !videoAsset.getId().equals(candidate.getId()))
+            .filter(
+                candidate -> candidate.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
+            .anyMatch(candidate -> isAdHeroPair(videoAsset.getSlot(), candidate.getSlot()));
+    if (hasConflictingSlot
+        && !StringUtils.hasText(videoAsset.getVisualSimilarityOverrideReason())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Aprovacao bloqueada: video de campanha e hero do PDE usam a mesma origem visual. "
+              + "Informe visualSimilarityOverrideReason ou gere uma variacao visual distinta.");
+    }
+  }
+
+  /** Identifica slots principais que nao devem repetir a mesma origem visual sem controle. */
+  private boolean isAdOrHero(ExperimentVideoSlot slot) {
+    return slot == ExperimentVideoSlot.AD || slot == ExperimentVideoSlot.LANDING_HERO;
+  }
+
+  /** Identifica colisao entre o video de campanha e o video hero da pagina. */
+  private boolean isAdHeroPair(ExperimentVideoSlot currentSlot, ExperimentVideoSlot candidateSlot) {
+    return (currentSlot == ExperimentVideoSlot.AD
+            && candidateSlot == ExperimentVideoSlot.LANDING_HERO)
+        || (currentSlot == ExperimentVideoSlot.LANDING_HERO
+            && candidateSlot == ExperimentVideoSlot.AD);
+  }
+
+  /** Busca o experimento alvo ou falha com resposta HTTP clara. */
+  private Experiment ensureExperiment(Long experimentId) {
+    return experimentRepository
+        .findById(experimentId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "experiment not found"));
+  }
+
+  /** Reusa o produto operacional do nicho ou cria um mínimo para suportar o vídeo. */
+  private Product resolveOrCreateProduct(Experiment experiment) {
+    Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
+    if (nicheId == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experiment niche not found");
+    }
+    return productRepository
+        .findFirstByMarketNiche_IdOrderByCreatedAtDesc(nicheId)
+        .orElseGet(
+            () ->
+                productRepository.save(
+                    Product.builder()
                         .marketNiche(experiment.getNiche())
                         .niche(experiment.getNiche().getName())
                         .avatar(experiment.getName())
                         .explicitPain(experiment.getSinglePain())
                         .promise(resolveProductPromise(experiment))
                         .build()));
+  }
+
+  /** Resolve a promessa comercial mínima do produto operacional. */
+  private String resolveProductPromise(Experiment experiment) {
+    if (StringUtils.hasText(experiment.getFunnelPromise())) {
+      return experiment.getFunnelPromise();
     }
-
-    /** Resolve a promessa comercial mínima do produto operacional. */
-    private String resolveProductPromise(Experiment experiment) {
-        if (StringUtils.hasText(experiment.getFunnelPromise())) {
-            return experiment.getFunnelPromise();
-        }
-        if (StringUtils.hasText(experiment.getHypothesis())) {
-            return experiment.getHypothesis();
-        }
-        return experiment.getName();
+    if (StringUtils.hasText(experiment.getHypothesis())) {
+      return experiment.getHypothesis();
     }
+    return experiment.getName();
+  }
 
-    /** Seleciona a landing do experimento quando já existir publicação registrada. */
-    private Long resolveLandingPageId(Long experimentId) {
-        return landingPageRepository.findByExperimentId(experimentId).stream()
-                .findFirst()
-                .map(LandingPage::getId)
-                .orElse(null);
+  /** Seleciona a landing do experimento quando já existir publicação registrada. */
+  private Long resolveLandingPageId(Long experimentId) {
+    return landingPageRepository.findByExperimentId(experimentId).stream()
+        .findFirst()
+        .map(LandingPage::getId)
+        .orElse(null);
+  }
+
+  /** Solicita render no módulo SalesVideo usando o roteiro e prompt já planejados no ativo. */
+  private ExperimentVideoAsset requestRenderForPlannedAsset(
+      ExperimentVideoAsset videoAsset,
+      Product product,
+      Long landingPageId,
+      RequestPlannedExperimentVideoRenderRequest request) {
+    String scriptText = trimToNull(videoAsset.getScript());
+    if (scriptText == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "planned video asset script is required");
     }
+    String providerName =
+        Optional.ofNullable(trimToNull(videoAsset.getProvider())).orElse("LUMA_RAY_3_2");
+    Integer targetDurationSeconds =
+        resolvePlannedRenderTargetDurationSeconds(videoAsset, providerName);
+    validateProviderDuration(providerName, targetDurationSeconds);
+    Long experimentId =
+        videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null;
+    String title =
+        "Vídeo planejado #%d - experimento %d".formatted(videoAsset.getId(), experimentId);
 
-    /** Solicita render no módulo SalesVideo usando o roteiro e prompt já planejados no ativo. */
-    private ExperimentVideoAsset requestRenderForPlannedAsset(ExperimentVideoAsset videoAsset,
-                                                              Product product,
-                                                              Long landingPageId,
-                                                              RequestPlannedExperimentVideoRenderRequest request) {
-        String scriptText = trimToNull(videoAsset.getScript());
-        if (scriptText == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "planned video asset script is required");
-        }
-        String providerName = Optional.ofNullable(trimToNull(videoAsset.getProvider())).orElse("LUMA_RAY_3_2");
-        Integer targetDurationSeconds = resolvePlannedRenderTargetDurationSeconds(videoAsset, providerName);
-        validateProviderDuration(providerName, targetDurationSeconds);
-        Long experimentId = videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null;
-        String title = "Vídeo planejado #%d - experimento %d".formatted(videoAsset.getId(), experimentId);
+    CreateSalesVideoProfileRequest profileRequest = new CreateSalesVideoProfileRequest();
+    profileRequest.setVideoKind(SalesVideoKind.HERO);
+    profileRequest.setTitle(title);
+    profileRequest.setPersonaName(trimToNull(request.personaName()));
+    profileRequest.setPersonaStyle(trimToNull(request.personaStyle()));
+    profileRequest.setVoiceStyle(trimToNull(request.voiceStyle()));
+    profileRequest.setLanguage(Optional.ofNullable(trimToNull(request.language())).orElse("pt-BR"));
+    profileRequest.setTargetDurationSeconds(targetDurationSeconds);
+    profileRequest.setLandingPageId(landingPageId);
+    SalesVideoProfileDto profile = salesVideoService.createProfile(product.getId(), profileRequest);
 
-        CreateSalesVideoProfileRequest profileRequest = new CreateSalesVideoProfileRequest();
-        profileRequest.setVideoKind(SalesVideoKind.HERO);
-        profileRequest.setTitle(title);
-        profileRequest.setPersonaName(trimToNull(request.personaName()));
-        profileRequest.setPersonaStyle(trimToNull(request.personaStyle()));
-        profileRequest.setVoiceStyle(trimToNull(request.voiceStyle()));
-        profileRequest.setLanguage(Optional.ofNullable(trimToNull(request.language())).orElse("pt-BR"));
-        profileRequest.setTargetDurationSeconds(targetDurationSeconds);
-        profileRequest.setLandingPageId(landingPageId);
-        SalesVideoProfileDto profile = salesVideoService.createProfile(product.getId(), profileRequest);
+    ApproveSalesVideoScriptRequest scriptRequest = new ApproveSalesVideoScriptRequest();
+    scriptRequest.setScriptText(scriptText);
+    scriptRequest.setApprovedBy(request.requestedBy().trim());
+    salesVideoService.approveScript(profile.getId(), scriptRequest);
 
-        ApproveSalesVideoScriptRequest scriptRequest = new ApproveSalesVideoScriptRequest();
-        scriptRequest.setScriptText(scriptText);
-        scriptRequest.setApprovedBy(request.requestedBy().trim());
-        salesVideoService.approveScript(profile.getId(), scriptRequest);
+    RequestVideoRenderRequest renderRequest = new RequestVideoRenderRequest();
+    renderRequest.setRequestedBy(request.requestedBy().trim());
+    renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+    renderRequest.setProviderName(providerName);
+    renderRequest.setExecutionMode(request.executionMode());
+    renderRequest.setMetadataJson(
+        buildPlannedRenderMetadata(videoAsset, targetDurationSeconds, request));
+    SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
 
-        RequestVideoRenderRequest renderRequest = new RequestVideoRenderRequest();
-        renderRequest.setRequestedBy(request.requestedBy().trim());
-        renderRequest.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
-        renderRequest.setProviderName(providerName);
-        renderRequest.setExecutionMode(request.executionMode());
-        renderRequest.setMetadataJson(buildPlannedRenderMetadata(videoAsset, targetDurationSeconds, request));
-        SalesVideoJobDto job = salesVideoService.requestRender(profile.getId(), renderRequest);
-
-        videoAsset.setSalesVideoProfile(resolveProfile(profile.getId()));
-        videoAsset.setSalesVideoJob(resolveJob(job.getId()));
-        videoAsset.setProvider(providerName);
-        videoAsset.setModel(Optional.ofNullable(trimToNull(videoAsset.getModel())).orElse(providerName));
-        videoAsset.setStatus(ExperimentVideoStatus.GENERATING);
-        videoAsset.setDurationSeconds(targetDurationSeconds);
-        videoAsset.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
-        if (request.requiredForRelease() != null) {
-            videoAsset.setRequiredForRelease(request.requiredForRelease());
-        }
-        BigDecimal estimatedCost = resolveCost(
-                videoAsset.getCost(),
-                videoAsset.getProvider(),
-                videoAsset.getModel(),
-                videoAsset.getDurationSeconds(),
-                null);
-        if (estimatedCost != null) {
-            videoAsset.setCost(estimatedCost);
-        }
-        return videoAsset;
+    videoAsset.setSalesVideoProfile(resolveProfile(profile.getId()));
+    videoAsset.setSalesVideoJob(resolveJob(job.getId()));
+    videoAsset.setProvider(providerName);
+    videoAsset.setModel(
+        Optional.ofNullable(trimToNull(videoAsset.getModel())).orElse(providerName));
+    videoAsset.setStatus(ExperimentVideoStatus.GENERATING);
+    videoAsset.setDurationSeconds(targetDurationSeconds);
+    videoAsset.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+    if (request.requiredForRelease() != null) {
+      videoAsset.setRequiredForRelease(request.requiredForRelease());
     }
-
-    /** Normaliza a duração comercial do render planejado conforme o papel do vídeo no funil. */
-    private Integer resolvePlannedRenderTargetDurationSeconds(ExperimentVideoAsset videoAsset, String providerName) {
-        Integer plannedDurationSeconds = videoAsset.getDurationSeconds();
-        boolean lumaHero = videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO
-                && isLumaProvider(providerName);
-        if (lumaHero && (plannedDurationSeconds == null || plannedDurationSeconds < 25)) {
-            return LANDING_HERO_LUMA_TARGET_SECONDS;
-        }
-        return plannedDurationSeconds;
+    BigDecimal estimatedCost =
+        resolveCost(
+            videoAsset.getCost(),
+            videoAsset.getProvider(),
+            videoAsset.getModel(),
+            videoAsset.getDurationSeconds(),
+            null);
+    if (estimatedCost != null) {
+      videoAsset.setCost(estimatedCost);
     }
+    return videoAsset;
+  }
 
-    /** Identifica providers Luma para aplicar a estratégia comercial de hero premium. */
-    private boolean isLumaProvider(String providerName) {
-        String normalizedProviderName = Optional.ofNullable(trimToNull(providerName)).orElse("").toUpperCase();
-        return normalizedProviderName.contains("LUMA") || normalizedProviderName.contains("RAY_3_2");
+  /** Normaliza a duração comercial do render planejado conforme o papel do vídeo no funil. */
+  private Integer resolvePlannedRenderTargetDurationSeconds(
+      ExperimentVideoAsset videoAsset, String providerName) {
+    Integer plannedDurationSeconds = videoAsset.getDurationSeconds();
+    boolean lumaHero =
+        videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO && isLumaProvider(providerName);
+    if (lumaHero && (plannedDurationSeconds == null || plannedDurationSeconds < 25)) {
+      return LANDING_HERO_LUMA_TARGET_SECONDS;
     }
+    return plannedDurationSeconds;
+  }
 
-    /** Identifica ativos planejados ou falhados que podem receber novo job sem duplicar o ativo. */
-    private boolean requiresRenderJob(ExperimentVideoAsset videoAsset) {
-        if (videoAsset.getStatus() == ExperimentVideoStatus.PLANNED && videoAsset.getSalesVideoJob() == null) {
-            return true;
-        }
-        SalesVideoJob currentJob = videoAsset.getSalesVideoJob();
-        return currentJob != null
-                && currentJob.getStatus() == SalesVideoStatus.VIDEO_FAILED
-                && (videoAsset.getStatus() == ExperimentVideoStatus.GENERATING
-                        || videoAsset.getStatus() == ExperimentVideoStatus.FAILED);
+  /** Identifica providers Luma para aplicar a estratégia comercial de hero premium. */
+  private boolean isLumaProvider(String providerName) {
+    String normalizedProviderName =
+        Optional.ofNullable(trimToNull(providerName)).orElse("").toUpperCase();
+    return normalizedProviderName.contains("LUMA") || normalizedProviderName.contains("RAY_3_2");
+  }
+
+  /** Identifica ativos planejados ou falhados que podem receber novo job sem duplicar o ativo. */
+  private boolean requiresRenderJob(ExperimentVideoAsset videoAsset) {
+    if (videoAsset.getStatus() == ExperimentVideoStatus.PLANNED
+        && videoAsset.getSalesVideoJob() == null) {
+      return true;
     }
+    SalesVideoJob currentJob = videoAsset.getSalesVideoJob();
+    return currentJob != null
+        && currentJob.getStatus() == SalesVideoStatus.VIDEO_FAILED
+        && (videoAsset.getStatus() == ExperimentVideoStatus.GENERATING
+            || videoAsset.getStatus() == ExperimentVideoStatus.FAILED);
+  }
 
-    /** Identifica vídeos brutos prontos que ainda precisam de acabamento comercial. */
-    private boolean requiresPostProductionJob(ExperimentVideoAsset videoAsset) {
-        SalesVideoJob currentJob = videoAsset.getSalesVideoJob();
-        if (currentJob != null
-                && currentJob.getJobType() == SalesVideoJobType.POST_PRODUCTION
-                && currentJob.getStatus() == SalesVideoStatus.VIDEO_READY) {
-            return false;
-        }
-        if (currentJob != null
-                && currentJob.getJobType() == SalesVideoJobType.POST_PRODUCTION
-                && currentJob.getStatus() == SalesVideoStatus.VIDEO_FAILED) {
-            return true;
-        }
-        return videoAsset.getStatus() == ExperimentVideoStatus.READY
-                && StringUtils.hasText(videoAsset.getAssetUrl())
-                && videoAsset.getSalesVideoProfile() != null;
+  /** Identifica vídeos brutos prontos que ainda precisam de acabamento comercial. */
+  private boolean requiresPostProductionJob(ExperimentVideoAsset videoAsset) {
+    SalesVideoJob currentJob = videoAsset.getSalesVideoJob();
+    if (currentJob != null
+        && currentJob.getJobType() == SalesVideoJobType.POST_PRODUCTION
+        && currentJob.getStatus() == SalesVideoStatus.VIDEO_READY) {
+      return false;
     }
-
-    /** Solicita a finalização com voz, legenda e trilha usando o vídeo pronto como fonte. */
-    private ExperimentVideoAsset requestPostProductionForReadyAsset(
-            ExperimentVideoAsset videoAsset,
-            RequestExperimentVideoPostProductionRequest request) {
-        SalesVideoProfile profile = videoAsset.getSalesVideoProfile();
-        SalesVideoJob job = salesVideoJobService.createJob(
-                profile,
-                resolveApprovedScript(profile),
-                SalesVideoJobType.POST_PRODUCTION,
-                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
-                POST_PRODUCTION_PROVIDER,
-                request.requestedBy().trim(),
-                Optional.ofNullable(request.executionMode()).orElse(SalesVideoExecutionMode.TEST));
-        job.setMetadataJson(buildPostProductionMetadata(videoAsset, request));
-        SalesVideoJob savedJob = jobRepository.save(job);
-        videoAsset.setSalesVideoJob(savedJob);
-        videoAsset.setProvider(POST_PRODUCTION_PROVIDER);
-        videoAsset.setModel(POST_PRODUCTION_PROVIDER);
-        videoAsset.setStatus(ExperimentVideoStatus.GENERATING);
-        videoAsset.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
-        return videoAsset;
+    if (currentJob != null
+        && currentJob.getJobType() == SalesVideoJobType.POST_PRODUCTION
+        && currentJob.getStatus() == SalesVideoStatus.VIDEO_FAILED) {
+      return true;
     }
+    return videoAsset.getStatus() == ExperimentVideoStatus.READY
+        && StringUtils.hasText(videoAsset.getAssetUrl())
+        && videoAsset.getSalesVideoProfile() != null;
+  }
 
-    /** Monta um resumo auditável do prompt enviado ao fluxo VEO. */
-    private String buildVeoPromptSnapshot(RequestExperimentVeoVideoRequest request) {
-        return """
+  /** Solicita a finalização com voz, legenda e trilha usando o vídeo pronto como fonte. */
+  private ExperimentVideoAsset requestPostProductionForReadyAsset(
+      ExperimentVideoAsset videoAsset, RequestExperimentVideoPostProductionRequest request) {
+    SalesVideoProfile profile = videoAsset.getSalesVideoProfile();
+    SalesVideoJob job =
+        salesVideoJobService.createJob(
+            profile,
+            resolveApprovedScript(profile),
+            SalesVideoJobType.POST_PRODUCTION,
+            SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+            POST_PRODUCTION_PROVIDER,
+            request.requestedBy().trim(),
+            Optional.ofNullable(request.executionMode()).orElse(SalesVideoExecutionMode.TEST));
+    job.setMetadataJson(buildPostProductionMetadata(videoAsset, request));
+    SalesVideoJob savedJob = jobRepository.save(job);
+    videoAsset.setSalesVideoJob(savedJob);
+    videoAsset.setProvider(POST_PRODUCTION_PROVIDER);
+    videoAsset.setModel(POST_PRODUCTION_PROVIDER);
+    videoAsset.setStatus(ExperimentVideoStatus.GENERATING);
+    videoAsset.setReviewStatus(ExperimentVideoReviewStatus.PENDING);
+    return videoAsset;
+  }
+
+  /** Monta um resumo auditável do prompt enviado ao fluxo VEO. */
+  private String buildVeoPromptSnapshot(RequestExperimentVeoVideoRequest request) {
+    return """
                 Provider: VEO
                 Objetivo: %s
                 Métrica primária: %s
@@ -702,331 +758,398 @@ public class ExperimentVideoAssetService {
 
                 Script:
                 %s
-                """.formatted(
-                request.objective().trim(),
-                request.primaryMetric().trim(),
-                Optional.ofNullable(trimToNull(request.characterImageModel())).orElse("OPENAI_IMAGE"),
-                Optional.ofNullable(trimToNull(request.characterImageJobId())).orElse("pendente"),
-                request.characterImageAssetId() != null ? request.characterImageAssetId() : "pendente",
-                Optional.ofNullable(trimToNull(request.characterImageReferenceUrl())).orElse("pendente"),
-                Optional.ofNullable(trimToNull(request.characterImagePrompt())).orElse("nao informado"),
-                request.scriptText().trim());
-    }
+                """
+        .formatted(
+            request.objective().trim(),
+            request.primaryMetric().trim(),
+            Optional.ofNullable(trimToNull(request.characterImageModel())).orElse("OPENAI_IMAGE"),
+            Optional.ofNullable(trimToNull(request.characterImageJobId())).orElse("pendente"),
+            request.characterImageAssetId() != null ? request.characterImageAssetId() : "pendente",
+            Optional.ofNullable(trimToNull(request.characterImageReferenceUrl()))
+                .orElse("pendente"),
+            Optional.ofNullable(trimToNull(request.characterImagePrompt())).orElse("nao informado"),
+            request.scriptText().trim());
+  }
 
-    /** Monta metadados estruturados para o worker de vídeo reaproveitar a personagem gerada por OpenAI. */
-    private String buildVeoRenderMetadata(Long experimentId, RequestExperimentVeoVideoRequest request) {
-        Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("artifactType", "experiment.veoRenderRequest.v1");
-        metadata.put("experimentId", experimentId);
-        metadata.put("videoProvider", Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"));
-        metadata.put("characterImageProvider", "OPENAI");
-        metadata.put("characterImageModel", trimToNull(request.characterImageModel()));
-        metadata.put("characterImageJobId", trimToNull(request.characterImageJobId()));
-        metadata.put("characterImageAssetId", request.characterImageAssetId());
-        metadata.put("characterImageReferenceUrl", trimToNull(request.characterImageReferenceUrl()));
-        metadata.put("characterImagePrompt", trimToNull(request.characterImagePrompt()));
-        metadata.put("scriptText", request.scriptText().trim());
-        metadata.put("hookText", trimToNull(request.hookText()));
-        metadata.put("ctaText", trimToNull(request.ctaText()));
-        metadata.put("captionText", trimToNull(request.captionText()));
-        try {
-            return OBJECT_MAPPER.writeValueAsString(metadata);
-        } catch (JsonProcessingException ex) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "video metadata serialization failed", ex);
-        }
+  /**
+   * Monta metadados estruturados para o worker de vídeo reaproveitar a personagem gerada por
+   * OpenAI.
+   */
+  private String buildVeoRenderMetadata(
+      Long experimentId, RequestExperimentVeoVideoRequest request) {
+    Map<String, Object> metadata = new LinkedHashMap<>();
+    metadata.put("artifactType", "experiment.veoRenderRequest.v1");
+    metadata.put("experimentId", experimentId);
+    metadata.put(
+        "videoProvider", Optional.ofNullable(trimToNull(request.providerName())).orElse("VEO"));
+    metadata.put("characterImageProvider", "OPENAI");
+    metadata.put("characterImageModel", trimToNull(request.characterImageModel()));
+    metadata.put("characterImageJobId", trimToNull(request.characterImageJobId()));
+    metadata.put("characterImageAssetId", request.characterImageAssetId());
+    metadata.put("characterImageReferenceUrl", trimToNull(request.characterImageReferenceUrl()));
+    metadata.put("characterImagePrompt", trimToNull(request.characterImagePrompt()));
+    metadata.put("scriptText", request.scriptText().trim());
+    metadata.put("hookText", trimToNull(request.hookText()));
+    metadata.put("ctaText", trimToNull(request.ctaText()));
+    metadata.put("captionText", trimToNull(request.captionText()));
+    try {
+      return OBJECT_MAPPER.writeValueAsString(metadata);
+    } catch (JsonProcessingException ex) {
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "video metadata serialization failed", ex);
     }
+  }
 
-    /** Monta metadados estruturados para renderizar um ativo planejado existente. */
-    private String buildPlannedRenderMetadata(ExperimentVideoAsset videoAsset,
-                                              Integer targetDurationSeconds,
-                                              RequestPlannedExperimentVideoRenderRequest request) {
-        Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("artifactType", "experiment.plannedVideoRenderRequest.v1");
-        metadata.put("experimentId", videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null);
-        metadata.put("experimentVideoAssetId", videoAsset.getId());
-        metadata.put("slot", videoAsset.getSlot());
-        metadata.put("provider", trimToNull(videoAsset.getProvider()));
-        metadata.put("model", trimToNull(videoAsset.getModel()));
-        metadata.put("durationSeconds", targetDurationSeconds);
-        metadata.put("commercialStrategy", buildCommercialStrategyMetadata(videoAsset));
-        metadata.put("aspectRatio", trimToNull(videoAsset.getAspectRatio()));
-        metadata.put("objective", trimToNull(videoAsset.getObjective()));
-        metadata.put("primaryMetric", trimToNull(videoAsset.getPrimaryMetric()));
-        metadata.put("prompt", trimToNull(videoAsset.getPrompt()));
-        metadata.put("scriptText", trimToNull(videoAsset.getScript()));
-        metadata.put("requestedBy", request.requestedBy().trim());
-        enrichPlannedRenderPromptSafety(metadata, videoAsset, targetDurationSeconds);
-        try {
-            return OBJECT_MAPPER.writeValueAsString(metadata);
-        } catch (JsonProcessingException ex) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "planned video metadata serialization failed",
-                    ex);
-        }
+  /** Monta metadados estruturados para renderizar um ativo planejado existente. */
+  private String buildPlannedRenderMetadata(
+      ExperimentVideoAsset videoAsset,
+      Integer targetDurationSeconds,
+      RequestPlannedExperimentVideoRenderRequest request) {
+    Map<String, Object> metadata = new LinkedHashMap<>();
+    metadata.put("artifactType", "experiment.plannedVideoRenderRequest.v1");
+    metadata.put(
+        "experimentId",
+        videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null);
+    metadata.put("experimentVideoAssetId", videoAsset.getId());
+    metadata.put("slot", videoAsset.getSlot());
+    metadata.put("provider", trimToNull(videoAsset.getProvider()));
+    metadata.put("model", trimToNull(videoAsset.getModel()));
+    metadata.put("durationSeconds", targetDurationSeconds);
+    metadata.put("commercialStrategy", buildCommercialStrategyMetadata(videoAsset));
+    metadata.put("aspectRatio", trimToNull(videoAsset.getAspectRatio()));
+    metadata.put("objective", trimToNull(videoAsset.getObjective()));
+    metadata.put("primaryMetric", trimToNull(videoAsset.getPrimaryMetric()));
+    metadata.put("prompt", trimToNull(videoAsset.getPrompt()));
+    metadata.put("scriptText", trimToNull(videoAsset.getScript()));
+    metadata.put("requestedBy", request.requestedBy().trim());
+    enrichPlannedRenderPromptSafety(metadata, videoAsset, targetDurationSeconds);
+    try {
+      return OBJECT_MAPPER.writeValueAsString(metadata);
+    } catch (JsonProcessingException ex) {
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "planned video metadata serialization failed", ex);
     }
+  }
 
-    /** Adiciona recursos preventivos de prompt para reduzir flicker, haze e asset inutilizavel no funil. */
-    private void enrichPlannedRenderPromptSafety(Map<String, Object> metadata,
-                                                 ExperimentVideoAsset videoAsset,
-                                                 Integer targetDurationSeconds) {
-        boolean luma = isLumaProvider(videoAsset.getProvider());
-        boolean commercialVideo = videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO
-                || videoAsset.getSlot() == ExperimentVideoSlot.AD;
-        metadata.put("visual_provider_directives", MUSA_STABLE_VISUAL_DIRECTIVES.trim());
-        metadata.put("quality_gate", Map.of(
-                "reject_if", List.of(
-                        "flickering",
-                        "lighting oscillation",
-                        "exposure shift",
-                        "haze",
-                        "milky filter",
-                        "blur",
-                        "low contrast",
-                        "distorted hands",
-                        "embedded text",
-                        "sensualized pose"),
-                "commercial_block_rule",
-                "Se houver luz oscilando, mudanca forte de exposicao, haze ou baixa nitidez, o asset deve ser rejeitado e nao pode ser usado como hero, criativo, retargeting ou referencia final."));
-        if (luma && commercialVideo) {
-            metadata.put("generation_strategy", "OPENAI_IMAGE_TO_LUMA_VIDEO");
-            metadata.put("image_to_video", Map.of(
-                    "enabled", true,
-                    "source_image_provider", "OPENAI",
-                    "animation_provider", "LUMA_RAY_3_2",
-                    "reference_image_count", resolveReferenceImageCount(targetDurationSeconds),
-                    "image_prompt", buildReferenceImagePrompt(videoAsset),
-                    "expected_benefit",
-                    "Travar composicao, postura e luz antes da animacao para reduzir flicker, haze e drift visual."));
-        } else {
-            metadata.put("generation_strategy", "TEXT_TO_VIDEO");
-            Map<String, Object> imageToVideo = new LinkedHashMap<>();
-            imageToVideo.put("enabled", false);
-            imageToVideo.put("source_image_provider", null);
-            imageToVideo.put("animation_provider", trimToNull(videoAsset.getProvider()));
-            imageToVideo.put("reference_image_count", 0);
-            metadata.put("image_to_video", imageToVideo);
-        }
+  /**
+   * Adiciona recursos preventivos de prompt para reduzir flicker, haze e asset inutilizavel no
+   * funil.
+   */
+  private void enrichPlannedRenderPromptSafety(
+      Map<String, Object> metadata,
+      ExperimentVideoAsset videoAsset,
+      Integer targetDurationSeconds) {
+    boolean luma = isLumaProvider(videoAsset.getProvider());
+    boolean commercialVideo =
+        videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO
+            || videoAsset.getSlot() == ExperimentVideoSlot.AD;
+    metadata.put("visual_provider_directives", MUSA_STABLE_VISUAL_DIRECTIVES.trim());
+    metadata.put(
+        "quality_gate",
+        Map.of(
+            "reject_if",
+            List.of(
+                "flickering",
+                "lighting oscillation",
+                "exposure shift",
+                "haze",
+                "milky filter",
+                "blur",
+                "low contrast",
+                "distorted hands",
+                "embedded text",
+                "sensualized pose"),
+            "commercial_block_rule",
+            "Se houver luz oscilando, mudanca forte de exposicao, haze ou baixa nitidez, o asset deve ser rejeitado e nao pode ser usado como hero, criativo, retargeting ou referencia final."));
+    if (luma && commercialVideo) {
+      metadata.put("generation_strategy", "OPENAI_IMAGE_TO_LUMA_VIDEO");
+      metadata.put(
+          "image_to_video",
+          Map.of(
+              "enabled",
+              true,
+              "source_image_provider",
+              "OPENAI",
+              "animation_provider",
+              "LUMA_RAY_3_2",
+              "reference_image_count",
+              resolveReferenceImageCount(targetDurationSeconds),
+              "image_prompt",
+              buildReferenceImagePrompt(videoAsset),
+              "expected_benefit",
+              "Travar composicao, postura e luz antes da animacao para reduzir flicker, haze e drift visual."));
+    } else {
+      metadata.put("generation_strategy", "TEXT_TO_VIDEO");
+      Map<String, Object> imageToVideo = new LinkedHashMap<>();
+      imageToVideo.put("enabled", false);
+      imageToVideo.put("source_image_provider", null);
+      imageToVideo.put("animation_provider", trimToNull(videoAsset.getProvider()));
+      imageToVideo.put("reference_image_count", 0);
+      metadata.put("image_to_video", imageToVideo);
     }
+  }
 
-    /** Define quantas imagens-base usar para controlar inicio e fim da cena comercial. */
-    private int resolveReferenceImageCount(Integer targetDurationSeconds) {
-        return targetDurationSeconds != null && targetDurationSeconds >= 20 ? 2 : 1;
+  /** Define quantas imagens-base usar para controlar inicio e fim da cena comercial. */
+  private int resolveReferenceImageCount(Integer targetDurationSeconds) {
+    return targetDurationSeconds != null && targetDurationSeconds >= 20 ? 2 : 1;
+  }
+
+  /** Combina prompt planejado com diretrizes visuais estaveis para gerar a imagem-base. */
+  private String buildReferenceImagePrompt(ExperimentVideoAsset videoAsset) {
+    String plannedPrompt = trimToNull(videoAsset.getPrompt());
+    if (plannedPrompt == null) {
+      return MUSA_REFERENCE_IMAGE_PROMPT.trim();
     }
+    return plannedPrompt + "\n\n" + MUSA_REFERENCE_IMAGE_PROMPT.trim();
+  }
 
-    /** Combina prompt planejado com diretrizes visuais estaveis para gerar a imagem-base. */
-    private String buildReferenceImagePrompt(ExperimentVideoAsset videoAsset) {
-        String plannedPrompt = trimToNull(videoAsset.getPrompt());
-        if (plannedPrompt == null) {
-            return MUSA_REFERENCE_IMAGE_PROMPT.trim();
-        }
-        return plannedPrompt + "\n\n" + MUSA_REFERENCE_IMAGE_PROMPT.trim();
+  /** Descreve nos metadados como o ativo deve ser usado para maximizar venda no funil. */
+  private Map<String, Object> buildCommercialStrategyMetadata(ExperimentVideoAsset videoAsset) {
+    Map<String, Object> strategy = new LinkedHashMap<>();
+    boolean landingHero = videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO;
+    boolean luma = isLumaProvider(videoAsset.getProvider());
+    if (landingHero && luma) {
+      strategy.put("funnelRole", "LANDING_HERO");
+      strategy.put(
+          "recommendedUse",
+          "hero principal da landing para atravessar dor, mecanismo, desejo e CTA");
+      strategy.put("recommendedPrimaryDurationSeconds", LANDING_HERO_LUMA_TARGET_SECONDS);
+      strategy.put("recommendedPaidTrafficDerivativeSeconds", List.of(10, 15));
+      strategy.put(
+          "approvalRule",
+          "aprovar um hero principal e usar os demais como variacoes ou base para cortes curtos");
+      strategy.put(
+          "salesJourney", "desconhecimento -> relevancia -> mecanismo -> desejo -> compra");
+    } else if (videoAsset.getSlot() == ExperimentVideoSlot.AD) {
+      strategy.put("funnelRole", "PAID_TRAFFIC_HOOK");
+      strategy.put("recommendedUse", "criativo curto para captar atencao e levar para a landing");
+      strategy.put("recommendedPrimaryDurationSeconds", 15);
+      strategy.put("salesJourney", "desconhecimento -> relevancia");
+    } else {
+      strategy.put(
+          "funnelRole",
+          videoAsset.getSlot() != null ? videoAsset.getSlot().name() : "EXPERIMENT_VIDEO");
+      strategy.put("recommendedUse", "apoio de funil conforme contexto do experimento");
+      strategy.put("salesJourney", "reduzir incerteza e esforco percebido");
     }
+    return strategy;
+  }
 
-    /** Descreve nos metadados como o ativo deve ser usado para maximizar venda no funil. */
-    private Map<String, Object> buildCommercialStrategyMetadata(ExperimentVideoAsset videoAsset) {
-        Map<String, Object> strategy = new LinkedHashMap<>();
-        boolean landingHero = videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO;
-        boolean luma = isLumaProvider(videoAsset.getProvider());
-        if (landingHero && luma) {
-            strategy.put("funnelRole", "LANDING_HERO");
-            strategy.put("recommendedUse", "hero principal da landing para atravessar dor, mecanismo, desejo e CTA");
-            strategy.put("recommendedPrimaryDurationSeconds", LANDING_HERO_LUMA_TARGET_SECONDS);
-            strategy.put("recommendedPaidTrafficDerivativeSeconds", List.of(10, 15));
-            strategy.put("approvalRule", "aprovar um hero principal e usar os demais como variacoes ou base para cortes curtos");
-            strategy.put("salesJourney", "desconhecimento -> relevancia -> mecanismo -> desejo -> compra");
-        } else if (videoAsset.getSlot() == ExperimentVideoSlot.AD) {
-            strategy.put("funnelRole", "PAID_TRAFFIC_HOOK");
-            strategy.put("recommendedUse", "criativo curto para captar atencao e levar para a landing");
-            strategy.put("recommendedPrimaryDurationSeconds", 15);
-            strategy.put("salesJourney", "desconhecimento -> relevancia");
-        } else {
-            strategy.put("funnelRole", videoAsset.getSlot() != null ? videoAsset.getSlot().name() : "EXPERIMENT_VIDEO");
-            strategy.put("recommendedUse", "apoio de funil conforme contexto do experimento");
-            strategy.put("salesJourney", "reduzir incerteza e esforco percebido");
-        }
-        return strategy;
+  /** Monta metadados para o worker finalizar o vídeo bruto em peça pronta para venda. */
+  private String buildPostProductionMetadata(
+      ExperimentVideoAsset videoAsset, RequestExperimentVideoPostProductionRequest request) {
+    Map<String, Object> metadata = new LinkedHashMap<>();
+    metadata.put("artifactType", "experiment.videoPostProductionRequest.v1");
+    metadata.put(
+        "experimentId",
+        videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null);
+    metadata.put("experimentVideoAssetId", videoAsset.getId());
+    metadata.put("sourceVideoUrl", trimToNull(videoAsset.getAssetUrl()));
+    metadata.put(
+        "sourceAssetId", videoAsset.getAsset() != null ? videoAsset.getAsset().getId() : null);
+    metadata.put("sourceProvider", trimToNull(videoAsset.getProvider()));
+    metadata.put("sourceModel", trimToNull(videoAsset.getModel()));
+    metadata.put(
+        "voiceOverScript",
+        Optional.ofNullable(trimToNull(request.voiceOverScript()))
+            .orElse(defaultMusaVoiceOver(videoAsset)));
+    metadata.put(
+        "captionText",
+        Optional.ofNullable(trimToNull(request.captionText()))
+            .orElse(defaultMusaCaption(videoAsset)));
+    metadata.put(
+        "soundtrackStyle",
+        Optional.ofNullable(trimToNull(request.soundtrackStyle()))
+            .orElse("trilha leve, elegante e discreta, baixa o suficiente para a voz vender"));
+    metadata.put(
+        "outputVariant",
+        Optional.ofNullable(trimToNull(request.outputVariant())).orElse("LANDING_HERO_FINAL"));
+    metadata.put("createShortDerivatives", Boolean.TRUE.equals(request.createShortDerivatives()));
+    metadata.put(
+        "commercialStrategy",
+        Map.of(
+            "funnelRole", "FINISHED_SALES_VIDEO",
+            "recommendedUse",
+                "landing hero com voz off, legenda grande e CTA; derivar cortes para Ads/Reels",
+            "salesJourney", "dor reconhecivel -> mecanismo simples -> microexperiencia -> CTA"));
+    try {
+      return OBJECT_MAPPER.writeValueAsString(metadata);
+    } catch (JsonProcessingException ex) {
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          "video post-production metadata serialization failed",
+          ex);
     }
+  }
 
-    /** Monta metadados para o worker finalizar o vídeo bruto em peça pronta para venda. */
-    private String buildPostProductionMetadata(ExperimentVideoAsset videoAsset,
-                                               RequestExperimentVideoPostProductionRequest request) {
-        Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("artifactType", "experiment.videoPostProductionRequest.v1");
-        metadata.put("experimentId", videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null);
-        metadata.put("experimentVideoAssetId", videoAsset.getId());
-        metadata.put("sourceVideoUrl", trimToNull(videoAsset.getAssetUrl()));
-        metadata.put("sourceAssetId", videoAsset.getAsset() != null ? videoAsset.getAsset().getId() : null);
-        metadata.put("sourceProvider", trimToNull(videoAsset.getProvider()));
-        metadata.put("sourceModel", trimToNull(videoAsset.getModel()));
-        metadata.put("voiceOverScript", Optional.ofNullable(trimToNull(request.voiceOverScript()))
-                .orElse(defaultMusaVoiceOver(videoAsset)));
-        metadata.put("captionText", Optional.ofNullable(trimToNull(request.captionText()))
-                .orElse(defaultMusaCaption(videoAsset)));
-        metadata.put("soundtrackStyle", Optional.ofNullable(trimToNull(request.soundtrackStyle()))
-                .orElse("trilha leve, elegante e discreta, baixa o suficiente para a voz vender"));
-        metadata.put("outputVariant", Optional.ofNullable(trimToNull(request.outputVariant()))
-                .orElse("LANDING_HERO_FINAL"));
-        metadata.put("createShortDerivatives", Boolean.TRUE.equals(request.createShortDerivatives()));
-        metadata.put("commercialStrategy", Map.of(
-                "funnelRole", "FINISHED_SALES_VIDEO",
-                "recommendedUse", "landing hero com voz off, legenda grande e CTA; derivar cortes para Ads/Reels",
-                "salesJourney", "dor reconhecivel -> mecanismo simples -> microexperiencia -> CTA"));
-        try {
-            return OBJECT_MAPPER.writeValueAsString(metadata);
-        } catch (JsonProcessingException ex) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "video post-production metadata serialization failed",
-                    ex);
-        }
-    }
-
-    /** Define uma voz off padrão aderente ao PDE MUSA quando a tela não informar texto próprio. */
-    private String defaultMusaVoiceOver(ExperimentVideoAsset videoAsset) {
-        String cta = videoAsset.getExperiment() != null && StringUtils.hasText(videoAsset.getExperiment().getPrimaryCta())
-                ? videoAsset.getExperiment().getPrimaryCta()
-                : "Ver meu plano MUSA de 7 dias";
-        return """
+  /** Define uma voz off padrão aderente ao PDE MUSA quando a tela não informar texto próprio. */
+  private String defaultMusaVoiceOver(ExperimentVideoAsset videoAsset) {
+    String cta =
+        videoAsset.getExperiment() != null
+                && StringUtils.hasText(videoAsset.getExperiment().getPrimaryCta())
+            ? videoAsset.getExperiment().getPrimaryCta()
+            : "Ver meu plano MUSA de 7 dias";
+    return """
                 Você se arruma, olha no espelho e ainda sente que falta presença?
                 O Método MUSA te guia por microações simples para reduzir ruído visual,
                 escolher melhor cores, acabamento e peça-sinal, usando o que você já tem.
                 Em sete dias, você entende um caminho mais elegante, marcante e possível.
                 %s.
-                """.formatted(cta).trim();
-    }
+                """
+        .formatted(cta)
+        .trim();
+  }
 
-    /** Define a legenda principal para vender mesmo quando a usuária assistir sem áudio. */
-    private String defaultMusaCaption(ExperimentVideoAsset videoAsset) {
-        String cta = videoAsset.getExperiment() != null && StringUtils.hasText(videoAsset.getExperiment().getPrimaryCta())
-                ? videoAsset.getExperiment().getPrimaryCta()
-                : "Ver meu plano MUSA de 7 dias";
-        return "Pare de se sentir comum no espelho. Veja seu plano MUSA de 7 dias. " + cta + ".";
-    }
+  /** Define a legenda principal para vender mesmo quando a usuária assistir sem áudio. */
+  private String defaultMusaCaption(ExperimentVideoAsset videoAsset) {
+    String cta =
+        videoAsset.getExperiment() != null
+                && StringUtils.hasText(videoAsset.getExperiment().getPrimaryCta())
+            ? videoAsset.getExperiment().getPrimaryCta()
+            : "Ver meu plano MUSA de 7 dias";
+    return "Pare de se sentir comum no espelho. Veja seu plano MUSA de 7 dias. " + cta + ".";
+  }
 
-    /** Seleciona o roteiro aprovado mais recente para manter o job de pós-produção auditável. */
-    private SalesVideoScript resolveApprovedScript(SalesVideoProfile profile) {
-        if (profile == null || profile.getScripts() == null) {
-            return null;
-        }
-        return profile.getScripts().stream()
-                .filter(script -> script.getStatus() == SalesVideoScriptStatus.APPROVED)
-                .max((left, right) -> Integer.compare(
-                        Optional.ofNullable(left.getVersion()).orElse(0),
-                        Optional.ofNullable(right.getVersion()).orElse(0)))
-                .orElse(null);
+  /** Seleciona o roteiro aprovado mais recente para manter o job de pós-produção auditável. */
+  private SalesVideoScript resolveApprovedScript(SalesVideoProfile profile) {
+    if (profile == null || profile.getScripts() == null) {
+      return null;
     }
+    return profile.getScripts().stream()
+        .filter(script -> script.getStatus() == SalesVideoScriptStatus.APPROVED)
+        .max(
+            (left, right) ->
+                Integer.compare(
+                    Optional.ofNullable(left.getVersion()).orElse(0),
+                    Optional.ofNullable(right.getVersion()).orElse(0)))
+        .orElse(null);
+  }
 
-    /** Resolve o custo em USD informado ou calculado pela tabela oficial do provider. */
-    private BigDecimal resolveCost(BigDecimal informedCost,
-                                   String provider,
-                                   String model,
-                                   Integer durationSeconds,
-                                   String resolution) {
-        if (informedCost != null) {
-            return informedCost;
-        }
-        return costCalculator.estimateUsd(provider, model, durationSeconds, resolution);
+  /** Resolve o custo em USD informado ou calculado pela tabela oficial do provider. */
+  private BigDecimal resolveCost(
+      BigDecimal informedCost,
+      String provider,
+      String model,
+      Integer durationSeconds,
+      String resolution) {
+    if (informedCost != null) {
+      return informedCost;
     }
+    return costCalculator.estimateUsd(provider, model, durationSeconds, resolution);
+  }
 
-    /** Normaliza textos opcionais em branco para nulo. */
-    private String trimToNull(String value) {
-        return StringUtils.hasText(value) ? value.trim() : null;
-    }
+  /** Normaliza textos opcionais em branco para nulo. */
+  private String trimToNull(String value) {
+    return StringUtils.hasText(value) ? value.trim() : null;
+  }
 
-    /** Normaliza texto opcional que vai para campos auditaveis do ativo. */
-    private String normalizeOptionalText(String value) {
-        return trimToNull(value);
-    }
+  /** Normaliza texto opcional que vai para campos auditaveis do ativo. */
+  private String normalizeOptionalText(String value) {
+    return trimToNull(value);
+  }
 
-    /** Normaliza a chave de origem visual para comparacao operacional consistente. */
-    private String normalizeVisualSourceKey(String value) {
-        String normalized = trimToNull(value);
-        return normalized == null ? null : normalized.toLowerCase();
-    }
+  /** Normaliza a chave de origem visual para comparacao operacional consistente. */
+  private String normalizeVisualSourceKey(String value) {
+    String normalized = trimToNull(value);
+    return normalized == null ? null : normalized.toLowerCase();
+  }
 
-    /** Busca o perfil de vídeo quando informado. */
-    private SalesVideoProfile resolveProfile(Long profileId) {
-        if (profileId == null) {
-            return null;
-        }
-        return profileRepository.findById(profileId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "sales video profile not found"));
+  /** Busca o perfil de vídeo quando informado. */
+  private SalesVideoProfile resolveProfile(Long profileId) {
+    if (profileId == null) {
+      return null;
     }
+    return profileRepository
+        .findById(profileId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "sales video profile not found"));
+  }
 
-    /** Busca o job de vídeo quando informado. */
-    private SalesVideoJob resolveJob(Long jobId) {
-        if (jobId == null) {
-            return null;
-        }
-        return jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "sales video job not found"));
+  /** Busca o job de vídeo quando informado. */
+  private SalesVideoJob resolveJob(Long jobId) {
+    if (jobId == null) {
+      return null;
     }
+    return jobRepository
+        .findById(jobId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "sales video job not found"));
+  }
 
-    /** Busca o asset final quando informado. */
-    private Asset resolveAsset(Long assetId) {
-        if (assetId == null) {
-            return null;
-        }
-        return assetRepository.findById(assetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "asset not found"));
+  /** Busca o asset final quando informado. */
+  private Asset resolveAsset(Long assetId) {
+    if (assetId == null) {
+      return null;
     }
+    return assetRepository
+        .findById(assetId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "asset not found"));
+  }
 
-    /** Busca o slot de landing e impede vínculo com outro experimento. */
-    private LandingVideoSlot resolveLandingVideoSlot(Long experimentId, Long slotId) {
-        if (slotId == null) {
-            return null;
-        }
-        LandingVideoSlot slot = landingVideoSlotRepository.findById(slotId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "landing video slot not found"));
-        LandingPage landingPage = slot.getLandingPage();
-        Long slotExperimentId = landingPage != null && landingPage.getExperiment() != null
-                ? landingPage.getExperiment().getId()
-                : null;
-        if (!experimentId.equals(slotExperimentId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "landing video slot belongs to another experiment");
-        }
-        return slot;
+  /** Busca o slot de landing e impede vínculo com outro experimento. */
+  private LandingVideoSlot resolveLandingVideoSlot(Long experimentId, Long slotId) {
+    if (slotId == null) {
+      return null;
     }
+    LandingVideoSlot slot =
+        landingVideoSlotRepository
+            .findById(slotId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "landing video slot not found"));
+    LandingPage landingPage = slot.getLandingPage();
+    Long slotExperimentId =
+        landingPage != null && landingPage.getExperiment() != null
+            ? landingPage.getExperiment().getId()
+            : null;
+    if (!experimentId.equals(slotExperimentId)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "landing video slot belongs to another experiment");
+    }
+    return slot;
+  }
 
-    /** Converte a entidade para o contrato de leitura da API. */
-    private ExperimentVideoAssetDto toDto(ExperimentVideoAsset videoAsset) {
-        return new ExperimentVideoAssetDto(
-                videoAsset.getId(),
-                videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null,
-                videoAsset.getSlot(),
-                videoAsset.getObjective(),
-                videoAsset.getPrimaryMetric(),
-                videoAsset.getScript(),
-                videoAsset.getPrompt(),
-                videoAsset.getProvider(),
-                videoAsset.getModel(),
-                videoAsset.getStatus(),
-                videoAsset.getAssetUrl(),
-                videoAsset.getThumbnailUrl(),
-                videoAsset.getDurationSeconds(),
-                videoAsset.getHasAudio(),
-                videoAsset.getAspectRatio(),
-                videoAsset.getVisualSourceType(),
-                videoAsset.getVisualSourceKey(),
-                videoAsset.getVisualSourceDescription(),
-                videoAsset.getVisualSimilarityOverrideReason(),
-                videoAsset.getRequestJson(),
-                videoAsset.getResponseJson(),
-                videoAsset.getCost(),
-                videoAsset.getAudioCost(),
-                videoAsset.getReviewStatus(),
-                videoAsset.getRejectionReason(),
-                videoAsset.getReviewedBy(),
-                videoAsset.getReviewedAt(),
-                videoAsset.isRequiredForRelease(),
-                videoAsset.getSalesVideoProfile() != null ? videoAsset.getSalesVideoProfile().getId() : null,
-                videoAsset.getSalesVideoJob() != null ? videoAsset.getSalesVideoJob().getId() : null,
-                videoAsset.getAsset() != null ? videoAsset.getAsset().getId() : null,
-                videoAsset.getLandingVideoSlot() != null ? videoAsset.getLandingVideoSlot().getId() : null,
-                videoAsset.getCreatedAt(),
-                videoAsset.getUpdatedAt());
-    }
+  /** Converte a entidade para o contrato de leitura da API. */
+  private ExperimentVideoAssetDto toDto(ExperimentVideoAsset videoAsset) {
+    return new ExperimentVideoAssetDto(
+        videoAsset.getId(),
+        videoAsset.getExperiment() != null ? videoAsset.getExperiment().getId() : null,
+        videoAsset.getSlot(),
+        videoAsset.getObjective(),
+        videoAsset.getPrimaryMetric(),
+        videoAsset.getScript(),
+        videoAsset.getPrompt(),
+        videoAsset.getProvider(),
+        videoAsset.getModel(),
+        videoAsset.getStatus(),
+        videoAsset.getAssetUrl(),
+        videoAsset.getThumbnailUrl(),
+        videoAsset.getDurationSeconds(),
+        videoAsset.getHasAudio(),
+        videoAsset.getAspectRatio(),
+        videoAsset.getVisualSourceType(),
+        videoAsset.getVisualSourceKey(),
+        videoAsset.getVisualSourceDescription(),
+        videoAsset.getVisualSimilarityOverrideReason(),
+        videoAsset.getRequestJson(),
+        videoAsset.getResponseJson(),
+        videoAsset.getCost(),
+        videoAsset.getAudioCost(),
+        videoAsset.getReviewStatus(),
+        videoAsset.getRejectionReason(),
+        videoAsset.getReviewedBy(),
+        videoAsset.getReviewedAt(),
+        videoAsset.isRequiredForRelease(),
+        videoAsset.getSalesVideoProfile() != null
+            ? videoAsset.getSalesVideoProfile().getId()
+            : null,
+        videoAsset.getSalesVideoJob() != null ? videoAsset.getSalesVideoJob().getId() : null,
+        videoAsset.getAsset() != null ? videoAsset.getAsset().getId() : null,
+        videoAsset.getLandingVideoSlot() != null ? videoAsset.getLandingVideoSlot().getId() : null,
+        videoAsset.getCreatedAt(),
+        videoAsset.getUpdatedAt());
+  }
 }

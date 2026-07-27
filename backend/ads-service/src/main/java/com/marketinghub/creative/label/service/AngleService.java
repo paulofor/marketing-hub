@@ -11,36 +11,39 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AngleService {
-    private final AngleRepository repository;
+  private final AngleRepository repository;
 
-    public AngleService(AngleRepository repository) {
-        this.repository = repository;
-    }
+  public AngleService(AngleRepository repository) {
+    this.repository = repository;
+  }
 
-    @Transactional
-    public Angle create(CreateAngleRequest request) {
-        Angle angle = Angle.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .frameType(request.getFrameType())
-                .build();
-        return repository.save(angle);
-    }
+  @Transactional
+  public Angle create(CreateAngleRequest request) {
+    Angle angle =
+        Angle.builder()
+            .name(request.getName())
+            .description(request.getDescription())
+            .frameType(request.getFrameType())
+            .build();
+    return repository.save(angle);
+  }
 
-    public Angle get(Long id) {
-        return repository.findById(id).orElseThrow();
-    }
+  public Angle get(Long id) {
+    return repository.findById(id).orElseThrow();
+  }
 
-    public Iterable<Angle> list() {
-        return repository.findAll();
-    }
+  public Iterable<Angle> list() {
+    return repository.findAll();
+  }
 
-    @Transactional
-    public Angle update(Long id, AngleDto dto) {
-        Angle angle = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        angle.setName(dto.getName());
-        angle.setDescription(dto.getDescription());
-        return repository.save(angle);
-    }
+  @Transactional
+  public Angle update(Long id, AngleDto dto) {
+    Angle angle =
+        repository
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    angle.setName(dto.getName());
+    angle.setDescription(dto.getDescription());
+    return repository.save(angle);
+  }
 }

@@ -2,8 +2,8 @@ package com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.failStag
 
 /** Contrato devolvido após o backend registrar falha adaptive-query-planner do NichoCNAE v2. */
 public record AdaptiveQueryPlannerFailureResponse(
-        String stageExecutionId,
-        String status,
-        String retryStageExecutionId,
-        Integer attemptNumber,
-        Integer technicalRetryNumber) {}
+    String stageExecutionId,
+    String status,
+    String retryStageExecutionId,
+    Integer attemptNumber,
+    Integer technicalRetryNumber) {}

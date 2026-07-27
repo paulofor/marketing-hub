@@ -1,10 +1,11 @@
 package com.marketinghub.repository.jpa.niche;
 
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.dto.MarketNicheListItemProjection;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.dto.MarketNicheListItemProjection;
 import java.math.BigDecimal;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,16 +13,14 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-
-/**
- * Responsabilidade: persistir e consultar nichos de mercado no banco de dados.
- */
+/** Responsabilidade: persistir e consultar nichos de mercado no banco de dados. */
 public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> {
-    /**
-     * Lista os nichos para a tela administrativa com agregados de hipóteses do pipeline e experimentos.
-     */
-    @Query("""
+  /**
+   * Lista os nichos para a tela administrativa com agregados de hipóteses do pipeline e
+   * experimentos.
+   */
+  @Query(
+      """
             select n.id as id,
                    n.name as name,
                    n.createdAt as createdAt,
@@ -37,69 +36,68 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
             from MarketNiche n
             order by n.createdAt desc, n.id desc
             """)
-    Page<MarketNicheListItemProjection> findListItems(Pageable pageable);
+  Page<MarketNicheListItemProjection> findListItems(Pageable pageable);
 
-    /**
-     * Busca nichos configurados para geração de hipóteses.
-     *
-     * <p>Os filtros ficam na consulta para carregar apenas os registros necessários.</p>
-     */
-    @Query("""
+  /**
+   * Busca nichos configurados para geração de hipóteses.
+   *
+   * <p>Os filtros ficam na consulta para carregar apenas os registros necessários.
+   */
+  @Query(
+      """
             select n from MarketNiche n
             left join fetch n.differentiatedTechnology
             where n.hypothesesToGenerate is not null
               and n.hypothesesToGenerate > 0
             """)
-    List<MarketNiche> findAllToGenerateHypotheses();
+  List<MarketNiche> findAllToGenerateHypotheses();
 
-    /**
-     * Busca nichos configurados para geração de interesses.
-     */
-    @Query("""
+  /** Busca nichos configurados para geração de interesses. */
+  @Query(
+      """
             select distinct n from MarketNiche n
             left join fetch n.differentiatedTechnology
             where n.interestsToGenerate is not null
               and n.interestsToGenerate > 0
             """)
-    List<MarketNiche> findAllToGenerateInterests();
+  List<MarketNiche> findAllToGenerateInterests();
 
-    /**
-     * Busca nichos configurados para geração de cargos.
-     */
-    @Query("""
+  /** Busca nichos configurados para geração de cargos. */
+  @Query(
+      """
             select distinct n from MarketNiche n
             left join fetch n.differentiatedTechnology
             where n.jobTitlesToGenerate is not null
               and n.jobTitlesToGenerate > 0
             """)
-    List<MarketNiche> findAllToGenerateJobTitles();
+  List<MarketNiche> findAllToGenerateJobTitles();
 
-    /**
-     * Busca nichos configurados para geração de comportamentos.
-     */
-    @Query("""
+  /** Busca nichos configurados para geração de comportamentos. */
+  @Query(
+      """
             select distinct n from MarketNiche n
             left join fetch n.differentiatedTechnology
             where n.behaviorsToGenerate is not null
               and n.behaviorsToGenerate > 0
             """)
-    List<MarketNiche> findAllToGenerateBehaviors();
+  List<MarketNiche> findAllToGenerateBehaviors();
 
-    /**
-     * Busca nichos configurados para geração de descrições detalhadas.
-     */
-    @Query("""
+  /** Busca nichos configurados para geração de descrições detalhadas. */
+  @Query(
+      """
             select distinct n from MarketNiche n
             left join fetch n.differentiatedTechnology
             where n.detailedDescriptionsToGenerate is not null
               and n.detailedDescriptionsToGenerate > 0
             """)
-    List<MarketNiche> findAllToGenerateDetailedDescriptions();
+  List<MarketNiche> findAllToGenerateDetailedDescriptions();
 
-    /**
-     * Lista nichos que possuem solicitação pendente e ao menos um experimento comercialmente pronto para criação de pixel.
-     */
-    @Query("""
+  /**
+   * Lista nichos que possuem solicitação pendente e ao menos um experimento comercialmente pronto
+   * para criação de pixel.
+   */
+  @Query(
+      """
             select distinct n from MarketNiche n
             where n.facebookPixelId is null
               and n.facebookPixelRequestStatus = 'PENDING'
@@ -113,33 +111,32 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
                       and e.followUpActionUrl is not null
               )
             """)
-    List<MarketNiche> findPendingPixelRequests(@Param("statuses") List<ExperimentStatus> statuses,
-                                               @Param("platform") ExperimentPlatform platform);
+  List<MarketNiche> findPendingPixelRequests(
+      @Param("statuses") List<ExperimentStatus> statuses,
+      @Param("platform") ExperimentPlatform platform);
 
-    /**
-     * Incrementa o custo total acumulado de um nicho.
-     */
-    @Modifying
-    @Query("""
+  /** Incrementa o custo total acumulado de um nicho. */
+  @Modifying
+  @Query(
+      """
             update MarketNiche n
             set n.totalCost = coalesce(n.totalCost, 0) + :delta
             where n.id = :id
             """)
-    void incrementTotalCost(@Param("id") Long id, @Param("delta") BigDecimal delta);
+  void incrementTotalCost(@Param("id") Long id, @Param("delta") BigDecimal delta);
 
-    /**
-     * Verifica se já existe nicho com o mesmo nome, ignorando caixa, para impedir duplicidade comercial.
-     */
-    boolean existsByNameIgnoreCase(String name);
+  /**
+   * Verifica se já existe nicho com o mesmo nome, ignorando caixa, para impedir duplicidade
+   * comercial.
+   */
+  boolean existsByNameIgnoreCase(String name);
 
-    /**
-     * Verifica se outro nicho já usa o mesmo nome, preservando atualização idempotente do próprio registro.
-     */
-    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+  /**
+   * Verifica se outro nicho já usa o mesmo nome, preservando atualização idempotente do próprio
+   * registro.
+   */
+  boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
-    /**
-     * Busca o nicho mais recente associado ao CNAE de origem para reprocessamento idempotente.
-     */
-    java.util.Optional<MarketNiche> findFirstBySourceCnaeCodeOrderByIdDesc(String sourceCnaeCode);
-
+  /** Busca o nicho mais recente associado ao CNAE de origem para reprocessamento idempotente. */
+  java.util.Optional<MarketNiche> findFirstBySourceCnaeCodeOrderByIdDesc(String sourceCnaeCode);
 }

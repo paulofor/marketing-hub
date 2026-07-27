@@ -5,11 +5,9 @@ import com.marketinghub.whatsapp.dto.WhatsAppMessageDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-/**
- * MapStruct mapper for WhatsAppMessage.
- */
+/** MapStruct mapper for WhatsAppMessage. */
 @Mapper(componentModel = "spring")
 public interface WhatsAppMessageMapper {
-    @Mapping(source = "account.id", target = "accountId")
-    WhatsAppMessageDto toDto(WhatsAppMessage message);
+  @Mapping(source = "account.id", target = "accountId")
+  WhatsAppMessageDto toDto(WhatsAppMessage message);
 }

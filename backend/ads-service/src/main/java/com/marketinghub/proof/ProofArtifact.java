@@ -5,17 +5,14 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
-
-/**
- * Catalogued proof asset tied to a hypothesis or experiment.
- */
+/** Catalogued proof asset tied to a hypothesis or experiment. */
 @Entity
 @Table(name = "proof_artifact")
 @Data
@@ -23,61 +20,59 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProofArtifact {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "market_niche_id")
-    private MarketNiche marketNiche;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "market_niche_id")
+  private MarketNiche marketNiche;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hypothesis_id")
-    private Hypothesis hypothesis;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "hypothesis_id")
+  private Hypothesis hypothesis;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_id")
-    private Experiment experiment;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "experiment_id")
+  private Experiment experiment;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "visual_proof_id")
-    private VisualProof visualProof;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "visual_proof_id")
+  private VisualProof visualProof;
 
-    @Enumerated(EnumType.STRING)
-    private ProofStage stage;
+  @Enumerated(EnumType.STRING)
+  private ProofStage stage;
 
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ProofStatus status = ProofStatus.DRAFT;
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  private ProofStatus status = ProofStatus.DRAFT;
 
-    @Column(name = "custom_type", length = 120)
-    private String customType;
+  @Column(name = "custom_type", length = 120)
+  private String customType;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String assetPlan;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String assetPlan;
 
-    @Column(name = "asset_url", length = 512)
-    private String assetUrl;
+  @Column(name = "asset_url", length = 512)
+  private String assetUrl;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String message;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String message;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String deliveryNotes;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String deliveryNotes;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String prompt;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String prompt;
 
-    @Column(length = 255)
-    private String model;
+  @Column(length = 255)
+  private String model;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

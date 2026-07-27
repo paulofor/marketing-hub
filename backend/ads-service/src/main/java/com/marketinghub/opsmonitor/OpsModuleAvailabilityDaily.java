@@ -23,40 +23,40 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Getter
 @Setter
 public class OpsModuleAvailabilityDaily {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "module_id", nullable = false)
-    private OpsMonitoredModule module;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "module_id", nullable = false)
+  private OpsMonitoredModule module;
 
-    @Column(name = "availability_date", nullable = false)
-    private LocalDate availabilityDate;
+  @Column(name = "availability_date", nullable = false)
+  private LocalDate availabilityDate;
 
-    @Column(name = "total_checks", nullable = false)
-    private Integer totalChecks;
+  @Column(name = "total_checks", nullable = false)
+  private Integer totalChecks;
 
-    @Column(name = "successful_checks", nullable = false)
-    private Integer successfulChecks;
+  @Column(name = "successful_checks", nullable = false)
+  private Integer successfulChecks;
 
-    @Column(name = "failed_checks", nullable = false)
-    private Integer failedChecks;
+  @Column(name = "failed_checks", nullable = false)
+  private Integer failedChecks;
 
-    @Column(name = "availability_percentage", nullable = false, precision = 5, scale = 2)
-    private BigDecimal availabilityPercentage;
+  @Column(name = "availability_percentage", nullable = false, precision = 5, scale = 2)
+  private BigDecimal availabilityPercentage;
 
-    @Column(name = "offline_seconds", nullable = false)
-    private Long offlineSeconds;
+  @Column(name = "offline_seconds", nullable = false)
+  private Long offlineSeconds;
 
-    @Column(name = "degraded_seconds", nullable = false)
-    private Long degradedSeconds;
+  @Column(name = "degraded_seconds", nullable = false)
+  private Long degradedSeconds;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/image-generation/models")
 public class ImageGenerationModelController {
 
-    private final ImageGenerationCatalogService catalogService;
+  private final ImageGenerationCatalogService catalogService;
 
-    public ImageGenerationModelController(ImageGenerationCatalogService catalogService) {
-        this.catalogService = catalogService;
-    }
+  public ImageGenerationModelController(ImageGenerationCatalogService catalogService) {
+    this.catalogService = catalogService;
+  }
 
-    @GetMapping
-    public List<ImageGenerationModelDto> listModels() {
-        return catalogService.listModels();
-    }
+  @GetMapping
+  public List<ImageGenerationModelDto> listModels() {
+    return catalogService.listModels();
+  }
 }

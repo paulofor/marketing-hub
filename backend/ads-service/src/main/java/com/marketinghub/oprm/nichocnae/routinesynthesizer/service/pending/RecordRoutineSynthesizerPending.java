@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-/** Contrato interno que entrega sinais suficientes para a etapa seis sintetizar o cartão de rotina. */
+/**
+ * Contrato interno que entrega sinais suficientes para a etapa seis sintetizar o cartão de rotina.
+ */
 public record RecordRoutineSynthesizerPending(
     Long researchCycleId,
     Long sourceNicheId,

@@ -3,97 +3,92 @@ package com.marketinghub.targeting;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
-/**
- * Elemento individual de segmentação (interesse, cargo ou comportamento).
- */
+/** Elemento individual de segmentação (interesse, cargo ou comportamento). */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TargetingElement {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "market_niche_id", nullable = false)
-    private MarketNiche niche;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "market_niche_id", nullable = false)
+  private MarketNiche niche;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hypothesis_id")
-    private Hypothesis hypothesis;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "hypothesis_id")
+  private Hypothesis hypothesis;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private TargetingElementType type;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 32)
+  private TargetingElementType type;
 
-    @Column(name = "term", nullable = false, length = 255)
-    private String term;
+  @Column(name = "term", nullable = false, length = 255)
+  private String term;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String description;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String description;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String prompt;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String prompt;
 
-    @Column(length = 191)
-    private String model;
+  @Column(length = 191)
+  private String model;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 32)
-    private TargetingElementSource source;
+  @Enumerated(EnumType.STRING)
+  @Column(length = 32)
+  private TargetingElementSource source;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private TargetingElementStatus status = TargetingElementStatus.DRAFT;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 32)
+  @Builder.Default
+  private TargetingElementStatus status = TargetingElementStatus.DRAFT;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String notes;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String notes;
 
-    @Column(length = 191)
-    private String lastReviewedBy;
+  @Column(length = 191)
+  private String lastReviewedBy;
 
-    @Column(length = 100)
-    private String metaId;
+  @Column(length = 100)
+  private String metaId;
 
-    @Column(length = 191)
-    private String metaKey;
+  @Column(length = 191)
+  private String metaKey;
 
-    @Column(name = "meta_audience_size_lower_bound")
-    private Long metaAudienceSizeLowerBound;
+  @Column(name = "meta_audience_size_lower_bound")
+  private Long metaAudienceSizeLowerBound;
 
-    @Column(name = "meta_audience_size_upper_bound")
-    private Long metaAudienceSizeUpperBound;
+  @Column(name = "meta_audience_size_upper_bound")
+  private Long metaAudienceSizeUpperBound;
 
-    @Column(name = "meta_id_unavailable", nullable = false)
-    @Builder.Default
-    private Boolean metaIdUnavailable = false;
+  @Column(name = "meta_id_unavailable", nullable = false)
+  @Builder.Default
+  private Boolean metaIdUnavailable = false;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "meta_id_unavailable_reason")
-    private String metaIdUnavailableReason;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "meta_id_unavailable_reason")
+  private String metaIdUnavailableReason;
 
-    @Column(precision = 10, scale = 4)
-    private BigDecimal confidence;
+  @Column(precision = 10, scale = 4)
+  private BigDecimal confidence;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class PromptAttributeDto {
-    private String name;
-    private String description;
+  private String name;
+  private String description;
 }

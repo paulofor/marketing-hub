@@ -4,54 +4,53 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.targeting.TargetingCandidateStatus;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingOptionSource;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class TargetingCandidateResolutionUpdateRequest {
-    private TargetingCandidateStatus status;
+  private TargetingCandidateStatus status;
 
-    @JsonProperty("rejection_reason")
-    private String rejectionReason;
+  @JsonProperty("rejection_reason")
+  private String rejectionReason;
 
-    private List<OptionPayload> options = new ArrayList<>();
+  private List<OptionPayload> options = new ArrayList<>();
 
-    @Data
-    public static class OptionPayload {
-        @JsonProperty("facebook_id")
-        private String facebookId;
+  @Data
+  public static class OptionPayload {
+    @JsonProperty("facebook_id")
+    private String facebookId;
 
-        private String name;
+    private String name;
 
-        private TargetingCandidateType type;
+    private TargetingCandidateType type;
 
-        @JsonProperty("audience_size")
-        private Long audienceSize;
+    @JsonProperty("audience_size")
+    private Long audienceSize;
 
-        @JsonProperty("match_score")
-        private BigDecimal matchScore;
+    @JsonProperty("match_score")
+    private BigDecimal matchScore;
 
-        @JsonProperty("final_score")
-        private BigDecimal finalScore;
+    @JsonProperty("final_score")
+    private BigDecimal finalScore;
 
-        private List<String> path = new ArrayList<>();
+    private List<String> path = new ArrayList<>();
 
-        @JsonProperty("search_locale")
-        private String searchLocale;
+    @JsonProperty("search_locale")
+    private String searchLocale;
 
-        @JsonProperty("search_country")
-        private String searchCountry;
+    @JsonProperty("search_country")
+    private String searchCountry;
 
-        @JsonProperty("search_term")
-        private String searchTerm;
+    @JsonProperty("search_term")
+    private String searchTerm;
 
-        @JsonProperty("source")
-        private TargetingOptionSource source;
+    @JsonProperty("source")
+    private TargetingOptionSource source;
 
-        @JsonProperty("seed_variant")
-        private String seedVariant;
-    }
+    @JsonProperty("seed_variant")
+    private String seedVariant;
+  }
 }

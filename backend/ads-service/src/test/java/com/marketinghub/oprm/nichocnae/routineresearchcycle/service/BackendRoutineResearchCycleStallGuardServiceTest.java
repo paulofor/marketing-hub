@@ -30,7 +30,9 @@ class BackendRoutineResearchCycleStallGuardServiceTest {
 
   @InjectMocks private BackendRoutineResearchCycleStallGuardService service;
 
-  /** Deve marcar ciclo RUNNING antigo sem progresso como STALLED e atualizar o candidato vinculado. */
+  /**
+   * Deve marcar ciclo RUNNING antigo sem progresso como STALLED e atualizar o candidato vinculado.
+   */
   @Test
   void markRunningCyclesWithoutProgressAsStalledUpdatesCycleAndCandidate() {
     Instant now = Instant.parse("2026-06-12T12:00:00Z");
@@ -44,13 +46,17 @@ class BackendRoutineResearchCycleStallGuardServiceTest {
     int stalledCount = service.markRunningCyclesWithoutProgressAsStalled(now);
 
     assertThat(stalledCount).isEqualTo(1);
-    ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+    ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+        ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
     verify(routineResearchCycleRepository).save(cycleCaptor.capture());
     assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("STALLED");
     assertThat(cycleCaptor.getValue().getFinishedAt()).isEqualTo(now);
-    assertThat(cycleCaptor.getValue().getErrorMessage()).contains("oprm-coletor-mei").contains("researchCycleId=1001");
+    assertThat(cycleCaptor.getValue().getErrorMessage())
+        .contains("oprm-coletor-mei")
+        .contains("researchCycleId=1001");
 
-    ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
+    ArgumentCaptor<OprmNicheCandidate> candidateCaptor =
+        ArgumentCaptor.forClass(OprmNicheCandidate.class);
     verify(nicheCandidateRepository).save(candidateCaptor.capture());
     assertThat(candidateCaptor.getValue().getRoutineResearchStatus()).isEqualTo("RESEARCH_STALLED");
     assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(1001L);

@@ -12,37 +12,42 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsabilidade: expor contratos internos do pipeline MDS product-evidence v1 para o worker científico. */
+/**
+ * Responsabilidade: expor contratos internos do pipeline MDS product-evidence v1 para o worker
+ * científico.
+ */
 @RestController
 @RequestMapping("/api/internal/scientific-research/product-evidence/v1")
 public class ProductEvidenceInternalController {
-    private final ProductEvidenceWorkflowService workflowService;
+  private final ProductEvidenceWorkflowService workflowService;
 
-    /** Recebe o serviço de orquestração das etapas científicas. */
-    public ProductEvidenceInternalController(ProductEvidenceWorkflowService workflowService) {
-        this.workflowService = workflowService;
-    }
+  /** Recebe o serviço de orquestração das etapas científicas. */
+  public ProductEvidenceInternalController(ProductEvidenceWorkflowService workflowService) {
+    this.workflowService = workflowService;
+  }
 
-    /** Inicia a pesquisa científica de produto para um nicho quando o fluxo manual exigir evidência antes da oferta. */
-    @PostMapping("/market-niches/{marketNicheId}/stage-executions/start")
-    public void start(@PathVariable Long marketNicheId) {
-        workflowService.ensureProductEvidenceStarted(marketNicheId);
-    }
+  /**
+   * Inicia a pesquisa científica de produto para um nicho quando o fluxo manual exigir evidência
+   * antes da oferta.
+   */
+  @PostMapping("/market-niches/{marketNicheId}/stage-executions/start")
+  public void start(@PathVariable Long marketNicheId) {
+    workflowService.ensureProductEvidenceStarted(marketNicheId);
+  }
 
-    /** Lista pendências canônicas de uma etapa para consumo pelo scientific-research-worker. */
-    @GetMapping("/{stageCode}/stage-executions/pending")
-    public List<ProductEvidenceStagePendingResponse> pending(
-            @PathVariable String stageCode,
-            @RequestParam(defaultValue = "5") int limit) {
-        return workflowService.listPending(stageCode, limit);
-    }
+  /** Lista pendências canônicas de uma etapa para consumo pelo scientific-research-worker. */
+  @GetMapping("/{stageCode}/stage-executions/pending")
+  public List<ProductEvidenceStagePendingResponse> pending(
+      @PathVariable String stageCode, @RequestParam(defaultValue = "5") int limit) {
+    return workflowService.listPending(stageCode, limit);
+  }
 
-    /** Recebe o callback de resultado ou falha de uma execução científica. */
-    @PostMapping("/{stageCode}/stage-executions/{executionId}/callback")
-    public void callback(
-            @PathVariable String stageCode,
-            @PathVariable Long executionId,
-            @RequestBody ProductEvidenceStageCallbackRequest request) {
-        workflowService.receiveCallback(stageCode, executionId, request);
-    }
+  /** Recebe o callback de resultado ou falha de uma execução científica. */
+  @PostMapping("/{stageCode}/stage-executions/{executionId}/callback")
+  public void callback(
+      @PathVariable String stageCode,
+      @PathVariable Long executionId,
+      @RequestBody ProductEvidenceStageCallbackRequest request) {
+    workflowService.receiveCallback(stageCode, executionId, request);
+  }
 }

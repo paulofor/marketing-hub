@@ -1,5 +1,18 @@
 package com.marketinghub.product.web;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
 import com.marketinghub.pde.PdeProductionSlotStatus;
@@ -7,9 +20,9 @@ import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
-import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.dto.ProductScientificArticleDto;
+import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.SaveProductScientificArticleRequest;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductScientificArticleService;
@@ -24,6 +37,9 @@ import com.marketinghub.product.service.financialsummary.ProductFinancialSummary
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoDecisionRuleResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanItemResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,393 +49,437 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /** Responsabilidade: validar o contrato REST do cadastro comercial de produtos. */
 @ExtendWith(MockitoExtension.class)
 class ProductControllerTest {
-    private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private MockMvc mockMvc;
+  private MockMvc mockMvc;
 
-    @Mock
-    private ProductService service;
+  @Mock private ProductService service;
 
-    @Mock
-    private ProductScientificArticleService scientificArticleService;
+  @Mock private ProductScientificArticleService scientificArticleService;
 
-    @Mock
-    private ProductMapper mapper;
+  @Mock private ProductMapper mapper;
 
-    @Mock
-    private PdeProductionSlotService pdeProductionSlotService;
+  @Mock private PdeProductionSlotService pdeProductionSlotService;
 
-    /** Monta o controller isolado para validar o contrato HTTP de produto. */
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                new ProductController(service, scientificArticleService, mapper, pdeProductionSlotService)).build();
-    }
+  /** Monta o controller isolado para validar o contrato HTTP de produto. */
+  @BeforeEach
+  void setUp() {
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(
+                new ProductController(
+                    service, scientificArticleService, mapper, pdeProductionSlotService))
+            .build();
+  }
 
-    /** Deve aceitar atualização de dados comerciais pelo endpoint canônico de produto. */
-    @Test
-    void updateProduct() throws Exception {
-        CreateProductRequest request = new CreateProductRequest();
-        request.setName("Método MUSA - Presença Elegante em 7 Dias");
-        request.setMarketNicheId(10L);
-        request.setCurrentPriceBrl(new BigDecimal("67.00"));
+  /** Deve aceitar atualização de dados comerciais pelo endpoint canônico de produto. */
+  @Test
+  void updateProduct() throws Exception {
+    CreateProductRequest request = new CreateProductRequest();
+    request.setName("Método MUSA - Presença Elegante em 7 Dias");
+    request.setMarketNicheId(10L);
+    request.setCurrentPriceBrl(new BigDecimal("67.00"));
 
-        Product product = Product.builder().id(1L).name(request.getName()).build();
-        ProductDto response = new ProductDto();
-        response.setId(1L);
-        response.setName(request.getName());
-        response.setLogoUrl("https://clubemusa.com.br/assets/logo-musa.svg");
-        response.setCurrentPriceBrl(request.getCurrentPriceBrl());
+    Product product = Product.builder().id(1L).name(request.getName()).build();
+    ProductDto response = new ProductDto();
+    response.setId(1L);
+    response.setName(request.getName());
+    response.setLogoUrl("https://clubemusa.com.br/assets/logo-musa.svg");
+    response.setCurrentPriceBrl(request.getCurrentPriceBrl());
 
-        when(service.updateProduct(eq(1L), any(CreateProductRequest.class))).thenReturn(product);
-        when(mapper.toDto(product)).thenReturn(response);
+    when(service.updateProduct(eq(1L), any(CreateProductRequest.class))).thenReturn(product);
+    when(mapper.toDto(product)).thenReturn(response);
 
-        mockMvc.perform(put("/api/products/{id}", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.name").value(request.getName()))
-                .andExpect(jsonPath("$.logoUrl").value("https://clubemusa.com.br/assets/logo-musa.svg"))
-                .andExpect(jsonPath("$.currentPriceBrl").value(67.00));
-    }
+    mockMvc
+        .perform(
+            put("/api/products/{id}", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(1L))
+        .andExpect(jsonPath("$.name").value(request.getName()))
+        .andExpect(jsonPath("$.logoUrl").value("https://clubemusa.com.br/assets/logo-musa.svg"))
+        .andExpect(jsonPath("$.currentPriceBrl").value(67.00));
+  }
 
-    /** Deve expor o resumo financeiro do produto no contrato canônico. */
-    @Test
-    void getFinancialSummary() throws Exception {
-        var response = new ProductFinancialSummaryResponse(
-                1L,
-                "Método MUSA",
-                "metodo-musa-7-dias",
-                new BigDecimal("5.00"),
-                Instant.parse("2026-07-01T00:00:00Z"),
-                Instant.parse("2026-01-01T00:00:00Z"),
-                List.of(new ProductFinancialMonthlyResultResponse(
-                        Instant.parse("2026-07-01T00:00:00Z"),
-                        "Julho 2026",
-                        new ProductFinancialAmountResponse(new BigDecimal("75.00"), new BigDecimal("15.00")),
-                        new ProductFinancialAmountResponse(new BigDecimal("67.00"), new BigDecimal("13.40")),
-                        new ProductFinancialAmountResponse(new BigDecimal("-8.00"), new BigDecimal("-1.60")))),
-                List.of(new ProductFinancialLineResponse(
-                        "MEDIA",
-                        "Mídia paga",
-                        new ProductFinancialAmountResponse(new BigDecimal("25.00"), new BigDecimal("5.00")),
-                        new ProductFinancialAmountResponse(new BigDecimal("250.00"), new BigDecimal("50.00")),
-                        "Métricas de campanha")),
+  /** Deve expor o resumo financeiro do produto no contrato canônico. */
+  @Test
+  void getFinancialSummary() throws Exception {
+    var response =
+        new ProductFinancialSummaryResponse(
+            1L,
+            "Método MUSA",
+            "metodo-musa-7-dias",
+            new BigDecimal("5.00"),
+            Instant.parse("2026-07-01T00:00:00Z"),
+            Instant.parse("2026-01-01T00:00:00Z"),
+            List.of(
+                new ProductFinancialMonthlyResultResponse(
+                    Instant.parse("2026-07-01T00:00:00Z"),
+                    "Julho 2026",
+                    new ProductFinancialAmountResponse(
+                        new BigDecimal("75.00"), new BigDecimal("15.00")),
+                    new ProductFinancialAmountResponse(
+                        new BigDecimal("67.00"), new BigDecimal("13.40")),
+                    new ProductFinancialAmountResponse(
+                        new BigDecimal("-8.00"), new BigDecimal("-1.60")))),
+            List.of(
                 new ProductFinancialLineResponse(
-                        "SALES",
-                        "Receitas de vendas",
-                        new ProductFinancialAmountResponse(new BigDecimal("67.00"), new BigDecimal("13.40")),
-                        new ProductFinancialAmountResponse(new BigDecimal("670.00"), new BigDecimal("134.00")),
-                        "Vendas aprovadas"),
-                new ProductFinancialLineResponse(
-                        "PROFIT",
-                        "Lucro",
-                        new ProductFinancialAmountResponse(new BigDecimal("42.00"), new BigDecimal("8.40")),
-                        new ProductFinancialAmountResponse(new BigDecimal("420.00"), new BigDecimal("84.00")),
-                        "Receita menos custos"));
+                    "MEDIA",
+                    "Mídia paga",
+                    new ProductFinancialAmountResponse(
+                        new BigDecimal("25.00"), new BigDecimal("5.00")),
+                    new ProductFinancialAmountResponse(
+                        new BigDecimal("250.00"), new BigDecimal("50.00")),
+                    "Métricas de campanha")),
+            new ProductFinancialLineResponse(
+                "SALES",
+                "Receitas de vendas",
+                new ProductFinancialAmountResponse(
+                    new BigDecimal("67.00"), new BigDecimal("13.40")),
+                new ProductFinancialAmountResponse(
+                    new BigDecimal("670.00"), new BigDecimal("134.00")),
+                "Vendas aprovadas"),
+            new ProductFinancialLineResponse(
+                "PROFIT",
+                "Lucro",
+                new ProductFinancialAmountResponse(new BigDecimal("42.00"), new BigDecimal("8.40")),
+                new ProductFinancialAmountResponse(
+                    new BigDecimal("420.00"), new BigDecimal("84.00")),
+                "Receita menos custos"));
 
-        when(service.getFinancialSummary(1L)).thenReturn(response);
+    when(service.getFinancialSummary(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/products/{id}/financial-summary", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.productId").value(1L))
-                .andExpect(jsonPath("$.exchangeRateBrlPerUsd").value(5.00))
-                .andExpect(jsonPath("$.monthlyResults[0].monthLabel").value("Julho 2026"))
-                .andExpect(jsonPath("$.monthlyResults[0].cost.brl").value(75.00))
-                .andExpect(jsonPath("$.monthlyResults[0].profit.usd").value(-1.60))
-                .andExpect(jsonPath("$.costs[0].type").value("MEDIA"))
-                .andExpect(jsonPath("$.revenue.monthly.brl").value(67.00))
-                .andExpect(jsonPath("$.profit.annual.usd").value(84.00));
-    }
+    mockMvc
+        .perform(get("/api/products/{id}/financial-summary", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productId").value(1L))
+        .andExpect(jsonPath("$.exchangeRateBrlPerUsd").value(5.00))
+        .andExpect(jsonPath("$.monthlyResults[0].monthLabel").value("Julho 2026"))
+        .andExpect(jsonPath("$.monthlyResults[0].cost.brl").value(75.00))
+        .andExpect(jsonPath("$.monthlyResults[0].profit.usd").value(-1.60))
+        .andExpect(jsonPath("$.costs[0].type").value("MEDIA"))
+        .andExpect(jsonPath("$.revenue.monthly.brl").value(67.00))
+        .andExpect(jsonPath("$.profit.annual.usd").value(84.00));
+  }
 
-    /** Deve expor o painel comparativo de experimentos por produto. */
-    @Test
-    void getExperimentComparison() throws Exception {
-        var response = new ProductExperimentComparisonResponse(
-                1L,
-                "Método MUSA",
-                "metodo-musa-7-dias",
-                "VALIDACAO_COMERCIAL",
-                "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos.",
-                List.of(new ProductExperimentComparisonExperimentResponse(
-                        74L,
-                        "MUSA-H001-E009",
-                        "RUNNING",
-                        "ACTIVE",
-                        "SALES",
-                        "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL",
-                        java.time.LocalDate.parse("2026-07-27"),
-                        java.time.LocalDate.parse("2026-08-03"),
-                        new BigDecimal("25.00"),
-                        new BigDecimal("67.00"),
-                        1000L,
-                        900L,
-                        20L,
-                        0L,
-                        new BigDecimal("12.50"),
-                        new BigDecimal("0.62"),
-                        BigDecimal.ZERO,
-                        3L,
-                        3L,
-                        List.of(new ProductExperimentComparisonFunnelStageResponse(
-                                "ACESSO_FORM_LEAD", "Acesso ao formulário de lead", 5)),
-                        "Público amplo Meta",
-                        "Elegância possível em 7 dias",
-                        "Clique barato, mas ativação precisa melhorar.",
-                        "Corrigir ativação pós-clique: o anúncio gera interesse, mas o funil não registra entrada.",
-                        Instant.parse("2026-07-27T12:00:00Z"))));
+  /** Deve expor o painel comparativo de experimentos por produto. */
+  @Test
+  void getExperimentComparison() throws Exception {
+    var response =
+        new ProductExperimentComparisonResponse(
+            1L,
+            "Método MUSA",
+            "metodo-musa-7-dias",
+            "VALIDACAO_COMERCIAL",
+            "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos.",
+            List.of(
+                new ProductExperimentComparisonExperimentResponse(
+                    74L,
+                    "MUSA-H001-E009",
+                    "RUNNING",
+                    "ACTIVE",
+                    "SALES",
+                    "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL",
+                    java.time.LocalDate.parse("2026-07-27"),
+                    java.time.LocalDate.parse("2026-08-03"),
+                    new BigDecimal("25.00"),
+                    new BigDecimal("67.00"),
+                    1000L,
+                    900L,
+                    20L,
+                    0L,
+                    new BigDecimal("12.50"),
+                    new BigDecimal("0.62"),
+                    BigDecimal.ZERO,
+                    3L,
+                    3L,
+                    List.of(
+                        new ProductExperimentComparisonFunnelStageResponse(
+                            "ACESSO_FORM_LEAD", "Acesso ao formulário de lead", 5)),
+                    "Público amplo Meta",
+                    "Elegância possível em 7 dias",
+                    "Clique barato, mas ativação precisa melhorar.",
+                    "Corrigir ativação pós-clique: o anúncio gera interesse, mas o funil não registra entrada.",
+                    Instant.parse("2026-07-27T12:00:00Z"))));
 
-        when(service.getExperimentComparison(1L)).thenReturn(response);
+    when(service.getExperimentComparison(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/products/{id}/experiment-comparison", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.productId").value(1L))
-                .andExpect(jsonPath("$.mainRecommendation").value(
-                        "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos."))
-                .andExpect(jsonPath("$.experiments[0].experimentId").value(74L))
-                .andExpect(jsonPath("$.experiments[0].campaignStatus").value("ACTIVE"))
-                .andExpect(jsonPath("$.experiments[0].funnelStages[0].stageLabel")
-                        .value("Acesso ao formulário de lead"));
-    }
+    mockMvc
+        .perform(get("/api/products/{id}/experiment-comparison", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productId").value(1L))
+        .andExpect(
+            jsonPath("$.mainRecommendation")
+                .value(
+                    "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos."))
+        .andExpect(jsonPath("$.experiments[0].experimentId").value(74L))
+        .andExpect(jsonPath("$.experiments[0].campaignStatus").value("ACTIVE"))
+        .andExpect(
+            jsonPath("$.experiments[0].funnelStages[0].stageLabel")
+                .value("Acesso ao formulário de lead"));
+  }
 
-    /** Deve expor o playbook de vídeos orgânicos do produto pelo contrato canônico. */
-    @Test
-    void getOrganicVideoPlan() throws Exception {
-        var response = new ProductOrganicVideoPlanResponse(
-                1L,
-                "Método MUSA",
-                "metodo-musa-7-dias",
-                "9 vídeos em 7 dias",
-                "Validar atenção antes de aumentar CTA.",
-                "7 dias",
-                "TikTok + Reels",
-                "6 vídeos de dor, 2 educativos e 1 direto.",
-                List.of(new ProductOrganicVideoPlanItemResponse(
-                        1,
-                        1,
-                        "ENTRETENIMENTO_DOR",
-                        "Desconhecido -> relevante",
-                        "Isso acontece comigo.",
-                        "TikTok + Reels",
-                        "POV: você já trocou de roupa 4 vezes e nenhuma parece você.",
-                        "Cena no espelho.",
-                        "Falta intenção visual.",
-                        "Faça o diagnóstico.",
-                        "Retenção e comentários.",
-                        List.of("Legenda grande."))),
-                List.of(new ProductOrganicVideoDecisionRuleResponse(
-                        "Dor cotidiana",
-                        "Vídeos de dor geram retenção.",
-                        "Aumentar CTA.",
-                        "A audiência reconheceu o problema.")),
-                List.of("Começar por situação reconhecível."));
+  /** Deve expor o playbook de vídeos orgânicos do produto pelo contrato canônico. */
+  @Test
+  void getOrganicVideoPlan() throws Exception {
+    var response =
+        new ProductOrganicVideoPlanResponse(
+            1L,
+            "Método MUSA",
+            "metodo-musa-7-dias",
+            "9 vídeos em 7 dias",
+            "Validar atenção antes de aumentar CTA.",
+            "7 dias",
+            "TikTok + Reels",
+            "6 vídeos de dor, 2 educativos e 1 direto.",
+            List.of(
+                new ProductOrganicVideoPlanItemResponse(
+                    1,
+                    1,
+                    "ENTRETENIMENTO_DOR",
+                    "Desconhecido -> relevante",
+                    "Isso acontece comigo.",
+                    "TikTok + Reels",
+                    "POV: você já trocou de roupa 4 vezes e nenhuma parece você.",
+                    "Cena no espelho.",
+                    "Falta intenção visual.",
+                    "Faça o diagnóstico.",
+                    "Retenção e comentários.",
+                    List.of("Legenda grande."))),
+            List.of(
+                new ProductOrganicVideoDecisionRuleResponse(
+                    "Dor cotidiana",
+                    "Vídeos de dor geram retenção.",
+                    "Aumentar CTA.",
+                    "A audiência reconheceu o problema.")),
+            List.of("Começar por situação reconhecível."));
 
-        when(service.getOrganicVideoPlan(1L)).thenReturn(response);
+    when(service.getOrganicVideoPlan(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/api/products/{id}/organic-video-plan", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.strategyName").value("9 vídeos em 7 dias"))
-                .andExpect(jsonPath("$.videos[0].category").value("ENTRETENIMENTO_DOR"))
-                .andExpect(jsonPath("$.decisionRules[0].decision").value("Aumentar CTA."));
-    }
+    mockMvc
+        .perform(get("/api/products/{id}/organic-video-plan", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.strategyName").value("9 vídeos em 7 dias"))
+        .andExpect(jsonPath("$.videos[0].category").value("ENTRETENIMENTO_DOR"))
+        .andExpect(jsonPath("$.decisionRules[0].decision").value("Aumentar CTA."));
+  }
 
-    /** Deve expor os artigos científicos usados no mecanismo do produto. */
-    @Test
-    void listScientificArticles() throws Exception {
-        var response = new ProductScientificArticleDto(
-                8L,
-                1L,
-                "https://doi.org/10.1016/j.jesp.2012.02.008",
-                "Enclothed cognition",
-                "Cognição vestida",
-                "Resumo operacional.",
-                "Aplicação no mecanismo MUSA.",
-                Instant.parse("2026-07-27T00:00:00Z"),
-                Instant.parse("2026-07-27T00:00:00Z"));
+  /** Deve expor os artigos científicos usados no mecanismo do produto. */
+  @Test
+  void listScientificArticles() throws Exception {
+    var response =
+        new ProductScientificArticleDto(
+            8L,
+            1L,
+            "https://doi.org/10.1016/j.jesp.2012.02.008",
+            "Enclothed cognition",
+            "Cognição vestida",
+            "Resumo operacional.",
+            "Aplicação no mecanismo MUSA.",
+            Instant.parse("2026-07-27T00:00:00Z"),
+            Instant.parse("2026-07-27T00:00:00Z"));
 
-        when(scientificArticleService.listArticles(1L)).thenReturn(List.of(response));
+    when(scientificArticleService.listArticles(1L)).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/api/products/{id}/scientific-articles", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(8L))
-                .andExpect(jsonPath("$[0].originalTitle").value("Enclothed cognition"))
-                .andExpect(jsonPath("$[0].portugueseTitle").value("Cognição vestida"))
-                .andExpect(jsonPath("$[0].mechanismApplication").value("Aplicação no mecanismo MUSA."));
-    }
+    mockMvc
+        .perform(get("/api/products/{id}/scientific-articles", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(8L))
+        .andExpect(jsonPath("$[0].originalTitle").value("Enclothed cognition"))
+        .andExpect(jsonPath("$[0].portugueseTitle").value("Cognição vestida"))
+        .andExpect(jsonPath("$[0].mechanismApplication").value("Aplicação no mecanismo MUSA."));
+  }
 
-    /** Deve cadastrar artigo científico pelo contrato canônico do produto. */
-    @Test
-    void createScientificArticle() throws Exception {
-        var response = new ProductScientificArticleDto(
-                9L,
-                1L,
-                "https://doi.org/10.1177/1948550615579462",
-                "The Cognitive Consequences of Formal Clothing",
-                "As consequências cognitivas da roupa formal",
-                "Resumo.",
-                "Aplicação.",
-                null,
-                null);
-        var request = new SaveProductScientificArticleRequest(
-                response.link(),
-                response.originalTitle(),
-                response.portugueseTitle(),
-                response.summary(),
-                response.mechanismApplication());
+  /** Deve cadastrar artigo científico pelo contrato canônico do produto. */
+  @Test
+  void createScientificArticle() throws Exception {
+    var response =
+        new ProductScientificArticleDto(
+            9L,
+            1L,
+            "https://doi.org/10.1177/1948550615579462",
+            "The Cognitive Consequences of Formal Clothing",
+            "As consequências cognitivas da roupa formal",
+            "Resumo.",
+            "Aplicação.",
+            null,
+            null);
+    var request =
+        new SaveProductScientificArticleRequest(
+            response.link(),
+            response.originalTitle(),
+            response.portugueseTitle(),
+            response.summary(),
+            response.mechanismApplication());
 
-        when(scientificArticleService.createArticle(eq(1L), any(SaveProductScientificArticleRequest.class)))
-                .thenReturn(response);
+    when(scientificArticleService.createArticle(
+            eq(1L), any(SaveProductScientificArticleRequest.class)))
+        .thenReturn(response);
 
-        mockMvc.perform(post("/api/products/{id}/scientific-articles", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(9L))
-                .andExpect(jsonPath("$.link").value(response.link()));
-    }
+    mockMvc
+        .perform(
+            post("/api/products/{id}/scientific-articles", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(9L))
+        .andExpect(jsonPath("$.link").value(response.link()));
+  }
 
-    /** Deve atualizar artigo científico do produto pelo contrato canônico. */
-    @Test
-    void updateScientificArticle() throws Exception {
-        var response = new ProductScientificArticleDto(
-                9L,
-                1L,
-                "https://doi.org/10.1177/1948550615579462",
-                "The Cognitive Consequences of Formal Clothing",
-                "Roupa formal e cognição",
-                "Resumo revisado.",
-                "Aplicação revisada.",
-                null,
-                null);
-        var request = new SaveProductScientificArticleRequest(
-                response.link(),
-                response.originalTitle(),
-                response.portugueseTitle(),
-                response.summary(),
-                response.mechanismApplication());
+  /** Deve atualizar artigo científico do produto pelo contrato canônico. */
+  @Test
+  void updateScientificArticle() throws Exception {
+    var response =
+        new ProductScientificArticleDto(
+            9L,
+            1L,
+            "https://doi.org/10.1177/1948550615579462",
+            "The Cognitive Consequences of Formal Clothing",
+            "Roupa formal e cognição",
+            "Resumo revisado.",
+            "Aplicação revisada.",
+            null,
+            null);
+    var request =
+        new SaveProductScientificArticleRequest(
+            response.link(),
+            response.originalTitle(),
+            response.portugueseTitle(),
+            response.summary(),
+            response.mechanismApplication());
 
-        when(scientificArticleService.updateArticle(
-                eq(1L), eq(9L), any(SaveProductScientificArticleRequest.class)))
-                .thenReturn(response);
+    when(scientificArticleService.updateArticle(
+            eq(1L), eq(9L), any(SaveProductScientificArticleRequest.class)))
+        .thenReturn(response);
 
-        mockMvc.perform(put("/api/products/{id}/scientific-articles/{articleId}", 1L, 9L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.portugueseTitle").value("Roupa formal e cognição"))
-                .andExpect(jsonPath("$.summary").value("Resumo revisado."));
-    }
+    mockMvc
+        .perform(
+            put("/api/products/{id}/scientific-articles/{articleId}", 1L, 9L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.portugueseTitle").value("Roupa formal e cognição"))
+        .andExpect(jsonPath("$.summary").value("Resumo revisado."));
+  }
 
-    /** Deve remover artigo científico do produto sem retornar corpo. */
-    @Test
-    void deleteScientificArticle() throws Exception {
-        mockMvc.perform(delete("/api/products/{id}/scientific-articles/{articleId}", 1L, 9L))
-                .andExpect(status().isNoContent());
-    }
+  /** Deve remover artigo científico do produto sem retornar corpo. */
+  @Test
+  void deleteScientificArticle() throws Exception {
+    mockMvc
+        .perform(delete("/api/products/{id}/scientific-articles/{articleId}", 1L, 9L))
+        .andExpect(status().isNoContent());
+  }
 
-    /** Deve expor a definição pública de mercado do produto como Markdown. */
-    @Test
-    void getPublicMarketingDefinitionMarkdown() throws Exception {
-        String markdown = "# Definição de Produto para Mercado — Método MUSA\n\n## 1. Identidade do produto\n";
+  /** Deve expor a definição pública de mercado do produto como Markdown. */
+  @Test
+  void getPublicMarketingDefinitionMarkdown() throws Exception {
+    String markdown =
+        "# Definição de Produto para Mercado — Método MUSA\n\n## 1. Identidade do produto\n";
 
-        when(service.buildPublicMarketingDefinitionMarkdown("metodo-musa-7-dias")).thenReturn(markdown);
+    when(service.buildPublicMarketingDefinitionMarkdown("metodo-musa-7-dias")).thenReturn(markdown);
 
-        mockMvc.perform(get("/api/products/public/{productCode}/marketing-definition.md", "metodo-musa-7-dias"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/markdown;charset=UTF-8"))
-                .andExpect(header().string("Content-Disposition",
-                        "inline; filename=\"produto-metodo-musa-7-dias-definicao-mercado.md\""))
-                .andExpect(content().string(markdown));
-    }
+    mockMvc
+        .perform(
+            get("/api/products/public/{productCode}/marketing-definition.md", "metodo-musa-7-dias"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType("text/markdown;charset=UTF-8"))
+        .andExpect(
+            header()
+                .string(
+                    "Content-Disposition",
+                    "inline; filename=\"produto-metodo-musa-7-dias-definicao-mercado.md\""))
+        .andExpect(content().string(markdown));
+  }
 
-    /** Deve expor a definição pública de mercado do produto como HTML formatado. */
-    @Test
-    void getPublicMarketingDefinitionHtml() throws Exception {
-        String markdown = "# Definição de Produto para Mercado — Método MUSA\n\n"
-                + "> Documento público de posicionamento comercial do produto.\n\n"
-                + "## 1. Identidade do produto\n\n"
-                + "- **Nome comercial:** Método MUSA\n";
+  /** Deve expor a definição pública de mercado do produto como HTML formatado. */
+  @Test
+  void getPublicMarketingDefinitionHtml() throws Exception {
+    String markdown =
+        "# Definição de Produto para Mercado — Método MUSA\n\n"
+            + "> Documento público de posicionamento comercial do produto.\n\n"
+            + "## 1. Identidade do produto\n\n"
+            + "- **Nome comercial:** Método MUSA\n";
 
-        when(service.buildPublicMarketingDefinitionMarkdown("metodo-musa-7-dias")).thenReturn(markdown);
+    when(service.buildPublicMarketingDefinitionMarkdown("metodo-musa-7-dias")).thenReturn(markdown);
 
-        mockMvc.perform(get("/api/products/public/{productCode}/marketing-definition", "metodo-musa-7-dias"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/html;charset=UTF-8"))
-                .andExpect(content().string(containsString("<h1>Definição de Produto para Mercado — Método MUSA</h1>")))
-                .andExpect(content().string(containsString("<blockquote>Documento público de posicionamento comercial do produto.</blockquote>")))
-                .andExpect(content().string(containsString("<li><strong>Nome comercial:</strong> Método MUSA</li>")));
-    }
+    mockMvc
+        .perform(
+            get("/api/products/public/{productCode}/marketing-definition", "metodo-musa-7-dias"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType("text/html;charset=UTF-8"))
+        .andExpect(
+            content()
+                .string(containsString("<h1>Definição de Produto para Mercado — Método MUSA</h1>")))
+        .andExpect(
+            content()
+                .string(
+                    containsString(
+                        "<blockquote>Documento público de posicionamento comercial do produto.</blockquote>")))
+        .andExpect(
+            content()
+                .string(containsString("<li><strong>Nome comercial:</strong> Método MUSA</li>")));
+  }
 
-    /** Deve expor o contrato JSON da experiência PDE publicado pelo Marketing Hub. */
-    @Test
-    void getPublicPdeExperience() throws Exception {
-        String json = "{\"slug\":\"metodo-musa-7-dias\",\"missions\":[]}";
+  /** Deve expor o contrato JSON da experiência PDE publicado pelo Marketing Hub. */
+  @Test
+  void getPublicPdeExperience() throws Exception {
+    String json = "{\"slug\":\"metodo-musa-7-dias\",\"missions\":[]}";
 
-        when(service.getPublicPdeExperienceJson("metodo-musa-7-dias")).thenReturn(json);
+    when(service.getPublicPdeExperienceJson("metodo-musa-7-dias")).thenReturn(json);
 
-        mockMvc.perform(get("/api/products/public/{productCode}/pde-experience", "metodo-musa-7-dias"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.slug").value("metodo-musa-7-dias"));
-    }
+    mockMvc
+        .perform(get("/api/products/public/{productCode}/pde-experience", "metodo-musa-7-dias"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.slug").value("metodo-musa-7-dias"));
+  }
 
-    /** Deve acionar a inserção da jornada persuasiva interativa no produto. */
-    @Test
-    void applyDefaultPdePersuasiveJourney() throws Exception {
-        Product product = Product.builder().id(1L).name("Método MUSA").build();
-        ProductDto response = new ProductDto();
-        response.setId(1L);
-        response.setName("Método MUSA");
-        response.setPdeExperienceJson("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\"}}");
+  /** Deve acionar a inserção da jornada persuasiva interativa no produto. */
+  @Test
+  void applyDefaultPdePersuasiveJourney() throws Exception {
+    Product product = Product.builder().id(1L).name("Método MUSA").build();
+    ProductDto response = new ProductDto();
+    response.setId(1L);
+    response.setName("Método MUSA");
+    response.setPdeExperienceJson(
+        "{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\"}}");
 
-        when(service.applyDefaultPdePersuasiveJourney(1L)).thenReturn(product);
-        when(mapper.toDto(product)).thenReturn(response);
+    when(service.applyDefaultPdePersuasiveJourney(1L)).thenReturn(product);
+    when(mapper.toDto(product)).thenReturn(response);
 
-        mockMvc.perform(post("/api/products/{id}/pde-persuasive-journey/default", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.pdeExperienceJson").value("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\"}}"));
-    }
+    mockMvc
+        .perform(post("/api/products/{id}/pde-persuasive-journey/default", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(1L))
+        .andExpect(
+            jsonPath("$.pdeExperienceJson")
+                .value("{\"persuasiveJourney\":{\"framework\":\"Funil experiencial PDE\"}}"));
+  }
 
-    /** Deve aprovar a imagem semente de vídeo do produto pelo endpoint canônico. */
-    @Test
-    void updateVideoSeedImage() throws Exception {
-        Product product = Product.builder().id(1L).name("Método MUSA").build();
-        ProductDto response = new ProductDto();
-        response.setId(1L);
-        response.setName("Método MUSA");
-        response.setVideoSeedImageAssetId(99L);
-        response.setVideoSeedCharacterName("Sofia MUSA");
-        response.setVideoSeedReviewStatus(ProductVideoSeedImageReviewStatus.APPROVED);
+  /** Deve aprovar a imagem semente de vídeo do produto pelo endpoint canônico. */
+  @Test
+  void updateVideoSeedImage() throws Exception {
+    Product product = Product.builder().id(1L).name("Método MUSA").build();
+    ProductDto response = new ProductDto();
+    response.setId(1L);
+    response.setName("Método MUSA");
+    response.setVideoSeedImageAssetId(99L);
+    response.setVideoSeedCharacterName("Sofia MUSA");
+    response.setVideoSeedReviewStatus(ProductVideoSeedImageReviewStatus.APPROVED);
 
-        when(service.updateVideoSeedImage(eq(1L), any())).thenReturn(product);
-        when(mapper.toDto(product)).thenReturn(response);
+    when(service.updateVideoSeedImage(eq(1L), any())).thenReturn(product);
+    when(mapper.toDto(product)).thenReturn(response);
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(
-                                "/api/products/{id}/video-seed-image", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+    mockMvc
+        .perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(
+                    "/api/products/{id}/video-seed-image", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
                                 {
                                   "assetId": 99,
                                   "characterName": "Sofia MUSA",
@@ -428,35 +488,39 @@ class ProductControllerTest {
                                   "reviewedBy": "marketing@hub.local"
                                 }
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.videoSeedImageAssetId").value(99L))
-                .andExpect(jsonPath("$.videoSeedCharacterName").value("Sofia MUSA"))
-                .andExpect(jsonPath("$.videoSeedReviewStatus").value("APPROVED"));
-    }
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.videoSeedImageAssetId").value(99L))
+        .andExpect(jsonPath("$.videoSeedCharacterName").value("Sofia MUSA"))
+        .andExpect(jsonPath("$.videoSeedReviewStatus").value("APPROVED"));
+  }
 
-    /** Deve registrar avatar de vídeo do produto para uso futuro por provider. */
-    @Test
-    void registerVideoProviderAvatar() throws Exception {
-        var response = new ProductVideoProviderAvatarDto(
-                10L,
-                4L,
-                1927L,
-                "HEYGEN",
-                "Sofia MUSA",
-                "281a1e5b526841b0865ea466dfb33ab9",
-                "3952e73a14d94871b8130274e27287ee",
-                "processing",
-                "https://cdn.example/musa.png",
-                true,
-                "Avatar criado por API HeyGen.",
-                Instant.parse("2026-07-25T14:53:43Z"),
-                Instant.parse("2026-07-25T14:53:43Z"));
+  /** Deve registrar avatar de vídeo do produto para uso futuro por provider. */
+  @Test
+  void registerVideoProviderAvatar() throws Exception {
+    var response =
+        new ProductVideoProviderAvatarDto(
+            10L,
+            4L,
+            1927L,
+            "HEYGEN",
+            "Sofia MUSA",
+            "281a1e5b526841b0865ea466dfb33ab9",
+            "3952e73a14d94871b8130274e27287ee",
+            "processing",
+            "https://cdn.example/musa.png",
+            true,
+            "Avatar criado por API HeyGen.",
+            Instant.parse("2026-07-25T14:53:43Z"),
+            Instant.parse("2026-07-25T14:53:43Z"));
 
-        when(service.registerVideoProviderAvatar(eq(4L), any())).thenReturn(response);
+    when(service.registerVideoProviderAvatar(eq(4L), any())).thenReturn(response);
 
-        mockMvc.perform(post("/api/products/{id}/video-provider-avatars", 4L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+    mockMvc
+        .perform(
+            post("/api/products/{id}/video-provider-avatars", 4L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
                                 {
                                   "sourceAssetId": 1927,
                                   "provider": "HEYGEN",
@@ -467,83 +531,91 @@ class ProductControllerTest {
                                   "supportsReusableAvatar": true
                                 }
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.provider").value("HEYGEN"))
-                .andExpect(jsonPath("$.characterName").value("Sofia MUSA"))
-                .andExpect(jsonPath("$.providerAvatarId").value("281a1e5b526841b0865ea466dfb33ab9"))
-                .andExpect(jsonPath("$.supportsReusableAvatar").value(true));
-    }
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.provider").value("HEYGEN"))
+        .andExpect(jsonPath("$.characterName").value("Sofia MUSA"))
+        .andExpect(jsonPath("$.providerAvatarId").value("281a1e5b526841b0865ea466dfb33ab9"))
+        .andExpect(jsonPath("$.supportsReusableAvatar").value(true));
+  }
 
-    /** Deve listar avatars de vídeo disponíveis para o produto. */
-    @Test
-    void listVideoProviderAvatars() throws Exception {
-        when(service.listVideoProviderAvatars(4L))
-                .thenReturn(List.of(new ProductVideoProviderAvatarDto(
-                        10L,
-                        4L,
-                        1927L,
-                        "HEYGEN",
-                        "Sofia MUSA",
-                        "281a1e5b526841b0865ea466dfb33ab9",
-                        "3952e73a14d94871b8130274e27287ee",
-                        "processing",
-                        "https://cdn.example/musa.png",
-                        true,
-                        "Avatar criado por API HeyGen.",
-                        Instant.parse("2026-07-25T14:53:43Z"),
-                        Instant.parse("2026-07-25T14:53:43Z"))));
+  /** Deve listar avatars de vídeo disponíveis para o produto. */
+  @Test
+  void listVideoProviderAvatars() throws Exception {
+    when(service.listVideoProviderAvatars(4L))
+        .thenReturn(
+            List.of(
+                new ProductVideoProviderAvatarDto(
+                    10L,
+                    4L,
+                    1927L,
+                    "HEYGEN",
+                    "Sofia MUSA",
+                    "281a1e5b526841b0865ea466dfb33ab9",
+                    "3952e73a14d94871b8130274e27287ee",
+                    "processing",
+                    "https://cdn.example/musa.png",
+                    true,
+                    "Avatar criado por API HeyGen.",
+                    Instant.parse("2026-07-25T14:53:43Z"),
+                    Instant.parse("2026-07-25T14:53:43Z"))));
 
-        mockMvc.perform(get("/api/products/{id}/video-provider-avatars", 4L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].provider").value("HEYGEN"))
-                .andExpect(jsonPath("$[0].characterName").value("Sofia MUSA"));
-    }
+    mockMvc
+        .perform(get("/api/products/{id}/video-provider-avatars", 4L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].provider").value("HEYGEN"))
+        .andExpect(jsonPath("$[0].characterName").value("Sofia MUSA"));
+  }
 
-    /** Deve listar versões produtivas PDE pelo endpoint canônico do produto. */
-    @Test
-    void listPdeProductionSlots() throws Exception {
-        Product product = Product.builder().id(1L).slug("metodo-musa-7-dias").build();
-        when(service.getProduct(1L)).thenReturn(product);
-        when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
-                .thenReturn(List.of(new PostDeployPdeProductionSlotDto(
-                        2L,
-                        "v2",
-                        "metodo-musa-7-dias",
-                        "v2.clubemusa.com.br",
-                        "https://v2.clubemusa.com.br",
-                        null,
-                        "musa-pde-entry-v5-estrada-desejo",
-                        "production-v2",
-                        PdeProductionSlotStatus.PLANNED,
-                        71L,
-                        "Hipotese 2",
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        Instant.parse("2026-07-24T10:00:00Z"),
-                        Instant.parse("2026-07-24T10:00:00Z"))));
+  /** Deve listar versões produtivas PDE pelo endpoint canônico do produto. */
+  @Test
+  void listPdeProductionSlots() throws Exception {
+    Product product = Product.builder().id(1L).slug("metodo-musa-7-dias").build();
+    when(service.getProduct(1L)).thenReturn(product);
+    when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
+        .thenReturn(
+            List.of(
+                new PostDeployPdeProductionSlotDto(
+                    2L,
+                    "v2",
+                    "metodo-musa-7-dias",
+                    "v2.clubemusa.com.br",
+                    "https://v2.clubemusa.com.br",
+                    null,
+                    "musa-pde-entry-v5-estrada-desejo",
+                    "production-v2",
+                    PdeProductionSlotStatus.PLANNED,
+                    71L,
+                    "Hipotese 2",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    Instant.parse("2026-07-24T10:00:00Z"),
+                    Instant.parse("2026-07-24T10:00:00Z"))));
 
-        mockMvc.perform(get("/api/products/{id}/pde-production-slots", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].slotCode").value("v2"))
-                .andExpect(jsonPath("$[0].experienceVersion").value("musa-pde-entry-v5-estrada-desejo"));
-    }
+    mockMvc
+        .perform(get("/api/products/{id}/pde-production-slots", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].slotCode").value("v2"))
+        .andExpect(jsonPath("$[0].experienceVersion").value("musa-pde-entry-v5-estrada-desejo"));
+  }
 
-    /** Deve expor a jornada persuasiva PDE como contrato JSON público. */
-    @Test
-    void getPublicPdePersuasiveJourney() throws Exception {
-        var journey = objectMapper.readTree("{\"framework\":\"Funil experiencial PDE\",\"steps\":[]}");
+  /** Deve expor a jornada persuasiva PDE como contrato JSON público. */
+  @Test
+  void getPublicPdePersuasiveJourney() throws Exception {
+    var journey = objectMapper.readTree("{\"framework\":\"Funil experiencial PDE\",\"steps\":[]}");
 
-        when(service.getPublicPdePersuasiveJourney("metodo-musa-7-dias")).thenReturn(journey);
+    when(service.getPublicPdePersuasiveJourney("metodo-musa-7-dias")).thenReturn(journey);
 
-        mockMvc.perform(get("/api/products/public/{productCode}/pde-persuasive-journey", "metodo-musa-7-dias"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.framework").value("Funil experiencial PDE"));
-    }
+    mockMvc
+        .perform(
+            get("/api/products/public/{productCode}/pde-persuasive-journey", "metodo-musa-7-dias"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.framework").value("Funil experiencial PDE"));
+  }
 }

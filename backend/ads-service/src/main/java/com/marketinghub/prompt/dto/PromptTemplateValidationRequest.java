@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class PromptTemplateValidationRequest {
-    private String domain;
-    private String template;
+  private String domain;
+  private String template;
 }

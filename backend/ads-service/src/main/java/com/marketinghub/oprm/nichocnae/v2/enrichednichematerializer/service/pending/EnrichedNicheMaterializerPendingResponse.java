@@ -2,14 +2,14 @@ package com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.pen
 
 /** Contrato de leitura de pendência da etapa enriched-niche-materializer para o executor OPRM. */
 public record EnrichedNicheMaterializerPendingResponse(
-        String stageExecutionId,
-        String jobId,
-        String cnaeCode,
-        String cnaeDescription,
-        Long researchCycleId,
-        Long sourceNicheId,
-        Integer attemptNumber,
-        Integer technicalRetryNumber,
-        Integer knowledgeVersion,
-        Boolean materializationEnabled,
-        String inputPayload) {}
+    String stageExecutionId,
+    String jobId,
+    String cnaeCode,
+    String cnaeDescription,
+    Long researchCycleId,
+    Long sourceNicheId,
+    Integer attemptNumber,
+    Integer technicalRetryNumber,
+    Integer knowledgeVersion,
+    Boolean materializationEnabled,
+    String inputPayload) {}

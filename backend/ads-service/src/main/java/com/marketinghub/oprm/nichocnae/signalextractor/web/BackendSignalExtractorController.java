@@ -33,7 +33,8 @@ public class BackendSignalExtractorController {
   }
 
   /** Persiste sinais estruturados extraídos de um snapshot curto selecionado. */
-  @PostMapping("/internal/oprm/nichocnae/signal-extractor/stage-executions/{sourceSnapshotId}/complete")
+  @PostMapping(
+      "/internal/oprm/nichocnae/signal-extractor/stage-executions/{sourceSnapshotId}/complete")
   public ResponseEntity<CompleteSignalExtractorResponse> complete(
       @PathVariable Long sourceSnapshotId, @RequestBody CompleteSignalExtractorRequest request) {
     return ResponseEntity.ok(executionService.complete(sourceSnapshotId, request));
@@ -41,7 +42,8 @@ public class BackendSignalExtractorController {
 
   /** Registra falha operacional de extração de sinais para um snapshot curto. */
   @PostMapping("/internal/oprm/nichocnae/signal-extractor/stage-executions/{sourceSnapshotId}/fail")
-  public ResponseEntity<Void> fail(@PathVariable Long sourceSnapshotId, @RequestBody FailSignalExtractorRequest request) {
+  public ResponseEntity<Void> fail(
+      @PathVariable Long sourceSnapshotId, @RequestBody FailSignalExtractorRequest request) {
     executionService.fail(sourceSnapshotId, request);
     return ResponseEntity.noContent().build();
   }

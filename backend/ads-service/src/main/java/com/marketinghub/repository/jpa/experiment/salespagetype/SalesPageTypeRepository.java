@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Responsabilidade: consultar o catalogo de tipos de pagina de venda. */
 public interface SalesPageTypeRepository extends JpaRepository<SalesPageType, String> {
-    /** Lista os tipos ativos em ordem alfabetica para selecao operacional. */
-    List<SalesPageType> findByActiveTrueOrderByNameAsc();
+  /** Lista os tipos ativos em ordem alfabetica para selecao operacional. */
+  List<SalesPageType> findByActiveTrueOrderByNameAsc();
 }

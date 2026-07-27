@@ -15,13 +15,9 @@ import org.springframework.stereotype.Component;
 @Setter
 @ToString
 public class LeadPortalIntegrationProperties {
-    /**
-     * Controls whether the integration with the public lead portal should be triggered.
-     */
-    private boolean enabled = false;
+  /** Controls whether the integration with the public lead portal should be triggered. */
+  private boolean enabled = false;
 
-    /**
-     * Base URL of the lead portal application (for example {@code https://portal.example.com}).
-     */
-    private String baseUrl;
+  /** Base URL of the lead portal application (for example {@code https://portal.example.com}). */
+  private String baseUrl;
 }

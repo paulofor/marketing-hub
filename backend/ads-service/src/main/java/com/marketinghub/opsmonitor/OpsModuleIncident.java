@@ -21,43 +21,43 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Getter
 @Setter
 public class OpsModuleIncident {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "module_id", nullable = false)
-    private OpsMonitoredModule module;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "module_id", nullable = false)
+  private OpsMonitoredModule module;
 
-    @Column(name = "status", nullable = false, length = 30)
-    private String status;
+  @Column(name = "status", nullable = false, length = 30)
+  private String status;
 
-    @Column(name = "severity", nullable = false, length = 30)
-    private String severity;
+  @Column(name = "severity", nullable = false, length = 30)
+  private String severity;
 
-    @Column(name = "started_at", nullable = false)
-    private Instant startedAt;
+  @Column(name = "started_at", nullable = false)
+  private Instant startedAt;
 
-    @Column(name = "ended_at")
-    private Instant endedAt;
+  @Column(name = "ended_at")
+  private Instant endedAt;
 
-    @Column(name = "duration_seconds")
-    private Long durationSeconds;
+  @Column(name = "duration_seconds")
+  private Long durationSeconds;
 
-    @Column(name = "summary", nullable = false, length = 500)
-    private String summary;
+  @Column(name = "summary", nullable = false, length = 500)
+  private String summary;
 
-    @Column(name = "root_signal", length = 255)
-    private String rootSignal;
+  @Column(name = "root_signal", length = 255)
+  private String rootSignal;
 
-    @Column(name = "last_error", length = 1000)
-    private String lastError;
+  @Column(name = "last_error", length = 1000)
+  private String lastError;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

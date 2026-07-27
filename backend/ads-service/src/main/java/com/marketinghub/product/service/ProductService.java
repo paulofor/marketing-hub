@@ -784,9 +784,10 @@ public class ProductService {
 
   /** Define os nove roteiros operacionais do playbook orgânico do produto. */
   private List<ProductOrganicVideoPlanItemResponse> buildOrganicVideoPlanItems(Product product) {
-    String cta = StringUtils.hasText(product.getPrimaryCta())
-        ? product.getPrimaryCta().trim()
-        : "Faça o diagnóstico e veja seu primeiro ajuste.";
+    String cta =
+        StringUtils.hasText(product.getPrimaryCta())
+            ? product.getPrimaryCta().trim()
+            : "Faça o diagnóstico e veja seu primeiro ajuste.";
     return List.of(
         videoPlanItem(
             1,

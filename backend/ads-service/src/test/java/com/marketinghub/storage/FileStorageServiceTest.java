@@ -23,46 +23,44 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 @ExtendWith(MockitoExtension.class)
 class FileStorageServiceTest {
 
-    @Mock
-    private S3Client s3Client;
+  @Mock private S3Client s3Client;
 
-    private StorageProperties properties;
-    private FileStorageService service;
+  private StorageProperties properties;
+  private FileStorageService service;
 
-    @BeforeEach
-    void setUp() {
-        properties = new StorageProperties();
-        properties.setBucket("bucket");
-        properties.setMaxDownloadBytes(16);
-        service = new FileStorageService(properties, s3Client);
+  @BeforeEach
+  void setUp() {
+    properties = new StorageProperties();
+    properties.setBucket("bucket");
+    properties.setMaxDownloadBytes(16);
+    service = new FileStorageService(properties, s3Client);
+  }
+
+  @Test
+  void shouldStreamObjectAsResource() throws Exception {
+    byte[] data = "streamed content".getBytes(StandardCharsets.UTF_8);
+    when(s3Client.getObject(any(GetObjectRequest.class), any(ResponseTransformer.class)))
+        .thenReturn(responseStream(data));
+
+    Resource resource = service.loadAsResource("file.txt");
+
+    try (InputStream in = resource.getInputStream()) {
+      assertArrayEquals(data, in.readAllBytes());
     }
+  }
 
-    @Test
-    void shouldStreamObjectAsResource() throws Exception {
-        byte[] data = "streamed content".getBytes(StandardCharsets.UTF_8);
-        when(s3Client.getObject(any(GetObjectRequest.class), any(ResponseTransformer.class)))
-                .thenReturn(responseStream(data));
+  @Test
+  void shouldRejectObjectsLargerThanConfiguredLimit() {
+    properties.setMaxDownloadBytes(4);
+    when(s3Client.getObject(any(GetObjectRequest.class), any(ResponseTransformer.class)))
+        .thenReturn(responseStream("oversized".getBytes(StandardCharsets.UTF_8)));
 
-        Resource resource = service.loadAsResource("file.txt");
+    assertThrows(StorageException.class, () -> service.loadAsResource("too-big.bin"));
+  }
 
-        try (InputStream in = resource.getInputStream()) {
-            assertArrayEquals(data, in.readAllBytes());
-        }
-    }
-
-    @Test
-    void shouldRejectObjectsLargerThanConfiguredLimit() {
-        properties.setMaxDownloadBytes(4);
-        when(s3Client.getObject(any(GetObjectRequest.class), any(ResponseTransformer.class)))
-                .thenReturn(responseStream("oversized".getBytes(StandardCharsets.UTF_8)));
-
-        assertThrows(StorageException.class, () -> service.loadAsResource("too-big.bin"));
-    }
-
-    private ResponseInputStream<GetObjectResponse> responseStream(byte[] data) {
-        GetObjectResponse response = GetObjectResponse.builder()
-                .contentLength((long) data.length)
-                .build();
-        return new ResponseInputStream<>(response, new ByteArrayInputStream(data));
-    }
+  private ResponseInputStream<GetObjectResponse> responseStream(byte[] data) {
+    GetObjectResponse response =
+        GetObjectResponse.builder().contentLength((long) data.length).build();
+    return new ResponseInputStream<>(response, new ByteArrayInputStream(data));
+  }
 }

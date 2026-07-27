@@ -8,14 +8,12 @@ import jakarta.validation.constraints.Size;
 
 /** Contrato de entrada para cadastrar uma semente manual de público geral. */
 public record CreateGeneralAudienceSeedRequest(
-        @NotBlank @Size(max = 191) String name,
-        String description,
-        String marketContext,
-        @Size(max = 64) String country,
-        @Size(max = 32) String language,
-        @NotNull OprmGeneralAudienceSeedType seedType,
-        OprmGeneralAudienceSeedStatus status,
-        String businessGoal,
-        String riskNotes
-) {
-}
+    @NotBlank @Size(max = 191) String name,
+    String description,
+    String marketContext,
+    @Size(max = 64) String country,
+    @Size(max = 32) String language,
+    @NotNull OprmGeneralAudienceSeedType seedType,
+    OprmGeneralAudienceSeedStatus status,
+    String businessGoal,
+    String riskNotes) {}

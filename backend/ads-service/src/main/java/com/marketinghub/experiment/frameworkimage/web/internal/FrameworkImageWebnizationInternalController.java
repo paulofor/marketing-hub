@@ -16,21 +16,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/framework-image/assets")
 public class FrameworkImageWebnizationInternalController {
-    private final FrameworkImageGenerationService service;
+  private final FrameworkImageGenerationService service;
 
-    public FrameworkImageWebnizationInternalController(FrameworkImageGenerationService service) {
-        this.service = service;
-    }
+  public FrameworkImageWebnizationInternalController(FrameworkImageGenerationService service) {
+    this.service = service;
+  }
 
-    @GetMapping("/pending-webnization")
-    public List<FrameworkImageWebnizationPendingAssetDto> listPendingWebnization(
-            @RequestParam(value = "limit", defaultValue = "20") Integer limit) {
-        return service.listPendingWebnizationAssets(limit != null ? limit : 20);
-    }
+  @GetMapping("/pending-webnization")
+  public List<FrameworkImageWebnizationPendingAssetDto> listPendingWebnization(
+      @RequestParam(value = "limit", defaultValue = "20") Integer limit) {
+    return service.listPendingWebnizationAssets(limit != null ? limit : 20);
+  }
 
-    @PostMapping("/{assetId}/web-ready")
-    public void markWebReady(@PathVariable Long assetId,
-                             @Valid @RequestBody FrameworkImageWebReadyRequest request) {
-        service.markAssetAsWebReady(assetId, request.webUrl());
-    }
+  @PostMapping("/{assetId}/web-ready")
+  public void markWebReady(
+      @PathVariable Long assetId, @Valid @RequestBody FrameworkImageWebReadyRequest request) {
+    service.markAssetAsWebReady(assetId, request.webUrl());
+  }
 }

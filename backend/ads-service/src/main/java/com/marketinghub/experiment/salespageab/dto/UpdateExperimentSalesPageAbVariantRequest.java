@@ -5,13 +5,12 @@ import java.math.BigDecimal;
 
 /** Responsabilidade: receber alteracoes operacionais de uma variante A/B. */
 public record UpdateExperimentSalesPageAbVariantRequest(
-        ExperimentSalesPageAbVariantStatus status,
-        BigDecimal trafficWeight,
-        String salesPageUrl,
-        String checkoutUrl,
-        String adDestinationUrl,
-        String analyticsVariantParam,
-        Long publicationAuditId,
-        Long experimentVideoAssetId,
-        Boolean requiredCollectorsPresent) {
-}
+    ExperimentSalesPageAbVariantStatus status,
+    BigDecimal trafficWeight,
+    String salesPageUrl,
+    String checkoutUrl,
+    String adDestinationUrl,
+    String analyticsVariantParam,
+    Long publicationAuditId,
+    Long experimentVideoAssetId,
+    Boolean requiredCollectorsPresent) {}

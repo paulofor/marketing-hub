@@ -12,22 +12,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/oprm/nichocnae/v3/cnaes/{cnaeCode}/progress")
 public class BackendNichoCnaeV3ProgressController {
-    private final BackendNichoCnaeV3ProgressService service;
+  private final BackendNichoCnaeV3ProgressService service;
 
-    /** Inicializa o controller com service de leitura do progresso v3. */
-    public BackendNichoCnaeV3ProgressController(BackendNichoCnaeV3ProgressService service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com service de leitura do progresso v3. */
+  public BackendNichoCnaeV3ProgressController(BackendNichoCnaeV3ProgressService service) {
+    this.service = service;
+  }
 
-    /** Expõe o progresso do job mais recente do CNAE informado. */
-    @GetMapping
-    public NichoCnaeV3JobProgressResponse latestByCnae(@PathVariable String cnaeCode) {
-        return service.latestByCnae(cnaeCode);
-    }
+  /** Expõe o progresso do job mais recente do CNAE informado. */
+  @GetMapping
+  public NichoCnaeV3JobProgressResponse latestByCnae(@PathVariable String cnaeCode) {
+    return service.latestByCnae(cnaeCode);
+  }
 
-    /** Confirma a revisão exibida na tela e libera a etapa final do pipeline. */
-    @PostMapping("/confirm-finalization")
-    public void confirmFinalization(@PathVariable String cnaeCode) {
-        service.confirmFinalization(cnaeCode);
-    }
+  /** Confirma a revisão exibida na tela e libera a etapa final do pipeline. */
+  @PostMapping("/confirm-finalization")
+  public void confirmFinalization(@PathVariable String cnaeCode) {
+    service.confirmFinalization(cnaeCode);
+  }
 }

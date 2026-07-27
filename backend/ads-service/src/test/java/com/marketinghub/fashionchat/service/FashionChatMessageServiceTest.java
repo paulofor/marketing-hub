@@ -21,27 +21,32 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Valida a ponte do backend para o executor do Chat Moda. */
 class FashionChatMessageServiceTest {
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
-    private final FashionChatMessageService service = new FashionChatMessageService(
-            restTemplate,
-            "http://fashion-chat.test/");
+  private final RestTemplate restTemplate = new RestTemplate();
+  private final MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+  private final FashionChatMessageService service =
+      new FashionChatMessageService(restTemplate, "http://fashion-chat.test/");
 
-    /** Deve encaminhar a mensagem ao executor e preservar a resposta funcional. */
-    @Test
-    void answerForwardsMessageToFashionChatExecutor() {
-        server.expect(requestTo("http://fashion-chat.test/api/fashion-chat/messages"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(header("X-Job-Id", "fashion-chat-job-test"))
-                .andExpect(header("X-Correlation-Id", "fashion-chat-job-test"))
-                .andExpect(content().json("""
+  /** Deve encaminhar a mensagem ao executor e preservar a resposta funcional. */
+  @Test
+  void answerForwardsMessageToFashionChatExecutor() {
+    server
+        .expect(requestTo("http://fashion-chat.test/api/fashion-chat/messages"))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(header("X-Job-Id", "fashion-chat-job-test"))
+        .andExpect(header("X-Correlation-Id", "fashion-chat-job-test"))
+        .andExpect(
+            content()
+                .json(
+                    """
                         {
                           "customerId": "marketing-hub-pilot",
                           "message": "Que roupa usar em uma reuniao casual?",
                           "jobId": "fashion-chat-job-test"
                         }
                         """))
-                .andRespond(withSuccess("""
+        .andRespond(
+            withSuccess(
+                """
                         {
                           "answer": "Use alfaiataria leve.",
                           "mode": "codex_app_server",
@@ -49,29 +54,36 @@ class FashionChatMessageServiceTest {
                           "jobId": "fashion-chat-job-test",
                           "research": {"query": "moda reuniao"}
                         }
-                        """, MediaType.APPLICATION_JSON));
+                        """,
+                MediaType.APPLICATION_JSON));
 
-        FashionChatMessageResponse response = service.answer(new FashionChatMessageRequest(
+    FashionChatMessageResponse response =
+        service.answer(
+            new FashionChatMessageRequest(
                 " marketing-hub-pilot ",
                 " Que roupa usar em uma reuniao casual? ",
                 " fashion-chat-job-test "));
 
-        assertThat(response.answer()).isEqualTo("Use alfaiataria leve.");
-        assertThat(response.mode()).isEqualTo("codex_app_server");
-        assertThat(response.sandboxId()).isEqualTo("fashion-chat-test");
-        assertThat(response.jobId()).isEqualTo("fashion-chat-job-test");
-        assertThat(response.research().get("query").asText()).isEqualTo("moda reuniao");
-        server.verify();
-    }
+    assertThat(response.answer()).isEqualTo("Use alfaiataria leve.");
+    assertThat(response.mode()).isEqualTo("codex_app_server");
+    assertThat(response.sandboxId()).isEqualTo("fashion-chat-test");
+    assertThat(response.jobId()).isEqualTo("fashion-chat-job-test");
+    assertThat(response.research().get("query").asText()).isEqualTo("moda reuniao");
+    server.verify();
+  }
 
-    /** Deve repetir uma vez quando o executor retorna falha transitória. */
-    @Test
-    void answerRetriesTransientGatewayFailure() {
-        server.expect(requestTo("http://fashion-chat.test/api/fashion-chat/messages"))
-                .andRespond(withStatus(HttpStatus.BAD_GATEWAY));
-        server.expect(requestTo("http://fashion-chat.test/api/fashion-chat/messages"))
-                .andExpect(header("X-Job-Id", "fashion-chat-retry-test"))
-                .andRespond(withSuccess("""
+  /** Deve repetir uma vez quando o executor retorna falha transitória. */
+  @Test
+  void answerRetriesTransientGatewayFailure() {
+    server
+        .expect(requestTo("http://fashion-chat.test/api/fashion-chat/messages"))
+        .andRespond(withStatus(HttpStatus.BAD_GATEWAY));
+    server
+        .expect(requestTo("http://fashion-chat.test/api/fashion-chat/messages"))
+        .andExpect(header("X-Job-Id", "fashion-chat-retry-test"))
+        .andRespond(
+            withSuccess(
+                """
                         {
                           "answer": "Conversa recuperada apos retry.",
                           "mode": "codex_app_server",
@@ -79,23 +91,23 @@ class FashionChatMessageServiceTest {
                           "jobId": "fashion-chat-retry-test",
                           "research": {"query": "retry"}
                         }
-                        """, MediaType.APPLICATION_JSON));
+                        """,
+                MediaType.APPLICATION_JSON));
 
-        FashionChatMessageResponse response = service.answer(new FashionChatMessageRequest(
-                "cliente",
-                "Look para festa",
-                "fashion-chat-retry-test"));
+    FashionChatMessageResponse response =
+        service.answer(
+            new FashionChatMessageRequest("cliente", "Look para festa", "fashion-chat-retry-test"));
 
-        assertThat(response.answer()).contains("retry");
-        assertThat(response.jobId()).isEqualTo("fashion-chat-retry-test");
-        server.verify();
-    }
+    assertThat(response.answer()).contains("retry");
+    assertThat(response.jobId()).isEqualTo("fashion-chat-retry-test");
+    server.verify();
+  }
 
-    /** Deve bloquear chamada vazia antes de acionar o executor. */
-    @Test
-    void answerRejectsBlankMessage() {
-        assertThatThrownBy(() -> service.answer(new FashionChatMessageRequest("cliente", " ")))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("message e obrigatorio");
-    }
+  /** Deve bloquear chamada vazia antes de acionar o executor. */
+  @Test
+  void answerRejectsBlankMessage() {
+    assertThatThrownBy(() -> service.answer(new FashionChatMessageRequest("cliente", " ")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("message e obrigatorio");
+  }
 }

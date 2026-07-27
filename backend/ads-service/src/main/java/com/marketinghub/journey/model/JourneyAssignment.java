@@ -2,15 +2,12 @@ package com.marketinghub.journey.model;
 
 import com.marketinghub.model.Lead;
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-
-/**
- * Links a lead or segment to a specific {@link Journey} execution.
- */
+/** Links a lead or segment to a specific {@link Journey} execution. */
 @Entity
 @Table(name = "journey_assignment")
 @Data
@@ -18,56 +15,56 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JourneyAssignment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "journey_id", nullable = false)
-    private Journey journey;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "journey_id", nullable = false)
+  private Journey journey;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private JourneyAssignmentType type;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private JourneyAssignmentType type;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lead_id")
-    private Lead lead;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "lead_id")
+  private Lead lead;
 
-    @Column(name = "segment_identifier")
-    private String segmentIdentifier;
+  @Column(name = "segment_identifier")
+  private String segmentIdentifier;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private JourneyAssignmentStatus status = JourneyAssignmentStatus.PENDING;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private JourneyAssignmentStatus status = JourneyAssignmentStatus.PENDING;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "current_step_id")
-    private JourneyStep currentStep;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "current_step_id")
+  private JourneyStep currentStep;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "next_step_id")
-    private JourneyStep nextStep;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "next_step_id")
+  private JourneyStep nextStep;
 
-    @Column(name = "last_event_at")
-    private Instant lastEventAt;
+  @Column(name = "last_event_at")
+  private Instant lastEventAt;
 
-    @Lob
-    @Column(name = "context_payload")
-    private String contextPayload;
+  @Lob
+  @Column(name = "context_payload")
+  private String contextPayload;
 
-    @Column(name = "next_attempt_at")
-    private Instant nextAttemptAt;
+  @Column(name = "next_attempt_at")
+  private Instant nextAttemptAt;
 
-    @Builder.Default
-    @Column(name = "retry_count")
-    private Integer retryCount = 0;
+  @Builder.Default
+  @Column(name = "retry_count")
+  private Integer retryCount = 0;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private Instant updatedAt;
 }

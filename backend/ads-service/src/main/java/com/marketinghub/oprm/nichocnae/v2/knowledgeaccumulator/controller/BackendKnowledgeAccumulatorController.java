@@ -20,36 +20,44 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/oprm/nichocnae/v2/knowledge-accumulator/stage-executions")
 public class BackendKnowledgeAccumulatorController {
-    private final BackendKnowledgeAccumulatorService service;
+  private final BackendKnowledgeAccumulatorService service;
 
-    /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
-    public BackendKnowledgeAccumulatorController(BackendKnowledgeAccumulatorService service) {
-        this.service = service;
-    }
+  /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
+  public BackendKnowledgeAccumulatorController(BackendKnowledgeAccumulatorService service) {
+    this.service = service;
+  }
 
-    /** Entrega execuções pendentes da etapa knowledge-accumulator ao módulo executor OPRM. */
-    @GetMapping("/pending")
-    public List<KnowledgeAccumulatorPendingResponse> pending() {
-        return service.pending();
-    }
+  /** Entrega execuções pendentes da etapa knowledge-accumulator ao módulo executor OPRM. */
+  @GetMapping("/pending")
+  public List<KnowledgeAccumulatorPendingResponse> pending() {
+    return service.pending();
+  }
 
-    /** Grava uma pendência da etapa knowledge-accumulator solicitada pelo módulo executor OPRM. */
-    @PostMapping
-    public KnowledgeAccumulatorCreateResponse create(@RequestBody KnowledgeAccumulatorCreateRequest request) {
-        return service.create(request);
-    }
+  /** Grava uma pendência da etapa knowledge-accumulator solicitada pelo módulo executor OPRM. */
+  @PostMapping
+  public KnowledgeAccumulatorCreateResponse create(
+      @RequestBody KnowledgeAccumulatorCreateRequest request) {
+    return service.create(request);
+  }
 
-    /** Registra a conclusão da execução de acumulação de conhecimento informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/complete")
-    public KnowledgeAccumulatorCompletionResponse complete(
-            @PathVariable Long stageExecutionId, @RequestBody KnowledgeAccumulatorCompletionRequest request) {
-        return service.complete(stageExecutionId, request);
-    }
+  /**
+   * Registra a conclusão da execução de acumulação de conhecimento informada pelo módulo executor
+   * OPRM.
+   */
+  @PostMapping("/{stageExecutionId}/complete")
+  public KnowledgeAccumulatorCompletionResponse complete(
+      @PathVariable Long stageExecutionId,
+      @RequestBody KnowledgeAccumulatorCompletionRequest request) {
+    return service.complete(stageExecutionId, request);
+  }
 
-    /** Registra a falha da execução de acumulação de conhecimento informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/fail")
-    public KnowledgeAccumulatorFailureResponse fail(
-            @PathVariable Long stageExecutionId, @RequestBody KnowledgeAccumulatorFailureRequest request) {
-        return service.fail(stageExecutionId, request);
-    }
+  /**
+   * Registra a falha da execução de acumulação de conhecimento informada pelo módulo executor OPRM.
+   */
+  @PostMapping("/{stageExecutionId}/fail")
+  public KnowledgeAccumulatorFailureResponse fail(
+      @PathVariable Long stageExecutionId,
+      @RequestBody KnowledgeAccumulatorFailureRequest request) {
+    return service.fail(stageExecutionId, request);
+  }
 }

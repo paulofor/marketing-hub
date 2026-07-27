@@ -23,17 +23,17 @@ import com.marketinghub.salesvideo.dto.JobHeartbeatRequest;
 import com.marketinghub.salesvideo.dto.JobProgressRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotHistoryDto;
-import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoMontageRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
+import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.RetrySalesVideoJobRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoConversionEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
-import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
 import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
@@ -58,350 +58,355 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Controller único do módulo Avatar Sales Video para contratos administrativos e internos.
- */
+/** Controller único do módulo Avatar Sales Video para contratos administrativos e internos. */
 @RestController
 public class SalesVideoController {
-    private final SalesVideoService salesVideoService;
-    private final AssetMapper assetMapper;
+  private final SalesVideoService salesVideoService;
+  private final AssetMapper assetMapper;
 
-    /** Inicializa o controller com a fachada única do módulo e o mapper de assets. */
-    public SalesVideoController(SalesVideoService salesVideoService, AssetMapper assetMapper) {
-        this.salesVideoService = salesVideoService;
-        this.assetMapper = assetMapper;
-    }
+  /** Inicializa o controller com a fachada única do módulo e o mapper de assets. */
+  public SalesVideoController(SalesVideoService salesVideoService, AssetMapper assetMapper) {
+    this.salesVideoService = salesVideoService;
+    this.assetMapper = assetMapper;
+  }
 
-    /** Lista projetos editáveis do estúdio de vídeos. */
-    @GetMapping("/api/sales-videos/projects")
-    public List<VideoProjectDto> listVideoProjects() {
-        return salesVideoService.listVideoProjects();
-    }
+  /** Lista projetos editáveis do estúdio de vídeos. */
+  @GetMapping("/api/sales-videos/projects")
+  public List<VideoProjectDto> listVideoProjects() {
+    return salesVideoService.listVideoProjects();
+  }
 
-    /** Cria um projeto editável no estúdio de vídeos. */
-    @PostMapping("/api/sales-videos/projects")
-    @ResponseStatus(HttpStatus.CREATED)
-    public VideoProjectDto createVideoProject(@Valid @RequestBody CreateVideoProjectRequest request) {
-        return salesVideoService.createVideoProject(request);
-    }
+  /** Cria um projeto editável no estúdio de vídeos. */
+  @PostMapping("/api/sales-videos/projects")
+  @ResponseStatus(HttpStatus.CREATED)
+  public VideoProjectDto createVideoProject(@Valid @RequestBody CreateVideoProjectRequest request) {
+    return salesVideoService.createVideoProject(request);
+  }
 
-    /** Consulta um projeto editável do estúdio de vídeos. */
-    @GetMapping("/api/sales-videos/projects/{projectId}")
-    public VideoProjectDto getVideoProject(@PathVariable Long projectId) {
-        return salesVideoService.getVideoProject(projectId);
-    }
+  /** Consulta um projeto editável do estúdio de vídeos. */
+  @GetMapping("/api/sales-videos/projects/{projectId}")
+  public VideoProjectDto getVideoProject(@PathVariable Long projectId) {
+    return salesVideoService.getVideoProject(projectId);
+  }
 
-    /** Atualiza um projeto editável do estúdio de vídeos. */
-    @PatchMapping("/api/sales-videos/projects/{projectId}")
-    public VideoProjectDto updateVideoProject(@PathVariable Long projectId,
-                                              @Valid @RequestBody UpdateVideoProjectRequest request) {
-        return salesVideoService.updateVideoProject(projectId, request);
-    }
+  /** Atualiza um projeto editável do estúdio de vídeos. */
+  @PatchMapping("/api/sales-videos/projects/{projectId}")
+  public VideoProjectDto updateVideoProject(
+      @PathVariable Long projectId, @Valid @RequestBody UpdateVideoProjectRequest request) {
+    return salesVideoService.updateVideoProject(projectId, request);
+  }
 
-    /** Cria um perfil de vídeo para um produto. */
-    @PostMapping("/api/products/{productId}/sales-videos/profiles")
-    public SalesVideoProfileDto createProfile(@PathVariable Long productId,
-                                              @Valid @RequestBody CreateSalesVideoProfileRequest request) {
-        return salesVideoService.createProfile(productId, request);
-    }
+  /** Cria um perfil de vídeo para um produto. */
+  @PostMapping("/api/products/{productId}/sales-videos/profiles")
+  public SalesVideoProfileDto createProfile(
+      @PathVariable Long productId, @Valid @RequestBody CreateSalesVideoProfileRequest request) {
+    return salesVideoService.createProfile(productId, request);
+  }
 
-    /** Lista perfis de vídeo de um produto. */
-    @GetMapping("/api/products/{productId}/sales-videos/profiles")
-    public List<SalesVideoProfileDto> listProfiles(@PathVariable Long productId) {
-        return salesVideoService.listProfiles(productId);
-    }
+  /** Lista perfis de vídeo de um produto. */
+  @GetMapping("/api/products/{productId}/sales-videos/profiles")
+  public List<SalesVideoProfileDto> listProfiles(@PathVariable Long productId) {
+    return salesVideoService.listProfiles(productId);
+  }
 
-    /** Consulta um perfil de vídeo. */
-    @GetMapping("/api/sales-videos/profiles/{profileId}")
-    public SalesVideoProfileDto getProfile(@PathVariable Long profileId) {
-        return salesVideoService.getProfile(profileId);
-    }
+  /** Consulta um perfil de vídeo. */
+  @GetMapping("/api/sales-videos/profiles/{profileId}")
+  public SalesVideoProfileDto getProfile(@PathVariable Long profileId) {
+    return salesVideoService.getProfile(profileId);
+  }
 
-    /** Lista scripts de um perfil de vídeo. */
-    @GetMapping("/api/sales-videos/profiles/{profileId}/scripts")
-    public List<SalesVideoScriptDto> listScripts(@PathVariable Long profileId) {
-        return salesVideoService.listScripts(profileId);
-    }
+  /** Lista scripts de um perfil de vídeo. */
+  @GetMapping("/api/sales-videos/profiles/{profileId}/scripts")
+  public List<SalesVideoScriptDto> listScripts(@PathVariable Long profileId) {
+    return salesVideoService.listScripts(profileId);
+  }
 
-    /** Solicita geração automática de script. */
-    @PostMapping("/api/sales-videos/profiles/{profileId}/generate-script")
-    public SalesVideoJobDto requestScript(@PathVariable Long profileId,
-                                          @Valid @RequestBody GenerateSalesVideoScriptRequest request) {
-        return salesVideoService.requestScriptGeneration(profileId, request);
-    }
+  /** Solicita geração automática de script. */
+  @PostMapping("/api/sales-videos/profiles/{profileId}/generate-script")
+  public SalesVideoJobDto requestScript(
+      @PathVariable Long profileId, @Valid @RequestBody GenerateSalesVideoScriptRequest request) {
+    return salesVideoService.requestScriptGeneration(profileId, request);
+  }
 
-    /** Aprova manualmente um script. */
-    @PostMapping("/api/sales-videos/profiles/{profileId}/approve-script")
-    public SalesVideoScriptDto approveScript(@PathVariable Long profileId,
-                                             @Valid @RequestBody ApproveSalesVideoScriptRequest request) {
-        return salesVideoService.approveScript(profileId, request);
-    }
+  /** Aprova manualmente um script. */
+  @PostMapping("/api/sales-videos/profiles/{profileId}/approve-script")
+  public SalesVideoScriptDto approveScript(
+      @PathVariable Long profileId, @Valid @RequestBody ApproveSalesVideoScriptRequest request) {
+    return salesVideoService.approveScript(profileId, request);
+  }
 
-    /** Solicita renderização de um vídeo aprovado. */
-    @PostMapping("/api/sales-videos/profiles/{profileId}/request-render")
-    public SalesVideoJobDto requestRender(@PathVariable Long profileId,
-                                          @Valid @RequestBody RequestVideoRenderRequest request) {
-        return salesVideoService.requestRender(profileId, request);
-    }
+  /** Solicita renderização de um vídeo aprovado. */
+  @PostMapping("/api/sales-videos/profiles/{profileId}/request-render")
+  public SalesVideoJobDto requestRender(
+      @PathVariable Long profileId, @Valid @RequestBody RequestVideoRenderRequest request) {
+    return salesVideoService.requestRender(profileId, request);
+  }
 
-    /** Atualiza checklist de compliance do perfil. */
-    @PatchMapping("/api/sales-videos/profiles/{profileId}/compliance")
-    public SalesVideoProfileDto updateCompliance(@PathVariable Long profileId,
-                                                 @RequestBody UpdateSalesVideoComplianceRequest request) {
-        return salesVideoService.updateCompliance(profileId, request);
-    }
+  /** Atualiza checklist de compliance do perfil. */
+  @PatchMapping("/api/sales-videos/profiles/{profileId}/compliance")
+  public SalesVideoProfileDto updateCompliance(
+      @PathVariable Long profileId, @RequestBody UpdateSalesVideoComplianceRequest request) {
+    return salesVideoService.updateCompliance(profileId, request);
+  }
 
-    /** Consulta status de rollout do tenant. */
-    @GetMapping("/api/sales-videos/rollout/status")
-    public SalesVideoRolloutStatusDto getTenantRolloutStatus() {
-        return salesVideoService.getTenantRolloutStatus();
-    }
+  /** Consulta status de rollout do tenant. */
+  @GetMapping("/api/sales-videos/rollout/status")
+  public SalesVideoRolloutStatusDto getTenantRolloutStatus() {
+    return salesVideoService.getTenantRolloutStatus();
+  }
 
-    /** Consulta reputação global dos provedores de vídeo do tenant. */
-    @GetMapping("/api/sales-videos/provider-scores")
-    public List<SalesVideoProviderScoreDto> listProviderScores() {
-        return salesVideoService.summarizeProviderScores();
-    }
+  /** Consulta reputação global dos provedores de vídeo do tenant. */
+  @GetMapping("/api/sales-videos/provider-scores")
+  public List<SalesVideoProviderScoreDto> listProviderScores() {
+    return salesVideoService.summarizeProviderScores();
+  }
 
-    /** Consulta status de rollout de um perfil. */
-    @GetMapping("/api/sales-videos/profiles/{profileId}/rollout-status")
-    public SalesVideoRolloutStatusDto getProfileRolloutStatus(@PathVariable Long profileId) {
-        return salesVideoService.getProfileRolloutStatus(profileId);
-    }
+  /** Consulta status de rollout de um perfil. */
+  @GetMapping("/api/sales-videos/profiles/{profileId}/rollout-status")
+  public SalesVideoRolloutStatusDto getProfileRolloutStatus(@PathVariable Long profileId) {
+    return salesVideoService.getProfileRolloutStatus(profileId);
+  }
 
-    /** Lista jobs administrativos por perfil. */
-    @GetMapping("/api/sales-videos/profiles/{profileId}/jobs")
-    public List<SalesVideoJobDto> listJobsByProfile(@PathVariable Long profileId) {
-        return salesVideoService.listJobsByProfile(profileId);
-    }
+  /** Lista jobs administrativos por perfil. */
+  @GetMapping("/api/sales-videos/profiles/{profileId}/jobs")
+  public List<SalesVideoJobDto> listJobsByProfile(@PathVariable Long profileId) {
+    return salesVideoService.listJobsByProfile(profileId);
+  }
 
-    /** Lista jobs administrativos de todos os perfis de um produto. */
-    @GetMapping("/api/products/{productId}/sales-videos/jobs")
-    public List<SalesVideoJobDto> listJobsByProduct(@PathVariable Long productId) {
-        return salesVideoService.listJobsByProduct(productId);
-    }
+  /** Lista jobs administrativos de todos os perfis de um produto. */
+  @GetMapping("/api/products/{productId}/sales-videos/jobs")
+  public List<SalesVideoJobDto> listJobsByProduct(@PathVariable Long productId) {
+    return salesVideoService.listJobsByProduct(productId);
+  }
 
-    /** Consulta um job administrativo. */
-    @GetMapping("/api/sales-videos/jobs/{jobId}")
-    public SalesVideoJobDto getAdminJob(@PathVariable Long jobId) {
-        return salesVideoService.getJob(jobId);
-    }
+  /** Consulta um job administrativo. */
+  @GetMapping("/api/sales-videos/jobs/{jobId}")
+  public SalesVideoJobDto getAdminJob(@PathVariable Long jobId) {
+    return salesVideoService.getJob(jobId);
+  }
 
-    /** Lista eventos de um job administrativo. */
-    @GetMapping("/api/sales-videos/jobs/{jobId}/events")
-    public List<SalesVideoJobEventDto> getJobEvents(@PathVariable Long jobId) {
-        return salesVideoService.getJobEvents(jobId);
-    }
+  /** Lista eventos de um job administrativo. */
+  @GetMapping("/api/sales-videos/jobs/{jobId}/events")
+  public List<SalesVideoJobEventDto> getJobEvents(@PathVariable Long jobId) {
+    return salesVideoService.getJobEvents(jobId);
+  }
 
-    /** Solicita reprocessamento de um job. */
-    @PostMapping("/api/sales-videos/jobs/{jobId}/retry")
-    public SalesVideoJobDto retryJob(@PathVariable Long jobId,
-                                     @Valid @RequestBody RetrySalesVideoJobRequest request) {
-        return salesVideoService.retry(jobId, request);
-    }
+  /** Solicita reprocessamento de um job. */
+  @PostMapping("/api/sales-videos/jobs/{jobId}/retry")
+  public SalesVideoJobDto retryJob(
+      @PathVariable Long jobId, @Valid @RequestBody RetrySalesVideoJobRequest request) {
+    return salesVideoService.retry(jobId, request);
+  }
 
-    /** Solicita pós-produção de um vídeo bruto já renderizado. */
-    @PostMapping("/api/sales-videos/jobs/{jobId}/request-post-production")
-    public SalesVideoJobDto requestPostProduction(@PathVariable Long jobId,
-                                                  @Valid @RequestBody RequestSalesVideoPostProductionRequest request) {
-        return salesVideoService.requestPostProduction(jobId, request);
-    }
+  /** Solicita pós-produção de um vídeo bruto já renderizado. */
+  @PostMapping("/api/sales-videos/jobs/{jobId}/request-post-production")
+  public SalesVideoJobDto requestPostProduction(
+      @PathVariable Long jobId,
+      @Valid @RequestBody RequestSalesVideoPostProductionRequest request) {
+    return salesVideoService.requestPostProduction(jobId, request);
+  }
 
-    /** Solicita montagem de múltiplos vídeos prontos em um único vídeo. */
-    @PostMapping("/api/sales-videos/jobs/request-montage")
-    public SalesVideoJobDto requestMontage(@Valid @RequestBody RequestSalesVideoMontageRequest request) {
-        return salesVideoService.requestMontage(request);
-    }
+  /** Solicita montagem de múltiplos vídeos prontos em um único vídeo. */
+  @PostMapping("/api/sales-videos/jobs/request-montage")
+  public SalesVideoJobDto requestMontage(
+      @Valid @RequestBody RequestSalesVideoMontageRequest request) {
+    return salesVideoService.requestMontage(request);
+  }
 
-    /** Lista jobs OpenAI para consumo interno do ai-worker. */
-    @GetMapping("/internal/ai/openai-jobs")
-    public List<SalesVideoJobDto> listOpenAiJobs(@RequestParam(required = false) SalesVideoStatus status,
-                                                 @RequestParam(required = false, name = "type") SalesVideoJobType jobType,
-                                                 @RequestParam(defaultValue = "25") int limit) {
-        return salesVideoService.findJobs(SalesVideoProviderFamily.OPENAI, status, jobType, limit);
-    }
+  /** Lista jobs OpenAI para consumo interno do ai-worker. */
+  @GetMapping("/internal/ai/openai-jobs")
+  public List<SalesVideoJobDto> listOpenAiJobs(
+      @RequestParam(required = false) SalesVideoStatus status,
+      @RequestParam(required = false, name = "type") SalesVideoJobType jobType,
+      @RequestParam(defaultValue = "25") int limit) {
+    return salesVideoService.findJobs(SalesVideoProviderFamily.OPENAI, status, jobType, limit);
+  }
 
-    /** Consulta job OpenAI interno. */
-    @GetMapping("/internal/ai/openai-jobs/{jobId}")
-    public SalesVideoJobDto getOpenAiJob(@PathVariable Long jobId) {
-        return salesVideoService.getJob(jobId);
-    }
+  /** Consulta job OpenAI interno. */
+  @GetMapping("/internal/ai/openai-jobs/{jobId}")
+  public SalesVideoJobDto getOpenAiJob(@PathVariable Long jobId) {
+    return salesVideoService.getJob(jobId);
+  }
 
-    /** Consulta perfil de vídeo para processamento interno do ai-worker. */
-    @GetMapping("/internal/ai/sales-videos/profiles/{profileId}")
-    public SalesVideoProfileDto getOpenAiProfile(@PathVariable Long profileId) {
-        return salesVideoService.getProfile(profileId);
-    }
+  /** Consulta perfil de vídeo para processamento interno do ai-worker. */
+  @GetMapping("/internal/ai/sales-videos/profiles/{profileId}")
+  public SalesVideoProfileDto getOpenAiProfile(@PathVariable Long profileId) {
+    return salesVideoService.getProfile(profileId);
+  }
 
-    /** Consulta perfil de vídeo para processamento interno do módulo externo de renderização. */
-    @GetMapping("/internal/video/sales-videos/profiles/{profileId}")
-    public SalesVideoProfileDto getInternalVideoProfile(@PathVariable Long profileId) {
-        return salesVideoService.getProfile(profileId);
-    }
+  /** Consulta perfil de vídeo para processamento interno do módulo externo de renderização. */
+  @GetMapping("/internal/video/sales-videos/profiles/{profileId}")
+  public SalesVideoProfileDto getInternalVideoProfile(@PathVariable Long profileId) {
+    return salesVideoService.getProfile(profileId);
+  }
 
-    /** Faz claim de job OpenAI interno. */
-    @PostMapping("/internal/ai/openai-jobs/{jobId}/claim")
-    public SalesVideoJobDto claimOpenAiJob(@PathVariable Long jobId,
-                                           @Valid @RequestBody JobClaimRequest request) {
-        return salesVideoService.claimJob(jobId, request);
-    }
+  /** Faz claim de job OpenAI interno. */
+  @PostMapping("/internal/ai/openai-jobs/{jobId}/claim")
+  public SalesVideoJobDto claimOpenAiJob(
+      @PathVariable Long jobId, @Valid @RequestBody JobClaimRequest request) {
+    return salesVideoService.claimJob(jobId, request);
+  }
 
-    /** Registra heartbeat de job OpenAI interno. */
-    @PostMapping("/internal/ai/openai-jobs/{jobId}/heartbeat")
-    public SalesVideoJobDto heartbeatOpenAiJob(@PathVariable Long jobId,
-                                               @RequestBody JobHeartbeatRequest request) {
-        return salesVideoService.heartbeat(jobId, request);
-    }
+  /** Registra heartbeat de job OpenAI interno. */
+  @PostMapping("/internal/ai/openai-jobs/{jobId}/heartbeat")
+  public SalesVideoJobDto heartbeatOpenAiJob(
+      @PathVariable Long jobId, @RequestBody JobHeartbeatRequest request) {
+    return salesVideoService.heartbeat(jobId, request);
+  }
 
-    /** Registra progresso de job OpenAI interno. */
-    @PostMapping("/internal/ai/openai-jobs/{jobId}/progress")
-    public SalesVideoJobDto progressOpenAiJob(@PathVariable Long jobId,
-                                              @RequestBody JobProgressRequest request) {
-        return salesVideoService.progress(jobId, request);
-    }
+  /** Registra progresso de job OpenAI interno. */
+  @PostMapping("/internal/ai/openai-jobs/{jobId}/progress")
+  public SalesVideoJobDto progressOpenAiJob(
+      @PathVariable Long jobId, @RequestBody JobProgressRequest request) {
+    return salesVideoService.progress(jobId, request);
+  }
 
-    /** Conclui job OpenAI interno. */
-    @PostMapping("/internal/ai/openai-jobs/{jobId}/complete")
-    public SalesVideoJobDto completeOpenAiJob(@PathVariable Long jobId,
-                                              @RequestBody JobCompletionRequest request) {
-        return salesVideoService.complete(jobId, request);
-    }
+  /** Conclui job OpenAI interno. */
+  @PostMapping("/internal/ai/openai-jobs/{jobId}/complete")
+  public SalesVideoJobDto completeOpenAiJob(
+      @PathVariable Long jobId, @RequestBody JobCompletionRequest request) {
+    return salesVideoService.complete(jobId, request);
+  }
 
-    /** Marca job OpenAI interno como falho. */
-    @PostMapping("/internal/ai/openai-jobs/{jobId}/fail")
-    public SalesVideoJobDto failOpenAiJob(@PathVariable Long jobId,
-                                          @RequestBody JobFailureRequest request) {
-        return salesVideoService.fail(jobId, request);
-    }
+  /** Marca job OpenAI interno como falho. */
+  @PostMapping("/internal/ai/openai-jobs/{jobId}/fail")
+  public SalesVideoJobDto failOpenAiJob(
+      @PathVariable Long jobId, @RequestBody JobFailureRequest request) {
+    return salesVideoService.fail(jobId, request);
+  }
 
-    /** Lista jobs internos do módulo externo de vídeo. */
-    @GetMapping("/internal/video/jobs")
-    public List<SalesVideoJobDto> listVideoJobs(@RequestParam(required = false) SalesVideoStatus status,
-                                                @RequestParam(required = false, name = "type") SalesVideoJobType jobType,
-                                                @RequestParam(required = false) SalesVideoProviderFamily providerFamily,
-                                                @RequestParam(defaultValue = "25") int limit) {
-        SalesVideoProviderFamily family = providerFamily != null
-                ? providerFamily
-                : SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE;
-        return salesVideoService.findJobs(family, status, jobType, limit);
-    }
+  /** Lista jobs internos do módulo externo de vídeo. */
+  @GetMapping("/internal/video/jobs")
+  public List<SalesVideoJobDto> listVideoJobs(
+      @RequestParam(required = false) SalesVideoStatus status,
+      @RequestParam(required = false, name = "type") SalesVideoJobType jobType,
+      @RequestParam(required = false) SalesVideoProviderFamily providerFamily,
+      @RequestParam(defaultValue = "25") int limit) {
+    SalesVideoProviderFamily family =
+        providerFamily != null ? providerFamily : SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE;
+    return salesVideoService.findJobs(family, status, jobType, limit);
+  }
 
-    /** Consulta job interno do módulo externo de vídeo. */
-    @GetMapping("/internal/video/jobs/{jobId}")
-    public SalesVideoJobDto getVideoJob(@PathVariable Long jobId) {
-        return salesVideoService.getJob(jobId);
-    }
+  /** Consulta job interno do módulo externo de vídeo. */
+  @GetMapping("/internal/video/jobs/{jobId}")
+  public SalesVideoJobDto getVideoJob(@PathVariable Long jobId) {
+    return salesVideoService.getJob(jobId);
+  }
 
-    /** Faz claim de job interno do módulo externo de vídeo. */
-    @PostMapping("/internal/video/jobs/{jobId}/claim")
-    public SalesVideoJobDto claimVideoJob(@PathVariable Long jobId,
-                                          @Valid @RequestBody JobClaimRequest request) {
-        return salesVideoService.claimJob(jobId, request);
-    }
+  /** Faz claim de job interno do módulo externo de vídeo. */
+  @PostMapping("/internal/video/jobs/{jobId}/claim")
+  public SalesVideoJobDto claimVideoJob(
+      @PathVariable Long jobId, @Valid @RequestBody JobClaimRequest request) {
+    return salesVideoService.claimJob(jobId, request);
+  }
 
-    /** Registra heartbeat de job interno do módulo externo de vídeo. */
-    @PostMapping("/internal/video/jobs/{jobId}/heartbeat")
-    public SalesVideoJobDto heartbeatVideoJob(@PathVariable Long jobId,
-                                              @RequestBody JobHeartbeatRequest request) {
-        return salesVideoService.heartbeat(jobId, request);
-    }
+  /** Registra heartbeat de job interno do módulo externo de vídeo. */
+  @PostMapping("/internal/video/jobs/{jobId}/heartbeat")
+  public SalesVideoJobDto heartbeatVideoJob(
+      @PathVariable Long jobId, @RequestBody JobHeartbeatRequest request) {
+    return salesVideoService.heartbeat(jobId, request);
+  }
 
-    /** Registra progresso de job interno do módulo externo de vídeo. */
-    @PostMapping("/internal/video/jobs/{jobId}/progress")
-    public SalesVideoJobDto progressVideoJob(@PathVariable Long jobId,
-                                             @RequestBody JobProgressRequest request) {
-        return salesVideoService.progress(jobId, request);
-    }
+  /** Registra progresso de job interno do módulo externo de vídeo. */
+  @PostMapping("/internal/video/jobs/{jobId}/progress")
+  public SalesVideoJobDto progressVideoJob(
+      @PathVariable Long jobId, @RequestBody JobProgressRequest request) {
+    return salesVideoService.progress(jobId, request);
+  }
 
-    /** Conclui job interno do módulo externo de vídeo. */
-    @PostMapping("/internal/video/jobs/{jobId}/complete")
-    public SalesVideoJobDto completeVideoJob(@PathVariable Long jobId,
-                                             @RequestBody JobCompletionRequest request) {
-        return salesVideoService.complete(jobId, request);
-    }
+  /** Conclui job interno do módulo externo de vídeo. */
+  @PostMapping("/internal/video/jobs/{jobId}/complete")
+  public SalesVideoJobDto completeVideoJob(
+      @PathVariable Long jobId, @RequestBody JobCompletionRequest request) {
+    return salesVideoService.complete(jobId, request);
+  }
 
-    /** Marca job interno do módulo externo de vídeo como falho. */
-    @PostMapping("/internal/video/jobs/{jobId}/fail")
-    public SalesVideoJobDto failVideoJob(@PathVariable Long jobId,
-                                         @RequestBody JobFailureRequest request) {
-        return salesVideoService.fail(jobId, request);
-    }
+  /** Marca job interno do módulo externo de vídeo como falho. */
+  @PostMapping("/internal/video/jobs/{jobId}/fail")
+  public SalesVideoJobDto failVideoJob(
+      @PathVariable Long jobId, @RequestBody JobFailureRequest request) {
+    return salesVideoService.fail(jobId, request);
+  }
 
-    /** Marca job interno do módulo externo de vídeo como expirado. */
-    @PostMapping("/internal/video/jobs/{jobId}/expired")
-    public SalesVideoJobDto expireVideoJob(@PathVariable Long jobId,
-                                           @RequestBody JobExpirationRequest request) {
-        return salesVideoService.expire(jobId, request);
-    }
+  /** Marca job interno do módulo externo de vídeo como expirado. */
+  @PostMapping("/internal/video/jobs/{jobId}/expired")
+  public SalesVideoJobDto expireVideoJob(
+      @PathVariable Long jobId, @RequestBody JobExpirationRequest request) {
+    return salesVideoService.expire(jobId, request);
+  }
 
-    /** Faz upload interno de asset final ou auxiliar de vídeo. */
-    @PostMapping(value = "/internal/video/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ResponseStatus(HttpStatus.CREATED)
-    public AssetDto upload(@RequestParam("file") MultipartFile file,
-                           @RequestParam(name = "assetType", required = false) AssetType assetType,
-                           @RequestParam(name = "provider", required = false) MediaProvider provider,
-                           @RequestParam(name = "metadata", required = false) String metadata) throws IOException {
-        Asset asset = salesVideoService.storeAsset(file, assetType, provider, metadata);
-        return assetMapper.toDto(asset);
-    }
+  /** Faz upload interno de asset final ou auxiliar de vídeo. */
+  @PostMapping(value = "/internal/video/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  public AssetDto upload(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(name = "assetType", required = false) AssetType assetType,
+      @RequestParam(name = "provider", required = false) MediaProvider provider,
+      @RequestParam(name = "metadata", required = false) String metadata)
+      throws IOException {
+    Asset asset = salesVideoService.storeAsset(file, assetType, provider, metadata);
+    return assetMapper.toDto(asset);
+  }
 
-    /** Lista slots de vídeo de uma landing page. */
-    @GetMapping("/api/landing-pages/{landingId}/video-slots")
-    public List<LandingVideoSlotDto> listSlots(@PathVariable Long landingId) {
-        return salesVideoService.listSlots(landingId);
-    }
+  /** Lista slots de vídeo de uma landing page. */
+  @GetMapping("/api/landing-pages/{landingId}/video-slots")
+  public List<LandingVideoSlotDto> listSlots(@PathVariable Long landingId) {
+    return salesVideoService.listSlots(landingId);
+  }
 
-    /** Cria um slot de vídeo em uma landing page. */
-    @PostMapping("/api/landing-pages/{landingId}/video-slots")
-    public LandingVideoSlotDto createSlot(@PathVariable Long landingId,
-                                          @Valid @RequestBody CreateLandingVideoSlotRequest request) {
-        return salesVideoService.createSlot(landingId, request);
-    }
+  /** Cria um slot de vídeo em uma landing page. */
+  @PostMapping("/api/landing-pages/{landingId}/video-slots")
+  public LandingVideoSlotDto createSlot(
+      @PathVariable Long landingId, @Valid @RequestBody CreateLandingVideoSlotRequest request) {
+    return salesVideoService.createSlot(landingId, request);
+  }
 
-    /** Atualiza um slot de vídeo em uma landing page. */
-    @PatchMapping("/api/landing-pages/{landingId}/video-slots/{slotId}")
-    public LandingVideoSlotDto updateSlot(@PathVariable Long landingId,
-                                          @PathVariable Long slotId,
-                                          @RequestBody UpdateLandingVideoSlotRequest request) {
-        return salesVideoService.updateSlot(landingId, slotId, request);
-    }
+  /** Atualiza um slot de vídeo em uma landing page. */
+  @PatchMapping("/api/landing-pages/{landingId}/video-slots/{slotId}")
+  public LandingVideoSlotDto updateSlot(
+      @PathVariable Long landingId,
+      @PathVariable Long slotId,
+      @RequestBody UpdateLandingVideoSlotRequest request) {
+    return salesVideoService.updateSlot(landingId, slotId, request);
+  }
 
-    /** Lista histórico de alteração de um slot de vídeo. */
-    @GetMapping("/api/landing-pages/{landingId}/video-slots/{slotId}/history")
-    public List<LandingVideoSlotHistoryDto> slotHistory(@PathVariable Long landingId,
-                                                        @PathVariable Long slotId) {
-        return salesVideoService.slotHistory(landingId, slotId);
-    }
+  /** Lista histórico de alteração de um slot de vídeo. */
+  @GetMapping("/api/landing-pages/{landingId}/video-slots/{slotId}/history")
+  public List<LandingVideoSlotHistoryDto> slotHistory(
+      @PathVariable Long landingId, @PathVariable Long slotId) {
+    return salesVideoService.slotHistory(landingId, slotId);
+  }
 
-    /** Cria um playbook comercial de vídeo. */
-    @PostMapping("/api/sales-videos/profiles/{profileId}/commercial-playbooks")
-    public SalesVideoCommercialPlaybookDto createPlaybook(@PathVariable Long profileId,
-                                                          @Valid @RequestBody CreateSalesVideoCommercialPlaybookRequest request) {
-        return salesVideoService.createPlaybook(profileId, request);
-    }
+  /** Cria um playbook comercial de vídeo. */
+  @PostMapping("/api/sales-videos/profiles/{profileId}/commercial-playbooks")
+  public SalesVideoCommercialPlaybookDto createPlaybook(
+      @PathVariable Long profileId,
+      @Valid @RequestBody CreateSalesVideoCommercialPlaybookRequest request) {
+    return salesVideoService.createPlaybook(profileId, request);
+  }
 
-    /** Lista playbooks comerciais de vídeo. */
-    @GetMapping("/api/sales-videos/profiles/{profileId}/commercial-playbooks")
-    public List<SalesVideoCommercialPlaybookDto> listPlaybooks(@PathVariable Long profileId) {
-        return salesVideoService.listPlaybooks(profileId);
-    }
+  /** Lista playbooks comerciais de vídeo. */
+  @GetMapping("/api/sales-videos/profiles/{profileId}/commercial-playbooks")
+  public List<SalesVideoCommercialPlaybookDto> listPlaybooks(@PathVariable Long profileId) {
+    return salesVideoService.listPlaybooks(profileId);
+  }
 
-    /** Registra evento de conversão de vídeo. */
-    @PostMapping("/api/sales-videos/profiles/{profileId}/conversion-events")
-    public SalesVideoConversionEventDto createConversionEvent(@PathVariable Long profileId,
-                                                              @Valid @RequestBody CreateSalesVideoConversionEventRequest request) {
-        return salesVideoService.createConversionEvent(profileId, request);
-    }
+  /** Registra evento de conversão de vídeo. */
+  @PostMapping("/api/sales-videos/profiles/{profileId}/conversion-events")
+  public SalesVideoConversionEventDto createConversionEvent(
+      @PathVariable Long profileId,
+      @Valid @RequestBody CreateSalesVideoConversionEventRequest request) {
+    return salesVideoService.createConversionEvent(profileId, request);
+  }
 
-    /** Consulta resumo de performance comercial de vídeo. */
-    @GetMapping("/api/sales-videos/profiles/{profileId}/performance-summary")
-    public SalesVideoPerformanceSummaryDto getPerformanceSummary(@PathVariable Long profileId,
-                                                                 @RequestParam(required = false)
-                                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                                 Instant from,
-                                                                 @RequestParam(required = false)
-                                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                                 Instant to) {
-        return salesVideoService.summarizePerformance(profileId, from, to);
-    }
+  /** Consulta resumo de performance comercial de vídeo. */
+  @GetMapping("/api/sales-videos/profiles/{profileId}/performance-summary")
+  public SalesVideoPerformanceSummaryDto getPerformanceSummary(
+      @PathVariable Long profileId,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          Instant from,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          Instant to) {
+    return salesVideoService.summarizePerformance(profileId, from, to);
+  }
 }

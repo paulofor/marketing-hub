@@ -5,12 +5,10 @@ import com.marketinghub.experiment.dto.MetricSnapshotDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-/**
- * MapStruct mapper for MetricSnapshot.
- */
+/** MapStruct mapper for MetricSnapshot. */
 @Mapper(componentModel = "spring")
 public interface MetricSnapshotMapper {
-    @Mapping(target = "creativeId", source = "creative.id")
-    @Mapping(target = "adSetId", source = "adSet.id")
-    MetricSnapshotDto toDto(MetricSnapshot snapshot);
+  @Mapping(target = "creativeId", source = "creative.id")
+  @Mapping(target = "adSetId", source = "adSet.id")
+  MetricSnapshotDto toDto(MetricSnapshot snapshot);
 }

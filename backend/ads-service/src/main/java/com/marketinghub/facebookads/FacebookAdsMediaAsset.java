@@ -1,12 +1,11 @@
 package com.marketinghub.facebookads;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "facebook_ads_media_asset")
@@ -14,36 +13,33 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 public class FacebookAdsMediaAsset {
-    @Id
-    @Column(length = 36, columnDefinition = "CHAR(36)")
-    private String id;
+  @Id
+  @Column(length = 36, columnDefinition = "CHAR(36)")
+  private String id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private MediaAssetKind kind;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private MediaAssetKind kind;
 
-    @Column(name = "source_uri")
-    private String sourceUri;
+  @Column(name = "source_uri")
+  private String sourceUri;
 
-    @Column(name = "image_hash")
-    private String imageHash;
+  @Column(name = "image_hash")
+  private String imageHash;
 
-    @Column(name = "video_id")
-    private String videoId;
+  @Column(name = "video_id")
+  private String videoId;
 
-    @Column
-    private Integer width;
+  @Column private Integer width;
 
-    @Column
-    private Integer height;
+  @Column private Integer height;
 
-    @Column(name = "duration_ms")
-    private Integer durationMs;
+  @Column(name = "duration_ms")
+  private Integer durationMs;
 
-    @Column
-    private String checksum;
+  @Column private String checksum;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 }

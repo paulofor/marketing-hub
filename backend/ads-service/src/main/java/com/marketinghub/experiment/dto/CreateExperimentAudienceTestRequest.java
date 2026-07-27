@@ -5,41 +5,29 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
-/**
- * Requisição para criar uma variação de público a ser testada em um experimento.
- */
+/** Requisição para criar uma variação de público a ser testada em um experimento. */
 @Data
 public class CreateExperimentAudienceTestRequest {
-    @NotBlank
-    private String name;
+  @NotBlank private String name;
 
-    @NotBlank
-    private String hypothesis;
+  @NotBlank private String hypothesis;
 
-    @NotBlank
-    private String successMetric;
+  @NotBlank private String successMetric;
 
-    private BigDecimal dailyBudget;
+  private BigDecimal dailyBudget;
 
-    @Valid
-    @NotEmpty
-    private List<Item> items = new ArrayList<>();
+  @Valid @NotEmpty private List<Item> items = new ArrayList<>();
 
-    /**
-     * Item de targeting oficial da Meta escolhido para a variação.
-     */
-    @Data
-    public static class Item {
-        @NotNull
-        private TargetingCandidateType candidateType;
+  /** Item de targeting oficial da Meta escolhido para a variação. */
+  @Data
+  public static class Item {
+    @NotNull private TargetingCandidateType candidateType;
 
-        @NotNull
-        private Long targetingElementId;
-    }
+    @NotNull private Long targetingElementId;
+  }
 }

@@ -7,75 +7,77 @@ import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.hypothesis.service.HypothesisKanbanFacade;
 import com.marketinghub.hypothesis.service.HypothesisService;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api")
 public class HypothesisController {
-    private final HypothesisService service;
-    private final HypothesisMapper mapper;
-    private final HypothesisKanbanFacade facade;
+  private final HypothesisService service;
+  private final HypothesisMapper mapper;
+  private final HypothesisKanbanFacade facade;
 
-    public HypothesisController(HypothesisService service, HypothesisMapper mapper, HypothesisKanbanFacade facade) {
-        this.service = service;
-        this.mapper = mapper;
-        this.facade = facade;
-    }
+  public HypothesisController(
+      HypothesisService service, HypothesisMapper mapper, HypothesisKanbanFacade facade) {
+    this.service = service;
+    this.mapper = mapper;
+    this.facade = facade;
+  }
 
-    @PostMapping("/hypotheses")
-    @ResponseStatus(org.springframework.http.HttpStatus.CREATED)
-    public HypothesisDto create(@RequestBody CreateHypothesisRequest req) {
-        return mapper.toDto(service.create(req));
-    }
+  @PostMapping("/hypotheses")
+  @ResponseStatus(org.springframework.http.HttpStatus.CREATED)
+  public HypothesisDto create(@RequestBody CreateHypothesisRequest req) {
+    return mapper.toDto(service.create(req));
+  }
 
-    @PutMapping("/hypotheses/{id}")
-    public HypothesisDto update(@PathVariable UUID id, @RequestBody UpdateHypothesisRequest req) {
-        return mapper.toDto(service.update(id, req));
-    }
+  @PutMapping("/hypotheses/{id}")
+  public HypothesisDto update(@PathVariable UUID id, @RequestBody UpdateHypothesisRequest req) {
+    return mapper.toDto(service.update(id, req));
+  }
 
-    @GetMapping("/hypotheses")
-    public List<HypothesisDto> listAll(@RequestParam(value = "status", required = false) String status) {
-        HypothesisStatus parsed = parseStatus(status);
-        return StreamSupport.stream(service.list(parsed).spliterator(), false)
-                .map(mapper::toDto)
-                .toList();
-    }
+  @GetMapping("/hypotheses")
+  public List<HypothesisDto> listAll(
+      @RequestParam(value = "status", required = false) String status) {
+    HypothesisStatus parsed = parseStatus(status);
+    return StreamSupport.stream(service.list(parsed).spliterator(), false)
+        .map(mapper::toDto)
+        .toList();
+  }
 
-    @GetMapping("/niches/{nicheId}/hypotheses")
-    public List<HypothesisDto> listByNiche(@PathVariable Long nicheId,
-                                           @RequestParam(value = "status", required = false) String status) {
-        HypothesisStatus parsed = parseStatus(status);
-        return StreamSupport.stream(service.listByMarketNiche(nicheId, parsed).spliterator(), false)
-                .map(mapper::toDto)
-                .toList();
-    }
+  @GetMapping("/niches/{nicheId}/hypotheses")
+  public List<HypothesisDto> listByNiche(
+      @PathVariable Long nicheId, @RequestParam(value = "status", required = false) String status) {
+    HypothesisStatus parsed = parseStatus(status);
+    return StreamSupport.stream(service.listByMarketNiche(nicheId, parsed).spliterator(), false)
+        .map(mapper::toDto)
+        .toList();
+  }
 
-    @PatchMapping("/hypotheses/{id}/status")
-    public HypothesisDto patchStatus(@PathVariable UUID id, @RequestBody Map<String, HypothesisStatus> body) {
-        HypothesisStatus status = body.get("status");
-        return mapper.toDto(service.updateStatus(id, status));
-    }
+  @PatchMapping("/hypotheses/{id}/status")
+  public HypothesisDto patchStatus(
+      @PathVariable UUID id, @RequestBody Map<String, HypothesisStatus> body) {
+    HypothesisStatus status = body.get("status");
+    return mapper.toDto(service.updateStatus(id, status));
+  }
 
-    @GetMapping("/niches/{nicheId}/hypotheses/board")
-    public Map<HypothesisStatus, List<HypothesisDto>> board(@PathVariable Long nicheId) {
-        return facade.board(nicheId);
-    }
+  @GetMapping("/niches/{nicheId}/hypotheses/board")
+  public Map<HypothesisStatus, List<HypothesisDto>> board(@PathVariable Long nicheId) {
+    return facade.board(nicheId);
+  }
 
-    private HypothesisStatus parseStatus(String raw) {
-        if (raw == null || raw.isBlank() || "ALL".equalsIgnoreCase(raw)) {
-            return null;
-        }
-        try {
-            return HypothesisStatus.valueOf(raw);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status");
-        }
+  private HypothesisStatus parseStatus(String raw) {
+    if (raw == null || raw.isBlank() || "ALL".equalsIgnoreCase(raw)) {
+      return null;
     }
+    try {
+      return HypothesisStatus.valueOf(raw);
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status");
+    }
+  }
 }

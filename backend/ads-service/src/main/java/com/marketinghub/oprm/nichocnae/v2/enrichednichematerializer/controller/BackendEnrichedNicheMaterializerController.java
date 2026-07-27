@@ -20,36 +20,47 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController("oprmNichocnaeV2BackendEnrichedNicheMaterializerController")
 @RequestMapping("/api/internal/oprm/nichocnae/v2/enriched-niche-materializer/stage-executions")
 public class BackendEnrichedNicheMaterializerController {
-    private final BackendEnrichedNicheMaterializerService service;
+  private final BackendEnrichedNicheMaterializerService service;
 
-    /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
-    public BackendEnrichedNicheMaterializerController(BackendEnrichedNicheMaterializerService service) {
-        this.service = service;
-    }
+  /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
+  public BackendEnrichedNicheMaterializerController(
+      BackendEnrichedNicheMaterializerService service) {
+    this.service = service;
+  }
 
-    /** Entrega execuções pendentes da etapa enriched-niche-materializer ao módulo executor OPRM. */
-    @GetMapping("/pending")
-    public List<EnrichedNicheMaterializerPendingResponse> pending() {
-        return service.pending();
-    }
+  /** Entrega execuções pendentes da etapa enriched-niche-materializer ao módulo executor OPRM. */
+  @GetMapping("/pending")
+  public List<EnrichedNicheMaterializerPendingResponse> pending() {
+    return service.pending();
+  }
 
-    /** Grava uma pendência da etapa enriched-niche-materializer solicitada pelo módulo executor OPRM. */
-    @PostMapping
-    public EnrichedNicheMaterializerCreateResponse create(@RequestBody EnrichedNicheMaterializerCreateRequest request) {
-        return service.create(request);
-    }
+  /**
+   * Grava uma pendência da etapa enriched-niche-materializer solicitada pelo módulo executor OPRM.
+   */
+  @PostMapping
+  public EnrichedNicheMaterializerCreateResponse create(
+      @RequestBody EnrichedNicheMaterializerCreateRequest request) {
+    return service.create(request);
+  }
 
-    /** Registra a conclusão do materializador de nicho enriquecido informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/complete")
-    public EnrichedNicheMaterializerCompletionResponse complete(
-            @PathVariable Long stageExecutionId, @RequestBody EnrichedNicheMaterializerCompletionRequest request) {
-        return service.complete(stageExecutionId, request);
-    }
+  /**
+   * Registra a conclusão do materializador de nicho enriquecido informada pelo módulo executor
+   * OPRM.
+   */
+  @PostMapping("/{stageExecutionId}/complete")
+  public EnrichedNicheMaterializerCompletionResponse complete(
+      @PathVariable Long stageExecutionId,
+      @RequestBody EnrichedNicheMaterializerCompletionRequest request) {
+    return service.complete(stageExecutionId, request);
+  }
 
-    /** Registra a falha do materializador de nicho enriquecido informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/fail")
-    public EnrichedNicheMaterializerFailureResponse fail(
-            @PathVariable Long stageExecutionId, @RequestBody EnrichedNicheMaterializerFailureRequest request) {
-        return service.fail(stageExecutionId, request);
-    }
+  /**
+   * Registra a falha do materializador de nicho enriquecido informada pelo módulo executor OPRM.
+   */
+  @PostMapping("/{stageExecutionId}/fail")
+  public EnrichedNicheMaterializerFailureResponse fail(
+      @PathVariable Long stageExecutionId,
+      @RequestBody EnrichedNicheMaterializerFailureRequest request) {
+    return service.fail(stageExecutionId, request);
+  }
 }

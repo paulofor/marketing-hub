@@ -16,14 +16,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/internal/moissaleslibraryworker/dossieproduto/v1/{etapa}/stage-executions")
 @RequiredArgsConstructor
 public class DossierSituacaoController {
-    private final DossierSituacaoService service;
+  private final DossierSituacaoService service;
 
-    /** Retorna registros da auditoria que existem para a etapa, identificador externo e status informados. */
-    @PostMapping("/{idExterno}/situacao")
-    public DossierSituacaoResponse situacao(
-            @PathVariable("etapa") String etapa,
-            @PathVariable("idExterno") String idExterno,
-            @Valid @RequestBody DossierSituacaoRequest request) {
-        return service.consultar(etapa, idExterno, request);
-    }
+  /**
+   * Retorna registros da auditoria que existem para a etapa, identificador externo e status
+   * informados.
+   */
+  @PostMapping("/{idExterno}/situacao")
+  public DossierSituacaoResponse situacao(
+      @PathVariable("etapa") String etapa,
+      @PathVariable("idExterno") String idExterno,
+      @Valid @RequestBody DossierSituacaoRequest request) {
+    return service.consultar(etapa, idExterno, request);
+  }
 }

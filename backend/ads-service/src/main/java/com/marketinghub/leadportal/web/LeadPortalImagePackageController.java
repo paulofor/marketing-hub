@@ -16,34 +16,34 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Exposes read-only endpoints that surface Lead Portal image packages inside Marketing Hub.
- */
+/** Exposes read-only endpoints that surface Lead Portal image packages inside Marketing Hub. */
 @RestController
 @RequestMapping("/api/lead-portal/image-packages")
 public class LeadPortalImagePackageController {
 
-    private final LeadPortalImagePackageService imagePackageService;
+  private final LeadPortalImagePackageService imagePackageService;
 
-    public LeadPortalImagePackageController(LeadPortalImagePackageService imagePackageService) {
-        this.imagePackageService = imagePackageService;
-    }
+  public LeadPortalImagePackageController(LeadPortalImagePackageService imagePackageService) {
+    this.imagePackageService = imagePackageService;
+  }
 
-    @GetMapping
-    public List<LeadPortalImagePackageSummaryDto> list(
-            @RequestParam(name = "status", required = false) List<FlowSubmissionImagePackageStatus> statuses) {
-        Collection<FlowSubmissionImagePackageStatus> filter = statuses == null ? List.of() : new LinkedHashSet<>(statuses);
-        return imagePackageService.listImagePackages(filter);
-    }
+  @GetMapping
+  public List<LeadPortalImagePackageSummaryDto> list(
+      @RequestParam(name = "status", required = false)
+          List<FlowSubmissionImagePackageStatus> statuses) {
+    Collection<FlowSubmissionImagePackageStatus> filter =
+        statuses == null ? List.of() : new LinkedHashSet<>(statuses);
+    return imagePackageService.listImagePackages(filter);
+  }
 
-    @GetMapping("/{id}")
-    public LeadPortalImagePackageDetailDto get(@PathVariable("id") long id) {
-        return imagePackageService.getImagePackage(id);
-    }
+  @GetMapping("/{id}")
+  public LeadPortalImagePackageDetailDto get(@PathVariable("id") long id) {
+    return imagePackageService.getImagePackage(id);
+  }
 
-    @PostMapping("/{id}/retry")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void retry(@PathVariable("id") long id) {
-        imagePackageService.retry(id);
-    }
+  @PostMapping("/{id}/retry")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void retry(@PathVariable("id") long id) {
+    imagePackageService.retry(id);
+  }
 }

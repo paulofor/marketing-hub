@@ -20,57 +20,58 @@ import lombok.Setter;
 /** Responsabilidade: registrar quais prompts e schemas de IA foram associados a um experimento. */
 @Entity
 @Table(
-        name = "experiment_ai_prompt_schema_usage",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_experiment_ai_prompt_schema_usage",
-                columnNames = {"experiment_id", "template_key", "usage_context", "stage_code"}))
+    name = "experiment_ai_prompt_schema_usage",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "uk_experiment_ai_prompt_schema_usage",
+            columnNames = {"experiment_id", "template_key", "usage_context", "stage_code"}))
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExperimentAiPromptSchemaUsage {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "experiment_id", nullable = false)
-    private Experiment experiment;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "experiment_id", nullable = false)
+  private Experiment experiment;
 
-    @Column(name = "experiment_id", nullable = false, insertable = false, updatable = false)
-    private Long experimentId;
+  @Column(name = "experiment_id", nullable = false, insertable = false, updatable = false)
+  private Long experimentId;
 
-    @Column(name = "template_key", nullable = false, length = 191)
-    private String templateKey;
+  @Column(name = "template_key", nullable = false, length = 191)
+  private String templateKey;
 
-    @Column(name = "pipeline_code", nullable = false, length = 100)
-    private String pipelineCode;
+  @Column(name = "pipeline_code", nullable = false, length = 100)
+  private String pipelineCode;
 
-    @Column(name = "stage_code", nullable = false, length = 100)
-    private String stageCode;
+  @Column(name = "stage_code", nullable = false, length = 100)
+  private String stageCode;
 
-    @Column(name = "template_version", nullable = false, length = 40)
-    private String templateVersion;
+  @Column(name = "template_version", nullable = false, length = 40)
+  private String templateVersion;
 
-    @Column(name = "openai_model", nullable = false, length = 120)
-    private String openAiModel;
+  @Column(name = "openai_model", nullable = false, length = 120)
+  private String openAiModel;
 
-    @Column(name = "schema_name", nullable = false, length = 120)
-    private String schemaName;
+  @Column(name = "schema_name", nullable = false, length = 120)
+  private String schemaName;
 
-    @Column(name = "usage_context", nullable = false, length = 80)
-    private String usageContext;
+  @Column(name = "usage_context", nullable = false, length = 80)
+  private String usageContext;
 
-    @Column(name = "source_job_id", length = 191)
-    private String sourceJobId;
+  @Column(name = "source_job_id", length = 191)
+  private String sourceJobId;
 
-    @Column(name = "used_at", nullable = false)
-    private Instant usedAt;
+  @Column(name = "used_at", nullable = false)
+  private Instant usedAt;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

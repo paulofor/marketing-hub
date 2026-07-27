@@ -21,60 +21,81 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/oprmcoletormei/nichocnae/v3/routine-query-planner/stage-executions")
 public class BackendRoutineQueryPlannerController {
-    private static final Logger log = LoggerFactory.getLogger(BackendRoutineQueryPlannerController.class);
-    private final BackendRoutineQueryPlannerService service;
+  private static final Logger log =
+      LoggerFactory.getLogger(BackendRoutineQueryPlannerController.class);
+  private final BackendRoutineQueryPlannerService service;
 
-    /** Inicializa o controller com service canônico da etapa. */
-    public BackendRoutineQueryPlannerController(BackendRoutineQueryPlannerService service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com service canônico da etapa. */
+  public BackendRoutineQueryPlannerController(BackendRoutineQueryPlannerService service) {
+    this.service = service;
+  }
 
-    /** Inicia uma execução pendente da etapa a partir do CNAE informado pela tela. */
-    @PostMapping("/{idExterno}/start")
-    public RoutineQueryPlannerCreateResponse start(@PathVariable("idExterno") String cnaeCode) {
-        return service.start(cnaeCode);
-    }
+  /** Inicia uma execução pendente da etapa a partir do CNAE informado pela tela. */
+  @PostMapping("/{idExterno}/start")
+  public RoutineQueryPlannerCreateResponse start(@PathVariable("idExterno") String cnaeCode) {
+    return service.start(cnaeCode);
+  }
 
-    /** Cria uma execução pendente da etapa routine-query-planner. */
-    @PostMapping
-    public RoutineQueryPlannerCreateResponse create(@RequestBody RoutineQueryPlannerPendingResponse request) {
-        return service.create(request.jobId(), request.cnaeCode(), request.inputPayload(), request.attemptNumber(), request.knowledgeVersion());
-    }
+  /** Cria uma execução pendente da etapa routine-query-planner. */
+  @PostMapping
+  public RoutineQueryPlannerCreateResponse create(
+      @RequestBody RoutineQueryPlannerPendingResponse request) {
+    return service.create(
+        request.jobId(),
+        request.cnaeCode(),
+        request.inputPayload(),
+        request.attemptNumber(),
+        request.knowledgeVersion());
+  }
 
-    /** Cria a primeira execução v3 diretamente a partir de um CNAE. */
-    @PostMapping("/cnaes/{cnaeCode}")
-    public RoutineQueryPlannerCreateResponse createForCnae(@PathVariable String cnaeCode) {
-        return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
-    }
+  /** Cria a primeira execução v3 diretamente a partir de um CNAE. */
+  @PostMapping("/cnaes/{cnaeCode}")
+  public RoutineQueryPlannerCreateResponse createForCnae(@PathVariable String cnaeCode) {
+    return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+  }
 
-    /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
-    @PostMapping("/{idExterno}/{jobId}/recebeRequest")
-    public RoutineQueryPlannerCreateResponse recebeRequest(@PathVariable("idExterno") String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
-        return service.recebeRequest(cnaeCode, jobId, request);
-    }
+  /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
+  @PostMapping("/{idExterno}/{jobId}/recebeRequest")
+  public RoutineQueryPlannerCreateResponse recebeRequest(
+      @PathVariable("idExterno") String cnaeCode,
+      @PathVariable String jobId,
+      @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+    return service.recebeRequest(cnaeCode, jobId, request);
+  }
 
-    /** Recebe o response bruto da etapa identificado pelo CNAE e jobId. */
-    @PostMapping("/{idExterno}/{jobId}/recebeResponse")
-    public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(@PathVariable("idExterno") String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeResponseRequest request) {
-        log.info("Recebendo response NichoCNAE v3. etapa={}, cnaeCode={}, jobId={}, payload={}", service.stageCode(), cnaeCode, jobId, request);
-        return service.recebeResponse(cnaeCode, jobId, request);
-    }
+  /** Recebe o response bruto da etapa identificado pelo CNAE e jobId. */
+  @PostMapping("/{idExterno}/{jobId}/recebeResponse")
+  public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(
+      @PathVariable("idExterno") String cnaeCode,
+      @PathVariable String jobId,
+      @RequestBody OprmNichoCnaeV3RecebeResponseRequest request) {
+    log.info(
+        "Recebendo response NichoCNAE v3. etapa={}, cnaeCode={}, jobId={}, payload={}",
+        service.stageCode(),
+        cnaeCode,
+        jobId,
+        request);
+    return service.recebeResponse(cnaeCode, jobId, request);
+  }
 
-    /** Entrega pendências da etapa routine-query-planner ao executor OPRM. */
-    @PostMapping("/pending")
-    public List<RoutineQueryPlannerPendingResponse> pending() {
-        return service.pending();
-    }
+  /** Entrega pendências da etapa routine-query-planner ao executor OPRM. */
+  @PostMapping("/pending")
+  public List<RoutineQueryPlannerPendingResponse> pending() {
+    return service.pending();
+  }
 
-    /** Recebe conclusão da etapa routine-query-planner enviada pelo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/complete")
-    public RoutineQueryPlannerCreateResponse complete(@PathVariable Long stageExecutionId, @RequestBody RoutineQueryPlannerCompletionRequest request) {
-        return service.complete(stageExecutionId, request.outputPayload(), request.nextStageCode());
-    }
+  /** Recebe conclusão da etapa routine-query-planner enviada pelo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/complete")
+  public RoutineQueryPlannerCreateResponse complete(
+      @PathVariable Long stageExecutionId,
+      @RequestBody RoutineQueryPlannerCompletionRequest request) {
+    return service.complete(stageExecutionId, request.outputPayload(), request.nextStageCode());
+  }
 
-    /** Recebe falha da etapa routine-query-planner enviada pelo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/fail")
-    public RoutineQueryPlannerCreateResponse fail(@PathVariable Long stageExecutionId, @RequestBody RoutineQueryPlannerFailureRequest request) {
-        return service.fail(stageExecutionId, request.errorMessage());
-    }
+  /** Recebe falha da etapa routine-query-planner enviada pelo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/fail")
+  public RoutineQueryPlannerCreateResponse fail(
+      @PathVariable Long stageExecutionId, @RequestBody RoutineQueryPlannerFailureRequest request) {
+    return service.fail(stageExecutionId, request.errorMessage());
+  }
 }

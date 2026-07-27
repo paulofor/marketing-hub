@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsável por expor os endpoints de backend da etapa landing-page-design-preset no GeraLanding. */
+/**
+ * Responsável por expor os endpoints de backend da etapa landing-page-design-preset no GeraLanding.
+ */
 @RestController
 @RequestMapping("/api")
 public class BackendPresetDesignController {
@@ -36,7 +38,8 @@ public class BackendPresetDesignController {
 
   /** Registra uma execução inicial da etapa landing-page-design-preset. */
   @PostMapping("/experiments/{experimentId}/geralanding/design-preset/start")
-  public ResponseEntity<GeraLandingPresetDesignStartResponse> start(@PathVariable Long experimentId) {
+  public ResponseEntity<GeraLandingPresetDesignStartResponse> start(
+      @PathVariable Long experimentId) {
     GeraLandingPresetDesignStartResponse response = executionService.start(experimentId);
     return ResponseEntity.accepted().body(response);
   }
@@ -57,7 +60,10 @@ public class BackendPresetDesignController {
     return executionService.listPending(STAGE_CODE);
   }
 
-  /** Recebe prompt, schema e request cru enviados para IA e marca a execução aguardando retorno da OpenAI. */
+  /**
+   * Recebe prompt, schema e request cru enviados para IA e marca a execução aguardando retorno da
+   * OpenAI.
+   */
   @PostMapping("/internal/geralanding/design-preset/stage-executions/{idJob}/recebe-prompt")
   public ResponseEntity<Void> recebePrompt(
       @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {

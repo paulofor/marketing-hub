@@ -2,55 +2,51 @@ package com.marketinghub.funnel;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
-
-/**
- * Step within a sales funnel.
- */
+/** Step within a sales funnel. */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class FunnelStep {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.BINARY)
-    @Column(length = 16)
-    private UUID id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @JdbcTypeCode(SqlTypes.BINARY)
+  @Column(length = 16)
+  private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "funnel_id")
-    @JsonIgnore
-    private SalesFunnel funnel;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "funnel_id")
+  @JsonIgnore
+  private SalesFunnel funnel;
 
-    private Integer orderIdx;
+  private Integer orderIdx;
 
-    @Enumerated(EnumType.STRING)
-    private StimulusType stimulusType;
+  @Enumerated(EnumType.STRING)
+  private StimulusType stimulusType;
 
-    private String channel;
-    private String templateId;
+  private String channel;
+  private String templateId;
 
-    @Column(columnDefinition = "TEXT")
-    private String note;
+  @Column(columnDefinition = "TEXT")
+  private String note;
 
-    @Enumerated(EnumType.STRING)
-    private ActionType expectedAction;
+  @Enumerated(EnumType.STRING)
+  private ActionType expectedAction;
 
-    private Integer scoreInc;
+  private Integer scoreInc;
 
-    private BigDecimal revenueTarget;
+  private BigDecimal revenueTarget;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    private Boolean isActive;
+  private Boolean isActive;
 }

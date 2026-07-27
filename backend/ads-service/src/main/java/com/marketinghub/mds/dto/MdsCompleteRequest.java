@@ -1,4 +1,3 @@
 package com.marketinghub.mds.dto;
 
-public record MdsCompleteRequest(String message) {
-}
+public record MdsCompleteRequest(String message) {}

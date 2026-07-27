@@ -1,6 +1,9 @@
 package com.marketinghub.oprm.nichocnae.evidencelevelgate.service.pending;
 
-/** Representa um cartão aprovado na qualidade aguardando classificação comercial E0-E5 pelo executor externo. */
+/**
+ * Representa um cartão aprovado na qualidade aguardando classificação comercial E0-E5 pelo executor
+ * externo.
+ */
 public record RecordEvidenceLevelGatePending(
     Long routineCardId,
     Long researchCycleId,

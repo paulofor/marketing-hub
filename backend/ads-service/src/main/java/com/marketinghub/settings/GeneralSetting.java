@@ -1,6 +1,7 @@
 package com.marketinghub.settings;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,12 +11,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
-
 @Entity(name = "general_setting")
-@Table(name = "general_setting", uniqueConstraints = {
-        @UniqueConstraint(name = "uq_general_setting_name", columnNames = "name")
-})
+@Table(
+    name = "general_setting",
+    uniqueConstraints = {@UniqueConstraint(name = "uq_general_setting_name", columnNames = "name")})
 @Getter
 @Setter
 @Builder
@@ -23,20 +22,18 @@ import java.time.Instant;
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class GeneralSetting {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, length = 100)
-    private String name;
+  @Column(nullable = false, length = 100)
+  private String name;
 
-    @Lob
-    @Column(name = "setting_value", columnDefinition = "LONGTEXT")
-    private String value;
+  @Lob
+  @Column(name = "setting_value", columnDefinition = "LONGTEXT")
+  private String value;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

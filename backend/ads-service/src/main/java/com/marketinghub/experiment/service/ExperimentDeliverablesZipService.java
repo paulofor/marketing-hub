@@ -1,5 +1,7 @@
 package com.marketinghub.experiment.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.deliverable.Deliverable;
 import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.experiment.Experiment;
@@ -9,8 +11,6 @@ import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverableRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.feo.fabricacao.v1.FeoFabricacaoV1StageExecutionRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,251 +33,259 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: montar o arquivo ZIP com os entregáveis vinculados a um experimento. */
 @Service
 public class ExperimentDeliverablesZipService {
-    private static final Logger log = LoggerFactory.getLogger(ExperimentDeliverablesZipService.class);
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd HH:mm:ss")
-            .withZone(ZoneId.of("UTC"));
-    private static final String STAGE_MONTAGEM = "montagem-pacote";
-    private static final TypeReference<List<Map<String, Object>>> ARTIFACT_LIST_TYPE = new TypeReference<>() {};
+  private static final Logger log = LoggerFactory.getLogger(ExperimentDeliverablesZipService.class);
+  private static final DateTimeFormatter DATE_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
+  private static final String STAGE_MONTAGEM = "montagem-pacote";
+  private static final TypeReference<List<Map<String, Object>>> ARTIFACT_LIST_TYPE =
+      new TypeReference<>() {};
 
-    private final ExperimentRepository experimentRepository;
-    private final DeliverableRepository deliverableRepository;
-    private final DeliverablePackageRepository deliverablePackageRepository;
-    private final FeoFabricacaoV1StageExecutionRepository feoExecutionRepository;
-    private final ObjectMapper objectMapper;
+  private final ExperimentRepository experimentRepository;
+  private final DeliverableRepository deliverableRepository;
+  private final DeliverablePackageRepository deliverablePackageRepository;
+  private final FeoFabricacaoV1StageExecutionRepository feoExecutionRepository;
+  private final ObjectMapper objectMapper;
 
-    /** Inicializa o serviço com os repositórios necessários para coletar os entregáveis. */
-    public ExperimentDeliverablesZipService(
-            ExperimentRepository experimentRepository,
-            DeliverableRepository deliverableRepository,
-            DeliverablePackageRepository deliverablePackageRepository,
-            FeoFabricacaoV1StageExecutionRepository feoExecutionRepository,
-            ObjectMapper objectMapper) {
-        this.experimentRepository = experimentRepository;
-        this.deliverableRepository = deliverableRepository;
-        this.deliverablePackageRepository = deliverablePackageRepository;
-        this.feoExecutionRepository = feoExecutionRepository;
-        this.objectMapper = objectMapper;
-    }
+  /** Inicializa o serviço com os repositórios necessários para coletar os entregáveis. */
+  public ExperimentDeliverablesZipService(
+      ExperimentRepository experimentRepository,
+      DeliverableRepository deliverableRepository,
+      DeliverablePackageRepository deliverablePackageRepository,
+      FeoFabricacaoV1StageExecutionRepository feoExecutionRepository,
+      ObjectMapper objectMapper) {
+    this.experimentRepository = experimentRepository;
+    this.deliverableRepository = deliverableRepository;
+    this.deliverablePackageRepository = deliverablePackageRepository;
+    this.feoExecutionRepository = feoExecutionRepository;
+    this.objectMapper = objectMapper;
+  }
 
-    /** Gera o ZIP de entregáveis do experimento a partir dos dados persistidos. */
-    @Transactional(readOnly = true)
-    public byte[] generate(Long experimentId) {
-        Experiment experiment = experimentRepository.findById(experimentId)
-                .orElseThrow(() -> new ResponseStatusException(
+  /** Gera o ZIP de entregáveis do experimento a partir dos dados persistidos. */
+  @Transactional(readOnly = true)
+  public byte[] generate(Long experimentId) {
+    Experiment experiment =
+        experimentRepository
+            .findById(experimentId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Experiment not found: " + experimentId));
-        byte[] finalFeoZip = latestFeoFinalZip(experimentId);
-        if (finalFeoZip.length > 0) {
-            return finalFeoZip;
+    byte[] finalFeoZip = latestFeoFinalZip(experimentId);
+    if (finalFeoZip.length > 0) {
+      return finalFeoZip;
+    }
+    Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
+    List<Deliverable> deliverables =
+        nicheId != null
+            ? deliverableRepository.findByNicheIdOrderByCreatedAtDesc(nicheId)
+            : List.of();
+    List<DeliverablePackage> packages =
+        deliverablePackageRepository.findByExperimentIdOrderByCreatedAtDesc(experimentId);
+
+    try (ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ZipOutputStream zip = new ZipOutputStream(output, StandardCharsets.UTF_8)) {
+      writeText(zip, "README.txt", buildReadme(experiment, deliverables, packages));
+      writeDeliverables(zip, deliverables);
+      writePackages(zip, packages);
+      zip.finish();
+      return output.toByteArray();
+    } catch (IOException ex) {
+      log.error("Falha ao gerar ZIP publico de entregaveis para experimentId={}", experimentId, ex);
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "Could not generate experiment deliverables zip", ex);
+    }
+  }
+
+  /** Monta o texto de orientação que acompanha o pacote baixado. */
+  private String buildReadme(
+      Experiment experiment, List<Deliverable> deliverables, List<DeliverablePackage> packages) {
+    StringBuilder text = new StringBuilder();
+    text.append("Materiais do produto\n");
+    text.append("====================\n\n");
+    text.append("Produto: ").append(publicProductName(experiment.getName())).append("\n");
+    text.append("Publico: ")
+        .append(experiment.getNiche() != null ? safe(experiment.getNiche().getName()) : "-")
+        .append("\n");
+    text.append("\n");
+    text.append("Conteudo do ZIP:\n");
+    text.append("- materiais/: materiais principais prontos para leitura e aplicacao.\n");
+    text.append("- planos/: planos, checklists e templates de apoio.\n\n");
+    text.append("Totais:\n");
+    text.append("- Materiais: ").append(deliverables.size()).append("\n");
+    text.append("- Planos e pacotes: ").append(packages.size()).append("\n");
+    return text.toString();
+  }
+
+  /** Escreve cada entregável aprovado do nicho em um arquivo HTML pronto para leitura. */
+  private void writeDeliverables(ZipOutputStream zip, List<Deliverable> deliverables)
+      throws IOException {
+    for (Deliverable deliverable : deliverables) {
+      String fileName = "materiais/%s.html".formatted(slug(deliverable.getTitle(), "material"));
+      writeText(zip, fileName, renderDeliverable(deliverable));
+    }
+  }
+
+  /** Escreve cada pacote vinculado ao experimento em um arquivo HTML pronto para revisão. */
+  private void writePackages(ZipOutputStream zip, List<DeliverablePackage> packages)
+      throws IOException {
+    for (DeliverablePackage pack : packages) {
+      String fileName = "planos/%s.html".formatted(slug(pack.getName(), "plano"));
+      writeText(zip, fileName, renderPackage(pack));
+    }
+  }
+
+  /** Renderiza um entregável individual em HTML de consumo final. */
+  private String renderDeliverable(Deliverable deliverable) {
+    StringBuilder body = new StringBuilder();
+    appendHero(body, safe(deliverable.getTitle()), "Material do produto");
+    appendSection(body, "Descricao", deliverable.getDescription());
+    appendSection(body, "Conteudo pronto para uso", deliverable.getContent());
+    return wrapHtml(deliverable.getTitle(), body.toString());
+  }
+
+  /** Renderiza um pacote de entregáveis em HTML de revisão e entrega. */
+  private String renderPackage(DeliverablePackage pack) {
+    StringBuilder body = new StringBuilder();
+    appendHero(body, safe(pack.getName()), "Plano de aplicacao");
+    appendSection(body, "Descricao", pack.getDescription());
+    body.append("<section><h2>Materiais vinculados</h2><ul>");
+    if (pack.getDeliverables() == null || pack.getDeliverables().isEmpty()) {
+      body.append("<li>Nenhum material vinculado.</li>");
+    } else {
+      for (Deliverable deliverable : pack.getDeliverables()) {
+        body.append("<li><strong>")
+            .append(escape(safe(deliverable.getTitle())))
+            .append("</strong>");
+        if (StringUtils.hasText(deliverable.getDescription())) {
+          body.append(": ").append(escape(deliverable.getDescription().trim()));
         }
-        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
-        List<Deliverable> deliverables = nicheId != null
-                ? deliverableRepository.findByNicheIdOrderByCreatedAtDesc(nicheId)
-                : List.of();
-        List<DeliverablePackage> packages =
-                deliverablePackageRepository.findByExperimentIdOrderByCreatedAtDesc(experimentId);
+        body.append("</li>");
+      }
+    }
+    body.append("</ul></section>");
+    return wrapHtml(pack.getName(), body.toString());
+  }
 
-        try (ByteArrayOutputStream output = new ByteArrayOutputStream();
-                ZipOutputStream zip = new ZipOutputStream(output, StandardCharsets.UTF_8)) {
-            writeText(zip, "README.txt", buildReadme(experiment, deliverables, packages));
-            writeDeliverables(zip, deliverables);
-            writePackages(zip, packages);
-            zip.finish();
-            return output.toByteArray();
-        } catch (IOException ex) {
-            log.error("Falha ao gerar ZIP publico de entregaveis para experimentId={}", experimentId, ex);
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Could not generate experiment deliverables zip",
-                    ex);
+  /** Retorna diretamente o ZIP final público da FEO quando ele já existir. */
+  private byte[] latestFeoFinalZip(Long experimentId) {
+    FeoFabricacaoV1StageExecution execution =
+        feoExecutionRepository
+            .findFirstByExperimentIdAndStageCodeAndStatusOrderByFinishedAtDesc(
+                experimentId, STAGE_MONTAGEM, FeoFabricacaoV1StageStatus.COMPLETED)
+            .orElse(null);
+    if (execution == null || !StringUtils.hasText(execution.getArtifactsPayload())) {
+      return new byte[0];
+    }
+    List<Map<String, Object>> artifacts = readArtifacts(execution.getArtifactsPayload());
+    for (Map<String, Object> artifact : artifacts) {
+      String type = stringValue(artifact.get("type"), "");
+      String name = stringValue(artifact.get("name"), "");
+      if ("FINAL_ZIP".equals(type) || name.endsWith(".zip")) {
+        byte[] content = artifactBytes(artifact.get("content"));
+        if (content.length > 0) {
+          return content;
         }
+      }
     }
+    return new byte[0];
+  }
 
-    /** Monta o texto de orientação que acompanha o pacote baixado. */
-    private String buildReadme(
-            Experiment experiment,
-            List<Deliverable> deliverables,
-            List<DeliverablePackage> packages) {
-        StringBuilder text = new StringBuilder();
-        text.append("Materiais do produto\n");
-        text.append("====================\n\n");
-        text.append("Produto: ").append(publicProductName(experiment.getName())).append("\n");
-        text.append("Publico: ")
-                .append(experiment.getNiche() != null ? safe(experiment.getNiche().getName()) : "-")
-                .append("\n");
-        text.append("\n");
-        text.append("Conteudo do ZIP:\n");
-        text.append("- materiais/: materiais principais prontos para leitura e aplicacao.\n");
-        text.append("- planos/: planos, checklists e templates de apoio.\n\n");
-        text.append("Totais:\n");
-        text.append("- Materiais: ").append(deliverables.size()).append("\n");
-        text.append("- Planos e pacotes: ").append(packages.size()).append("\n");
-        return text.toString();
+  /** Escreve um arquivo de texto no ZIP usando UTF-8. */
+  private void writeText(ZipOutputStream zip, String name, String content) throws IOException {
+    writeBytes(zip, name, (content != null ? content : "").getBytes(StandardCharsets.UTF_8));
+  }
+
+  /** Escreve bytes no ZIP preservando o nome informado. */
+  private void writeBytes(ZipOutputStream zip, String name, byte[] content) throws IOException {
+    ZipEntry entry = new ZipEntry(name);
+    zip.putNextEntry(entry);
+    zip.write(content != null ? content : new byte[0]);
+    zip.closeEntry();
+  }
+
+  /** Adiciona capa curta ao HTML do arquivo. */
+  private void appendHero(StringBuilder html, String title, String subtitle) {
+    html.append("<section class=\"cover\"><p class=\"eyebrow\">")
+        .append(escape(subtitle))
+        .append("</p><h1>")
+        .append(escape(title))
+        .append("</h1></section>");
+  }
+
+  /** Adiciona metadados em grade compacta. */
+  private void appendDefinitionList(StringBuilder html, List<List<String>> fields) {
+    html.append("<dl class=\"meta\">");
+    for (List<String> field : fields) {
+      if (field.size() == 2 && StringUtils.hasText(field.get(1)) && !"-".equals(field.get(1))) {
+        html.append("<div><dt>")
+            .append(escape(field.get(0)))
+            .append("</dt><dd>")
+            .append(escape(field.get(1)))
+            .append("</dd></div>");
+      }
     }
+    html.append("</dl>");
+  }
 
-    /** Escreve cada entregável aprovado do nicho em um arquivo HTML pronto para leitura. */
-    private void writeDeliverables(ZipOutputStream zip, List<Deliverable> deliverables) throws IOException {
-        for (Deliverable deliverable : deliverables) {
-            String fileName = "materiais/%s.html".formatted(slug(deliverable.getTitle(), "material"));
-            writeText(zip, fileName, renderDeliverable(deliverable));
-        }
+  /** Adiciona uma seção HTML quando houver conteúdo. */
+  private void appendSection(StringBuilder html, String title, String content) {
+    if (StringUtils.hasText(content)) {
+      html.append("<section><h2>")
+          .append(escape(title))
+          .append("</h2>")
+          .append(renderTextContent(content.trim()))
+          .append("</section>");
     }
+  }
 
-    /** Escreve cada pacote vinculado ao experimento em um arquivo HTML pronto para revisão. */
-    private void writePackages(ZipOutputStream zip, List<DeliverablePackage> packages) throws IOException {
-        for (DeliverablePackage pack : packages) {
-            String fileName = "planos/%s.html".formatted(slug(pack.getName(), "plano"));
-            writeText(zip, fileName, renderPackage(pack));
-        }
+  /** Formata instantes persistidos em UTC para gerar arquivos estáveis. */
+  private String formatInstant(java.time.Instant instant) {
+    return instant != null ? DATE_TIME_FORMATTER.format(instant) + " UTC" : null;
+  }
+
+  /** Retorna texto seguro para campos opcionais. */
+  private String safe(String value) {
+    return StringUtils.hasText(value) ? value.trim() : "-";
+  }
+
+  /** Remove nomes operacionais quando o cadastro ainda usa rótulo interno de experimento. */
+  private String publicProductName(String value) {
+    String name = safe(value);
+    if (name.toLowerCase(Locale.ROOT).matches(".*experimento\\s*\\d+.*")) {
+      return "Produto Digital";
     }
+    return name;
+  }
 
-    /** Renderiza um entregável individual em HTML de consumo final. */
-    private String renderDeliverable(Deliverable deliverable) {
-        StringBuilder body = new StringBuilder();
-        appendHero(body, safe(deliverable.getTitle()), "Material do produto");
-        appendSection(body, "Descricao", deliverable.getDescription());
-        appendSection(body, "Conteudo pronto para uso", deliverable.getContent());
-        return wrapHtml(deliverable.getTitle(), body.toString());
-    }
-
-    /** Renderiza um pacote de entregáveis em HTML de revisão e entrega. */
-    private String renderPackage(DeliverablePackage pack) {
-        StringBuilder body = new StringBuilder();
-        appendHero(body, safe(pack.getName()), "Plano de aplicacao");
-        appendSection(body, "Descricao", pack.getDescription());
-        body.append("<section><h2>Materiais vinculados</h2><ul>");
-        if (pack.getDeliverables() == null || pack.getDeliverables().isEmpty()) {
-            body.append("<li>Nenhum material vinculado.</li>");
-        } else {
-            for (Deliverable deliverable : pack.getDeliverables()) {
-                body.append("<li><strong>").append(escape(safe(deliverable.getTitle()))).append("</strong>");
-                if (StringUtils.hasText(deliverable.getDescription())) {
-                    body.append(": ").append(escape(deliverable.getDescription().trim()));
-                }
-                body.append("</li>");
-            }
-        }
-        body.append("</ul></section>");
-        return wrapHtml(pack.getName(), body.toString());
-    }
-
-    /** Retorna diretamente o ZIP final público da FEO quando ele já existir. */
-    private byte[] latestFeoFinalZip(Long experimentId) {
-        FeoFabricacaoV1StageExecution execution = feoExecutionRepository
-                .findFirstByExperimentIdAndStageCodeAndStatusOrderByFinishedAtDesc(
-                        experimentId,
-                        STAGE_MONTAGEM,
-                        FeoFabricacaoV1StageStatus.COMPLETED)
-                .orElse(null);
-        if (execution == null || !StringUtils.hasText(execution.getArtifactsPayload())) {
-            return new byte[0];
-        }
-        List<Map<String, Object>> artifacts = readArtifacts(execution.getArtifactsPayload());
-        for (Map<String, Object> artifact : artifacts) {
-            String type = stringValue(artifact.get("type"), "");
-            String name = stringValue(artifact.get("name"), "");
-            if ("FINAL_ZIP".equals(type) || name.endsWith(".zip")) {
-                byte[] content = artifactBytes(artifact.get("content"));
-                if (content.length > 0) {
-                    return content;
-                }
-            }
-        }
-        return new byte[0];
-    }
-
-    /** Escreve um arquivo de texto no ZIP usando UTF-8. */
-    private void writeText(ZipOutputStream zip, String name, String content) throws IOException {
-        writeBytes(zip, name, (content != null ? content : "").getBytes(StandardCharsets.UTF_8));
-    }
-
-    /** Escreve bytes no ZIP preservando o nome informado. */
-    private void writeBytes(ZipOutputStream zip, String name, byte[] content) throws IOException {
-        ZipEntry entry = new ZipEntry(name);
-        zip.putNextEntry(entry);
-        zip.write(content != null ? content : new byte[0]);
-        zip.closeEntry();
-    }
-
-    /** Adiciona capa curta ao HTML do arquivo. */
-    private void appendHero(StringBuilder html, String title, String subtitle) {
-        html.append("<section class=\"cover\"><p class=\"eyebrow\">")
-                .append(escape(subtitle))
-                .append("</p><h1>")
-                .append(escape(title))
-                .append("</h1></section>");
-    }
-
-    /** Adiciona metadados em grade compacta. */
-    private void appendDefinitionList(StringBuilder html, List<List<String>> fields) {
-        html.append("<dl class=\"meta\">");
-        for (List<String> field : fields) {
-            if (field.size() == 2 && StringUtils.hasText(field.get(1)) && !"-".equals(field.get(1))) {
-                html.append("<div><dt>")
-                        .append(escape(field.get(0)))
-                        .append("</dt><dd>")
-                        .append(escape(field.get(1)))
-                        .append("</dd></div>");
-            }
-        }
-        html.append("</dl>");
-    }
-
-    /** Adiciona uma seção HTML quando houver conteúdo. */
-    private void appendSection(StringBuilder html, String title, String content) {
-        if (StringUtils.hasText(content)) {
-            html.append("<section><h2>")
-                    .append(escape(title))
-                    .append("</h2>")
-                    .append(renderTextContent(content.trim()))
-                    .append("</section>");
-        }
-    }
-
-    /** Formata instantes persistidos em UTC para gerar arquivos estáveis. */
-    private String formatInstant(java.time.Instant instant) {
-        return instant != null ? DATE_TIME_FORMATTER.format(instant) + " UTC" : null;
-    }
-
-    /** Retorna texto seguro para campos opcionais. */
-    private String safe(String value) {
-        return StringUtils.hasText(value) ? value.trim() : "-";
-    }
-
-    /** Remove nomes operacionais quando o cadastro ainda usa rótulo interno de experimento. */
-    private String publicProductName(String value) {
-        String name = safe(value);
-        if (name.toLowerCase(Locale.ROOT).matches(".*experimento\\s*\\d+.*")) {
-            return "Produto Digital";
-        }
-        return name;
-    }
-
-    /** Converte um texto bruto em blocos HTML simples sem entregar Markdown cru ao comprador. */
-    private String renderTextContent(String content) {
-        String[] paragraphs = content.split("\\R{2,}");
-        StringBuilder html = new StringBuilder();
-        for (String paragraph : paragraphs) {
-            String trimmed = paragraph.trim();
-            if (!StringUtils.hasText(trimmed)) {
-                continue;
-            }
-            if (trimmed.lines().allMatch(line -> line.trim().matches("^([-*•]|\\d+[.)])\\s+.+"))) {
-                html.append("<ul>");
-                trimmed.lines().forEach(line -> html.append("<li>")
+  /** Converte um texto bruto em blocos HTML simples sem entregar Markdown cru ao comprador. */
+  private String renderTextContent(String content) {
+    String[] paragraphs = content.split("\\R{2,}");
+    StringBuilder html = new StringBuilder();
+    for (String paragraph : paragraphs) {
+      String trimmed = paragraph.trim();
+      if (!StringUtils.hasText(trimmed)) {
+        continue;
+      }
+      if (trimmed.lines().allMatch(line -> line.trim().matches("^([-*•]|\\d+[.)])\\s+.+"))) {
+        html.append("<ul>");
+        trimmed
+            .lines()
+            .forEach(
+                line ->
+                    html.append("<li>")
                         .append(escape(line.replaceFirst("^([-*•]|\\d+[.)])\\s+", "").trim()))
                         .append("</li>"));
-                html.append("</ul>");
-            } else {
-                html.append("<p>").append(escape(trimmed).replace("\n", "<br />")).append("</p>");
-            }
-        }
-        return html.toString();
+        html.append("</ul>");
+      } else {
+        html.append("<p>").append(escape(trimmed).replace("\n", "<br />")).append("</p>");
+      }
     }
+    return html.toString();
+  }
 
-    /** Envolve o corpo em HTML com acabamento de produto final. */
-    private String wrapHtml(String title, String body) {
-        return """
+  /** Envolve o corpo em HTML com acabamento de produto final. */
+  private String wrapHtml(String title, String body) {
+    return """
                 <!doctype html>
                 <html lang="pt-BR">
                 <head>
@@ -299,64 +307,69 @@ public class ExperimentDeliverablesZipService {
                 </head>
                 <body><main>%s</main></body>
                 </html>
-                """.formatted(escape(title), body);
-    }
+                """
+        .formatted(escape(title), body);
+  }
 
-    /** Escapa texto para uso seguro em HTML. */
-    private String escape(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+  /** Escapa texto para uso seguro em HTML. */
+  private String escape(String value) {
+    if (value == null) {
+      return "";
     }
+    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+  }
 
-    /** Lê a lista de artefatos serializada no callback FEO. */
-    private List<Map<String, Object>> readArtifacts(String json) {
-        try {
-            return objectMapper.readValue(json, ARTIFACT_LIST_TYPE);
-        } catch (Exception ex) {
-            log.error("Falha ao ler artefatos FEO do ZIP publico", ex);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not read FEO artifacts", ex);
-        }
+  /** Lê a lista de artefatos serializada no callback FEO. */
+  private List<Map<String, Object>> readArtifacts(String json) {
+    try {
+      return objectMapper.readValue(json, ARTIFACT_LIST_TYPE);
+    } catch (Exception ex) {
+      log.error("Falha ao ler artefatos FEO do ZIP publico", ex);
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "Could not read FEO artifacts", ex);
     }
+  }
 
-    /** Decodifica o conteúdo de artefato recebido pelo JSON do worker. */
-    private byte[] artifactBytes(Object content) {
-        if (content instanceof String value && StringUtils.hasText(value)) {
-            return Base64.getDecoder().decode(value);
-        }
-        if (content instanceof List<?> values) {
-            byte[] bytes = new byte[values.size()];
-            for (int i = 0; i < values.size(); i++) {
-                bytes[i] = ((Number) values.get(i)).byteValue();
-            }
-            return bytes;
-        }
-        return new byte[0];
+  /** Decodifica o conteúdo de artefato recebido pelo JSON do worker. */
+  private byte[] artifactBytes(Object content) {
+    if (content instanceof String value && StringUtils.hasText(value)) {
+      return Base64.getDecoder().decode(value);
     }
+    if (content instanceof List<?> values) {
+      byte[] bytes = new byte[values.size()];
+      for (int i = 0; i < values.size(); i++) {
+        bytes[i] = ((Number) values.get(i)).byteValue();
+      }
+      return bytes;
+    }
+    return new byte[0];
+  }
 
-    /** Retorna string com fallback para metadados de artefato. */
-    private String stringValue(Object value, String fallback) {
-        return value == null || !StringUtils.hasText(String.valueOf(value)) ? fallback : String.valueOf(value);
-    }
+  /** Retorna string com fallback para metadados de artefato. */
+  private String stringValue(Object value, String fallback) {
+    return value == null || !StringUtils.hasText(String.valueOf(value))
+        ? fallback
+        : String.valueOf(value);
+  }
 
-    /** Preserva extensão original quando o slug remover pontos do nome. */
-    private String extensionFrom(String name) {
-        int index = name == null ? -1 : name.lastIndexOf('.');
-        if (index < 0 || index == name.length() - 1) {
-            return "";
-        }
-        return name.substring(index).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9.]", "");
+  /** Preserva extensão original quando o slug remover pontos do nome. */
+  private String extensionFrom(String name) {
+    int index = name == null ? -1 : name.lastIndexOf('.');
+    if (index < 0 || index == name.length() - 1) {
+      return "";
     }
+    return name.substring(index).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9.]", "");
+  }
 
-    /** Cria um identificador simples para nomes de arquivos dentro do ZIP. */
-    private String slug(String value, String fallback) {
-        String source = StringUtils.hasText(value) ? value : fallback;
-        String normalized = java.text.Normalizer.normalize(source, java.text.Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("(^-|-$)", "");
-        return StringUtils.hasText(normalized) ? normalized : fallback;
-    }
+  /** Cria um identificador simples para nomes de arquivos dentro do ZIP. */
+  private String slug(String value, String fallback) {
+    String source = StringUtils.hasText(value) ? value : fallback;
+    String normalized =
+        java.text.Normalizer.normalize(source, java.text.Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "")
+            .toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("(^-|-$)", "");
+    return StringUtils.hasText(normalized) ? normalized : fallback;
+  }
 }

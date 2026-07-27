@@ -13,32 +13,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Endpoints utilizados pela UI para acompanhar as solicitações vinculadas a um experimento.
- */
+/** Endpoints utilizados pela UI para acompanhar as solicitações vinculadas a um experimento. */
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/learning-requests")
 public class ExperimentLearningRequestController {
 
-    private final ExperimentLearningRequestService service;
-    private final ExperimentLearningRequestMapper mapper;
+  private final ExperimentLearningRequestService service;
+  private final ExperimentLearningRequestMapper mapper;
 
-    public ExperimentLearningRequestController(ExperimentLearningRequestService service,
-                                               ExperimentLearningRequestMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public ExperimentLearningRequestController(
+      ExperimentLearningRequestService service, ExperimentLearningRequestMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @GetMapping
-    public List<ExperimentLearningRequestDto> list(@PathVariable Long experimentId) {
-        return service.listByExperiment(experimentId).stream()
-                .map(mapper::toDto)
-                .toList();
-    }
+  @GetMapping
+  public List<ExperimentLearningRequestDto> list(@PathVariable Long experimentId) {
+    return service.listByExperiment(experimentId).stream().map(mapper::toDto).toList();
+  }
 
-    @PostMapping
-    public ExperimentLearningRequestDto create(@PathVariable Long experimentId,
-                                               @Valid @RequestBody(required = false) CreateExperimentLearningRequest request) {
-        return mapper.toDto(service.create(experimentId, request));
-    }
+  @PostMapping
+  public ExperimentLearningRequestDto create(
+      @PathVariable Long experimentId,
+      @Valid @RequestBody(required = false) CreateExperimentLearningRequest request) {
+    return mapper.toDto(service.create(experimentId, request));
+  }
 }

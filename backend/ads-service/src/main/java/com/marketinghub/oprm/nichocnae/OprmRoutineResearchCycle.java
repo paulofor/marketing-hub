@@ -17,73 +17,73 @@ import lombok.Data;
 @Data
 @Table(name = "oprm_routine_research_cycle")
 public class OprmRoutineResearchCycle {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "source_niche_id", nullable = false)
-    private Long sourceNicheId;
+  @Column(name = "source_niche_id", nullable = false)
+  private Long sourceNicheId;
 
-    @Column(name = "cnae_code", nullable = false, length = 7)
-    private String cnaeCode;
+  @Column(name = "cnae_code", nullable = false, length = 7)
+  private String cnaeCode;
 
-    @Column(name = "cnae_description", nullable = false, length = 255)
-    private String cnaeDescription;
+  @Column(name = "cnae_description", nullable = false, length = 255)
+  private String cnaeDescription;
 
-    @Column(name = "niche_name", nullable = false, length = 255)
-    private String nicheName;
+  @Column(name = "niche_name", nullable = false, length = 255)
+  private String nicheName;
 
-    @Column(name = "original_niche_name", nullable = false, length = 255)
-    private String originalNicheName;
+  @Column(name = "original_niche_name", nullable = false, length = 255)
+  private String originalNicheName;
 
-    @Column(name = "neutral_niche_name", nullable = false, length = 255)
-    private String neutralNicheName;
+  @Column(name = "neutral_niche_name", nullable = false, length = 255)
+  private String neutralNicheName;
 
-    @Column(name = "research_mode", nullable = false, length = 48)
-    private String researchMode;
+  @Column(name = "research_mode", nullable = false, length = 48)
+  private String researchMode;
 
-    @Column(name = "solution_language_risk_score", nullable = false, precision = 5, scale = 2)
-    private BigDecimal solutionLanguageRiskScore;
+  @Column(name = "solution_language_risk_score", nullable = false, precision = 5, scale = 2)
+  private BigDecimal solutionLanguageRiskScore;
 
-    @Column(name = "source_score", nullable = false, precision = 5, scale = 2)
-    private BigDecimal sourceScore;
+  @Column(name = "source_score", nullable = false, precision = 5, scale = 2)
+  private BigDecimal sourceScore;
 
-    @Column(name = "trigger_source", nullable = false, length = 32)
-    private String triggerSource;
+  @Column(name = "trigger_source", nullable = false, length = 32)
+  private String triggerSource;
 
-    @Column(name = "status", nullable = false, length = 32)
-    private String status;
+  @Column(name = "status", nullable = false, length = 32)
+  private String status;
 
-    @Column(name = "current_stage_code", length = 64)
-    private String currentStageCode;
+  @Column(name = "current_stage_code", length = 64)
+  private String currentStageCode;
 
-    @Column(name = "total_queries", nullable = false)
-    private Integer totalQueries;
+  @Column(name = "total_queries", nullable = false)
+  private Integer totalQueries;
 
-    @Column(name = "total_source_candidates", nullable = false)
-    private Integer totalSourceCandidates;
+  @Column(name = "total_source_candidates", nullable = false)
+  private Integer totalSourceCandidates;
 
-    @Column(name = "total_source_snapshots", nullable = false)
-    private Integer totalSourceSnapshots;
+  @Column(name = "total_source_snapshots", nullable = false)
+  private Integer totalSourceSnapshots;
 
-    @Column(name = "total_extracted_signals", nullable = false)
-    private Integer totalExtractedSignals;
+  @Column(name = "total_extracted_signals", nullable = false)
+  private Integer totalExtractedSignals;
 
-    @Column(name = "reprocess_preserved_cost_usd", nullable = false, precision = 12, scale = 8)
-    private BigDecimal reprocessPreservedCostUsd = BigDecimal.ZERO;
+  @Column(name = "reprocess_preserved_cost_usd", nullable = false, precision = 12, scale = 8)
+  private BigDecimal reprocessPreservedCostUsd = BigDecimal.ZERO;
 
-    @Column(name = "started_at", nullable = false)
-    private Instant startedAt;
+  @Column(name = "started_at", nullable = false)
+  private Instant startedAt;
 
-    @Column(name = "finished_at")
-    private Instant finishedAt;
+  @Column(name = "finished_at")
+  private Instant finishedAt;
 
-    @Column(name = "error_message", columnDefinition = "LONGTEXT")
-    private String errorMessage;
+  @Column(name = "error_message", columnDefinition = "LONGTEXT")
+  private String errorMessage;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

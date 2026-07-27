@@ -2,7 +2,9 @@ package com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.detailAudienc
 
 import java.time.Instant;
 
-/** DTO responsável por detalhar o perfil completo de público-alvo MEI/autônomo pesquisado pelo OPRM. */
+/**
+ * DTO responsável por detalhar o perfil completo de público-alvo MEI/autônomo pesquisado pelo OPRM.
+ */
 public record MeiAudienceProfileDetailResponse(
     Long id,
     Long researchCycleId,

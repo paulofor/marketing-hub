@@ -17,44 +17,41 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/lead-portal/email-template")
 public class LeadPortalEmailTemplateController {
 
-    private final LeadPortalEmailTemplateService templateService;
+  private final LeadPortalEmailTemplateService templateService;
 
-    public LeadPortalEmailTemplateController(LeadPortalEmailTemplateService templateService) {
-        this.templateService = templateService;
-    }
+  public LeadPortalEmailTemplateController(LeadPortalEmailTemplateService templateService) {
+    this.templateService = templateService;
+  }
 
-    @GetMapping
-    public LeadPortalEmailTemplateDto getTemplate() {
-        return toDto(templateService.findTemplate().orElse(null));
-    }
+  @GetMapping
+  public LeadPortalEmailTemplateDto getTemplate() {
+    return toDto(templateService.findTemplate().orElse(null));
+  }
 
-    @PutMapping
-    public LeadPortalEmailTemplateDto saveTemplate(@RequestBody(required = false) UpdateLeadPortalEmailTemplateRequest request) {
-        String subject = request != null ? request.subject() : null;
-        String html = request != null ? request.html() : null;
-        LeadPortalEmailTemplate saved = templateService.saveTemplate(subject, html);
-        return toDto(saved);
-    }
+  @PutMapping
+  public LeadPortalEmailTemplateDto saveTemplate(
+      @RequestBody(required = false) UpdateLeadPortalEmailTemplateRequest request) {
+    String subject = request != null ? request.subject() : null;
+    String html = request != null ? request.html() : null;
+    LeadPortalEmailTemplate saved = templateService.saveTemplate(subject, html);
+    return toDto(saved);
+  }
 
-    private LeadPortalEmailTemplateDto toDto(LeadPortalEmailTemplate template) {
-        return new LeadPortalEmailTemplateDto(
-                template != null ? template.subject() : null,
-                template != null ? template.html() : null,
-                template != null ? template.updatedAt() : null,
-                buildPlaceholderDtos());
-    }
+  private LeadPortalEmailTemplateDto toDto(LeadPortalEmailTemplate template) {
+    return new LeadPortalEmailTemplateDto(
+        template != null ? template.subject() : null,
+        template != null ? template.html() : null,
+        template != null ? template.updatedAt() : null,
+        buildPlaceholderDtos());
+  }
 
-    private List<LeadPortalEmailTemplatePlaceholderDto> buildPlaceholderDtos() {
-        return templateService.getPlaceholders().stream()
-                .map(this::toPlaceholderDto)
-                .toList();
-    }
+  private List<LeadPortalEmailTemplatePlaceholderDto> buildPlaceholderDtos() {
+    return templateService.getPlaceholders().stream().map(this::toPlaceholderDto).toList();
+  }
 
-    private LeadPortalEmailTemplatePlaceholderDto toPlaceholderDto(LeadPortalEmailTemplatePlaceholder placeholder) {
-        return new LeadPortalEmailTemplatePlaceholderDto(
-                placeholder.key(),
-                placeholder.token(),
-                placeholder.label(),
-                placeholder.description());
-    }
+  private LeadPortalEmailTemplatePlaceholderDto toPlaceholderDto(
+      LeadPortalEmailTemplatePlaceholder placeholder) {
+    return new LeadPortalEmailTemplatePlaceholderDto(
+        placeholder.key(), placeholder.token(), placeholder.label(), placeholder.description());
+  }
 }

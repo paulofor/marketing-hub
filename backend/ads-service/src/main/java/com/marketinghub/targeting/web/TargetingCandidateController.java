@@ -10,19 +10,20 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/targeting/candidates")
 public class TargetingCandidateController {
-    private final TargetingRequestService service;
-    private final TargetingCandidateMapper mapper;
+  private final TargetingRequestService service;
+  private final TargetingCandidateMapper mapper;
 
-    public TargetingCandidateController(TargetingRequestService service,
-                                        TargetingCandidateMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public TargetingCandidateController(
+      TargetingRequestService service, TargetingCandidateMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @PostMapping("/{candidateId}/reprocess")
-    public TargetingCandidateDto reprocess(@PathVariable Long candidateId,
-                                           @RequestBody(required = false) TargetingCandidateReprocessRequest payload) {
-        TargetingCandidate candidate = service.reprocessCandidate(candidateId, payload);
-        return mapper.toDto(candidate);
-    }
+  @PostMapping("/{candidateId}/reprocess")
+  public TargetingCandidateDto reprocess(
+      @PathVariable Long candidateId,
+      @RequestBody(required = false) TargetingCandidateReprocessRequest payload) {
+    TargetingCandidate candidate = service.reprocessCandidate(candidateId, payload);
+    return mapper.toDto(candidate);
+  }
 }

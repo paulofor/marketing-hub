@@ -5,12 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-/**
- * Repositório JPA responsável pela persistência de Agent.
- */
+/** Repositório JPA responsável pela persistência de Agent. */
 public interface AgentRepository extends JpaRepository<Agent, Long> {
 
-    Optional<Agent> findDetailedById(Long id);
+  Optional<Agent> findDetailedById(Long id);
 
-    List<Agent> findAllByOrderByNameAsc();
+  List<Agent> findAllByOrderByNameAsc();
 }

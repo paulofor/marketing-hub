@@ -2,9 +2,4 @@ package com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.p
 
 /** Contrato de confirmação da resposta persistida na extração de padrões de página. */
 public record SalesPagePatternsPagePatternExtractionRecebeResponseResponse(
-        String jobId,
-        String idExterno,
-        String stageCode,
-        String status,
-        String nextStageCode) {
-}
+    String jobId, String idExterno, String stageCode, String status, String nextStageCode) {}

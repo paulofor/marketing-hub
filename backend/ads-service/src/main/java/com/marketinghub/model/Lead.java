@@ -2,45 +2,43 @@ package com.marketinghub.model;
 
 import com.marketinghub.experiment.Experiment;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
-
-/**
- * Lead captured from webhook.
- */
+/** Lead captured from webhook. */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Lead {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.BINARY)
-    @Column(length = 16)
-    private UUID id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @JdbcTypeCode(SqlTypes.BINARY)
+  @Column(length = 16)
+  private UUID id;
 
-    @Column(unique = true)
-    private Long leadgenId;
-    private Long instagramUserId;
-    private Long adId;
-    private Long campaignId;
+  @Column(unique = true)
+  private Long leadgenId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "experiment_id")
-    private Experiment experiment;
+  private Long instagramUserId;
+  private Long adId;
+  private Long campaignId;
 
-    private Instant capturedAt;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "experiment_id")
+  private Experiment experiment;
 
-    @Enumerated(EnumType.STRING)
-    private NurtureStage nurtureStage = NurtureStage.NEW;
+  private Instant capturedAt;
 
-    private BigDecimal cpl;
+  @Enumerated(EnumType.STRING)
+  private NurtureStage nurtureStage = NurtureStage.NEW;
 
-    private Integer leadScore = 0;
+  private BigDecimal cpl;
+
+  private Integer leadScore = 0;
 }

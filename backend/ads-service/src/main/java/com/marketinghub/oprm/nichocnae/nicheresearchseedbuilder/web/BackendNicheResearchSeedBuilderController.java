@@ -22,7 +22,8 @@ public class BackendNicheResearchSeedBuilderController {
   private final BackendNicheResearchSeedBuilderService executionService;
 
   /** Inicializa o controller com o serviço backend da etapa dois de seed e queries. */
-  public BackendNicheResearchSeedBuilderController(BackendNicheResearchSeedBuilderService executionService) {
+  public BackendNicheResearchSeedBuilderController(
+      BackendNicheResearchSeedBuilderService executionService) {
     this.executionService = executionService;
   }
 
@@ -33,23 +34,28 @@ public class BackendNicheResearchSeedBuilderController {
   }
 
   /** Persiste a saída validada da IA para seed operacional e queries da etapa dois. */
-  @PostMapping("/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}/complete")
+  @PostMapping(
+      "/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}/complete")
   public ResponseEntity<CompleteNicheResearchSeedBuilderResponse> complete(
-      @PathVariable Long researchCycleId, @RequestBody CompleteNicheResearchSeedBuilderRequest request) {
+      @PathVariable Long researchCycleId,
+      @RequestBody CompleteNicheResearchSeedBuilderRequest request) {
     return ResponseEntity.ok(executionService.complete(researchCycleId, request));
   }
 
   /** Registra falha operacional da etapa dois em um ciclo de pesquisa de rotina. */
-  @PostMapping("/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}/fail")
+  @PostMapping(
+      "/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}/fail")
   public ResponseEntity<Void> fail(
-      @PathVariable Long researchCycleId, @RequestBody FailNicheResearchSeedBuilderRequest request) {
+      @PathVariable Long researchCycleId,
+      @RequestBody FailNicheResearchSeedBuilderRequest request) {
     executionService.fail(researchCycleId, request);
     return ResponseEntity.noContent().build();
   }
 
   /** Detalha o seed e as frases de pesquisa geradas para uma execução da etapa dois. */
   @GetMapping("/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}")
-  public ResponseEntity<NicheResearchSeedBuilderDetailResponse> detail(@PathVariable Long researchCycleId) {
+  public ResponseEntity<NicheResearchSeedBuilderDetailResponse> detail(
+      @PathVariable Long researchCycleId) {
     return ResponseEntity.ok(executionService.detail(researchCycleId));
   }
 }

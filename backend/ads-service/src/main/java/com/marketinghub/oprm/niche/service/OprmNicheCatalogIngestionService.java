@@ -13,30 +13,32 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OprmNicheCatalogIngestionService {
 
-    private final OprmNicheCatalogItemRepository repository;
+  private final OprmNicheCatalogItemRepository repository;
 
-    @Transactional
-    public OprmNicheSnapshotIngestResponseDto ingest(OprmNicheCatalogIngestRequestDto request) {
-        List<OprmNicheCatalogItem> items = request.records().stream()
-                .map(record -> OprmNicheCatalogItem.builder()
+  @Transactional
+  public OprmNicheSnapshotIngestResponseDto ingest(OprmNicheCatalogIngestRequestDto request) {
+    List<OprmNicheCatalogItem> items =
+        request.records().stream()
+            .map(
+                record ->
+                    OprmNicheCatalogItem.builder()
                         .cnaeCode(record.cnaeCode().trim())
                         .cnaeLabel(record.cnaeLabel().trim())
                         .source(request.source().trim())
                         .active(record.active() == null || record.active())
                         .build())
-                .toList();
+            .toList();
 
-        List<OprmNicheCatalogItem> persisted = repository.saveAll(items);
-        int received = request.records().size();
+    List<OprmNicheCatalogItem> persisted = repository.saveAll(items);
+    int received = request.records().size();
 
-        return new OprmNicheSnapshotIngestResponseDto(
-                "ACCEPTED",
-                received,
-                received,
-                persisted.size(),
-                0,
-                "OK",
-                "catálogo CNAE persistido com sucesso"
-        );
-    }
+    return new OprmNicheSnapshotIngestResponseDto(
+        "ACCEPTED",
+        received,
+        received,
+        persisted.size(),
+        0,
+        "OK",
+        "catálogo CNAE persistido com sucesso");
+  }
 }

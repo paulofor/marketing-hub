@@ -19,59 +19,58 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Valida a reconciliação de custos rastreáveis enviada para a tela de experimentos.
- */
+/** Valida a reconciliação de custos rastreáveis enviada para a tela de experimentos. */
 @ExtendWith(MockitoExtension.class)
 class ExperimentCostReconciliationServiceTest {
-    @Mock
-    private ExperimentPipelineGenerationJobRepository pipelineJobRepository;
+  @Mock private ExperimentPipelineGenerationJobRepository pipelineJobRepository;
 
-    @Mock
-    private GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
+  @Mock private GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
 
-    @Mock
-    private GeraSalesPagePublicationStageAuditRepository geraSalesPagePublicationStageAuditRepository;
+  @Mock
+  private GeraSalesPagePublicationStageAuditRepository geraSalesPagePublicationStageAuditRepository;
 
-    @Mock
-    private ExperimentVideoAssetRepository experimentVideoAssetRepository;
+  @Mock private ExperimentVideoAssetRepository experimentVideoAssetRepository;
 
-    private ExperimentCostReconciliationService service;
+  private ExperimentCostReconciliationService service;
 
-    /** Monta o serviço com a conversão canônica de USD para BRL. */
-    @BeforeEach
-    void setUp() {
-        service = new ExperimentCostReconciliationService(
-                new CurrencyConversionService(new CurrencyConversionProperties()),
-                pipelineJobRepository,
-                geraLandingStageExecutionRepository,
-                geraSalesPagePublicationStageAuditRepository,
-                experimentVideoAssetRepository);
-    }
+  /** Monta o serviço com a conversão canônica de USD para BRL. */
+  @BeforeEach
+  void setUp() {
+    service =
+        new ExperimentCostReconciliationService(
+            new CurrencyConversionService(new CurrencyConversionProperties()),
+            pipelineJobRepository,
+            geraLandingStageExecutionRepository,
+            geraSalesPagePublicationStageAuditRepository,
+            experimentVideoAssetRepository);
+  }
 
-    /** Garante que o custo de vídeo auditável entra no total exibido para o experimento 69. */
-    @Test
-    void enrichAddsVideoProviderCostToAuditableTotal() {
-        ExperimentCampaignMetric metric = ExperimentCampaignMetric.builder()
-                .spend(new BigDecimal("5.37"))
-                .build();
-        Experiment experiment = Experiment.builder()
-                .id(69L)
-                .totalCost(new BigDecimal("12.18"))
-                .campaignMetric(metric)
-                .build();
-        ExperimentDto dto = new ExperimentDto();
+  /** Garante que o custo de vídeo auditável entra no total exibido para o experimento 69. */
+  @Test
+  void enrichAddsVideoProviderCostToAuditableTotal() {
+    ExperimentCampaignMetric metric =
+        ExperimentCampaignMetric.builder().spend(new BigDecimal("5.37")).build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(69L)
+            .totalCost(new BigDecimal("12.18"))
+            .campaignMetric(metric)
+            .build();
+    ExperimentDto dto = new ExperimentDto();
 
-        when(pipelineJobRepository.sumCostUsdByExperimentId(69L)).thenReturn(BigDecimal.ZERO);
-        when(geraLandingStageExecutionRepository.sumCompletedCostUsdByExperimentId(69L)).thenReturn(BigDecimal.ZERO);
-        when(geraSalesPagePublicationStageAuditRepository.sumCostUsdByExperimentId(69L)).thenReturn(BigDecimal.ZERO);
-        when(experimentVideoAssetRepository.sumCostUsdByExperimentId(69L)).thenReturn(new BigDecimal("5.90"));
+    when(pipelineJobRepository.sumCostUsdByExperimentId(69L)).thenReturn(BigDecimal.ZERO);
+    when(geraLandingStageExecutionRepository.sumCompletedCostUsdByExperimentId(69L))
+        .thenReturn(BigDecimal.ZERO);
+    when(geraSalesPagePublicationStageAuditRepository.sumCostUsdByExperimentId(69L))
+        .thenReturn(BigDecimal.ZERO);
+    when(experimentVideoAssetRepository.sumCostUsdByExperimentId(69L))
+        .thenReturn(new BigDecimal("5.90"));
 
-        ExperimentDto result = service.enrich(experiment, dto);
+    ExperimentDto result = service.enrich(experiment, dto);
 
-        assertThat(result.getAuditableTotalCost()).isEqualByComparingTo("34.87");
-        assertThat(result.getTotalCost()).isEqualByComparingTo("34.87");
-        assertThat(result.getLegacyTotalCost()).isEqualByComparingTo("12.18");
-        assertThat(result.getUnreconciledLegacyCost()).isEqualByComparingTo("0.00");
-    }
+    assertThat(result.getAuditableTotalCost()).isEqualByComparingTo("34.87");
+    assertThat(result.getTotalCost()).isEqualByComparingTo("34.87");
+    assertThat(result.getLegacyTotalCost()).isEqualByComparingTo("12.18");
+    assertThat(result.getUnreconciledLegacyCost()).isEqualByComparingTo("0.00");
+  }
 }

@@ -7,22 +7,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Expõe a biblioteca global de vídeos comerciais dos experimentos.
- */
+/** Expõe a biblioteca global de vídeos comerciais dos experimentos. */
 @RestController
 @RequestMapping("/api/experiments/video-assets")
 public class ExperimentVideoAssetLibraryController {
-    private final ExperimentVideoAssetService service;
+  private final ExperimentVideoAssetService service;
 
-    /** Inicializa o controller com o serviço de vídeos de experimento. */
-    public ExperimentVideoAssetLibraryController(ExperimentVideoAssetService service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com o serviço de vídeos de experimento. */
+  public ExperimentVideoAssetLibraryController(ExperimentVideoAssetService service) {
+    this.service = service;
+  }
 
-    /** Lista todos os vídeos comerciais registrados nos experimentos. */
-    @GetMapping
-    public List<ExperimentVideoAssetDto> listAll() {
-        return service.listAll();
-    }
+  /** Lista todos os vídeos comerciais registrados nos experimentos. */
+  @GetMapping
+  public List<ExperimentVideoAssetDto> listAll() {
+    return service.listAll();
+  }
 }

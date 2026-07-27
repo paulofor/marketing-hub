@@ -6,5 +6,5 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface VisualProofMapper {
-    VisualProofDto toDto(VisualProof proof);
+  VisualProofDto toDto(VisualProof proof);
 }

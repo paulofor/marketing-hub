@@ -1,13 +1,13 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.controller;
 
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseRequest;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.BackendSourceSearcherV3Service;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.completeStageExecution.SourceSearcherCompletionRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.createStageExecution.SourceSearcherCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.failStageExecution.SourceSearcherFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.pending.SourceSearcherPendingResponse;
-import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
-import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseRequest;
-import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseResponse;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,60 +21,79 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/oprmcoletormei/nichocnae/v3/source-searcher/stage-executions")
 public class BackendSourceSearcherV3Controller {
-    private static final Logger log = LoggerFactory.getLogger(BackendSourceSearcherV3Controller.class);
-    private final BackendSourceSearcherV3Service service;
+  private static final Logger log =
+      LoggerFactory.getLogger(BackendSourceSearcherV3Controller.class);
+  private final BackendSourceSearcherV3Service service;
 
-    /** Inicializa o controller com service canônico da etapa. */
-    public BackendSourceSearcherV3Controller(BackendSourceSearcherV3Service service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com service canônico da etapa. */
+  public BackendSourceSearcherV3Controller(BackendSourceSearcherV3Service service) {
+    this.service = service;
+  }
 
-    /** Inicia uma execução pendente da etapa a partir do CNAE informado pela tela. */
-    @PostMapping("/{idExterno}/start")
-    public SourceSearcherCreateResponse start(@PathVariable("idExterno") String cnaeCode) {
-        return service.start(cnaeCode);
-    }
+  /** Inicia uma execução pendente da etapa a partir do CNAE informado pela tela. */
+  @PostMapping("/{idExterno}/start")
+  public SourceSearcherCreateResponse start(@PathVariable("idExterno") String cnaeCode) {
+    return service.start(cnaeCode);
+  }
 
-    /** Cria uma execução pendente da etapa source-searcher. */
-    @PostMapping
-    public SourceSearcherCreateResponse create(@RequestBody SourceSearcherPendingResponse request) {
-        return service.create(request.jobId(), request.cnaeCode(), request.inputPayload(), request.attemptNumber(), request.knowledgeVersion());
-    }
+  /** Cria uma execução pendente da etapa source-searcher. */
+  @PostMapping
+  public SourceSearcherCreateResponse create(@RequestBody SourceSearcherPendingResponse request) {
+    return service.create(
+        request.jobId(),
+        request.cnaeCode(),
+        request.inputPayload(),
+        request.attemptNumber(),
+        request.knowledgeVersion());
+  }
 
-    /** Cria a primeira execução v3 diretamente a partir de um CNAE. */
-    @PostMapping("/cnaes/{cnaeCode}")
-    public SourceSearcherCreateResponse createForCnae(@PathVariable String cnaeCode) {
-        return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
-    }
+  /** Cria a primeira execução v3 diretamente a partir de um CNAE. */
+  @PostMapping("/cnaes/{cnaeCode}")
+  public SourceSearcherCreateResponse createForCnae(@PathVariable String cnaeCode) {
+    return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+  }
 
-    /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
-    @PostMapping("/{idExterno}/{jobId}/recebeRequest")
-    public SourceSearcherCreateResponse recebeRequest(@PathVariable("idExterno") String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
-        return service.recebeRequest(cnaeCode, jobId, request);
-    }
+  /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
+  @PostMapping("/{idExterno}/{jobId}/recebeRequest")
+  public SourceSearcherCreateResponse recebeRequest(
+      @PathVariable("idExterno") String cnaeCode,
+      @PathVariable String jobId,
+      @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+    return service.recebeRequest(cnaeCode, jobId, request);
+  }
 
-    /** Recebe o response bruto da etapa identificado pelo CNAE e jobId. */
-    @PostMapping("/{idExterno}/{jobId}/recebeResponse")
-    public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(@PathVariable("idExterno") String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeResponseRequest request) {
-        log.info("Recebendo response NichoCNAE v3. etapa={}, cnaeCode={}, jobId={}, payload={}", service.stageCode(), cnaeCode, jobId, request);
-        return service.recebeResponse(cnaeCode, jobId, request);
-    }
+  /** Recebe o response bruto da etapa identificado pelo CNAE e jobId. */
+  @PostMapping("/{idExterno}/{jobId}/recebeResponse")
+  public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(
+      @PathVariable("idExterno") String cnaeCode,
+      @PathVariable String jobId,
+      @RequestBody OprmNichoCnaeV3RecebeResponseRequest request) {
+    log.info(
+        "Recebendo response NichoCNAE v3. etapa={}, cnaeCode={}, jobId={}, payload={}",
+        service.stageCode(),
+        cnaeCode,
+        jobId,
+        request);
+    return service.recebeResponse(cnaeCode, jobId, request);
+  }
 
-    /** Entrega pendências da etapa source-searcher ao executor OPRM. */
-    @PostMapping("/pending")
-    public List<SourceSearcherPendingResponse> pending() {
-        return service.pending();
-    }
+  /** Entrega pendências da etapa source-searcher ao executor OPRM. */
+  @PostMapping("/pending")
+  public List<SourceSearcherPendingResponse> pending() {
+    return service.pending();
+  }
 
-    /** Recebe conclusão da etapa source-searcher enviada pelo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/complete")
-    public SourceSearcherCreateResponse complete(@PathVariable Long stageExecutionId, @RequestBody SourceSearcherCompletionRequest request) {
-        return service.complete(stageExecutionId, request.outputPayload(), request.nextStageCode());
-    }
+  /** Recebe conclusão da etapa source-searcher enviada pelo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/complete")
+  public SourceSearcherCreateResponse complete(
+      @PathVariable Long stageExecutionId, @RequestBody SourceSearcherCompletionRequest request) {
+    return service.complete(stageExecutionId, request.outputPayload(), request.nextStageCode());
+  }
 
-    /** Recebe falha da etapa source-searcher enviada pelo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/fail")
-    public SourceSearcherCreateResponse fail(@PathVariable Long stageExecutionId, @RequestBody SourceSearcherFailureRequest request) {
-        return service.fail(stageExecutionId, request.errorMessage());
-    }
+  /** Recebe falha da etapa source-searcher enviada pelo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/fail")
+  public SourceSearcherCreateResponse fail(
+      @PathVariable Long stageExecutionId, @RequestBody SourceSearcherFailureRequest request) {
+    return service.fail(stageExecutionId, request.errorMessage());
+  }
 }

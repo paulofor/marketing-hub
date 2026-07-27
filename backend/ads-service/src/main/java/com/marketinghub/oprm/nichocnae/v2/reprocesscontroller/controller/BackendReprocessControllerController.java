@@ -20,24 +20,38 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/oprm/nichocnae/v2/reprocess-controller/stage-executions")
 public class BackendReprocessControllerController {
-    private final BackendReprocessControllerService service;
+  private final BackendReprocessControllerService service;
 
-    /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
-    public BackendReprocessControllerController(BackendReprocessControllerService service) { this.service = service; }
+  /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
+  public BackendReprocessControllerController(BackendReprocessControllerService service) {
+    this.service = service;
+  }
 
-    /** Entrega execuções pendentes da etapa reprocess-controller ao módulo executor OPRM. */
-    @GetMapping("/pending")
-    public List<ReprocessControllerPendingResponse> pending() { return service.pending(); }
+  /** Entrega execuções pendentes da etapa reprocess-controller ao módulo executor OPRM. */
+  @GetMapping("/pending")
+  public List<ReprocessControllerPendingResponse> pending() {
+    return service.pending();
+  }
 
-    /** Grava uma pendência da etapa reprocess-controller solicitada pelo módulo executor OPRM. */
-    @PostMapping
-    public ReprocessControllerCreateResponse create(@RequestBody ReprocessControllerCreateRequest request) { return service.create(request); }
+  /** Grava uma pendência da etapa reprocess-controller solicitada pelo módulo executor OPRM. */
+  @PostMapping
+  public ReprocessControllerCreateResponse create(
+      @RequestBody ReprocessControllerCreateRequest request) {
+    return service.create(request);
+  }
 
-    /** Registra a conclusão do controlador de reprocessamento informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/complete")
-    public ReprocessControllerCompletionResponse complete(@PathVariable Long stageExecutionId, @RequestBody ReprocessControllerCompletionRequest request) { return service.complete(stageExecutionId, request); }
+  /** Registra a conclusão do controlador de reprocessamento informada pelo módulo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/complete")
+  public ReprocessControllerCompletionResponse complete(
+      @PathVariable Long stageExecutionId,
+      @RequestBody ReprocessControllerCompletionRequest request) {
+    return service.complete(stageExecutionId, request);
+  }
 
-    /** Registra a falha do controlador de reprocessamento informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/fail")
-    public ReprocessControllerFailureResponse fail(@PathVariable Long stageExecutionId, @RequestBody ReprocessControllerFailureRequest request) { return service.fail(stageExecutionId, request); }
+  /** Registra a falha do controlador de reprocessamento informada pelo módulo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/fail")
+  public ReprocessControllerFailureResponse fail(
+      @PathVariable Long stageExecutionId, @RequestBody ReprocessControllerFailureRequest request) {
+    return service.fail(stageExecutionId, request);
+  }
 }

@@ -2,5 +2,4 @@ package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.intak
 
 /** Contrato de saída do endpoint recebeResponse da etapa intake do dossiê MOIS v1. */
 public record DossierIntakeRecebeResponseResponse(
-        String jobId, String productKey, String stageCode, String status, String nextStageCode) {
-}
+    String jobId, String productKey, String stageCode, String status, String nextStageCode) {}

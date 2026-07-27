@@ -6,10 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 
 public record OprmArtifactPublishRequestDto(
-        @NotBlank String jobId,
-        @NotBlank String correlationId,
-        @NotNull @Valid OprmArtifactEnvelopeDto artifact,
-        @NotNull Map<String, Object> lineage,
-        @NotBlank String idempotencyKey
-) {
-}
+    @NotBlank String jobId,
+    @NotBlank String correlationId,
+    @NotNull @Valid OprmArtifactEnvelopeDto artifact,
+    @NotNull Map<String, Object> lineage,
+    @NotBlank String idempotencyKey) {}

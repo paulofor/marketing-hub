@@ -12,12 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class OprmNicheIngestionService {
-    private final OprmNicheSnapshotRepository repository;
+  private final OprmNicheSnapshotRepository repository;
 
-    @Transactional
-    public OprmNicheSnapshotIngestResponseDto ingest(OprmNicheSnapshotIngestRequestDto request) {
-        List<OprmNicheSnapshot> snapshots = request.records().stream()
-                .map(record -> OprmNicheSnapshot.builder()
+  @Transactional
+  public OprmNicheSnapshotIngestResponseDto ingest(OprmNicheSnapshotIngestRequestDto request) {
+    List<OprmNicheSnapshot> snapshots =
+        request.records().stream()
+            .map(
+                record ->
+                    OprmNicheSnapshot.builder()
                         .snapshotDate(request.snapshotDate())
                         .source(request.source().trim())
                         .cnaeCode(record.cnaeCode().trim())
@@ -28,19 +31,12 @@ public class OprmNicheIngestionService {
                         .closures(record.closures())
                         .net(record.net())
                         .build())
-                .toList();
+            .toList();
 
-        List<OprmNicheSnapshot> persisted = repository.saveAll(snapshots);
-        int received = request.records().size();
+    List<OprmNicheSnapshot> persisted = repository.saveAll(snapshots);
+    int received = request.records().size();
 
-        return new OprmNicheSnapshotIngestResponseDto(
-                "ACCEPTED",
-                received,
-                received,
-                persisted.size(),
-                0,
-                "OK",
-                "lote persistido com sucesso"
-        );
-    }
+    return new OprmNicheSnapshotIngestResponseDto(
+        "ACCEPTED", received, received, persisted.size(), 0, "OK", "lote persistido com sucesso");
+  }
 }

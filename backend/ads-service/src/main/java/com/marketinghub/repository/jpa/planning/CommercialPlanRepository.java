@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Responsabilidade: persistir e consultar planos comerciais. */
 public interface CommercialPlanRepository extends JpaRepository<CommercialPlan, Long> {
-    /** Lista planos comerciais por status, priorizando os mais recentes. */
-    List<CommercialPlan> findByStatusOrderByUpdatedAtDesc(CommercialPlanStatus status);
+  /** Lista planos comerciais por status, priorizando os mais recentes. */
+  List<CommercialPlan> findByStatusOrderByUpdatedAtDesc(CommercialPlanStatus status);
 }

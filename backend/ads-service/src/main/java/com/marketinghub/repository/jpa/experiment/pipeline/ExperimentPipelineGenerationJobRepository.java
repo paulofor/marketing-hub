@@ -1,9 +1,9 @@
 package com.marketinghub.repository.jpa.experiment.pipeline;
 
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJob;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
-import com.marketinghub.experiment.ExperimentStatus;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
@@ -15,42 +15,42 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/**
- * Repositório JPA responsável pela persistência de ExperimentPipelineGenerationJob.
- */
-public interface ExperimentPipelineGenerationJobRepository extends JpaRepository<ExperimentPipelineGenerationJob, UUID> {
-    List<ExperimentPipelineGenerationJob> findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
-            Long experimentId,
-            ExperimentPipelineSection section,
-            Collection<ExperimentPipelineGenerationJobStatus> statuses);
+/** Repositório JPA responsável pela persistência de ExperimentPipelineGenerationJob. */
+public interface ExperimentPipelineGenerationJobRepository
+    extends JpaRepository<ExperimentPipelineGenerationJob, UUID> {
+  List<ExperimentPipelineGenerationJob> findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
+      Long experimentId,
+      ExperimentPipelineSection section,
+      Collection<ExperimentPipelineGenerationJobStatus> statuses);
 
-    List<ExperimentPipelineGenerationJob> findByExperimentIdAndStatusInOrderByCreatedAtDesc(
-            Long experimentId,
-            Collection<ExperimentPipelineGenerationJobStatus> statuses);
+  List<ExperimentPipelineGenerationJob> findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+      Long experimentId, Collection<ExperimentPipelineGenerationJobStatus> statuses);
 
-    Optional<ExperimentPipelineGenerationJob> findTopByExperimentIdAndSectionAndStatusAndModelOrderByCreatedAtDesc(
-            Long experimentId,
-            ExperimentPipelineSection section,
-            ExperimentPipelineGenerationJobStatus status,
-            String model);
+  Optional<ExperimentPipelineGenerationJob>
+      findTopByExperimentIdAndSectionAndStatusAndModelOrderByCreatedAtDesc(
+          Long experimentId,
+          ExperimentPipelineSection section,
+          ExperimentPipelineGenerationJobStatus status,
+          String model);
 
-    List<ExperimentPipelineGenerationJob> findByStatusOrderByCreatedAtAsc(ExperimentPipelineGenerationJobStatus status,
-                                                                          Pageable pageable);
+  List<ExperimentPipelineGenerationJob> findByStatusOrderByCreatedAtAsc(
+      ExperimentPipelineGenerationJobStatus status, Pageable pageable);
 
-    List<ExperimentPipelineGenerationJob> findByStatusAndExperimentStatusInOrderByCreatedAtAsc(
-            ExperimentPipelineGenerationJobStatus status,
-            Collection<ExperimentStatus> experimentStatuses,
-            Pageable pageable);
+  List<ExperimentPipelineGenerationJob> findByStatusAndExperimentStatusInOrderByCreatedAtAsc(
+      ExperimentPipelineGenerationJobStatus status,
+      Collection<ExperimentStatus> experimentStatuses,
+      Pageable pageable);
 
-    List<ExperimentPipelineGenerationJob> findByExperimentIdOrderByCreatedAtDesc(Long experimentId, Pageable pageable);
+  List<ExperimentPipelineGenerationJob> findByExperimentIdOrderByCreatedAtDesc(
+      Long experimentId, Pageable pageable);
 
-    Page<ExperimentPipelineGenerationJob> findByExperimentId(Long experimentId, Pageable pageable);
+  Page<ExperimentPipelineGenerationJob> findByExperimentId(Long experimentId, Pageable pageable);
 
-    Page<ExperimentPipelineGenerationJob> findByExperimentIdAndSection(Long experimentId,
-                                                                       ExperimentPipelineSection section,
-                                                                       Pageable pageable);
+  Page<ExperimentPipelineGenerationJob> findByExperimentIdAndSection(
+      Long experimentId, ExperimentPipelineSection section, Pageable pageable);
 
-    @Query("""
+  @Query(
+      """
             select j
             from ExperimentPipelineGenerationJob j
             where j.experiment.id = :experimentId
@@ -64,10 +64,11 @@ public interface ExperimentPipelineGenerationJobRepository extends JpaRepository
                     and j2.status = com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus.COMPLETED
               )
             """)
-    List<ExperimentPipelineGenerationJob> findLatestCompletedPerSectionByExperimentId(
-            @Param("experimentId") Long experimentId,
-            @Param("section") ExperimentPipelineSection section);
+  List<ExperimentPipelineGenerationJob> findLatestCompletedPerSectionByExperimentId(
+      @Param("experimentId") Long experimentId,
+      @Param("section") ExperimentPipelineSection section);
 
-    @Query("select coalesce(sum(j.costUsd), 0) from ExperimentPipelineGenerationJob j where j.experiment.id = :experimentId")
-    BigDecimal sumCostUsdByExperimentId(Long experimentId);
+  @Query(
+      "select coalesce(sum(j.costUsd), 0) from ExperimentPipelineGenerationJob j where j.experiment.id = :experimentId")
+  BigDecimal sumCostUsdByExperimentId(Long experimentId);
 }

@@ -12,7 +12,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 /**
- * Implementa o contrato OPRM de configuração da etapa dois usando os repositórios canônicos de pipeline e preços.
+ * Implementa o contrato OPRM de configuração da etapa dois usando os repositórios canônicos de
+ * pipeline e preços.
  */
 @Component
 public class JpaOprmNicheResearchSeedBuilderConfigurationGateway
@@ -25,7 +26,10 @@ public class JpaOprmNicheResearchSeedBuilderConfigurationGateway
   private final PipelineStageRepository pipelineStageRepository;
   private final OpenAiPricingService openAiPricingService;
 
-  /** Inicializa o gateway com os componentes canônicos que ficam fora do limite arquitetural direto do OPRM. */
+  /**
+   * Inicializa o gateway com os componentes canônicos que ficam fora do limite arquitetural direto
+   * do OPRM.
+   */
   public JpaOprmNicheResearchSeedBuilderConfigurationGateway(
       PipelineStageConfigRepository pipelineStageConfigRepository,
       PipelineStageRepository pipelineStageRepository,
@@ -35,13 +39,20 @@ public class JpaOprmNicheResearchSeedBuilderConfigurationGateway
     this.openAiPricingService = openAiPricingService;
   }
 
-  /** Recupera o modelo configurado priorizando o contrato persistente oficial e mantendo fallback legado. */
+  /**
+   * Recupera o modelo configurado priorizando o contrato persistente oficial e mantendo fallback
+   * legado.
+   */
   @Override
   public Optional<OprmNicheResearchSeedBuilderModel> findConfiguredModel() {
-    return findPersistentConfiguredModel().or(this::findLegacyConfiguredModel).map(this::toOprmModel);
+    return findPersistentConfiguredModel()
+        .or(this::findLegacyConfiguredModel)
+        .map(this::toOprmModel);
   }
 
-  /** Estima o custo padrão da chamada OpenAI para a etapa OPRM usando o serviço canônico de preços. */
+  /**
+   * Estima o custo padrão da chamada OpenAI para a etapa OPRM usando o serviço canônico de preços.
+   */
   @Override
   public BigDecimal estimateCostUsd(String model, Integer inputTokens, Integer outputTokens) {
     return openAiPricingService.estimateStandardCost(
@@ -52,7 +63,9 @@ public class JpaOprmNicheResearchSeedBuilderConfigurationGateway
   private Optional<OpenAiModel> findPersistentConfiguredModel() {
     return pipelineStageConfigRepository
         .findOfficialStageConfig(
-            OPRM_NICHO_CNAE_PIPELINE_CODE, OPRM_NICHO_CNAE_CANONICAL_VERSION, SEED_BUILDER_CANONICAL_CODE)
+            OPRM_NICHO_CNAE_PIPELINE_CODE,
+            OPRM_NICHO_CNAE_CANONICAL_VERSION,
+            SEED_BUILDER_CANONICAL_CODE)
         .map(config -> config.getOpenAiModel());
   }
 

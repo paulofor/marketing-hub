@@ -9,14 +9,13 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Angle {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String name;
+  private String name;
 
-    @Lob
-    private String description;
+  @Lob private String description;
 
-    private String frameType;
+  private String frameType;
 }

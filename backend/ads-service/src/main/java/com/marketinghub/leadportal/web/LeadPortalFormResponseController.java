@@ -16,15 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 public class LeadPortalFormResponseController {
 
-    private final LeadPortalFormResponseService service;
+  private final LeadPortalFormResponseService service;
 
-    public LeadPortalFormResponseController(LeadPortalFormResponseService service) {
-        this.service = service;
-    }
+  public LeadPortalFormResponseController(LeadPortalFormResponseService service) {
+    this.service = service;
+  }
 
-    @GetMapping
-    public List<LeadPortalFormResponseDto> listRecent(
-            @RequestParam(name = "limit", defaultValue = "50") @Positive int limit) {
-        return service.listRecentResponses(limit);
-    }
+  @GetMapping
+  public List<LeadPortalFormResponseDto> listRecent(
+      @RequestParam(name = "limit", defaultValue = "50") @Positive int limit) {
+    return service.listRecentResponses(limit);
+  }
 }

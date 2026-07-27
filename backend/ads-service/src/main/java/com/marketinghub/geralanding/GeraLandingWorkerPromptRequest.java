@@ -4,8 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record GeraLandingWorkerPromptRequest(
-        @NotNull Long experimentId,
-        @NotBlank String stageCode,
-        @NotBlank String jobId,
-        @NotBlank String promptContent) {
-}
+    @NotNull Long experimentId,
+    @NotBlank String stageCode,
+    @NotBlank String jobId,
+    @NotBlank String promptContent) {}

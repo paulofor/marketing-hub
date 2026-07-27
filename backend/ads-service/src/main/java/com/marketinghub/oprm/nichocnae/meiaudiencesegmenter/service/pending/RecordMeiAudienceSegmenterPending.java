@@ -3,7 +3,10 @@ package com.marketinghub.oprm.nichocnae.meiaudiencesegmenter.service.pending;
 import java.time.Instant;
 import java.util.List;
 
-/** Contrato interno que entrega evidências coletadas para a IA segmentar público MEI/autônomo sem criar produto. */
+/**
+ * Contrato interno que entrega evidências coletadas para a IA segmentar público MEI/autônomo sem
+ * criar produto.
+ */
 public record RecordMeiAudienceSegmenterPending(
     Long researchCycleId,
     Long routineCardId,

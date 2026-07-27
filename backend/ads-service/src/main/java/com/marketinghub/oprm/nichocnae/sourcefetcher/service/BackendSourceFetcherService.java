@@ -22,7 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Responsável por persistir os metadados e trechos curtos coletados na etapa quatro do OPRM nicho CNAE. */
+/**
+ * Responsável por persistir os metadados e trechos curtos coletados na etapa quatro do OPRM nicho
+ * CNAE.
+ */
 @Service
 public class BackendSourceFetcherService {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackendSourceFetcherService.class);
@@ -55,7 +58,10 @@ public class BackendSourceFetcherService {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
   }
 
-  /** Lista fontes candidatas encontradas apenas de ciclos ativos para coleta curta independente por ciclo. */
+  /**
+   * Lista fontes candidatas encontradas apenas de ciclos ativos para coleta curta independente por
+   * ciclo.
+   */
   @Transactional(readOnly = true)
   public List<RecordSourceFetcherPending> listPending() {
     return sourceCandidateRepository
@@ -68,7 +74,8 @@ public class BackendSourceFetcherService {
 
   /** Grava o snapshot curto coletado para uma fonte candidata selecionada. */
   @Transactional
-  public CompleteSourceFetcherResponse complete(Long sourceCandidateId, CompleteSourceFetcherRequest request) {
+  public CompleteSourceFetcherResponse complete(
+      Long sourceCandidateId, CompleteSourceFetcherRequest request) {
     try {
       validateCompletionRequest(sourceCandidateId, request);
       OprmSourceCandidate candidate = findCandidate(sourceCandidateId);
@@ -76,10 +83,12 @@ public class BackendSourceFetcherService {
       validateCandidateMatchesRequest(candidate, request);
       OprmRoutineResearchCycle cycle = findCycle(candidate.getResearchCycleId());
       if (sourceSnapshotRepository.existsBySourceCandidateId(sourceCandidateId)) {
-        throw new IllegalStateException("sourceCandidate already has snapshot: " + sourceCandidateId);
+        throw new IllegalStateException(
+            "sourceCandidate already has snapshot: " + sourceCandidateId);
       }
       Instant now = Instant.now();
-      OprmSourceSnapshot snapshot = sourceSnapshotRepository.save(createSnapshot(candidate, request, now));
+      OprmSourceSnapshot snapshot =
+          sourceSnapshotRepository.save(createSnapshot(candidate, request, now));
       candidate.setSelectedForFetch(true);
       candidate.setRelevanceScore(defaultInteger(request.relevanceScore(), 100));
       candidate.setRejectionReason(null);
@@ -118,12 +127,16 @@ public class BackendSourceFetcherService {
       Instant now = Instant.now();
       candidate.setSelectedForFetch(false);
       candidate.setRelevanceScore(request == null ? null : request.relevanceScore());
-      candidate.setRejectionReason(requiredText(request == null ? null : request.rejectionReason(), "rejectionReason"));
+      candidate.setRejectionReason(
+          requiredText(request == null ? null : request.rejectionReason(), "rejectionReason"));
       candidate.setStatus(CANDIDATE_STATUS_REJECTED);
       candidate.setUpdatedAt(now);
       sourceCandidateRepository.save(candidate);
     } catch (RuntimeException ex) {
-      LOGGER.error("Erro ao registrar falha da etapa quatro do OPRM nichocnae (sourceCandidateId={})", sourceCandidateId, ex);
+      LOGGER.error(
+          "Erro ao registrar falha da etapa quatro do OPRM nichocnae (sourceCandidateId={})",
+          sourceCandidateId,
+          ex);
       throw ex;
     }
   }
@@ -132,30 +145,39 @@ public class BackendSourceFetcherService {
   @Transactional(readOnly = true)
   public SourceFetcherDetailResponse detail(Long researchCycleId) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-    List<SourceSnapshotResponse> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId)
-        .stream()
-        .map(this::toSnapshotResponse)
-        .toList();
+    List<SourceSnapshotResponse> snapshots =
+        sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId).stream()
+            .map(this::toSnapshotResponse)
+            .toList();
     return new SourceFetcherDetailResponse(
-        cycle.getId(), cycle.getStatus(), cycle.getTotalSourceCandidates(), cycle.getTotalSourceSnapshots(), snapshots);
+        cycle.getId(),
+        cycle.getStatus(),
+        cycle.getTotalSourceCandidates(),
+        cycle.getTotalSourceSnapshots(),
+        snapshots);
   }
 
   /** Localiza uma fonte candidata ou falha com erro de contrato quando ela não existe. */
   private OprmSourceCandidate findCandidate(Long sourceCandidateId) {
     return sourceCandidateRepository
         .findById(sourceCandidateId)
-        .orElseThrow(() -> new EntityNotFoundException("Source candidate not found: " + sourceCandidateId));
+        .orElseThrow(
+            () -> new EntityNotFoundException("Source candidate not found: " + sourceCandidateId));
   }
 
   /** Localiza o ciclo de pesquisa ou falha com erro de contrato quando ele não existe. */
   private OprmRoutineResearchCycle findCycle(Long researchCycleId) {
     return routineResearchCycleRepository
         .findById(researchCycleId)
-        .orElseThrow(() -> new EntityNotFoundException("Routine research cycle not found: " + researchCycleId));
+        .orElseThrow(
+            () ->
+                new EntityNotFoundException(
+                    "Routine research cycle not found: " + researchCycleId));
   }
 
   /** Valida o payload de conclusão para bloquear HTML completo e exigir campos contratuais. */
-  private void validateCompletionRequest(Long sourceCandidateId, CompleteSourceFetcherRequest request) {
+  private void validateCompletionRequest(
+      Long sourceCandidateId, CompleteSourceFetcherRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("request is required");
     }
@@ -171,7 +193,8 @@ public class BackendSourceFetcherService {
     requiredText(request.storagePolicy(), "storagePolicy");
     String shortExcerpt = requiredText(request.shortExcerpt(), "shortExcerpt");
     if (shortExcerpt.length() > MAX_SHORT_EXCERPT_LENGTH) {
-      throw new IllegalArgumentException("shortExcerpt must contain at most " + MAX_SHORT_EXCERPT_LENGTH + " characters");
+      throw new IllegalArgumentException(
+          "shortExcerpt must contain at most " + MAX_SHORT_EXCERPT_LENGTH + " characters");
     }
     if (sourceCandidateId == null) {
       throw new IllegalArgumentException("sourceCandidateId is required");
@@ -179,7 +202,8 @@ public class BackendSourceFetcherService {
   }
 
   /** Confere se o snapshot recebido pertence exatamente à URL candidata selecionada. */
-  private void validateCandidateMatchesRequest(OprmSourceCandidate candidate, CompleteSourceFetcherRequest request) {
+  private void validateCandidateMatchesRequest(
+      OprmSourceCandidate candidate, CompleteSourceFetcherRequest request) {
     if (!candidate.getSourceUrl().equals(requiredText(request.sourceUrl(), "sourceUrl"))) {
       throw new IllegalArgumentException("sourceUrl must match source candidate URL");
     }
@@ -188,14 +212,17 @@ public class BackendSourceFetcherService {
     }
   }
 
-  /** Bloqueia coleta de fontes de solução ou comerciais para preservar a pesquisa de rotina real. */
+  /**
+   * Bloqueia coleta de fontes de solução ou comerciais para preservar a pesquisa de rotina real.
+   */
   private void validateRoutineSourceEligibleForFetch(OprmSourceCandidate candidate) {
     if (!CANDIDATE_STATUS_FOUND.equals(candidate.getStatus())) {
       throw new IllegalArgumentException("sourceCandidate must be FOUND before fetch");
     }
     if (Boolean.TRUE.equals(candidate.getCommercialPageRisk())
         || Boolean.TRUE.equals(candidate.getSolutionLanguageRisk())) {
-      throw new IllegalArgumentException("sourceCandidate must be a routine source without solution or commercial risk");
+      throw new IllegalArgumentException(
+          "sourceCandidate must be a routine source without solution or commercial risk");
     }
   }
 
@@ -210,15 +237,22 @@ public class BackendSourceFetcherService {
     snapshot.setSourceTitle(requiredText(request.sourceTitle(), "sourceTitle"));
     snapshot.setSourceType(defaultText(request.sourceType(), DEFAULT_SOURCE_TYPE));
     snapshot.setSourceIntent(requiredText(request.sourceIntent(), "sourceIntent"));
-    snapshot.setRoutineEvidenceScore(requiredScore(request.routineEvidenceScore(), "routineEvidenceScore"));
-    snapshot.setCommercialPageRisk(requiredBoolean(request.commercialPageRisk(), "commercialPageRisk"));
-    snapshot.setSolutionLanguageRisk(requiredBoolean(request.solutionLanguageRisk(), "solutionLanguageRisk"));
-    snapshot.setSourceClassificationType(defaultText(request.sourceClassificationType(), DEFAULT_SOURCE_CLASSIFICATION_TYPE));
+    snapshot.setRoutineEvidenceScore(
+        requiredScore(request.routineEvidenceScore(), "routineEvidenceScore"));
+    snapshot.setCommercialPageRisk(
+        requiredBoolean(request.commercialPageRisk(), "commercialPageRisk"));
+    snapshot.setSolutionLanguageRisk(
+        requiredBoolean(request.solutionLanguageRisk(), "solutionLanguageRisk"));
+    snapshot.setSourceClassificationType(
+        defaultText(request.sourceClassificationType(), DEFAULT_SOURCE_CLASSIFICATION_TYPE));
     snapshot.setSourceFreshnessScore(normalizeOptionalScore(request.sourceFreshnessScore()));
-    snapshot.setOutdatedSourceRisk(requiredBoolean(request.outdatedSourceRisk(), "outdatedSourceRisk"));
+    snapshot.setOutdatedSourceRisk(
+        requiredBoolean(request.outdatedSourceRisk(), "outdatedSourceRisk"));
     snapshot.setBrazilRelevanceScore(normalizeOptionalScore(request.brazilRelevanceScore()));
-    snapshot.setAutonomousProfessionalEvidenceScore(normalizeOptionalScore(request.autonomousProfessionalEvidenceScore()));
-    snapshot.setStructuredBusinessDriftRisk(requiredBoolean(request.structuredBusinessDriftRisk(), "structuredBusinessDriftRisk"));
+    snapshot.setAutonomousProfessionalEvidenceScore(
+        normalizeOptionalScore(request.autonomousProfessionalEvidenceScore()));
+    snapshot.setStructuredBusinessDriftRisk(
+        requiredBoolean(request.structuredBusinessDriftRisk(), "structuredBusinessDriftRisk"));
     snapshot.setPublishedAt(request.publishedAt());
     snapshot.setSnippet(trimToNull(request.snippet()));
     snapshot.setShortExcerpt(requiredText(request.shortExcerpt(), "shortExcerpt"));
@@ -237,11 +271,14 @@ public class BackendSourceFetcherService {
 
   /** Calcula o total de snapshots do ciclo depois da persistência atual. */
   private Integer countCycleSnapshots(Long researchCycleId, int fallbackCurrentSnapshotCount) {
-    List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
+    List<OprmSourceSnapshot> snapshots =
+        sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
     return snapshots.isEmpty() ? fallbackCurrentSnapshotCount : snapshots.size();
   }
 
-  /** Converte uma candidata pendente para o contrato interno de unidade de trabalho da etapa quatro. */
+  /**
+   * Converte uma candidata pendente para o contrato interno de unidade de trabalho da etapa quatro.
+   */
   private RecordSourceFetcherPending toPending(OprmSourceCandidate candidate) {
     return new RecordSourceFetcherPending(
         candidate.getId(),

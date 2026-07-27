@@ -1,16 +1,13 @@
 package com.marketinghub.epm;
 
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.time.LocalDate;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-import java.time.LocalDate;
-
-/**
- * Representa a verba planejada para executar um experimento financeiro do EPM.
- */
+/** Representa a verba planejada para executar um experimento financeiro do EPM. */
 @Entity
 @Table(name = "experiment_budget")
 @Data
@@ -18,58 +15,58 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExperimentBudget {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "financial_plan_hypothesis_id", nullable = false)
-    private FinancialPlanHypothesis financialPlanHypothesis;
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "financial_plan_hypothesis_id", nullable = false)
+  private FinancialPlanHypothesis financialPlanHypothesis;
 
-    @Column(name = "external_experiment_id")
-    private Long externalExperimentId;
+  @Column(name = "external_experiment_id")
+  private Long externalExperimentId;
 
-    @Column(nullable = false, length = 191)
-    private String name;
+  @Column(nullable = false, length = 191)
+  private String name;
 
-    @Column(name = "planned_daily_budget_cents", nullable = false)
-    private Long plannedDailyBudgetCents;
+  @Column(name = "planned_daily_budget_cents", nullable = false)
+  private Long plannedDailyBudgetCents;
 
-    @Column(name = "planned_duration_days", nullable = false)
-    private Integer plannedDurationDays;
+  @Column(name = "planned_duration_days", nullable = false)
+  private Integer plannedDurationDays;
 
-    @Column(name = "planned_total_budget_cents", nullable = false)
-    private Long plannedTotalBudgetCents;
+  @Column(name = "planned_total_budget_cents", nullable = false)
+  private Long plannedTotalBudgetCents;
 
-    @Column(name = "spend_limit_cents")
-    private Long spendLimitCents;
+  @Column(name = "spend_limit_cents")
+  private Long spendLimitCents;
 
-    @Builder.Default
-    @Column(name = "actual_spend_cents")
-    private Long actualSpendCents = 0L;
+  @Builder.Default
+  @Column(name = "actual_spend_cents")
+  private Long actualSpendCents = 0L;
 
-    @Column(name = "remaining_budget_cents")
-    private Long remainingBudgetCents;
+  @Column(name = "remaining_budget_cents")
+  private Long remainingBudgetCents;
 
-    @Column(name = "start_date")
-    private LocalDate startDate;
+  @Column(name = "start_date")
+  private LocalDate startDate;
 
-    @Column(name = "end_date")
-    private LocalDate endDate;
+  @Column(name = "end_date")
+  private LocalDate endDate;
 
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private ExperimentBudgetStatus status = ExperimentBudgetStatus.PLANNED;
+  @Builder.Default
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 32)
+  private ExperimentBudgetStatus status = ExperimentBudgetStatus.PLANNED;
 
-    @Column(columnDefinition = "TEXT")
-    private String notes;
+  @Column(columnDefinition = "TEXT")
+  private String notes;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

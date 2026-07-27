@@ -9,7 +9,10 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.Data;
 
-/** Entidade responsável por persistir o perfil rastreável do público-alvo MEI/autônomo pesquisado pelo OPRM. */
+/**
+ * Entidade responsável por persistir o perfil rastreável do público-alvo MEI/autônomo pesquisado
+ * pelo OPRM.
+ */
 @Entity
 @Data
 @Table(name = "oprm_mei_audience_profile")

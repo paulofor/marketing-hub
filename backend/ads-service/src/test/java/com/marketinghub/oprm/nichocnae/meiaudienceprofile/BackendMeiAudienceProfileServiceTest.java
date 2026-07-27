@@ -18,23 +18,32 @@ import org.mockito.ArgumentCaptor;
 
 /** Testes responsáveis por validar a orquestração do serviço de perfil MEI/autônomo. */
 class BackendMeiAudienceProfileServiceTest {
-  private final OprmMeiAudienceProfileRepository repository = mock(OprmMeiAudienceProfileRepository.class);
-  private final OprmNicheRoutineCardRepository routineCardRepository = mock(OprmNicheRoutineCardRepository.class);
-  private final BackendMeiAudienceProfileService service = new BackendMeiAudienceProfileService(repository, routineCardRepository);
+  private final OprmMeiAudienceProfileRepository repository =
+      mock(OprmMeiAudienceProfileRepository.class);
+  private final OprmNicheRoutineCardRepository routineCardRepository =
+      mock(OprmNicheRoutineCardRepository.class);
+  private final BackendMeiAudienceProfileService service =
+      new BackendMeiAudienceProfileService(repository, routineCardRepository);
 
-  /** Valida que o serviço grava somente campos de público-alvo e normaliza scores ausentes para zero. */
+  /**
+   * Valida que o serviço grava somente campos de público-alvo e normaliza scores ausentes para
+   * zero.
+   */
   @Test
   void upsertAudienceProfilePersistsAudienceContractWithoutCommercialFields() {
     when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.empty());
-    when(repository.save(any(OprmMeiAudienceProfile.class))).thenAnswer(invocation -> {
-      OprmMeiAudienceProfile profile = invocation.getArgument(0);
-      profile.setId(55L);
-      return profile;
-    });
+    when(repository.save(any(OprmMeiAudienceProfile.class)))
+        .thenAnswer(
+            invocation -> {
+              OprmMeiAudienceProfile profile = invocation.getArgument(0);
+              profile.setId(55L);
+              return profile;
+            });
 
     var response = service.upsertAudienceProfile(request());
 
-    ArgumentCaptor<OprmMeiAudienceProfile> captor = ArgumentCaptor.forClass(OprmMeiAudienceProfile.class);
+    ArgumentCaptor<OprmMeiAudienceProfile> captor =
+        ArgumentCaptor.forClass(OprmMeiAudienceProfile.class);
     verify(repository).save(captor.capture());
     OprmMeiAudienceProfile saved = captor.getValue();
     assertThat(saved.getResearchCycleId()).isEqualTo(1001L);
@@ -83,19 +92,24 @@ class BackendMeiAudienceProfileServiceTest {
     profile.setStructuredBusinessDriftRiskScore(9);
     profile.setSolutionLanguageRiskScore(0);
     OprmNicheRoutineCard card = approvedCard();
-    when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
+    when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.of(profile));
     when(routineCardRepository.findById(2002L)).thenReturn(Optional.of(card));
     profile.setRoutineCardId(2002L);
 
     var detail = service.detailByResearchCycleId(1001L);
 
-    assertThat(detail).get().satisfies(response -> {
-      assertThat(response.id()).isEqualTo(55L);
-      assertThat(response.audienceName()).isEqualTo("manicures MEI que atendem por agenda própria");
-      assertThat(response.cnaeCode()).isEqualTo("9602501");
-      assertThat(response.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
-      assertThat(response.approvedForConsumption()).isTrue();
-    });
+    assertThat(detail)
+        .get()
+        .satisfies(
+            response -> {
+              assertThat(response.id()).isEqualTo(55L);
+              assertThat(response.audienceName())
+                  .isEqualTo("manicures MEI que atendem por agenda própria");
+              assertThat(response.cnaeCode()).isEqualTo("9602501");
+              assertThat(response.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
+              assertThat(response.approvedForConsumption()).isTrue();
+            });
   }
 
   /** Valida que o detalhe aprovado só libera perfil após aprovação do gate de qualidade. */
@@ -103,16 +117,20 @@ class BackendMeiAudienceProfileServiceTest {
   void approvedDetailByResearchCycleIdRequiresQualityGateApproval() {
     OprmMeiAudienceProfile profile = profile();
     OprmNicheRoutineCard card = approvedCard();
-    when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
+    when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.of(profile));
     when(routineCardRepository.findById(2002L)).thenReturn(Optional.of(card));
 
     var detail = service.approvedDetailByResearchCycleId(1001L);
 
-    assertThat(detail).get().satisfies(response -> {
-      assertThat(response.approvedForConsumption()).isTrue();
-      assertThat(response.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
-      assertThat(response.recentSourceSummary()).contains("Fontes brasileiras recentes");
-    });
+    assertThat(detail)
+        .get()
+        .satisfies(
+            response -> {
+              assertThat(response.approvedForConsumption()).isTrue();
+              assertThat(response.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
+              assertThat(response.recentSourceSummary()).contains("Fontes brasileiras recentes");
+            });
   }
 
   /** Valida que o perfil final aprovado não é exposto quando contém linguagem de solução. */
@@ -120,14 +138,14 @@ class BackendMeiAudienceProfileServiceTest {
   void approvedDetailByResearchCycleIdRejectsSolutionContamination() {
     OprmMeiAudienceProfile profile = profile();
     profile.setAudienceName("manicures buscando software para vender mais");
-    when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
+    when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L))
+        .thenReturn(Optional.of(profile));
     when(routineCardRepository.findById(2002L)).thenReturn(Optional.of(approvedCard()));
 
     assertThatThrownBy(() -> service.approvedDetailByResearchCycleId(1001L))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("linguagem de solução proibida");
   }
-
 
   /** Monta um perfil persistido de público MEI/autônomo aprovado e sem linguagem comercial. */
   private OprmMeiAudienceProfile profile() {
@@ -142,15 +160,20 @@ class BackendMeiAudienceProfileServiceTest {
     profile.setAudienceName("manicures MEI que atendem por agenda própria");
     profile.setOccupationTerms("manicure autônoma; nail designer MEI");
     profile.setWorkMode("Atendimento em domicílio, salão parceiro ou espaço próprio pequeno.");
-    profile.setCustomerAcquisitionBehavior("Captação por indicação, WhatsApp, Instagram e clientes recorrentes.");
-    profile.setDailyRoutineSummary("Agenda clientes, compra materiais, atende, cobra e reorganiza horários.");
-    profile.setOperationalPainsSummary("Cancelamentos, atrasos, retrabalho e compra de material sem previsibilidade.");
-    profile.setEmotionalPainsSummary("Medo de renda instável e insegurança para cobrar preço justo.");
+    profile.setCustomerAcquisitionBehavior(
+        "Captação por indicação, WhatsApp, Instagram e clientes recorrentes.");
+    profile.setDailyRoutineSummary(
+        "Agenda clientes, compra materiais, atende, cobra e reorganiza horários.");
+    profile.setOperationalPainsSummary(
+        "Cancelamentos, atrasos, retrabalho e compra de material sem previsibilidade.");
+    profile.setEmotionalPainsSummary(
+        "Medo de renda instável e insegurança para cobrar preço justo.");
     profile.setDreamsSummary("Ter agenda cheia, renda previsível e reconhecimento profissional.");
     profile.setFearsSummary("Perder clientes, receber avaliações ruins e ficar sem caixa.");
     profile.setLanguagePatterns("agenda cheia; cliente fixa; meu próprio horário; cobrar certo");
     profile.setChannelsUsed("WhatsApp; Instagram; Google Perfil da Empresa");
-    profile.setRecentSourceSummary("Fontes brasileiras recentes sobre rotina de manicures autônomas e MEI.");
+    profile.setRecentSourceSummary(
+        "Fontes brasileiras recentes sobre rotina de manicures autônomas e MEI.");
     profile.setAutonomousProfessionalFitScore(92);
     profile.setBehavioralEvidenceScore(88);
     profile.setSourceFreshnessScore(81);

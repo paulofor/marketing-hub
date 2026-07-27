@@ -2,7 +2,9 @@ package com.marketinghub.oprm.nichocnae.routineresearchcycle.service.recebeRespo
 
 import java.math.BigDecimal;
 
-/** Contrato para registrar a resposta da IA quando a etapa passar a receber callbacks assíncronos. */
+/**
+ * Contrato para registrar a resposta da IA quando a etapa passar a receber callbacks assíncronos.
+ */
 public record RecebeRespostaRequest(
     Long researchCycleId,
     String stageCode,

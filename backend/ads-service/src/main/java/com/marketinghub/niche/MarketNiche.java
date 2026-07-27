@@ -1,7 +1,5 @@
 package com.marketinghub.niche;
 
-import jakarta.persistence.*;
-import lombok.*;
 import com.marketinghub.appidea.AppIdea;
 import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.deliverable.Deliverable;
@@ -10,18 +8,17 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.informationsource.InformationSource;
 import com.marketinghub.niche.description.NicheDetailedDescription;
 import com.marketinghub.targeting.TargetingElement;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
-/**
- * Representa um nicho de mercado usado para descoberta, experimentos e mensuração comercial.
- */
+/** Representa um nicho de mercado usado para descoberta, experimentos e mensuração comercial. */
 @Entity
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -29,191 +26,189 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MarketNiche {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @EqualsAndHashCode.Include
+  private Long id;
 
-    private String name;
+  private String name;
 
-    /** Optional description or notes about this niche. */
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String description;
+  /** Optional description or notes about this niche. */
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String description;
 
-    @Column(name = "facebook_pixel_id", length = 64)
-    private String facebookPixelId;
+  @Column(name = "facebook_pixel_id", length = 64)
+  private String facebookPixelId;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "facebook_pixel_code", columnDefinition = "LONGTEXT")
-    private String facebookPixelCode;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "facebook_pixel_code", columnDefinition = "LONGTEXT")
+  private String facebookPixelCode;
 
-    @Column(name = "facebook_pixel_created_at")
-    private Instant facebookPixelCreatedAt;
+  @Column(name = "facebook_pixel_created_at")
+  private Instant facebookPixelCreatedAt;
 
-    @Column(name = "facebook_pixel_requested_at")
-    private Instant facebookPixelRequestedAt;
+  @Column(name = "facebook_pixel_requested_at")
+  private Instant facebookPixelRequestedAt;
 
-    @Column(name = "facebook_pixel_request_status", length = 32)
-    private String facebookPixelRequestStatus;
+  @Column(name = "facebook_pixel_request_status", length = 32)
+  private String facebookPixelRequestStatus;
 
-    /** Código CNAE de origem usado para atualizar o nicho em reprocessamentos do NichoCNAE. */
-    @Column(name = "source_cnae_code", length = 16)
-    private String sourceCnaeCode;
+  /** Código CNAE de origem usado para atualizar o nicho em reprocessamentos do NichoCNAE. */
+  @Column(name = "source_cnae_code", length = 16)
+  private String sourceCnaeCode;
 
-    /** Descrição do CNAE de origem usado na materialização do nicho. */
-    @Column(name = "source_cnae_description", length = 255)
-    private String sourceCnaeDescription;
+  /** Descrição do CNAE de origem usado na materialização do nicho. */
+  @Column(name = "source_cnae_description", length = 255)
+  private String sourceCnaeDescription;
 
-    /** Categoria principal de interesse associada ao nicho. */
-    private String interestCategory;
+  /** Categoria principal de interesse associada ao nicho. */
+  private String interestCategory;
 
-    /** Categoria de cargo associada ao nicho. */
-    private String roleCategory;
+  /** Categoria de cargo associada ao nicho. */
+  private String roleCategory;
 
-    /** Results of demand volume tests. */
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String demandVolume;
+  /** Results of demand volume tests. */
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String demandVolume;
 
-    /** Promises validated for this niche. */
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String promises;
+  /** Promises validated for this niche. */
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String promises;
 
-    /** Offers validated for this niche. */
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String offers;
+  /** Offers validated for this niche. */
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String offers;
 
-    /** Custo estimado para o nicho. */
-    @Column(precision = 10, scale = 2)
-    private BigDecimal cost;
+  /** Custo estimado para o nicho. */
+  @Column(precision = 10, scale = 2)
+  private BigDecimal cost;
 
-    /** Despesa estimada para o nicho. */
-    @Column(precision = 10, scale = 2)
-    private BigDecimal expense;
+  /** Despesa estimada para o nicho. */
+  @Column(precision = 10, scale = 2)
+  private BigDecimal expense;
 
-    /** Custo total acumulado para o nicho. */
-    @Column(precision = 12, scale = 2)
-    private BigDecimal totalCost;
+  /** Custo total acumulado para o nicho. */
+  @Column(precision = 12, scale = 2)
+  private BigDecimal totalCost;
 
-    /** Receita total acumulada para o nicho. */
-    @Column(precision = 12, scale = 2)
-    private BigDecimal totalRevenue;
+  /** Receita total acumulada para o nicho. */
+  @Column(precision = 12, scale = 2)
+  private BigDecimal totalRevenue;
 
-    /** Quantidade de hipóteses a serem geradas para este nicho. */
-    private Integer hypothesesToGenerate;
+  /** Quantidade de hipóteses a serem geradas para este nicho. */
+  private Integer hypothesesToGenerate;
 
-    /** Quantidade de interesses a serem gerados para este nicho. */
-    private Integer interestsToGenerate;
+  /** Quantidade de interesses a serem gerados para este nicho. */
+  private Integer interestsToGenerate;
 
-    /** Quantidade de cargos a serem gerados para este nicho. */
-    private Integer jobTitlesToGenerate;
+  /** Quantidade de cargos a serem gerados para este nicho. */
+  private Integer jobTitlesToGenerate;
 
-    /** Quantidade de comportamentos a serem gerados para este nicho. */
-    private Integer behaviorsToGenerate;
+  /** Quantidade de comportamentos a serem gerados para este nicho. */
+  private Integer behaviorsToGenerate;
 
-    /** Quantidade de descrições detalhadas a serem geradas para este nicho. */
-    private Integer detailedDescriptionsToGenerate;
+  /** Quantidade de descrições detalhadas a serem geradas para este nicho. */
+  private Integer detailedDescriptionsToGenerate;
 
-    /** Modelo do OpenAI a ser utilizado para gerar hipóteses. */
-    @Column(length = 191)
-    private String hypothesisModel;
+  /** Modelo do OpenAI a ser utilizado para gerar hipóteses. */
+  @Column(length = 191)
+  private String hypothesisModel;
 
-    /** Modelo do OpenAI a ser utilizado para gerar interesses. */
-    @Column(length = 191)
-    private String interestModel;
+  /** Modelo do OpenAI a ser utilizado para gerar interesses. */
+  @Column(length = 191)
+  private String interestModel;
 
-    /** Modelo do OpenAI a ser utilizado para gerar cargos. */
-    @Column(length = 191)
-    private String jobTitleModel;
+  /** Modelo do OpenAI a ser utilizado para gerar cargos. */
+  @Column(length = 191)
+  private String jobTitleModel;
 
-    /** Modelo do OpenAI a ser utilizado para gerar comportamentos. */
-    @Column(length = 191)
-    private String behaviorModel;
+  /** Modelo do OpenAI a ser utilizado para gerar comportamentos. */
+  @Column(length = 191)
+  private String behaviorModel;
 
-    /** Modelo do OpenAI a ser utilizado para gerar descrições detalhadas. */
-    @Column(length = 191)
-    private String detailedDescriptionModel;
+  /** Modelo do OpenAI a ser utilizado para gerar descrições detalhadas. */
+  @Column(length = 191)
+  private String detailedDescriptionModel;
 
-    /** Tecnologia diferenciada selecionada para guiar hipóteses. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "differentiated_technology_id")
-    private DifferentiatedTechnology differentiatedTechnology;
+  /** Tecnologia diferenciada selecionada para guiar hipóteses. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "differentiated_technology_id")
+  private DifferentiatedTechnology differentiatedTechnology;
 
-    /** Descrição detalhada ativa para orientar hipóteses. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hypothesis_detailed_description_id")
-    @ToString.Exclude
-    private NicheDetailedDescription hypothesisDetailedDescription;
+  /** Descrição detalhada ativa para orientar hipóteses. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "hypothesis_detailed_description_id")
+  @ToString.Exclude
+  private NicheDetailedDescription hypothesisDetailedDescription;
 
-    /** Base segmentation for the Brazilian market. */
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String baseSegmentation;
+  /** Base segmentation for the Brazilian market. */
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String baseSegmentation;
 
-    /** Main interests or behaviors for this niche. */
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String interests;
+  /** Main interests or behaviors for this niche. */
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String interests;
 
-    /** Demographic filters and job roles. */
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String demographicFilters;
+  /** Demographic filters and job roles. */
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String demographicFilters;
 
-    /** Curated list of interests manually maintained for this niche. */
-    @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
-    @Column(name = "interest_list", columnDefinition = "LONGTEXT")
-    private List<String> interestList;
+  /** Curated list of interests manually maintained for this niche. */
+  @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
+  @Column(name = "interest_list", columnDefinition = "LONGTEXT")
+  private List<String> interestList;
 
-    /** Curated list of job titles manually maintained for this niche. */
-    @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
-    @Column(name = "role_list", columnDefinition = "LONGTEXT")
-    private List<String> roleList;
+  /** Curated list of job titles manually maintained for this niche. */
+  @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
+  @Column(name = "role_list", columnDefinition = "LONGTEXT")
+  private List<String> roleList;
 
-    /** Curated list of behaviors manually maintained for this niche. */
-    @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
-    @Column(name = "behavior_list", columnDefinition = "LONGTEXT")
-    private List<String> behaviorList;
+  /** Curated list of behaviors manually maintained for this niche. */
+  @Convert(converter = com.marketinghub.niche.persistence.StringListConverter.class)
+  @Column(name = "behavior_list", columnDefinition = "LONGTEXT")
+  private List<String> behaviorList;
 
-    /** Extra tips for advertising this niche. */
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String extraTips;
+  /** Extra tips for advertising this niche. */
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String extraTips;
 
-    /** ChatGPT dialog that originated this niche, if any. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chat_dialog_id")
-    @ToString.Exclude
-    private ChatDialog chatDialog;
+  /** ChatGPT dialog that originated this niche, if any. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "chat_dialog_id")
+  @ToString.Exclude
+  private ChatDialog chatDialog;
 
-    @OneToMany(mappedBy = "niche")
-    private java.util.List<Experiment> experiments;
+  @OneToMany(mappedBy = "niche")
+  private java.util.List<Experiment> experiments;
 
-    @OneToMany(mappedBy = "niche")
-    private java.util.List<TargetingElement> targetingElements;
+  @OneToMany(mappedBy = "niche")
+  private java.util.List<TargetingElement> targetingElements;
 
-    @OneToMany(mappedBy = "niche")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private java.util.List<AppIdea> appIdeas;
+  @OneToMany(mappedBy = "niche")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private java.util.List<AppIdea> appIdeas;
 
-    @OneToMany(mappedBy = "niche")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private java.util.List<Deliverable> deliverables;
+  @OneToMany(mappedBy = "niche")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private java.util.List<Deliverable> deliverables;
 
-    @OneToMany(mappedBy = "niche")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private java.util.List<InformationSource> informationSources;
+  @OneToMany(mappedBy = "niche")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private java.util.List<InformationSource> informationSources;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

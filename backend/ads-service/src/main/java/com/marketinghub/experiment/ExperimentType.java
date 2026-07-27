@@ -1,10 +1,8 @@
 package com.marketinghub.experiment;
 
-/**
- * Define o tipo comercial do experimento e a regra principal de aprendizado.
- */
+/** Define o tipo comercial do experimento e a regra principal de aprendizado. */
 public enum ExperimentType {
-    NICHE_TEST,
-    LOW_TICKET_PRODUCT,
-    PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+  NICHE_TEST,
+  LOW_TICKET_PRODUCT,
+  PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
 }

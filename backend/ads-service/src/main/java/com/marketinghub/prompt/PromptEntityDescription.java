@@ -1,11 +1,10 @@
 package com.marketinghub.prompt;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.Instant;
 
 @Entity
 @Data
@@ -15,24 +14,22 @@ import java.time.Instant;
 @EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 @Table(name = "prompt_entity_description")
 public class PromptEntityDescription {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prompt_entity_id")
-    private PromptEntity entity;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "prompt_entity_id")
+  private PromptEntity entity;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String description;
+  @Lob
+  @Column(columnDefinition = "LONGTEXT")
+  private String description;
 
-    @Column(nullable = false)
-    private boolean active = true;
+  @Column(nullable = false)
+  private boolean active = true;
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

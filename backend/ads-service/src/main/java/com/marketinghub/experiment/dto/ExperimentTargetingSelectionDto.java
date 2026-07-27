@@ -5,10 +5,8 @@ import lombok.Builder;
 
 @Builder
 public record ExperimentTargetingSelectionDto(
-        Long id,
-        Long experimentId,
-        TargetingCandidateType candidateType,
-        String term,
-        Long targetingElementId
-) {
-}
+    Long id,
+    Long experimentId,
+    TargetingCandidateType candidateType,
+    String term,
+    Long targetingElementId) {}

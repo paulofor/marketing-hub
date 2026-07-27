@@ -18,150 +18,152 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 /**
- * Minimal storage service used by the ads-service to fetch lead portal assets hosted on Cloudflare R2.
+ * Minimal storage service used by the ads-service to fetch lead portal assets hosted on Cloudflare
+ * R2.
  */
 @Service
 public class FileStorageService {
 
-    private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
+  private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
-    private final StorageProperties properties;
-    private final S3Client s3Client;
+  private final StorageProperties properties;
+  private final S3Client s3Client;
 
-    public FileStorageService(StorageProperties properties, S3Client s3Client) {
-        this.properties = properties;
-        this.s3Client = s3Client;
+  public FileStorageService(StorageProperties properties, S3Client s3Client) {
+    this.properties = properties;
+    this.s3Client = s3Client;
+  }
+
+  @PostConstruct
+  public void validateConfiguration() {
+    if (isBlank(properties.getBucket())
+        || isBlank(properties.getEndpoint())
+        || isBlank(properties.getAccessKeyId())
+        || isBlank(properties.getSecretAccessKey())) {
+      log.warn("Lead portal storage is not fully configured; e-mails with anexos may fail");
+    }
+  }
+
+  public Resource loadAsResource(String storedFileName) {
+    if (isBlank(storedFileName)) {
+      throw new StorageException("storedFileName must be provided");
+    }
+    ResponseInputStream<GetObjectResponse> responseStream = null;
+    try {
+      GetObjectRequest request =
+          GetObjectRequest.builder().bucket(properties.getBucket()).key(storedFileName).build();
+      responseStream = s3Client.getObject(request, ResponseTransformer.toInputStream());
+      Resource resource =
+          toResource(storedFileName, responseStream, properties.getMaxDownloadBytes());
+      responseStream = null; // the caller is responsible for closing the stream
+      return resource;
+    } catch (SdkException | IOException ex) {
+      abortQuietly(responseStream);
+      throw new StorageException("Failed to load file from bucket", ex);
+    }
+  }
+
+  public Optional<String> resolvePublicUrl(String storedFileName) {
+    if (isBlank(storedFileName)) {
+      return Optional.empty();
+    }
+    String base = properties.getPublicBaseUrl();
+    if (isBlank(base)) {
+      return Optional.empty();
+    }
+    String normalized = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+    return Optional.of(normalized + "/" + storedFileName);
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
+  }
+
+  private Resource toResource(
+      String storedFileName, ResponseInputStream<GetObjectResponse> responseStream, long maxBytes)
+      throws IOException {
+    Long contentLength = responseStream.response().contentLength();
+    if (maxBytes > 0 && contentLength != null && contentLength > maxBytes) {
+      abortQuietly(responseStream);
+      throw new IOException(
+          "Object '" + storedFileName + "' exceeds max download size of " + maxBytes + " bytes");
     }
 
-    @PostConstruct
-    public void validateConfiguration() {
-        if (isBlank(properties.getBucket())
-                || isBlank(properties.getEndpoint())
-                || isBlank(properties.getAccessKeyId())
-                || isBlank(properties.getSecretAccessKey())) {
-            log.warn("Lead portal storage is not fully configured; e-mails with anexos may fail");
-        }
+    InputStream limitedStream =
+        maxBytes > 0
+            ? new SizeBoundedInputStream(responseStream, maxBytes, responseStream::abort)
+            : responseStream;
+
+    return new InputStreamResource(limitedStream) {
+      @Override
+      public String getFilename() {
+        return storedFileName;
+      }
+
+      @Override
+      public long contentLength() {
+        return contentLength != null ? contentLength : -1L;
+      }
+    };
+  }
+
+  private void abortQuietly(InputStream stream) {
+    if (stream == null) {
+      return;
+    }
+    try {
+      stream.close();
+    } catch (IOException ex) {
+      log.debug("Failed to close S3 stream", ex);
+    }
+  }
+
+  private static class SizeBoundedInputStream extends FilterInputStream {
+
+    private final long maxBytes;
+    private final Runnable abortAction;
+    private long totalRead;
+
+    SizeBoundedInputStream(InputStream delegate, long maxBytes, Runnable abortAction) {
+      super(delegate);
+      this.maxBytes = maxBytes;
+      this.abortAction = abortAction != null ? abortAction : () -> {};
     }
 
-    public Resource loadAsResource(String storedFileName) {
-        if (isBlank(storedFileName)) {
-            throw new StorageException("storedFileName must be provided");
-        }
-        ResponseInputStream<GetObjectResponse> responseStream = null;
-        try {
-            GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(properties.getBucket())
-                    .key(storedFileName)
-                    .build();
-            responseStream = s3Client.getObject(request, ResponseTransformer.toInputStream());
-            Resource resource = toResource(storedFileName, responseStream, properties.getMaxDownloadBytes());
-            responseStream = null; // the caller is responsible for closing the stream
-            return resource;
-        } catch (SdkException | IOException ex) {
-            abortQuietly(responseStream);
-            throw new StorageException("Failed to load file from bucket", ex);
-        }
+    @Override
+    public int read() throws IOException {
+      int read = super.read();
+      if (read != -1) {
+        registerRead(1);
+      }
+      return read;
     }
 
-    public Optional<String> resolvePublicUrl(String storedFileName) {
-        if (isBlank(storedFileName)) {
-            return Optional.empty();
-        }
-        String base = properties.getPublicBaseUrl();
-        if (isBlank(base)) {
-            return Optional.empty();
-        }
-        String normalized = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
-        return Optional.of(normalized + "/" + storedFileName);
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+      int read = super.read(b, off, len);
+      registerRead(read > 0 ? read : 0);
+      return read;
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+    private void registerRead(int bytesRead) throws IOException {
+      if (bytesRead <= 0) {
+        return;
+      }
+      totalRead += bytesRead;
+      if (totalRead > maxBytes) {
+        abort();
+        throw new IOException(
+            "Downloaded object exceeded configured limit of " + maxBytes + " bytes");
+      }
     }
 
-    private Resource toResource(String storedFileName,
-                                ResponseInputStream<GetObjectResponse> responseStream,
-                                long maxBytes)
-            throws IOException {
-        Long contentLength = responseStream.response().contentLength();
-        if (maxBytes > 0 && contentLength != null && contentLength > maxBytes) {
-            abortQuietly(responseStream);
-            throw new IOException("Object '" + storedFileName + "' exceeds max download size of " + maxBytes + " bytes");
-        }
-
-        InputStream limitedStream = maxBytes > 0
-                ? new SizeBoundedInputStream(responseStream, maxBytes, responseStream::abort)
-                : responseStream;
-
-        return new InputStreamResource(limitedStream) {
-            @Override
-            public String getFilename() {
-                return storedFileName;
-            }
-
-            @Override
-            public long contentLength() {
-                return contentLength != null ? contentLength : -1L;
-            }
-        };
+    private void abort() {
+      try {
+        abortAction.run();
+      } catch (Exception ignored) {
+        // ignore abort errors
+      }
     }
-
-    private void abortQuietly(InputStream stream) {
-        if (stream == null) {
-            return;
-        }
-        try {
-            stream.close();
-        } catch (IOException ex) {
-            log.debug("Failed to close S3 stream", ex);
-        }
-    }
-
-    private static class SizeBoundedInputStream extends FilterInputStream {
-
-        private final long maxBytes;
-        private final Runnable abortAction;
-        private long totalRead;
-
-        SizeBoundedInputStream(InputStream delegate, long maxBytes, Runnable abortAction) {
-            super(delegate);
-            this.maxBytes = maxBytes;
-            this.abortAction = abortAction != null ? abortAction : () -> {};
-        }
-
-        @Override
-        public int read() throws IOException {
-            int read = super.read();
-            if (read != -1) {
-                registerRead(1);
-            }
-            return read;
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            int read = super.read(b, off, len);
-            registerRead(read > 0 ? read : 0);
-            return read;
-        }
-
-        private void registerRead(int bytesRead) throws IOException {
-            if (bytesRead <= 0) {
-                return;
-            }
-            totalRead += bytesRead;
-            if (totalRead > maxBytes) {
-                abort();
-                throw new IOException("Downloaded object exceeded configured limit of " + maxBytes + " bytes");
-            }
-        }
-
-        private void abort() {
-            try {
-                abortAction.run();
-            } catch (Exception ignored) {
-                // ignore abort errors
-            }
-        }
-    }
+  }
 }

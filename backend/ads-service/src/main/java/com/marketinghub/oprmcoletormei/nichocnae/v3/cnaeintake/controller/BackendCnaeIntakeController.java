@@ -21,60 +21,78 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/oprmcoletormei/nichocnae/v3/cnae-intake/stage-executions")
 public class BackendCnaeIntakeController {
-    private static final Logger log = LoggerFactory.getLogger(BackendCnaeIntakeController.class);
-    private final BackendCnaeIntakeService service;
+  private static final Logger log = LoggerFactory.getLogger(BackendCnaeIntakeController.class);
+  private final BackendCnaeIntakeService service;
 
-    /** Inicializa o controller com service canônico da etapa. */
-    public BackendCnaeIntakeController(BackendCnaeIntakeService service) {
-        this.service = service;
-    }
+  /** Inicializa o controller com service canônico da etapa. */
+  public BackendCnaeIntakeController(BackendCnaeIntakeService service) {
+    this.service = service;
+  }
 
-    /** Inicia uma execução pendente da etapa a partir do CNAE informado pela tela. */
-    @PostMapping("/{idExterno}/start")
-    public CnaeIntakeCreateResponse start(@PathVariable("idExterno") String cnaeCode) {
-        return service.start(cnaeCode);
-    }
+  /** Inicia uma execução pendente da etapa a partir do CNAE informado pela tela. */
+  @PostMapping("/{idExterno}/start")
+  public CnaeIntakeCreateResponse start(@PathVariable("idExterno") String cnaeCode) {
+    return service.start(cnaeCode);
+  }
 
-    /** Cria uma execução pendente da etapa cnae-intake. */
-    @PostMapping
-    public CnaeIntakeCreateResponse create(@RequestBody CnaeIntakePendingResponse request) {
-        return service.create(request.jobId(), request.cnaeCode(), request.inputPayload(), request.attemptNumber(), request.knowledgeVersion());
-    }
+  /** Cria uma execução pendente da etapa cnae-intake. */
+  @PostMapping
+  public CnaeIntakeCreateResponse create(@RequestBody CnaeIntakePendingResponse request) {
+    return service.create(
+        request.jobId(),
+        request.cnaeCode(),
+        request.inputPayload(),
+        request.attemptNumber(),
+        request.knowledgeVersion());
+  }
 
-    /** Cria a primeira execução v3 diretamente a partir de um CNAE. */
-    @PostMapping("/cnaes/{cnaeCode}")
-    public CnaeIntakeCreateResponse createForCnae(@PathVariable String cnaeCode) {
-        return service.createForCnae(cnaeCode);
-    }
+  /** Cria a primeira execução v3 diretamente a partir de um CNAE. */
+  @PostMapping("/cnaes/{cnaeCode}")
+  public CnaeIntakeCreateResponse createForCnae(@PathVariable String cnaeCode) {
+    return service.createForCnae(cnaeCode);
+  }
 
-    /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
-    @PostMapping("/{idExterno}/{jobId}/recebeRequest")
-    public CnaeIntakeCreateResponse recebeRequest(@PathVariable("idExterno") String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
-        return service.recebeRequest(cnaeCode, jobId, request);
-    }
+  /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
+  @PostMapping("/{idExterno}/{jobId}/recebeRequest")
+  public CnaeIntakeCreateResponse recebeRequest(
+      @PathVariable("idExterno") String cnaeCode,
+      @PathVariable String jobId,
+      @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+    return service.recebeRequest(cnaeCode, jobId, request);
+  }
 
-    /** Recebe o response bruto da etapa identificado pelo CNAE e jobId. */
-    @PostMapping("/{idExterno}/{jobId}/recebeResponse")
-    public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(@PathVariable("idExterno") String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeResponseRequest request) {
-        log.info("Recebendo response NichoCNAE v3. etapa={}, cnaeCode={}, jobId={}, payload={}", service.stageCode(), cnaeCode, jobId, request);
-        return service.recebeResponse(cnaeCode, jobId, request);
-    }
+  /** Recebe o response bruto da etapa identificado pelo CNAE e jobId. */
+  @PostMapping("/{idExterno}/{jobId}/recebeResponse")
+  public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(
+      @PathVariable("idExterno") String cnaeCode,
+      @PathVariable String jobId,
+      @RequestBody OprmNichoCnaeV3RecebeResponseRequest request) {
+    log.info(
+        "Recebendo response NichoCNAE v3. etapa={}, cnaeCode={}, jobId={}, payload={}",
+        service.stageCode(),
+        cnaeCode,
+        jobId,
+        request);
+    return service.recebeResponse(cnaeCode, jobId, request);
+  }
 
-    /** Entrega pendências da etapa cnae-intake ao executor OPRM. */
-    @PostMapping("/pending")
-    public List<CnaeIntakePendingResponse> pending() {
-        return service.pending();
-    }
+  /** Entrega pendências da etapa cnae-intake ao executor OPRM. */
+  @PostMapping("/pending")
+  public List<CnaeIntakePendingResponse> pending() {
+    return service.pending();
+  }
 
-    /** Recebe conclusão da etapa cnae-intake enviada pelo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/complete")
-    public CnaeIntakeCreateResponse complete(@PathVariable Long stageExecutionId, @RequestBody CnaeIntakeCompletionRequest request) {
-        return service.complete(stageExecutionId, request.outputPayload(), request.nextStageCode());
-    }
+  /** Recebe conclusão da etapa cnae-intake enviada pelo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/complete")
+  public CnaeIntakeCreateResponse complete(
+      @PathVariable Long stageExecutionId, @RequestBody CnaeIntakeCompletionRequest request) {
+    return service.complete(stageExecutionId, request.outputPayload(), request.nextStageCode());
+  }
 
-    /** Recebe falha da etapa cnae-intake enviada pelo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/fail")
-    public CnaeIntakeCreateResponse fail(@PathVariable Long stageExecutionId, @RequestBody CnaeIntakeFailureRequest request) {
-        return service.fail(stageExecutionId, request.errorMessage());
-    }
+  /** Recebe falha da etapa cnae-intake enviada pelo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/fail")
+  public CnaeIntakeCreateResponse fail(
+      @PathVariable Long stageExecutionId, @RequestBody CnaeIntakeFailureRequest request) {
+    return service.fail(stageExecutionId, request.errorMessage());
+  }
 }

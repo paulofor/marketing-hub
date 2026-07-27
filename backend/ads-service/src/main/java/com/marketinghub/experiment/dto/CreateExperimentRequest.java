@@ -2,72 +2,74 @@ package com.marketinghub.experiment.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.math.BigDecimal;
-import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentCreationSource;
+import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.productai.ProductAiSubtype;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.Data;
 
-/**
- * Recebe os dados necessários para criar um experimento comercial.
- */
+/** Recebe os dados necessários para criar um experimento comercial. */
 @Data
 public class CreateExperimentRequest {
-    private Long marketNicheId;
-    private java.util.UUID hypothesisId;
-    private String name;
-    private ExperimentCreationSource creationSource;
-    private String hypothesis;
-    private String singlePain;
-    private String freeReward;
-    private String funnelPromise;
-    private String primaryCta;
-    private ExperimentType experimentType;
-    private ProductAiSubtype productAiSubtype;
-    private ExperimentCampaignObjective campaignObjective;
-    private ExperimentStage stage;
-    private String primaryVariable;
-    private String primaryMetric;
-    @JsonProperty("kpiTarget")
-    @JsonAlias("kpiTargetCpl")
-    private BigDecimal kpiTargetCpl;
-    private String metricPresetId;
-    private Integer sampleSize;
-    private BigDecimal baselineCvr;
-    private BigDecimal targetCvr;
-    @JsonProperty("mde")
-    @JsonAlias("mdePercent")
-    private BigDecimal mdePercent;
-    private BigDecimal dailyBudget;
-    private BigDecimal unitPrice;
-    private BigDecimal cost;
-    private BigDecimal expense;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private Integer creativesToGenerate;
-    private Integer instantFormsToGenerate;
-    private Integer emailsToGenerate;
-    private Integer sampleEmailsToGenerate;
-    private Integer deliverablesToGenerate;
-    private Integer leadPortalFlowsToGenerate;
-    private Integer imagesPerPackage;
-    private Integer openImagesPerPackage;
-    private Integer compressedImagesPerPackage;
-    private Long journeyTemplateId;
-    private Long facebookPageId;
-    private Long facebookInstantFormId;
-    private Long instagramAccountId;
-    private String followUpActionUrl;
-    private String leadPortalFlowModel;
-    private Boolean schemaFirstLeadPortalEnabled;
-    private Long leadPortalFlowId;
-    private Long imageModelId;
-    private Long imageModelQualityId;
-    private String creativeTextPrompt;
-    private String creativeImagePrompt;
-    private List<Long> promiseGenerationRequestIds;
+  private Long marketNicheId;
+  private java.util.UUID hypothesisId;
+  private String name;
+  private ExperimentCreationSource creationSource;
+  private String hypothesis;
+  private String singlePain;
+  private String freeReward;
+  private String funnelPromise;
+  private String primaryCta;
+  private ExperimentType experimentType;
+  private ProductAiSubtype productAiSubtype;
+  private ExperimentCampaignObjective campaignObjective;
+  private ExperimentStage stage;
+  private String primaryVariable;
+  private String primaryMetric;
+
+  @JsonProperty("kpiTarget")
+  @JsonAlias("kpiTargetCpl")
+  private BigDecimal kpiTargetCpl;
+
+  private String metricPresetId;
+  private Integer sampleSize;
+  private BigDecimal baselineCvr;
+  private BigDecimal targetCvr;
+
+  @JsonProperty("mde")
+  @JsonAlias("mdePercent")
+  private BigDecimal mdePercent;
+
+  private BigDecimal dailyBudget;
+  private BigDecimal unitPrice;
+  private BigDecimal cost;
+  private BigDecimal expense;
+  private LocalDate startDate;
+  private LocalDate endDate;
+  private Integer creativesToGenerate;
+  private Integer instantFormsToGenerate;
+  private Integer emailsToGenerate;
+  private Integer sampleEmailsToGenerate;
+  private Integer deliverablesToGenerate;
+  private Integer leadPortalFlowsToGenerate;
+  private Integer imagesPerPackage;
+  private Integer openImagesPerPackage;
+  private Integer compressedImagesPerPackage;
+  private Long journeyTemplateId;
+  private Long facebookPageId;
+  private Long facebookInstantFormId;
+  private Long instagramAccountId;
+  private String followUpActionUrl;
+  private String leadPortalFlowModel;
+  private Boolean schemaFirstLeadPortalEnabled;
+  private Long leadPortalFlowId;
+  private Long imageModelId;
+  private Long imageModelQualityId;
+  private String creativeTextPrompt;
+  private String creativeImagePrompt;
+  private List<Long> promiseGenerationRequestIds;
 }

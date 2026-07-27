@@ -20,36 +20,38 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/oprm/nichocnae/v2/source-safety-filter/stage-executions")
 public class BackendSourceSafetyFilterController {
-    private final BackendSourceSafetyFilterService service;
+  private final BackendSourceSafetyFilterService service;
 
-    /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
-    public BackendSourceSafetyFilterController(BackendSourceSafetyFilterService service) {
-        this.service = service;
-    }
+  /** Recebe o service canônico da etapa para delegar operações HTTP internas. */
+  public BackendSourceSafetyFilterController(BackendSourceSafetyFilterService service) {
+    this.service = service;
+  }
 
-    /** Entrega execuções pendentes da etapa source-safety-filter ao módulo executor OPRM. */
-    @GetMapping("/pending")
-    public List<SourceSafetyFilterPendingResponse> pending() {
-        return service.pending();
-    }
+  /** Entrega execuções pendentes da etapa source-safety-filter ao módulo executor OPRM. */
+  @GetMapping("/pending")
+  public List<SourceSafetyFilterPendingResponse> pending() {
+    return service.pending();
+  }
 
-    /** Grava uma pendência da etapa source-safety-filter solicitada pelo módulo executor OPRM. */
-    @PostMapping
-    public SourceSafetyFilterCreateResponse create(@RequestBody SourceSafetyFilterCreateRequest request) {
-        return service.create(request);
-    }
+  /** Grava uma pendência da etapa source-safety-filter solicitada pelo módulo executor OPRM. */
+  @PostMapping
+  public SourceSafetyFilterCreateResponse create(
+      @RequestBody SourceSafetyFilterCreateRequest request) {
+    return service.create(request);
+  }
 
-    /** Registra a conclusão da execução de segurança informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/complete")
-    public SourceSafetyFilterCompletionResponse complete(
-            @PathVariable Long stageExecutionId, @RequestBody SourceSafetyFilterCompletionRequest request) {
-        return service.complete(stageExecutionId, request);
-    }
+  /** Registra a conclusão da execução de segurança informada pelo módulo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/complete")
+  public SourceSafetyFilterCompletionResponse complete(
+      @PathVariable Long stageExecutionId,
+      @RequestBody SourceSafetyFilterCompletionRequest request) {
+    return service.complete(stageExecutionId, request);
+  }
 
-    /** Registra a falha da execução de segurança informada pelo módulo executor OPRM. */
-    @PostMapping("/{stageExecutionId}/fail")
-    public SourceSafetyFilterFailureResponse fail(
-            @PathVariable Long stageExecutionId, @RequestBody SourceSafetyFilterFailureRequest request) {
-        return service.fail(stageExecutionId, request);
-    }
+  /** Registra a falha da execução de segurança informada pelo módulo executor OPRM. */
+  @PostMapping("/{stageExecutionId}/fail")
+  public SourceSafetyFilterFailureResponse fail(
+      @PathVariable Long stageExecutionId, @RequestBody SourceSafetyFilterFailureRequest request) {
+    return service.fail(stageExecutionId, request);
+  }
 }

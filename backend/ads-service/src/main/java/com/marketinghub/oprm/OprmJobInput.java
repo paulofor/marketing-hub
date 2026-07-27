@@ -20,21 +20,19 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OprmJobInput {
-    @Id
-    @GeneratedValue
-    private Long id;
+  @Id @GeneratedValue private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "job_id", nullable = false)
-    private OprmJob job;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "job_id", nullable = false)
+  private OprmJob job;
 
-    @Column(name = "input_ref", nullable = false, length = 191)
-    private String inputRef;
+  @Column(name = "input_ref", nullable = false, length = 191)
+  private String inputRef;
 
-    @Column(name = "input_value", columnDefinition = "LONGTEXT")
-    private String inputValue;
+  @Column(name = "input_value", columnDefinition = "LONGTEXT")
+  private String inputValue;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 }

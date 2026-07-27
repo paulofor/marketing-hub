@@ -5,19 +5,25 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-/** Porta canônica usada pelo OPRM para materializar e consultar nichos sem depender do domínio Niche. */
+/**
+ * Porta canônica usada pelo OPRM para materializar e consultar nichos sem depender do domínio
+ * Niche.
+ */
 public interface OprmEnrichedNicheGateway {
   /** Lista subnichos já materializados para o CNAE informado. */
   List<String> listNeutralNicheNamesByCnae(String cnaeCode, int limit);
 
   /** Busca materialização existente pelo CNAE e nome neutro normalizado. */
-  Optional<OprmMarketNicheSnapshot> findByCnaeAndNormalizedNeutralName(String cnaeCode, String normalizedNeutralNicheName);
+  Optional<OprmMarketNicheSnapshot> findByCnaeAndNormalizedNeutralName(
+      String cnaeCode, String normalizedNeutralNicheName);
 
   /** Materializa ou atualiza o nicho e grava o perfil enriquecido. */
-  OprmEnrichedNicheMaterializationResult materialize(OprmMarketNicheDraft nicheDraft, OprmEnrichedNicheProfileDraft profileDraft);
+  OprmEnrichedNicheMaterializationResult materialize(
+      OprmMarketNicheDraft nicheDraft, OprmEnrichedNicheProfileDraft profileDraft);
 
   /** Busca o último perfil enriquecido de um ciclo. */
-  Optional<OprmEnrichedNicheProfileSnapshot> findLatestProfileByResearchCycleId(Long researchCycleId);
+  Optional<OprmEnrichedNicheProfileSnapshot> findLatestProfileByResearchCycleId(
+      Long researchCycleId);
 
   /** Busca o perfil enriquecido pelo identificador. */
   OprmEnrichedNicheProfileSnapshot requireProfileById(Long profileId);
@@ -45,7 +51,9 @@ public interface OprmEnrichedNicheGateway {
       String extraTips,
       BigDecimal identificationCostBrl) {}
 
-  /** Representa os campos funcionais do perfil enriquecido que o OPRM pode solicitar por contrato. */
+  /**
+   * Representa os campos funcionais do perfil enriquecido que o OPRM pode solicitar por contrato.
+   */
   record OprmEnrichedNicheProfileDraft(
       Long sourceNicheCandidateId,
       Long researchCycleId,
@@ -81,7 +89,8 @@ public interface OprmEnrichedNicheGateway {
   record OprmMarketNicheSnapshot(Long marketNicheId) {}
 
   /** Retorna o resultado da materialização sem expor entidades Niche ao OPRM. */
-  record OprmEnrichedNicheMaterializationResult(Long marketNicheId, Long profileId, Instant createdAt) {}
+  record OprmEnrichedNicheMaterializationResult(
+      Long marketNicheId, Long profileId, Instant createdAt) {}
 
   /** Projeção de leitura do perfil enriquecido materializado. */
   record OprmEnrichedNicheProfileSnapshot(

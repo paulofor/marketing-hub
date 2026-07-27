@@ -9,16 +9,17 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/proofs")
 public class ProofArtifactController {
-    private final ProofArtifactService service;
-    private final ProofArtifactMapper mapper;
+  private final ProofArtifactService service;
+  private final ProofArtifactMapper mapper;
 
-    public ProofArtifactController(ProofArtifactService service, ProofArtifactMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public ProofArtifactController(ProofArtifactService service, ProofArtifactMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @PutMapping("/{id}")
-    public ProofArtifactDto update(@PathVariable Long id, @RequestBody UpdateProofArtifactRequest request) {
-        return mapper.toDto(service.update(id, request));
-    }
+  @PutMapping("/{id}")
+  public ProofArtifactDto update(
+      @PathVariable Long id, @RequestBody UpdateProofArtifactRequest request) {
+    return mapper.toDto(service.update(id, request));
+  }
 }

@@ -14,10 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class OprmHeartbeatController {
 
-    @PostMapping
-    public ResponseEntity<Void> heartbeat(@Valid @RequestBody OprmHeartbeatRequestDto request) {
-        log.debug("oprm-heartbeat workerId={} workerVersion={} sentAt={} counters={}",
-                request.workerId(), request.workerVersion(), request.sentAt(), request.counters());
-        return ResponseEntity.accepted().build();
-    }
+  @PostMapping
+  public ResponseEntity<Void> heartbeat(@Valid @RequestBody OprmHeartbeatRequestDto request) {
+    log.debug(
+        "oprm-heartbeat workerId={} workerVersion={} sentAt={} counters={}",
+        request.workerId(),
+        request.workerVersion(),
+        request.sentAt(),
+        request.counters());
+    return ResponseEntity.accepted().build();
+  }
 }

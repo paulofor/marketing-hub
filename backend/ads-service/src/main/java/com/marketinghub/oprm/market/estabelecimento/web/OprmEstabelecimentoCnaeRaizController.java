@@ -17,14 +17,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OprmEstabelecimentoCnaeRaizController {
 
-    private final OprmEstabelecimentoCnaeRaizService service;
+  private final OprmEstabelecimentoCnaeRaizService service;
 
-    /**
-     * Recebe um lote de estabelecimentos normalizados pelo coletor e delega a persistência ao serviço.
-     */
-    @PostMapping("/batch")
-    public OprmEstabelecimentoCnaeRaizBatchResponseDto upsertBatch(
-            @RequestBody OprmEstabelecimentoCnaeRaizBatchRequestDto request) {
-        return service.upsertBatch(request);
-    }
+  /**
+   * Recebe um lote de estabelecimentos normalizados pelo coletor e delega a persistência ao
+   * serviço.
+   */
+  @PostMapping("/batch")
+  public OprmEstabelecimentoCnaeRaizBatchResponseDto upsertBatch(
+      @RequestBody OprmEstabelecimentoCnaeRaizBatchRequestDto request) {
+    return service.upsertBatch(request);
+  }
 }

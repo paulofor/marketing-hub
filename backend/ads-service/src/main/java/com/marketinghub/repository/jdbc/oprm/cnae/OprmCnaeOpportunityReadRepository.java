@@ -6,24 +6,25 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repositório JDBC responsável por leituras operacionais de CNAEs para o OPRM sem aplicar regra de negócio.
+ * Repositório JDBC responsável por leituras operacionais de CNAEs para o OPRM sem aplicar regra de
+ * negócio.
  */
 @Repository
 public class OprmCnaeOpportunityReadRepository {
-    private final JdbcTemplate jdbcTemplate;
+  private final JdbcTemplate jdbcTemplate;
 
-    /**
-     * Inicializa o repositório com o template JDBC usado para consultas SQL filtradas.
-     */
-    public OprmCnaeOpportunityReadRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+  /** Inicializa o repositório com o template JDBC usado para consultas SQL filtradas. */
+  public OprmCnaeOpportunityReadRepository(JdbcTemplate jdbcTemplate) {
+    this.jdbcTemplate = jdbcTemplate;
+  }
 
-    /**
-     * Retorna CNAEs sem score persistido no snapshot mais recente, usando apenas filtros e ordenação de leitura.
-     */
-    public List<OprmCnaeOpportunityCandidateDto> findMissingScores(int limit) {
-        return jdbcTemplate.query("""
+  /**
+   * Retorna CNAEs sem score persistido no snapshot mais recente, usando apenas filtros e ordenação
+   * de leitura.
+   */
+  public List<OprmCnaeOpportunityCandidateDto> findMissingScores(int limit) {
+    return jdbcTemplate.query(
+        """
                 select ms.snapshot_date,
                        ms.cnae_code,
                        coalesce(dim.description, ms.cnae_code) as cnae_description,
@@ -39,14 +40,17 @@ public class OprmCnaeOpportunityReadRepository {
                    and score.cnae_code is null
                  order by ms.total_empresas_mei desc, ms.cnae_code asc
                  limit ?
-                """, (rs, rowNum) -> new OprmCnaeOpportunityCandidateDto(
-                        rs.getDate("snapshot_date").toLocalDate(),
-                        rs.getString("cnae_code"),
-                        rs.getString("cnae_description"),
-                        rs.getLong("total_estabelecimentos"),
-                        rs.getLong("total_estabelecimentos_ativos"),
-                        rs.getLong("total_empresas"),
-                        rs.getLong("total_empresas_mei"),
-                        rs.getLong("total_empresas_simples")), limit);
-    }
+                """,
+        (rs, rowNum) ->
+            new OprmCnaeOpportunityCandidateDto(
+                rs.getDate("snapshot_date").toLocalDate(),
+                rs.getString("cnae_code"),
+                rs.getString("cnae_description"),
+                rs.getLong("total_estabelecimentos"),
+                rs.getLong("total_estabelecimentos_ativos"),
+                rs.getLong("total_empresas"),
+                rs.getLong("total_empresas_mei"),
+                rs.getLong("total_empresas_simples")),
+        limit);
+  }
 }

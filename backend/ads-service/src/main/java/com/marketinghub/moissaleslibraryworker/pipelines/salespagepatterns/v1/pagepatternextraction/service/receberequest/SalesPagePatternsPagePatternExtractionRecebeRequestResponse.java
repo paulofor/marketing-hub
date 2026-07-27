@@ -2,8 +2,4 @@ package com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.p
 
 /** Contrato de confirmação do request auditado na extração de padrões de página. */
 public record SalesPagePatternsPagePatternExtractionRecebeRequestResponse(
-        String jobId,
-        String idExterno,
-        String stageCode,
-        String status) {
-}
+    String jobId, String idExterno, String stageCode, String status) {}

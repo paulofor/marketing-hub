@@ -4,5 +4,4 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStage
 import jakarta.validation.constraints.NotNull;
 
 public record ExperimentPipelineGenerationJobStageUpdateRequest(
-        @NotNull ExperimentPipelineGenerationJobStage stage) {
-}
+    @NotNull ExperimentPipelineGenerationJobStage stage) {}

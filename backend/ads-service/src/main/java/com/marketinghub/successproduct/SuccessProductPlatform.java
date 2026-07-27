@@ -1,10 +1,8 @@
 package com.marketinghub.successproduct;
 
-/**
- * Platform where the successful product is sold.
- */
+/** Platform where the successful product is sold. */
 public enum SuccessProductPlatform {
-    COFRE,
-    HOTMART,
-    CLICKBANK
+  COFRE,
+  HOTMART,
+  CLICKBANK
 }

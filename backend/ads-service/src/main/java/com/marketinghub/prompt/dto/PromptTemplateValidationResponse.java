@@ -7,9 +7,9 @@ import lombok.Data;
 @Data
 @Builder
 public class PromptTemplateValidationResponse {
-    private boolean valid;
-    private String message;
-    private String renderedPrompt;
-    private List<String> missingVariables;
-    private List<String> availableVariables;
+  private boolean valid;
+  private String message;
+  private String renderedPrompt;
+  private List<String> missingVariables;
+  private List<String> availableVariables;
 }

@@ -2,7 +2,10 @@ package com.marketinghub.oprm.nichocnae.signalextractor.service.completeStageExe
 
 import java.util.List;
 
-/** Representa o payload de conclusão da etapa cinco com sinais estruturados extraídos de um snapshot. */
+/**
+ * Representa o payload de conclusão da etapa cinco com sinais estruturados extraídos de um
+ * snapshot.
+ */
 public record CompleteSignalExtractorRequest(
     Long researchCycleId,
     Long sourceCandidateId,

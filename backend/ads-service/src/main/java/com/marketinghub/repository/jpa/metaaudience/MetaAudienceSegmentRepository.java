@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Repositório JPA das parcelas funcionais vinculadas às audiências Meta Ads. */
 public interface MetaAudienceSegmentRepository extends JpaRepository<MetaAudienceSegment, Long> {
-    /** Lista as parcelas funcionais de uma audiência. */
-    List<MetaAudienceSegment> findByMetaAudienceIdOrderByUpdatedAtDesc(Long metaAudienceId);
+  /** Lista as parcelas funcionais de uma audiência. */
+  List<MetaAudienceSegment> findByMetaAudienceIdOrderByUpdatedAtDesc(Long metaAudienceId);
 }

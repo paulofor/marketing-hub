@@ -7,15 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Aggregates experiment context required to generate Facebook ad sets.
- */
+/** Aggregates experiment context required to generate Facebook ad sets. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExperimentReadyForAdSetDto {
-    private ExperimentDto experiment;
-    private MarketNicheDto niche;
-    private HypothesisDto hypothesis;
-    private TargetingPackageDto targeting;
+  private ExperimentDto experiment;
+  private MarketNicheDto niche;
+  private HypothesisDto hypothesis;
+  private TargetingPackageDto targeting;
 }

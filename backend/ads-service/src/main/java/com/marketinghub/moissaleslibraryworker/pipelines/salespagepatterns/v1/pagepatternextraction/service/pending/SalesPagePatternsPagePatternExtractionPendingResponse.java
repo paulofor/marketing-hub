@@ -4,6 +4,4 @@ import java.util.List;
 
 /** Contrato de resposta com os trabalhos de extração de padrões reservados pelo backend. */
 public record SalesPagePatternsPagePatternExtractionPendingResponse(
-        boolean claimed,
-        List<SalesPagePatternsPagePatternExtractionPendingJob> jobs) {
-}
+    boolean claimed, List<SalesPagePatternsPagePatternExtractionPendingJob> jobs) {}

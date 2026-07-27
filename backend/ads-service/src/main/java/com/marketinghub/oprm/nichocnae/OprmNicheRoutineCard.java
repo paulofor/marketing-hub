@@ -9,7 +9,9 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.Data;
 
-/** Entidade responsável por armazenar o cartão de rotina sintetizado para um nicho CNAE pesquisado. */
+/**
+ * Entidade responsável por armazenar o cartão de rotina sintetizado para um nicho CNAE pesquisado.
+ */
 @Entity
 @Data
 @Table(name = "oprm_niche_routine_card")

@@ -20,43 +20,47 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/hypotheses/{id}/framework")
 public class HypothesisFrameworkController {
-    private final HypothesisFrameworkGenerationService generationService;
+  private final HypothesisFrameworkGenerationService generationService;
 
-    public HypothesisFrameworkController(HypothesisFrameworkGenerationService generationService) {
-        this.generationService = generationService;
-    }
+  public HypothesisFrameworkController(HypothesisFrameworkGenerationService generationService) {
+    this.generationService = generationService;
+  }
 
-    @PostMapping("/{section}/generate")
-    public HypothesisDto generate(@PathVariable UUID id,
-                                  @PathVariable String section,
-                                  @RequestBody(required = false) HypothesisFrameworkGenerationRequest request) {
-        HypothesisFrameworkSection parsed;
-        try {
-            parsed = HypothesisFrameworkSection.fromPath(section);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
-        }
-        HypothesisFrameworkGenerationRequest payload = request != null ? request : new HypothesisFrameworkGenerationRequest();
-        return generationService.generate(id, parsed, payload, false);
+  @PostMapping("/{section}/generate")
+  public HypothesisDto generate(
+      @PathVariable UUID id,
+      @PathVariable String section,
+      @RequestBody(required = false) HypothesisFrameworkGenerationRequest request) {
+    HypothesisFrameworkSection parsed;
+    try {
+      parsed = HypothesisFrameworkSection.fromPath(section);
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
+    HypothesisFrameworkGenerationRequest payload =
+        request != null ? request : new HypothesisFrameworkGenerationRequest();
+    return generationService.generate(id, parsed, payload, false);
+  }
 
-    @PostMapping("/{section}/summary/generate")
-    public HypothesisDto generateSummary(@PathVariable UUID id,
-                                         @PathVariable String section,
-                                         @RequestBody(required = false) HypothesisFrameworkGenerationRequest request) {
-        HypothesisFrameworkSection parsed;
-        try {
-            parsed = HypothesisFrameworkSection.fromPath(section);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
-        }
-        HypothesisFrameworkGenerationRequest payload = request != null ? request : new HypothesisFrameworkGenerationRequest();
-        return generationService.generate(id, parsed, payload, true);
+  @PostMapping("/{section}/summary/generate")
+  public HypothesisDto generateSummary(
+      @PathVariable UUID id,
+      @PathVariable String section,
+      @RequestBody(required = false) HypothesisFrameworkGenerationRequest request) {
+    HypothesisFrameworkSection parsed;
+    try {
+      parsed = HypothesisFrameworkSection.fromPath(section);
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
+    HypothesisFrameworkGenerationRequest payload =
+        request != null ? request : new HypothesisFrameworkGenerationRequest();
+    return generationService.generate(id, parsed, payload, true);
+  }
 
-    @GetMapping("/jobs")
-    public List<HypothesisFrameworkGenerationJobDto> listJobs(@PathVariable UUID id,
-                                                              @RequestParam(value = "size", defaultValue = "30") Integer size) {
-        return generationService.listJobs(id, size != null ? size : 30);
-    }
+  @GetMapping("/jobs")
+  public List<HypothesisFrameworkGenerationJobDto> listJobs(
+      @PathVariable UUID id, @RequestParam(value = "size", defaultValue = "30") Integer size) {
+    return generationService.listJobs(id, size != null ? size : 30);
+  }
 }

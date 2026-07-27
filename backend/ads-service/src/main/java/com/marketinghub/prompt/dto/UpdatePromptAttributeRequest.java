@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class UpdatePromptAttributeRequest {
-    private String description;
+  private String description;
 }

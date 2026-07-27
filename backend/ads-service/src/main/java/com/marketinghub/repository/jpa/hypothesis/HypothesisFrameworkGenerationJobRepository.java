@@ -9,17 +9,18 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-/**
- * Repositório JPA responsável pela persistência de HypothesisFrameworkGenerationJob.
- */
-public interface HypothesisFrameworkGenerationJobRepository extends JpaRepository<HypothesisFrameworkGenerationJob, UUID> {
-    List<HypothesisFrameworkGenerationJob> findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
-            UUID hypothesisId,
-            HypothesisFrameworkSection section,
-            Collection<HypothesisFrameworkGenerationJobStatus> statuses);
+/** Repositório JPA responsável pela persistência de HypothesisFrameworkGenerationJob. */
+public interface HypothesisFrameworkGenerationJobRepository
+    extends JpaRepository<HypothesisFrameworkGenerationJob, UUID> {
+  List<HypothesisFrameworkGenerationJob>
+      findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
+          UUID hypothesisId,
+          HypothesisFrameworkSection section,
+          Collection<HypothesisFrameworkGenerationJobStatus> statuses);
 
-    List<HypothesisFrameworkGenerationJob> findByStatusOrderByCreatedAtAsc(HypothesisFrameworkGenerationJobStatus status,
-                                                                           Pageable pageable);
+  List<HypothesisFrameworkGenerationJob> findByStatusOrderByCreatedAtAsc(
+      HypothesisFrameworkGenerationJobStatus status, Pageable pageable);
 
-    List<HypothesisFrameworkGenerationJob> findByHypothesisIdOrderByCreatedAtDesc(UUID hypothesisId, Pageable pageable);
+  List<HypothesisFrameworkGenerationJob> findByHypothesisIdOrderByCreatedAtDesc(
+      UUID hypothesisId, Pageable pageable);
 }

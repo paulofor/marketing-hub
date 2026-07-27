@@ -4,5 +4,4 @@ import com.marketinghub.hypothesis.HypothesisFrameworkGenerationJobStage;
 import jakarta.validation.constraints.NotNull;
 
 public record HypothesisFrameworkGenerationJobStageUpdateRequest(
-        @NotNull HypothesisFrameworkGenerationJobStage stage) {
-}
+    @NotNull HypothesisFrameworkGenerationJobStage stage) {}

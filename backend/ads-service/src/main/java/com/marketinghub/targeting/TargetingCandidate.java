@@ -1,6 +1,12 @@
 package com.marketinghub.targeting;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,16 +18,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-/**
- * Candidato de targeting enviado pelo AI Worker antes de validação com a Meta.
- */
+/** Candidato de targeting enviado pelo AI Worker antes de validação com a Meta. */
 @Entity
 @Table(name = "targeting_candidate")
 @Data
@@ -31,64 +28,64 @@ import java.util.Set;
 @ToString(exclude = {"request", "options"})
 @EqualsAndHashCode(exclude = {"request", "options"})
 public class TargetingCandidate {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "request_id", nullable = false)
-    private TargetingRequest request;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "request_id", nullable = false)
+  private TargetingRequest request;
 
-    @Column(name = "texto_sugerido", nullable = false, length = 255)
-    private String seed;
+  @Column(name = "texto_sugerido", nullable = false, length = 255)
+  private String seed;
 
-    @ElementCollection
-    @CollectionTable(name = "targeting_candidate_seed_variant", joinColumns = @JoinColumn(name = "candidate_id"))
-    @OrderColumn(name = "variant_order")
-    @Column(name = "variant_value", length = 255, nullable = false)
-    @Builder.Default
-    private List<String> seedVariants = new ArrayList<>();
+  @ElementCollection
+  @CollectionTable(
+      name = "targeting_candidate_seed_variant",
+      joinColumns = @JoinColumn(name = "candidate_id"))
+  @OrderColumn(name = "variant_order")
+  @Column(name = "variant_value", length = 255, nullable = false)
+  @Builder.Default
+  private List<String> seedVariants = new ArrayList<>();
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private TargetingCandidateType type;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 32)
+  private TargetingCandidateType type;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private TargetingCandidateStatus status = TargetingCandidateStatus.PENDING_FACEBOOK_MATCH;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 32)
+  @Builder.Default
+  private TargetingCandidateStatus status = TargetingCandidateStatus.PENDING_FACEBOOK_MATCH;
 
-    @Column(name = "idioma", length = 10)
-    private String localeHint;
+  @Column(name = "idioma", length = 10)
+  private String localeHint;
 
-    @Column(length = 5)
-    private String country;
+  @Column(length = 5)
+  private String country;
 
-    @Column(length = 32)
-    private String origem;
+  @Column(length = 32)
+  private String origem;
 
-    @Column(name = "intent_tag", length = 32)
-    private String intentTag;
+  @Column(name = "intent_tag", length = 32)
+  private String intentTag;
 
-    @Column(precision = 5, scale = 4)
-    private BigDecimal score;
+  @Column(precision = 5, scale = 4)
+  private BigDecimal score;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String rationale;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  private String rationale;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "rejection_reason")
-    private String rejectionReason;
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "rejection_reason")
+  private String rejectionReason;
 
-    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private Set<TargetingOption> options = new LinkedHashSet<>();
+  @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private Set<TargetingOption> options = new LinkedHashSet<>();
 
-    @CreationTimestamp
-    private Instant createdAt;
+  @CreationTimestamp private Instant createdAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+  @UpdateTimestamp private Instant updatedAt;
 }

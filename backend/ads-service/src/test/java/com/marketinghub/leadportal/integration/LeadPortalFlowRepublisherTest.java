@@ -14,52 +14,50 @@ import org.junit.jupiter.api.Test;
 
 class LeadPortalFlowRepublisherTest {
 
-    private LeadPortalFlowRepository repository;
-    private LeadPortalFlowPublisher publisher;
-    private LeadPortalIntegrationProperties properties;
-    private LeadPortalFlowRepublisher republisher;
+  private LeadPortalFlowRepository repository;
+  private LeadPortalFlowPublisher publisher;
+  private LeadPortalIntegrationProperties properties;
+  private LeadPortalFlowRepublisher republisher;
 
-    @BeforeEach
-    void setUp() {
-        repository = mock(LeadPortalFlowRepository.class);
-        publisher = mock(LeadPortalFlowPublisher.class);
-        properties = new LeadPortalIntegrationProperties();
-        properties.setEnabled(true);
-        properties.setBaseUrl("https://example.com");
-        republisher = new LeadPortalFlowRepublisher(repository, publisher, properties);
-    }
+  @BeforeEach
+  void setUp() {
+    repository = mock(LeadPortalFlowRepository.class);
+    publisher = mock(LeadPortalFlowPublisher.class);
+    properties = new LeadPortalIntegrationProperties();
+    properties.setEnabled(true);
+    properties.setBaseUrl("https://example.com");
+    republisher = new LeadPortalFlowRepublisher(repository, publisher, properties);
+  }
 
-    @Test
-    void republishApprovedFlowsWhenIntegrationEnabled() {
-        LeadPortalFlow flow = new LeadPortalFlow();
-        flow.setSlug("flow-1");
-        when(repository.findAllByApprovedTrue()).thenReturn(List.of(flow));
+  @Test
+  void republishApprovedFlowsWhenIntegrationEnabled() {
+    LeadPortalFlow flow = new LeadPortalFlow();
+    flow.setSlug("flow-1");
+    when(repository.findAllByApprovedTrue()).thenReturn(List.of(flow));
 
-        republisher.republishApprovedFlows();
+    republisher.republishApprovedFlows();
 
-        verify(publisher).publish(flow);
-    }
+    verify(publisher).publish(flow);
+  }
 
-    @Test
-    void skipRepublishWhenIntegrationDisabled() {
-        properties.setEnabled(false);
+  @Test
+  void skipRepublishWhenIntegrationDisabled() {
+    properties.setEnabled(false);
 
-        republisher.republishApprovedFlows();
+    republisher.republishApprovedFlows();
 
-        verifyNoInteractions(repository, publisher);
-    }
+    verifyNoInteractions(repository, publisher);
+  }
 
-    @Test
-    void continueProcessingWhenPublishFails() {
-        LeadPortalFlow flow = new LeadPortalFlow();
-        flow.setSlug("broken-flow");
-        when(repository.findAllByApprovedTrue()).thenReturn(List.of(flow));
-        doThrow(new LeadPortalPublicationException("fail"))
-                .when(publisher)
-                .publish(flow);
+  @Test
+  void continueProcessingWhenPublishFails() {
+    LeadPortalFlow flow = new LeadPortalFlow();
+    flow.setSlug("broken-flow");
+    when(repository.findAllByApprovedTrue()).thenReturn(List.of(flow));
+    doThrow(new LeadPortalPublicationException("fail")).when(publisher).publish(flow);
 
-        republisher.republishApprovedFlows();
+    republisher.republishApprovedFlows();
 
-        verify(publisher).publish(flow);
-    }
+    verify(publisher).publish(flow);
+  }
 }

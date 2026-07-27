@@ -8,23 +8,27 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-/** Responsabilidade: expor a prontidão sistêmica de uma hipótese para virar experimento de Produto IA. */
+/**
+ * Responsabilidade: expor a prontidão sistêmica de uma hipótese para virar experimento de Produto
+ * IA.
+ */
 public record ProductAiExperimentPreparationDto(
-        UUID hypothesisId,
-        String hypothesisTitle,
-        ProductAiSubtype productAiSubtype,
-        boolean ready,
-        List<String> blockers,
-        ProductAiExperimentDraftDto draft) {
+    UUID hypothesisId,
+    String hypothesisTitle,
+    ProductAiSubtype productAiSubtype,
+    boolean ready,
+    List<String> blockers,
+    ProductAiExperimentDraftDto draft) {
 
-    /** Responsabilidade: representar o rascunho canônico aplicável na tela de criação de experimento. */
-    public record ProductAiExperimentDraftDto(
-            ExperimentType experimentType,
-            ProductAiSubtype productAiSubtype,
-            ExperimentStage stage,
-            ExperimentCampaignObjective campaignObjective,
-            String primaryVariable,
-            String primaryMetric,
-            BigDecimal unitPrice) {
-    }
+  /**
+   * Responsabilidade: representar o rascunho canônico aplicável na tela de criação de experimento.
+   */
+  public record ProductAiExperimentDraftDto(
+      ExperimentType experimentType,
+      ProductAiSubtype productAiSubtype,
+      ExperimentStage stage,
+      ExperimentCampaignObjective campaignObjective,
+      String primaryVariable,
+      String primaryMetric,
+      BigDecimal unitPrice) {}
 }

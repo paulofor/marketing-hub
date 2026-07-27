@@ -21,17 +21,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Validated
 public class OprmFeedbackController {
-    private final OprmFeedbackService service;
+  private final OprmFeedbackService service;
 
-    @PostMapping
-    public ResponseEntity<Void> publish(@Valid @RequestBody OprmFeedbackPublishRequestDto request) {
-        service.publishFeedback(request);
-        return ResponseEntity.accepted().build();
-    }
+  @PostMapping
+  public ResponseEntity<Void> publish(@Valid @RequestBody OprmFeedbackPublishRequestDto request) {
+    service.publishFeedback(request);
+    return ResponseEntity.accepted().build();
+  }
 
-    @GetMapping("/history")
-    public List<OprmFeedbackHistoryEntryDto> listHistory(@RequestParam @NotBlank String occupationName,
-                                                         @RequestParam @NotBlank String personaLabel) {
-        return service.listHistory(occupationName, personaLabel);
-    }
+  @GetMapping("/history")
+  public List<OprmFeedbackHistoryEntryDto> listHistory(
+      @RequestParam @NotBlank String occupationName, @RequestParam @NotBlank String personaLabel) {
+    return service.listHistory(occupationName, personaLabel);
+  }
 }

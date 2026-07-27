@@ -4,186 +4,179 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.journey.dto.*;
 import com.marketinghub.journey.model.*;
+import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
-
-/**
- * Mapper centralizing conversions between domain entities and API DTOs.
- */
+/** Mapper centralizing conversions between domain entities and API DTOs. */
 @Component
 public class JourneyMapper {
-    private final ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-    public JourneyMapper(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+  public JourneyMapper(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
+  public JourneyTemplateSummaryResponse toSummary(JourneyTemplate template) {
+    return new JourneyTemplateSummaryResponse(
+        template.getId(),
+        template.getName(),
+        template.getObjective(),
+        copyPhases(template.getPhases()),
+        template.getPreferredChannel(),
+        copyTags(template.getTags()),
+        copyMetadata(template.getMetadata()),
+        copySteps(template.getSteps()),
+        template.getCreatedAt(),
+        template.getUpdatedAt());
+  }
+
+  public JourneyTemplateResponse toResponse(JourneyTemplate template) {
+    return new JourneyTemplateResponse(
+        template.getId(),
+        template.getName(),
+        template.getDescription(),
+        template.getObjective(),
+        copyPhases(template.getPhases()),
+        template.getPreferredChannel(),
+        copyTags(template.getTags()),
+        copyMetadata(template.getMetadata()),
+        copySteps(template.getSteps()),
+        template.getCreatedAt(),
+        template.getUpdatedAt());
+  }
+
+  public JourneyStepResponse toStepResponse(JourneyStep step) {
+    return new JourneyStepResponse(
+        step.getId(),
+        step.getTemplate().getId(),
+        step.getPosition(),
+        step.getName(),
+        step.getDescription(),
+        step.getPhase(),
+        step.getStimulusType(),
+        step.getCreative() != null ? step.getCreative().getId() : null,
+        step.getAngle() != null ? step.getAngle().getId() : null,
+        step.getVisualProof() != null ? step.getVisualProof().getId() : null,
+        step.getEmotionalTrigger() != null ? step.getEmotionalTrigger().getId() : null,
+        step.getEntryCondition(),
+        step.getExitCondition(),
+        step.getDelayMinutes(),
+        copyMetadata(step.getMetadata()));
+  }
+
+  private List<JourneyPhase> copyPhases(List<JourneyPhase> phases) {
+    if (phases == null || phases.isEmpty()) {
+      return List.of();
     }
+    return phases.stream().filter(Objects::nonNull).toList();
+  }
 
-    public JourneyTemplateSummaryResponse toSummary(JourneyTemplate template) {
-        return new JourneyTemplateSummaryResponse(
-                template.getId(),
-                template.getName(),
-                template.getObjective(),
-                copyPhases(template.getPhases()),
-                template.getPreferredChannel(),
-                copyTags(template.getTags()),
-                copyMetadata(template.getMetadata()),
-                copySteps(template.getSteps()),
-                template.getCreatedAt(),
-                template.getUpdatedAt()
-        );
+  private Set<String> copyTags(Set<String> tags) {
+    if (tags == null || tags.isEmpty()) {
+      return Set.of();
     }
+    return tags.stream()
+        .filter(Objects::nonNull)
+        .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
+  }
 
-    public JourneyTemplateResponse toResponse(JourneyTemplate template) {
-        return new JourneyTemplateResponse(
-                template.getId(),
-                template.getName(),
-                template.getDescription(),
-                template.getObjective(),
-                copyPhases(template.getPhases()),
-                template.getPreferredChannel(),
-                copyTags(template.getTags()),
-                copyMetadata(template.getMetadata()),
-                copySteps(template.getSteps()),
-                template.getCreatedAt(),
-                template.getUpdatedAt()
-        );
+  private Map<String, String> copyMetadata(Map<String, String> metadata) {
+    if (metadata == null || metadata.isEmpty()) {
+      return new LinkedHashMap<>();
     }
-
-    public JourneyStepResponse toStepResponse(JourneyStep step) {
-        return new JourneyStepResponse(
-                step.getId(),
-                step.getTemplate().getId(),
-                step.getPosition(),
-                step.getName(),
-                step.getDescription(),
-                step.getPhase(),
-                step.getStimulusType(),
-                step.getCreative() != null ? step.getCreative().getId() : null,
-                step.getAngle() != null ? step.getAngle().getId() : null,
-                step.getVisualProof() != null ? step.getVisualProof().getId() : null,
-                step.getEmotionalTrigger() != null ? step.getEmotionalTrigger().getId() : null,
-                step.getEntryCondition(),
-                step.getExitCondition(),
-                step.getDelayMinutes(),
-                copyMetadata(step.getMetadata())
-        );
-    }
-
-    private List<JourneyPhase> copyPhases(List<JourneyPhase> phases) {
-        if (phases == null || phases.isEmpty()) {
-            return List.of();
-        }
-        return phases.stream()
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private Set<String> copyTags(Set<String> tags) {
-        if (tags == null || tags.isEmpty()) {
-            return Set.of();
-        }
-        return tags.stream()
-                .filter(Objects::nonNull)
-                .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
-    }
-
-    private Map<String, String> copyMetadata(Map<String, String> metadata) {
-        if (metadata == null || metadata.isEmpty()) {
-            return new LinkedHashMap<>();
-        }
-        LinkedHashMap<String, String> sanitized = new LinkedHashMap<>();
-        metadata.forEach((key, value) -> {
-            if (key != null) {
-                sanitized.put(key, value);
-            }
+    LinkedHashMap<String, String> sanitized = new LinkedHashMap<>();
+    metadata.forEach(
+        (key, value) -> {
+          if (key != null) {
+            sanitized.put(key, value);
+          }
         });
-        return new LinkedHashMap<>(sanitized);
+    return new LinkedHashMap<>(sanitized);
+  }
+
+  private List<JourneyStepResponse> copySteps(List<JourneyStep> steps) {
+    if (steps == null || steps.isEmpty()) {
+      return List.of();
     }
 
-    private List<JourneyStepResponse> copySteps(List<JourneyStep> steps) {
-        if (steps == null || steps.isEmpty()) {
-            return List.of();
-        }
-
-        LinkedHashMap<Object, JourneyStep> uniqueSteps = new LinkedHashMap<>();
-        for (JourneyStep step : steps) {
-            if (step == null) {
-                continue;
-            }
-            Object key = step.getId() != null ? step.getId() : System.identityHashCode(step);
-            uniqueSteps.putIfAbsent(key, step);
-        }
-
-        return uniqueSteps.values().stream()
-                .sorted(Comparator.comparing(JourneyStep::getPosition, Comparator.nullsLast(Integer::compareTo)))
-                .map(this::toStepResponse)
-                .toList();
+    LinkedHashMap<Object, JourneyStep> uniqueSteps = new LinkedHashMap<>();
+    for (JourneyStep step : steps) {
+      if (step == null) {
+        continue;
+      }
+      Object key = step.getId() != null ? step.getId() : System.identityHashCode(step);
+      uniqueSteps.putIfAbsent(key, step);
     }
 
-    public JourneyResponse toJourneyResponse(Journey journey) {
-        return new JourneyResponse(
-                journey.getId(),
-                journey.getTemplate().getId(),
-                journey.getTemplate().getName(),
-                journey.getName(),
-                journey.getDescription(),
-                journey.getStatus(),
-                journey.getMarketNiche() != null ? journey.getMarketNiche().getId() : null,
-                journey.getExperiment() != null ? journey.getExperiment().getId() : null,
-                journey.getSegmentReference(),
-                journey.getSegmentFilter(),
-                new LinkedHashMap<>(journey.getMetadata()),
-                journey.getStartAt(),
-                journey.getEndAt(),
-                journey.getCreatedAt(),
-                journey.getUpdatedAt()
-        );
-    }
+    return uniqueSteps.values().stream()
+        .sorted(
+            Comparator.comparing(
+                JourneyStep::getPosition, Comparator.nullsLast(Integer::compareTo)))
+        .map(this::toStepResponse)
+        .toList();
+  }
 
-    public JourneyAssignmentResponse toAssignmentResponse(JourneyAssignment assignment) {
-        return new JourneyAssignmentResponse(
-                assignment.getId(),
-                assignment.getJourney().getId(),
-                assignment.getType(),
-                assignment.getStatus(),
-                assignment.getLead() != null ? assignment.getLead().getId() : null,
-                assignment.getSegmentIdentifier(),
-                assignment.getCurrentStep() != null ? assignment.getCurrentStep().getId() : null,
-                assignment.getNextStep() != null ? assignment.getNextStep().getId() : null,
-                assignment.getLastEventAt(),
-                assignment.getContextPayload(),
-                assignment.getCreatedAt(),
-                assignment.getUpdatedAt()
-        );
-    }
+  public JourneyResponse toJourneyResponse(Journey journey) {
+    return new JourneyResponse(
+        journey.getId(),
+        journey.getTemplate().getId(),
+        journey.getTemplate().getName(),
+        journey.getName(),
+        journey.getDescription(),
+        journey.getStatus(),
+        journey.getMarketNiche() != null ? journey.getMarketNiche().getId() : null,
+        journey.getExperiment() != null ? journey.getExperiment().getId() : null,
+        journey.getSegmentReference(),
+        journey.getSegmentFilter(),
+        new LinkedHashMap<>(journey.getMetadata()),
+        journey.getStartAt(),
+        journey.getEndAt(),
+        journey.getCreatedAt(),
+        journey.getUpdatedAt());
+  }
 
-    public EventLogResponse toEventLogResponse(EventLog log) {
-        return new EventLogResponse(
-                log.getId(),
-                log.getActorId(),
-                log.getEventType(),
-                log.getJourney() != null ? log.getJourney().getId() : null,
-                log.getJourneyStep() != null ? log.getJourneyStep().getId() : null,
-                log.getSource(),
-                log.getCampaignId(),
-                deserializeMetadata(log.getMetadata()),
-                log.getValue(),
-                log.getOccurredAt(),
-                log.getReceivedAt()
-        );
-    }
+  public JourneyAssignmentResponse toAssignmentResponse(JourneyAssignment assignment) {
+    return new JourneyAssignmentResponse(
+        assignment.getId(),
+        assignment.getJourney().getId(),
+        assignment.getType(),
+        assignment.getStatus(),
+        assignment.getLead() != null ? assignment.getLead().getId() : null,
+        assignment.getSegmentIdentifier(),
+        assignment.getCurrentStep() != null ? assignment.getCurrentStep().getId() : null,
+        assignment.getNextStep() != null ? assignment.getNextStep().getId() : null,
+        assignment.getLastEventAt(),
+        assignment.getContextPayload(),
+        assignment.getCreatedAt(),
+        assignment.getUpdatedAt());
+  }
 
-    private Map<String, Object> deserializeMetadata(String metadata) {
-        if (metadata == null || metadata.isBlank()) {
-            return Map.of();
-        }
-        try {
-            return objectMapper.readValue(metadata, Map.class);
-        } catch (JsonProcessingException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse event metadata", e);
-        }
+  public EventLogResponse toEventLogResponse(EventLog log) {
+    return new EventLogResponse(
+        log.getId(),
+        log.getActorId(),
+        log.getEventType(),
+        log.getJourney() != null ? log.getJourney().getId() : null,
+        log.getJourneyStep() != null ? log.getJourneyStep().getId() : null,
+        log.getSource(),
+        log.getCampaignId(),
+        deserializeMetadata(log.getMetadata()),
+        log.getValue(),
+        log.getOccurredAt(),
+        log.getReceivedAt());
+  }
+
+  private Map<String, Object> deserializeMetadata(String metadata) {
+    if (metadata == null || metadata.isBlank()) {
+      return Map.of();
     }
+    try {
+      return objectMapper.readValue(metadata, Map.class);
+    } catch (JsonProcessingException e) {
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse event metadata", e);
+    }
+  }
 }

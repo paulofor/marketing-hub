@@ -1,8 +1,13 @@
 package com.marketinghub.facebookads.playbook.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJob;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJobApiLog;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJobStatus;
@@ -12,9 +17,12 @@ import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
 import com.marketinghub.facebookads.playbook.ExperimentFacebookApiLogContext;
 import com.marketinghub.facebookads.playbook.ExperimentFacebookApiLogEntry;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.facebookads.playbook.ExperimentAdSetJobApiLogRepository;
 import com.marketinghub.repository.jpa.facebookads.playbook.ExperimentFacebookApiLogEntryRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,125 +30,110 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
-import java.time.Instant;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class ExperimentFacebookApiLogServiceTest {
 
-    @Mock
-    private ExperimentRepository experimentRepository;
+  @Mock private ExperimentRepository experimentRepository;
 
-    @Mock
-    private ExperimentAdSetJobApiLogRepository jobApiLogRepository;
+  @Mock private ExperimentAdSetJobApiLogRepository jobApiLogRepository;
 
-    @Mock
-    private ExperimentFacebookApiLogEntryRepository apiLogEntryRepository;
+  @Mock private ExperimentFacebookApiLogEntryRepository apiLogEntryRepository;
 
-    private ExperimentFacebookApiLogService service;
+  private ExperimentFacebookApiLogService service;
 
-    @BeforeEach
-    void setUp() {
-        service = new ExperimentFacebookApiLogService(
-                experimentRepository,
-                jobApiLogRepository,
-                apiLogEntryRepository,
-                new ObjectMapper()
-        );
-    }
+  @BeforeEach
+  void setUp() {
+    service =
+        new ExperimentFacebookApiLogService(
+            experimentRepository, jobApiLogRepository, apiLogEntryRepository, new ObjectMapper());
+  }
 
-    @Test
-    void shouldFailWhenExperimentDoesNotExist() {
-        when(experimentRepository.existsById(6L)).thenReturn(false);
+  @Test
+  void shouldFailWhenExperimentDoesNotExist() {
+    when(experimentRepository.existsById(6L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.findLogs(6L, 10))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("Experimento 6");
-    }
+    assertThatThrownBy(() -> service.findLogs(6L, 10))
+        .isInstanceOf(EntityNotFoundException.class)
+        .hasMessageContaining("Experimento 6");
+  }
 
-    @Test
-    void shouldReturnSanitizedLogs() {
-        when(experimentRepository.existsById(6L)).thenReturn(true);
-        Experiment experiment = new Experiment();
-        experiment.setId(6L);
-        ExperimentAdSetWorkflow workflow = ExperimentAdSetWorkflow.builder()
-                .id(20L)
-                .experiment(experiment)
-                .build();
-        ExperimentAdSetJob job = ExperimentAdSetJob.builder()
-                .id(15L)
-                .workflow(workflow)
-                .type(ExperimentAdSetJobType.FACEBOOK_SEED_LOOKUP)
-                .worker(ExperimentAdSetWorker.FACEBOOK)
-                .status(ExperimentAdSetJobStatus.SUCCEEDED)
-                .resourceId(99L)
-                .build();
-        ExperimentAdSetJobApiLog log = ExperimentAdSetJobApiLog.builder()
-                .id(55L)
-                .job(job)
-                .provider("FACEBOOK")
-                .endpoint("/v19.0/act_123?access_token=abc123456789")
-                .httpMethod("POST")
-                .statusCode(400)
-                .errorMessage("Invalid token")
-                .requestPayload("{\"access_token\":\"abc123456789\",\"name\":\"Test\"}")
-                .responsePayload("{\"error\":{\"message\":\"Bad token\"}}")
-                .requestedAt(Instant.parse("2024-01-01T10:00:00Z"))
-                .respondedAt(Instant.parse("2024-01-01T10:00:01Z"))
-                .build();
-        when(jobApiLogRepository.findByJobWorkflowExperimentId(eq(6L), any(Pageable.class)))
-                .thenReturn(List.of(log));
-        when(apiLogEntryRepository.findByExperimentId(eq(6L), any(Pageable.class)))
-                .thenReturn(List.of());
+  @Test
+  void shouldReturnSanitizedLogs() {
+    when(experimentRepository.existsById(6L)).thenReturn(true);
+    Experiment experiment = new Experiment();
+    experiment.setId(6L);
+    ExperimentAdSetWorkflow workflow =
+        ExperimentAdSetWorkflow.builder().id(20L).experiment(experiment).build();
+    ExperimentAdSetJob job =
+        ExperimentAdSetJob.builder()
+            .id(15L)
+            .workflow(workflow)
+            .type(ExperimentAdSetJobType.FACEBOOK_SEED_LOOKUP)
+            .worker(ExperimentAdSetWorker.FACEBOOK)
+            .status(ExperimentAdSetJobStatus.SUCCEEDED)
+            .resourceId(99L)
+            .build();
+    ExperimentAdSetJobApiLog log =
+        ExperimentAdSetJobApiLog.builder()
+            .id(55L)
+            .job(job)
+            .provider("FACEBOOK")
+            .endpoint("/v19.0/act_123?access_token=abc123456789")
+            .httpMethod("POST")
+            .statusCode(400)
+            .errorMessage("Invalid token")
+            .requestPayload("{\"access_token\":\"abc123456789\",\"name\":\"Test\"}")
+            .responsePayload("{\"error\":{\"message\":\"Bad token\"}}")
+            .requestedAt(Instant.parse("2024-01-01T10:00:00Z"))
+            .respondedAt(Instant.parse("2024-01-01T10:00:01Z"))
+            .build();
+    when(jobApiLogRepository.findByJobWorkflowExperimentId(eq(6L), any(Pageable.class)))
+        .thenReturn(List.of(log));
+    when(apiLogEntryRepository.findByExperimentId(eq(6L), any(Pageable.class)))
+        .thenReturn(List.of());
 
-        List<ExperimentFacebookApiLogDto> dtos = service.findLogs(6L, 5);
+    List<ExperimentFacebookApiLogDto> dtos = service.findLogs(6L, 5);
 
-        assertThat(dtos).hasSize(1);
-        ExperimentFacebookApiLogDto dto = dtos.getFirst();
-        assertThat(dto.jobId()).isEqualTo(15L);
-        assertThat(dto.workflowId()).isEqualTo(20L);
-        assertThat(dto.endpoint()).doesNotContain("abc123456789");
-        assertThat(dto.requestPayload()).doesNotContain("abc123456789");
-        assertThat(dto.durationMs()).isEqualTo(1000L);
-    }
+    assertThat(dtos).hasSize(1);
+    ExperimentFacebookApiLogDto dto = dtos.getFirst();
+    assertThat(dto.jobId()).isEqualTo(15L);
+    assertThat(dto.workflowId()).isEqualTo(20L);
+    assertThat(dto.endpoint()).doesNotContain("abc123456789");
+    assertThat(dto.requestPayload()).doesNotContain("abc123456789");
+    assertThat(dto.durationMs()).isEqualTo(1000L);
+  }
 
-    @Test
-    void shouldReturnCustomLogEntries() {
-        when(experimentRepository.existsById(7L)).thenReturn(true);
-        Experiment experiment = new Experiment();
-        experiment.setId(7L);
-        ExperimentFacebookApiLogEntry entry = new ExperimentFacebookApiLogEntry();
-        entry.setExperiment(experiment);
-        entry.setId(88L);
-        entry.setContext(ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET);
-        entry.setProvider("FACEBOOK");
-        entry.setEndpoint("/v19.0/adsets?access_token=secret987654321");
-        entry.setHttpMethod("GET");
-        entry.setStatusCode(200);
-        entry.setRequestPayload("{\"access_token\":\"secret987654321\"}");
-        entry.setResponsePayload("{\"data\":[]}");
-        entry.setRequestedAt(Instant.parse("2024-01-02T10:00:00Z"));
-        entry.setRespondedAt(Instant.parse("2024-01-02T10:00:02Z"));
-        entry.setCreatedAt(Instant.parse("2024-01-02T10:00:03Z"));
-        when(jobApiLogRepository.findByJobWorkflowExperimentId(eq(7L), any(Pageable.class)))
-                .thenReturn(List.of());
-        when(apiLogEntryRepository.findByExperimentId(eq(7L), any(Pageable.class)))
-                .thenReturn(List.of(entry));
+  @Test
+  void shouldReturnCustomLogEntries() {
+    when(experimentRepository.existsById(7L)).thenReturn(true);
+    Experiment experiment = new Experiment();
+    experiment.setId(7L);
+    ExperimentFacebookApiLogEntry entry = new ExperimentFacebookApiLogEntry();
+    entry.setExperiment(experiment);
+    entry.setId(88L);
+    entry.setContext(ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET);
+    entry.setProvider("FACEBOOK");
+    entry.setEndpoint("/v19.0/adsets?access_token=secret987654321");
+    entry.setHttpMethod("GET");
+    entry.setStatusCode(200);
+    entry.setRequestPayload("{\"access_token\":\"secret987654321\"}");
+    entry.setResponsePayload("{\"data\":[]}");
+    entry.setRequestedAt(Instant.parse("2024-01-02T10:00:00Z"));
+    entry.setRespondedAt(Instant.parse("2024-01-02T10:00:02Z"));
+    entry.setCreatedAt(Instant.parse("2024-01-02T10:00:03Z"));
+    when(jobApiLogRepository.findByJobWorkflowExperimentId(eq(7L), any(Pageable.class)))
+        .thenReturn(List.of());
+    when(apiLogEntryRepository.findByExperimentId(eq(7L), any(Pageable.class)))
+        .thenReturn(List.of(entry));
 
-        List<ExperimentFacebookApiLogDto> dtos = service.findLogs(7L, 10);
+    List<ExperimentFacebookApiLogDto> dtos = service.findLogs(7L, 10);
 
-        assertThat(dtos).hasSize(1);
-        ExperimentFacebookApiLogDto dto = dtos.getFirst();
-        assertThat(dto.context()).isEqualTo(ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET.name());
-        assertThat(dto.endpoint()).doesNotContain("secret987654321");
-        assertThat(dto.requestPayload()).doesNotContain("secret987654321");
-        assertThat(dto.durationMs()).isEqualTo(2000L);
-        assertThat(dto.createdAt()).isEqualTo(Instant.parse("2024-01-02T10:00:03Z"));
-    }
+    assertThat(dtos).hasSize(1);
+    ExperimentFacebookApiLogDto dto = dtos.getFirst();
+    assertThat(dto.context()).isEqualTo(ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET.name());
+    assertThat(dto.endpoint()).doesNotContain("secret987654321");
+    assertThat(dto.requestPayload()).doesNotContain("secret987654321");
+    assertThat(dto.durationMs()).isEqualTo(2000L);
+    assertThat(dto.createdAt()).isEqualTo(Instant.parse("2024-01-02T10:00:03Z"));
+  }
 }

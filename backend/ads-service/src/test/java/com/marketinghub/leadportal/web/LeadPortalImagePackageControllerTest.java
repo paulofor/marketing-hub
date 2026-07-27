@@ -25,123 +25,129 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @WebMvcTest(controllers = LeadPortalImagePackageController.class)
 class LeadPortalImagePackageControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    @MockBean
-    private LeadPortalImagePackageService imagePackageService;
+  @MockBean private LeadPortalImagePackageService imagePackageService;
 
-    @Test
-    void listUsesProvidedStatuses() throws Exception {
-        LeadPortalImagePackageSummaryDto dto = new LeadPortalImagePackageSummaryDto(
-                1L,
-                UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
-                "flow",
-                "Nome",
-                "email@example.com",
-                "+5511999999999",
-                FlowSubmissionImagePackageStatus.FAILED,
-                FlowSubmissionImagePackageLifecycleStatus.FAILED,
-                "Prompt",
-                "gpt-image",
-                10,
-                5,
-                3,
-                2,
-                Instant.parse("2024-01-01T10:00:00Z"),
-                Instant.parse("2024-01-01T10:05:00Z"),
-                Instant.parse("2024-01-01T10:03:00Z"),
-                Instant.parse("2024-01-01T10:04:00Z"),
-                null,
-                "Erro temporário",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
-        when(imagePackageService.listImagePackages(any())).thenReturn(List.of(dto));
+  @Test
+  void listUsesProvidedStatuses() throws Exception {
+    LeadPortalImagePackageSummaryDto dto =
+        new LeadPortalImagePackageSummaryDto(
+            1L,
+            UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
+            "flow",
+            "Nome",
+            "email@example.com",
+            "+5511999999999",
+            FlowSubmissionImagePackageStatus.FAILED,
+            FlowSubmissionImagePackageLifecycleStatus.FAILED,
+            "Prompt",
+            "gpt-image",
+            10,
+            5,
+            3,
+            2,
+            Instant.parse("2024-01-01T10:00:00Z"),
+            Instant.parse("2024-01-01T10:05:00Z"),
+            Instant.parse("2024-01-01T10:03:00Z"),
+            Instant.parse("2024-01-01T10:04:00Z"),
+            null,
+            "Erro temporário",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    when(imagePackageService.listImagePackages(any())).thenReturn(List.of(dto));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/lead-portal/image-packages")
-                        .param("status", FlowSubmissionImagePackageStatus.FAILED.name())
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].status").value(FlowSubmissionImagePackageStatus.FAILED.name()))
-                .andExpect(jsonPath("$[0].lifecycleStatus").value(FlowSubmissionImagePackageLifecycleStatus.FAILED.name()));
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.get("/api/lead-portal/image-packages")
+                .param("status", FlowSubmissionImagePackageStatus.FAILED.name())
+                .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(1L))
+        .andExpect(jsonPath("$[0].status").value(FlowSubmissionImagePackageStatus.FAILED.name()))
+        .andExpect(
+            jsonPath("$[0].lifecycleStatus")
+                .value(FlowSubmissionImagePackageLifecycleStatus.FAILED.name()));
 
-        verify(imagePackageService).listImagePackages(new java.util.LinkedHashSet<>(List.of(FlowSubmissionImagePackageStatus.FAILED)));
-    }
+    verify(imagePackageService)
+        .listImagePackages(
+            new java.util.LinkedHashSet<>(List.of(FlowSubmissionImagePackageStatus.FAILED)));
+  }
 
-    @Test
-    void retryDelegatesToService() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/lead-portal/image-packages/{id}/retry", 77L))
-                .andExpect(status().isNoContent());
+  @Test
+  void retryDelegatesToService() throws Exception {
+    mockMvc
+        .perform(MockMvcRequestBuilders.post("/api/lead-portal/image-packages/{id}/retry", 77L))
+        .andExpect(status().isNoContent());
 
-        verify(imagePackageService).retry(77L);
-    }
+    verify(imagePackageService).retry(77L);
+  }
 
-    @Test
-    void getReturnsHistoryEntriesForEngagementEvents() throws Exception {
-        LeadPortalImagePackageDetailDto detail = new LeadPortalImagePackageDetailDto(
-                5L,
-                UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
-                FlowSubmissionImagePackageStatus.COMPLETED,
-                FlowSubmissionImagePackageLifecycleStatus.SAMPLE_IMAGES_VIEWED,
-                "Prompt",
-                "model",
-                Integer.valueOf(4),
-                Integer.valueOf(1),
-                Integer.valueOf(1),
-                null,
-                Instant.parse("2024-01-01T10:00:00Z"),
-                Instant.parse("2024-01-01T10:05:00Z"),
-                Instant.parse("2024-01-01T10:04:00Z"),
-                Instant.parse("2024-01-01T10:06:00Z"),
-                Instant.parse("2024-01-01T10:07:00Z"),
-                List.of(
-                        new LeadPortalImagePackageDetailDto.StatusHistoryEntry(
-                                FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED,
-                                null,
-                                Instant.parse("2024-01-01T10:06:00Z")),
-                        new LeadPortalImagePackageDetailDto.StatusHistoryEntry(
-                                FlowSubmissionImagePackageStatus.SAMPLE_IMAGES_VIEWED,
-                                null,
-                                Instant.parse("2024-01-01T10:07:00Z"))),
-                null,
-                new LeadPortalImagePackageDetailDto.SubmissionInfo(
-                        "flow",
-                        "Name",
-                        "email@example.com",
-                        "+5511999999999",
-                        "img-question"),
-                null,
-                List.<LeadPortalImagePackageDetailDto.ImageReference>of(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
-        when(imagePackageService.getImagePackage(5L)).thenReturn(detail);
+  @Test
+  void getReturnsHistoryEntriesForEngagementEvents() throws Exception {
+    LeadPortalImagePackageDetailDto detail =
+        new LeadPortalImagePackageDetailDto(
+            5L,
+            UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
+            FlowSubmissionImagePackageStatus.COMPLETED,
+            FlowSubmissionImagePackageLifecycleStatus.SAMPLE_IMAGES_VIEWED,
+            "Prompt",
+            "model",
+            Integer.valueOf(4),
+            Integer.valueOf(1),
+            Integer.valueOf(1),
+            null,
+            Instant.parse("2024-01-01T10:00:00Z"),
+            Instant.parse("2024-01-01T10:05:00Z"),
+            Instant.parse("2024-01-01T10:04:00Z"),
+            Instant.parse("2024-01-01T10:06:00Z"),
+            Instant.parse("2024-01-01T10:07:00Z"),
+            List.of(
+                new LeadPortalImagePackageDetailDto.StatusHistoryEntry(
+                    FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED,
+                    null,
+                    Instant.parse("2024-01-01T10:06:00Z")),
+                new LeadPortalImagePackageDetailDto.StatusHistoryEntry(
+                    FlowSubmissionImagePackageStatus.SAMPLE_IMAGES_VIEWED,
+                    null,
+                    Instant.parse("2024-01-01T10:07:00Z"))),
+            null,
+            new LeadPortalImagePackageDetailDto.SubmissionInfo(
+                "flow", "Name", "email@example.com", "+5511999999999", "img-question"),
+            null,
+            List.<LeadPortalImagePackageDetailDto.ImageReference>of(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    when(imagePackageService.getImagePackage(5L)).thenReturn(detail);
 
-        mockMvc.perform(
-                        MockMvcRequestBuilders.get("/api/lead-portal/image-packages/{id}", 5L)
-                                .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.history[0].status")
-                        .value(FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED.name()))
-                .andExpect(jsonPath("$.history[1].status")
-                        .value(FlowSubmissionImagePackageStatus.SAMPLE_IMAGES_VIEWED.name()));
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.get("/api/lead-portal/image-packages/{id}", 5L)
+                .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.history[0].status")
+                .value(FlowSubmissionImagePackageStatus.SAMPLE_EMAIL_OPENED.name()))
+        .andExpect(
+            jsonPath("$.history[1].status")
+                .value(FlowSubmissionImagePackageStatus.SAMPLE_IMAGES_VIEWED.name()));
 
-        verify(imagePackageService).getImagePackage(5L);
-    }
+    verify(imagePackageService).getImagePackage(5L);
+  }
 }

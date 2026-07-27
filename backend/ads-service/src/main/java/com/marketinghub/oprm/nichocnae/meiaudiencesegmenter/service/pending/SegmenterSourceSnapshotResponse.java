@@ -2,7 +2,10 @@ package com.marketinghub.oprm.nichocnae.meiaudiencesegmenter.service.pending;
 
 import java.time.Instant;
 
-/** DTO responsável por transportar fonte curta e indicadores de aderência para segmentação MEI/autônomo. */
+/**
+ * DTO responsável por transportar fonte curta e indicadores de aderência para segmentação
+ * MEI/autônomo.
+ */
 public record SegmenterSourceSnapshotResponse(
     Long sourceSnapshotId,
     Long sourceCandidateId,

@@ -27,73 +27,72 @@ import org.hibernate.annotations.UuidGenerator;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExperimentPipelineGenerationJob {
-    @Id
-    @GeneratedValue
-    @UuidGenerator
-    private UUID id;
+  @Id @GeneratedValue @UuidGenerator private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "experiment_id", nullable = false)
-    private Experiment experiment;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "experiment_id", nullable = false)
+  private Experiment experiment;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 128)
-    private ExperimentPipelineSection section;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 128)
+  private ExperimentPipelineSection section;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private ExperimentPipelineGenerationJobStatus status = ExperimentPipelineGenerationJobStatus.PENDING;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 32)
+  @Builder.Default
+  private ExperimentPipelineGenerationJobStatus status =
+      ExperimentPipelineGenerationJobStatus.PENDING;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "stage", nullable = false, length = 32)
-    @Builder.Default
-    private ExperimentPipelineGenerationJobStage stage = ExperimentPipelineGenerationJobStage.WAITING_AI_WORKER;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "stage", nullable = false, length = 32)
+  @Builder.Default
+  private ExperimentPipelineGenerationJobStage stage =
+      ExperimentPipelineGenerationJobStage.WAITING_AI_WORKER;
 
-    @Column(length = 191)
-    private String model;
+  @Column(length = 191)
+  private String model;
 
-    @Column(name = "worker_id", length = 191)
-    private String workerId;
+  @Column(name = "worker_id", length = 191)
+  private String workerId;
 
-    @Column(name = "custom_instructions", columnDefinition = "LONGTEXT")
-    private String customInstructions;
+  @Column(name = "custom_instructions", columnDefinition = "LONGTEXT")
+  private String customInstructions;
 
-    @Column(name = "prompt", columnDefinition = "LONGTEXT")
-    private String prompt;
+  @Column(name = "prompt", columnDefinition = "LONGTEXT")
+  private String prompt;
 
-    @Column(name = "request_body_json", columnDefinition = "LONGTEXT")
-    private String requestBodyJson;
+  @Column(name = "request_body_json", columnDefinition = "LONGTEXT")
+  private String requestBodyJson;
 
-    @Column(name = "raw_response", columnDefinition = "LONGTEXT")
-    private String rawResponse;
+  @Column(name = "raw_response", columnDefinition = "LONGTEXT")
+  private String rawResponse;
 
-    @Column(name = "response_content", columnDefinition = "LONGTEXT")
-    private String responseContent;
+  @Column(name = "response_content", columnDefinition = "LONGTEXT")
+  private String responseContent;
 
-    @Column(name = "input_tokens")
-    private Integer inputTokens;
+  @Column(name = "input_tokens")
+  private Integer inputTokens;
 
-    @Column(name = "output_tokens")
-    private Integer outputTokens;
+  @Column(name = "output_tokens")
+  private Integer outputTokens;
 
-    @Column(name = "cost_usd", precision = 10, scale = 4)
-    private BigDecimal costUsd;
+  @Column(name = "cost_usd", precision = 10, scale = 4)
+  private BigDecimal costUsd;
 
-    @Column(name = "error_message", columnDefinition = "LONGTEXT")
-    private String errorMessage;
+  @Column(name = "error_message", columnDefinition = "LONGTEXT")
+  private String errorMessage;
 
-    @Column(name = "started_at")
-    private Instant startedAt;
+  @Column(name = "started_at")
+  private Instant startedAt;
 
-    @Column(name = "finished_at")
-    private Instant finishedAt;
+  @Column(name = "finished_at")
+  private Instant finishedAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

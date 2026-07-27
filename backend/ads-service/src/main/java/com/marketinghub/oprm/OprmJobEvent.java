@@ -22,31 +22,29 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OprmJobEvent {
-    @Id
-    @GeneratedValue
-    private Long id;
+  @Id @GeneratedValue private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "job_id", nullable = false)
-    private OprmJob job;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "job_id", nullable = false)
+  private OprmJob job;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "event_status", nullable = false, length = 32)
-    private OprmJobStatus eventStatus;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "event_status", nullable = false, length = 32)
+  private OprmJobStatus eventStatus;
 
-    @Column(name = "phase", length = 128)
-    private String phase;
+  @Column(name = "phase", length = 128)
+  private String phase;
 
-    @Column(name = "message", columnDefinition = "LONGTEXT")
-    private String message;
+  @Column(name = "message", columnDefinition = "LONGTEXT")
+  private String message;
 
-    @Column(name = "worker_id", length = 191)
-    private String workerId;
+  @Column(name = "worker_id", length = 191)
+  private String workerId;
 
-    @Column(name = "occurred_at", nullable = false)
-    private Instant occurredAt;
+  @Column(name = "occurred_at", nullable = false)
+  private Instant occurredAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 }

@@ -8,25 +8,37 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: validar a geração de sinais Meta Ads a partir de nichos enriquecidos do OPRM. */
+/**
+ * Responsabilidade: validar a geração de sinais Meta Ads a partir de nichos enriquecidos do OPRM.
+ */
 class OprmEnrichedNicheMetaSignalServiceTest {
-  private final OprmEnrichedNicheMetaSignalService service = new OprmEnrichedNicheMetaSignalService();
+  private final OprmEnrichedNicheMetaSignalService service =
+      new OprmEnrichedNicheMetaSignalService();
 
-  /** Deve converter o CNAE campeão de beleza em interesses, cargos e comportamentos úteis para a Meta. */
+  /**
+   * Deve converter o CNAE campeão de beleza em interesses, cargos e comportamentos úteis para a
+   * Meta.
+   */
   @Test
   void shouldBuildBeautySignalsFromCnae() {
-    OprmEnrichedNicheMetaSignalService.MetaSignalPackage signalPackage = service.buildSignalPackage(cycle(), card());
+    OprmEnrichedNicheMetaSignalService.MetaSignalPackage signalPackage =
+        service.buildSignalPackage(cycle(), card());
 
-    assertThat(signalPackage.interests()).contains("Salão de beleza", "Cabeleireiro", "WhatsApp Business");
+    assertThat(signalPackage.interests())
+        .contains("Salão de beleza", "Cabeleireiro", "WhatsApp Business");
     assertThat(signalPackage.roles()).contains("Cabeleireiro", "Manicure", "Pedicure");
     assertThat(signalPackage.behaviors()).contains("Small business owners", "Facebook Page admins");
   }
 
-  /** Deve montar resumo dos sinais para armazenamento no backend sem criar elementos de targeting no OPRM. */
+  /**
+   * Deve montar resumo dos sinais para armazenamento no backend sem criar elementos de targeting no
+   * OPRM.
+   */
   @Test
   void shouldBuildReadableSummaryForBackendStorage() {
-    OprmEnrichedNicheMetaSignalService.MetaSignalPackage signalPackage = new OprmEnrichedNicheMetaSignalService.MetaSignalPackage(
-        List.of("Loja de roupas"), List.of("Lojista"), List.of("Small business owners"));
+    OprmEnrichedNicheMetaSignalService.MetaSignalPackage signalPackage =
+        new OprmEnrichedNicheMetaSignalService.MetaSignalPackage(
+            List.of("Loja de roupas"), List.of("Lojista"), List.of("Small business owners"));
 
     String summary = service.buildReadableSignalSummary(signalPackage);
 
@@ -51,7 +63,8 @@ class OprmEnrichedNicheMetaSignalServiceTest {
     OprmNicheRoutineCard card = new OprmNicheRoutineCard();
     card.setRoutineSummary("Rotina com agenda e atendimento pelo WhatsApp.");
     card.setPainsSummary("Dificuldade de vender retorno para clientes do salão.");
-    card.setMechanismOpportunitiesSummary("Contexto operacional com encaixes, horários vagos e Instagram.");
+    card.setMechanismOpportunitiesSummary(
+        "Contexto operacional com encaixes, horários vagos e Instagram.");
     return card;
   }
 }

@@ -1,16 +1,17 @@
 package com.marketinghub.geralanding;
 
-import com.marketinghub.geralanding.wireframe.provisorio.WireframeHtmlGenerator;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.marketinghub.geralanding.wireframe.provisorio.WireframeHtmlGenerator;
+import org.junit.jupiter.api.Test;
+
 class WireframeHtmlGeneratorTest {
 
-    @Test
-    void shouldApplyUiSizesWhenProvidedAsJsonObject() {
-        String json = """
+  @Test
+  void shouldApplyUiSizesWhenProvidedAsJsonObject() {
+    String json =
+        """
             {
               "sectionOrder": [
                 {
@@ -29,15 +30,14 @@ class WireframeHtmlGeneratorTest {
             }
             """;
 
-        WireframeHtmlGenerator generator = new WireframeHtmlGenerator();
-        String html = generator.generateFromJson(json);
+    WireframeHtmlGenerator generator = new WireframeHtmlGenerator();
+    String html = generator.generateFromJson(json);
 
-        assertNotNull(html);
-        assertTrue(html.contains("#hero {"));
-        assertTrue(html.contains("padding: 24px;"));
-        assertTrue(html.contains("max-width: 1024px;"));
-        assertTrue(html.contains("#hero h1 {"));
-        assertTrue(html.contains("font-size: 32px;"));
-    }
-
+    assertNotNull(html);
+    assertTrue(html.contains("#hero {"));
+    assertTrue(html.contains("padding: 24px;"));
+    assertTrue(html.contains("max-width: 1024px;"));
+    assertTrue(html.contains("#hero h1 {"));
+    assertTrue(html.contains("font-size: 32px;"));
+  }
 }

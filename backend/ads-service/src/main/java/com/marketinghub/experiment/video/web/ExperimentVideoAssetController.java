@@ -3,9 +3,9 @@ package com.marketinghub.experiment.video.web;
 import com.marketinghub.experiment.video.dto.CreateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.ExperimentVideoAssetDto;
 import com.marketinghub.experiment.video.dto.ExperimentVideoPerformanceDashboardDto;
-import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
-import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
+import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
+import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
@@ -19,69 +19,72 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Expõe vídeos de experimento para planejamento, revisão e liberação do funil.
- */
+/** Expõe vídeos de experimento para planejamento, revisão e liberação do funil. */
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/video-assets")
 public class ExperimentVideoAssetController {
-    private final ExperimentVideoAssetService service;
-    private final ExperimentVideoPerformanceDashboardService performanceDashboardService;
+  private final ExperimentVideoAssetService service;
+  private final ExperimentVideoPerformanceDashboardService performanceDashboardService;
 
-    /** Inicializa o controller com o serviço de vídeos de experimento. */
-    public ExperimentVideoAssetController(ExperimentVideoAssetService service,
-                                          ExperimentVideoPerformanceDashboardService performanceDashboardService) {
-        this.service = service;
-        this.performanceDashboardService = performanceDashboardService;
-    }
+  /** Inicializa o controller com o serviço de vídeos de experimento. */
+  public ExperimentVideoAssetController(
+      ExperimentVideoAssetService service,
+      ExperimentVideoPerformanceDashboardService performanceDashboardService) {
+    this.service = service;
+    this.performanceDashboardService = performanceDashboardService;
+  }
 
-    /** Lista os vídeos vinculados a um experimento. */
-    @GetMapping
-    public List<ExperimentVideoAssetDto> list(@PathVariable Long experimentId) {
-        return service.list(experimentId);
-    }
+  /** Lista os vídeos vinculados a um experimento. */
+  @GetMapping
+  public List<ExperimentVideoAssetDto> list(@PathVariable Long experimentId) {
+    return service.list(experimentId);
+  }
 
-    /** Retorna painel consolidado de vídeo, criativos Meta e funil do experimento. */
-    @GetMapping("/performance-dashboard")
-    public ExperimentVideoPerformanceDashboardDto performanceDashboard(@PathVariable Long experimentId) {
-        return performanceDashboardService.summarize(experimentId);
-    }
+  /** Retorna painel consolidado de vídeo, criativos Meta e funil do experimento. */
+  @GetMapping("/performance-dashboard")
+  public ExperimentVideoPerformanceDashboardDto performanceDashboard(
+      @PathVariable Long experimentId) {
+    return performanceDashboardService.summarize(experimentId);
+  }
 
-    /** Cria um novo vídeo comercial para o experimento. */
-    @PostMapping
-    public ExperimentVideoAssetDto create(@PathVariable Long experimentId,
-                                          @Valid @RequestBody CreateExperimentVideoAssetRequest request) {
-        return service.create(experimentId, request);
-    }
+  /** Cria um novo vídeo comercial para o experimento. */
+  @PostMapping
+  public ExperimentVideoAssetDto create(
+      @PathVariable Long experimentId,
+      @Valid @RequestBody CreateExperimentVideoAssetRequest request) {
+    return service.create(experimentId, request);
+  }
 
-    /** Cria perfil, script, job VEO e vínculo obrigatório de vídeo para o experimento. */
-    @PostMapping("/veo-render-requests")
-    public ExperimentVideoAssetDto requestVeoRender(@PathVariable Long experimentId,
-                                                    @Valid @RequestBody RequestExperimentVeoVideoRequest request) {
-        return service.requestVeoRender(experimentId, request);
-    }
+  /** Cria perfil, script, job VEO e vínculo obrigatório de vídeo para o experimento. */
+  @PostMapping("/veo-render-requests")
+  public ExperimentVideoAssetDto requestVeoRender(
+      @PathVariable Long experimentId,
+      @Valid @RequestBody RequestExperimentVeoVideoRequest request) {
+    return service.requestVeoRender(experimentId, request);
+  }
 
-    /** Cria jobs de render para vídeos planejados sem perder o vínculo dos ativos existentes. */
-    @PostMapping("/planned-render-requests")
-    public List<ExperimentVideoAssetDto> requestPlannedRenders(
-            @PathVariable Long experimentId,
-            @Valid @RequestBody RequestPlannedExperimentVideoRenderRequest request) {
-        return service.requestPlannedRenders(experimentId, request);
-    }
+  /** Cria jobs de render para vídeos planejados sem perder o vínculo dos ativos existentes. */
+  @PostMapping("/planned-render-requests")
+  public List<ExperimentVideoAssetDto> requestPlannedRenders(
+      @PathVariable Long experimentId,
+      @Valid @RequestBody RequestPlannedExperimentVideoRenderRequest request) {
+    return service.requestPlannedRenders(experimentId, request);
+  }
 
-    /** Cria jobs de pós-produção para vídeos prontos virarem peças comerciais finalizadas. */
-    @PostMapping("/post-production-requests")
-    public List<ExperimentVideoAssetDto> requestPostProduction(
-            @PathVariable Long experimentId,
-            @Valid @RequestBody RequestExperimentVideoPostProductionRequest request) {
-        return service.requestPostProduction(experimentId, request);
-    }
+  /** Cria jobs de pós-produção para vídeos prontos virarem peças comerciais finalizadas. */
+  @PostMapping("/post-production-requests")
+  public List<ExperimentVideoAssetDto> requestPostProduction(
+      @PathVariable Long experimentId,
+      @Valid @RequestBody RequestExperimentVideoPostProductionRequest request) {
+    return service.requestPostProduction(experimentId, request);
+  }
 
-    /** Atualiza status, revisão e vínculos de um vídeo comercial do experimento. */
-    @PatchMapping("/{videoAssetId}")
-    public ExperimentVideoAssetDto update(@PathVariable Long experimentId,
-                                          @PathVariable Long videoAssetId,
-                                          @RequestBody UpdateExperimentVideoAssetRequest request) {
-        return service.update(experimentId, videoAssetId, request);
-    }
+  /** Atualiza status, revisão e vínculos de um vídeo comercial do experimento. */
+  @PatchMapping("/{videoAssetId}")
+  public ExperimentVideoAssetDto update(
+      @PathVariable Long experimentId,
+      @PathVariable Long videoAssetId,
+      @RequestBody UpdateExperimentVideoAssetRequest request) {
+    return service.update(experimentId, videoAssetId, request);
+  }
 }

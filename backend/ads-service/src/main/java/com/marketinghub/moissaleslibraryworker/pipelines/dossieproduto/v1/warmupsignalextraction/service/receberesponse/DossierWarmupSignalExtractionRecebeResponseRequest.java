@@ -2,12 +2,13 @@ package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.warmu
 
 import java.math.BigDecimal;
 
-/** Contrato de entrada do endpoint recebeResponse da etapa warmupsignalextraction do dossiê MOIS v1. */
+/**
+ * Contrato de entrada do endpoint recebeResponse da etapa warmupsignalextraction do dossiê MOIS v1.
+ */
 public record DossierWarmupSignalExtractionRecebeResponseRequest(
-        String response,
-        String descricaoErro,
-        Long quantidadeTokenEntrada,
-        Long quantidadeTokenSaida,
-        BigDecimal custo,
-        String modelo) {
-}
+    String response,
+    String descricaoErro,
+    Long quantidadeTokenEntrada,
+    Long quantidadeTokenSaida,
+    BigDecimal custo,
+    String modelo) {}

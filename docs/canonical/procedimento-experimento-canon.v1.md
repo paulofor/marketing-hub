@@ -25,7 +25,7 @@ Aplica-se ao fluxo de experimentos no Marketing Hub, especialmente:
 1. O usuário cria o experimento pela tela, preenchendo os campos obrigatórios do formulário.
 2. Após salvar, o experimento passa a ter contexto para geração de ativos do pipeline.
 
-Para experimentos manuais, a estrutura base canônica fica definida em `docs/canonical/manual-experiments-flow-canon.v1.md`: a entrada deve capturar apenas o brief inicial, e a aba Construção deve conduzir o fluxo `Nicho/dor -> hipótese -> MDS descobre mecanismo -> oferta -> prova -> experimento -> FEO produz entregáveis -> funil mede venda`.
+Para experimentos manuais, a estrutura base canônica fica definida em `docs/canonical/manual-experiments-flow-canon.v1.md`: a entrada deve capturar apenas o brief inicial, e a aba Construção deve conduzir o fluxo `Nicho/dor -> hipótese -> MDS descobre mecanismo -> oferta -> prova -> experimento -> FEO prepara experiência PDE -> funil mede venda`.
 
 
 ### 3.1.1 Regra mandatória — identificação automática de hipótese e experimento

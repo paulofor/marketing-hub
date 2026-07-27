@@ -90,6 +90,28 @@ function eventCount(
   }, 0);
 }
 
+export function calculateVideoAnalytics(events?: Record<string, number>) {
+  const exposed = eventCount(events, "VIDEO_VIEWED");
+  const plays = eventCount(events, "VIDEO_PLAY");
+  const progress25 = eventCount(events, "VIDEO_PROGRESS_25");
+  const progress50 = eventCount(events, "VIDEO_PROGRESS_50");
+  const progress75 = eventCount(events, "VIDEO_PROGRESS_75");
+  const completed = eventCount(events, "VIDEO_COMPLETED");
+  const errors = eventCount(events, "VIDEO_ERROR");
+  return {
+    exposed,
+    plays,
+    progress25,
+    progress50,
+    progress75,
+    completed,
+    errors,
+    playRate: exposed > 0 ? (plays / exposed) * 100 : null,
+    progress25Rate: plays > 0 ? (progress25 / plays) * 100 : null,
+    completionRate: plays > 0 ? (completed / plays) * 100 : null,
+  };
+}
+
 function abandonmentLabel(value?: string | null) {
   const labels: Record<string, string> = {
     ASSINATURA_APROVADA: "Compra aprovada",
@@ -154,22 +176,7 @@ export default function ExperimentLandingAnalyticsTab({
     const pdeTopEvents = Object.entries(pde?.events ?? {})
       .sort(([, first], [, second]) => second - first)
       .slice(0, 12);
-    const videoPlayEvents = eventCount(
-      pde?.events,
-      "VIDEO_PLAY",
-      "VIDEO_VIEWED",
-    );
-    const videoPartialEvents = eventCount(
-      pde?.events,
-      "VIDEO_PROGRESS_25",
-      "VIDEO_PROGRESS_50",
-      "VIDEO_PROGRESS_75",
-    );
-    const videoCompletedEvents = eventCount(pde?.events, "VIDEO_COMPLETED");
-    const videoCompletionRate =
-      videoPlayEvents > 0
-        ? (videoCompletedEvents / videoPlayEvents) * 100
-        : null;
+    const videoAnalytics = calculateVideoAnalytics(pde?.events);
     const pdeCards = [
       {
         label: "Sessões PDE",
@@ -273,33 +280,76 @@ export default function ExperimentLandingAnalyticsTab({
                     </p>
                   </div>
                   <span className="badge text-bg-light border">
-                    {formatPercent(videoCompletionRate)} completo
+                    {formatPercent(videoAnalytics.completionRate)} completo
                   </span>
                 </div>
                 <div className="row g-2">
-                  <div className="col-4">
+                  <div className="col-6 col-lg-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <Eye size={18} className="text-primary mb-2" />
+                      <div className="fw-semibold">{videoAnalytics.exposed}</div>
+                      <div className="text-muted small">expostos</div>
+                    </div>
+                  </div>
+                  <div className="col-6 col-lg-4">
                     <div className="border rounded-3 p-3 h-100">
                       <PlayCircle size={18} className="text-primary mb-2" />
-                      <div className="fw-semibold">{videoPlayEvents}</div>
-                      <div className="text-muted small">plays</div>
+                      <div className="fw-semibold">{videoAnalytics.plays}</div>
+                      <div className="text-muted small">plays reais</div>
                     </div>
                   </div>
-                  <div className="col-4">
+                  <div className="col-6 col-lg-4">
                     <div className="border rounded-3 p-3 h-100">
                       <Activity size={18} className="text-primary mb-2" />
-                      <div className="fw-semibold">{videoPartialEvents}</div>
-                      <div className="text-muted small">parciais</div>
+                      <div className="fw-semibold">
+                        {videoAnalytics.progress25}
+                      </div>
+                      <div className="text-muted small">25% ou 5s</div>
                     </div>
                   </div>
-                  <div className="col-4">
+                  <div className="col-6 col-lg-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <Activity size={18} className="text-primary mb-2" />
+                      <div className="fw-semibold">
+                        {videoAnalytics.progress50}
+                      </div>
+                      <div className="text-muted small">50%</div>
+                    </div>
+                  </div>
+                  <div className="col-6 col-lg-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <Activity size={18} className="text-primary mb-2" />
+                      <div className="fw-semibold">
+                        {videoAnalytics.progress75}
+                      </div>
+                      <div className="text-muted small">75%</div>
+                    </div>
+                  </div>
+                  <div className="col-6 col-lg-4">
                     <div className="border rounded-3 p-3 h-100">
                       <CheckCircle2 size={18} className="text-primary mb-2" />
-                      <div className="fw-semibold">{videoCompletedEvents}</div>
+                      <div className="fw-semibold">
+                        {videoAnalytics.completed}
+                      </div>
                       <div className="text-muted small">completos</div>
                     </div>
                   </div>
                 </div>
-                {videoPlayEvents === 0 && videoPartialEvents === 0 ? (
+                <div className="d-flex flex-wrap gap-2 mt-3 small">
+                  <span className="badge text-bg-light border">
+                    {formatPercent(videoAnalytics.playRate)} play/exposição
+                  </span>
+                  <span className="badge text-bg-light border">
+                    {formatPercent(videoAnalytics.progress25Rate)} 25%/play
+                  </span>
+                  <span className="badge text-bg-light border">
+                    {formatPercent(videoAnalytics.completionRate)} completo/play
+                  </span>
+                  <span className="badge text-bg-light border">
+                    {videoAnalytics.errors} erros
+                  </span>
+                </div>
+                {videoAnalytics.plays === 0 && videoAnalytics.progress25 === 0 ? (
                   <p className="text-muted small mt-3 mb-0">
                     Nenhum evento de vídeo capturado para esta versão ainda.
                   </p>

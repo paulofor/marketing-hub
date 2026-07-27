@@ -1,6 +1,13 @@
 import { useMemo, useState } from "react";
 import ReactECharts from "echarts-for-react";
-import { AlertTriangle, Activity, ServerCrash } from "lucide-react";
+import {
+  AlertTriangle,
+  Activity,
+  ExternalLink,
+  RefreshCw,
+  ServerCrash,
+  ShieldCheck,
+} from "lucide-react";
 import PageTitle from "../components/PageTitle";
 import {
   ModuleAvailability,
@@ -40,6 +47,10 @@ const MODULE_IMPACT: Record<string, string> = {
     "Leads podem não conseguir acessar ofertas, materiais ou páginas pós-clique.",
   "email-service":
     "Comunicações transacionais e recuperação de leads podem falhar.",
+  "pde-musa-v5":
+    "Clientes e leads podem perder acesso à experiência vendida do Clube MUSA v5.",
+  "pde-musa-v6":
+    "Clientes e leads podem perder acesso à experiência vendida do Clube MUSA v6.",
 };
 
 function formatDateTime(value?: string | null) {
@@ -66,17 +77,43 @@ function formatDuration(seconds?: number | null) {
   return `${Math.floor(minutes / 60)}h ${minutes % 60}min`;
 }
 
+function formatHistoryDuration(seconds: number) {
+  return seconds > 0 ? formatDuration(seconds) : "0s";
+}
+
 function getImpact(module: ModuleAvailability) {
+  if (module.type === "PDE") {
+    return (
+      MODULE_IMPACT[module.moduleCode] ??
+      "Clientes e leads podem perder acesso à versão PDE em campanha."
+    );
+  }
   return (
     MODULE_IMPACT[module.moduleCode] ??
     "Fluxos operacionais ligados a este módulo podem ter atraso ou interrupção."
   );
 }
 
-export default function OpsMonitorPage() {
+interface OpsMonitorPageProps {
+  defaultCriticalityFilter?: string;
+  defaultTypeFilter?: string;
+  title?: string;
+  subtitle?: string;
+  pdeFocus?: boolean;
+}
+
+export default function OpsMonitorPage({
+  defaultCriticalityFilter = "",
+  defaultTypeFilter = "",
+  title = "Operação / Saúde dos Módulos",
+  subtitle = "Visão operacional baseada no backend para proteger vendas, geração de ativos e publicação de campanhas.",
+  pdeFocus = false,
+}: OpsMonitorPageProps) {
   const [selectedModuleCode, setSelectedModuleCode] = useState<string>();
-  const [criticalityFilter, setCriticalityFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [criticalityFilter, setCriticalityFilter] = useState(
+    defaultCriticalityFilter,
+  );
+  const [typeFilter, setTypeFilter] = useState(defaultTypeFilter);
   const filters = useMemo(
     () => ({ criticality: criticalityFilter, type: typeFilter }),
     [criticalityFilter, typeFilter],
@@ -87,6 +124,15 @@ export default function OpsMonitorPage() {
   const incidentHistoryQuery = useOpsMonitorIncidentHistory(filters);
 
   const modules = availabilityQuery.data ?? [];
+  const pdeVersions = modules.filter((module) => module.type === "PDE");
+  const pdeSummary = {
+    online: modules.filter((module) => module.status === "ONLINE").length,
+    degraded: modules.filter((module) => module.status === "DEGRADED").length,
+    offline: modules.filter((module) => module.status === "OFFLINE").length,
+    unknown: modules.filter((module) => module.status === "UNKNOWN").length,
+    openIncidents: incidentsQuery.data?.length ?? 0,
+  };
+  const summary = pdeFocus ? pdeSummary : summaryQuery.data;
   const selectedModule = useMemo(() => {
     return (
       modules.find((module) => module.moduleCode === selectedModuleCode) ??
@@ -99,8 +145,20 @@ export default function OpsMonitorPage() {
 
   const criticalAlerts = modules.filter(
     (module) =>
-      module.criticality === "CRITICAL" && module.status === "OFFLINE",
+      module.criticality === "CRITICAL" &&
+      (module.status === "OFFLINE" ||
+        (pdeFocus && module.status === "DEGRADED")),
   );
+
+  const refreshHealth = () => {
+    void summaryQuery.refetch();
+    void availabilityQuery.refetch();
+    void incidentsQuery.refetch();
+    void incidentHistoryQuery.refetch();
+    if (selectedModule?.moduleCode) {
+      void historyQuery.refetch();
+    }
+  };
 
   const chartOption = {
     tooltip: { trigger: "axis" },
@@ -129,11 +187,83 @@ export default function OpsMonitorPage() {
 
   return (
     <div className="ops-monitor-page">
-      <PageTitle>Operação / Saúde dos Módulos</PageTitle>
-      <p className="text-muted mb-4">
-        Visão operacional baseada no backend para proteger vendas, geração de
-        ativos e publicação de campanhas.
-      </p>
+      <PageTitle>{title}</PageTitle>
+      <p className="text-muted mb-4">{subtitle}</p>
+
+      {pdeFocus ? (
+        <div className="card mb-4 ops-monitor-page__pde-versions">
+          <div className="card-header d-flex justify-content-between align-items-center gap-3">
+            <span>Versões PDE em venda</span>
+            <button
+              className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
+              type="button"
+              onClick={refreshHealth}
+              disabled={
+                availabilityQuery.isFetching || incidentsQuery.isFetching
+              }
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              Revalidar agora
+            </button>
+          </div>
+          <div className="card-body">
+            {pdeVersions.length === 0 ? (
+              <p className="text-muted mb-0">
+                Nenhuma versão PDE crítica retornada pelo backend.
+              </p>
+            ) : (
+              <div className="row g-3">
+                {pdeVersions.map((module) => (
+                  <div className="col-lg-6" key={module.moduleCode}>
+                    <div className="ops-monitor-page__pde-version-card">
+                      <div className="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                          <strong>{module.name}</strong>
+                          <div className="text-muted small">
+                            {module.publishedVersion ?? "Versão não informada"}
+                          </div>
+                        </div>
+                        <span
+                          className={`badge ${STATUS_BADGES[module.status]}`}
+                        >
+                          {STATUS_LABELS[module.status]}
+                        </span>
+                      </div>
+                      <div className="ops-monitor-page__pde-version-meta">
+                        <div>
+                          <span>Domínio</span>
+                          <strong>
+                            {module.productUrl ??
+                              module.attemptedUrl ??
+                              "Sem URL"}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Imagem/container</span>
+                          <strong>
+                            {module.containerImageVersion ?? "Não informado"}
+                          </strong>
+                        </div>
+                      </div>
+                      {module.monitoringUrl ? (
+                        <a
+                          className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2 mt-3"
+                          href={module.monitoringUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir sem estatística comercial
+                          <ExternalLink size={14} aria-hidden="true" />
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {summaryQuery.isError ||
       availabilityQuery.isError ||
@@ -148,35 +278,35 @@ export default function OpsMonitorPage() {
         <div className="col-md-2">
           <SummaryCard
             label="Online"
-            value={summaryQuery.data?.online ?? 0}
+            value={summary?.online ?? 0}
             variant="text-success"
           />
         </div>
         <div className="col-md-2">
           <SummaryCard
             label="Instáveis"
-            value={summaryQuery.data?.degraded ?? 0}
+            value={summary?.degraded ?? 0}
             variant="text-warning"
           />
         </div>
         <div className="col-md-2">
           <SummaryCard
             label="Fora do ar"
-            value={summaryQuery.data?.offline ?? 0}
+            value={summary?.offline ?? 0}
             variant="text-danger"
           />
         </div>
         <div className="col-md-2">
           <SummaryCard
             label="Desconhecidos"
-            value={summaryQuery.data?.unknown ?? 0}
+            value={summary?.unknown ?? 0}
             variant="text-secondary"
           />
         </div>
         <div className="col-md-4">
           <SummaryCard
             label="Incidentes abertos"
-            value={summaryQuery.data?.openIncidents ?? 0}
+            value={summary?.openIncidents ?? 0}
             variant="text-danger"
           />
         </div>
@@ -219,11 +349,31 @@ export default function OpsMonitorPage() {
                 <option value="COLLECTOR">Coletor</option>
                 <option value="PORTAL">Portal</option>
                 <option value="SERVICE">Serviço</option>
+                <option value="PDE">PDE</option>
               </select>
             </div>
           </div>
         </div>
       </div>
+
+      {pdeFocus ? (
+        <div
+          className="alert alert-info ops-monitor-page__pde-note"
+          role="status"
+        >
+          <div className="d-flex gap-2 align-items-start">
+            <ShieldCheck aria-hidden="true" />
+            <div>
+              <strong>Monitoramento 24/7 das versões vendidas.</strong>
+              <div>
+                Cada versão PDE aparece aqui como alvo crítico de
+                disponibilidade pública. Se uma versão sair do ar, o impacto é
+                direto em acesso, confiança e conversão.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {criticalAlerts.length > 0 ? (
         <div className="mb-4">
@@ -269,7 +419,47 @@ export default function OpsMonitorPage() {
               {historyQuery.isLoading ? (
                 <p>Carregando gráfico...</p>
               ) : (
-                <ReactECharts option={chartOption} style={{ height: 320 }} />
+                <>
+                  <ReactECharts option={chartOption} style={{ height: 320 }} />
+                  <div className="table-responsive mt-3">
+                    <table className="table table-sm align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>Dia</th>
+                          <th>Checks</th>
+                          <th>Falhas</th>
+                          <th>Tempo fora</th>
+                          <th>Tempo instável</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(historyQuery.data ?? []).slice(0, 7).map((item) => (
+                          <tr key={item.date}>
+                            <td>{item.date}</td>
+                            <td>{item.totalChecks}</td>
+                            <td>{item.failedChecks}</td>
+                            <td>
+                              {formatHistoryDuration(item.offlineSeconds)}
+                            </td>
+                            <td>
+                              {formatHistoryDuration(item.degradedSeconds)}
+                            </td>
+                          </tr>
+                        ))}
+                        {(historyQuery.data ?? []).length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              className="text-center text-muted py-3"
+                            >
+                              Sem histórico diário para o módulo selecionado.
+                            </td>
+                          </tr>
+                        ) : null}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>

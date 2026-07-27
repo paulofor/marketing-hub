@@ -1,13 +1,18 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axios from "axios";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import OpsMonitorPage from "./OpsMonitorPage";
 
 vi.mock("axios");
 vi.mock("echarts-for-react", () => ({
   default: () => <div data-testid="availability-chart" />,
 }));
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 function renderPage() {
   const client = new QueryClient({
@@ -97,6 +102,99 @@ describe("OpsMonitorPage", () => {
     expect(await screen.findByText("timeout")).toBeInTheDocument();
     expect(
       await screen.findByText("http://191.252.181.168/actuator/health"),
+    ).toBeInTheDocument();
+  });
+
+  it("renderiza visão focada em PDE com filtro padrão de versões produtivas", async () => {
+    (axios.get as any).mockImplementation((url: string, config?: any) => {
+      if (url === "/api/ops-monitor/v1/summary") {
+        return Promise.resolve({
+          data: {
+            online: 8,
+            degraded: 0,
+            offline: 0,
+            unknown: 0,
+            openIncidents: 0,
+          },
+        });
+      }
+      if (url === "/api/ops-monitor/v1/modules/availability") {
+        expect(config?.params).toEqual({
+          criticality: "CRITICAL",
+          type: "PDE",
+        });
+        return Promise.resolve({
+          data: [
+            {
+              moduleCode: "pde-musa-v5",
+              name: "Clube MUSA PDE v5",
+              type: "PDE",
+              criticality: "CRITICAL",
+              publishedVersion: "musa-pde-entry-v5-video-explicativo",
+              productUrl: "https://v5.clubemusa.com.br",
+              monitoringUrl: "https://v5.clubemusa.com.br/?mh_monitor=1",
+              containerImageVersion:
+                "pde-platform-backend / pde-platform-frontend: tag do workflow",
+              status: "ONLINE",
+              lastCheckedAt: "2026-07-27T10:00:00Z",
+              lastResponseTimeMs: 120,
+              lastError: null,
+              attemptedUrl: "https://v5.clubemusa.com.br/healthz",
+            },
+          ],
+        });
+      }
+      if (
+        url === "/api/ops-monitor/v1/modules/pde-musa-v5/availability-history"
+      ) {
+        return Promise.resolve({
+          data: [
+            {
+              date: "2026-07-27",
+              totalChecks: 20,
+              successfulChecks: 19,
+              failedChecks: 1,
+              availabilityPercentage: 95,
+              offlineSeconds: 120,
+              degradedSeconds: 30,
+            },
+          ],
+        });
+      }
+      if (url === "/api/ops-monitor/v1/incidents/open") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <OpsMonitorPage
+          defaultCriticalityFilter="CRITICAL"
+          defaultTypeFilter="PDE"
+          title="Saúde PDE 24/7"
+          subtitle="Monitoramento das versões PDE produtivas."
+          pdeFocus
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Saúde PDE 24/7")).toBeInTheDocument();
+    expect(await screen.findAllByText("Clube MUSA PDE v5")).toHaveLength(3);
+    expect(
+      await screen.findByText("musa-pde-entry-v5-video-explicativo"),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText("Abrir sem estatística comercial"),
+    ).toHaveAttribute("href", "https://v5.clubemusa.com.br/?mh_monitor=1");
+    expect(await screen.findByText("Revalidar agora")).toBeInTheDocument();
+    expect(await screen.findByText("Tempo fora")).toBeInTheDocument();
+    expect(await screen.findByText("2min")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Monitoramento 24/7 das versões vendidas."),
     ).toBeInTheDocument();
   });
 });

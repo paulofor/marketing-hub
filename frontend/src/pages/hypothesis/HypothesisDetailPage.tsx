@@ -194,7 +194,6 @@ export default function HypothesisDetailPage() {
           label: "Promessa central",
           value: framework.offer.corePromise,
         },
-        { label: "Entregáveis", value: framework.offer.deliverables },
         { label: "Reversão de risco", value: framework.offer.riskReversal },
         { label: "Lógica de preço", value: framework.offer.priceLogic },
         { label: "Preço", value: framework.offer.priceAmount },

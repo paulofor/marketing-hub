@@ -147,6 +147,7 @@ const NAV_SECTIONS: NavSection[] = [
       },
       { to: "/analytics", label: "Analytics", icon: BarChart3 },
       { to: "/ops-monitor", label: "Operação / Saúde", icon: HeartPulse },
+      { to: "/ops-monitor/pde", label: "Saúde PDE 24/7", icon: HeartPulse },
     ],
   },
   {

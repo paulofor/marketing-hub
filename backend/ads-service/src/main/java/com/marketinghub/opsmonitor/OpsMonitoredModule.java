@@ -40,6 +40,18 @@ public class OpsMonitoredModule {
   @Column(name = "log_path", length = 255)
   private String logPath;
 
+  @Column(name = "published_version", length = 150)
+  private String publishedVersion;
+
+  @Column(name = "product_url", length = 512)
+  private String productUrl;
+
+  @Column(name = "monitoring_url", length = 512)
+  private String monitoringUrl;
+
+  @Column(name = "container_image_version", length = 512)
+  private String containerImageVersion;
+
   @Column(name = "enabled", nullable = false)
   private boolean enabled;
 

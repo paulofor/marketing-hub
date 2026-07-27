@@ -6,10 +6,20 @@
     "Estrada MUSA",
     "Ver meu primeiro passo"
   ],
+  "requiredHlsStreams": [
+    "/assets/hls/musa-v5-video-explicativo/index.m3u8",
+    "/assets/hls/musa-v6-video-motivacional/index.m3u8"
+  ],
   "forbiddenTexts": [
     "Application error",
     "Cannot find module",
     "Unexpected token",
-    "Failed to fetch dynamically imported module"
+    "Failed to fetch dynamically imported module",
+    " IA ",
+    "modelo de IA",
+    "algoritmo",
+    "prompt",
+    "schema",
+    "JSON"
   ]
 }

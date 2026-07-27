@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,6 @@ public class PdeProductionSlotService {
 
   private static final String DEFAULT_PDE_PRODUCT_SLUG = "metodo-musa-7-dias";
   private static final Duration VALIDATION_TIMEOUT = Duration.ofSeconds(12);
-  private static final long MINIMUM_VIDEO_ASSET_BYTES = 100_000L;
   private static final String VALIDATION_OK = "OK";
   private static final String VALIDATION_FAILED = "FAILED";
 
@@ -230,14 +230,24 @@ public class PdeProductionSlotService {
           healthPath,
           resolvedUrl);
     }
-    String expectedAsset = expectedAsset(slot.getExperienceVersion());
-    if (StringUtils.hasText(expectedAsset)) {
-      AssetValidationResult asset = validateAsset(slot.getPublicUrl() + expectedAsset);
-      if (!asset.valid()) {
+    Optional<String> textValidationError = validatePageTexts(contract, page.body());
+    if (textValidationError.isPresent()) {
+      return ValidationResult.failed(
+          page.statusCode(),
+          "Entrada pública contém copy inválida para cliente final",
+          textValidationError.get(),
+          contractSlug,
+          healthPath,
+          resolvedUrl);
+    }
+    String expectedStream = expectedHlsStream(slot.getExperienceVersion());
+    if (StringUtils.hasText(expectedStream)) {
+      AssetValidationResult stream = validateHlsStream(slot.getPublicUrl(), expectedStream);
+      if (!stream.valid()) {
         return ValidationResult.failed(
-            asset.httpStatus(),
-            "Ativo obrigatório da versão PDE não foi entregue",
-            "Ativo esperado: " + expectedAsset + ". " + asset.detail(),
+            stream.httpStatus(),
+            "HLS obrigatório da versão PDE não foi entregue",
+            "Stream esperado: " + expectedStream + ". " + stream.detail(),
             contractSlug,
             healthPath,
             resolvedUrl);
@@ -246,7 +256,7 @@ public class PdeProductionSlotService {
     return ValidationResult.ok(
         page.statusCode(),
         "URL produtiva validada",
-        "Health, contrato público, entrada do funil e ativo versionado responderam.",
+        "Health, contrato público, entrada do funil, copy pública e HLS versionado responderam.",
         contractSlug,
         healthPath,
         resolvedUrl);
@@ -288,25 +298,99 @@ public class PdeProductionSlotService {
     return statusCode >= 200 && statusCode < 300;
   }
 
-  /** Valida cabeçalhos mínimos para impedir falso 200 servindo HTML no lugar de MP4. */
-  private AssetValidationResult validateAsset(String url) throws IOException, InterruptedException {
+  /** Valida o manifesto HLS e seu primeiro segmento para impedir falso 200 ou fallback HTML. */
+  private AssetValidationResult validateHlsStream(String publicUrl, String streamPath)
+      throws IOException, InterruptedException {
+    String streamUrl = resolveUrl(publicUrl, streamPath);
+    HttpResponse<Void> response = getWithoutBody(streamUrl);
+    int statusCode = response.statusCode();
+    String contentType = response.headers().firstValue("content-type").orElse("");
+    if (!isSuccess(statusCode)) {
+      return AssetValidationResult.failed(statusCode, "Manifesto HTTP " + statusCode);
+    }
+    if (!isHlsContentType(contentType)) {
+      return AssetValidationResult.failed(
+          statusCode,
+          "Content-Type do manifesto recebido: "
+              + (StringUtils.hasText(contentType) ? contentType : "ausente"));
+    }
+    HttpResponse<String> manifest = get(streamUrl);
+    String segmentPath = firstHlsSegmentPath(manifest.body());
+    if (!StringUtils.hasText(segmentPath)) {
+      return AssetValidationResult.failed(statusCode, "Manifesto HLS sem segmento de vídeo");
+    }
+    return validateHlsSegment(resolveSiblingUrl(streamUrl, segmentPath));
+  }
+
+  /** Valida cabeçalhos mínimos do primeiro segmento HLS versionado. */
+  private AssetValidationResult validateHlsSegment(String url)
+      throws IOException, InterruptedException {
     HttpResponse<Void> response = getWithoutBody(url);
     int statusCode = response.statusCode();
     String contentType = response.headers().firstValue("content-type").orElse("");
-    long contentLength = response.headers().firstValueAsLong("content-length").orElse(-1L);
     if (!isSuccess(statusCode)) {
       return AssetValidationResult.failed(statusCode, "HTTP " + statusCode);
     }
-    if (!contentType.toLowerCase(Locale.ROOT).startsWith("video/")) {
+    String normalizedContentType = contentType.toLowerCase(Locale.ROOT);
+    if (!normalizedContentType.startsWith("video/")
+        && !normalizedContentType.contains("mp2t")
+        && !normalizedContentType.contains("octet-stream")) {
       return AssetValidationResult.failed(
           statusCode,
-          "Content-Type recebido: " + (StringUtils.hasText(contentType) ? contentType : "ausente"));
-    }
-    if (contentLength >= 0 && contentLength < MINIMUM_VIDEO_ASSET_BYTES) {
-      return AssetValidationResult.failed(
-          statusCode, "Content-Length baixo para vídeo comercial: " + contentLength + " bytes");
+          "Content-Type do segmento recebido: "
+              + (StringUtils.hasText(contentType) ? contentType : "ausente"));
     }
     return AssetValidationResult.ok(statusCode);
+  }
+
+  /** Informa se o content-type é compatível com playlist HLS. */
+  private boolean isHlsContentType(String contentType) {
+    String normalized = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
+    return normalized.contains("mpegurl")
+        || normalized.contains("application/vnd.apple")
+        || normalized.contains("application/x-mpegurl");
+  }
+
+  /** Extrai o primeiro segmento de vídeo do manifesto HLS. */
+  private String firstHlsSegmentPath(String manifest) {
+    if (!StringUtils.hasText(manifest)) {
+      return null;
+    }
+    for (String line : manifest.split("\\R")) {
+      String trimmed = line.trim();
+      if (StringUtils.hasText(trimmed) && !trimmed.startsWith("#")) {
+        return trimmed;
+      }
+    }
+    return null;
+  }
+
+  /** Resolve um segmento relativo ao diretório do manifesto HLS. */
+  private String resolveSiblingUrl(String manifestUrl, String segmentPath) {
+    if (segmentPath.startsWith("http://") || segmentPath.startsWith("https://")) {
+      return segmentPath;
+    }
+    int directoryEnd = manifestUrl.lastIndexOf('/');
+    String directory = directoryEnd >= 0 ? manifestUrl.substring(0, directoryEnd + 1) : manifestUrl;
+    return directory + segmentPath;
+  }
+
+  /** Confere textos obrigatórios e proibidos declarados no contrato público do PDE. */
+  private Optional<String> validatePageTexts(JsonNode contract, String pageHtml) {
+    for (JsonNode requiredText : contract.withArray("requiredTexts")) {
+      String text = requiredText.asText("");
+      if (StringUtils.hasText(text) && !pageHtml.contains(text)) {
+        return Optional.of("Texto obrigatório ausente: " + text);
+      }
+    }
+    for (JsonNode forbiddenText : contract.withArray("forbiddenTexts")) {
+      String text = forbiddenText.asText("");
+      if (StringUtils.hasText(text)
+          && pageHtml.toLowerCase(Locale.ROOT).contains(text.toLowerCase(Locale.ROOT))) {
+        return Optional.of("Texto técnico proibido encontrado: " + text.trim());
+      }
+    }
+    return Optional.empty();
   }
 
   /** Lê um campo textual do contrato público do PDE. */
@@ -328,13 +412,13 @@ public class PdeProductionSlotService {
     return normalizedPublicUrl + normalizedPath;
   }
 
-  /** Mapeia versões PDE conhecidas para ativos que precisam existir no domínio público. */
-  private String expectedAsset(String experienceVersion) {
+  /** Mapeia versões PDE conhecidas para streams HLS que precisam existir no domínio público. */
+  private String expectedHlsStream(String experienceVersion) {
     if ("musa-pde-entry-v5-video-explicativo".equals(experienceVersion)) {
-      return "/assets/musa-v5-video-explicativo.mp4";
+      return "/assets/hls/musa-v5-video-explicativo/index.m3u8";
     }
     if ("musa-pde-entry-v6-video-motivacional".equals(experienceVersion)) {
-      return "/assets/musa-v6-video-motivacional.mp4";
+      return "/assets/hls/musa-v6-video-motivacional/index.m3u8";
     }
     return null;
   }

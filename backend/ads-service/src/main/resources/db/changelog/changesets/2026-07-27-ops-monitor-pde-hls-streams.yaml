@@ -1,0 +1,83 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-27-ops-monitor-pde-hls-streams-001
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ops_monitored_module (
+                code,
+                name,
+                type,
+                base_url,
+                health_path,
+                log_path,
+                enabled,
+                criticality,
+                offline_threshold_seconds,
+                published_version,
+                product_url,
+                monitoring_url,
+                container_image_version
+              )
+              SELECT
+                'pde-musa-v5-hls',
+                'Clube MUSA PDE v5 - HLS',
+                'PDE',
+                'https://v5.clubemusa.com.br',
+                '/assets/hls/musa-v5-video-explicativo/index.m3u8',
+                NULL,
+                1,
+                'CRITICAL',
+                120,
+                'musa-pde-entry-v5-video-explicativo',
+                'https://v5.clubemusa.com.br',
+                'https://v5.clubemusa.com.br/?mh_monitor=1',
+                'pde-platform-frontend: HLS versionado'
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM ops_monitored_module WHERE code = 'pde-musa-v5-hls'
+              );
+
+              INSERT INTO ops_monitored_module (
+                code,
+                name,
+                type,
+                base_url,
+                health_path,
+                log_path,
+                enabled,
+                criticality,
+                offline_threshold_seconds,
+                published_version,
+                product_url,
+                monitoring_url,
+                container_image_version
+              )
+              SELECT
+                'pde-musa-v6-hls',
+                'Clube MUSA PDE v6 - HLS',
+                'PDE',
+                'https://v6.clubemusa.com.br',
+                '/assets/hls/musa-v6-video-motivacional/index.m3u8',
+                NULL,
+                1,
+                'CRITICAL',
+                120,
+                'musa-pde-entry-v6-video-motivacional',
+                'https://v6.clubemusa.com.br',
+                'https://v6.clubemusa.com.br/?mh_monitor=1',
+                'pde-platform-frontend: HLS versionado'
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM ops_monitored_module WHERE code = 'pde-musa-v6-hls'
+              );

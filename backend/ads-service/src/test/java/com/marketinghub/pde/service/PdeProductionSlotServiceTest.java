@@ -105,9 +105,9 @@ class PdeProductionSlotServiceTest {
     assertThat(response.validationSummary()).isEqualTo("Health público não respondeu como UP");
   }
 
-  /** Deve reprovar versão com vídeo quando o MP4 público entrega HTML por fallback. */
+  /** Deve reprovar versão com vídeo quando o manifesto HLS público entrega HTML por fallback. */
   @Test
-  void recordsFailedValidationWhenVersionedVideoAssetIsHtmlFallback() throws Exception {
+  void recordsFailedValidationWhenVersionedHlsManifestIsHtmlFallback() throws Exception {
     PdeProductionSlot slot =
         PdeProductionSlot.builder()
             .id(6L)
@@ -131,12 +131,12 @@ class PdeProductionSlotServiceTest {
             200,
             "{\"slug\":\"metodo-musa-7-dias\",\"healthPath\":\"/\",\"requiredTexts\":[\"CTA\"]}");
     HttpResponse<String> pageResponse =
-        response(200, "<html><script type=\"module\"></script></html>");
-    HttpResponse<Void> assetResponse = response(200, headers("text/html", "510"));
+        response(200, "<html><body>CTA<script type=\"module\"></script></body></html>");
+    HttpResponse<Void> manifestHeadResponse = response(200, headers("text/html", "510"));
     org.mockito.Mockito.doReturn(healthResponse)
         .doReturn(contractResponse)
         .doReturn(pageResponse)
-        .doReturn(assetResponse)
+        .doReturn(manifestHeadResponse)
         .when(httpClient)
         .send(
             org.mockito.ArgumentMatchers.any(HttpRequest.class),
@@ -148,8 +148,60 @@ class PdeProductionSlotServiceTest {
 
     assertThat(response.validationStatus()).isEqualTo("FAILED");
     assertThat(response.validationSummary())
-        .isEqualTo("Ativo obrigatório da versão PDE não foi entregue");
-    assertThat(response.validationDetail()).contains("Content-Type recebido: text/html");
+        .isEqualTo("HLS obrigatório da versão PDE não foi entregue");
+    assertThat(response.validationDetail())
+        .contains("Content-Type do manifesto recebido: text/html");
+  }
+
+  /** Deve aprovar versão quando o manifesto HLS e o primeiro segmento respondem corretamente. */
+  @Test
+  void recordsOkValidationWhenVersionedHlsStreamIsAvailable() throws Exception {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(7L)
+            .slotCode("v6")
+            .productSlug("metodo-musa-7-dias")
+            .domain("v6.clubemusa.com.br")
+            .publicUrl("https://v6.clubemusa.com.br")
+            .experienceVersion("musa-pde-entry-v6-video-motivacional")
+            .targetEnvironment("production-v6")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .createdAt(Instant.parse("2026-07-24T10:00:00Z"))
+            .updatedAt(Instant.parse("2026-07-24T10:00:00Z"))
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(repository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v6"))
+        .thenReturn(Optional.of(slot));
+    HttpResponse<String> healthResponse = response(200, "{\"status\":\"UP\"}");
+    HttpResponse<String> contractResponse =
+        response(
+            200,
+            "{\"slug\":\"metodo-musa-7-dias\",\"healthPath\":\"/\",\"requiredTexts\":[\"CTA\"],\"forbiddenTexts\":[\"Application error\"]}");
+    HttpResponse<String> pageResponse =
+        response(200, "<html><body>CTA<script type=\"module\"></script></body></html>");
+    HttpResponse<Void> manifestHeadResponse =
+        response(200, headers("application/vnd.apple.mpegurl", "180"));
+    HttpResponse<String> manifestResponse =
+        response(200, "#EXTM3U\n#EXTINF:4.000000,\nsegment-000.ts\n#EXT-X-ENDLIST\n");
+    HttpResponse<Void> segmentHeadResponse = response(200, headers("video/mp2t", "204800"));
+    org.mockito.Mockito.doReturn(healthResponse)
+        .doReturn(contractResponse)
+        .doReturn(pageResponse)
+        .doReturn(manifestHeadResponse)
+        .doReturn(manifestResponse)
+        .doReturn(segmentHeadResponse)
+        .when(httpClient)
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response = service.validateProductionSlot("metodo-musa-7-dias", "v6");
+
+    assertThat(response.validationStatus()).isEqualTo("OK");
+    assertThat(response.validationSummary()).isEqualTo("URL produtiva validada");
   }
 
   /** Cria resposta HTTP simulada para validação de contrato do slot. */
@@ -164,8 +216,8 @@ class PdeProductionSlotServiceTest {
   @SuppressWarnings("unchecked")
   private HttpResponse<String> response(int statusCode, String body) {
     HttpResponse<String> response = org.mockito.Mockito.mock(HttpResponse.class);
-    when(response.statusCode()).thenReturn(statusCode);
-    when(response.body()).thenReturn(body);
+    org.mockito.Mockito.lenient().when(response.statusCode()).thenReturn(statusCode);
+    org.mockito.Mockito.lenient().when(response.body()).thenReturn(body);
     return response;
   }
 

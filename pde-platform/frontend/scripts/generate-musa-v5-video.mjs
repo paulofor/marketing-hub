@@ -19,11 +19,13 @@ const videos = [
   {
     output: 'musa-v5-video-explicativo.mp4',
     manifest: 'musa-v5-video-explicativo-manifest.json',
+    hlsDirectory: 'musa-v5-video-explicativo',
     purpose: 'Video explicativo inicial da versao v5 do Clube MUSA.',
   },
   {
     output: 'musa-v6-video-motivacional.mp4',
     manifest: 'musa-v6-video-motivacional-manifest.json',
+    hlsDirectory: 'musa-v6-video-motivacional',
     purpose: 'Video motivacional inicial da versao v6 do Clube MUSA.',
   },
 ];
@@ -71,20 +73,51 @@ function runFfmpeg(outputVideo) {
   }
 }
 
+async function runHlsPackaging(sourceVideo, hlsDirectory) {
+  const outputDir = path.join(assetsDir, 'hls', hlsDirectory);
+  await fs.rm(outputDir, { recursive: true, force: true });
+  await fs.mkdir(outputDir, { recursive: true });
+  const result = spawnSync(
+    'ffmpeg',
+    [
+      '-y',
+      '-i',
+      sourceVideo,
+      '-c:v',
+      'copy',
+      '-an',
+      '-hls_time',
+      '4',
+      '-hls_playlist_type',
+      'vod',
+      '-hls_segment_filename',
+      path.join(outputDir, 'segment-%03d.ts'),
+      path.join(outputDir, 'index.m3u8'),
+    ],
+    { encoding: 'utf8' },
+  );
+
+  if (result.status !== 0) {
+    throw new Error(`ffmpeg falhou ao gerar HLS MUSA: ${result.stderr}`);
+  }
+}
+
 await assertSourcesExist();
 for (const video of videos) {
   const outputVideo = path.join(assetsDir, video.output);
   runFfmpeg(outputVideo);
+  await runHlsPackaging(outputVideo, video.hlsDirectory);
   await fs.writeFile(
     path.join(assetsDir, video.manifest),
     JSON.stringify(
       {
         generatedBy: 'scripts/generate-musa-v5-video.mjs',
         output: video.output,
+        hlsPlaylist: `hls/${video.hlsDirectory}/index.m3u8`,
         purpose: video.purpose,
         sourceSlides: sourceSlides.map((sourceSlide) => path.basename(sourceSlide)),
         durationSeconds: 16,
-        format: 'mp4/h264',
+        format: 'hls/h264',
       },
       null,
       2,

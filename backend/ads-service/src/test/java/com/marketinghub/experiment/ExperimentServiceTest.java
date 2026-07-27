@@ -1006,6 +1006,7 @@ class ExperimentServiceTest {
     req.setHypothesisId(hyp.getId());
     req.setName("ExpPdeRunningGuard");
     req.setHypothesis("H");
+    req.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
     req.setKpiTargetCpl(new BigDecimal("45"));
     req.setMetricPresetId("LEAN_150_PDE_RUNNING_GUARD");
     req.setSampleSize(150);
@@ -1339,6 +1340,67 @@ class ExperimentServiceTest {
     MarketNiche refreshed = nicheRepository.findById(niche.getId()).orElseThrow();
     assertThat(refreshed.getFacebookPixelId()).isNull();
     assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+  }
+
+  /** Garante que experimento PDE só libera campanha com slot produtivo aprovado no Hub. */
+  @Test
+  void releaseForFacebookRejectsPdeWithoutApprovedProductionSlot() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche PDE Release Guard").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("APDERelease").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HPDERelease")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_PDE_RELEASE_GUARD")
+            .name("Lean-Startup 150 PDE Release Guard")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp PDE Release Guard");
+    req.setHypothesis("H");
+    req.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    req.setFollowUpActionUrl("https://v6.clubemusa.com.br");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_PDE_RELEASE_GUARD");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
+    completeCommercialContract(experiment);
+    pdeProductionSlotRepository.save(
+        PdeProductionSlot.builder()
+            .slotCode("v6")
+            .productSlug("metodo-musa-7-dias")
+            .domain("v6.clubemusa.com.br")
+            .publicUrl("https://v6.clubemusa.com.br")
+            .experienceVersion("musa-pde-entry-v6-video-motivacional")
+            .targetEnvironment("production-v6")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .validationStatus("FAILED")
+            .sourceExperimentId(experiment.getId())
+            .notes("Versão ainda sem aprovação humana.")
+            .build());
+
+    assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("versão PDE aprovada manualmente");
   }
 
   /** Garante que venda low-ticket não entra na fila sem página criada pelo pipeline. */

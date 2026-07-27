@@ -11,11 +11,11 @@ import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Orquestra o cadastro editorial de projetos de vídeo do Marketing Hub. */
-@Service
+/** Componente interno que executa o cadastro editorial de projetos de vídeo do Marketing Hub. */
+@Component
 public class VideoProjectService {
   private final VideoProjectRepository repository;
 

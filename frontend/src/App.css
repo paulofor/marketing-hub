@@ -218,6 +218,23 @@
   background: #f0fdf4;
 }
 
+.product-financial-months__label {
+  color: #172033;
+}
+
+.product-financial-months__brl {
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.product-financial-months__profit--positive {
+  color: #047857;
+}
+
+.product-financial-months__profit--negative {
+  color: #b91c1c;
+}
+
 .product-comparison-decision {
   background: #f8fafc;
   border: 1px solid #cbd5e1;

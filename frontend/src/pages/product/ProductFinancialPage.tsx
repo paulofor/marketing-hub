@@ -109,6 +109,64 @@ export default function ProductFinancialPage() {
         </section>
       </div>
 
+      <div className="card product-financial-months mb-3">
+        <div className="card-body">
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <h2 className="h6 mb-0">Resultado dos últimos 4 meses</h2>
+            <span className="text-muted small">
+              Mês corrente e 3 anteriores
+            </span>
+          </div>
+          <div className="table-responsive">
+            <table className="table align-middle product-financial-table mb-0">
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th>Custo</th>
+                  <th>Receita</th>
+                  <th>Lucro</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.monthlyResults.map((month) => (
+                  <tr key={month.monthStart}>
+                    <td>
+                      <strong className="product-financial-months__label">
+                        {month.monthLabel}
+                      </strong>
+                    </td>
+                    <td>
+                      <strong className="product-financial-months__brl">
+                        {formatBrl(month.cost.brl)}
+                      </strong>
+                      <small>{formatUsd(month.cost.usd)}</small>
+                    </td>
+                    <td>
+                      <strong className="product-financial-months__brl">
+                        {formatBrl(month.revenue.brl)}
+                      </strong>
+                      <small>{formatUsd(month.revenue.usd)}</small>
+                    </td>
+                    <td>
+                      <strong
+                        className={
+                          month.profit.brl >= 0
+                            ? "product-financial-months__brl product-financial-months__profit--positive"
+                            : "product-financial-months__brl product-financial-months__profit--negative"
+                        }
+                      >
+                        {formatBrl(month.profit.brl)}
+                      </strong>
+                      <small>{formatUsd(month.profit.usd)}</small>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div className="card">
         <div className="card-body">
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">

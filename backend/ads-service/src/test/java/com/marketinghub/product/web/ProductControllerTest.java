@@ -16,6 +16,7 @@ import com.marketinghub.product.service.experimentcomparison.ProductExperimentCo
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
+import com.marketinghub.product.service.financialsummary.ProductFinancialMonthlyResultResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoDecisionRuleResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanItemResponse;
@@ -105,6 +106,12 @@ class ProductControllerTest {
                 new BigDecimal("5.00"),
                 Instant.parse("2026-07-01T00:00:00Z"),
                 Instant.parse("2026-01-01T00:00:00Z"),
+                List.of(new ProductFinancialMonthlyResultResponse(
+                        Instant.parse("2026-07-01T00:00:00Z"),
+                        "Julho 2026",
+                        new ProductFinancialAmountResponse(new BigDecimal("75.00"), new BigDecimal("15.00")),
+                        new ProductFinancialAmountResponse(new BigDecimal("67.00"), new BigDecimal("13.40")),
+                        new ProductFinancialAmountResponse(new BigDecimal("-8.00"), new BigDecimal("-1.60")))),
                 List.of(new ProductFinancialLineResponse(
                         "MEDIA",
                         "Mídia paga",
@@ -130,6 +137,9 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(1L))
                 .andExpect(jsonPath("$.exchangeRateBrlPerUsd").value(5.00))
+                .andExpect(jsonPath("$.monthlyResults[0].monthLabel").value("Julho 2026"))
+                .andExpect(jsonPath("$.monthlyResults[0].cost.brl").value(75.00))
+                .andExpect(jsonPath("$.monthlyResults[0].profit.usd").value(-1.60))
                 .andExpect(jsonPath("$.costs[0].type").value("MEDIA"))
                 .andExpect(jsonPath("$.revenue.monthly.brl").value(67.00))
                 .andExpect(jsonPath("$.profit.annual.usd").value(84.00));

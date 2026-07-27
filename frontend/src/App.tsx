@@ -12,6 +12,7 @@ import ProductListPage from "./pages/product/ProductListPage";
 import NewProductPage from "./pages/product/NewProductPage";
 import EditProductPage from "./pages/product/EditProductPage";
 import ProductFinancialPage from "./pages/product/ProductFinancialPage";
+import ProductExperimentComparisonPage from "./pages/product/ProductExperimentComparisonPage";
 import ProductVideoImagesPage from "./pages/product/ProductVideoImagesPage";
 import ProductPdeVersionsPage from "./pages/product/ProductPdeVersionsPage";
 import ProductOrganicVideoPlanPage from "./pages/product/ProductOrganicVideoPlanPage";
@@ -215,6 +216,10 @@ export default function App() {
               <Route
                 path="/products/:productId/financial"
                 element={<ProductFinancialPage />}
+              />
+              <Route
+                path="/products/:productId/experiment-comparison"
+                element={<ProductExperimentComparisonPage />}
               />
               <Route
                 path="/products/:productId/video-images"

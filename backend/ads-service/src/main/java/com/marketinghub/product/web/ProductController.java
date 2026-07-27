@@ -11,6 +11,7 @@ import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
+import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
@@ -66,6 +67,12 @@ public class ProductController {
   @GetMapping("/{id}/financial-summary")
   public ProductFinancialSummaryResponse getFinancialSummary(@PathVariable Long id) {
     return service.getFinancialSummary(id);
+  }
+
+  /** Retorna o painel comparativo automático dos experimentos vinculados ao produto. */
+  @GetMapping("/{id}/experiment-comparison")
+  public ProductExperimentComparisonResponse getExperimentComparison(@PathVariable Long id) {
+    return service.getExperimentComparison(id);
   }
 
   /** Retorna o playbook de vídeos orgânicos recomendado para o produto. */

@@ -11,6 +11,9 @@ import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductService;
+import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonExperimentResponse;
+import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonFunnelStageResponse;
+import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
@@ -130,6 +133,56 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.costs[0].type").value("MEDIA"))
                 .andExpect(jsonPath("$.revenue.monthly.brl").value(67.00))
                 .andExpect(jsonPath("$.profit.annual.usd").value(84.00));
+    }
+
+    /** Deve expor o painel comparativo de experimentos por produto. */
+    @Test
+    void getExperimentComparison() throws Exception {
+        var response = new ProductExperimentComparisonResponse(
+                1L,
+                "Método MUSA",
+                "metodo-musa-7-dias",
+                "VALIDACAO_COMERCIAL",
+                "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos.",
+                List.of(new ProductExperimentComparisonExperimentResponse(
+                        74L,
+                        "MUSA-H001-E009",
+                        "RUNNING",
+                        "ACTIVE",
+                        "SALES",
+                        "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL",
+                        java.time.LocalDate.parse("2026-07-27"),
+                        java.time.LocalDate.parse("2026-08-03"),
+                        new BigDecimal("25.00"),
+                        new BigDecimal("67.00"),
+                        1000L,
+                        900L,
+                        20L,
+                        0L,
+                        new BigDecimal("12.50"),
+                        new BigDecimal("0.62"),
+                        BigDecimal.ZERO,
+                        3L,
+                        3L,
+                        List.of(new ProductExperimentComparisonFunnelStageResponse(
+                                "ACESSO_FORM_LEAD", "Acesso ao formulário de lead", 5)),
+                        "Público amplo Meta",
+                        "Elegância possível em 7 dias",
+                        "Clique barato, mas ativação precisa melhorar.",
+                        "Corrigir ativação pós-clique: o anúncio gera interesse, mas o funil não registra entrada.",
+                        Instant.parse("2026-07-27T12:00:00Z"))));
+
+        when(service.getExperimentComparison(1L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/products/{id}/experiment-comparison", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(1L))
+                .andExpect(jsonPath("$.mainRecommendation").value(
+                        "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos."))
+                .andExpect(jsonPath("$.experiments[0].experimentId").value(74L))
+                .andExpect(jsonPath("$.experiments[0].campaignStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.experiments[0].funnelStages[0].stageLabel")
+                        .value("Acesso ao formulário de lead"));
     }
 
     /** Deve expor o playbook de vídeos orgânicos do produto pelo contrato canônico. */

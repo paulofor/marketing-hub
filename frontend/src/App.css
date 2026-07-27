@@ -218,6 +218,114 @@
   background: #f0fdf4;
 }
 
+.product-comparison-decision {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.product-comparison-decision div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.product-comparison-decision span,
+.product-comparison-summary span,
+.product-comparison-learning dt {
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.product-comparison-decision strong {
+  color: #172033;
+  font-size: 1.05rem;
+}
+
+.product-comparison-summary {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.product-comparison-summary section {
+  align-items: start;
+  background: #ffffff;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.25rem;
+  min-height: 7rem;
+  padding: 1rem;
+}
+
+.product-comparison-summary svg {
+  color: #2563eb;
+}
+
+.product-comparison-summary strong {
+  color: #172033;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.product-comparison-table th {
+  color: #475569;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.product-comparison-table__decision {
+  color: #334155;
+  max-width: 20rem;
+  min-width: 15rem;
+}
+
+.product-comparison-learning {
+  background: #ffffff;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 1rem;
+  height: 100%;
+  padding: 1rem;
+}
+
+.product-comparison-learning h2 {
+  color: #172033;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.product-comparison-learning dl {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.product-comparison-learning dd {
+  color: #334155;
+  margin: 0.15rem 0 0;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 767.98px) {
+  .product-comparison-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .product-comparison-summary section {
+    min-height: 6.5rem;
+  }
+
+  .product-comparison-table {
+    min-width: 48rem;
+  }
+}
+
 .organic-video-plan__summary {
   align-items: stretch;
   background: #ffffff;

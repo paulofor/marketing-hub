@@ -2,7 +2,9 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
-import ExperimentLandingAnalyticsTab from "./ExperimentLandingAnalyticsTab";
+import ExperimentLandingAnalyticsTab, {
+  calculateVideoAnalytics,
+} from "./ExperimentLandingAnalyticsTab";
 
 vi.mock("axios");
 
@@ -278,5 +280,30 @@ describe("ExperimentLandingAnalyticsTab", () => {
     expect(screen.getByText(/40.0% 1ª ação/i)).toBeTruthy();
     expect(screen.getByText(/20.0% paywall/i)).toBeTruthy();
     expect(screen.getByText(/10.0% compra/i)).toBeTruthy();
+  });
+
+  it("separates video exposure from real plays and retention", () => {
+    expect(
+      calculateVideoAnalytics({
+        VIDEO_VIEWED: 8,
+        VIDEO_PLAY: 3,
+        VIDEO_PROGRESS_25: 2,
+        VIDEO_PROGRESS_50: 1,
+        VIDEO_PROGRESS_75: 1,
+        VIDEO_COMPLETED: 0,
+        VIDEO_ERROR: 1,
+      }),
+    ).toEqual({
+      exposed: 8,
+      plays: 3,
+      progress25: 2,
+      progress50: 1,
+      progress75: 1,
+      completed: 0,
+      errors: 1,
+      playRate: 37.5,
+      progress25Rate: 66.66666666666666,
+      completionRate: 0,
+    });
   });
 });

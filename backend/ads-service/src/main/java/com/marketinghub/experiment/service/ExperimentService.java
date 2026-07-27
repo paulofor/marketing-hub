@@ -19,6 +19,8 @@ import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageAnalyticsContract;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
+import com.marketinghub.pde.PdeProductionSlot;
+import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentStatusChangeRepository;
@@ -29,6 +31,7 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
+import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
@@ -50,6 +53,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -90,6 +94,7 @@ public class ExperimentService {
     private final ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
     private final ProductAiExperimentPreparationService productAiExperimentPreparationService;
     private final ExperimentFunnelStandbyService experimentFunnelStandbyService;
+    private final PdeProductionSlotRepository pdeProductionSlotRepository;
 
     /** Inicializa o serviço com repositórios, integrações e validadores usados pelos experimentos. */
     public ExperimentService(ExperimentRepository repository,
@@ -119,7 +124,8 @@ public class ExperimentService {
                              CurrencyConversionService currencyConversionService,
                              ExperimentAiPromptSchemaUsageService promptSchemaUsageService,
                              ProductAiExperimentPreparationService productAiExperimentPreparationService,
-                             ExperimentFunnelStandbyService experimentFunnelStandbyService) {
+                             ExperimentFunnelStandbyService experimentFunnelStandbyService,
+                             PdeProductionSlotRepository pdeProductionSlotRepository) {
         this.repository = repository;
         this.statusChangeRepository = statusChangeRepository;
         this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
@@ -148,6 +154,7 @@ public class ExperimentService {
         this.promptSchemaUsageService = promptSchemaUsageService;
         this.productAiExperimentPreparationService = productAiExperimentPreparationService;
         this.experimentFunnelStandbyService = experimentFunnelStandbyService;
+        this.pdeProductionSlotRepository = pdeProductionSlotRepository;
     }
 
     /**
@@ -664,6 +671,53 @@ public class ExperimentService {
                     HttpStatus.BAD_REQUEST,
                     "Facebook campaign must be registered before setting experiment RUNNING");
         }
+        validateActivePdeDestination(exp);
+    }
+
+    /** Bloqueia tráfego para versão PDE planejada, pausada ou encerrada. */
+    private void validateActivePdeDestination(Experiment exp) {
+        Optional<PdeProductionSlot> slotByExperiment =
+                pdeProductionSlotRepository.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(exp.getId());
+        Optional<PdeProductionSlot> slotByDestination = normalizeDomainFromUrl(exp.getFollowUpActionUrl())
+                .flatMap(pdeProductionSlotRepository::findFirstByDomain);
+        PdeProductionSlot slot = slotByDestination.or(() -> slotByExperiment).orElse(null);
+        if (slot == null || slot.getStatus() == PdeProductionSlotStatus.ACTIVE) {
+            return;
+        }
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Versão PDE %s está %s; ative a versão antes de colocar o experimento em RUNNING"
+                        .formatted(slot.getSlotCode(), slot.getStatus()));
+    }
+
+    /** Extrai o domínio de uma URL pública para comparar com o cadastro operacional de PDE. */
+    private Optional<String> normalizeDomainFromUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return Optional.empty();
+        }
+        String normalized = url.trim()
+                .replaceFirst("^https?://", "")
+                .replaceFirst("^//", "");
+        int pathStart = normalized.indexOf('/');
+        if (pathStart >= 0) {
+            normalized = normalized.substring(0, pathStart);
+        }
+        int queryStart = normalized.indexOf('?');
+        if (queryStart >= 0) {
+            normalized = normalized.substring(0, queryStart);
+        }
+        int hashStart = normalized.indexOf('#');
+        if (hashStart >= 0) {
+            normalized = normalized.substring(0, hashStart);
+        }
+        int portStart = normalized.indexOf(':');
+        if (portStart >= 0) {
+            normalized = normalized.substring(0, portStart);
+        }
+        if (!StringUtils.hasText(normalized) || !normalized.contains(".")) {
+            return Optional.empty();
+        }
+        return Optional.of(normalized.toLowerCase(Locale.ROOT));
     }
 
     /**

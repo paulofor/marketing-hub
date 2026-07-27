@@ -13,4 +13,10 @@ public interface PdeProductionSlotRepository extends JpaRepository<PdeProduction
 
     /** Busca um slot de produto pelo código operacional. */
     Optional<PdeProductionSlot> findByProductSlugAndSlotCode(String productSlug, String slotCode);
+
+    /** Busca um slot produtivo pelo domínio público normalizado. */
+    Optional<PdeProductionSlot> findFirstByDomain(String domain);
+
+    /** Busca o slot mais recente associado diretamente a um experimento de origem. */
+    Optional<PdeProductionSlot> findFirstBySourceExperimentIdOrderByUpdatedAtDesc(Long sourceExperimentId);
 }

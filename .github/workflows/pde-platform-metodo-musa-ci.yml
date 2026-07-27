@@ -233,7 +233,18 @@ jobs:
         run: |
           curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_PORT}/" > /dev/null
           curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_PORT}/healthz"
-          curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}/actuator/health"
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && cd ${REMOTE_PATH} \
+            && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
+            && for attempt in \$(seq 1 30); do \
+              if docker compose -f docker-compose.deploy.yml exec -T pde-platform-backend curl --fail --silent http://127.0.0.1:8096/actuator/health >/dev/null 2>&1; then exit 0; fi; \
+              sleep 10; \
+            done; \
+            echo 'Backend PDE nao ficou saudavel no container apos 300s.' >&2; \
+            docker compose -f docker-compose.deploy.yml ps pde-platform-backend >&2 || true; \
+            docker compose -f docker-compose.deploy.yml logs --tail=200 pde-platform-backend >&2 || true; \
+            exit 1"
+          curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}/actuator/health"
       - name: Set up Node for production rendering smoke
         uses: actions/setup-node@v4
         with:

@@ -153,6 +153,29 @@ Produtos que exigem resultado medico, juridico, financeiro garantido, renda gara
 tratamento sensivel ou promessa individual inevitavel devem ser bloqueados ou enviados
 para revisao humana antes de qualquer experimento.
 
+## Historico comercial anterior ao PDE
+
+Campanhas, produtos, templates, kits ou experimentos anteriores ao modelo de PDE nao
+devem ser tratados como validacao positiva automatica de uma oportunidade. Esse historico
+pode ser usado como evidencia de aprendizado, objecoes, dores, canais e mensagens, mas
+nao como prova de que o novo Produto Digital Experiencial esta validado.
+
+Quando um nicho tiver varias tentativas anteriores sem sucesso, o ranking deve registrar
+esse fato como risco comercial relevante. A oportunidade so pode receber destaque se a
+nova proposta PDE demonstrar uma mudanca substantiva de mecanismo, experiencia,
+personalizacao, prova de valor e caminho de compra em relacao as tentativas antigas.
+
+Para evitar falso destaque por maturidade herdada, a avaliacao deve separar:
+
+- maturidade de pesquisa: existe conhecimento acumulado sobre publico, dor e linguagem;
+- maturidade de ativo legado: existem materiais, campanhas ou produtos antigos;
+- maturidade PDE: existe microexperiencia personalizada, observavel e vendavel, com
+  mecanismo claro e evidencias atuais de interesse.
+
+Somente a maturidade PDE deve sustentar priorizacao comercial para novo teste. Maturidade
+de pesquisa ou ativo legado pode reduzir esforco de preparacao, mas nao substitui validacao
+do PDE.
+
 ## Saida canonica da oportunidade
 
 Toda oportunidade aprovada deve gerar um dossie curto e auditavel com:

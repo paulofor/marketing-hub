@@ -45,6 +45,10 @@ public class ProductScientificArticle {
   @Column(name = "link", length = 1024, nullable = false)
   private String link;
 
+  /** Hash SHA-256 do link usado para unicidade compatível com MySQL 5.7. */
+  @Column(name = "link_hash", length = 64, nullable = false)
+  private String linkHash;
+
   /** Título original do artigo conforme publicação. */
   @Column(name = "original_title", length = 512, nullable = false)
   private String originalTitle;

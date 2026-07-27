@@ -6,7 +6,13 @@ import com.marketinghub.product.dto.ProductScientificArticleDto;
 import com.marketinghub.product.dto.SaveProductScientificArticleRequest;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.product.ProductScientificArticleRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: gerenciar artigos científicos ligados ao mecanismo comercial de produtos. */
 @Service
 public class ProductScientificArticleService {
+  private static final Logger log = LoggerFactory.getLogger(ProductScientificArticleService.class);
+
   private final ProductRepository productRepository;
   private final ProductScientificArticleRepository articleRepository;
 
@@ -89,7 +97,9 @@ public class ProductScientificArticleService {
   /** Aplica os campos validados da requisição ao artigo científico. */
   private void applyRequest(
       ProductScientificArticle article, SaveProductScientificArticleRequest request) {
-    article.setLink(normalizeRequired(request.link(), "Informe o link do artigo."));
+    String link = normalizeRequired(request.link(), "Informe o link do artigo.");
+    article.setLink(link);
+    article.setLinkHash(hashLink(link));
     article.setOriginalTitle(
         normalizeRequired(request.originalTitle(), "Informe o título original do artigo."));
     article.setPortugueseTitle(
@@ -107,6 +117,17 @@ public class ProductScientificArticleService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
     return value.trim();
+  }
+
+  /** Gera o hash SHA-256 do link para aplicar unicidade sem indexar URL longa. */
+  private String hashLink(String link) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      return HexFormat.of().formatHex(digest.digest(link.getBytes(StandardCharsets.UTF_8)));
+    } catch (NoSuchAlgorithmException ex) {
+      log.error("Falha ao gerar hash SHA-256 de artigo científico de produto.", ex);
+      throw new IllegalStateException("Algoritmo SHA-256 indisponível.", ex);
+    }
   }
 
   /** Converte a entidade persistida para o contrato de leitura da API. */

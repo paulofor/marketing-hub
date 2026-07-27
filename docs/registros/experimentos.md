@@ -6189,3 +6189,11 @@
 - foi feito: a tela de versões PDE do produto passou a ter botão `Testar URL` e exibir o resultado da última validação.
 - prevenção: a decisão de usar uma versão PDE em campanha passa a depender de evidência operacional salva no slot, não apenas de domínio cadastrado manualmente.
 - impacto comercial esperado: evitar tráfego pago ou leitura de experimento sobre URL inexistente, errada ou sem ativo comercial obrigatório.
+
+## 2026-07-27 — Experimento 74: analytics PDE visível no detalhe
+
+- causa-raiz confirmada: o banco PDE já grava dispositivo e resolução em todos os eventos recentes, mas a imagem PDE em produção ainda está antiga e não expõe `deviceBreakdown`/`screenSizeBreakdown` no contrato do monitor; o endpoint operacional `/api/pde/deploy/schema-status` também não existe no runtime publicado.
+- foi feito: a aba `Analytics` do detalhe de experimento passou a mostrar os dados já disponíveis no monitor atual: eventos capturados, leitura de vídeo completa/parcial, jornadas recentes, origem de tráfego e alerta objetivo quando o contrato publicado ainda não expõe dispositivo/tela.
+- foi feito: a formatação de horário desta aba foi alinhada ao horário operacional de Brasília.
+- validação: teste unitário da aba, typecheck do frontend, teste local com Vite e Playwright em `/experiments/74`, usando o backend real.
+- impacto comercial esperado: recuperar leitura de comportamento do funil PDE durante campanha ativa e separar problema de aquisição, primeira dobra, vídeo, CTA, paywall ou checkout sem depender de logs técnicos.

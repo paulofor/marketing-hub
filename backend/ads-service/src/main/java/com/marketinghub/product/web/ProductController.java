@@ -7,9 +7,12 @@ import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductDto;
+import com.marketinghub.product.dto.ProductScientificArticleDto;
 import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
+import com.marketinghub.product.dto.SaveProductScientificArticleRequest;
 import com.marketinghub.product.mapper.ProductMapper;
+import com.marketinghub.product.service.ProductScientificArticleService;
 import com.marketinghub.product.service.ProductService;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/products")
 public class ProductController {
   private final ProductService service;
+  private final ProductScientificArticleService scientificArticleService;
   private final ProductMapper mapper;
   private final PdeProductionSlotService pdeProductionSlotService;
   private final ProductMarketingDefinitionHtmlRenderer htmlRenderer =
@@ -38,9 +42,11 @@ public class ProductController {
   /** Inicializa o controller com serviço de produto e mapper de resposta. */
   public ProductController(
       ProductService service,
+      ProductScientificArticleService scientificArticleService,
       ProductMapper mapper,
       PdeProductionSlotService pdeProductionSlotService) {
     this.service = service;
+    this.scientificArticleService = scientificArticleService;
     this.mapper = mapper;
     this.pdeProductionSlotService = pdeProductionSlotService;
   }
@@ -79,6 +85,36 @@ public class ProductController {
   @GetMapping("/{id}/organic-video-plan")
   public ProductOrganicVideoPlanResponse getOrganicVideoPlan(@PathVariable Long id) {
     return service.getOrganicVideoPlan(id);
+  }
+
+  /** Lista artigos científicos usados para sustentar o mecanismo do produto. */
+  @GetMapping("/{id}/scientific-articles")
+  public List<ProductScientificArticleDto> listScientificArticles(@PathVariable Long id) {
+    return scientificArticleService.listArticles(id);
+  }
+
+  /** Cadastra um artigo científico na base de mecanismo do produto. */
+  @PostMapping("/{id}/scientific-articles")
+  public ProductScientificArticleDto createScientificArticle(
+      @PathVariable Long id, @Valid @RequestBody SaveProductScientificArticleRequest request) {
+    return scientificArticleService.createArticle(id, request);
+  }
+
+  /** Atualiza um artigo científico cadastrado no produto. */
+  @PutMapping("/{id}/scientific-articles/{articleId}")
+  public ProductScientificArticleDto updateScientificArticle(
+      @PathVariable Long id,
+      @PathVariable Long articleId,
+      @Valid @RequestBody SaveProductScientificArticleRequest request) {
+    return scientificArticleService.updateArticle(id, articleId, request);
+  }
+
+  /** Remove um artigo científico da base de mecanismo do produto. */
+  @DeleteMapping("/{id}/scientific-articles/{articleId}")
+  public ResponseEntity<Void> deleteScientificArticle(
+      @PathVariable Long id, @PathVariable Long articleId) {
+    scientificArticleService.deleteArticle(id, articleId);
+    return ResponseEntity.noContent().build();
   }
 
   /** Insere a jornada persuasiva interativa padrão no contrato PDE do produto. */

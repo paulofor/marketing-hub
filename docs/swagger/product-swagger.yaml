@@ -50,6 +50,120 @@ paths:
                 $ref: "#/components/schemas/ProductOrganicVideoPlan"
         "404":
           description: Produto não encontrado.
+  /api/products/{id}/scientific-articles:
+    get:
+      tags:
+        - Products
+      summary: Lista artigos científicos usados para sustentar o mecanismo do produto.
+      operationId: listProductScientificArticles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        "200":
+          description: Lista de artigos científicos cadastrados para o produto.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductScientificArticle"
+        "404":
+          description: Produto não encontrado.
+    post:
+      tags:
+        - Products
+      summary: Cadastra artigo científico usado na definição do mecanismo do produto.
+      operationId: createProductScientificArticle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProductScientificArticleRequest"
+      responses:
+        "200":
+          description: Artigo científico cadastrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductScientificArticle"
+        "400":
+          description: Campos obrigatórios ausentes ou inválidos.
+        "404":
+          description: Produto não encontrado.
+  /api/products/{id}/scientific-articles/{articleId}:
+    put:
+      tags:
+        - Products
+      summary: Atualiza artigo científico usado na definição do mecanismo do produto.
+      operationId: updateProductScientificArticle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProductScientificArticleRequest"
+      responses:
+        "200":
+          description: Artigo científico atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductScientificArticle"
+        "400":
+          description: Campos obrigatórios ausentes ou inválidos.
+        "404":
+          description: Produto ou artigo não encontrado.
+    delete:
+      tags:
+        - Products
+      summary: Remove artigo científico do cadastro de mecanismo do produto.
+      operationId: deleteProductScientificArticle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: Artigo científico removido.
+        "404":
+          description: Produto ou artigo não encontrado.
   /api/products/{id}/video-seed-image:
     patch:
       tags:
@@ -199,6 +313,56 @@ components:
         videoSeedReviewedAt:
           type: string
           format: date-time
+    ProductScientificArticle:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        link:
+          type: string
+          example: https://doi.org/10.1016/j.jesp.2012.02.008
+        originalTitle:
+          type: string
+          example: Enclothed cognition
+        portugueseTitle:
+          type: string
+          example: Cognição vestida
+        summary:
+          type: string
+        mechanismApplication:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SaveProductScientificArticleRequest:
+      type: object
+      required:
+        - link
+        - originalTitle
+        - portugueseTitle
+        - summary
+        - mechanismApplication
+      properties:
+        link:
+          type: string
+          maxLength: 1024
+        originalTitle:
+          type: string
+          maxLength: 512
+        portugueseTitle:
+          type: string
+          maxLength: 512
+        summary:
+          type: string
+        mechanismApplication:
+          type: string
     ProductFinancialSummary:
       type: object
       properties:

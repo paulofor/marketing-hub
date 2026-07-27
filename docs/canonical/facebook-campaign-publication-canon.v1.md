@@ -14,6 +14,7 @@
 > - torna obrigatório o upload de imagens de criativo por bytes/multipart para a Meta, proibindo fallback por URL externa em campanhas
 > - adiciona validação obrigatória de alcance por `reachestimate` antes de criar a hierarquia da campanha na Meta
 > - ajusta a regra de negócio para tratar ausência de limites da Meta como alerta controlado, não como falha automática
+> - ajusta a regra de negócio para tratar alcance acima de 20.000.000 como alerta controlado, não como bloqueio automático
 > - formaliza a coleta periódica de sugestões oficiais da Meta para campanhas ativas, com persistência exclusiva via backend
 > - formaliza que campanhas de experimento usam orçamento diário no nível do ad set (`budgetMode=ADSET`) e que orçamento de campanha é reservado para etapa futura de escala
 > - formaliza que solicitações de targeting por IA devem usar GPT-5.5 em modo Flex e gerar seeds orientados à taxonomia Meta Ads, mantendo a validação oficial de existência no Facebook Ads Worker
@@ -44,7 +45,7 @@ As etapas oficiais expostas para operação são:
 1. `worker-configuration` — carregar configuração, token, conta de anúncios e defaults.
 2. `experiment-readiness` — selecionar experimentos liberados, prontos e sem campanha duplicada.
 3. `creative-consumption` — consumir somente criativos aprovados pelo contrato do módulo Facebook.
-4. `reach-validation` — consultar `reachestimate` da Meta com o targeting final ampliado em lógica **OU** entre interesses, cargos e comportamentos, bloqueando publicação quando o público estimado estiver fora da faixa operacional.
+4. `reach-validation` — consultar `reachestimate` da Meta com o targeting final ampliado em lógica **OU** entre interesses, cargos e comportamentos, bloqueando publicação quando o público estimado estiver abaixo do mínimo operacional e registrando alerta quando estiver amplo demais para leitura controlada.
 5. `campaign-hierarchy-publication` — criar campanha, conjunto, imagem, criativo e anúncio na Meta.
 6. `publication-registration` — persistir IDs externos no backend e marcar rastreabilidade da publicação.
 7. `metrics-sync-target-selection` — selecionar campanhas em execução para sincronização de métricas.
@@ -56,12 +57,12 @@ Esse pipeline é administrativo e operacional: ele torna visível o fluxo do wor
 
 ### 2.2 Gate obrigatório de alcance
 
-Antes de qualquer criação de campanha, conjunto, imagem, criativo ou anúncio na Meta, o `facebook-ads-worker` deve validar o targeting final no endpoint `reachestimate` da Graph API. Para evitar públicos pequenos demais por interseção, interesses, cargos e comportamentos aprovados devem ser agrupados em um único grupo de segmentação ampla com lógica **OU** (`flexible_spec` único), mantendo localização e demais restrições estruturais no topo do `targeting_spec`. Quando a Meta retornar `users_lower_bound` e `users_upper_bound`, a publicação só pode avançar se ambos estiverem dentro da faixa operacional canônica:
+Antes de qualquer criação de campanha, conjunto, imagem, criativo ou anúncio na Meta, o `facebook-ads-worker` deve validar o targeting final no endpoint `reachestimate` da Graph API. Para evitar públicos pequenos demais por interseção, interesses, cargos e comportamentos aprovados devem ser agrupados em um único grupo de segmentação ampla com lógica **OU** (`flexible_spec` único), mantendo localização e demais restrições estruturais no topo do `targeting_spec`. Quando a Meta retornar `users_lower_bound` e `users_upper_bound`, a publicação deve preservar o mínimo operacional canônico:
 
 - mínimo: `users_lower_bound >= 200000`;
-- máximo: `users_upper_bound <= 20000000`.
+- alerta de público amplo: `users_upper_bound > 20000000`.
 
-Quando a Meta retornar limites fora dessa faixa, o experimento deve ser bloqueado antes da criação da campanha e registrado como falha operacional para correção de causa-raiz do público. Quando a Meta não retornar os limites, isso deve ser tratado como alerta de risco, não como falha automática: campanhas de teste controlado podem seguir, com registro operacional do aviso e monitoramento obrigatório de entrega, CPM, CTR, leads e vendas nas primeiras horas. A ausência de estimativa só deve bloquear a publicação se vier acompanhada de erro explícito da Meta, segmentação inválida ou outro bloqueio canônico de prontidão.
+Quando a Meta retornar público abaixo do mínimo, o experimento deve ser bloqueado antes da criação da campanha e registrado como falha operacional para correção de causa-raiz do público. Quando a Meta retornar público acima de 20.000.000, isso deve ser tratado como alerta de risco, não como falha automática: campanhas de teste controlado podem seguir porque a Meta pode usar criativo, objetivo e sinais de conversão para direcionar a entrega dentro de públicos amplos. O monitoramento de entrega, CPM, CTR, leads, vendas e qualidade do tráfego nas primeiras horas passa a ser obrigatório. Quando a Meta não retornar os limites, isso também deve ser tratado como alerta de risco, não como falha automática. A ausência de estimativa só deve bloquear a publicação se vier acompanhada de erro explícito da Meta, segmentação inválida ou outro bloqueio canônico de prontidão.
 
 
 ### 2.3 Solicitações de targeting por IA

@@ -74,7 +74,7 @@ public class FacebookCampaignService {
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_ERROR_SUBCODE = 3858258;
     private static final String IMAGE_HASH_PLATFORM = "FACEBOOK";
     private static final long MIN_REACH_LOWER_BOUND = 200_000L;
-    private static final long MAX_REACH_UPPER_BOUND = 20_000_000L;
+    private static final long HIGH_REACH_WARNING_UPPER_BOUND = 20_000_000L;
     private static final Set<String> META_CALL_TO_ACTION_TYPES = Set.of(
         "OPEN_LINK",
         "LIKE_PAGE",
@@ -994,16 +994,22 @@ public class FacebookCampaignService {
             );
             throw new IllegalStateException(message);
         }
-        if (bounds.upperBound() > MAX_REACH_UPPER_BOUND) {
-            String message = "Público amplo demais para publicar: a Meta estimou %d a %d pessoas, mas o máximo operacional é %d. Refine o público com critérios mais específicos e libere novamente."
-                .formatted(bounds.lowerBound(), bounds.upperBound(), MAX_REACH_UPPER_BOUND);
+        if (bounds.upperBound() > HIGH_REACH_WARNING_UPPER_BOUND) {
+            String message = "Público amplo para teste controlado: a Meta estimou %d a %d pessoas, acima do alerta operacional de %d. A publicação seguirá porque públicos amplos podem ser filtrados por criativo, objetivo e sinais de conversão; monitore CPM, CTR, leads, vendas e qualidade do tráfego nas primeiras horas."
+                .formatted(bounds.lowerBound(), bounds.upperBound(), HIGH_REACH_WARNING_UPPER_BOUND);
             experimentFacebookApiLogClient.logPublicationJobFailureStep(
                 publicationJobId,
                 experimentId,
-                "CAMPAIGN_REACH_VALIDATION_BLOCKED",
+                "CAMPAIGN_REACH_VALIDATION_WARNING",
                 message
             );
-            throw new IllegalStateException(message);
+            LOGGER.warn(
+                "Reach estimate above warning threshold; continuing controlled publication: experimentId={}, lowerBound={}, upperBound={}, warningUpperBound={}",
+                experimentId,
+                bounds.lowerBound(),
+                bounds.upperBound(),
+                HIGH_REACH_WARNING_UPPER_BOUND
+            );
         }
         LOGGER.info(
             "Reach validation approved before campaign creation: experimentId={}, lowerBound={}, upperBound={}",

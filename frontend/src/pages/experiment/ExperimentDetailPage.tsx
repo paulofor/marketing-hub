@@ -48,6 +48,10 @@ import {
 import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
 import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
 import { useExperimentVideoAssets } from "../../api/experiment/useExperimentVideoAssets";
+import {
+  usePostDeployMonitor,
+  type PostDeployPdeProductionSlot,
+} from "../../api/experiment/usePostDeployMonitor";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   const name = stageModel?.openAiModelName?.trim();
@@ -226,6 +230,61 @@ export function buildExperimentTestUrl(url?: string | null) {
   }
 }
 
+export function buildPdeInternalPreviewUrl(
+  url?: string | null,
+  experimentId?: string | number | null,
+  version?: string | null,
+) {
+  const trimmedUrl = url?.trim();
+  if (!trimmedUrl) {
+    return null;
+  }
+
+  const campaign =
+    experimentId === undefined || experimentId === null
+      ? "pde_preview_qa"
+      : `experiment_${experimentId}_pde_preview_qa`;
+  const content = version?.trim() || "pde_version";
+
+  try {
+    const parsedUrl = new URL(trimmedUrl);
+    parsedUrl.searchParams.set("mh_preview", "qa");
+    parsedUrl.searchParams.set("pde_analytics", "off");
+    parsedUrl.searchParams.set("utm_source", "internal");
+    parsedUrl.searchParams.set("utm_medium", "qa");
+    parsedUrl.searchParams.set("utm_campaign", campaign);
+    parsedUrl.searchParams.set("utm_content", content);
+    return parsedUrl.toString();
+  } catch {
+    return null;
+  }
+}
+
+function resolveExperimentPdeSlot(
+  slots: PostDeployPdeProductionSlot[],
+  experimentId: string,
+  currentExperienceVersion?: string | null,
+) {
+  const numericExperimentId = Number(experimentId);
+  if (Number.isFinite(numericExperimentId)) {
+    const slotByExperiment = slots.find(
+      (slot) => slot.sourceExperimentId === numericExperimentId,
+    );
+    if (slotByExperiment) {
+      return slotByExperiment;
+    }
+  }
+
+  const normalizedCurrentVersion = currentExperienceVersion?.trim();
+  if (normalizedCurrentVersion) {
+    return slots.find(
+      (slot) => slot.experienceVersion === normalizedCurrentVersion,
+    );
+  }
+
+  return undefined;
+}
+
 function hasExecutionWithJobId(
   executions: GeraLandingStageExecutionItem[] | undefined,
   jobId: string,
@@ -322,6 +381,11 @@ export default function ExperimentDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data, isLoading } = useExperiment(expId);
+  const isPdeExperimentForMonitor =
+    data?.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const pdeMonitorQuery = usePostDeployMonitor(
+    isPdeExperimentForMonitor ? expId : undefined,
+  );
   const videoAssetsQuery = useExperimentVideoAssets(expId);
   const geraSalesPagePublications = useGeraSalesPagePublications(expId);
   const { data: geraLandingStageModels, isLoading: isLoadingStageModels } =
@@ -1892,6 +1956,21 @@ export default function ExperimentDetailPage() {
   const isLowTicketProduct = data.experimentType === "LOW_TICKET_PRODUCT";
   const isPdeMembershipSubscriptionFunnel =
     data.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const pdeMonitor = pdeMonitorQuery.data;
+  const experimentPdeSlot = resolveExperimentPdeSlot(
+    pdeMonitor?.pdeProductionSlots ?? [],
+    expId,
+    pdeMonitor?.pde.currentExperienceVersion,
+  );
+  const experimentPdeVersion =
+    experimentPdeSlot?.experienceVersion ??
+    pdeMonitor?.pde.currentExperienceVersion ??
+    null;
+  const experimentPdePreviewUrl = buildPdeInternalPreviewUrl(
+    experimentPdeSlot?.publicUrl ?? data.followUpActionUrl,
+    expId,
+    experimentPdeVersion,
+  );
   const isSalesObjectiveExperiment =
     isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
   const campaignObjectiveLabel =
@@ -2041,6 +2120,48 @@ export default function ExperimentDetailPage() {
           <span className="badge bg-secondary">{data.status}</span>
         </div>
       </div>
+      {isPdeMembershipSubscriptionFunnel ? (
+        <div className="card border-0 shadow-sm rounded-3 mt-3">
+          <div className="card-body">
+            <div className="d-flex flex-column flex-lg-row align-items-start justify-content-between gap-3">
+              <div>
+                <div className="text-muted small text-uppercase">
+                  PDE utilizado neste experimento
+                </div>
+                <h2 className="h6 mb-1 mt-1">
+                  {pdeMonitorQuery.isLoading
+                    ? "Carregando versão PDE..."
+                    : experimentPdeVersion || "Versão PDE não vinculada"}
+                </h2>
+                <p className="text-muted small mb-0">
+                  {experimentPdeSlot
+                    ? `Slot ${experimentPdeSlot.slotCode} · ${experimentPdeSlot.domain}`
+                    : "Vincule um slot produtivo PDE para monitorar a versão exata usada na venda."}
+                </p>
+              </div>
+              <div className="d-flex flex-column align-items-start align-items-lg-end gap-2">
+                {experimentPdePreviewUrl ? (
+                  <a
+                    className="btn btn-outline-primary btn-sm"
+                    href={experimentPdePreviewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Abrir PDE sem métricas
+                  </a>
+                ) : (
+                  <span className="badge text-bg-warning">
+                    Link indisponível
+                  </span>
+                )}
+                <span className="small text-muted">
+                  Link interno com analytics desligado.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {isLoadingDiagnostics ? (
         <div
           className="alert alert-light d-flex align-items-center gap-2 mt-3"

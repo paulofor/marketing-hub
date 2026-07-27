@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -27,6 +27,34 @@ describe("ProductExperimentComparisonPage", () => {
         mainRecommendation:
           "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos.",
         experiments: [
+          {
+            experimentId: 69,
+            name: "MUSA-H001-E007",
+            status: "USER_STOPPED",
+            campaignStatus: "PAUSED",
+            campaignObjective: "SALES",
+            experimentType: "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL",
+            startDate: "2026-07-24",
+            endDate: "2026-07-31",
+            dailyBudget: 25,
+            unitPrice: 67,
+            impressions: 500,
+            reach: 450,
+            clicks: 10,
+            leads: 0,
+            spend: 6.25,
+            cpc: 0.62,
+            cpl: 0,
+            approvedCreatives: 1,
+            totalCreatives: 2,
+            funnelStages: [],
+            hypothesis: "Público interrompido",
+            promise: "Elegância prática",
+            learnedLessons: "Interrompido antes de leitura conclusiva.",
+            recommendedAction:
+              "Aguardar novo ciclo antes de tomar decisão comercial.",
+            updatedAt: "2026-07-26T12:00:00Z",
+          },
           {
             experimentId: 74,
             name: "MUSA-H001-E009",
@@ -90,6 +118,11 @@ describe("ProductExperimentComparisonPage", () => {
       "href",
       "/experiments/74",
     );
+    const rows = screen.getAllByRole("row");
+    expect(
+      within(rows[1]).getByRole("link", { name: /MUSA-H001-E009/i }),
+    ).toBeTruthy();
+    expect(rows[1]).toHaveClass("product-comparison-table__row--running");
     expect(screen.getByText(/Clique barato, mas ativação precisa melhorar/i)).toBeTruthy();
   });
 });

@@ -295,6 +295,25 @@
   text-transform: uppercase;
 }
 
+.product-comparison-table tbody tr.product-comparison-table__row--running > * {
+  background: #f0fdf4;
+  border-bottom-color: #bbf7d0;
+}
+
+.product-comparison-table tbody tr.product-comparison-table__row--running > :first-child {
+  border-left: 0.25rem solid #22c55e;
+}
+
+.product-comparison-status {
+  letter-spacing: 0;
+}
+
+.product-comparison-status--running {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
 .product-comparison-table__decision {
   color: #334155;
   max-width: 20rem;

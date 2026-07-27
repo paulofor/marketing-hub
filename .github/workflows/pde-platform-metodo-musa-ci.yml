@@ -227,7 +227,13 @@ jobs:
             && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
             && docker compose -f docker-compose.deploy.yml pull \
             && (docker rm -f pde-platform-backend pde-platform-frontend pde-ai-worker >/dev/null 2>&1 || true) \
-            && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
+            && (docker compose -f docker-compose.deploy.yml up -d --remove-orphans || ( \
+              echo 'Falha ao publicar PDE Platform. Coletando diagnostico dos containers.' >&2; \
+              docker compose -f docker-compose.deploy.yml ps >&2 || true; \
+              docker compose -f docker-compose.deploy.yml logs --tail=200 pde-platform-backend >&2 || true; \
+              docker inspect pde-platform-backend --format '{{json .State}}' >&2 || true; \
+              exit 1 \
+            )) \
             && docker image prune -af"
       - name: Validate production public container ports
         run: |

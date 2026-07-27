@@ -638,7 +638,7 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
 
 function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [product, setProduct] = useState<ProductExperience>(fallbackProduct);
+  const [product, setProduct] = useState<ProductExperience>(() => applyExperienceOverrides(fallbackProduct));
   const [email, setEmail] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [activeMissionId, setActiveMissionId] = useState('');
@@ -654,6 +654,8 @@ function App() {
   const [publicDiagnosticDirection, setPublicDiagnosticDirection] = useState<'forward' | 'backward'>('forward');
   const [publicDiagnosticGuidance, setPublicDiagnosticGuidance] = useState<AiGuidance | null>(null);
   const [publicDiagnosticLoading, setPublicDiagnosticLoading] = useState(false);
+  const [publicVideoWatchPercent, setPublicVideoWatchPercent] = useState(0);
+  const [publicVideoCompleted, setPublicVideoCompleted] = useState(false);
   const [missionAnswers, setMissionAnswers] = useState<Record<string, Record<string, string>>>({});
   const [aiGuidanceByMission, setAiGuidanceByMission] = useState<Record<string, AiGuidance>>({});
   const [generatingGuidance, setGeneratingGuidance] = useState(false);
@@ -1779,6 +1781,7 @@ function App() {
   const selectedDesiredPresence = desiredPresenceSignals.find((option) => option.key === desiredPresence);
   const diagnosticReadyForEmail = authMode === 'login' || Boolean(presenceBlocker && desiredPresence);
   const showVideoHero = currentExperienceVersion === 'musa-pde-entry-v4-video-hero';
+  const showMotivationalTimelineVideo = currentExperienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
   const showPublishedPublicDiagnosticVideoHero =
     !workspace
     && ((isMusaVideoExplainerExperience(currentExperienceVersion) && publicDiagnosticVideoVariant !== 'control')
@@ -1886,6 +1889,11 @@ function App() {
     const answeredPublicDiagnosticCount = publicDiagnosticQuestions.filter((question) => publicDiagnosticAnswers[question.key]?.trim()).length;
     const publicDiagnosticProgressPercent = Math.round((answeredPublicDiagnosticCount / publicDiagnosticQuestions.length) * 100);
     const showPublicDiagnosticVideoHero = showPublishedPublicDiagnosticVideoHero;
+    const videoWatchLabel = publicVideoCompleted
+      ? 'Vídeo visto completo'
+      : publicVideoWatchPercent > 0
+        ? `Vídeo visto parcialmente: ${publicVideoWatchPercent}%`
+        : 'Vídeo pronto para começar';
 
     return (
       <main className="app-shell public-diagnostic-shell">
@@ -1896,7 +1904,11 @@ function App() {
           </div>
 
           {showPublicDiagnosticVideoHero && (
-            <section className="public-video-hero" aria-label="Vídeo curto Método MUSA" data-analytics-section="public_diagnostic_video_hero">
+            <section
+              className={`public-video-hero ${showMotivationalTimelineVideo ? 'public-video-timeline' : ''}`}
+              aria-label="Vídeo curto Método MUSA"
+              data-analytics-section="public_diagnostic_video_hero"
+            >
               <div className="public-video-frame">
                 {heroPlaybackUrl ? (
                   <AdaptiveVideoPlayer
@@ -1904,6 +1916,7 @@ function App() {
                     src={heroPlaybackUrl}
                     fallbackSrc={heroVideoUrl}
                     autoPlay
+                    controls={showMotivationalTimelineVideo}
                     muted
                     loop
                     playsInline
@@ -1917,6 +1930,10 @@ function App() {
                         return;
                       }
                       if (event.type === 'progress' && event.percent) {
+                        setPublicVideoWatchPercent((current) => Math.max(current, event.percent ?? 0));
+                        if (event.percent >= 95) {
+                          setPublicVideoCompleted(true);
+                        }
                         trackPublicHeroVideoPlayback(event.percent >= 95 ? 'VIDEO_COMPLETED' : `VIDEO_PROGRESS_${event.percent}`, {
                           progressPercent: event.percent,
                           currentTime: Math.round(event.currentTime),
@@ -1925,6 +1942,8 @@ function App() {
                         return;
                       }
                       if (event.type === 'ended') {
+                        setPublicVideoWatchPercent(100);
+                        setPublicVideoCompleted(true);
                         trackPublicHeroVideoPlayback('VIDEO_COMPLETED', {
                           progressPercent: 100,
                           currentTime: Math.round(event.currentTime),
@@ -1951,11 +1970,17 @@ function App() {
                   <Sparkles size={17} />
                   <span>{heroPlaybackUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
                 </div>
+                <div className="public-video-watch-status" aria-live="polite">
+                  <span>{videoWatchLabel}</span>
+                  <i>
+                    <b style={{ width: `${publicVideoCompleted ? 100 : publicVideoWatchPercent}%` }} />
+                  </i>
+                </div>
               </div>
               <div className="public-video-copy">
-                <p className="section-kicker">Vídeo inicial MUSA</p>
-                <h2>Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.</h2>
-                <p>Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.</p>
+                <p className="section-kicker">{showMotivationalTimelineVideo ? 'Timeline MUSA' : 'Vídeo inicial MUSA'}</p>
+                <h2>{showMotivationalTimelineVideo ? 'Assista como um primeiro story e siga para seu mapa de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
+                <p>{showMotivationalTimelineVideo ? 'A v6 começa com vídeo motivacional no próprio HTML, registra visualização parcial ou completa e conduz para a escolha das opções sem travar a experiência.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
                 <button
                   className="secondary-button public-video-cta"
                   type="button"

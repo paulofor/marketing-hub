@@ -461,11 +461,22 @@ textarea {
   overflow: hidden;
 }
 
+.public-video-timeline {
+  background: #20161a;
+  gap: 0;
+  grid-template-columns: minmax(320px, 0.48fr) minmax(320px, 0.52fr);
+  min-height: 620px;
+}
+
 .public-video-frame {
   background: #2d2024;
   min-height: 310px;
   overflow: hidden;
   position: relative;
+}
+
+.public-video-timeline .public-video-frame {
+  min-height: 620px;
 }
 
 .public-hero-video,
@@ -521,11 +532,52 @@ textarea {
   z-index: 1;
 }
 
+.public-video-watch-status {
+  background: rgba(32, 22, 26, 0.84);
+  bottom: 18px;
+  color: #fff8f3;
+  display: grid;
+  gap: 8px;
+  left: 18px;
+  padding: 10px 12px;
+  position: absolute;
+  right: 18px;
+  z-index: 2;
+}
+
+.public-video-watch-status span {
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.public-video-watch-status i {
+  background: rgba(255, 248, 243, 0.22);
+  display: block;
+  height: 6px;
+  overflow: hidden;
+}
+
+.public-video-watch-status b {
+  background: linear-gradient(90deg, #d6a75c, #fff8f3);
+  display: block;
+  height: 100%;
+  transition: width 220ms ease;
+}
+
 .public-video-copy {
   align-content: center;
   background: linear-gradient(135deg, rgba(255, 248, 243, 0.96), rgba(247, 228, 198, 0.72));
   display: grid;
   padding: 30px;
+}
+
+.public-video-timeline .public-video-copy {
+  align-content: end;
+  background:
+    linear-gradient(180deg, rgba(32, 22, 26, 0.1), rgba(32, 22, 26, 0.84)),
+    #7a2444;
+  color: #fff8f3;
+  padding: 42px;
 }
 
 .public-video-copy h2 {
@@ -536,11 +588,22 @@ textarea {
   max-width: 520px;
 }
 
+.public-video-timeline .public-video-copy h2 {
+  color: #fff8f3;
+  font-size: 2.15rem;
+  max-width: 560px;
+}
+
 .public-video-copy p:not(.section-kicker) {
   color: #5a4a42;
   font-weight: 720;
   margin: 12px 0 0;
   max-width: 540px;
+}
+
+.public-video-timeline .public-video-copy .section-kicker,
+.public-video-timeline .public-video-copy p:not(.section-kicker) {
+  color: rgba(255, 248, 243, 0.82);
 }
 
 .public-video-cta {
@@ -2673,16 +2736,32 @@ h3 {
     min-height: unset;
   }
 
+  .public-video-timeline {
+    min-height: unset;
+  }
+
   .public-video-frame {
     min-height: 260px;
+  }
+
+  .public-video-timeline .public-video-frame {
+    min-height: 68vh;
   }
 
   .public-video-copy {
     padding: 20px;
   }
 
+  .public-video-timeline .public-video-copy {
+    padding: 20px;
+  }
+
   .public-video-copy h2 {
     font-size: 1.22rem;
+  }
+
+  .public-video-timeline .public-video-copy h2 {
+    font-size: 1.42rem;
   }
 
   .public-video-copy p:not(.section-kicker) {

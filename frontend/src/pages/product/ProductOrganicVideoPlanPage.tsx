@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,10 +9,25 @@ import {
   MousePointerClick,
   PlaySquare,
   Map,
+  Radio,
   Share2,
 } from "lucide-react";
-import { useProductOrganicVideoPlan } from "../../api/product/useProductOrganicVideoPlan";
+import { toast } from "react-toastify";
+import {
+  ProductOrganicVideoPlanItem,
+  useProductOrganicVideoPlan,
+} from "../../api/product/useProductOrganicVideoPlan";
+import { useRequestOrganicVideoRender } from "../../api/product/useRequestOrganicVideoRender";
+import { useSalesVideoProviderScores } from "../../api/salesVideo/useSalesVideoProviderScores";
+import { SalesVideoProviderScore } from "../../api/salesVideo/types";
+import {
+  buildOrganicVideoRenderMetadata,
+  DEFAULT_SALES_VIDEO_PROVIDER,
+  findSalesVideoProviderOption,
+  SALES_VIDEO_PROVIDER_OPTIONS,
+} from "../../api/salesVideo/videoProviderCatalog";
 import PageTitle from "../../components/PageTitle";
+import { useTenantContext } from "../../utils/tenantContext";
 
 const categoryLabels: Record<string, string> = {
   ENTRETENIMENTO_DOR: "Entretenimento / dor",
@@ -36,13 +52,65 @@ function groupByDay<T extends { day: number }>(items: T[]) {
   }, {});
 }
 
+function buildOrganicScript(video: ProductOrganicVideoPlanItem) {
+  return [
+    `Hook: ${video.hook}`,
+    `Cena: ${video.scene}`,
+    `Mensagem central: ${video.message}`,
+    `Virada mental esperada: ${video.mentalShift}`,
+    `CTA: ${video.callToAction}`,
+    `Métrica principal: ${video.primaryMetric}`,
+  ].join("\n\n");
+}
+
+function providerBlockReason(
+  providerName: string,
+  scores?: SalesVideoProviderScore[],
+) {
+  const score = scores?.find((item) => item.providerName === providerName);
+  if (!score) {
+    return "";
+  }
+  if (score.recommendation === "bloquear_ou_regenerar") {
+    return `Bloqueado por reputação: score ${score.score}, recomendação ${score.recommendation}.`;
+  }
+  if (score.score < 40 || score.rejectedAssets > 0) {
+    return `Bloqueado por score baixo ou rejeição visual: score ${score.score}, rejeições ${score.rejectedAssets}.`;
+  }
+  return "";
+}
+
+function providerScoreLabel(
+  providerName: string,
+  scores?: SalesVideoProviderScore[],
+) {
+  const score = scores?.find((item) => item.providerName === providerName);
+  if (!score) {
+    return "Sem histórico suficiente";
+  }
+  return `Score ${score.score} · ${score.recommendation}`;
+}
+
 export default function ProductOrganicVideoPlanPage() {
   const { productId } = useParams();
+  const tenantContext = useTenantContext();
   const planQuery = useProductOrganicVideoPlan(productId);
+  const providerScoresQuery = useSalesVideoProviderScores();
+  const requestOrganicRender = useRequestOrganicVideoRender(productId);
+  const defaultOrganicProvider =
+    findSalesVideoProviderOption("RUNWAY") ?? DEFAULT_SALES_VIDEO_PROVIDER;
+  const [selectedProviderName, setSelectedProviderName] = useState(
+    defaultOrganicProvider.providerName,
+  );
+  const [renderingSequence, setRenderingSequence] = useState<number | null>(
+    null,
+  );
   const plan = planQuery.data;
 
   if (planQuery.isLoading) {
-    return <p className="text-muted">Carregando plano de vídeos orgânicos...</p>;
+    return (
+      <p className="text-muted">Carregando plano de vídeos orgânicos...</p>
+    );
   }
 
   if (planQuery.isError || !plan) {
@@ -69,6 +137,52 @@ export default function ProductOrganicVideoPlanPage() {
   const directCount = plan.videos.filter(
     (video) => video.category === "DIRETO_DIAGNOSTICO",
   ).length;
+  const selectedProvider =
+    findSalesVideoProviderOption(selectedProviderName) ??
+    defaultOrganicProvider;
+  const selectedProviderBlockReason = providerBlockReason(
+    selectedProvider.providerName,
+    providerScoresQuery.data,
+  );
+  const isProviderBlocked = Boolean(selectedProviderBlockReason);
+
+  const handleRenderOrganicVideo = async (
+    video: ProductOrganicVideoPlanItem,
+  ) => {
+    if (isProviderBlocked) {
+      toast.warn(selectedProviderBlockReason);
+      return;
+    }
+    setRenderingSequence(video.sequence);
+    try {
+      const job = await requestOrganicRender.mutateAsync({
+        title: `Orgânico ${plan.productName ?? plan.productSlug ?? plan.productId} #${video.sequence} - ${video.hook.slice(0, 80)}`,
+        scriptText: buildOrganicScript(video),
+        hookText: video.hook,
+        ctaText: video.callToAction,
+        captionText: `${video.message} ${video.callToAction}`,
+        providerFamily: selectedProvider.providerFamily,
+        providerName: selectedProvider.providerName,
+        targetDurationSeconds: selectedProvider.clipDurationSeconds,
+        requestedBy: tenantContext.userEmail,
+        metadataJson: buildOrganicVideoRenderMetadata(selectedProvider, {
+          productId: plan.productId,
+          productName: plan.productName,
+          productSlug: plan.productSlug,
+          ...video,
+        }),
+      });
+      toast.success(`Render orgânico solicitado no job ${job.id}`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Falha ao solicitar render orgânico",
+      );
+    } finally {
+      setRenderingSequence(null);
+    }
+  };
 
   return (
     <div>
@@ -76,8 +190,10 @@ export default function ProductOrganicVideoPlanPage() {
         <div>
           <PageTitle>Plano orgânico de vídeos</PageTitle>
           <p className="text-muted mb-0">
-            {plan.productName || plan.productSlug || `Produto ${plan.productId}`} ·{" "}
-            {plan.strategyName}
+            {plan.productName ||
+              plan.productSlug ||
+              `Produto ${plan.productId}`}{" "}
+            · {plan.strategyName}
           </p>
         </div>
         <Link className="btn btn-outline-secondary" to="/products">
@@ -119,16 +235,65 @@ export default function ProductOrganicVideoPlanPage() {
         </div>
         <div>
           <Map size={18} aria-hidden="true" />
-          <span>Sequência baseada em desconhecimento, relevância, mecanismo, microexperiência e desejo.</span>
+          <span>
+            Sequência baseada em desconhecimento, relevância, mecanismo,
+            microexperiência e desejo.
+          </span>
         </div>
       </div>
 
-      <section className="organic-video-plan__calendar" aria-label="Calendário de vídeos">
+      <section className="organic-video-render-panel">
+        <div>
+          <span className="badge text-bg-light border">Render orgânico</span>
+          <h2>Transformar roteiro em job</h2>
+          <p>
+            O botão de cada card cria perfil, aprova o roteiro e solicita render
+            em modo teste. Providers com reputação ruim ficam bloqueados.
+          </p>
+        </div>
+        <label>
+          <Radio size={16} aria-hidden="true" />
+          Provider
+          <select
+            className="form-select"
+            value={selectedProvider.providerName}
+            onChange={(event) => setSelectedProviderName(event.target.value)}
+          >
+            {SALES_VIDEO_PROVIDER_OPTIONS.filter(
+              (provider) => provider.providerFamily === "EXTERNAL_VIDEO_MODULE",
+            ).map((provider) => (
+              <option key={provider.providerName} value={provider.providerName}>
+                {provider.label} · {provider.clipDurationSeconds}s
+              </option>
+            ))}
+          </select>
+        </label>
+        <small
+          className={
+            isProviderBlocked
+              ? "organic-video-render-panel__blocked"
+              : "text-muted"
+          }
+        >
+          {selectedProviderBlockReason ||
+            providerScoreLabel(
+              selectedProvider.providerName,
+              providerScoresQuery.data,
+            )}
+        </small>
+      </section>
+
+      <section
+        className="organic-video-plan__calendar"
+        aria-label="Calendário de vídeos"
+      >
         {Object.entries(videosByDay).map(([day, videos]) => (
           <article className="organic-video-day" key={day}>
             <div className="organic-video-day__header">
               <span>Dia {day}</span>
-              <strong>{videos.length} vídeo{videos.length > 1 ? "s" : ""}</strong>
+              <strong>
+                {videos.length} vídeo{videos.length > 1 ? "s" : ""}
+              </strong>
             </div>
             <div className="organic-video-day__videos">
               {videos.map((video) => {
@@ -165,6 +330,26 @@ export default function ProductOrganicVideoPlanPage() {
                       <span>{video.funnelStage}</span>
                       <span>{video.platformPriority}</span>
                     </div>
+                    <button
+                      className="btn btn-primary organic-video-card__render"
+                      type="button"
+                      disabled={
+                        isProviderBlocked ||
+                        requestOrganicRender.isPending ||
+                        renderingSequence === video.sequence
+                      }
+                      onClick={() => handleRenderOrganicVideo(video)}
+                    >
+                      <Clapperboard size={16} aria-hidden="true" />
+                      {renderingSequence === video.sequence
+                        ? "Solicitando..."
+                        : "Renderizar orgânico"}
+                    </button>
+                    {isProviderBlocked ? (
+                      <small className="organic-video-card__block">
+                        {selectedProviderBlockReason}
+                      </small>
+                    ) : null}
                   </div>
                 );
               })}

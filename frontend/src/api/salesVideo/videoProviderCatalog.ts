@@ -137,7 +137,7 @@ export function buildSalesVideoRenderMetadata(
       ? "OPENAI_IMAGE_TO_LUMA_VIDEO"
       : providerUsesApprovedSourceImage
         ? "APPROVED_IMAGE_TO_VIDEO"
-      : "TEXT_TO_VIDEO",
+        : "TEXT_TO_VIDEO",
     visual_provider_directives: normalizedVisualProviderDirectives,
     image_to_video: {
       enabled: openAiReferenceImageEnabled || providerUsesApprovedSourceImage,
@@ -155,10 +155,9 @@ export function buildSalesVideoRenderMetadata(
       image_prompt:
         renderOptions?.openAiReferenceImagePrompt?.trim() ||
         "Quadro-base MUSA anti-sensualizacao: mulher brasileira adulta em acao pratica, organizando visual com clareza, alivio e presenca elegante acessivel.",
-      expected_benefit:
-        providerUsesApprovedSourceImage
-          ? "Animar uma imagem ja aprovada comercialmente para preservar personagem, postura, luz e enquadramento nos testes de criativo."
-          : "Controlar composicao, postura e luz antes de animar na Luma para reduzir cenas sensualizadas ou nebulosas.",
+      expected_benefit: providerUsesApprovedSourceImage
+        ? "Animar uma imagem ja aprovada comercialmente para preservar personagem, postura, luz e enquadramento nos testes de criativo."
+        : "Controlar composicao, postura e luz antes de animar na Luma para reduzir cenas sensualizadas ou nebulosas.",
     },
     provider_strategy: {
       provider_name: provider.providerName,
@@ -204,6 +203,74 @@ export function buildSalesVideoRenderMetadata(
       primary_delivery: "streamPlaybackUrl",
       fallback_delivery: "assetId",
       public_player: "HLS com fallback MP4",
+    },
+  });
+}
+
+export type OrganicVideoRenderMetadataOptions = {
+  productId: number;
+  productName?: string;
+  productSlug?: string;
+  day: number;
+  sequence: number;
+  category: string;
+  funnelStage: string;
+  mentalShift: string;
+  hook: string;
+  scene: string;
+  message: string;
+  callToAction: string;
+  primaryMetric: string;
+  platformPriority: string;
+};
+
+export function buildOrganicVideoRenderMetadata(
+  provider: SalesVideoProviderOption,
+  video: OrganicVideoRenderMetadataOptions,
+) {
+  return JSON.stringify({
+    commercial_goal: "ORGANIC_VIDEO_MUSA_SIGNAL_TEST",
+    generation_strategy: "ORGANIC_TEXT_TO_VIDEO",
+    visual_provider_directives: [
+      DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
+      "Vertical social video, native creator style, fast first frame, natural movement, no embedded text.",
+    ].join(" "),
+    organic_video_plan: {
+      product_id: video.productId,
+      product_name: video.productName ?? null,
+      product_slug: video.productSlug ?? null,
+      day: video.day,
+      sequence: video.sequence,
+      category: video.category,
+      funnel_stage: video.funnelStage,
+      mental_shift: video.mentalShift,
+      platform_priority: video.platformPriority,
+      primary_metric: video.primaryMetric,
+    },
+    script_brief: {
+      hook: video.hook,
+      scene: video.scene,
+      message: video.message,
+      call_to_action: video.callToAction,
+    },
+    provider_strategy: {
+      provider_name: provider.providerName,
+      recommended_use: provider.recommendedUse,
+      expected_clip_duration_seconds: provider.clipDurationSeconds,
+      supports_scene_assembly: provider.supportsSceneAssembly,
+      stream_required: true,
+      stream_target: "HLS_ADAPTIVE",
+    },
+    quality_gate: {
+      reject_if: [
+        "visual sexualizado",
+        "texto embutido ilegivel",
+        "rosto distorcido",
+        "maos distorcidas",
+        "movimento artificial que prejudica retencao",
+      ],
+      commercial_reason:
+        "Video organico precisa parecer nativo e gerar leitura de sinal antes de virar anuncio ou retargeting.",
     },
   });
 }

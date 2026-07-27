@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildOrganicVideoRenderMetadata,
   buildSalesVideoRenderMetadata,
   DEFAULT_VISUAL_PROVIDER_DIRECTIVES,
   DEFAULT_SALES_VIDEO_PROVIDER,
@@ -105,7 +106,9 @@ describe("videoProviderCatalog", () => {
 
     expect(metadata.generation_strategy).toBe("APPROVED_IMAGE_TO_VIDEO");
     expect(metadata.image_to_video.enabled).toBe(true);
-    expect(metadata.image_to_video.source_image_provider).toBe("APPROVED_ASSET");
+    expect(metadata.image_to_video.source_image_provider).toBe(
+      "APPROVED_ASSET",
+    );
     expect(metadata.image_to_video.source_image_asset_id).toBe(1925);
     expect(metadata.image_to_video.source_image_url).toBe(
       "https://assets.example/musa-approved.png",
@@ -114,11 +117,21 @@ describe("videoProviderCatalog", () => {
   });
 
   it("declara limites por solicitacao para os providers integrados", () => {
-    expect(findSalesVideoProviderOption("LUMA_RAY_3_2")?.maxDirectDurationSeconds).toBe(30);
-    expect(findSalesVideoProviderOption("KLING_3_0")?.maxDirectDurationSeconds).toBe(10);
-    expect(findSalesVideoProviderOption("RUNWAY")?.maxDirectDurationSeconds).toBe(10);
-    expect(findSalesVideoProviderOption("VEO")?.maxDirectDurationSeconds).toBe(8);
-    expect(findSalesVideoProviderOption("HEYGEN")?.maxDirectDurationSeconds).toBe(600);
+    expect(
+      findSalesVideoProviderOption("LUMA_RAY_3_2")?.maxDirectDurationSeconds,
+    ).toBe(30);
+    expect(
+      findSalesVideoProviderOption("KLING_3_0")?.maxDirectDurationSeconds,
+    ).toBe(10);
+    expect(
+      findSalesVideoProviderOption("RUNWAY")?.maxDirectDurationSeconds,
+    ).toBe(10);
+    expect(findSalesVideoProviderOption("VEO")?.maxDirectDurationSeconds).toBe(
+      8,
+    );
+    expect(
+      findSalesVideoProviderOption("HEYGEN")?.maxDirectDurationSeconds,
+    ).toBe(600);
   });
 
   it("habilita estrategia OpenAI imagem para Luma quando solicitada", () => {
@@ -138,5 +151,37 @@ describe("videoProviderCatalog", () => {
     expect(metadata.image_to_video.image_prompt).toBe(
       "Mulher organizada com blazer e caderno.",
     );
+  });
+
+  it("monta metadata de render organico com funcao de funil e provider escolhido", () => {
+    const provider = findSalesVideoProviderOption("RUNWAY");
+
+    expect(provider).toBeDefined();
+
+    const metadata = JSON.parse(
+      buildOrganicVideoRenderMetadata(provider!, {
+        productId: 1,
+        productName: "Método MUSA",
+        productSlug: "metodo-musa-7-dias",
+        day: 1,
+        sequence: 1,
+        category: "ENTRETENIMENTO_DOR",
+        funnelStage: "Desconhecido -> relevante",
+        mentalShift: "Isso acontece comigo.",
+        platformPriority: "TikTok + Reels",
+        hook: "POV: nenhuma roupa parece voce.",
+        scene: "Troca de looks no espelho.",
+        message: "O problema pode ser falta de intenção visual.",
+        callToAction: "Faça o diagnóstico.",
+        primaryMetric: "Retenção e comentários.",
+      }),
+    );
+
+    expect(metadata.commercial_goal).toBe("ORGANIC_VIDEO_MUSA_SIGNAL_TEST");
+    expect(metadata.organic_video_plan.sequence).toBe(1);
+    expect(metadata.organic_video_plan.funnel_stage).toBe(
+      "Desconhecido -> relevante",
+    );
+    expect(metadata.provider_strategy.provider_name).toBe("RUNWAY");
   });
 });

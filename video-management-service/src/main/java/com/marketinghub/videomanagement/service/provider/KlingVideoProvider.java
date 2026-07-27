@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.netty.http.client.HttpClient;
 
 /** Responsabilidade: renderizar vídeos comerciais pelo provider Kling para jobs do Marketing Hub. */
@@ -91,10 +92,11 @@ public class KlingVideoProvider implements VideoProvider {
         progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING, "Enviando prompt para Kling");
 
         Map<String, Object> payload = buildPayload(job, profile, script);
-        String taskId = submitRender(job, payload);
+        boolean imageToVideo = isImageToVideoPayload(payload);
+        String taskId = submitRender(job, payload, imageToVideo);
         progressCallback.onProgress(30, SalesVideoStatus.VIDEO_PROCESSING, "Kling aceitou o taskId: " + taskId);
 
-        JsonNode finalStatus = waitUntilCompleted(taskId, progressCallback);
+        JsonNode finalStatus = waitUntilCompleted(taskId, imageToVideo, progressCallback);
         String videoUrl = resolveVideoUrl(finalStatus);
         if (!StringUtils.hasText(videoUrl)) {
             throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Kling não retornou URL do vídeo gerado");
@@ -107,17 +109,24 @@ public class KlingVideoProvider implements VideoProvider {
         return new ProviderArtifacts(taskId, video, null, null, metadata);
     }
 
-    /** Cria a tarefa text-to-video no Kling. */
-    private String submitRender(SalesVideoJob job, Map<String, Object> payload) {
-        String path = properties.getProviders().getKling().getCreatePath();
+    /** Cria a tarefa text-to-video ou image-to-video no Kling. */
+    private String submitRender(SalesVideoJob job, Map<String, Object> payload, boolean imageToVideo) {
+        String path = imageToVideo
+                ? properties.getProviders().getKling().getImageCreatePath()
+                : properties.getProviders().getKling().getCreatePath();
         log.info("Chamando Kling para criar vídeo; jobId={} url={} request={}", job.id(), resolveBaseUrl() + path, payload);
-        JsonNode response = authorized(webClient.post()
-                        .uri(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(payload))
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block();
+        JsonNode response;
+        try {
+            response = authorized(webClient.post()
+                            .uri(path)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(payload))
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+        } catch (WebClientResponseException ex) {
+            throw providerHttpError(job, "criação", path, ex);
+        }
         log.info("Resposta Kling create; jobId={} response={}", job.id(), response);
         ensureSuccessfulResponse(response, "criação");
         String taskId = firstText(response,
@@ -134,15 +143,21 @@ public class KlingVideoProvider implements VideoProvider {
     }
 
     /** Aguarda a tarefa Kling chegar em sucesso ou falha objetiva. */
-    private JsonNode waitUntilCompleted(String taskId, ProgressCallback progressCallback) {
+    private JsonNode waitUntilCompleted(String taskId, boolean imageToVideo, ProgressCallback progressCallback) {
         VideoManagementProperties.Kling config = properties.getProviders().getKling();
         for (int attempt = 1; attempt <= config.getMaxPollAttempts(); attempt++) {
-            String path = config.getStatusPathTemplate().replace("{taskId}", taskId);
+            String statusTemplate = imageToVideo ? config.getImageStatusPathTemplate() : config.getStatusPathTemplate();
+            String path = statusTemplate.replace("{taskId}", taskId);
             log.info("Consultando Kling; taskId={} url={}", taskId, resolveBaseUrl() + path);
-            JsonNode status = authorized(webClient.get().uri(path))
-                    .retrieve()
-                    .bodyToMono(JsonNode.class)
-                    .block();
+            JsonNode status;
+            try {
+                status = authorized(webClient.get().uri(path))
+                        .retrieve()
+                        .bodyToMono(JsonNode.class)
+                        .block();
+            } catch (WebClientResponseException ex) {
+                throw providerHttpError(null, "consulta", path, ex);
+            }
             log.info("Resposta Kling status; taskId={} response={}", taskId, status);
             ensureSuccessfulResponse(status, "consulta");
             String taskStatus = normalize(firstText(status,
@@ -166,9 +181,10 @@ public class KlingVideoProvider implements VideoProvider {
         throw new VideoProviderException("PROVIDER_TIMEOUT", "Timeout aguardando conclusão do Kling");
     }
 
-    /** Monta payload text-to-video com prompt comercial e parâmetros do provider. */
+    /** Monta payload text-to-video ou image-to-video com prompt comercial e parâmetros do provider. */
     private Map<String, Object> buildPayload(SalesVideoJob job, SalesVideoProfile profile, SalesVideoScript script) {
         VideoManagementProperties.Kling config = properties.getProviders().getKling();
+        JsonNode metadata = readMetadata(job);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model_name", config.getModel());
         payload.put("prompt", buildPrompt(job, profile, script));
@@ -176,7 +192,26 @@ public class KlingVideoProvider implements VideoProvider {
         payload.put("aspect_ratio", config.getAspectRatio());
         payload.put("mode", config.getMode());
         payload.put("duration", config.getDuration());
+        String sourceImageUrl = resolveSourceImageUrl(metadata);
+        if (StringUtils.hasText(sourceImageUrl)) {
+            payload.put("image", sourceImageUrl);
+        }
         return payload;
+    }
+
+    /** Identifica se o payload deve usar o endpoint image-to-video. */
+    private boolean isImageToVideoPayload(Map<String, Object> payload) {
+        Object image = payload.get("image");
+        return image instanceof String imageUrl && StringUtils.hasText(imageUrl);
+    }
+
+    /** Resolve URL de imagem aprovada a partir do metadata estruturado do job. */
+    private String resolveSourceImageUrl(JsonNode metadata) {
+        return firstText(metadata,
+                "/image_to_video/source_image_url",
+                "/image_to_video/reference_image_url",
+                "/characterImageReferenceUrl",
+                "/promptImage");
     }
 
     /** Monta prompt orientado ao PDE MUSA e às diretivas visuais do job. */
@@ -254,6 +289,7 @@ public class KlingVideoProvider implements VideoProvider {
         metadata.put("aspect_ratio", properties.getProviders().getKling().getAspectRatio());
         metadata.put("mode", properties.getProviders().getKling().getMode());
         metadata.put("duration_seconds", parseDurationSeconds(properties.getProviders().getKling().getDuration()));
+        metadata.put("modality", isImageToVideoPayload(request) ? "image_to_video" : "text_to_video");
         metadata.put("cost_usd", estimateCostUsd());
         metadata.put("pricing_source", "Kling API pricing varies by model, mode, resolution and duration");
         metadata.put("request", request);
@@ -282,6 +318,35 @@ public class KlingVideoProvider implements VideoProvider {
                     "Kling retornou erro em %s: code=%s message=%s"
                             .formatted(operation, response.path("code").asText(), response.path("message").asText()));
         }
+    }
+
+    /** Converte erro HTTP do provider em falha auditável com corpo sanitizado. */
+    private VideoProviderException providerHttpError(SalesVideoJob job,
+                                                     String operation,
+                                                     String path,
+                                                     WebClientResponseException ex) {
+        String body = sanitizeProviderBody(ex.getResponseBodyAsString());
+        log.warn("Kling retornou erro HTTP; jobId={} operation={} status={} url={} responseBody={}",
+                job == null ? null : job.id(),
+                operation,
+                ex.getStatusCode().value(),
+                resolveBaseUrl() + path,
+                body,
+                ex);
+        String code = ex.getStatusCode().value() == 429 ? "PROVIDER_RATE_LIMIT" : "PROVIDER_RENDER_FAILED";
+        return new VideoProviderException(code,
+                "Kling retornou HTTP %d em %s: %s"
+                        .formatted(ex.getStatusCode().value(), operation, body),
+                ex);
+    }
+
+    /** Limita corpo de erro externo para log e retorno sem vazar conteúdo excessivo. */
+    private String sanitizeProviderBody(String body) {
+        if (!StringUtils.hasText(body)) {
+            return "sem corpo";
+        }
+        String normalized = body.replaceAll("[\\r\\n\\t]+", " ").trim();
+        return normalized.length() > 1200 ? normalized.substring(0, 1200) : normalized;
     }
 
     /** Extrai URL de vídeo aceitando formatos atuais e variações comuns do Kling. */

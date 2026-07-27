@@ -5,6 +5,7 @@ import {
   GitBranch,
   CircleDollarSign,
   Eye,
+  GitCompare,
   Image as ImageIcon,
   Loader2,
   Pencil,
@@ -408,6 +409,13 @@ export default function ProductListPage() {
                       >
                         <CircleDollarSign size={16} aria-hidden="true" />
                         Financeiro
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/products/${product.id}/experiment-comparison`}
+                      >
+                        <GitCompare size={16} aria-hidden="true" />
+                        Comparar experimentos
                       </Link>
                       {showPdeJourneyAction && (
                         <Link

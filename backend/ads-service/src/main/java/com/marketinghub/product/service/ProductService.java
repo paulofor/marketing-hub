@@ -24,6 +24,9 @@ import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.service.financialsummary.ProductFinancialAmountResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialLineResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
+import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonExperimentResponse;
+import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonFunnelStageResponse;
+import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoDecisionRuleResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanItemResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
@@ -50,11 +53,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Base64;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -66,6 +72,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ProductService {
   private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
+  private static final Pattern EXPERIMENT_ID_PATTERN =
+      Pattern.compile("(?i)(?:experimento|experiment|exp)[^0-9]*(\\d+)|#(\\d+)");
 
   private final ProductRepository repository;
   private final InstagramAccountRepository accountRepository;
@@ -331,6 +339,243 @@ public class ProductService {
         List.of(videoProduction, media, pdeProduction, otherCosts),
         revenue,
         profit);
+  }
+
+  /** Consolida experimentos do mesmo produto para comparação comercial automática. */
+  @Transactional(readOnly = true)
+  public ProductExperimentComparisonResponse getExperimentComparison(Long productId) {
+    Product product = getProduct(productId);
+    List<Long> explicitExperimentIds = extractExperimentIds(product.getAssociatedExperiments());
+    List<Object> params = new ArrayList<>();
+    StringBuilder where = new StringBuilder(" WHERE 1 = 0");
+    if (product.getMarketNiche() != null && product.getMarketNiche().getId() != null) {
+      where.append(" OR e.niche_id = ?");
+      params.add(product.getMarketNiche().getId());
+    }
+    if (!explicitExperimentIds.isEmpty()) {
+      where.append(" OR e.id IN (");
+      where.append("?,".repeat(explicitExperimentIds.size()));
+      where.setLength(where.length() - 1);
+      where.append(")");
+      params.addAll(explicitExperimentIds);
+    }
+    if (params.isEmpty()) {
+      return new ProductExperimentComparisonResponse(
+          product.getId(),
+          product.getName(),
+          product.getSlug(),
+          product.getCommercialStatus(),
+          "Vincule o produto a um nicho ou informe experimentos associados para comparar histórico.",
+          List.of());
+    }
+
+    String sql =
+        """
+        SELECT e.id AS experiment_id,
+               e.name AS experiment_name,
+               e.status AS experiment_status,
+               e.campaign_objective AS campaign_objective,
+               e.experiment_type AS experiment_type,
+               e.start_date AS start_date,
+               e.end_date AS end_date,
+               e.daily_budget AS daily_budget,
+               e.unit_price_brl AS unit_price_brl,
+               e.updated_at AS updated_at,
+               e.hypothesis AS hypothesis,
+               e.funnel_promise AS funnel_promise,
+               e.learned_lessons AS learned_lessons,
+               COALESCE(metric.impressions, 0) AS impressions,
+               COALESCE(metric.reach, 0) AS reach,
+               COALESCE(metric.clicks, 0) AS clicks,
+               COALESCE(metric.leads, 0) AS leads,
+               COALESCE(metric.spend, 0) AS spend,
+               COALESCE(metric.cpc, 0) AS cpc,
+               COALESCE(metric.cpl, 0) AS cpl,
+               (
+                   SELECT fac.status
+                   FROM facebook_ads_campaign fac
+                   WHERE fac.experiment_id = e.id
+                   ORDER BY fac.updated_at DESC, fac.created_at DESC
+                   LIMIT 1
+               ) AS campaign_status,
+               (
+                   SELECT COUNT(*)
+                   FROM creative_variant cv
+                   WHERE cv.experiment_id = e.id
+               ) AS total_creatives,
+               CASE WHEN e.creative_approved = 1 THEN (
+                   SELECT COUNT(*)
+                   FROM creative_variant cv
+                   WHERE cv.experiment_id = e.id
+               ) ELSE 0 END AS approved_creatives
+        FROM experiment e
+        LEFT JOIN experiment_campaign_metric metric ON metric.experiment_id = e.id
+        """
+            + where
+            + " ORDER BY e.updated_at DESC, e.id DESC";
+    List<ProductExperimentComparisonExperimentResponse> experiments =
+        jdbcTemplate.query(
+            sql,
+            (rs, rowNum) -> {
+              Long experimentId = rs.getLong("experiment_id");
+              List<ProductExperimentComparisonFunnelStageResponse> funnelStages =
+                  listFunnelStages(experimentId);
+              long impressions = rs.getLong("impressions");
+              long clicks = rs.getLong("clicks");
+              long leads = rs.getLong("leads");
+              BigDecimal spend = rs.getBigDecimal("spend");
+              return new ProductExperimentComparisonExperimentResponse(
+                  experimentId,
+                  rs.getString("experiment_name"),
+                  rs.getString("experiment_status"),
+                  rs.getString("campaign_status"),
+                  rs.getString("campaign_objective"),
+                  rs.getString("experiment_type"),
+                  rs.getDate("start_date") != null ? rs.getDate("start_date").toLocalDate() : null,
+                  rs.getDate("end_date") != null ? rs.getDate("end_date").toLocalDate() : null,
+                  rs.getBigDecimal("daily_budget"),
+                  rs.getBigDecimal("unit_price_brl"),
+                  impressions,
+                  rs.getLong("reach"),
+                  clicks,
+                  leads,
+                  spend,
+                  rs.getBigDecimal("cpc"),
+                  rs.getBigDecimal("cpl"),
+                  rs.getLong("approved_creatives"),
+                  rs.getLong("total_creatives"),
+                  funnelStages,
+                  rs.getString("hypothesis"),
+                  rs.getString("funnel_promise"),
+                  rs.getString("learned_lessons"),
+                  recommendExperimentAction(impressions, clicks, leads, spend, funnelStages),
+                  rs.getTimestamp("updated_at") != null
+                      ? rs.getTimestamp("updated_at").toInstant()
+                      : null);
+            },
+            params.toArray());
+    return new ProductExperimentComparisonResponse(
+        product.getId(),
+        product.getName(),
+        product.getSlug(),
+        product.getCommercialStatus(),
+        recommendProductAction(experiments),
+        experiments);
+  }
+
+  /** Extrai identificadores numéricos de experimentos informados no cadastro comercial. */
+  private List<Long> extractExperimentIds(String associatedExperiments) {
+    if (!StringUtils.hasText(associatedExperiments)) {
+      return List.of();
+    }
+    Matcher matcher = EXPERIMENT_ID_PATTERN.matcher(associatedExperiments);
+    List<Long> ids = new ArrayList<>();
+    while (matcher.find()) {
+      String rawId = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+      if (rawId != null) {
+        ids.add(Long.parseLong(rawId));
+      }
+    }
+    return ids.stream().distinct().toList();
+  }
+
+  /** Lista as etapas de funil com eventos registrados para um experimento. */
+  private List<ProductExperimentComparisonFunnelStageResponse> listFunnelStages(Long experimentId) {
+    return jdbcTemplate.query(
+        """
+        SELECT stage, COUNT(*) AS total
+        FROM experiment_funnel_event
+        WHERE experiment_id = ?
+        GROUP BY stage
+        ORDER BY MIN(id)
+        """,
+        (rs, rowNum) -> {
+          String stageCode = rs.getString("stage");
+          return new ProductExperimentComparisonFunnelStageResponse(
+              stageCode, labelFunnelStage(stageCode), rs.getLong("total"));
+        },
+        experimentId);
+  }
+
+  /** Traduz códigos canônicos de funil para nomes comerciais legíveis. */
+  private String labelFunnelStage(String stageCode) {
+    if (stageCode == null) {
+      return "Etapa não informada";
+    }
+    return switch (stageCode) {
+      case "VISUALIZACAO_ANUNCIO" -> "Visualização do anúncio";
+      case "ACESSO_FORM_LEAD" -> "Acesso ao formulário de lead";
+      case "VISUALIZACAO_FORM" -> "Visualização do formulário";
+      case "ENVIO_FORM" -> "Envio do formulário";
+      case "ABERTURA_EMAIL_AMOSTRA" -> "Abertura do e-mail de amostra";
+      case "ACESSO_CHECKOUT" -> "Acesso ao checkout";
+      case "COMPRA" -> "Compra";
+      case "ABERTURA_EMAIL_COMPRA" -> "Abertura do e-mail de compra";
+      case "DOWNLOAD_MATERIAL_PAGO" -> "Download do material pago";
+      default -> stageCode;
+    };
+  }
+
+  /** Recomenda a próxima ação de marketing a partir dos sinais comerciais do experimento. */
+  private String recommendExperimentAction(
+      long impressions,
+      long clicks,
+      long leads,
+      BigDecimal spend,
+      List<ProductExperimentComparisonFunnelStageResponse> funnelStages) {
+    long checkoutAccesses = funnelTotal(funnelStages, "ACESSO_CHECKOUT");
+    long purchases = funnelTotal(funnelStages, "COMPRA");
+    if (purchases > 0) {
+      return "Escalar com cautela e criar variação para aumentar volume mantendo a promessa.";
+    }
+    if (checkoutAccesses > 0) {
+      return "Aprofundar oferta e checkout: existe intenção, mas ainda falta compra registrada.";
+    }
+    if (clicks > 0 && leads == 0 && funnelStages.isEmpty()) {
+      return "Corrigir ativação pós-clique: o anúncio gera interesse, mas o funil não registra entrada.";
+    }
+    if (impressions >= 100 && clicks == 0) {
+      return "Revisar criativo e ângulo: houve entrega, mas sem clique suficiente.";
+    }
+    if (spend != null && spend.compareTo(new BigDecimal("20.00")) >= 0 && leads == 0) {
+      return "Pausar ou corrigir antes de gastar mais: investimento inicial sem avanço no funil.";
+    }
+    return "Aguardar mais dados antes de decidir; ainda não há sinal comercial suficiente.";
+  }
+
+  /** Soma eventos de uma etapa do funil no resumo comparativo. */
+  private long funnelTotal(
+      List<ProductExperimentComparisonFunnelStageResponse> funnelStages, String stageCode) {
+    return funnelStages.stream()
+        .filter(stage -> stage.stageCode().equals(stageCode))
+        .mapToLong(ProductExperimentComparisonFunnelStageResponse::total)
+        .sum();
+  }
+
+  /** Resume a ação recomendada para o conjunto de experimentos do produto. */
+  private String recommendProductAction(
+      List<ProductExperimentComparisonExperimentResponse> experiments) {
+    if (experiments.isEmpty()) {
+      return "Sem histórico comparável; criar ou vincular experimentos antes de decidir escala.";
+    }
+    boolean hasPurchase =
+        experiments.stream()
+            .flatMap(experiment -> experiment.funnelStages().stream())
+            .anyMatch(stage -> "COMPRA".equals(stage.stageCode()) && stage.total() > 0);
+    if (hasPurchase) {
+      return "Priorizar o experimento com compra registrada e criar variações de escala sem trocar a promessa central.";
+    }
+    boolean hasClicksWithoutFunnel =
+        experiments.stream()
+            .anyMatch(
+                experiment ->
+                    experiment.clicks() != null
+                        && experiment.clicks() > 0
+                        && experiment.funnelStages().isEmpty());
+    if (hasClicksWithoutFunnel) {
+      return "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos.";
+    }
+    return "Comparar os criativos e manter rodando apenas testes com entrega suficiente para aprendizado.";
   }
 
   /** Monta o plano recomendado de vídeos orgânicos para conduzir desconhecidos ao desejo. */

@@ -91,6 +91,14 @@ describe("ProductListPage", () => {
       name: /Financeiro/i,
     });
     expect(financialLink).toHaveAttribute("href", "/products/1/financial");
+
+    const comparisonLink = screen.getByRole("link", {
+      name: /Comparar experimentos/i,
+    });
+    expect(comparisonLink).toHaveAttribute(
+      "href",
+      "/products/1/experiment-comparison",
+    );
   });
 
   it("shows empty state when there are no products", async () => {

@@ -41,13 +41,23 @@ services:
       - pde-platform-data:/data/pde
     networks:
       - pde-platform-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail --silent http://127.0.0.1:8096/actuator/health >/dev/null || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
 
   pde-platform-frontend:
     image: ${PDE_PLATFORM_FRONTEND_IMAGE:?PDE_PLATFORM_FRONTEND_IMAGE is required}
     container_name: pde-platform-frontend
     depends_on:
       pde-platform-backend:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     ports:
       - "${PDE_PLATFORM_FRONTEND_PORT:-5176}:80"
@@ -72,7 +82,7 @@ services:
     container_name: pde-ai-worker
     depends_on:
       pde-platform-backend:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     environment:
       PDE_BACKEND_URL: ${PDE_BACKEND_URL:-http://pde-platform-backend:8096}

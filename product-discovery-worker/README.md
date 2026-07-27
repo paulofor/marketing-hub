@@ -38,11 +38,6 @@ O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
 O workflow `Product Discovery Worker CI` publica o container no host operacional de
 workers `191.252.120.96`.
 
-O deploy roda automaticamente após merge na branch `main` ou `master` quando houver
-alteração no worker ou no workflow. A imagem aplicada no host usa tag imutável por
-commit (`sha-<commit>`), mantendo também a tag `latest` apenas como conveniência de
-registro.
-
 No deploy de produção, o provider padrão é Brave, com busca direcionada ao Brasil
 (`PRODUCT_DISCOVERY_SEARCH_COUNTRY=br`, `PRODUCT_DISCOVERY_SEARCH_LANGUAGE=pt-br`).
 A chave deve existir no servidor em:
@@ -55,16 +50,10 @@ O compose de produção monta esse arquivo como Docker secret em
 `/run/secrets/brave_search_api_key` e o worker lê pelo
 `BRAVE_SEARCH_API_KEY_FILE`.
 
-O projeto Compose de produção usa o nome `marketinghub-product-discovery-worker`,
-para isolar containers, rede e lifecycle dos demais workers.
-
 ## Health operacional
 
 O worker expõe `GET /healthz` e `GET /health` na porta interna `8080`. Em
 produção, o Compose publica o endpoint apenas em `127.0.0.1:18081` por padrão.
-O workflow só conclui o deploy depois que `http://127.0.0.1:18081/healthz`
-responde com sucesso no host. A imagem também possui `HEALTHCHECK` Docker interno
-contra `/healthz`.
 
 O payload informa o provider ativo, status da chave Brave sem revelar o segredo,
 último polling e último ciclo processado:

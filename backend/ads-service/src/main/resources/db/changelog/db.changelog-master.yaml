@@ -1456,5 +1456,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-07-27-musa-pde-slot-v5-v6-governance.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-07-24-experiment-learned-lessons.yaml
       relativeToChangelogFile: true

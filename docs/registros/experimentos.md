@@ -1,3 +1,10 @@
+## 2026-07-27 — Experimento 74: governanca de versoes PDE MUSA
+
+- causa-raiz confirmada no banco: o experimento 74 estava em execucao apontando para `https://v5.clubemusa.com.br`, mas o slot produtivo `v5` nao carregava `source_experiment_id`, fazendo a tela mostrar a versao sem o experimento que mede o trafego.
+- decisao comercial: nao alterar a primeira dobra da v5 no meio da leitura do experimento 74; a v5 passa a ficar vinculada e ativa para o experimento 74, enquanto a hipotese com video inicial motivacional nasce como slot planejado `v6`.
+- foi feito: a tela de versoes PDE separa versoes ativas/prontas/planejadas das pausadas/encerradas, mostra observacoes comerciais por versao e permite informar o experimento origem no cadastro do slot.
+- prevencao de recorrencia: proximas variacoes relevantes de primeira dobra devem nascer como slot versionado com experimento origem explicito antes de liberar trafego.
+
 ## 2026-07-26 — Experimento 69: entrada MUSA com vídeo explicativo inicial
 
 - decisão comercial: não criar novo experimento; o experimento 69 continua sendo o teste principal para medir se o vídeo explicativo inicial aumenta avanço real no PDE MUSA.

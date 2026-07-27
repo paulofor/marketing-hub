@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-27-musa-pde-slot-v5-v6-governance.yaml
+  - changeSet:
+      id: 2026-07-27-musa-pde-slot-v5-v6-governance-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+        - sqlCheck:
+            expectedResult: "1"
+            sql: "SELECT COUNT(*) FROM experiment WHERE id = 74"
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pde_production_slot
+                 SET status = 'ACTIVE',
+                     source_experiment_id = 74,
+                     notes = 'Versao v5 em validacao pelo experimento 74. Nao alterar a primeira dobra durante a leitura comercial; nova hipotese com video inicial deve entrar como v6 planejada.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE product_slug = 'metodo-musa-7-dias'
+                 AND slot_code = 'v5';
+  - changeSet:
+      id: 2026-07-27-musa-pde-slot-v5-v6-governance-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pde_production_slot (
+                slot_code,
+                product_slug,
+                domain,
+                public_url,
+                backend_url,
+                experience_version,
+                target_environment,
+                status,
+                source_experiment_id,
+                notes
+              ) VALUES (
+                'v6',
+                'metodo-musa-7-dias',
+                'v6.clubemusa.com.br',
+                'https://v6.clubemusa.com.br',
+                NULL,
+                'musa-pde-entry-v6-video-motivacional',
+                'production-v6',
+                'PLANNED',
+                NULL,
+                'Versao planejada para testar video inicial motivacional antes do diagnostico, preservando a leitura da v5 no experimento 74.'
+              )
+              ON DUPLICATE KEY UPDATE
+                domain = VALUES(domain),
+                public_url = VALUES(public_url),
+                backend_url = VALUES(backend_url),
+                experience_version = VALUES(experience_version),
+                target_environment = VALUES(target_environment),
+                status = VALUES(status),
+                notes = VALUES(notes),
+                updated_at = CURRENT_TIMESTAMP;

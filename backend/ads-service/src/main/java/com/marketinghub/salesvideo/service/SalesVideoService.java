@@ -11,6 +11,7 @@ import com.marketinghub.salesvideo.dto.CreateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoCommercialPlaybookRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
+import com.marketinghub.salesvideo.dto.CreateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.GenerateSalesVideoScriptRequest;
 import com.marketinghub.salesvideo.dto.JobClaimRequest;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
@@ -35,6 +36,8 @@ import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
+import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
+import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -51,18 +54,41 @@ public class SalesVideoService {
     private final LandingVideoSlotService slotService;
     private final SalesVideoAssetService assetService;
     private final SalesVideoCommercialInsightsService commercialInsightsService;
+    private final VideoProjectService videoProjectService;
 
     /** Inicializa a fachada com os componentes internos do módulo de vídeo. */
     public SalesVideoService(SalesVideoProfileService profileService,
                              SalesVideoJobService jobService,
                              LandingVideoSlotService slotService,
                              SalesVideoAssetService assetService,
-                             SalesVideoCommercialInsightsService commercialInsightsService) {
+                             SalesVideoCommercialInsightsService commercialInsightsService,
+                             VideoProjectService videoProjectService) {
         this.profileService = profileService;
         this.jobService = jobService;
         this.slotService = slotService;
         this.assetService = assetService;
         this.commercialInsightsService = commercialInsightsService;
+        this.videoProjectService = videoProjectService;
+    }
+
+    /** Lista projetos editáveis de vídeo do tenant atual. */
+    public List<VideoProjectDto> listVideoProjects() {
+        return videoProjectService.listProjects();
+    }
+
+    /** Cria um projeto editável de vídeo no estúdio. */
+    public VideoProjectDto createVideoProject(CreateVideoProjectRequest request) {
+        return videoProjectService.createProject(request);
+    }
+
+    /** Consulta um projeto editável de vídeo. */
+    public VideoProjectDto getVideoProject(Long projectId) {
+        return videoProjectService.getProject(projectId);
+    }
+
+    /** Atualiza um projeto editável de vídeo. */
+    public VideoProjectDto updateVideoProject(Long projectId, UpdateVideoProjectRequest request) {
+        return videoProjectService.updateProject(projectId, request);
     }
 
     /** Cria um perfil de vídeo para o produto informado. */

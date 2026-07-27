@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: Video Studio API
+  version: 1.0.0
+  description: Contratos administrativos para criação e edição de projetos de vídeo do Marketing Hub.
+servers:
+  - url: http://191.252.181.168:8000
+    description: Backend operacional
+tags:
+  - name: VideoStudio
+    description: Briefings persistidos para vídeos de produtos, campanhas, PDEs e orgânicos.
+paths:
+  /api/sales-videos/projects:
+    get:
+      tags: [VideoStudio]
+      summary: Lista projetos editáveis de vídeo do tenant.
+      responses:
+        '200':
+          description: Projetos encontrados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VideoProjectDto'
+    post:
+      tags: [VideoStudio]
+      summary: Cria projeto editável de vídeo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVideoProjectRequest'
+      responses:
+        '201':
+          description: Projeto criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoProjectDto'
+  /api/sales-videos/projects/{projectId}:
+    get:
+      tags: [VideoStudio]
+      summary: Consulta projeto editável de vídeo.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Projeto encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoProjectDto'
+    patch:
+      tags: [VideoStudio]
+      summary: Atualiza projeto editável de vídeo.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVideoProjectRequest'
+      responses:
+        '200':
+          description: Projeto atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoProjectDto'
+components:
+  parameters:
+    ProjectId:
+      in: path
+      name: projectId
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    VideoProjectStatus:
+      type: string
+      enum:
+        - DRAFT
+        - READY_FOR_SCRIPT
+        - READY_FOR_RENDER
+        - IN_PRODUCTION
+        - READY_FOR_REVIEW
+        - APPROVED
+        - ARCHIVED
+    CreateVideoProjectRequest:
+      type: object
+      required:
+        - contextType
+        - productionMode
+        - targetChannel
+        - format
+        - title
+        - objective
+      properties:
+        productId: { type: integer, format: int64, nullable: true }
+        experimentId: { type: integer, format: int64, nullable: true }
+        salesVideoProfileId: { type: integer, format: int64, nullable: true }
+        campaignKey: { type: string, nullable: true }
+        contextType: { type: string, example: PRODUCT }
+        productionMode: { type: string, example: MIXED_AI_SCENES }
+        targetChannel: { type: string, example: INSTAGRAM_REELS }
+        format: { type: string, example: VERTICAL_9_16 }
+        title: { type: string }
+        objective: { type: string }
+        funnelStage: { type: string, nullable: true }
+        primaryMetric: { type: string, nullable: true }
+        hookText: { type: string, nullable: true }
+        scriptText: { type: string, nullable: true }
+        scenePlan: { type: string, nullable: true }
+        visualReferences: { type: string, nullable: true }
+        voiceoverPlan: { type: string, nullable: true }
+        soundtrackPlan: { type: string, nullable: true }
+        captionPlan: { type: string, nullable: true }
+        ctaText: { type: string, nullable: true }
+        targetDurationSeconds: { type: integer, nullable: true }
+        providerPlan: { type: string, nullable: true }
+        editingNotes: { type: string, nullable: true }
+        qualityGate: { type: string, nullable: true }
+        status:
+          $ref: '#/components/schemas/VideoProjectStatus'
+        createdBy: { type: string, nullable: true }
+    UpdateVideoProjectRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateVideoProjectRequest'
+      properties:
+        updatedBy: { type: string, nullable: true }
+    VideoProjectDto:
+      allOf:
+        - $ref: '#/components/schemas/CreateVideoProjectRequest'
+      properties:
+        id: { type: integer, format: int64 }
+        tenantId: { type: string }
+        updatedBy: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }

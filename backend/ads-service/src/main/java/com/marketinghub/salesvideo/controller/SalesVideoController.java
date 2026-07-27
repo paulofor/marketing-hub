@@ -13,6 +13,7 @@ import com.marketinghub.salesvideo.dto.CreateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoCommercialPlaybookRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
+import com.marketinghub.salesvideo.dto.CreateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.GenerateSalesVideoScriptRequest;
 import com.marketinghub.salesvideo.dto.JobClaimRequest;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
@@ -37,6 +38,8 @@ import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
+import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
+import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -67,6 +70,32 @@ public class SalesVideoController {
     public SalesVideoController(SalesVideoService salesVideoService, AssetMapper assetMapper) {
         this.salesVideoService = salesVideoService;
         this.assetMapper = assetMapper;
+    }
+
+    /** Lista projetos editáveis do estúdio de vídeos. */
+    @GetMapping("/api/sales-videos/projects")
+    public List<VideoProjectDto> listVideoProjects() {
+        return salesVideoService.listVideoProjects();
+    }
+
+    /** Cria um projeto editável no estúdio de vídeos. */
+    @PostMapping("/api/sales-videos/projects")
+    @ResponseStatus(HttpStatus.CREATED)
+    public VideoProjectDto createVideoProject(@Valid @RequestBody CreateVideoProjectRequest request) {
+        return salesVideoService.createVideoProject(request);
+    }
+
+    /** Consulta um projeto editável do estúdio de vídeos. */
+    @GetMapping("/api/sales-videos/projects/{projectId}")
+    public VideoProjectDto getVideoProject(@PathVariable Long projectId) {
+        return salesVideoService.getVideoProject(projectId);
+    }
+
+    /** Atualiza um projeto editável do estúdio de vídeos. */
+    @PatchMapping("/api/sales-videos/projects/{projectId}")
+    public VideoProjectDto updateVideoProject(@PathVariable Long projectId,
+                                              @Valid @RequestBody UpdateVideoProjectRequest request) {
+        return salesVideoService.updateVideoProject(projectId, request);
     }
 
     /** Cria um perfil de vídeo para um produto. */

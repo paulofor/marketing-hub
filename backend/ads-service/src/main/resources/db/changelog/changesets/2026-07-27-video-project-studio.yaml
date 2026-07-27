@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-27-video-project-studio-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - tableExists:
+            tableName: experiment
+        - tableExists:
+            tableName: sales_video_profile
+        - not:
+            tableExists:
+              tableName: video_project
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE video_project (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                tenant_id VARCHAR(64) NOT NULL DEFAULT 'default',
+                product_id BIGINT NULL,
+                experiment_id BIGINT NULL,
+                sales_video_profile_id BIGINT NULL,
+                campaign_key VARCHAR(191) NULL,
+                context_type VARCHAR(64) NOT NULL,
+                production_mode VARCHAR(64) NOT NULL,
+                target_channel VARCHAR(64) NOT NULL,
+                format VARCHAR(64) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                objective VARCHAR(1024) NOT NULL,
+                funnel_stage VARCHAR(64) NULL,
+                primary_metric VARCHAR(191) NULL,
+                hook_text VARCHAR(1024) NULL,
+                script_text LONGTEXT NULL,
+                scene_plan LONGTEXT NULL,
+                visual_references LONGTEXT NULL,
+                voiceover_plan LONGTEXT NULL,
+                soundtrack_plan LONGTEXT NULL,
+                caption_plan LONGTEXT NULL,
+                cta_text VARCHAR(1024) NULL,
+                target_duration_seconds INT NULL,
+                provider_plan LONGTEXT NULL,
+                editing_notes LONGTEXT NULL,
+                quality_gate LONGTEXT NULL,
+                status VARCHAR(64) NOT NULL DEFAULT 'DRAFT',
+                created_by VARCHAR(191) NULL,
+                updated_by VARCHAR(191) NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                CONSTRAINT pk_video_project PRIMARY KEY (id),
+                CONSTRAINT fk_video_project_product FOREIGN KEY (product_id) REFERENCES product (id),
+                CONSTRAINT fk_video_project_experiment FOREIGN KEY (experiment_id) REFERENCES experiment (id),
+                CONSTRAINT fk_video_project_sales_video_profile FOREIGN KEY (sales_video_profile_id) REFERENCES sales_video_profile (id)
+              );
+              CREATE INDEX idx_video_project_tenant_updated ON video_project (tenant_id, updated_at);
+              CREATE INDEX idx_video_project_product ON video_project (product_id, updated_at);
+              CREATE INDEX idx_video_project_experiment ON video_project (experiment_id, updated_at);

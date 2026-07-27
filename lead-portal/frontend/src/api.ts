@@ -212,6 +212,10 @@ export interface FlowPageAnalyticsPayload {
   firstContentfulPaintMs?: number | null;
   resourceErrorCount?: number | null;
   connectionType?: string | null;
+  videoId?: string | null;
+  videoCurrentTimeMs?: number | null;
+  videoDurationMs?: number | null;
+  videoPercent?: number | null;
 }
 
 export async function registerFlowPageAnalytics(

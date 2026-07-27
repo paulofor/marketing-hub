@@ -7,6 +7,7 @@ import {
   registerFlowPageAnalytics,
   registerFlowRenderComplete,
   submitFlowSubmission,
+  type FlowPageAnalyticsPayload,
 } from "../api";
 import FlowForm from "../components/FlowForm";
 import SubmissionSuccessCard from "../components/SubmissionSuccessCard";
@@ -52,6 +53,16 @@ export default function FlowPage() {
       console.warn(`Falha ao registrar ${eventType} do fluxo`, trackError);
     });
   };
+
+  useEffect(() => {
+    if (!resolvedFlowSlug || testMode || typeof document === "undefined") {
+      return;
+    }
+    return attachVideoAnalyticsToDocument(document, {
+      flowSlug: resolvedFlowSlug,
+      rootElement: document.body,
+    });
+  }, [resolvedFlowSlug, testMode, customTemplateHtml]);
 
   const handleFormStarted = () => {
     if (hasTrackedFormStart) {
@@ -792,16 +803,98 @@ function attachCustomTemplateBridgeToDocument(
   };
 
   doc.addEventListener("submit", handleFormSubmit, true);
+  const detachVideoAnalytics = attachVideoAnalyticsToDocument(doc, options);
 
   return () => {
     doc.removeEventListener("click", handleAnchorClick, true);
     doc.removeEventListener("input", handleFormStart, true);
     doc.removeEventListener("change", handleFormStart, true);
     doc.removeEventListener("submit", handleFormSubmit, true);
+    detachVideoAnalytics();
   };
 }
 
-function buildFlowPageAnalyticsPayload(eventType: "form_start" | "form_submit") {
+function attachVideoAnalyticsToDocument(doc: Document, options: Pick<CustomTemplateBridgeOptions, "flowSlug" | "rootElement">) {
+  if (isInternalTestTraffic()) {
+    return () => {};
+  }
+  const videos = Array.from(doc.querySelectorAll("video"));
+  const cleanups: Array<() => void> = [];
+  videos.forEach((video, index) => {
+    if (options.rootElement && !options.rootElement.contains(video)) {
+      return;
+    }
+    const state = { partial: false, complete: false };
+    const videoId =
+      video.getAttribute("data-video-id") ??
+      video.id ??
+      video.currentSrc ??
+      video.src ??
+      `video-${index}`;
+    const emitVideoEvent = (eventType: "video_progress" | "video_complete") => {
+      const durationMs =
+        Number.isFinite(video.duration) && video.duration > 0
+          ? Math.round(video.duration * 1000)
+          : null;
+      const currentTimeMs =
+        Number.isFinite(video.currentTime) && video.currentTime > 0
+          ? Math.round(video.currentTime * 1000)
+          : null;
+      const videoPercent =
+        durationMs && currentTimeMs
+          ? Math.min(100, Math.round((currentTimeMs / durationMs) * 100))
+          : null;
+      registerFlowPageAnalytics(
+        options.flowSlug,
+        buildFlowPageAnalyticsPayload(eventType, {
+          videoId,
+          videoCurrentTimeMs: currentTimeMs,
+          videoDurationMs: durationMs,
+          videoPercent,
+          elapsedMs: currentTimeMs,
+          visibleMs: currentTimeMs,
+        }),
+      ).catch((trackError) => {
+        console.warn(`Falha ao registrar ${eventType} do vídeo`, trackError);
+      });
+    };
+    const onTimeUpdate = () => {
+      if (!Number.isFinite(video.duration) || video.duration <= 0) {
+        return;
+      }
+      const watchedRate = video.currentTime / video.duration;
+      if (!state.partial && (video.currentTime >= 5 || watchedRate >= 0.25)) {
+        state.partial = true;
+        emitVideoEvent("video_progress");
+      }
+      if (!state.complete && watchedRate >= 0.95) {
+        state.complete = true;
+        emitVideoEvent("video_complete");
+      }
+    };
+    const onEnded = () => {
+      if (state.complete) {
+        return;
+      }
+      state.complete = true;
+      emitVideoEvent("video_complete");
+    };
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("ended", onEnded);
+    cleanups.push(() => {
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("ended", onEnded);
+    });
+  });
+  return () => {
+    cleanups.forEach((cleanup) => cleanup());
+  };
+}
+
+function buildFlowPageAnalyticsPayload(
+  eventType: "form_start" | "form_submit" | "video_progress" | "video_complete",
+  extra?: Partial<FlowPageAnalyticsPayload>,
+) {
   const now = new Date().toISOString();
   return {
     eventId: typeof crypto !== "undefined" && crypto.randomUUID
@@ -817,6 +910,7 @@ function buildFlowPageAnalyticsPayload(eventType: "form_start" | "form_submit") 
     operatingSystem: resolveOperatingSystem(),
     screenWidth: Math.round(window.innerWidth || document.documentElement.clientWidth || screen.width || 0),
     screenHeight: Math.round(window.innerHeight || document.documentElement.clientHeight || screen.height || 0),
+    ...(extra ?? {}),
   };
 }
 

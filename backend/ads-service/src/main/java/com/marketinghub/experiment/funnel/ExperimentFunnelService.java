@@ -472,6 +472,10 @@ public class ExperimentFunnelService {
             validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para checkout_click");
             validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para checkout_click");
         }
+        if ("video_progress".equalsIgnoreCase(eventType) || "video_complete".equalsIgnoreCase(eventType)) {
+            validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para eventos de vídeo");
+            validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para eventos de vídeo");
+        }
         if ("form_start".equalsIgnoreCase(eventType) || "form_submit".equalsIgnoreCase(eventType)) {
             validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para eventos de formulário");
             validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para eventos de formulário");
@@ -601,6 +605,12 @@ public class ExperimentFunnelService {
         if ("form_submit".equalsIgnoreCase(eventType)) {
             return ExperimentFunnelStage.ENVIO_FORM;
         }
+        if ("video_progress".equalsIgnoreCase(eventType)) {
+            return ExperimentFunnelStage.VIDEO_VISTO_PARCIAL;
+        }
+        if ("video_complete".equalsIgnoreCase(eventType)) {
+            return ExperimentFunnelStage.VIDEO_VISTO_COMPLETO;
+        }
         if ("checkout_click".equalsIgnoreCase(eventType) && isPurchaseIntentFunnel(experiment)) {
             return ExperimentFunnelStage.ACESSO_CHECKOUT;
         }
@@ -627,6 +637,10 @@ public class ExperimentFunnelService {
         String firstContentfulPaintMs = request.firstContentfulPaintMs() == null ? "" : request.firstContentfulPaintMs().toString();
         String resourceErrorCount = request.resourceErrorCount() == null ? "" : request.resourceErrorCount().toString();
         String connectionType = sanitizePayloadValue(request.connectionType());
+        String videoId = sanitizePayloadValue(request.videoId());
+        String videoCurrentTimeMs = request.videoCurrentTimeMs() == null ? "" : request.videoCurrentTimeMs().toString();
+        String videoDurationMs = request.videoDurationMs() == null ? "" : request.videoDurationMs().toString();
+        String videoPercent = request.videoPercent() == null ? "" : request.videoPercent().toString();
         String duration = elapsedMs == null ? "" : elapsedMs.toString();
         return "eventId=" + sanitizePayloadValue(request.eventId())
                 + ";eventType=" + sanitizePayloadValue(request.eventType())
@@ -644,7 +658,11 @@ public class ExperimentFunnelService {
                 + ";domContentLoadedMs=" + sanitizePayloadValue(domContentLoadedMs)
                 + ";firstContentfulPaintMs=" + sanitizePayloadValue(firstContentfulPaintMs)
                 + ";resourceErrorCount=" + sanitizePayloadValue(resourceErrorCount)
-                + ";connectionType=" + connectionType;
+                + ";connectionType=" + connectionType
+                + ";videoId=" + videoId
+                + ";videoCurrentTimeMs=" + sanitizePayloadValue(videoCurrentTimeMs)
+                + ";videoDurationMs=" + sanitizePayloadValue(videoDurationMs)
+                + ";videoPercent=" + sanitizePayloadValue(videoPercent);
     }
 
     /**
@@ -751,6 +769,42 @@ public class ExperimentFunnelService {
                         ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE,
                         baseline, baseline),
                 "Visualizações canônicas por page_view normalizado com fallback legado de render-complete");
+
+        mergeMetric(stages, ExperimentFunnelStage.VIDEO_VISTO_PARCIAL,
+                fetchSingleMetric("""
+                        SELECT COUNT(*) AS total,
+                               COUNT(DISTINCT NULLIF(
+                                   SUBSTRING_INDEX(SUBSTRING_INDEX(payload, 'visitorId=', -1), ';', 1),
+                                   ''
+                               )) AS unique_count,
+                               MAX(occurred_at) AS last_event
+                        FROM experiment_funnel_event
+                        WHERE experiment_id = ?
+                          AND stage = 'VIDEO_VISTO_PARCIAL'
+                          AND source = ?
+                          AND (? IS NULL OR occurred_at > ?)
+                        """, experimentId,
+                        ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
+                        baseline, baseline),
+                "Vídeos vistos parcialmente no PDE ou página publicada (video_progress)");
+
+        mergeMetric(stages, ExperimentFunnelStage.VIDEO_VISTO_COMPLETO,
+                fetchSingleMetric("""
+                        SELECT COUNT(*) AS total,
+                               COUNT(DISTINCT NULLIF(
+                                   SUBSTRING_INDEX(SUBSTRING_INDEX(payload, 'visitorId=', -1), ';', 1),
+                                   ''
+                               )) AS unique_count,
+                               MAX(occurred_at) AS last_event
+                        FROM experiment_funnel_event
+                        WHERE experiment_id = ?
+                          AND stage = 'VIDEO_VISTO_COMPLETO'
+                          AND source = ?
+                          AND (? IS NULL OR occurred_at > ?)
+                        """, experimentId,
+                        ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
+                        baseline, baseline),
+                "Vídeos vistos até o fim no PDE ou página publicada (video_complete)");
 
         mergeMetric(stages, ExperimentFunnelStage.ENVIO_FORM,
                 fetchSingleMetric("""
@@ -1086,6 +1140,12 @@ public class ExperimentFunnelService {
         renameStage(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
                 "Visualização da página de venda",
                 "Visualizações da página de venda publicadas pelo GeraSalesPage (page_view)");
+        renameStage(stages, ExperimentFunnelStage.VIDEO_VISTO_PARCIAL,
+                "Vídeo da página visto parcial",
+                "Sinal de consumo parcial do vídeo da página de venda");
+        renameStage(stages, ExperimentFunnelStage.VIDEO_VISTO_COMPLETO,
+                "Vídeo da página visto completo",
+                "Sinal de consumo completo do vídeo da página de venda");
         renameStage(stages, ExperimentFunnelStage.ACESSO_CHECKOUT,
                 "Clique no checkout",
                 "Cliques reais no checkout da página de venda (checkout_click)");
@@ -1101,6 +1161,12 @@ public class ExperimentFunnelService {
         renameStage(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
                 "Entrada na tela inicial do PED/MUSA",
                 "Visualizações da tela inicial do PED/MUSA publicadas pelo GeraSalesPage ou PDE (page_view)");
+        renameStage(stages, ExperimentFunnelStage.VIDEO_VISTO_PARCIAL,
+                "Vídeo do PDE/MUSA visto parcial",
+                "Sinal de consumo parcial do vídeo explicativo dentro do PED/MUSA");
+        renameStage(stages, ExperimentFunnelStage.VIDEO_VISTO_COMPLETO,
+                "Vídeo do PDE/MUSA visto completo",
+                "Sinal de consumo completo do vídeo explicativo dentro do PED/MUSA");
         renameStage(stages, ExperimentFunnelStage.ENVIO_FORM,
                 "Login ou criação de conta",
                 "Entradas identificadas na área PDE/MUSA por login ou criação de conta");
@@ -1144,6 +1210,8 @@ public class ExperimentFunnelService {
             return stage == ExperimentFunnelStage.VISUALIZACAO_ANUNCIO
                     || stage == ExperimentFunnelStage.ACESSO_FORM_LEAD
                     || stage == ExperimentFunnelStage.VISUALIZACAO_FORM
+                    || stage == ExperimentFunnelStage.VIDEO_VISTO_PARCIAL
+                    || stage == ExperimentFunnelStage.VIDEO_VISTO_COMPLETO
                     || stage == ExperimentFunnelStage.ENVIO_FORM
                     || stage == ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA
                     || stage == ExperimentFunnelStage.ACESSO_CHECKOUT
@@ -1157,6 +1225,8 @@ public class ExperimentFunnelService {
         return stage == ExperimentFunnelStage.VISUALIZACAO_ANUNCIO
                 || stage == ExperimentFunnelStage.ACESSO_FORM_LEAD
                 || stage == ExperimentFunnelStage.VISUALIZACAO_FORM
+                || stage == ExperimentFunnelStage.VIDEO_VISTO_PARCIAL
+                || stage == ExperimentFunnelStage.VIDEO_VISTO_COMPLETO
                 || stage == ExperimentFunnelStage.ACESSO_CHECKOUT
                 || stage == ExperimentFunnelStage.COMPRA
                 || stage == ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO;

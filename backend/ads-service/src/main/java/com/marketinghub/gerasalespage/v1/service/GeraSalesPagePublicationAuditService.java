@@ -535,6 +535,45 @@ public class GeraSalesPagePublicationAuditService {
                         emit('checkout_click', {checkoutUrl: link.href});
                       }
                     }, true);
+                    var trackedVideos = new WeakMap();
+                    function videoIdentity(video, index) {
+                      return video.getAttribute('data-video-id') || video.id || video.currentSrc || video.src || ('video-' + index);
+                    }
+                    function emitVideo(video, eventType, id) {
+                      var duration = Number.isFinite(video.duration) && video.duration > 0 ? Math.round(video.duration * 1000) : null;
+                      var current = Number.isFinite(video.currentTime) && video.currentTime > 0 ? Math.round(video.currentTime * 1000) : null;
+                      var percent = duration && current ? Math.min(100, Math.round((current / duration) * 100)) : null;
+                      emit(eventType, null, current, {
+                        videoId: id,
+                        videoCurrentTimeMs: current,
+                        videoDurationMs: duration,
+                        videoPercent: percent
+                      });
+                    }
+                    Array.prototype.slice.call(document.querySelectorAll('video')).forEach(function(video, index){
+                      var id = videoIdentity(video, index);
+                      var state = {partial:false, complete:false};
+                      trackedVideos.set(video, state);
+                      video.addEventListener('timeupdate', function(){
+                        var state = trackedVideos.get(video);
+                        if (!state || state.partial || !Number.isFinite(video.duration) || video.duration <= 0) return;
+                        var watchedEnough = video.currentTime >= 5 || (video.currentTime / video.duration) >= 0.25;
+                        if (watchedEnough) {
+                          state.partial = true;
+                          emitVideo(video, 'video_progress', id);
+                        }
+                        if (!state.complete && (video.currentTime / video.duration) >= 0.95) {
+                          state.complete = true;
+                          emitVideo(video, 'video_complete', id);
+                        }
+                      });
+                      video.addEventListener('ended', function(){
+                        var state = trackedVideos.get(video);
+                        if (!state || state.complete) return;
+                        state.complete = true;
+                        emitVideo(video, 'video_complete', id);
+                      });
+                    });
                   }
                   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
                 })();

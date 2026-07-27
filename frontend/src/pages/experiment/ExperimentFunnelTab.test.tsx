@@ -258,6 +258,8 @@ describe("ExperimentFunnelTab", () => {
 
     expect(screen.getByText(/Venda direta low-ticket/)).toBeInTheDocument();
     expect(screen.getByText("Clique para a página de venda")).toBeInTheDocument();
+    expect(screen.getByText("Vídeo da página visto parcial")).toBeInTheDocument();
+    expect(screen.getByText("Vídeo da página visto completo")).toBeInTheDocument();
     expect(screen.getByText("Clique no checkout")).toBeInTheDocument();
     expect(
       screen.queryByText("Acesso ao formulário de lead"),
@@ -285,6 +287,8 @@ describe("ExperimentFunnelTab", () => {
     );
 
     expect(screen.getByText(/Assinatura PDE\/MUSA/)).toBeInTheDocument();
+    expect(screen.getByText("Vídeo do PDE/MUSA visto parcial")).toBeInTheDocument();
+    expect(screen.getByText("Vídeo do PDE/MUSA visto completo")).toBeInTheDocument();
     expect(screen.getByText("Login ou criação de conta")).toBeInTheDocument();
     expect(screen.getByText("Assinatura aprovada")).toBeInTheDocument();
     expect(screen.getByText("Primeiro uso/ativação")).toBeInTheDocument();

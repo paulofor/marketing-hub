@@ -26,7 +26,11 @@ public record RegisterLandingPageAnalyticsEventRequest(
         Long domContentLoadedMs,
         Long firstContentfulPaintMs,
         Integer resourceErrorCount,
-        String connectionType) {
+        String connectionType,
+        String videoId,
+        Long videoCurrentTimeMs,
+        Long videoDurationMs,
+        Integer videoPercent) {
 
     /**
      * Mantém compatibilidade com emissores que ainda enviam somente o contrato original de analytics.
@@ -43,10 +47,11 @@ public record RegisterLandingPageAnalyticsEventRequest(
             Instant occurredAt,
             String userAgent,
             String deviceType,
-            String operatingSystem,
-            Integer screenWidth,
-            Integer screenHeight) {
+        String operatingSystem,
+        Integer screenWidth,
+        Integer screenHeight) {
         this(eventId, eventType, visitorId, sessionId, sectionId, visibleMs, elapsedMs, pageUrl, occurredAt, userAgent,
-                deviceType, operatingSystem, screenWidth, screenHeight, null, null, null, null, null);
+                deviceType, operatingSystem, screenWidth, screenHeight, null, null, null, null, null, null, null, null,
+                null);
     }
 }

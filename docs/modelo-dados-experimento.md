@@ -581,12 +581,14 @@ Para MUSA, este recurso deve ajudar a separar hipóteses como público amplo, p�
 ## Funil de vendas do experimento
 
 Para cada experimento passamos a acompanhar um funil operacional padronizado de
-nove etapas. As etapas são mantidas em `ExperimentFunnelStage` (código) e os
+onze etapas. As etapas são mantidas em `ExperimentFunnelStage` (código) e os
 logs ficam em `experiment_funnel_event`:
 
 - `VISUALIZACAO_ANUNCIO`
 - `ACESSO_FORM_LEAD`
 - `VISUALIZACAO_FORM`
+- `VIDEO_VISTO_PARCIAL`
+- `VIDEO_VISTO_COMPLETO`
 - `ENVIO_FORM`
 - `ABERTURA_EMAIL_AMOSTRA`
 - `ACESSO_CHECKOUT`
@@ -599,11 +601,13 @@ colunas: `id`, `experiment_id` (FK), `lead_id` (FK opcional), `stage`, `source`,
 `campaign_code`, `payload` e `occurred_at`.
 
 - O campo `campaign_code` recebe o valor enviado pelo Lead Portal via parâmetro `campaign`/`utm_campaign`, permitindo atribuir cada etapa às referências de anúncio exibidas na UI.
+- Quando a experiência possuir vídeo, o tracking público deve registrar `video_progress` como `VIDEO_VISTO_PARCIAL` ao atingir pelo menos 25% do vídeo ou 5 segundos de reprodução, e `video_complete` como `VIDEO_VISTO_COMPLETO` ao finalizar ou atingir 95% da duração. Esses eventos medem se a pessoa consumiu o mecanismo de venda antes de avançar para login, oferta, checkout ou assinatura.
 
 Além dos eventos explícitos, o backend consolida fontes automáticas por etapa:
 
 - Impressões e cliques: `experiment_campaign_metric`.
 - Visualização de formulário: `flow_access` associado ao `lead_portal_flow.slug`.
+- Consumo parcial e completo de vídeo: eventos públicos `video_progress` e `video_complete` recebidos em `experiment_funnel_event` com `source=landing-page-analytics`.
 - Envio de formulário: `lead_portal_submission` (campo `experiment_id`).
 - Abertura do e-mail de amostra e download pago: `flow_submission_image_package`
   (campos `email_opened_at` e `images_viewed_at` com `payment_purchase_id`).

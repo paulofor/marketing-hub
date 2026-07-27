@@ -31,9 +31,12 @@ import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
+import com.marketinghub.pde.PdeProductionSlot;
+import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
+import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,6 +93,8 @@ class ExperimentServiceTest {
     ExperimentFunnelEventRepository experimentFunnelEventRepository;
     @Autowired
     ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository;
+    @Autowired
+    PdeProductionSlotRepository pdeProductionSlotRepository;
 
     private InstagramAccount createInstagramAccount() {
         return instagramAccountRepository.save(
@@ -896,6 +901,62 @@ class ExperimentServiceTest {
     }
 
     @Test
+    void updateStatusRunningRejectsInactivePdeDestination() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche PDE Running Guard").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("APDE").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HPDE")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150_PDE_RUNNING_GUARD")
+                .name("Lean-Startup 150 PDE Running Guard")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("ExpPdeRunningGuard");
+        req.setHypothesis("H");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150_PDE_RUNNING_GUARD");
+        req.setSampleSize(150);
+        req.setDailyBudget(new BigDecimal("25"));
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setFollowUpActionUrl("https://v99.clubemusa.com.br/oferta?utm_source=teste");
+        Experiment experiment = service.create(req);
+        saveRegisteredCampaign(experiment, "campaign-pde-running-guard");
+        pdeProductionSlotRepository.save(PdeProductionSlot.builder()
+                .slotCode("v99")
+                .productSlug("metodo-musa-7-dias")
+                .domain("v99.clubemusa.com.br")
+                .publicUrl("https://v99.clubemusa.com.br")
+                .experienceVersion("musa-pde-entry-v99")
+                .targetEnvironment("production-v99")
+                .status(PdeProductionSlotStatus.PLANNED)
+                .sourceExperimentId(experiment.getId())
+                .notes("Versão ainda planejada para teste.")
+                .build());
+
+        assertThatThrownBy(() -> service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("Versão PDE v99 está PLANNED");
+        assertThat(experimentRepository.findById(experiment.getId()).orElseThrow().getStatus())
+                .isEqualTo(ExperimentStatus.PLANNED);
+    }
+
+    @Test
     void updateStatusPausedRequestsStopForLinkedFacebookCampaigns() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Pause Stop").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("APS").build());
@@ -953,6 +1014,25 @@ class ExperimentServiceTest {
         assertThat(stored.getStopCompletedAt()).isNull();
         assertThat(stored.getStopLastError()).isNull();
         assertThat(stored.getStopReason()).isEqualTo(FacebookCampaignStopReason.ADMIN_EXPERIMENT_PAUSED);
+    }
+
+    /** Registra uma campanha Meta mínima para permitir validar outros bloqueios de RUNNING. */
+    private void saveRegisteredCampaign(Experiment experiment, String campaignId) {
+        FacebookAccount facebookAccount = facebookAccountRepository.save(FacebookAccount.builder()
+                .name("Conta Facebook " + campaignId)
+                .adAccountId("act_" + campaignId)
+                .build());
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId(campaignId);
+        campaign.setExternalId("meta-" + campaignId);
+        campaign.setAdAccountId("act_" + campaignId);
+        campaign.setExperiment(experiment);
+        campaign.setFacebookAccount(facebookAccount);
+        campaign.setName("Campanha " + campaignId);
+        campaign.setObjective("OUTCOME_LEADS");
+        campaign.setStatus(FacebookAdStatus.ACTIVE);
+        campaign.setBudgetMode(BudgetMode.CAMPAIGN);
+        facebookAdsCampaignRepository.save(campaign);
     }
 
     @Test

@@ -181,6 +181,27 @@ test('exibe video no topo na versao publicada e permite controle para QA', async
   await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
 });
 
+test('exibe video no topo na versao v6 motivacional', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__MUSA_RUNTIME_CONFIG__ = {
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: 'musa-pde-entry-v6-video-motivacional',
+    };
+  });
+  await page.route('/api/pde/access/events', async (route) => {
+    await route.fulfill({ json: { status: 'RECORDED' } });
+  });
+  await page.route('/api/pde/products/metodo-musa-7-dias', async (route) => {
+    await route.fulfill({ status: 404, json: { error: 'Produto carregado pelo fallback do teste visual.' } });
+  });
+
+  await page.goto('/');
+
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
+  await expect(page.locator('video.public-hero-video')).toBeVisible();
+  await expect(page.locator('video.public-hero-video')).toHaveAttribute('src', '/assets/musa-v5-video-explicativo.mp4');
+  await expect(page.getByRole('heading', { name: /Veja em poucos segundos/i })).toBeVisible();
+});
+
 test('mede reproducao real do video inicial MUSA', async ({ page }) => {
   const events: string[] = [];
   await page.addInitScript(() => {

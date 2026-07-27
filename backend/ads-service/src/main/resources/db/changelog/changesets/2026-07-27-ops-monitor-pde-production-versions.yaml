@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-27-ops-monitor-pde-production-versions
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'pde-musa-v5', 'Clube MUSA PDE v5', 'PDE', 'https://v5.clubemusa.com.br', '/healthz', NULL, 1, 'CRITICAL', 120
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'pde-musa-v5');
+
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'pde-musa-v6', 'Clube MUSA PDE v6', 'PDE', 'https://v6.clubemusa.com.br', '/healthz', NULL, 1, 'CRITICAL', 120
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'pde-musa-v6');

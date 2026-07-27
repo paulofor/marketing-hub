@@ -556,6 +556,18 @@ export default function App() {
               <Route path="/landing/:id" element={<LandingPreview />} />
               <Route path="/analytics" element={<AnalyticsDashboard />} />
               <Route path="/ops-monitor" element={<OpsMonitorPage />} />
+              <Route
+                path="/ops-monitor/pde"
+                element={
+                  <OpsMonitorPage
+                    defaultCriticalityFilter="CRITICAL"
+                    defaultTypeFilter="PDE"
+                    title="Saúde PDE 24/7"
+                    subtitle="Monitoramento das versões PDE produtivas que recebem clientes e tráfego pago."
+                    pdeFocus
+                  />
+                }
+              />
               <Route path="/funnels" element={<FunnelListPage />} />
               <Route path="/funnels/new" element={<NewFunnelPage />} />
               <Route path="/funnels/:id/edit" element={<EditFunnelPage />} />

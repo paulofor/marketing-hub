@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import ReactECharts from "echarts-for-react";
-import { AlertTriangle, Activity, ServerCrash } from "lucide-react";
+import {
+  AlertTriangle,
+  Activity,
+  ServerCrash,
+  ShieldCheck,
+} from "lucide-react";
 import PageTitle from "../components/PageTitle";
 import {
   ModuleAvailability,
@@ -40,6 +45,10 @@ const MODULE_IMPACT: Record<string, string> = {
     "Leads podem não conseguir acessar ofertas, materiais ou páginas pós-clique.",
   "email-service":
     "Comunicações transacionais e recuperação de leads podem falhar.",
+  "pde-musa-v5":
+    "Clientes e leads podem perder acesso à experiência vendida do Clube MUSA v5.",
+  "pde-musa-v6":
+    "Clientes e leads podem perder acesso à experiência vendida do Clube MUSA v6.",
 };
 
 function formatDateTime(value?: string | null) {
@@ -67,16 +76,38 @@ function formatDuration(seconds?: number | null) {
 }
 
 function getImpact(module: ModuleAvailability) {
+  if (module.type === "PDE") {
+    return (
+      MODULE_IMPACT[module.moduleCode] ??
+      "Clientes e leads podem perder acesso à versão PDE em campanha."
+    );
+  }
   return (
     MODULE_IMPACT[module.moduleCode] ??
     "Fluxos operacionais ligados a este módulo podem ter atraso ou interrupção."
   );
 }
 
-export default function OpsMonitorPage() {
+interface OpsMonitorPageProps {
+  defaultCriticalityFilter?: string;
+  defaultTypeFilter?: string;
+  title?: string;
+  subtitle?: string;
+  pdeFocus?: boolean;
+}
+
+export default function OpsMonitorPage({
+  defaultCriticalityFilter = "",
+  defaultTypeFilter = "",
+  title = "Operação / Saúde dos Módulos",
+  subtitle = "Visão operacional baseada no backend para proteger vendas, geração de ativos e publicação de campanhas.",
+  pdeFocus = false,
+}: OpsMonitorPageProps) {
   const [selectedModuleCode, setSelectedModuleCode] = useState<string>();
-  const [criticalityFilter, setCriticalityFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [criticalityFilter, setCriticalityFilter] = useState(
+    defaultCriticalityFilter,
+  );
+  const [typeFilter, setTypeFilter] = useState(defaultTypeFilter);
   const filters = useMemo(
     () => ({ criticality: criticalityFilter, type: typeFilter }),
     [criticalityFilter, typeFilter],
@@ -87,6 +118,14 @@ export default function OpsMonitorPage() {
   const incidentHistoryQuery = useOpsMonitorIncidentHistory(filters);
 
   const modules = availabilityQuery.data ?? [];
+  const pdeSummary = {
+    online: modules.filter((module) => module.status === "ONLINE").length,
+    degraded: modules.filter((module) => module.status === "DEGRADED").length,
+    offline: modules.filter((module) => module.status === "OFFLINE").length,
+    unknown: modules.filter((module) => module.status === "UNKNOWN").length,
+    openIncidents: incidentsQuery.data?.length ?? 0,
+  };
+  const summary = pdeFocus ? pdeSummary : summaryQuery.data;
   const selectedModule = useMemo(() => {
     return (
       modules.find((module) => module.moduleCode === selectedModuleCode) ??
@@ -99,7 +138,9 @@ export default function OpsMonitorPage() {
 
   const criticalAlerts = modules.filter(
     (module) =>
-      module.criticality === "CRITICAL" && module.status === "OFFLINE",
+      module.criticality === "CRITICAL" &&
+      (module.status === "OFFLINE" ||
+        (pdeFocus && module.status === "DEGRADED")),
   );
 
   const chartOption = {
@@ -129,11 +170,8 @@ export default function OpsMonitorPage() {
 
   return (
     <div className="ops-monitor-page">
-      <PageTitle>Operação / Saúde dos Módulos</PageTitle>
-      <p className="text-muted mb-4">
-        Visão operacional baseada no backend para proteger vendas, geração de
-        ativos e publicação de campanhas.
-      </p>
+      <PageTitle>{title}</PageTitle>
+      <p className="text-muted mb-4">{subtitle}</p>
 
       {summaryQuery.isError ||
       availabilityQuery.isError ||
@@ -148,35 +186,35 @@ export default function OpsMonitorPage() {
         <div className="col-md-2">
           <SummaryCard
             label="Online"
-            value={summaryQuery.data?.online ?? 0}
+            value={summary?.online ?? 0}
             variant="text-success"
           />
         </div>
         <div className="col-md-2">
           <SummaryCard
             label="Instáveis"
-            value={summaryQuery.data?.degraded ?? 0}
+            value={summary?.degraded ?? 0}
             variant="text-warning"
           />
         </div>
         <div className="col-md-2">
           <SummaryCard
             label="Fora do ar"
-            value={summaryQuery.data?.offline ?? 0}
+            value={summary?.offline ?? 0}
             variant="text-danger"
           />
         </div>
         <div className="col-md-2">
           <SummaryCard
             label="Desconhecidos"
-            value={summaryQuery.data?.unknown ?? 0}
+            value={summary?.unknown ?? 0}
             variant="text-secondary"
           />
         </div>
         <div className="col-md-4">
           <SummaryCard
             label="Incidentes abertos"
-            value={summaryQuery.data?.openIncidents ?? 0}
+            value={summary?.openIncidents ?? 0}
             variant="text-danger"
           />
         </div>
@@ -219,11 +257,31 @@ export default function OpsMonitorPage() {
                 <option value="COLLECTOR">Coletor</option>
                 <option value="PORTAL">Portal</option>
                 <option value="SERVICE">Serviço</option>
+                <option value="PDE">PDE</option>
               </select>
             </div>
           </div>
         </div>
       </div>
+
+      {pdeFocus ? (
+        <div
+          className="alert alert-info ops-monitor-page__pde-note"
+          role="status"
+        >
+          <div className="d-flex gap-2 align-items-start">
+            <ShieldCheck aria-hidden="true" />
+            <div>
+              <strong>Monitoramento 24/7 das versões vendidas.</strong>
+              <div>
+                Cada versão PDE aparece aqui como alvo crítico de
+                disponibilidade pública. Se uma versão sair do ar, o impacto é
+                direto em acesso, confiança e conversão.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {criticalAlerts.length > 0 ? (
         <div className="mb-4">

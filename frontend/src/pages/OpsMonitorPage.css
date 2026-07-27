@@ -1,6 +1,6 @@
 .ops-monitor-page__summary-card {
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border-radius: 8px;
   background: #fff;
   padding: 1rem;
   min-height: 112px;
@@ -26,4 +26,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.ops-monitor-page__pde-note {
+  border-left: 6px solid #0dcaf0;
 }

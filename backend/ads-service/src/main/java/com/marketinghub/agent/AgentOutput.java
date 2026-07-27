@@ -17,31 +17,30 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 public class AgentOutput {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agent_id", nullable = false)
-    private Agent agent;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "agent_id", nullable = false)
+  private Agent agent;
 
-    @Column(nullable = false)
-    private String name;
+  @Column(nullable = false)
+  private String name;
 
-    @Column(name = "output_type", length = 100)
-    private String type;
+  @Column(name = "output_type", length = 100)
+  private String type;
 
-    @Lob
-    private String description;
+  @Lob private String description;
 
-    @Column(name = "order_index", nullable = false)
-    private Integer orderIndex;
+  @Column(name = "order_index", nullable = false)
+  private Integer orderIndex;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private Instant updatedAt;
 }

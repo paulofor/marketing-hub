@@ -16,47 +16,53 @@ import org.springframework.web.bind.annotation.RestController;
 @AnalyzeClasses(packages = "com.marketinghub")
 class LeadPortalPublicBoundaryArchitectureTest {
 
-    /** Bloqueia controllers de cliente/lead no pacote Lead Portal do ads-service. */
-    @ArchTest
-    static final ArchRule leadPortalPublicEndpointsMustStayOutOfAdsService = classes()
-            .that()
-            .resideInAPackage("com.marketinghub.leadportal.web..")
-            .and()
-            .areAnnotatedWith(RestController.class)
-            .should(notExposeLeadPortalCustomerRequestMapping())
-            .because("[ARQUITETURA] endpoints públicos de lead/cliente pertencem ao lead-portal ou "
-                    + "lead-portal-payments-service; o ads-service deve manter somente contratos administrativos "
-                    + "ou callbacks internos");
+  /** Bloqueia controllers de cliente/lead no pacote Lead Portal do ads-service. */
+  @ArchTest
+  static final ArchRule leadPortalPublicEndpointsMustStayOutOfAdsService =
+      classes()
+          .that()
+          .resideInAPackage("com.marketinghub.leadportal.web..")
+          .and()
+          .areAnnotatedWith(RestController.class)
+          .should(notExposeLeadPortalCustomerRequestMapping())
+          .because(
+              "[ARQUITETURA] endpoints públicos de lead/cliente pertencem ao lead-portal ou"
+                  + " lead-portal-payments-service; o ads-service deve manter somente contratos"
+                  + " administrativos ou callbacks internos");
 
-    /** Cria a condição ArchUnit que inspeciona o @RequestMapping da classe. */
-    private static ArchCondition<JavaClass> notExposeLeadPortalCustomerRequestMapping() {
-        return new ArchCondition<>("[ARQUITETURA] não expor borda de cliente do Lead Portal no ads-service") {
-            @Override
-            public void check(JavaClass item, ConditionEvents events) {
-                RequestMapping requestMapping = item.reflect().getAnnotation(RequestMapping.class);
-                if (requestMapping == null) {
-                    return;
-                }
-                if (containsLeadPortalCustomerMapping(requestMapping.value())
-                        || containsLeadPortalCustomerMapping(requestMapping.path())) {
-                    events.add(SimpleConditionEvent.violated(item,
-                            "[ARQUITETURA] [LeadPortal] " + item.getName()
-                                    + " expõe endpoint de lead/cliente no ads-service; mova a borda para "
-                                    + "lead-portal ou lead-portal-payments-service e mantenha no backend principal "
-                                    + "apenas callback interno."));
-                }
-            }
-        };
-    }
-
-    /** Verifica se algum mapping aponta para a borda de cliente do Lead Portal. */
-    private static boolean containsLeadPortalCustomerMapping(String[] mappings) {
-        for (String mapping : mappings) {
-            if (mapping != null
-                    && (mapping.startsWith("/api/public/lead-portal") || mapping.equals("/api/flows"))) {
-                return true;
-            }
+  /** Cria a condição ArchUnit que inspeciona o @RequestMapping da classe. */
+  private static ArchCondition<JavaClass> notExposeLeadPortalCustomerRequestMapping() {
+    return new ArchCondition<>(
+        "[ARQUITETURA] não expor borda de cliente do Lead Portal no ads-service") {
+      @Override
+      public void check(JavaClass item, ConditionEvents events) {
+        RequestMapping requestMapping = item.reflect().getAnnotation(RequestMapping.class);
+        if (requestMapping == null) {
+          return;
         }
-        return false;
+        if (containsLeadPortalCustomerMapping(requestMapping.value())
+            || containsLeadPortalCustomerMapping(requestMapping.path())) {
+          events.add(
+              SimpleConditionEvent.violated(
+                  item,
+                  "[ARQUITETURA] [LeadPortal] "
+                      + item.getName()
+                      + " expõe endpoint de lead/cliente no ads-service; mova a borda para"
+                      + " lead-portal ou lead-portal-payments-service e mantenha no backend"
+                      + " principal apenas callback interno."));
+        }
+      }
+    };
+  }
+
+  /** Verifica se algum mapping aponta para a borda de cliente do Lead Portal. */
+  private static boolean containsLeadPortalCustomerMapping(String[] mappings) {
+    for (String mapping : mappings) {
+      if (mapping != null
+          && (mapping.startsWith("/api/public/lead-portal") || mapping.equals("/api/flows"))) {
+        return true;
+      }
     }
+    return false;
+  }
 }

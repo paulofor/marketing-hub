@@ -7,6 +7,5 @@ import org.mapstruct.Mapper;
 /** Mapper for ChatDialog. */
 @Mapper(componentModel = "spring")
 public interface ChatDialogMapper {
-    ChatDialogDto toDto(ChatDialog dialog);
+  ChatDialogDto toDto(ChatDialog dialog);
 }
-

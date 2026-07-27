@@ -1,5 +1,8 @@
 package com.marketinghub.creative.label.web;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.creative.label.dto.CreateAngleRequest;
@@ -11,32 +14,30 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
+@TestPropertySource(
+    properties = {
+      "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.driverClassName=org.h2.Driver",
+      "spring.datasource.username=sa",
+      "spring.datasource.password=",
+      "spring.jpa.hibernate.ddl-auto=create",
+      "spring.liquibase.enabled=false"
+    })
 class AngleControllerTest {
-    @Autowired
-    MockMvc mockMvc;
-    @Autowired
-    ObjectMapper mapper;
+  @Autowired MockMvc mockMvc;
+  @Autowired ObjectMapper mapper;
 
-    @Test
-    void postAngle_emptyName_returns400() throws Exception {
-        CreateAngleRequest req = new CreateAngleRequest();
-        req.setName("");
-        mockMvc.perform(post("/api/angles")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
-    }
+  @Test
+  void postAngle_emptyName_returns400() throws Exception {
+    CreateAngleRequest req = new CreateAngleRequest();
+    req.setName("");
+    mockMvc
+        .perform(
+            post("/api/angles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(req)))
+        .andExpect(status().isBadRequest());
+  }
 }

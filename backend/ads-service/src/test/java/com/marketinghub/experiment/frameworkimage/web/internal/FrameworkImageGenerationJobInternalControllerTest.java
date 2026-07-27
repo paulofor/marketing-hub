@@ -28,79 +28,89 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @WebMvcTest(controllers = FrameworkImageGenerationJobInternalController.class)
 class FrameworkImageGenerationJobInternalControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-    @MockBean
-    private FrameworkImageGenerationService service;
+  @MockBean private FrameworkImageGenerationService service;
 
-    @BeforeEach
-    void setup() {
-        doNothing().when(service).updateJobStage(any(UUID.class), any(FrameworkImageGenerationJobStage.class));
-        doNothing().when(service).completeJob(any(UUID.class), any(FrameworkImageGenerationJobCompletionRequest.class));
-        doNothing().when(service).failJob(any(UUID.class), any(String.class));
-    }
+  @BeforeEach
+  void setup() {
+    doNothing()
+        .when(service)
+        .updateJobStage(any(UUID.class), any(FrameworkImageGenerationJobStage.class));
+    doNothing()
+        .when(service)
+        .completeJob(any(UUID.class), any(FrameworkImageGenerationJobCompletionRequest.class));
+    doNothing().when(service).failJob(any(UUID.class), any(String.class));
+  }
 
-    @Test
-    void listPendingReturnsJobs() throws Exception {
-        UUID jobId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-        FrameworkImageGenerationJobDto dto = FrameworkImageGenerationJobDto.builder()
-                .id(jobId)
-                .experimentId(15L)
-                .planningItemKey("hero-1")
-                .status("PENDING")
-                .stage("WAITING_AI_WORKER")
-                .build();
+  @Test
+  void listPendingReturnsJobs() throws Exception {
+    UUID jobId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    FrameworkImageGenerationJobDto dto =
+        FrameworkImageGenerationJobDto.builder()
+            .id(jobId)
+            .experimentId(15L)
+            .planningItemKey("hero-1")
+            .status("PENDING")
+            .stage("WAITING_AI_WORKER")
+            .build();
 
-        when(service.listPendingJobs(10)).thenReturn(List.of(dto));
+    when(service.listPendingJobs(10)).thenReturn(List.of(dto));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/internal/framework-image/jobs/pending"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(jobId.toString()))
-                .andExpect(jsonPath("$[0].planningItemKey").value("hero-1"));
-    }
+    mockMvc
+        .perform(MockMvcRequestBuilders.get("/api/internal/framework-image/jobs/pending"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(jobId.toString()))
+        .andExpect(jsonPath("$[0].planningItemKey").value("hero-1"));
+  }
 
-    @Test
-    void claimDelegatesToService() throws Exception {
-        UUID jobId = UUID.randomUUID();
-        FrameworkImageGenerationJobDto dto = FrameworkImageGenerationJobDto.builder()
-                .id(jobId)
-                .experimentId(20L)
-                .planningItemKey("item-2")
-                .status("PROCESSING")
-                .stage("CLAIMED")
-                .workerId("worker-a")
-                .build();
-        when(service.claimJob(jobId, "worker-a")).thenReturn(dto);
+  @Test
+  void claimDelegatesToService() throws Exception {
+    UUID jobId = UUID.randomUUID();
+    FrameworkImageGenerationJobDto dto =
+        FrameworkImageGenerationJobDto.builder()
+            .id(jobId)
+            .experimentId(20L)
+            .planningItemKey("item-2")
+            .status("PROCESSING")
+            .stage("CLAIMED")
+            .workerId("worker-a")
+            .build();
+    when(service.claimJob(jobId, "worker-a")).thenReturn(dto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/internal/framework-image/jobs/{jobId}/claim", jobId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"workerId\":\"worker-a\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.stage").value("CLAIMED"));
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.post("/api/internal/framework-image/jobs/{jobId}/claim", jobId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"workerId\":\"worker-a\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.stage").value("CLAIMED"));
 
-        verify(service).claimJob(jobId, "worker-a");
-    }
+    verify(service).claimJob(jobId, "worker-a");
+  }
 
-    @Test
-    void failValidatesBody() throws Exception {
-        UUID jobId = UUID.randomUUID();
+  @Test
+  void failValidatesBody() throws Exception {
+    UUID jobId = UUID.randomUUID();
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/internal/framework-image/jobs/{jobId}/fail", jobId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"errorMessage\":\"\"}"))
-                .andExpect(status().isBadRequest());
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.post("/api/internal/framework-image/jobs/{jobId}/fail", jobId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"errorMessage\":\"\"}"))
+        .andExpect(status().isBadRequest());
 
-        verify(service, never()).failJob(eq(jobId), any(String.class));
-    }
+    verify(service, never()).failJob(eq(jobId), any(String.class));
+  }
 
-    @Test
-    void completeDelegatesToService() throws Exception {
-        UUID jobId = UUID.randomUUID();
-        String body = objectMapper.writeValueAsString(new FrameworkImageGenerationJobCompletionRequest(
+  @Test
+  void completeDelegatesToService() throws Exception {
+    UUID jobId = UUID.randomUUID();
+    String body =
+        objectMapper.writeValueAsString(
+            new FrameworkImageGenerationJobCompletionRequest(
                 FrameworkImageGenerationJobStage.NOTIFIED_BACKEND,
                 "gpt-image-1",
                 "prompt final",
@@ -109,11 +119,14 @@ class FrameworkImageGenerationJobInternalControllerTest {
                 "https://cdn/source.jpg",
                 "https://cdn/web.jpg"));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/internal/framework-image/jobs/{jobId}/complete", jobId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk());
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.post(
+                    "/api/internal/framework-image/jobs/{jobId}/complete", jobId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isOk());
 
-        verify(service).completeJob(eq(jobId), any(FrameworkImageGenerationJobCompletionRequest.class));
-    }
+    verify(service).completeJob(eq(jobId), any(FrameworkImageGenerationJobCompletionRequest.class));
+  }
 }

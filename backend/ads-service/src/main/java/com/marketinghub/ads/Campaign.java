@@ -4,60 +4,61 @@ import jakarta.persistence.*;
 
 @Entity
 public class Campaign {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String name;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "facebook_account_id")
-    private FacebookAccount facebookAccount;
+  private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "instagram_account_id")
-    private InstagramAccount instagramAccount;
+  @ManyToOne
+  @JoinColumn(name = "facebook_account_id")
+  private FacebookAccount facebookAccount;
 
-    public Campaign() {}
+  @ManyToOne
+  @JoinColumn(name = "instagram_account_id")
+  private InstagramAccount instagramAccount;
 
-    public Campaign(String name, FacebookAccount fbAccount) {
-        this.name = name;
-        this.facebookAccount = fbAccount;
-    }
+  public Campaign() {}
 
-    public Campaign(String name, InstagramAccount igAccount) {
-        this.name = name;
-        this.instagramAccount = igAccount;
-    }
+  public Campaign(String name, FacebookAccount fbAccount) {
+    this.name = name;
+    this.facebookAccount = fbAccount;
+  }
 
-    public Long getId() {
-        return id;
-    }
+  public Campaign(String name, InstagramAccount igAccount) {
+    this.name = name;
+    this.instagramAccount = igAccount;
+  }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public void setId(Long id) {
+    this.id = id;
+  }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public FacebookAccount getFacebookAccount() {
-        return facebookAccount;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public void setFacebookAccount(FacebookAccount facebookAccount) {
-        this.facebookAccount = facebookAccount;
-    }
+  public FacebookAccount getFacebookAccount() {
+    return facebookAccount;
+  }
 
-    public InstagramAccount getInstagramAccount() {
-        return instagramAccount;
-    }
+  public void setFacebookAccount(FacebookAccount facebookAccount) {
+    this.facebookAccount = facebookAccount;
+  }
 
-    public void setInstagramAccount(InstagramAccount instagramAccount) {
-        this.instagramAccount = instagramAccount;
-    }
+  public InstagramAccount getInstagramAccount() {
+    return instagramAccount;
+  }
+
+  public void setInstagramAccount(InstagramAccount instagramAccount) {
+    this.instagramAccount = instagramAccount;
+  }
 }

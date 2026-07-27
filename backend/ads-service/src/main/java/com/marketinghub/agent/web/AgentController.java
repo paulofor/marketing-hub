@@ -17,31 +17,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/agents")
 public class AgentController {
 
-    private final AgentService service;
-    private final AgentMapper mapper;
+  private final AgentService service;
+  private final AgentMapper mapper;
 
-    public AgentController(AgentService service, AgentMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
+  public AgentController(AgentService service, AgentMapper mapper) {
+    this.service = service;
+    this.mapper = mapper;
+  }
 
-    @PostMapping
-    public AgentDto create(@RequestBody SaveAgentRequest request) {
-        return mapper.toDto(service.create(request));
-    }
+  @PostMapping
+  public AgentDto create(@RequestBody SaveAgentRequest request) {
+    return mapper.toDto(service.create(request));
+  }
 
-    @PutMapping("/{id}")
-    public AgentDto update(@PathVariable Long id, @RequestBody SaveAgentRequest request) {
-        return mapper.toDto(service.update(id, request));
-    }
+  @PutMapping("/{id}")
+  public AgentDto update(@PathVariable Long id, @RequestBody SaveAgentRequest request) {
+    return mapper.toDto(service.update(id, request));
+  }
 
-    @GetMapping
-    public List<AgentDto> list() {
-        return service.list().stream().map(mapper::toDto).toList();
-    }
+  @GetMapping
+  public List<AgentDto> list() {
+    return service.list().stream().map(mapper::toDto).toList();
+  }
 
-    @GetMapping("/{id}")
-    public AgentDto get(@PathVariable Long id) {
-        return mapper.toDto(service.get(id));
-    }
+  @GetMapping("/{id}")
+  public AgentDto get(@PathVariable Long id) {
+    return mapper.toDto(service.get(id));
+  }
 }

@@ -16,15 +16,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InstagramAccount {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String name;
+  private String name;
 
-    @Column(name = "handle", nullable = false)
-    private String handle;
+  @Column(name = "handle", nullable = false)
+  private String handle;
 
-    @Column(name = "account_code", nullable = false)
-    private String code;
+  @Column(name = "account_code", nullable = false)
+  private String code;
 }

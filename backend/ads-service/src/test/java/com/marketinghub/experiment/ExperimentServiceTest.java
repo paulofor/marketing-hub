@@ -1,29 +1,16 @@
 package com.marketinghub.experiment;
 
-import com.marketinghub.repository.jpa.creative.label.AngleRepository;
-import com.marketinghub.repository.jpa.experiment.MetricPresetRepository;
-import com.marketinghub.repository.jpa.experiment.ExperimentStatusChangeRepository;
-import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
-import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
-import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
-import com.marketinghub.experiment.MetricPreset;
-import com.marketinghub.experiment.dto.CreateExperimentRequest;
-import com.marketinghub.experiment.dto.UpdateExperimentRequest;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.experiment.service.ExperimentService;
-import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
-import com.marketinghub.experiment.funnel.ExperimentFunnelEvent;
-import com.marketinghub.experiment.funnel.ExperimentLandingAnalyticsEvent;
-import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
-import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
-import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
-import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
+import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentRequest;
+import com.marketinghub.experiment.funnel.ExperimentFunnelEvent;
+import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
+import com.marketinghub.experiment.funnel.ExperimentLandingAnalyticsEvent;
+import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
@@ -31,127 +18,121 @@ import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentStatusChangeRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 /** Valida os fluxos principais do serviço de experimentos com persistência em memória. */
 @SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
+@TestPropertySource(
+    properties = {
+      "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.driverClassName=org.h2.Driver",
+      "spring.datasource.username=sa",
+      "spring.datasource.password=",
+      "spring.jpa.hibernate.ddl-auto=create",
+      "spring.liquibase.enabled=false"
+    })
 class ExperimentServiceTest {
-    @Autowired
-    ExperimentService service;
-    @Autowired
-    MarketNicheRepository nicheRepository;
-    @Autowired
-    com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository;
-    @Autowired
-    com.marketinghub.repository.jpa.creative.label.AngleRepository angleRepository;
-    @Autowired
-    com.marketinghub.repository.jpa.experiment.MetricPresetRepository metricPresetRepository;
-    @Autowired
-    ExperimentRepository experimentRepository;
-    @Autowired
-    ExperimentStatusChangeRepository experimentStatusChangeRepository;
-    @Autowired
-    JourneyTemplateRepository journeyTemplateRepository;
-    @Autowired
-    TargetingElementRepository targetingElementRepository;
-    @Autowired
-    InstagramAccountRepository instagramAccountRepository;
-    @Autowired
-    FacebookAccountRepository facebookAccountRepository;
-    @Autowired
-    FacebookAdsCampaignRepository facebookAdsCampaignRepository;
-    @Autowired
-    GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
-    @Autowired
-    GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
-    @Autowired
-    com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
-    @Autowired
-    ExperimentFunnelEventRepository experimentFunnelEventRepository;
-    @Autowired
-    ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository;
-    @Autowired
-    PdeProductionSlotRepository pdeProductionSlotRepository;
+  @Autowired ExperimentService service;
+  @Autowired MarketNicheRepository nicheRepository;
+  @Autowired com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository;
+  @Autowired com.marketinghub.repository.jpa.creative.label.AngleRepository angleRepository;
 
-    private InstagramAccount createInstagramAccount() {
-        return instagramAccountRepository.save(
-                InstagramAccount.builder()
-                        .name("Conta Teste")
-                        .handle("@contateste")
-                        .code("IG-1")
-                        .build());
-    }
+  @Autowired
+  com.marketinghub.repository.jpa.experiment.MetricPresetRepository metricPresetRepository;
 
-    private JourneyTemplate createJourneyTemplate() {
-        return journeyTemplateRepository.save(
-                JourneyTemplate.builder()
-                        .name("Lifecycle")
-                        .build());
-    }
+  @Autowired ExperimentRepository experimentRepository;
+  @Autowired ExperimentStatusChangeRepository experimentStatusChangeRepository;
+  @Autowired JourneyTemplateRepository journeyTemplateRepository;
+  @Autowired TargetingElementRepository targetingElementRepository;
+  @Autowired InstagramAccountRepository instagramAccountRepository;
+  @Autowired FacebookAccountRepository facebookAccountRepository;
+  @Autowired FacebookAdsCampaignRepository facebookAdsCampaignRepository;
+  @Autowired GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
+  @Autowired GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
 
-    private Long createLeadPortalFlow(MarketNiche niche) {
-        String slug = "flow-" + java.util.UUID.randomUUID();
-        return leadPortalFlowRepository.save(
-                com.marketinghub.leadportal.LeadPortalFlow.builder()
-                        .name("Fluxo " + slug)
-                        .slug(slug)
-                        .marketNiche(niche)
-                        .build()).getId();
-    }
+  @Autowired
+  com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
 
-    /** Retorna HTML com todos os coletores mínimos da página de venda low-ticket. */
-    private String trackedSalesPageHtml() {
-        return """
-                <html><body>
-                <section data-track-section="oferta">Oferta</section>
-                <script data-mh-sales-page-analytics="true">
-                sendEvent('page_view');
-                sendEvent('page_load_metric');
-                sendEvent('section_view_time');
-                sendEvent('checkout_click');
-                </script>
-                </body></html>
-                """;
-    }
+  @Autowired ExperimentFunnelEventRepository experimentFunnelEventRepository;
+  @Autowired ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository;
+  @Autowired PdeProductionSlotRepository pdeProductionSlotRepository;
 
-    /** Preenche o contrato comercial mínimo gerado pela etapa Oferta. */
-    private void completeCommercialContract(Experiment experiment) {
-        experiment.setSinglePain("Cliente some depois da manutenção");
-        experiment.setFreeReward("Preview visual da agenda preenchida");
-        experiment.setFunnelPromise("Enxergar riscos e encaixes em 7 dias");
-        experiment.setPrimaryCta("Comprar o Mapa 7D");
-        experiment.setUnitPrice(new BigDecimal("29.90"));
-        experimentRepository.save(experiment);
-    }
+  private InstagramAccount createInstagramAccount() {
+    return instagramAccountRepository.save(
+        InstagramAccount.builder().name("Conta Teste").handle("@contateste").code("IG-1").build());
+  }
 
-    @Test
-    void requestPipelineCreativesQueuesPipelineAdsForWorker() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  private JourneyTemplate createJourneyTemplate() {
+    return journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+  }
+
+  private Long createLeadPortalFlow(MarketNiche niche) {
+    String slug = "flow-" + java.util.UUID.randomUUID();
+    return leadPortalFlowRepository
+        .save(
+            com.marketinghub.leadportal.LeadPortalFlow.builder()
+                .name("Fluxo " + slug)
+                .slug(slug)
+                .marketNiche(niche)
+                .build())
+        .getId();
+  }
+
+  /** Retorna HTML com todos os coletores mínimos da página de venda low-ticket. */
+  private String trackedSalesPageHtml() {
+    return """
+    <html><body>
+    <section data-track-section="oferta">Oferta</section>
+    <script data-mh-sales-page-analytics="true">
+    sendEvent('page_view');
+    sendEvent('page_load_metric');
+    sendEvent('section_view_time');
+    sendEvent('checkout_click');
+    </script>
+    </body></html>
+    """;
+  }
+
+  /** Preenche o contrato comercial mínimo gerado pela etapa Oferta. */
+  private void completeCommercialContract(Experiment experiment) {
+    experiment.setSinglePain("Cliente some depois da manutenção");
+    experiment.setFreeReward("Preview visual da agenda preenchida");
+    experiment.setFunnelPromise("Enxergar riscos e encaixes em 7 dias");
+    experiment.setPrimaryCta("Comprar o Mapa 7D");
+    experiment.setUnitPrice(new BigDecimal("29.90"));
+    experimentRepository.save(experiment);
+  }
+
+  @Test
+  void requestPipelineCreativesQueuesPipelineAdsForWorker() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -161,45 +142,56 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp pipeline");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setFollowUpActionUrl("https://destino.com");
-        Experiment exp = service.create(req);
-        exp.setAdCopy("{\"adCopy\":{\"primaryTextVariants\":[{\"label\":\"dor\",\"primaryText\":\"Texto\",\"headline\":\"Headline\",\"description\":\"Descrição\",\"ctaText\":\"Saiba mais\"}]}}");
-        exp.setAdImageBriefing("{\"adImageBriefing\":{\"briefings\":[{\"mustMatchAdVariant\":\"dor\",\"visualBriefing\":\"Use contraste simples\",\"assetType\":\"estatico\"}]}}");
-        experimentRepository.save(exp);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp pipeline");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setFollowUpActionUrl("https://destino.com");
+    Experiment exp = service.create(req);
+    exp.setAdCopy(
+        "{\"adCopy\":{\"primaryTextVariants\":[{\"label\":\"dor\",\"primaryText\":\"Texto\",\"headline\":\"Headline\",\"description\":\"Descrição\",\"ctaText\":\"Saiba"
+            + " mais\"}]}}");
+    exp.setAdImageBriefing(
+        "{\"adImageBriefing\":{\"briefings\":[{\"mustMatchAdVariant\":\"dor\",\"visualBriefing\":\"Use"
+            + " contraste simples\",\"assetType\":\"estatico\"}]}}");
+    experimentRepository.save(exp);
 
-        Experiment requested = service.requestPipelineCreatives(exp.getId());
+    Experiment requested = service.requestPipelineCreatives(exp.getId());
 
-        assertThat(requested.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
-        assertThat(requested.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.REQUESTED);
-        assertThat(requested.getCreativesToGenerate()).isEqualTo(3);
-        assertThat(service.listPendingCreativeGeneration(10))
-                .extracting(Experiment::getId)
-                .contains(requested.getId());
-    }
+    assertThat(requested.getCreativeGenerationMode())
+        .isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
+    assertThat(requested.getCreativeGenerationStatus())
+        .isEqualTo(CreativeGenerationStatus.REQUESTED);
+    assertThat(requested.getCreativesToGenerate()).isEqualTo(3);
+    assertThat(service.listPendingCreativeGeneration(10))
+        .extracting(Experiment::getId)
+        .contains(requested.getId());
+  }
 
-    @Test
-    void requestPipelineCreativesRejectsMissingPipelineAssets() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste sem destino").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void requestPipelineCreativesRejectsMissingPipelineAssets() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Teste sem destino").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -209,48 +201,53 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150_DRAFT")
-                .name("Lean-Startup 150 Draft")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp pipeline draft");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150_DRAFT");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        Experiment exp = service.create(req);
-        assertThatThrownBy(() -> service.requestPipelineCreatives(exp.getId()))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("Conclua as etapas de Texto do Anúncio e Prompt da Imagem");
-    }
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_DRAFT")
+            .name("Lean-Startup 150 Draft")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp pipeline draft");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_DRAFT");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    Experiment exp = service.create(req);
+    assertThatThrownBy(() -> service.requestPipelineCreatives(exp.getId()))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("Conclua as etapas de Texto do Anúncio e Prompt da Imagem");
+  }
 
+  private void applyStageDefaults(CreateExperimentRequest request) {
+    request.setStage(ExperimentStage.AD);
+    request.setPrimaryVariable("Ângulo de dor");
+    request.setPrimaryMetric("CTR de link (%)");
+  }
 
-    private void applyStageDefaults(CreateExperimentRequest request) {
-        request.setStage(ExperimentStage.AD);
-        request.setPrimaryVariable("Ângulo de dor");
-        request.setPrimaryMetric("CTR de link (%)");
-    }
+  private void applyStageDefaults(UpdateExperimentRequest request) {
+    request.setStage(ExperimentStage.AD);
+    request.setPrimaryVariable("Ângulo de dor");
+    request.setPrimaryMetric("CTR de link (%)");
+  }
 
-    private void applyStageDefaults(UpdateExperimentRequest request) {
-        request.setStage(ExperimentStage.AD);
-        request.setPrimaryVariable("Ângulo de dor");
-        request.setPrimaryMetric("CTR de link (%)");
-    }
-
-    @Test
-    void updateLearnedLessonsStoresAndClearsCommercialSynthesis() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste aprendizados").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Aprendizado").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateLearnedLessonsStoresAndClearsCommercialSynthesis() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Teste aprendizados").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Aprendizado").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -260,43 +257,53 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150_LEARNINGS")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp aprendizados");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150_LEARNINGS");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        Experiment exp = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_LEARNINGS")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp aprendizados");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_LEARNINGS");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    Experiment exp = service.create(req);
 
-        Experiment updated = service.updateLearnedLessons(
-                exp.getId(),
-                "  CTR alto, mas sem avanço para diagnóstico.\nPróximo teste precisa reduzir fricção da primeira ação.  ");
+    Experiment updated =
+        service.updateLearnedLessons(
+            exp.getId(),
+            "  CTR alto, mas sem avanço para diagnóstico.\n"
+                + "Próximo teste precisa reduzir fricção da primeira ação.  ");
 
-        assertThat(updated.getLearnedLessons())
-                .isEqualTo("CTR alto, mas sem avanço para diagnóstico.\nPróximo teste precisa reduzir fricção da primeira ação.");
+    assertThat(updated.getLearnedLessons())
+        .isEqualTo(
+            "CTR alto, mas sem avanço para diagnóstico.\n"
+                + "Próximo teste precisa reduzir fricção da primeira ação.");
 
-        Experiment cleared = service.updateLearnedLessons(exp.getId(), " ");
+    Experiment cleared = service.updateLearnedLessons(exp.getId(), " ");
 
-        assertThat(cleared.getLearnedLessons()).isNull();
-    }
+    assertThat(cleared.getLearnedLessons()).isNull();
+  }
 
-    @Test
-    void updateStatusRequiresLearnedLessonsBeforeFinished() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste finalizacao").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Finalizacao").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateStatusRequiresLearnedLessonsBeforeFinished() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Teste finalizacao").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Finalizacao").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -306,41 +313,48 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150_FINISH_LEARNINGS")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp finalizacao");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150_FINISH_LEARNINGS");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        Experiment exp = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_FINISH_LEARNINGS")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp finalizacao");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_FINISH_LEARNINGS");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    Experiment exp = service.create(req);
 
-        assertThatThrownBy(() -> service.updateStatus(exp.getId(), ExperimentStatus.FINISHED))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("learnedLessons required");
+    assertThatThrownBy(() -> service.updateStatus(exp.getId(), ExperimentStatus.FINISHED))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("learnedLessons required");
 
-        service.updateLearnedLessons(exp.getId(), "Falha técnica contaminada; relançar sucessor limpo.");
-        Experiment finished = service.updateStatus(exp.getId(), ExperimentStatus.FINISHED);
+    service.updateLearnedLessons(
+        exp.getId(), "Falha técnica contaminada; relançar sucessor limpo.");
+    Experiment finished = service.updateStatus(exp.getId(), ExperimentStatus.FINISHED);
 
-        assertThat(finished.getStatus()).isEqualTo(ExperimentStatus.FINISHED);
-    }
+    assertThat(finished.getStatus()).isEqualTo(ExperimentStatus.FINISHED);
+  }
 
-    @Test
-    void updateStrategicPositioningStoresAndClearsCurrentExperimentRole() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste posicionamento").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Posicionamento").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateStrategicPositioningStoresAndClearsCurrentExperimentRole() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Teste posicionamento").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Posicionamento").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -350,47 +364,52 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150_POSITIONING")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp posicionamento");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150_POSITIONING");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        Experiment exp = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_POSITIONING")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp posicionamento");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_POSITIONING");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    Experiment exp = service.create(req);
 
-        Experiment updated = service.updateStrategicPositioning(
-                exp.getId(),
-                "  Validar se vídeo humano aumenta início do diagnóstico.  ",
-                "  Validação operacional do roteamento A/B de página.  ");
+    Experiment updated =
+        service.updateStrategicPositioning(
+            exp.getId(),
+            "  Validar se vídeo humano aumenta início do diagnóstico.  ",
+            "  Validação operacional do roteamento A/B de página.  ");
 
-        assertThat(updated.getCommercialObjective())
-                .isEqualTo("Validar se vídeo humano aumenta início do diagnóstico.");
-        assertThat(updated.getCurrentOperationalFunction())
-                .isEqualTo("Validação operacional do roteamento A/B de página.");
+    assertThat(updated.getCommercialObjective())
+        .isEqualTo("Validar se vídeo humano aumenta início do diagnóstico.");
+    assertThat(updated.getCurrentOperationalFunction())
+        .isEqualTo("Validação operacional do roteamento A/B de página.");
 
-        Experiment cleared = service.updateStrategicPositioning(exp.getId(), " ", null);
+    Experiment cleared = service.updateStrategicPositioning(exp.getId(), " ", null);
 
-        assertThat(cleared.getCommercialObjective()).isNull();
-        assertThat(cleared.getCurrentOperationalFunction()).isNull();
-    }
+    assertThat(cleared.getCommercialObjective()).isNull();
+    assertThat(cleared.getCurrentOperationalFunction()).isNull();
+  }
 
-    @Test
-    void createNewExperimentWithExistingNiche() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void createNewExperimentWithExistingNiche() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -400,41 +419,46 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setSampleSize(1500);
-        req.setBaselineCvr(new BigDecimal("3"));
-        req.setTargetCvr(new BigDecimal("5"));
-        req.setMdePercent(new BigDecimal("40"));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        var exp = service.create(req);
-        assertThat(exp.getId()).isNotNull();
-        assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
-        assertThat(exp.getName()).isEqualTo("T-E001");
-    }
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setSampleSize(1500);
+    req.setBaselineCvr(new BigDecimal("3"));
+    req.setTargetCvr(new BigDecimal("5"));
+    req.setMdePercent(new BigDecimal("40"));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    var exp = service.create(req);
+    assertThat(exp.getId()).isNotNull();
+    assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
+    assertThat(exp.getName()).isEqualTo("T-E001");
+  }
 
-
-    /** Garante que a criação persiste o contrato de promessa única com objetivo Leads. */
-    @Test
-    void createPersistsSinglePromiseContract() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Contrato promessa").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Promessa").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  /** Garante que a criação persiste o contrato de promessa única com objetivo Leads. */
+  @Test
+  void createPersistsSinglePromiseContract() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Contrato promessa").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Promessa").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("Hipótese promessa")
                 .premiseAngle(angle)
@@ -444,44 +468,48 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_PROMISE")
-                .name("Lean Promessa")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp promessa");
-        req.setHypothesis("Teste");
-        req.setSinglePain("  cliente desmarca horário  ");
-        req.setFreeReward("  3 mensagens prontas  ");
-        req.setFunnelPromise("Receber as 3 mensagens");
-        req.setPrimaryCta("Receber as 3 mensagens");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_PROMISE");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_PROMISE")
+            .name("Lean Promessa")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp promessa");
+    req.setHypothesis("Teste");
+    req.setSinglePain("  cliente desmarca horário  ");
+    req.setFreeReward("  3 mensagens prontas  ");
+    req.setFunnelPromise("Receber as 3 mensagens");
+    req.setPrimaryCta("Receber as 3 mensagens");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_PROMISE");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        Experiment exp = service.create(req);
+    Experiment exp = service.create(req);
 
-        assertThat(exp.getSinglePain()).isEqualTo("cliente desmarca horário");
-        assertThat(exp.getFreeReward()).isEqualTo("3 mensagens prontas");
-        assertThat(exp.getFunnelPromise()).isEqualTo("Receber as 3 mensagens");
-        assertThat(exp.getPrimaryCta()).isEqualTo("Receber as 3 mensagens");
-        assertThat(exp.getCampaignObjective()).isEqualTo(ExperimentCampaignObjective.LEADS);
-    }
+    assertThat(exp.getSinglePain()).isEqualTo("cliente desmarca horário");
+    assertThat(exp.getFreeReward()).isEqualTo("3 mensagens prontas");
+    assertThat(exp.getFunnelPromise()).isEqualTo("Receber as 3 mensagens");
+    assertThat(exp.getPrimaryCta()).isEqualTo("Receber as 3 mensagens");
+    assertThat(exp.getCampaignObjective()).isEqualTo(ExperimentCampaignObjective.LEADS);
+  }
 
-    /** Garante que produto low-ticket nasce com objetivo de venda mesmo com amostra secundária. */
-    @Test
-    void createLowTicketProductDefaultsToSalesObjective() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low ticket").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Venda").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  /** Garante que produto low-ticket nasce com objetivo de venda mesmo com amostra secundária. */
+  @Test
+  void createLowTicketProductDefaultsToSalesObjective() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low ticket").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Venda").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("Hipótese venda")
                 .premiseAngle(angle)
@@ -491,43 +519,49 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_LOW_TICKET")
-                .name("Lean Low Ticket")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp low ticket");
-        req.setHypothesis("Teste");
-        req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        req.setSinglePain("cliente atrasa manutenção");
-        req.setFreeReward("ver amostra gratuita");
-        req.setFunnelPromise("organizar manutenção em 7 dias");
-        req.setPrimaryCta("Comprar por R$ 27");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_LOW_TICKET");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_LOW_TICKET")
+            .name("Lean Low Ticket")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp low ticket");
+    req.setHypothesis("Teste");
+    req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    req.setSinglePain("cliente atrasa manutenção");
+    req.setFreeReward("ver amostra gratuita");
+    req.setFunnelPromise("organizar manutenção em 7 dias");
+    req.setPrimaryCta("Comprar por R$ 27");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_LOW_TICKET");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        Experiment exp = service.create(req);
+    Experiment exp = service.create(req);
 
-        assertThat(exp.getExperimentType()).isEqualTo(ExperimentType.LOW_TICKET_PRODUCT);
-        assertThat(exp.getCampaignObjective()).isEqualTo(ExperimentCampaignObjective.SALES);
-        assertThat(exp.getFreeReward()).isEqualTo("ver amostra gratuita");
-    }
+    assertThat(exp.getExperimentType()).isEqualTo(ExperimentType.LOW_TICKET_PRODUCT);
+    assertThat(exp.getCampaignObjective()).isEqualTo(ExperimentCampaignObjective.SALES);
+    assertThat(exp.getFreeReward()).isEqualTo("ver amostra gratuita");
+  }
 
-    /** Garante que recompensa gratuita não pode nascer com objetivo Tráfego. */
-    @Test
-    void createRejectsTrafficObjectiveWithFreeReward() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Contrato tráfego").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Tráfego").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  /** Garante que recompensa gratuita não pode nascer com objetivo Tráfego. */
+  @Test
+  void createRejectsTrafficObjectiveWithFreeReward() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Contrato tráfego").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Tráfego").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("Hipótese tráfego")
                 .premiseAngle(angle)
@@ -537,37 +571,41 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_TRAFFIC_BLOCK")
-                .name("Lean Bloqueio Tráfego")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp tráfego");
-        req.setHypothesis("Teste");
-        req.setFreeReward("3 mensagens prontas");
-        req.setCampaignObjective(ExperimentCampaignObjective.TRAFFIC);
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_TRAFFIC_BLOCK");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_TRAFFIC_BLOCK")
+            .name("Lean Bloqueio Tráfego")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp tráfego");
+    req.setHypothesis("Teste");
+    req.setFreeReward("3 mensagens prontas");
+    req.setCampaignObjective(ExperimentCampaignObjective.TRAFFIC);
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_TRAFFIC_BLOCK");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("campaignObjective must be LEADS");
-    }
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("campaignObjective must be LEADS");
+  }
 
-    @Test
-    void createAllowsSampleSizeBelowOneHundred() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void createAllowsSampleSizeBelowOneHundred() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -577,36 +615,40 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setSampleSize(5);
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setSampleSize(5);
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        Experiment experiment = service.create(req);
+    Experiment experiment = service.create(req);
 
-        assertThat(experiment.getSampleSize()).isEqualTo(5);
-    }
+    assertThat(experiment.getSampleSize()).isEqualTo(5);
+  }
 
-    @Test
-    void createRejectsZeroSampleSize() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void createRejectsZeroSampleSize() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -616,36 +658,40 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setSampleSize(0);
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setSampleSize(0);
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("sampleSize must be at least 1");
-    }
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("sampleSize must be at least 1");
+  }
 
-    @Test
-    void validateDates() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void validateDates() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -655,38 +701,42 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setSampleSize(1500);
-        req.setBaselineCvr(new BigDecimal("3"));
-        req.setTargetCvr(new BigDecimal("5"));
-        req.setMdePercent(new BigDecimal("40"));
-        req.setStartDate(java.time.LocalDate.of(2024,2,1));
-        req.setEndDate(java.time.LocalDate.of(2024,1,1));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
-    }
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setSampleSize(1500);
+    req.setBaselineCvr(new BigDecimal("3"));
+    req.setTargetCvr(new BigDecimal("5"));
+    req.setMdePercent(new BigDecimal("40"));
+    req.setStartDate(java.time.LocalDate.of(2024, 2, 1));
+    req.setEndDate(java.time.LocalDate.of(2024, 1, 1));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+  }
 
-    @Test
-    void hypothesisAndNicheMustMatch() {
-        MarketNiche niche1 = nicheRepository.save(MarketNiche.builder().name("N1").build());
-        MarketNiche niche2 = nicheRepository.save(MarketNiche.builder().name("N2").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void hypothesisAndNicheMustMatch() {
+    MarketNiche niche1 = nicheRepository.save(MarketNiche.builder().name("N1").build());
+    MarketNiche niche2 = nicheRepository.save(MarketNiche.builder().name("N2").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche1)
                 .title("T")
                 .premiseAngle(angle)
@@ -696,36 +746,43 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche2.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setSampleSize(1500);
-        req.setBaselineCvr(new BigDecimal("3"));
-        req.setTargetCvr(new BigDecimal("5"));
-        req.setMdePercent(new BigDecimal("40"));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche2));
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
-    }
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche2.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setSampleSize(1500);
+    req.setBaselineCvr(new BigDecimal("3"));
+    req.setTargetCvr(new BigDecimal("5"));
+    req.setMdePercent(new BigDecimal("40"));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche2));
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+  }
 
-    /** Verifica que apenas experimentos liberados, criativos aprovados e públicos com metaId entram na fila. */
-    @Test
-    void listReadyForCampaignRequiresApprovals() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  /**
+   * Verifica que apenas experimentos liberados, criativos aprovados e públicos com metaId entram na
+   * fila.
+   */
+  @Test
+  void listReadyForCampaignRequiresApprovals() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("H1")
                 .premiseAngle(angle)
@@ -735,87 +792,97 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
 
-        CreateExperimentRequest req1 = new CreateExperimentRequest();
-        applyStageDefaults(req1);
-        req1.setMarketNicheId(niche.getId());
-        req1.setHypothesisId(hyp.getId());
-        req1.setName("ExpA");
-        req1.setHypothesis("H");
-        req1.setKpiTargetCpl(new BigDecimal("45"));
-        req1.setMetricPresetId("LEAN_150");
-        req1.setJourneyTemplateId(createJourneyTemplate().getId());
-        req1.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req1.setInstagramAccountId(createInstagramAccount().getId());
-        var expApproved = service.create(req1);
-        expApproved.setCreativeApproved(true);
-        experimentRepository.save(expApproved);
-        service.releaseForFacebook(expApproved.getId());
+    CreateExperimentRequest req1 = new CreateExperimentRequest();
+    applyStageDefaults(req1);
+    req1.setMarketNicheId(niche.getId());
+    req1.setHypothesisId(hyp.getId());
+    req1.setName("ExpA");
+    req1.setHypothesis("H");
+    req1.setKpiTargetCpl(new BigDecimal("45"));
+    req1.setMetricPresetId("LEAN_150");
+    req1.setJourneyTemplateId(createJourneyTemplate().getId());
+    req1.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req1.setInstagramAccountId(createInstagramAccount().getId());
+    var expApproved = service.create(req1);
+    expApproved.setCreativeApproved(true);
+    experimentRepository.save(expApproved);
+    service.releaseForFacebook(expApproved.getId());
 
-        targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
-                .niche(niche)
-                .hypothesis(hyp)
-                .type(com.marketinghub.targeting.TargetingElementType.INTEREST)
-                .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
-                .metaId("meta-interest-1")
-                .term("Interest")
-                .build());
-        targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
-                .niche(niche)
-                .hypothesis(hyp)
-                .type(com.marketinghub.targeting.TargetingElementType.JOB_TITLE)
-                .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
-                .metaId("meta-job-title-1")
-                .term("CMO")
-                .build());
-        targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
-                .niche(niche)
-                .hypothesis(hyp)
-                .type(com.marketinghub.targeting.TargetingElementType.BEHAVIOR)
-                .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
-                .metaId("meta-behavior-1")
-                .term("Engaged")
-                .build());
+    targetingElementRepository.save(
+        com.marketinghub.targeting.TargetingElement.builder()
+            .niche(niche)
+            .hypothesis(hyp)
+            .type(com.marketinghub.targeting.TargetingElementType.INTEREST)
+            .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+            .metaId("meta-interest-1")
+            .term("Interest")
+            .build());
+    targetingElementRepository.save(
+        com.marketinghub.targeting.TargetingElement.builder()
+            .niche(niche)
+            .hypothesis(hyp)
+            .type(com.marketinghub.targeting.TargetingElementType.JOB_TITLE)
+            .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+            .metaId("meta-job-title-1")
+            .term("CMO")
+            .build());
+    targetingElementRepository.save(
+        com.marketinghub.targeting.TargetingElement.builder()
+            .niche(niche)
+            .hypothesis(hyp)
+            .type(com.marketinghub.targeting.TargetingElementType.BEHAVIOR)
+            .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+            .metaId("meta-behavior-1")
+            .term("Engaged")
+            .build());
 
-        targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
-                .niche(niche)
-                .hypothesis(hyp)
-                .type(com.marketinghub.targeting.TargetingElementType.INTEREST)
-                .status(com.marketinghub.targeting.TargetingElementStatus.DRAFT)
-                .term("Pending")
-                .build());
+    targetingElementRepository.save(
+        com.marketinghub.targeting.TargetingElement.builder()
+            .niche(niche)
+            .hypothesis(hyp)
+            .type(com.marketinghub.targeting.TargetingElementType.INTEREST)
+            .status(com.marketinghub.targeting.TargetingElementStatus.DRAFT)
+            .term("Pending")
+            .build());
 
-        CreateExperimentRequest req2 = new CreateExperimentRequest();
-        applyStageDefaults(req2);
-        req2.setMarketNicheId(niche.getId());
-        req2.setHypothesisId(hyp.getId());
-        req2.setName("ExpB");
-        req2.setHypothesis("H");
-        req2.setKpiTargetCpl(new BigDecimal("45"));
-        req2.setMetricPresetId("LEAN_150");
-        req2.setJourneyTemplateId(createJourneyTemplate().getId());
-        req2.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req2.setInstagramAccountId(createInstagramAccount().getId());
-        var expNotApproved = service.create(req2);
-        experimentRepository.save(expNotApproved);
+    CreateExperimentRequest req2 = new CreateExperimentRequest();
+    applyStageDefaults(req2);
+    req2.setMarketNicheId(niche.getId());
+    req2.setHypothesisId(hyp.getId());
+    req2.setName("ExpB");
+    req2.setHypothesis("H");
+    req2.setKpiTargetCpl(new BigDecimal("45"));
+    req2.setMetricPresetId("LEAN_150");
+    req2.setJourneyTemplateId(createJourneyTemplate().getId());
+    req2.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req2.setInstagramAccountId(createInstagramAccount().getId());
+    var expNotApproved = service.create(req2);
+    experimentRepository.save(expNotApproved);
 
-        var result = service.listReadyForCampaign();
-        assertThat(result).extracting(Experiment::getId).containsExactly(expApproved.getId());
-    }
+    var result = service.listReadyForCampaign();
+    assertThat(result).extracting(Experiment::getId).containsExactly(expApproved.getId());
+  }
 
-    /** Garante que pausa administrativa preserva o timestamp persistido de liberação para Facebook. */
-    @Test
-    void updateStatusPreservesReleaseTimestampForBaseline() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Status").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AS").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  /**
+   * Garante que pausa administrativa preserva o timestamp persistido de liberação para Facebook.
+   */
+  @Test
+  void updateStatusPreservesReleaseTimestampForBaseline() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Status").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AS").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HS")
                 .premiseAngle(angle)
@@ -825,43 +892,48 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("ExpStatus");
-        req.setHypothesis("H");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
-        experimentRepository.save(experiment);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("ExpStatus");
+    req.setHypothesis("H");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
+    experimentRepository.save(experiment);
 
-        Experiment released = service.releaseForFacebook(experiment.getId());
-        assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
-        var releaseTimestamp = Instant.parse("2026-07-23T12:00:00Z");
-        released.setFacebookReleaseRequestedAt(releaseTimestamp);
-        experimentRepository.saveAndFlush(released);
+    Experiment released = service.releaseForFacebook(experiment.getId());
+    assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+    var releaseTimestamp = Instant.parse("2026-07-23T12:00:00Z");
+    released.setFacebookReleaseRequestedAt(releaseTimestamp);
+    experimentRepository.saveAndFlush(released);
 
-        Experiment paused = service.updateStatus(experiment.getId(), ExperimentStatus.PAUSED);
-        assertThat(paused.getFacebookReleaseRequestedAt()).isNotNull();
-        assertThat(paused.getFacebookReleaseRequestedAt()).isEqualTo(releaseTimestamp);
-    }
+    Experiment paused = service.updateStatus(experiment.getId(), ExperimentStatus.PAUSED);
+    assertThat(paused.getFacebookReleaseRequestedAt()).isNotNull();
+    assertThat(paused.getFacebookReleaseRequestedAt()).isEqualTo(releaseTimestamp);
+  }
 
-    @Test
-    void updateStatusRunningRejectsFacebookExperimentWithoutRegisteredCampaign() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Running Guard").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ARG").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateStatusRunningRejectsFacebookExperimentWithoutRegisteredCampaign() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche Running Guard").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ARG").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HRG")
                 .premiseAngle(angle)
@@ -871,40 +943,46 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150_RUNNING_GUARD")
-                .name("Lean-Startup 150 Running Guard")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("ExpRunningGuard");
-        req.setHypothesis("H");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150_RUNNING_GUARD");
-        req.setSampleSize(150);
-        req.setDailyBudget(new BigDecimal("25"));
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_RUNNING_GUARD")
+            .name("Lean-Startup 150 Running Guard")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("ExpRunningGuard");
+    req.setHypothesis("H");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_RUNNING_GUARD");
+    req.setSampleSize(150);
+    req.setDailyBudget(new BigDecimal("25"));
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
 
-        assertThatThrownBy(() -> service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("Facebook campaign must be registered before setting experiment RUNNING");
-        assertThat(experimentRepository.findById(experiment.getId()).orElseThrow().getStatus())
-                .isEqualTo(ExperimentStatus.PLANNED);
-    }
+    assertThatThrownBy(() -> service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining(
+            "Facebook campaign must be registered before setting experiment RUNNING");
+    assertThat(experimentRepository.findById(experiment.getId()).orElseThrow().getStatus())
+        .isEqualTo(ExperimentStatus.PLANNED);
+  }
 
-    @Test
-    void updateStatusRunningRejectsInactivePdeDestination() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche PDE Running Guard").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("APDE").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateStatusRunningRejectsInactivePdeDestination() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche PDE Running Guard").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("APDE").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HPDE")
                 .premiseAngle(angle)
@@ -914,53 +992,59 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150_PDE_RUNNING_GUARD")
-                .name("Lean-Startup 150 PDE Running Guard")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("ExpPdeRunningGuard");
-        req.setHypothesis("H");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150_PDE_RUNNING_GUARD");
-        req.setSampleSize(150);
-        req.setDailyBudget(new BigDecimal("25"));
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setFollowUpActionUrl("https://v99.clubemusa.com.br/oferta?utm_source=teste");
-        Experiment experiment = service.create(req);
-        saveRegisteredCampaign(experiment, "campaign-pde-running-guard");
-        pdeProductionSlotRepository.save(PdeProductionSlot.builder()
-                .slotCode("v99")
-                .productSlug("metodo-musa-7-dias")
-                .domain("v99.clubemusa.com.br")
-                .publicUrl("https://v99.clubemusa.com.br")
-                .experienceVersion("musa-pde-entry-v99")
-                .targetEnvironment("production-v99")
-                .status(PdeProductionSlotStatus.PLANNED)
-                .sourceExperimentId(experiment.getId())
-                .notes("Versão ainda planejada para teste.")
-                .build());
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_PDE_RUNNING_GUARD")
+            .name("Lean-Startup 150 PDE Running Guard")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("ExpPdeRunningGuard");
+    req.setHypothesis("H");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_PDE_RUNNING_GUARD");
+    req.setSampleSize(150);
+    req.setDailyBudget(new BigDecimal("25"));
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setFollowUpActionUrl("https://v99.clubemusa.com.br/oferta?utm_source=teste");
+    Experiment experiment = service.create(req);
+    saveRegisteredCampaign(experiment, "campaign-pde-running-guard");
+    pdeProductionSlotRepository.save(
+        PdeProductionSlot.builder()
+            .slotCode("v99")
+            .productSlug("metodo-musa-7-dias")
+            .domain("v99.clubemusa.com.br")
+            .publicUrl("https://v99.clubemusa.com.br")
+            .experienceVersion("musa-pde-entry-v99")
+            .targetEnvironment("production-v99")
+            .status(PdeProductionSlotStatus.PLANNED)
+            .sourceExperimentId(experiment.getId())
+            .notes("Versão ainda planejada para teste.")
+            .build());
 
-        assertThatThrownBy(() -> service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("Versão PDE v99 está PLANNED");
-        assertThat(experimentRepository.findById(experiment.getId()).orElseThrow().getStatus())
-                .isEqualTo(ExperimentStatus.PLANNED);
-    }
+    assertThatThrownBy(() -> service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("Versão PDE v99 está PLANNED");
+    assertThat(experimentRepository.findById(experiment.getId()).orElseThrow().getStatus())
+        .isEqualTo(ExperimentStatus.PLANNED);
+  }
 
-    @Test
-    void updateStatusPausedRequestsStopForLinkedFacebookCampaigns() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Pause Stop").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("APS").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateStatusPausedRequestsStopForLinkedFacebookCampaigns() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche Pause Stop").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("APS").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HPS")
                 .premiseAngle(angle)
@@ -970,76 +1054,87 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150_PAUSE_STOP")
-                .name("Lean-Startup 150 Pause Stop")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("ExpPauseStop");
-        req.setHypothesis("H");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150_PAUSE_STOP");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
-        experimentRepository.save(experiment);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_PAUSE_STOP")
+            .name("Lean-Startup 150 Pause Stop")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("ExpPauseStop");
+    req.setHypothesis("H");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_PAUSE_STOP");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
+    experimentRepository.save(experiment);
 
-        FacebookAccount facebookAccount = facebookAccountRepository.save(FacebookAccount.builder()
+    FacebookAccount facebookAccount =
+        facebookAccountRepository.save(
+            FacebookAccount.builder()
                 .name("Conta Facebook Pause")
                 .adAccountId("act_pause")
                 .build());
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("campaign-pause-stop");
-        campaign.setExternalId("meta-pause-stop");
-        campaign.setAdAccountId("act_pause");
-        campaign.setExperiment(experiment);
-        campaign.setFacebookAccount(facebookAccount);
-        campaign.setName("Campanha para pausar");
-        campaign.setObjective("OUTCOME_LEADS");
-        campaign.setStatus(FacebookAdStatus.ACTIVE);
-        campaign.setBudgetMode(BudgetMode.CAMPAIGN);
-        facebookAdsCampaignRepository.save(campaign);
+    FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+    campaign.setId("campaign-pause-stop");
+    campaign.setExternalId("meta-pause-stop");
+    campaign.setAdAccountId("act_pause");
+    campaign.setExperiment(experiment);
+    campaign.setFacebookAccount(facebookAccount);
+    campaign.setName("Campanha para pausar");
+    campaign.setObjective("OUTCOME_LEADS");
+    campaign.setStatus(FacebookAdStatus.ACTIVE);
+    campaign.setBudgetMode(BudgetMode.CAMPAIGN);
+    facebookAdsCampaignRepository.save(campaign);
 
-        service.updateStatus(experiment.getId(), ExperimentStatus.PAUSED);
+    service.updateStatus(experiment.getId(), ExperimentStatus.PAUSED);
 
-        FacebookAdsCampaign stored = facebookAdsCampaignRepository.findById(campaign.getId()).orElseThrow();
-        assertThat(stored.getStopRequestedAt()).isNotNull();
-        assertThat(stored.getStopCompletedAt()).isNull();
-        assertThat(stored.getStopLastError()).isNull();
-        assertThat(stored.getStopReason()).isEqualTo(FacebookCampaignStopReason.ADMIN_EXPERIMENT_PAUSED);
-    }
+    FacebookAdsCampaign stored =
+        facebookAdsCampaignRepository.findById(campaign.getId()).orElseThrow();
+    assertThat(stored.getStopRequestedAt()).isNotNull();
+    assertThat(stored.getStopCompletedAt()).isNull();
+    assertThat(stored.getStopLastError()).isNull();
+    assertThat(stored.getStopReason())
+        .isEqualTo(FacebookCampaignStopReason.ADMIN_EXPERIMENT_PAUSED);
+  }
 
-    /** Registra uma campanha Meta mínima para permitir validar outros bloqueios de RUNNING. */
-    private void saveRegisteredCampaign(Experiment experiment, String campaignId) {
-        FacebookAccount facebookAccount = facebookAccountRepository.save(FacebookAccount.builder()
+  /** Registra uma campanha Meta mínima para permitir validar outros bloqueios de RUNNING. */
+  private void saveRegisteredCampaign(Experiment experiment, String campaignId) {
+    FacebookAccount facebookAccount =
+        facebookAccountRepository.save(
+            FacebookAccount.builder()
                 .name("Conta Facebook " + campaignId)
                 .adAccountId("act_" + campaignId)
                 .build());
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId(campaignId);
-        campaign.setExternalId("meta-" + campaignId);
-        campaign.setAdAccountId("act_" + campaignId);
-        campaign.setExperiment(experiment);
-        campaign.setFacebookAccount(facebookAccount);
-        campaign.setName("Campanha " + campaignId);
-        campaign.setObjective("OUTCOME_LEADS");
-        campaign.setStatus(FacebookAdStatus.ACTIVE);
-        campaign.setBudgetMode(BudgetMode.CAMPAIGN);
-        facebookAdsCampaignRepository.save(campaign);
-    }
+    FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+    campaign.setId(campaignId);
+    campaign.setExternalId("meta-" + campaignId);
+    campaign.setAdAccountId("act_" + campaignId);
+    campaign.setExperiment(experiment);
+    campaign.setFacebookAccount(facebookAccount);
+    campaign.setName("Campanha " + campaignId);
+    campaign.setObjective("OUTCOME_LEADS");
+    campaign.setStatus(FacebookAdStatus.ACTIVE);
+    campaign.setBudgetMode(BudgetMode.CAMPAIGN);
+    facebookAdsCampaignRepository.save(campaign);
+  }
 
-    @Test
-    void reactivateStoppedExperimentRegistersReasonAndHistory() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Reactivation").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ARX").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void reactivateStoppedExperimentRegistersReasonAndHistory() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche Reactivation").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ARX").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HRX")
                 .premiseAngle(angle)
@@ -1049,70 +1144,78 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150_REACTIVATE")
-                .name("Lean-Startup 150 Reactivate")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("ExpReactivate");
-        req.setHypothesis("H");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150_REACTIVATE");
-        req.setDailyBudget(new BigDecimal("25"));
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
-        experiment.setStatus(ExperimentStatus.USER_STOPPED);
-        experimentRepository.save(experiment);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_REACTIVATE")
+            .name("Lean-Startup 150 Reactivate")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("ExpReactivate");
+    req.setHypothesis("H");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_REACTIVATE");
+    req.setDailyBudget(new BigDecimal("25"));
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
+    experiment.setStatus(ExperimentStatus.USER_STOPPED);
+    experimentRepository.save(experiment);
 
-        FacebookAccount facebookAccount = facebookAccountRepository.save(FacebookAccount.builder()
+    FacebookAccount facebookAccount =
+        facebookAccountRepository.save(
+            FacebookAccount.builder()
                 .name("Conta Facebook Reactivation")
                 .adAccountId("act_reactivation")
                 .build());
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("campaign-reactivation");
-        campaign.setExternalId("meta-reactivation");
-        campaign.setAdAccountId("act_reactivation");
-        campaign.setExperiment(experiment);
-        campaign.setFacebookAccount(facebookAccount);
-        campaign.setName("Campanha para reativar");
-        campaign.setObjective("OUTCOME_LEADS");
-        campaign.setStatus(FacebookAdStatus.PAUSED);
-        campaign.setBudgetMode(BudgetMode.CAMPAIGN);
-        facebookAdsCampaignRepository.save(campaign);
+    FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+    campaign.setId("campaign-reactivation");
+    campaign.setExternalId("meta-reactivation");
+    campaign.setAdAccountId("act_reactivation");
+    campaign.setExperiment(experiment);
+    campaign.setFacebookAccount(facebookAccount);
+    campaign.setName("Campanha para reativar");
+    campaign.setObjective("OUTCOME_LEADS");
+    campaign.setStatus(FacebookAdStatus.PAUSED);
+    campaign.setBudgetMode(BudgetMode.CAMPAIGN);
+    facebookAdsCampaignRepository.save(campaign);
 
-        Experiment reactivated = service.reactivate(
-                experiment.getId(),
-                new com.marketinghub.experiment.dto.ReactivateExperimentRequest(
-                        "Retomar ciclo controlado para validar a nova entrada do PDE Musa."));
+    Experiment reactivated =
+        service.reactivate(
+            experiment.getId(),
+            new com.marketinghub.experiment.dto.ReactivateExperimentRequest(
+                "Retomar ciclo controlado para validar a nova entrada do PDE Musa."));
 
-        assertThat(reactivated.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
-        assertThat(reactivated.getLastStatusChangeAction()).isEqualTo("REACTIVATE");
-        assertThat(reactivated.getLastStatusChangeReason()).contains("Retomar ciclo controlado");
-        assertThat(reactivated.getLastStatusChangedAt()).isNotNull();
-        assertThat(experimentStatusChangeRepository.findAll())
-                .anySatisfy(change -> {
-                    assertThat(change.getExperiment().getId()).isEqualTo(experiment.getId());
-                    assertThat(change.getPreviousStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
-                    assertThat(change.getNewStatus()).isEqualTo(ExperimentStatus.RUNNING);
-                    assertThat(change.getAction()).isEqualTo("REACTIVATE");
-                });
-        reactivated.setStatus(ExperimentStatus.USER_STOPPED);
-        experimentRepository.save(reactivated);
-    }
+    assertThat(reactivated.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    assertThat(reactivated.getLastStatusChangeAction()).isEqualTo("REACTIVATE");
+    assertThat(reactivated.getLastStatusChangeReason()).contains("Retomar ciclo controlado");
+    assertThat(reactivated.getLastStatusChangedAt()).isNotNull();
+    assertThat(experimentStatusChangeRepository.findAll())
+        .anySatisfy(
+            change -> {
+              assertThat(change.getExperiment().getId()).isEqualTo(experiment.getId());
+              assertThat(change.getPreviousStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+              assertThat(change.getNewStatus()).isEqualTo(ExperimentStatus.RUNNING);
+              assertThat(change.getAction()).isEqualTo("REACTIVATE");
+            });
+    reactivated.setStatus(ExperimentStatus.USER_STOPPED);
+    experimentRepository.save(reactivated);
+  }
 
-    @Test
-    void releaseForFacebookResetsFunnelAndTimestamp() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Release").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AR").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void releaseForFacebookResetsFunnelAndTimestamp() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Release").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AR").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HR")
                 .premiseAngle(angle)
@@ -1122,77 +1225,84 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("ExpRelease");
-        req.setHypothesis("H");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
-        experiment.setCreativeApproved(true);
-        experimentRepository.save(experiment);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("ExpRelease");
+    req.setHypothesis("H");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
+    experiment.setCreativeApproved(true);
+    experimentRepository.save(experiment);
 
-        experimentFunnelEventRepository.save(ExperimentFunnelEvent.builder()
-                .experiment(experiment)
-                .stage(ExperimentFunnelStage.ENVIO_FORM)
-                .source("manual")
-                .occurredAt(Instant.now().minusSeconds(60))
-                .build());
-        ExperimentFunnelEvent landingEvent = experimentFunnelEventRepository.save(ExperimentFunnelEvent.builder()
+    experimentFunnelEventRepository.save(
+        ExperimentFunnelEvent.builder()
+            .experiment(experiment)
+            .stage(ExperimentFunnelStage.ENVIO_FORM)
+            .source("manual")
+            .occurredAt(Instant.now().minusSeconds(60))
+            .build());
+    ExperimentFunnelEvent landingEvent =
+        experimentFunnelEventRepository.save(
+            ExperimentFunnelEvent.builder()
                 .experiment(experiment)
                 .stage(ExperimentFunnelStage.VISUALIZACAO_FORM)
                 .source(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE)
                 .occurredAt(Instant.now().minusSeconds(30))
                 .build());
-        experimentLandingAnalyticsEventRepository.save(ExperimentLandingAnalyticsEvent.builder()
-                .experiment(experiment)
-                .funnelEvent(landingEvent)
-                .eventType("page_view")
-                .occurredAt(landingEvent.getOccurredAt())
-                .build());
-        FacebookAccount facebookAccount = facebookAccountRepository.save(FacebookAccount.builder()
-                .name("Conta Facebook")
-                .adAccountId("act_123")
-                .build());
-        FacebookAdsCampaign previousCampaign = new FacebookAdsCampaign();
-        previousCampaign.setId("campaign-previous");
-        previousCampaign.setExternalId("meta-previous");
-        previousCampaign.setAdAccountId("act_123");
-        previousCampaign.setExperiment(experiment);
-        previousCampaign.setFacebookAccount(facebookAccount);
-        previousCampaign.setName("Campanha anterior");
-        previousCampaign.setObjective("OUTCOME_LEADS");
-        previousCampaign.setStatus(FacebookAdStatus.ACTIVE);
-        previousCampaign.setBudgetMode(BudgetMode.CAMPAIGN);
-        facebookAdsCampaignRepository.save(previousCampaign);
+    experimentLandingAnalyticsEventRepository.save(
+        ExperimentLandingAnalyticsEvent.builder()
+            .experiment(experiment)
+            .funnelEvent(landingEvent)
+            .eventType("page_view")
+            .occurredAt(landingEvent.getOccurredAt())
+            .build());
+    FacebookAccount facebookAccount =
+        facebookAccountRepository.save(
+            FacebookAccount.builder().name("Conta Facebook").adAccountId("act_123").build());
+    FacebookAdsCampaign previousCampaign = new FacebookAdsCampaign();
+    previousCampaign.setId("campaign-previous");
+    previousCampaign.setExternalId("meta-previous");
+    previousCampaign.setAdAccountId("act_123");
+    previousCampaign.setExperiment(experiment);
+    previousCampaign.setFacebookAccount(facebookAccount);
+    previousCampaign.setName("Campanha anterior");
+    previousCampaign.setObjective("OUTCOME_LEADS");
+    previousCampaign.setStatus(FacebookAdStatus.ACTIVE);
+    previousCampaign.setBudgetMode(BudgetMode.CAMPAIGN);
+    facebookAdsCampaignRepository.save(previousCampaign);
 
-        Experiment released = service.releaseForFacebook(experiment.getId());
+    Experiment released = service.releaseForFacebook(experiment.getId());
 
-        assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
-        assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
-        assertThat(released.getFunnelResetAt()).isNotNull();
-        assertThat(experimentLandingAnalyticsEventRepository.count()).isZero();
-        assertThat(experimentFunnelEventRepository.count()).isZero();
-        assertThat(facebookAdsCampaignRepository.existsByExperimentId(experiment.getId())).isFalse();
-    }
+    assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+    assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+    assertThat(released.getFunnelResetAt()).isNotNull();
+    assertThat(experimentLandingAnalyticsEventRepository.count()).isZero();
+    assertThat(experimentFunnelEventRepository.count()).isZero();
+    assertThat(facebookAdsCampaignRepository.existsByExperimentId(experiment.getId())).isFalse();
+  }
 
-    @Test
-    void releaseForFacebookAllowsReleaseWithoutPixel() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Pixel").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AP").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void releaseForFacebookAllowsReleaseWithoutPixel() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Pixel").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AP").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HP")
                 .premiseAngle(angle)
@@ -1202,40 +1312,45 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("ExpNoPixel");
-        req.setHypothesis("H");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("ExpNoPixel");
+    req.setHypothesis("H");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
 
-        Experiment released = service.releaseForFacebook(experiment.getId());
+    Experiment released = service.releaseForFacebook(experiment.getId());
 
-        assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
-        MarketNiche refreshed = nicheRepository.findById(niche.getId()).orElseThrow();
-        assertThat(refreshed.getFacebookPixelId()).isNull();
-        assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
-    }
+    assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+    MarketNiche refreshed = nicheRepository.findById(niche.getId()).orElseThrow();
+    assertThat(refreshed.getFacebookPixelId()).isNull();
+    assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+  }
 
-    /** Garante que venda low-ticket não entra na fila sem página criada pelo pipeline. */
-    @Test
-    void releaseForFacebookRejectsLowTicketWithoutGeraSalesPagePipeline() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low Ticket Release").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ALT").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  /** Garante que venda low-ticket não entra na fila sem página criada pelo pipeline. */
+  @Test
+  void releaseForFacebookRejectsLowTicketWithoutGeraSalesPagePipeline() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Low Ticket Release").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ALT").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HLT")
                 .premiseAngle(angle)
@@ -1245,39 +1360,44 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_LOW_RELEASE")
-                .name("Lean Low Release")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp Low Release");
-        req.setHypothesis("H");
-        req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_LOW_RELEASE");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
-        completeCommercialContract(experiment);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_LOW_RELEASE")
+            .name("Lean Low Release")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp Low Release");
+    req.setHypothesis("H");
+    req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_LOW_RELEASE");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
+    completeCommercialContract(experiment);
 
-        assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("página de venda criada pelo GeraSalesPage v1");
-    }
+    assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("página de venda criada pelo GeraSalesPage v1");
+  }
 
-    /** Garante que venda low-ticket só entra na fila após a etapa final do GeraSalesPage. */
-    @Test
-    void releaseForFacebookAllowsLowTicketAfterGeraSalesPagePipeline() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low Ticket Release Ok").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ALTOk").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  /** Garante que venda low-ticket só entra na fila após a etapa final do GeraSalesPage. */
+  @Test
+  void releaseForFacebookAllowsLowTicketAfterGeraSalesPagePipeline() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Low Ticket Release Ok").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ALTOk").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HLTOk")
                 .premiseAngle(angle)
@@ -1287,59 +1407,68 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_LOW_RELEASE_OK")
-                .name("Lean Low Release Ok")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp Low Release Ok");
-        req.setHypothesis("H");
-        req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_LOW_RELEASE_OK");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
-        completeCommercialContract(experiment);
-        String salesPageUrl = "https://pagamentopalf.site/sales-page-exp-low-release-ok.html";
-        String checkoutUrl = "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=low-ok";
-        experiment.setFollowUpActionUrl(salesPageUrl);
-        experimentRepository.save(experiment);
-        GeraSalesPageStageExecution execution = geraSalesPageStageExecutionRepository.save(GeraSalesPageStageExecution.builder()
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_LOW_RELEASE_OK")
+            .name("Lean Low Release Ok")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp Low Release Ok");
+    req.setHypothesis("H");
+    req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_LOW_RELEASE_OK");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
+    completeCommercialContract(experiment);
+    String salesPageUrl = "https://pagamentopalf.site/sales-page-exp-low-release-ok.html";
+    String checkoutUrl = "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=low-ok";
+    experiment.setFollowUpActionUrl(salesPageUrl);
+    experimentRepository.save(experiment);
+    GeraSalesPageStageExecution execution =
+        geraSalesPageStageExecutionRepository.save(
+            GeraSalesPageStageExecution.builder()
                 .idJob(java.util.UUID.randomUUID().toString())
                 .experimentId(experiment.getId())
                 .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
                 .status("CONCLUIDO")
                 .executionRequestedAt(Instant.now())
                 .build());
-        geraSalesPagePublicationAuditRepository.save(GeraSalesPagePublicationAudit.builder()
-                .experimentId(experiment.getId())
-                .publicationJobId(execution.getIdJob())
-                .publishedAt(Instant.now())
-                .salesPageUrl(salesPageUrl)
-                .checkoutUrl(checkoutUrl)
-                .html(trackedSalesPageHtml())
-                .createdAt(Instant.now())
-                .build());
+    geraSalesPagePublicationAuditRepository.save(
+        GeraSalesPagePublicationAudit.builder()
+            .experimentId(experiment.getId())
+            .publicationJobId(execution.getIdJob())
+            .publishedAt(Instant.now())
+            .salesPageUrl(salesPageUrl)
+            .checkoutUrl(checkoutUrl)
+            .html(trackedSalesPageHtml())
+            .createdAt(Instant.now())
+            .build());
 
-        Experiment released = service.releaseForFacebook(experiment.getId());
+    Experiment released = service.releaseForFacebook(experiment.getId());
 
-        assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
-    }
+    assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+  }
 
-    /** Garante que venda low-ticket não publica quando o anúncio aponta direto para checkout. */
-    @Test
-    void releaseForFacebookRejectsLowTicketWhenAdDestinationBypassesSalesPage() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low Ticket Checkout Direto").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ALTCheckout").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  /** Garante que venda low-ticket não publica quando o anúncio aponta direto para checkout. */
+  @Test
+  void releaseForFacebookRejectsLowTicketWhenAdDestinationBypassesSalesPage() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Low Ticket Checkout Direto").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("ALTCheckout").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("HLTCheckout")
                 .premiseAngle(angle)
@@ -1349,55 +1478,62 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_LOW_CHECKOUT_DIRECT")
-                .name("Lean Low Checkout Direct")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp Low Checkout Direct");
-        req.setHypothesis("H");
-        req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        req.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=direct");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_LOW_CHECKOUT_DIRECT");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment experiment = service.create(req);
-        completeCommercialContract(experiment);
-        GeraSalesPageStageExecution execution = geraSalesPageStageExecutionRepository.save(GeraSalesPageStageExecution.builder()
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_LOW_CHECKOUT_DIRECT")
+            .name("Lean Low Checkout Direct")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp Low Checkout Direct");
+    req.setHypothesis("H");
+    req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    req.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=direct");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_LOW_CHECKOUT_DIRECT");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment experiment = service.create(req);
+    completeCommercialContract(experiment);
+    GeraSalesPageStageExecution execution =
+        geraSalesPageStageExecutionRepository.save(
+            GeraSalesPageStageExecution.builder()
                 .idJob(java.util.UUID.randomUUID().toString())
                 .experimentId(experiment.getId())
                 .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
                 .status("CONCLUIDO")
                 .executionRequestedAt(Instant.now())
                 .build());
-        geraSalesPagePublicationAuditRepository.save(GeraSalesPagePublicationAudit.builder()
-                .experimentId(experiment.getId())
-                .publicationJobId(execution.getIdJob())
-                .publishedAt(Instant.now())
-                .salesPageUrl("https://pagamentopalf.site/sales-page-exp-direct.html")
-                .checkoutUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=direct")
-                .html(trackedSalesPageHtml())
-                .createdAt(Instant.now())
-                .build());
+    geraSalesPagePublicationAuditRepository.save(
+        GeraSalesPagePublicationAudit.builder()
+            .experimentId(experiment.getId())
+            .publicationJobId(execution.getIdJob())
+            .publishedAt(Instant.now())
+            .salesPageUrl("https://pagamentopalf.site/sales-page-exp-direct.html")
+            .checkoutUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=direct")
+            .html(trackedSalesPageHtml())
+            .createdAt(Instant.now())
+            .build());
 
-        assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("link do anúncio aponte para a página de venda");
-    }
+    assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("link do anúncio aponte para a página de venda");
+  }
 
-    @Test
-    void listByStatusAndPlatform() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche2").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A2").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void listByStatusAndPlatform() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche2").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A2").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T2")
                 .premiseAngle(angle)
@@ -1407,40 +1543,45 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("ExpRun");
-        req.setHypothesis("H");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(createJourneyTemplate().getId());
-        req.setSampleSize(1500);
-        req.setBaselineCvr(new BigDecimal("3"));
-        req.setTargetCvr(new BigDecimal("5"));
-        req.setMdePercent(new BigDecimal("40"));
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        var exp = service.create(req);
-        exp.setStatus(ExperimentStatus.RUNNING);
-        experimentRepository.save(exp);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("ExpRun");
+    req.setHypothesis("H");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setSampleSize(1500);
+    req.setBaselineCvr(new BigDecimal("3"));
+    req.setTargetCvr(new BigDecimal("5"));
+    req.setMdePercent(new BigDecimal("40"));
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    var exp = service.create(req);
+    exp.setStatus(ExperimentStatus.RUNNING);
+    experimentRepository.save(exp);
 
-        var result = service.listByStatusAndPlatform(ExperimentStatus.RUNNING, ExperimentPlatform.FACEBOOK);
-        assertThat(result).extracting(Experiment::getId).containsExactly(exp.getId());
-    }
+    var result =
+        service.listByStatusAndPlatform(ExperimentStatus.RUNNING, ExperimentPlatform.FACEBOOK);
+    assertThat(result).extracting(Experiment::getId).containsExactly(exp.getId());
+  }
 
-    @Test
-    void createAssociatesJourneyTemplateById() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void createAssociatesJourneyTemplateById() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -1450,37 +1591,42 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(template.getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    JourneyTemplate template =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(template.getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        Experiment exp = service.create(req);
+    Experiment exp = service.create(req);
 
-        assertThat(exp.getJourneyTemplate()).isNotNull();
-        assertThat(exp.getJourneyTemplate().getId()).isEqualTo(template.getId());
-    }
+    assertThat(exp.getJourneyTemplate()).isNotNull();
+    assertThat(exp.getJourneyTemplate().getId()).isEqualTo(template.getId());
+  }
 
-    @Test
-    void createRejectsMissingJourneyTemplateId() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void createRejectsMissingJourneyTemplateId() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -1490,35 +1636,39 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("400 BAD_REQUEST")
-                .hasMessageContaining("journeyTemplateId required");
-    }
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("400 BAD_REQUEST")
+        .hasMessageContaining("journeyTemplateId required");
+  }
 
-    @Test
-    void updateChangesJourneyTemplateWhenProvided() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateChangesJourneyTemplateWhenProvided() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -1528,47 +1678,53 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        JourneyTemplate first = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
-        JourneyTemplate second = journeyTemplateRepository.save(JourneyTemplate.builder().name("Retarget").build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(first.getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        Experiment exp = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    JourneyTemplate first =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+    JourneyTemplate second =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("Retarget").build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(first.getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    Experiment exp = service.create(req);
 
-        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
-        applyStageDefaults(updateReq);
-        updateReq.setName("Exp1");
-        updateReq.setHypothesis("Teste");
-        updateReq.setKpiTargetCpl(new BigDecimal("45"));
-        updateReq.setMetricPresetId("LEAN_150");
-        updateReq.setJourneyTemplateId(second.getId());
+    UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+    applyStageDefaults(updateReq);
+    updateReq.setName("Exp1");
+    updateReq.setHypothesis("Teste");
+    updateReq.setKpiTargetCpl(new BigDecimal("45"));
+    updateReq.setMetricPresetId("LEAN_150");
+    updateReq.setJourneyTemplateId(second.getId());
 
-        Experiment updated = service.update(exp.getId(), updateReq);
+    Experiment updated = service.update(exp.getId(), updateReq);
 
-        assertThat(updated.getJourneyTemplate()).isNotNull();
-        assertThat(updated.getJourneyTemplate().getId()).isEqualTo(second.getId());
-    }
+    assertThat(updated.getJourneyTemplate()).isNotNull();
+    assertThat(updated.getJourneyTemplate().getId()).isEqualTo(second.getId());
+  }
 
-    @Test
-    void updateAllowsSampleSizeBelowOneHundred() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateAllowsSampleSizeBelowOneHundred() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -1578,46 +1734,51 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(template.getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
-        Experiment exp = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    JourneyTemplate template =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(template.getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    Experiment exp = service.create(req);
 
-        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
-        applyStageDefaults(updateReq);
-        updateReq.setName("Exp1");
-        updateReq.setHypothesis("Teste");
-        updateReq.setKpiTargetCpl(new BigDecimal("45"));
-        updateReq.setMetricPresetId("LEAN_150");
-        updateReq.setJourneyTemplateId(template.getId());
-        updateReq.setSampleSize(5);
+    UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+    applyStageDefaults(updateReq);
+    updateReq.setName("Exp1");
+    updateReq.setHypothesis("Teste");
+    updateReq.setKpiTargetCpl(new BigDecimal("45"));
+    updateReq.setMetricPresetId("LEAN_150");
+    updateReq.setJourneyTemplateId(template.getId());
+    updateReq.setSampleSize(5);
 
-        Experiment updated = service.update(exp.getId(), updateReq);
+    Experiment updated = service.update(exp.getId(), updateReq);
 
-        assertThat(updated.getSampleSize()).isEqualTo(5);
-    }
+    assertThat(updated.getSampleSize()).isEqualTo(5);
+  }
 
-    @Test
-    void updateRejectsNullJourneyTemplate() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateRejectsNullJourneyTemplate() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -1627,44 +1788,49 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(template.getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment exp = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    JourneyTemplate template =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(template.getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    Experiment exp = service.create(req);
 
-        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
-        applyStageDefaults(updateReq);
-        updateReq.setName("Exp1");
-        updateReq.setHypothesis("Teste");
-        updateReq.setKpiTargetCpl(new BigDecimal("45"));
-        updateReq.setMetricPresetId("LEAN_150");
-        updateReq.setJourneyTemplateId(null);
+    UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+    applyStageDefaults(updateReq);
+    updateReq.setName("Exp1");
+    updateReq.setHypothesis("Teste");
+    updateReq.setKpiTargetCpl(new BigDecimal("45"));
+    updateReq.setMetricPresetId("LEAN_150");
+    updateReq.setJourneyTemplateId(null);
 
-        assertThatThrownBy(() -> service.update(exp.getId(), updateReq))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("journeyTemplateId required");
-    }
+    assertThatThrownBy(() -> service.update(exp.getId(), updateReq))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("journeyTemplateId required");
+  }
 
-    @Test
-    void updateClearsLeadPortalFlowWhenNullIsProvided() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateClearsLeadPortalFlowWhenNullIsProvided() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -1674,47 +1840,52 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        Long flowId = createLeadPortalFlow(niche);
-        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(template.getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(flowId);
-        Experiment exp = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    Long flowId = createLeadPortalFlow(niche);
+    JourneyTemplate template =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(template.getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(flowId);
+    Experiment exp = service.create(req);
 
-        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
-        applyStageDefaults(updateReq);
-        updateReq.setName("Exp1");
-        updateReq.setHypothesis("Teste");
-        updateReq.setKpiTargetCpl(new BigDecimal("45"));
-        updateReq.setMetricPresetId("LEAN_150");
-        updateReq.setJourneyTemplateId(template.getId());
-        updateReq.setLeadPortalFlowId(null);
+    UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+    applyStageDefaults(updateReq);
+    updateReq.setName("Exp1");
+    updateReq.setHypothesis("Teste");
+    updateReq.setKpiTargetCpl(new BigDecimal("45"));
+    updateReq.setMetricPresetId("LEAN_150");
+    updateReq.setJourneyTemplateId(template.getId());
+    updateReq.setLeadPortalFlowId(null);
 
-        Experiment updated = service.update(exp.getId(), updateReq);
+    Experiment updated = service.update(exp.getId(), updateReq);
 
-        assertThat(updated.getLeadPortalFlow()).isNull();
-    }
+    assertThat(updated.getLeadPortalFlow()).isNull();
+  }
 
-    @Test
-    void updateChangesLeadPortalFlowWhenProvided() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+  @Test
+  void updateChangesLeadPortalFlowWhenProvided() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
                 .title("T")
                 .premiseAngle(angle)
@@ -1724,41 +1895,43 @@ class ExperimentServiceTest {
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_150")
-                .name("Lean-Startup 150")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        Long firstFlow = createLeadPortalFlow(niche);
-        Long secondFlow = createLeadPortalFlow(niche);
-        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
-        CreateExperimentRequest req = new CreateExperimentRequest();
-        applyStageDefaults(req);
-        req.setMarketNicheId(niche.getId());
-        req.setHypothesisId(hyp.getId());
-        req.setName("Exp1");
-        req.setHypothesis("Teste");
-        req.setKpiTargetCpl(new BigDecimal("45"));
-        req.setMetricPresetId("LEAN_150");
-        req.setJourneyTemplateId(template.getId());
-        req.setInstagramAccountId(createInstagramAccount().getId());
-        req.setLeadPortalFlowId(firstFlow);
-        Experiment exp = service.create(req);
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150")
+            .name("Lean-Startup 150")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    Long firstFlow = createLeadPortalFlow(niche);
+    Long secondFlow = createLeadPortalFlow(niche);
+    JourneyTemplate template =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setName("Exp1");
+    req.setHypothesis("Teste");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150");
+    req.setJourneyTemplateId(template.getId());
+    req.setInstagramAccountId(createInstagramAccount().getId());
+    req.setLeadPortalFlowId(firstFlow);
+    Experiment exp = service.create(req);
 
-        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
-        applyStageDefaults(updateReq);
-        updateReq.setName("Exp1");
-        updateReq.setHypothesis("Teste");
-        updateReq.setKpiTargetCpl(new BigDecimal("45"));
-        updateReq.setMetricPresetId("LEAN_150");
-        updateReq.setJourneyTemplateId(template.getId());
-        updateReq.setLeadPortalFlowId(secondFlow);
+    UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+    applyStageDefaults(updateReq);
+    updateReq.setName("Exp1");
+    updateReq.setHypothesis("Teste");
+    updateReq.setKpiTargetCpl(new BigDecimal("45"));
+    updateReq.setMetricPresetId("LEAN_150");
+    updateReq.setJourneyTemplateId(template.getId());
+    updateReq.setLeadPortalFlowId(secondFlow);
 
-        Experiment updated = service.update(exp.getId(), updateReq);
+    Experiment updated = service.update(exp.getId(), updateReq);
 
-        assertThat(updated.getLeadPortalFlow()).isNotNull();
-        assertThat(updated.getLeadPortalFlow().getId()).isEqualTo(secondFlow);
-    }
+    assertThat(updated.getLeadPortalFlow()).isNotNull();
+    assertThat(updated.getLeadPortalFlow().getId()).isEqualTo(secondFlow);
+  }
 }

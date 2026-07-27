@@ -1,9 +1,26 @@
 package com.marketinghub.ads;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.facebookads.controller.FacebookPageController;
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.repository.jpa.ads.CampaignRepository;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,166 +30,142 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.ExperimentPlatform;
-import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.ads.CampaignRepository;
-import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
-import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
-import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
-
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create",
-        "spring.liquibase.enabled=false"
-})
+@TestPropertySource(
+    properties = {
+      "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.driverClassName=org.h2.Driver",
+      "spring.datasource.username=sa",
+      "spring.datasource.password=",
+      "spring.jpa.hibernate.ddl-auto=create",
+      "spring.liquibase.enabled=false"
+    })
 class FacebookPageControllerTest {
 
-    @Autowired
-    MockMvc mockMvc;
+  @Autowired MockMvc mockMvc;
 
-    @Autowired
-    FacebookAccountRepository accountRepository;
+  @Autowired FacebookAccountRepository accountRepository;
 
-    @Autowired
-    FacebookPageRepository pageRepository;
+  @Autowired FacebookPageRepository pageRepository;
 
-    @Autowired
-    ExperimentRepository experimentRepository;
+  @Autowired ExperimentRepository experimentRepository;
 
-    @Autowired
-    CampaignRepository campaignRepository;
+  @Autowired CampaignRepository campaignRepository;
 
-    @Autowired
-    MarketNicheRepository nicheRepository;
+  @Autowired MarketNicheRepository nicheRepository;
 
-    @Autowired
-    HypothesisRepository hypothesisRepository;
+  @Autowired HypothesisRepository hypothesisRepository;
 
-    @Autowired
-    ObjectMapper objectMapper;
+  @Autowired ObjectMapper objectMapper;
 
-    @Autowired
-    InstagramAccountRepository instagramAccountRepository;
+  @Autowired InstagramAccountRepository instagramAccountRepository;
 
-    @Autowired
-    JourneyTemplateRepository journeyTemplateRepository;
+  @Autowired JourneyTemplateRepository journeyTemplateRepository;
 
-    FacebookAccount account;
+  FacebookAccount account;
 
-    @BeforeEach
-    void setup() {
-        experimentRepository.deleteAll();
-        campaignRepository.deleteAll();
-        hypothesisRepository.deleteAll();
-        nicheRepository.deleteAll();
-        pageRepository.deleteAll();
-        accountRepository.deleteAll();
-        instagramAccountRepository.deleteAll();
-        account = accountRepository.save(FacebookAccount.builder()
-                .name("Account")
-                .currency("BRL")
-                .build());
-    }
+  @BeforeEach
+  void setup() {
+    experimentRepository.deleteAll();
+    campaignRepository.deleteAll();
+    hypothesisRepository.deleteAll();
+    nicheRepository.deleteAll();
+    pageRepository.deleteAll();
+    accountRepository.deleteAll();
+    instagramAccountRepository.deleteAll();
+    account =
+        accountRepository.save(FacebookAccount.builder().name("Account").currency("BRL").build());
+  }
 
-    @Test
-    void shouldCreateListAndDeletePages() throws Exception {
-        FacebookPageController.UpsertFacebookPageRequest request = new FacebookPageController.UpsertFacebookPageRequest(
-                "123456",
-                "Página Principal"
-        );
+  @Test
+  void shouldCreateListAndDeletePages() throws Exception {
+    FacebookPageController.UpsertFacebookPageRequest request =
+        new FacebookPageController.UpsertFacebookPageRequest("123456", "Página Principal");
 
-        mockMvc.perform(post("/api/accounts/facebook/" + account.getId() + "/pages")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pageId").value("123456"))
-                .andExpect(jsonPath("$.name").value("Página Principal"));
+    mockMvc
+        .perform(
+            post("/api/accounts/facebook/" + account.getId() + "/pages")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.pageId").value("123456"))
+        .andExpect(jsonPath("$.name").value("Página Principal"));
 
-        FacebookPage saved = pageRepository.findAll().getFirst();
+    FacebookPage saved = pageRepository.findAll().getFirst();
 
-        Experiment experiment = createExperiment(saved);
+    Experiment experiment = createExperiment(saved);
 
-        FacebookPageController.UpsertFacebookPageRequest update = new FacebookPageController.UpsertFacebookPageRequest(
-                "654321",
-                "Página Atualizada"
-        );
+    FacebookPageController.UpsertFacebookPageRequest update =
+        new FacebookPageController.UpsertFacebookPageRequest("654321", "Página Atualizada");
 
-        mockMvc.perform(put("/api/accounts/facebook/" + account.getId() + "/pages/" + saved.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(update)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pageId").value("654321"))
-                .andExpect(jsonPath("$.name").value("Página Atualizada"));
+    mockMvc
+        .perform(
+            put("/api/accounts/facebook/" + account.getId() + "/pages/" + saved.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(update)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.pageId").value("654321"))
+        .andExpect(jsonPath("$.name").value("Página Atualizada"));
 
-        mockMvc.perform(get("/api/accounts/facebook/" + account.getId() + "/pages"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].pageId").value("654321"));
+    mockMvc
+        .perform(get("/api/accounts/facebook/" + account.getId() + "/pages"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(1))
+        .andExpect(jsonPath("$[0].pageId").value("654321"));
 
-        Experiment updatedExperiment = experimentRepository.findById(experiment.getId()).orElseThrow();
-        assertThat(updatedExperiment.getFacebookPage()).isNotNull();
-        assertThat(updatedExperiment.getFacebookPage().getId()).isEqualTo(saved.getId());
-        assertThat(updatedExperiment.getFacebookPage().getPageId()).isEqualTo("654321");
+    Experiment updatedExperiment = experimentRepository.findById(experiment.getId()).orElseThrow();
+    assertThat(updatedExperiment.getFacebookPage()).isNotNull();
+    assertThat(updatedExperiment.getFacebookPage().getId()).isEqualTo(saved.getId());
+    assertThat(updatedExperiment.getFacebookPage().getPageId()).isEqualTo("654321");
 
-        mockMvc.perform(delete("/api/accounts/facebook/" + account.getId() + "/pages/" + saved.getId()))
-                .andExpect(status().isNoContent());
+    mockMvc
+        .perform(delete("/api/accounts/facebook/" + account.getId() + "/pages/" + saved.getId()))
+        .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/accounts/facebook/" + account.getId() + "/pages"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+    mockMvc
+        .perform(get("/api/accounts/facebook/" + account.getId() + "/pages"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
 
-        Experiment clearedExperiment = experimentRepository.findById(experiment.getId()).orElseThrow();
-        assertThat(clearedExperiment.getFacebookPage()).isNull();
-    }
+    Experiment clearedExperiment = experimentRepository.findById(experiment.getId()).orElseThrow();
+    assertThat(clearedExperiment.getFacebookPage()).isNull();
+  }
 
-    private Experiment createExperiment(FacebookPage page) {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder()
-                .name("Niche " + page.getPageId())
-                .build());
-        Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
+  private Experiment createExperiment(FacebookPage page) {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche " + page.getPageId()).build());
+    Hypothesis hypothesis =
+        hypothesisRepository.save(
+            Hypothesis.builder()
                 .marketNiche(niche)
                 .title("Hypothesis " + page.getPageId())
                 .build());
-        InstagramAccount instagramAccount = instagramAccountRepository.save(InstagramAccount.builder()
+    InstagramAccount instagramAccount =
+        instagramAccountRepository.save(
+            InstagramAccount.builder()
                 .name("IG " + page.getPageId())
                 .handle("@" + page.getPageId())
                 .code("IG-" + page.getPageId())
                 .build());
-        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder()
-                .name("Template " + page.getPageId())
-                .build());
-        Experiment experiment = Experiment.builder()
-                .niche(niche)
-                .name("Experiment " + page.getPageId())
-                .hypothesis("Hypothesis " + page.getPageId())
-                .hypothesisRef(hypothesis)
-                .status(ExperimentStatus.PLANNED)
-                .platform(ExperimentPlatform.FACEBOOK)
-                .creativeApproved(true)
-                .facebookPage(page)
-                .instagramAccount(instagramAccount)
-                .journeyTemplate(template)
-                .build();
-        experiment.setCreativesToGenerate(0);
-        experiment.setKpiTargetCpl(BigDecimal.ONE);
-        return experimentRepository.save(experiment);
-    }
+    JourneyTemplate template =
+        journeyTemplateRepository.save(
+            JourneyTemplate.builder().name("Template " + page.getPageId()).build());
+    Experiment experiment =
+        Experiment.builder()
+            .niche(niche)
+            .name("Experiment " + page.getPageId())
+            .hypothesis("Hypothesis " + page.getPageId())
+            .hypothesisRef(hypothesis)
+            .status(ExperimentStatus.PLANNED)
+            .platform(ExperimentPlatform.FACEBOOK)
+            .creativeApproved(true)
+            .facebookPage(page)
+            .instagramAccount(instagramAccount)
+            .journeyTemplate(template)
+            .build();
+    experiment.setCreativesToGenerate(0);
+    experiment.setKpiTargetCpl(BigDecimal.ONE);
+    return experimentRepository.save(experiment);
+  }
 }

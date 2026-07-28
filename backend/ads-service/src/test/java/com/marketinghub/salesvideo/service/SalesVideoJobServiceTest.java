@@ -26,6 +26,7 @@ import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.tenant.TenantContext;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -53,10 +54,13 @@ class SalesVideoJobServiceTest {
   @Mock private SalesVideoCompletedRenderAssetSync completedRenderAssetSync;
 
   private SalesVideoJobService service;
+  private SalesVideoProductionCostCalculator costCalculator;
 
   /** Inicializa o service com dependencias simuladas para cada teste. */
   @BeforeEach
   void setUp() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    costCalculator = new SalesVideoProductionCostCalculator();
     service =
         new SalesVideoJobService(
             jobRepository,
@@ -66,7 +70,8 @@ class SalesVideoJobServiceTest {
             assetRepository,
             reprocessPolicy,
             completedRenderAssetSync,
-            new ObjectMapper());
+            new SalesVideoJobCostMetadataService(objectMapper, costCalculator),
+            objectMapper);
   }
 
   /** Garante que os jobs de um perfil sao retornados em contrato de leitura. */
@@ -122,6 +127,56 @@ class SalesVideoJobServiceTest {
     } finally {
       TenantContextHolder.clear();
     }
+  }
+
+  /** Estima custo para jobs legados do produto quando o provider nao informou custo. */
+  @Test
+  void shouldEstimateMissingCostWhenListingJobsByProduct() {
+    long productId = 4L;
+    TenantContextHolder.set(new TenantContext("tenant-a", "seller@example.com", false));
+    SalesVideoProfile profile =
+        SalesVideoProfile.builder().id(10L).tenantId("tenant-a").targetDurationSeconds(30).build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(57L)
+            .profile(profile)
+            .tenantId("tenant-a")
+            .jobType(SalesVideoJobType.RENDER)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("LUMA_RAY_3_2")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .requestedAt(Instant.parse("2024-01-01T10:15:30Z"))
+            .metadataJson("{\"resolution\":\"720p\"}")
+            .build();
+    given(
+            jobRepository.findByProfileProductIdAndTenantIdOrderByRequestedAtDesc(
+                productId, "tenant-a"))
+        .willReturn(List.of(job));
+
+    try {
+      List<SalesVideoJobDto> result = service.listJobsByProduct(productId);
+
+      assertThat(result).hasSize(1);
+      assertThat(result.get(0).getMetadataJson()).contains("\"cost_usd\":2.7");
+      assertThat(result.get(0).getMetadataJson()).contains("PROVIDER_RATE_CARD_ESTIMATE");
+    } finally {
+      TenantContextHolder.clear();
+    }
+  }
+
+  /** Confirma o catalogo de custos dos providers de video integrados. */
+  @Test
+  void shouldEstimateKnownVideoProvidersFromRateCard() {
+    assertThat(costCalculator.estimateUsd("LUMA_RAY_3_2", "ray-3.2", 30, "720p"))
+        .isEqualByComparingTo(new BigDecimal("2.7000"));
+    assertThat(costCalculator.estimateUsd("KLING_3_0", "kling-v3-0", 10, "720p"))
+        .isEqualByComparingTo(new BigDecimal("1.1200"));
+    assertThat(costCalculator.estimateUsd("RUNWAY", "gen4.5", 10, "720p"))
+        .isEqualByComparingTo(new BigDecimal("1.2000"));
+    assertThat(costCalculator.estimateUsd("HEYGEN", "avatar_iv", 30, "720p"))
+        .isEqualByComparingTo(new BigDecimal("1.5000"));
+    assertThat(costCalculator.estimateUsd("VEO", "veo-3.1-generate-preview", 8, "720p"))
+        .isEqualByComparingTo(new BigDecimal("3.2000"));
   }
 
   /** Garante erro de negocio quando o perfil solicitado nao existe. */

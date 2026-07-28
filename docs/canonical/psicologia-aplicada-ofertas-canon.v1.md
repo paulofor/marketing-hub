@@ -71,6 +71,30 @@ Toda pagina, anuncio e artefato comercial deve reduzir carga cognitiva:
 
 Se a pessoa precisa pensar demais para entender a oferta, a comunicacao esta fraca.
 
+### Regra anti-vazamento tecnico
+
+Toda versao futura de produto, oferta, anuncio, landing, PDE, roteiro, diagnostico, material de apoio ou orientacao por IA deve ser revisada pela lente da consumidora antes de ser considerada pronta.
+
+A comunicacao visivel ao publico nao deve expor bastidores tecnicos, termos internos do Marketing Hub, nomes de pipeline, metricas operacionais, campos de contrato, schemas, nomes de modelo, mecanismo tecnico de IA, etapa de experimento ou qualquer expressao que faca a pessoa sentir que esta vendo uma ferramenta interna em vez de uma experiencia feita para ela.
+
+Quando houver informacao tecnica importante, ela deve ser traduzida para o efeito percebido pela pessoa:
+
+- em vez de explicar tecnologia, mostrar o que fica mais facil;
+- em vez de citar estrutura interna, mostrar o proximo passo claro;
+- em vez de falar em validacao tecnica, mostrar confianca, exemplo ou preview;
+- em vez de descrever a IA, mostrar orientacao simples, personalizada e aplicavel;
+- em vez de usar jargao de marketing, usar a cena real que a pessoa reconhece.
+
+A revisao final deve perguntar:
+
+- a pessoa entende isso sem conhecer marketing, IA ou tecnologia?
+- a frase aumenta desejo, conforto e curiosidade?
+- a explicacao reduz esforco percebido?
+- algum termo parece bastidor, relatorio tecnico ou linguagem de equipe?
+- a mensagem fala com a dor, o desejo e a rotina real do publico?
+
+Se a resposta expuser bastidor ou exigir conhecimento tecnico, o texto deve ser reescrito antes de entrar em nova versao comercial.
+
 ## Score psicologico de oferta
 
 Ao avaliar uma hipotese, considerar:

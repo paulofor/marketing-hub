@@ -38,6 +38,17 @@ describe("audio video studio navigation", () => {
     expect(link.getAttribute("href")).toBe("/audio-video-studio");
   });
 
+  it("has studio projects submenu link", () => {
+    setup(<App />, ["/"]);
+
+    const link = screen.getByRole("link", {
+      name: /lista de projetos/i,
+    });
+
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("href")).toBe("/audio-video-studio/projects");
+  });
+
   it("renders audio video studio page", () => {
     setup(<App />, ["/audio-video-studio"]);
 
@@ -58,5 +69,36 @@ describe("audio video studio navigation", () => {
     expect(screen.getByText(/plano basico de cenas/i)).toBeTruthy();
     expect(screen.getByText(/checklist de producao/i)).toBeTruthy();
     expect(screen.getByText(/o que continua onde esta/i)).toBeTruthy();
+  });
+
+  it("renders audio video studio projects page", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/projects") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 7,
+              title: "Projeto MUSA",
+              objective: "Aumentar inicio do diagnostico.",
+              targetChannel: "PDE",
+              format: "VERTICAL_9_16",
+              status: "READY_FOR_SCRIPT",
+              createdAt: "2026-07-28T10:00:00Z",
+            },
+          ],
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/projects"]);
+
+    expect(
+      screen.getByRole("heading", { name: /lista de projetos/i }),
+    ).toBeTruthy();
+    expect(await screen.findByText(/Projeto MUSA/i)).toBeTruthy();
+    expect(screen.getByText(/READY_FOR_SCRIPT/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /novo projeto/i })).toBeTruthy();
   });
 });

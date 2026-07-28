@@ -159,6 +159,7 @@ import VideoHubPage from "./pages/video/VideoHubPage";
 import VideoProviderManagementPage from "./pages/video/VideoProviderManagementPage";
 import CreativeVideoReviewPage from "./pages/creative/CreativeVideoReviewPage";
 import AudioVideoStudioPage from "./pages/audioVideoStudio/AudioVideoStudioPage";
+import AudioVideoStudioProjectsPage from "./pages/audioVideoStudio/AudioVideoStudioProjectsPage";
 import HomePage from "./pages/HomePage";
 
 function LegacyNicheRedirect() {
@@ -401,6 +402,10 @@ export default function App() {
               <Route
                 path="/audio-video-studio"
                 element={<AudioVideoStudioPage />}
+              />
+              <Route
+                path="/audio-video-studio/projects"
+                element={<AudioVideoStudioProjectsPage />}
               />
               <Route
                 path="/videos/providers"

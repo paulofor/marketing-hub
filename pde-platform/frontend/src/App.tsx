@@ -1934,10 +1934,10 @@ function App() {
                   <AdaptiveVideoPlayer
                     className="public-hero-video"
                     src={heroPlaybackUrl}
-                    autoPlay
+                    autoPlay={!showMotivationalTimelineVideo}
                     controls={showMotivationalTimelineVideo}
-                    muted
-                    loop
+                    muted={!showMotivationalTimelineVideo}
+                    loop={!showMotivationalTimelineVideo}
                     playsInline
                     poster="/assets/musa-editorial-presenca.png"
                     onPlaybackEvent={(event) => {
@@ -1985,16 +1985,20 @@ function App() {
                     <img src="/assets/musa-diagnostic-slide-3.png" alt="" />
                   </div>
                 )}
-                <div className="public-video-play-badge">
-                  <Sparkles size={17} />
-                  <span>{heroPlaybackUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
-                </div>
-                <div className="public-video-watch-status" aria-live="polite">
-                  <span>{videoWatchLabel}</span>
-                  <i>
-                    <b style={{ width: `${publicVideoCompleted ? 100 : publicVideoWatchPercent}%` }} />
-                  </i>
-                </div>
+                {!showMotivationalTimelineVideo && (
+                  <>
+                    <div className="public-video-play-badge">
+                      <Sparkles size={17} />
+                      <span>{heroPlaybackUrl ? 'Vídeo rápido' : 'Prévia em movimento'}</span>
+                    </div>
+                    <div className="public-video-watch-status" aria-live="polite">
+                      <span>{videoWatchLabel}</span>
+                      <i>
+                        <b style={{ width: `${publicVideoCompleted ? 100 : publicVideoWatchPercent}%` }} />
+                      </i>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="public-video-copy">
                 <p className="section-kicker">{showMotivationalTimelineVideo ? 'Microexperiência MUSA v6' : 'Vídeo inicial MUSA'}</p>

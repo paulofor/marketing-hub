@@ -14,6 +14,12 @@ test('v6 publica bloco de video nao-slide e segue direto para o diagnostico', as
     'src',
     '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8',
   );
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', false);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('controls', true);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', false);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('loop', false);
+  await expect(page.locator('.public-video-play-badge')).toHaveCount(0);
+  await expect(page.locator('.public-video-watch-status')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Falta acabamento' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeDisabled();

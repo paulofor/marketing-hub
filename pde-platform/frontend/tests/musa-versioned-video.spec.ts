@@ -14,9 +14,9 @@ test('v6 publica bloco de video nao-slide e segue direto para o diagnostico', as
     'src',
     '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8',
   );
-  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', false);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', true);
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('controls', true);
-  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', false);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', true);
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('loop', false);
   await expect(page.locator('.public-video-play-badge')).toHaveCount(0);
   await expect(page.locator('.public-video-watch-status')).toHaveCount(0);

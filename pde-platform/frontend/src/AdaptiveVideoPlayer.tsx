@@ -69,6 +69,9 @@ export function AdaptiveVideoPlayer({
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
+      if (autoPlay) {
+        video.play().catch(() => undefined);
+      }
       return undefined;
     }
 
@@ -80,6 +83,11 @@ export function AdaptiveVideoPlayer({
       });
       hls.loadSource(src);
       hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (autoPlay) {
+          video.play().catch(() => undefined);
+        }
+      });
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
           playbackEventRef.current?.({ type: 'error', ...readPlaybackState(video) });
@@ -96,7 +104,7 @@ export function AdaptiveVideoPlayer({
 
     playbackEventRef.current?.({ type: 'error', ...readPlaybackState(video) });
     return undefined;
-  }, [src]);
+  }, [autoPlay, src]);
 
   return (
     <video

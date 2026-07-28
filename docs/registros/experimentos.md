@@ -6203,3 +6203,10 @@
 - foi feito: a formatação de horário desta aba foi alinhada ao horário operacional de Brasília.
 - validação: teste unitário da aba, typecheck do frontend, teste local com Vite e Playwright em `/experiments/74`, usando o backend real.
 - impacto comercial esperado: recuperar leitura de comportamento do funil PDE durante campanha ativa e separar problema de aquisição, primeira dobra, vídeo, CTA, paywall ou checkout sem depender de logs técnicos.
+
+## 2026-07-28 — PDE MUSA v6: vídeo inicia em autoplay mudo
+
+- causa-raiz confirmada: a v6 usava o vídeo motivacional na primeira dobra com `muted=false` e `autoplay=false`, fazendo o navegador exibir o primeiro frame parado e criando percepção de vídeo indisponível.
+- foi feito: o player HLS da v6 passou a iniciar automaticamente em modo mudo, com `playsInline` e controles visíveis para a visitante ativar som/play quando desejar.
+- prevenção: os testes da `pde-platform` agora validam que a v6 publicada usa o HLS correto, autoplay mudo, controles ativos e sem loop.
+- impacto comercial esperado: aumentar consumo imediato da promessa em vídeo e reduzir abandono por confusão na primeira dobra antes do diagnóstico.

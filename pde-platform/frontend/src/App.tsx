@@ -1934,9 +1934,9 @@ function App() {
                   <AdaptiveVideoPlayer
                     className="public-hero-video"
                     src={heroPlaybackUrl}
-                    autoPlay={!showMotivationalTimelineVideo}
+                    autoPlay
                     controls={showMotivationalTimelineVideo}
-                    muted={!showMotivationalTimelineVideo}
+                    muted
                     loop={!showMotivationalTimelineVideo}
                     playsInline
                     poster="/assets/musa-editorial-presenca.png"

@@ -180,7 +180,7 @@ test('bloqueia video de slides na versao publicada e permite controle sem player
   await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
 });
 
-test('nao exibe player na versao v6 motivacional sem video real aprovado', async ({ page }) => {
+test('exibe player na versao v6 motivacional com video real aprovado', async ({ page }) => {
   await page.addInitScript(() => {
     window.__MUSA_RUNTIME_CONFIG__ = {
       VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: 'musa-pde-entry-v6-video-motivacional',
@@ -196,8 +196,10 @@ test('nao exibe player na versao v6 motivacional sem video real aprovado', async
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
-  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', true);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', true);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('controls', true);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
 });
 

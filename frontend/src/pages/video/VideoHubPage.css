@@ -275,6 +275,16 @@
   text-align: left;
 }
 
+.video-hub-page__type-button + .video-hub-page__type-button {
+  margin-top: 0.6rem;
+}
+
+.video-hub-page__type-button--cinematic {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+  color: #075985;
+}
+
 .video-hub-page__type-button strong,
 .video-hub-page__stage-title {
   display: block;

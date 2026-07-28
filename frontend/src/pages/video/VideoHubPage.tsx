@@ -118,6 +118,61 @@ const DEFAULT_PROJECT_FORM: VideoProjectForm = {
   status: "DRAFT",
 };
 
+const GALACTICA_CINEMATIC_PROJECT_FORM: VideoProjectForm = {
+  ...DEFAULT_PROJECT_FORM,
+  productId: "",
+  experimentId: "",
+  salesVideoProfileId: "",
+  campaignKey: "treino-editor-galactica-3min",
+  contextType: "TREINO_EDITOR",
+  productionMode: "STATIC_IMAGE_CINEMATIC_MONTAGE",
+  targetChannel: "YOUTUBE_REELS_ADAPTAVEL",
+  format: "HORIZONTAL_16_9",
+  title: "Galactica - O chamado da ultima rota",
+  objective:
+    "Criar um vídeo cinematico de 3 minutos usando a nave como ativo principal para treinar roteiro, ritmo, som, legendas e planejamento de cenas no editor do Marketing Hub.",
+  funnelStage: "AWARENESS_STORYTELLING",
+  primaryMetric:
+    "Retenção aos 3s, 30s, 90s e conclusão; comentários sobre curiosidade pela história; cliques em continuação ou bastidores.",
+  hookText:
+    "Quando a última nave atravessa a galáxia, ela não carrega armas: carrega a decisão de continuar.",
+  scriptText: [
+    "0:00-0:15 - Abertura: Em algum ponto entre a memória e o desconhecido, uma nave acende os motores. Não é fuga. É escolha.",
+    "0:15-0:40 - Incidente: A Galactica recebe um sinal antigo vindo da borda azul da nebulosa. Ninguém sabe se é pedido de socorro ou armadilha.",
+    "0:40-1:10 - Missão: O piloto entende que voltar seria seguro, mas inútil. Seguir pode custar tudo, mas também pode revelar o caminho.",
+    "1:10-1:45 - Travessia: As estrelas viram riscos de luz. O casco vibra. A nave parece pequena diante do vazio, mas cada metro avançado prova que medo não é comando.",
+    "1:45-2:20 - Revelação: No silêncio, o sinal se transforma em coordenadas. Não era uma ameaça. Era um mapa deixado por quem já venceu essa escuridão antes.",
+    "2:20-2:50 - Clímax: A Galactica acelera. A câmera cola na nave, o motor cresce, a luz domina o quadro e a rota impossível se abre.",
+    "2:50-3:00 - Fecho: Toda grande jornada começa assim: uma imagem, uma decisão e três minutos para fazer alguém querer ver o próximo capítulo.",
+  ].join("\n"),
+  scenePlan: [
+    "Cena 1 (0-15s): plano geral da nave à direita, estrelas à esquerda, zoom lento para criar escala e mistério.",
+    "Cena 2 (15-40s): pan diagonal acompanhando a nebulosa azul; inserir pequenos pulsos de luz como sinal distante.",
+    "Cena 3 (40-70s): close progressivo no cockpit e nariz da nave; sensação de decisão e tensão antes da travessia.",
+    "Cena 4 (70-105s): aceleração com motion blur leve, star streaks e brilho do motor subindo sem esconder a nave.",
+    "Cena 5 (105-140s): recuo visual para mostrar a nave pequena contra a galáxia; pausa emocional antes da revelação.",
+    "Cena 6 (140-170s): push-in final nos motores e feixe rosa/azul; ritmo de trailer, cortes mais curtos e energia crescente.",
+    "Cena 7 (170-180s): tela final com título curto e convite para o próximo capítulo.",
+  ].join("\n"),
+  visualReferences:
+    "Usar a imagem Galactica.png como referência principal. Preservar nave branca/vermelha, fundo espacial azul, sensação de velocidade e escala. Evitar transformar a nave em outro modelo, escurecer demais o cockpit ou esconder motores. Estilo: trailer sci-fi premium, limpo, épico, sem estética infantil.",
+  voiceoverPlan:
+    "Voz masculina ou feminina pt-BR com tom cinematográfico, grave, calmo no início e crescente no clímax. Pausas longas nos primeiros 40s, aceleração a partir de 1:45 e frase final com energia de chamada para série.",
+  soundtrackPlan:
+    "Trilha ambiente espacial em dó menor, subgrave discreto, pulso sintético a cada 8 tempos, riser em 1:45, impacto em 2:20 e cauda épica nos últimos 10s. SFX: motor ionico suave, whoosh de passagem, beep de sinal distante e swell final.",
+  captionPlan:
+    "Legendas curtas, no máximo 7 palavras por bloco, em branco com sombra leve. Usar somente frases-chave: 'Não era fuga.', 'Era escolha.', 'O sinal virou mapa.', 'A rota impossível se abriu.'.",
+  ctaText: "Ver o próximo capítulo",
+  targetDurationSeconds: "180",
+  providerPlan:
+    "Para produção por IA, dividir em 18 cenas de 10s com Kling/Runway ou 6 blocos de 30s com Luma quando disponível. Para treino imediato, usar montagem local com pan/zoom sobre a imagem, narração/TTS, trilha e export HLS/MP4.",
+  editingNotes:
+    "Montagem em três atos: mistério (0-40s), decisão/travessia (40-140s), revelação/clímax (140-180s). Usar zooms lentos, pans diagonais, cortes no ritmo dos impactos musicais e texto mínimo para não competir com a nave.",
+  qualityGate:
+    "Aprovar somente se a nave permanecer reconhecível em todos os atos, o vídeo tiver 180s auditados, áudio audível, legendas legíveis, nenhum texto fora da safe area e início forte nos primeiros 3s.",
+  status: "READY_FOR_SCRIPT",
+};
+
 const VIDEO_PROJECT_STATUS_LABELS: Record<VideoProjectStatus, string> = {
   DRAFT: "Rascunho",
   READY_FOR_SCRIPT: "Pronto para roteiro",
@@ -250,6 +305,10 @@ export default function VideoHubPage() {
         0,
     ) > selectedProvider.maxDirectDurationSeconds,
   );
+  const providerDurationLimitMessage =
+    providerDurationLimitExceeded && selectedProvider.maxDirectDurationSeconds
+      ? `${selectedProvider.label} aceita no máximo ${selectedProvider.maxDirectDurationSeconds}s por solicitação direta. Use montagem por cenas ou outro provider para vídeos maiores.`
+      : "";
 
   async function handleVideoReview(
     video: ExperimentVideoAsset,
@@ -375,6 +434,16 @@ export default function VideoHubPage() {
       salesVideoProfileId: selectedProfileId,
     });
     toast.info("Novo projeto de vídeo iniciado");
+  };
+
+  const applyGalacticaTemplate = () => {
+    setSelectedProjectId("");
+    setProjectForm({
+      ...GALACTICA_CINEMATIC_PROJECT_FORM,
+      productId: selectedProductId,
+      salesVideoProfileId: selectedProfileId,
+    });
+    toast.info("Template Galactica de 3 minutos aplicado");
   };
 
   const buildScriptText = () => {
@@ -518,7 +587,7 @@ export default function VideoHubPage() {
       return;
     }
     if (providerDurationLimitExceeded) {
-      toast.error("Veo aceita no máximo 8 segundos por render direto.");
+      toast.error(providerDurationLimitMessage);
       return;
     }
     try {
@@ -650,6 +719,18 @@ export default function VideoHubPage() {
             <span>
               Briefing completo para produto, campanha, orgânico, PDE, avatar,
               cenas de IA, montagem e pós-produção.
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="video-hub-page__type-button video-hub-page__type-button--cinematic"
+            onClick={applyGalacticaTemplate}
+          >
+            <strong>Template cinematico 3 min</strong>
+            <span>
+              Preenche roteiro, cenas, narração, trilha, legendas e QA para
+              vídeo com imagem de referência.
             </span>
           </button>
 

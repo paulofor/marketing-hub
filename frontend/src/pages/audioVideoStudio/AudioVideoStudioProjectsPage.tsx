@@ -4,6 +4,29 @@ import { useVideoProjects } from "../../api/salesVideo/useVideoProjects";
 import PageTitle from "../../components/PageTitle";
 import "./AudioVideoStudioPage.css";
 
+type ProjectListItem = {
+  id: number | "EXEMPLO";
+  title: string;
+  objective: string;
+  status: string;
+  targetChannel: string;
+  format: string;
+  createdAt?: string | null;
+  isExample?: boolean;
+};
+
+const exampleProject: ProjectListItem = {
+  id: "EXEMPLO",
+  title: "MUSA PDE v6 - video HLS motivacional",
+  objective:
+    "Projeto de referencia para localizar e revisar o video hero HLS do PDE v6 antes de evoluir roteiro, cenas, audio e revisao comercial.",
+  status: "EXEMPLO",
+  targetChannel: "PDE v6",
+  format: "HLS LANDING_HERO",
+  createdAt: null,
+  isExample: true,
+};
+
 function formatDate(value?: string | null) {
   if (!value) {
     return "Sem data";
@@ -20,7 +43,9 @@ function formatDate(value?: string | null) {
 
 export default function AudioVideoStudioProjectsPage() {
   const videoProjectsQuery = useVideoProjects();
-  const projects = videoProjectsQuery.data ?? [];
+  const persistedProjects = videoProjectsQuery.data ?? [];
+  const projects: ProjectListItem[] =
+    persistedProjects.length > 0 ? persistedProjects : [exampleProject];
 
   return (
     <div className="audio-video-studio-page">
@@ -55,7 +80,7 @@ export default function AudioVideoStudioProjectsPage() {
           <article className="audio-video-studio-page__project-card">
             Nao foi possivel carregar os projetos agora.
           </article>
-        ) : projects.length > 0 ? (
+        ) : (
           <div className="audio-video-studio-page__project-table-wrapper">
             <table className="audio-video-studio-page__project-table">
               <thead>
@@ -71,9 +96,16 @@ export default function AudioVideoStudioProjectsPage() {
                 {projects.map((project) => (
                   <tr key={project.id}>
                     <td>
-                      <strong>#{project.id}</strong>
+                      <strong>
+                        {project.isExample ? project.id : `#${project.id}`}
+                      </strong>
                       <span>{project.title}</span>
                       <small>{project.objective}</small>
+                      {project.isExample ? (
+                        <small>
+                          HLS: /assets/hls/musa-v6-microexperiencia-visivel/index.m3u8
+                        </small>
+                      ) : null}
                     </td>
                     <td>{project.status}</td>
                     <td>{project.targetChannel}</td>
@@ -84,11 +116,6 @@ export default function AudioVideoStudioProjectsPage() {
               </tbody>
             </table>
           </div>
-        ) : (
-          <article className="audio-video-studio-page__project-card">
-            Nenhum projeto criado ainda. Crie o primeiro projeto no Estudio de
-            Audio e Video.
-          </article>
         )}
       </section>
     </div>

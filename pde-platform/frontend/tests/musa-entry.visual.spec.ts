@@ -154,6 +154,78 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
   expect(trackedEvents).toBe(0);
 });
 
+test('destaca o preco em reais no paywall da area MUSA', async ({ page }) => {
+  const product = {
+    slug: 'metodo-musa-7-dias',
+    experienceVersion: 'musa-pde-entry-v6-video-motivacional',
+    funnelVersion: 'musa-membership-funnel-v1',
+    name: 'Método MUSA - Experiência Guiada de 7 Dias',
+    promise: 'Monte em 7 dias uma presença mais elegante com o que você já tem.',
+    audience: 'Mulheres urbanas',
+    priceLabel: 'R$67',
+    theme: {
+      primary: '#7a2444',
+      accent: '#d6a75c',
+      background: '#fff8f3',
+      imageUrl: '/assets/musa-cover.png',
+    },
+    diagnostic: {
+      title: 'Mapa de Presença MUSA',
+      intro: 'Descubra o primeiro ajuste para sua imagem comunicar mais intenção hoje.',
+      questions: ['O que minha imagem comunica hoje?'],
+    },
+    missions: [
+      {
+        id: 'dia-1-ruido-visual',
+        day: 1,
+        title: 'Ler o sinal que sua imagem comunica',
+        principle: 'A presença cresce quando você identifica o sinal visual principal.',
+        action: 'Escolha uma combinação real e registre o sinal que quer melhorar.',
+        evidence: 'Frase preenchida.',
+        visualCue: 'Compare antes e depois.',
+      },
+      {
+        id: 'dia-2-assinatura',
+        day: 2,
+        title: 'Criar sua assinatura simples',
+        principle: 'Coerência repetida cria reconhecimento.',
+        action: 'Defina 3 sinais para repetir.',
+        evidence: 'Lista dos 3 sinais.',
+        visualCue: 'Monte um pequeno painel.',
+      },
+    ],
+    supportMaterials: [],
+    completionOffer: 'Continue no Clube MUSA.',
+  };
+
+  await page.route('/api/pde/access/events', async (route) => {
+    await route.fulfill({ json: { status: 'RECORDED' } });
+  });
+  await page.route('/api/pde/access/trial-token/workspace', async (route) => {
+    await route.fulfill({
+      json: {
+        product,
+        email: 'teste+paywall@sandbox.local',
+        accessSource: 'MAGIC_LINK',
+        subscriptionStatus: 'TRIAL',
+        completedMissions: 1,
+        totalMissions: 2,
+        progressPercent: 50,
+        completedMissionIds: ['dia-1-ruido-visual'],
+        missionInteractions: [],
+      },
+    });
+  });
+
+  await page.goto('/access/trial-token?mh_preview=qa');
+
+  const paywall = page.getByRole('region', { name: 'Oferta de assinatura MUSA' });
+  await expect(paywall).toBeVisible();
+  await expect(paywall.getByText('Acesso completo', { exact: true })).toBeVisible();
+  await expect(paywall.getByText('R$67', { exact: true })).toBeVisible();
+  await expect(paywall.getByRole('button', { name: /Liberar por R\$67/i })).toBeVisible();
+});
+
 test('bloqueia video de slides na versao publicada e permite controle sem player para QA', async ({ page }) => {
   await page.route('/api/pde/access/events', async (route) => {
     await route.fulfill({ json: { status: 'RECORDED' } });

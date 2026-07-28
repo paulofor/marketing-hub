@@ -24,6 +24,7 @@ import org.springframework.web.client.RestClient;
 @Service
 public class ProductCatalogService {
     private static final Logger log = LoggerFactory.getLogger(ProductCatalogService.class);
+    private static final String MUSA_PRICE_LABEL = "R$67";
     private static final String MUSA_V5_EXPERIENCE_VERSION = "musa-pde-entry-v5-video-explicativo";
     private static final String MUSA_V6_EXPERIENCE_VERSION = "musa-pde-entry-v6-video-motivacional";
     private static final Map<String, String> MUSA_VERSIONED_HOST_EXPERIENCES = Map.of(
@@ -151,7 +152,7 @@ public class ProductCatalogService {
                 "Método MUSA - Experiência Guiada de 7 Dias",
                 "Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.",
                 "Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.",
-                "",
+                MUSA_PRICE_LABEL,
                 new ThemeDto("#7a2444", "#d6a75c", "#fff8f3", "/assets/musa-cover.png"),
                 new DiagnosticDto(
                         "Mapa de Presença MUSA",

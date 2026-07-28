@@ -274,11 +274,9 @@ jobs:
           PRODUCT_SLUG=metodo-musa-7-dias \
           PDE_PUBLIC_BASE_URL=https://v5.clubemusa.com.br \
           EXPECTED_EXPERIENCE_VERSION=musa-pde-entry-v5-video-explicativo \
-          EXPECTED_HERO_VIDEO_PATH=/assets/musa-v5-video-explicativo.mp4 \
           bash scripts/check-musa-pde-public-consistency.sh
 
           PRODUCT_SLUG=metodo-musa-7-dias \
           PDE_PUBLIC_BASE_URL=https://v6.clubemusa.com.br \
           EXPECTED_EXPERIENCE_VERSION=musa-pde-entry-v6-video-motivacional \
-          EXPECTED_HERO_VIDEO_PATH=/assets/musa-v6-video-motivacional.mp4 \
           bash scripts/check-musa-pde-public-consistency.sh

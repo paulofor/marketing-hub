@@ -1,3 +1,9 @@
+## 2026-07-28 — PDE/MUSA: validacao pos-deploy exigia videos antigos bloqueados
+
+- causa-raiz confirmada no Actions e no host publico: o deploy do PDE subiu saudavel, mas o workflow de producao ainda exigia `/assets/musa-v5-video-explicativo.mp4` e `/assets/musa-v6-video-motivacional.mp4`; esses ativos ja estavam proibidos pelo build por serem videos antigos derivados de slides, entao o Nginx servia o fallback HTML do SPA e a validacao tratava como erro de MP4.
+- foi feito: a validacao versionada do workflow continua conferindo os contratos publicos de v5 e v6, mas deixa de exigir os MP4 antigos que nao devem existir na imagem.
+- prevencao de recorrencia: enquanto nao houver video comercial real aprovado e publicado pelo fluxo versionado do Marketing Hub, o gate de deploy deve validar a experiencia e a ausencia de quebra comercial, nao caminhos de video bloqueados.
+
 ## 2026-07-27 — Experimento 74: governanca de versoes PDE MUSA
 
 - causa-raiz confirmada no banco: o experimento 74 estava em execucao apontando para `https://v5.clubemusa.com.br`, mas o slot produtivo `v5` nao carregava `source_experiment_id`, fazendo a tela mostrar a versao sem o experimento que mede o trafego.

@@ -21,6 +21,8 @@ import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
+import com.marketinghub.product.service.adlibrary.ProductAdLibraryItemResponse;
+import com.marketinghub.product.service.adlibrary.ProductAdLibraryResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonExperimentResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonFunnelStageResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
@@ -349,21 +351,8 @@ public class ProductService {
   @Transactional(readOnly = true)
   public ProductExperimentComparisonResponse getExperimentComparison(Long productId) {
     Product product = getProduct(productId);
-    List<Long> explicitExperimentIds = extractExperimentIds(product.getAssociatedExperiments());
-    List<Object> params = new ArrayList<>();
-    StringBuilder where = new StringBuilder(" WHERE 1 = 0");
-    if (product.getMarketNiche() != null && product.getMarketNiche().getId() != null) {
-      where.append(" OR e.niche_id = ?");
-      params.add(product.getMarketNiche().getId());
-    }
-    if (!explicitExperimentIds.isEmpty()) {
-      where.append(" OR e.id IN (");
-      where.append("?,".repeat(explicitExperimentIds.size()));
-      where.setLength(where.length() - 1);
-      where.append(")");
-      params.addAll(explicitExperimentIds);
-    }
-    if (params.isEmpty()) {
+    ProductExperimentScope scope = buildProductExperimentScope(product);
+    if (scope.params().isEmpty()) {
       return new ProductExperimentComparisonResponse(
           product.getId(),
           product.getName(),
@@ -415,7 +404,7 @@ public class ProductService {
         FROM experiment e
         LEFT JOIN experiment_campaign_metric metric ON metric.experiment_id = e.id
         """
-            + where
+            + scope.where()
             + " ORDER BY e.updated_at DESC, e.id DESC";
     List<ProductExperimentComparisonExperimentResponse> experiments =
         jdbcTemplate.query(
@@ -457,7 +446,7 @@ public class ProductService {
                       ? rs.getTimestamp("updated_at").toInstant()
                       : null);
             },
-            params.toArray());
+            scope.params().toArray());
     return new ProductExperimentComparisonResponse(
         product.getId(),
         product.getName(),
@@ -466,6 +455,128 @@ public class ProductService {
         recommendProductAction(experiments),
         experiments);
   }
+
+  /** Consolida anúncios gerados em experimentos do produto para reaproveitamento comercial. */
+  @Transactional(readOnly = true)
+  public ProductAdLibraryResponse getAdLibrary(Long productId) {
+    Product product = getProduct(productId);
+    ProductExperimentScope scope = buildProductExperimentScope(product);
+    if (scope.params().isEmpty()) {
+      return new ProductAdLibraryResponse(
+          product.getId(),
+          product.getName(),
+          product.getSlug(),
+          product.getCommercialStatus(),
+          "Vincule o produto a um nicho ou informe experimentos associados para listar anúncios reutilizáveis.",
+          List.of());
+    }
+
+    String sql =
+        """
+        SELECT c.id AS creative_id,
+               c.experiment_id AS experiment_id,
+               e.name AS experiment_name,
+               e.status AS experiment_status,
+               c.ad_format AS format,
+               c.status AS creative_status,
+               c.headline AS headline,
+               c.primary_text AS primary_text,
+               c.description AS description,
+               c.call_to_action AS cta,
+               c.destination_url AS destination_url,
+               c.image_url AS image_url,
+               c.video_url AS video_url,
+               c.video_id AS video_id,
+               c.reviewed_at AS reviewed_at
+        FROM creative c
+        JOIN experiment e ON e.id = c.experiment_id
+        """
+            + scope.where()
+            + """
+        ORDER BY CASE WHEN c.status = 'READY' THEN 0 ELSE 1 END,
+                 c.reviewed_at DESC,
+                 c.id DESC
+        """;
+    List<ProductAdLibraryItemResponse> ads =
+        jdbcTemplate.query(
+            sql,
+            (rs, rowNum) ->
+                new ProductAdLibraryItemResponse(
+                    rs.getLong("creative_id"),
+                    rs.getLong("experiment_id"),
+                    rs.getString("experiment_name"),
+                    rs.getString("experiment_status"),
+                    rs.getString("format"),
+                    rs.getString("creative_status"),
+                    rs.getString("headline"),
+                    rs.getString("primary_text"),
+                    rs.getString("description"),
+                    rs.getString("cta"),
+                    rs.getString("destination_url"),
+                    rs.getString("image_url"),
+                    rs.getString("video_url"),
+                    rs.getString("video_id"),
+                    recommendAdReuse(rs.getString("creative_status"), rs.getString("format")),
+                    rs.getTimestamp("reviewed_at") != null
+                        ? rs.getTimestamp("reviewed_at").toInstant()
+                        : null),
+            scope.params().toArray());
+    return new ProductAdLibraryResponse(
+        product.getId(),
+        product.getName(),
+        product.getSlug(),
+        product.getCommercialStatus(),
+        recommendAdLibraryAction(ads),
+        ads);
+  }
+
+  /** Monta o filtro canônico de experimentos vinculados ao produto. */
+  private ProductExperimentScope buildProductExperimentScope(Product product) {
+    List<Long> explicitExperimentIds = extractExperimentIds(product.getAssociatedExperiments());
+    List<Object> params = new ArrayList<>();
+    StringBuilder where = new StringBuilder(" WHERE 1 = 0");
+    if (product.getMarketNiche() != null && product.getMarketNiche().getId() != null) {
+      where.append(" OR e.niche_id = ?");
+      params.add(product.getMarketNiche().getId());
+    }
+    if (!explicitExperimentIds.isEmpty()) {
+      where.append(" OR e.id IN (");
+      where.append("?,".repeat(explicitExperimentIds.size()));
+      where.setLength(where.length() - 1);
+      where.append(")");
+      params.addAll(explicitExperimentIds);
+    }
+    return new ProductExperimentScope(where.toString(), params);
+  }
+
+  /** Recomenda o próximo uso comercial de um anúncio da biblioteca. */
+  private String recommendAdReuse(String status, String format) {
+    if ("READY".equalsIgnoreCase(status)) {
+      return "Pode ser reaproveitado em novos experimentos mantendo oferta, página e público controlados.";
+    }
+    if ("REJECTED".equalsIgnoreCase(status)) {
+      return "Não reutilizar sem corrigir o motivo da reprovação comercial.";
+    }
+    if ("VIDEO".equalsIgnoreCase(format)) {
+      return "Validar revisão humana e áudio antes de reutilizar em tráfego.";
+    }
+    return "Revisar promessa, CTA e mídia antes de reutilizar em tráfego.";
+  }
+
+  /** Resume a melhor ação para a biblioteca de anúncios do produto. */
+  private String recommendAdLibraryAction(List<ProductAdLibraryItemResponse> ads) {
+    if (ads.isEmpty()) {
+      return "Ainda não há anúncios gerados para reaproveitar; gere ou aprove criativos antes de abrir novos testes.";
+    }
+    long readyAds = ads.stream().filter(ad -> "READY".equalsIgnoreCase(ad.status())).count();
+    if (readyAds > 0) {
+      return "Priorize anúncios prontos como controle criativo e teste novas audiências ou versões PDE sem misturar variáveis.";
+    }
+    return "A biblioteca tem anúncios, mas nenhum pronto; concluir revisão comercial antes de usar em novos experimentos.";
+  }
+
+  /** Escopo SQL seguro para consultar experimentos relacionados ao produto. */
+  private record ProductExperimentScope(String where, List<Object> params) {}
 
   /** Extrai identificadores numéricos de experimentos informados no cadastro comercial. */
   private List<Long> extractExperimentIds(String associatedExperiments) {

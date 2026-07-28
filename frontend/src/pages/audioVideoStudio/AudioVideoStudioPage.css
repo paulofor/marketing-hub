@@ -209,6 +209,11 @@
   outline: none;
 }
 
+.audio-video-studio-page__back-link {
+  width: fit-content;
+  margin-bottom: 1rem;
+}
+
 .audio-video-studio-page__feedback {
   margin: 0;
   border-radius: 8px;
@@ -337,6 +342,18 @@
 
 .audio-video-studio-page__project-table strong {
   color: #2563eb;
+}
+
+.audio-video-studio-page__project-open-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.audio-video-studio-page__project-open-link:hover span,
+.audio-video-studio-page__project-open-link:focus-visible span {
+  color: #2563eb;
+  text-decoration: underline;
 }
 
 .audio-video-studio-page__project-table span {

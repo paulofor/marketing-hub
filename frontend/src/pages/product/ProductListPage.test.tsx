@@ -87,10 +87,20 @@ describe("ProductListPage", () => {
     });
     expect(videoImagesLink).toHaveAttribute("href", "/products/1/video-images");
 
+    const pdeVideosLink = screen.getByRole("link", {
+      name: /Vídeos HLS/i,
+    });
+    expect(pdeVideosLink).toHaveAttribute("href", "/products/1/pde-videos");
+
     const financialLink = screen.getByRole("link", {
       name: /Financeiro/i,
     });
     expect(financialLink).toHaveAttribute("href", "/products/1/financial");
+
+    const adsLink = screen.getByRole("link", {
+      name: /Anúncios/i,
+    });
+    expect(adsLink).toHaveAttribute("href", "/products/1/ads");
 
     const scientificArticlesLink = screen.getByRole("link", {
       name: /Artigos científicos/i,

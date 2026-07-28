@@ -3,12 +3,14 @@ import { useMemo, type CSSProperties } from "react";
 import type { Product } from "../../api/product/useProducts";
 import {
   BookOpen,
+  Clapperboard,
   GitBranch,
   CircleDollarSign,
   Eye,
   GitCompare,
   Image as ImageIcon,
   Loader2,
+  Megaphone,
   Pencil,
   PlaySquare,
   Video,
@@ -403,6 +405,20 @@ export default function ProductListPage() {
                       >
                         <ImageIcon size={16} aria-hidden="true" />
                         Imagens Para Vídeos
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/products/${product.id}/pde-videos`}
+                      >
+                        <Clapperboard size={16} aria-hidden="true" />
+                        Vídeos HLS
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/products/${product.id}/ads`}
+                      >
+                        <Megaphone size={16} aria-hidden="true" />
+                        Anúncios
                       </Link>
                       <Link
                         className="product-catalog-card__action-button product-catalog-card__action-button--secondary"

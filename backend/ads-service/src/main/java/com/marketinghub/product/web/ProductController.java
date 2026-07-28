@@ -14,6 +14,7 @@ import com.marketinghub.product.dto.SaveProductScientificArticleRequest;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductScientificArticleService;
 import com.marketinghub.product.service.ProductService;
+import com.marketinghub.product.service.adlibrary.ProductAdLibraryResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
@@ -79,6 +80,12 @@ public class ProductController {
   @GetMapping("/{id}/experiment-comparison")
   public ProductExperimentComparisonResponse getExperimentComparison(@PathVariable Long id) {
     return service.getExperimentComparison(id);
+  }
+
+  /** Retorna a biblioteca de anúncios reutilizáveis gerados para experimentos do produto. */
+  @GetMapping("/{id}/ads")
+  public ProductAdLibraryResponse getAdLibrary(@PathVariable Long id) {
+    return service.getAdLibrary(id);
   }
 
   /** Retorna o playbook de vídeos orgânicos recomendado para o produto. */

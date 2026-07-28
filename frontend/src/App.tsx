@@ -17,6 +17,7 @@ import ProductVideoImagesPage from "./pages/product/ProductVideoImagesPage";
 import ProductPdeVersionsPage from "./pages/product/ProductPdeVersionsPage";
 import ProductPdeVideosPage from "./pages/product/ProductPdeVideosPage";
 import ProductOrganicVideoPlanPage from "./pages/product/ProductOrganicVideoPlanPage";
+import ProductAdsPage from "./pages/product/ProductAdsPage";
 import ProductScientificArticlesPage from "./pages/product/ProductScientificArticlesPage";
 import ProductDiscoveryPage from "./pages/productDiscovery/ProductDiscoveryPage";
 import ProductDiscoveryCycleDetailPage from "./pages/productDiscovery/ProductDiscoveryCycleDetailPage";
@@ -228,6 +229,10 @@ export default function App() {
                 element={<ProductExperimentComparisonPage />}
               />
               <Route
+                path="/products/:productId/ads"
+                element={<ProductAdsPage />}
+              />
+              <Route
                 path="/products/:productId/video-images"
                 element={<ProductVideoImagesPage />}
               />
@@ -411,6 +416,10 @@ export default function App() {
               <Route
                 path="/audio-video-studio/projects"
                 element={<AudioVideoStudioProjectsPage />}
+              />
+              <Route
+                path="/audio-video-studio/projects/:projectId"
+                element={<AudioVideoStudioPage />}
               />
               <Route
                 path="/videos/providers"

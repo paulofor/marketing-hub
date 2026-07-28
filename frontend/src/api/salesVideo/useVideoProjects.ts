@@ -14,6 +14,19 @@ export function useVideoProjects() {
   });
 }
 
+export function useVideoProject(projectId?: number) {
+  return useQuery({
+    queryKey: ["sales-video-project", projectId],
+    queryFn: async () => {
+      const { data } = await axios.get<VideoProject>(
+        `/api/sales-videos/projects/${projectId}`,
+      );
+      return data;
+    },
+    enabled: Boolean(projectId),
+  });
+}
+
 export function useCreateVideoProject() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -26,6 +39,7 @@ export function useCreateVideoProject() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales-video-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["sales-video-project"] });
     },
   });
 }

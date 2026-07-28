@@ -27,6 +27,8 @@ import com.marketinghub.product.dto.SaveProductScientificArticleRequest;
 import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductScientificArticleService;
 import com.marketinghub.product.service.ProductService;
+import com.marketinghub.product.service.adlibrary.ProductAdLibraryItemResponse;
+import com.marketinghub.product.service.adlibrary.ProductAdLibraryResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonExperimentResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonFunnelStageResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
@@ -102,6 +104,50 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.name").value(request.getName()))
         .andExpect(jsonPath("$.logoUrl").value("https://clubemusa.com.br/assets/logo-musa.svg"))
         .andExpect(jsonPath("$.currentPriceBrl").value(67.00));
+  }
+
+  /** Deve expor anúncios reutilizáveis vinculados ao produto. */
+  @Test
+  void getAdLibrary() throws Exception {
+    var response =
+        new ProductAdLibraryResponse(
+            1L,
+            "Método MUSA",
+            "metodo-musa-7-dias",
+            "VALIDACAO_COMERCIAL",
+            "Priorize anúncios prontos como controle criativo.",
+            List.of(
+                new ProductAdLibraryItemResponse(
+                    12L,
+                    74L,
+                    "MUSA-H001-E009",
+                    "RUNNING",
+                    "IMAGE",
+                    "READY",
+                    "Elegância visível em 7 dias",
+                    "Descubra quais escolhas deixam sua presença mais elegante.",
+                    "Criativo para primeira dobra.",
+                    "LEARN_MORE",
+                    "https://clubemusa.com.br",
+                    "https://cdn.example.com/musa-ad.png",
+                    null,
+                    null,
+                    "Pode ser reaproveitado em novos experimentos.",
+                    Instant.parse("2026-07-28T12:00:00Z"))));
+
+    when(service.getAdLibrary(1L)).thenReturn(response);
+
+    mockMvc
+        .perform(get("/api/products/{id}/ads", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productId").value(1L))
+        .andExpect(
+            jsonPath("$.mainRecommendation")
+                .value("Priorize anúncios prontos como controle criativo."))
+        .andExpect(jsonPath("$.ads[0].creativeId").value(12L))
+        .andExpect(jsonPath("$.ads[0].experimentId").value(74L))
+        .andExpect(jsonPath("$.ads[0].headline").value("Elegância visível em 7 dias"))
+        .andExpect(jsonPath("$.ads[0].imageUrl").value("https://cdn.example.com/musa-ad.png"));
   }
 
   /** Deve expor o resumo financeiro do produto no contrato canônico. */

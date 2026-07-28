@@ -10,12 +10,15 @@ import {
   Timer,
   Volume2,
 } from "lucide-react";
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { Link, useParams } from "react-router-dom";
 import {
   useCreateVideoProject,
+  useUpdateVideoProject,
+  useVideoProject,
   useVideoProjects,
 } from "../../api/salesVideo/useVideoProjects";
-import type { VideoProjectPayload } from "../../api/salesVideo/types";
+import type { VideoProject, VideoProjectPayload } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
 import "./AudioVideoStudioPage.css";
 
@@ -141,21 +144,57 @@ const scenePrompts = [
 const exampleStory =
   "Uma consultora independente sente que sua presenca digital nao mostra sua autoridade real. Ela tenta postar melhor, ajustar foto, escrever bio e criar conteudo, mas tudo parece solto. Ao entrar no Metodo MUSA, ela recebe um diagnostico guiado por IA que transforma sinais dispersos em uma direcao clara de imagem, conteudo e posicionamento. Em poucos dias, ela entende o que precisa ajustar, passa a se apresentar com mais seguranca e convida outras pessoas para fazerem o mesmo diagnostico.";
 
+const defaultBriefing: StudioBriefing = {
+  title: "MUSA - video manifesto de presenca digital",
+  story: exampleStory,
+  product: "Metodo MUSA",
+  audience: "Mulheres que vendem sua imagem, conhecimento ou atendimento",
+  pain: "Esta se esforcando para aparecer melhor, mas sua presenca digital nao traduz autoridade",
+  promise: "Sair da sensacao de improviso e enxergar os proximos ajustes de imagem com clareza",
+  mechanism: "Diagnostico de presenca publica guiado por IA",
+  proof: "Antes e depois da clareza de posicionamento, bio, imagem e direcao de conteudo",
+  cta: "Fazer o diagnostico MUSA",
+};
+
+function buildBriefingFromProject(project: VideoProject): StudioBriefing {
+  return {
+    title: project.title,
+    story: project.storyText || project.objective,
+    product: project.contextType || defaultBriefing.product,
+    audience: project.targetChannel || defaultBriefing.audience,
+    pain: project.hookText || project.objective,
+    promise: project.primaryMetric || project.objective,
+    mechanism: project.productionMode || defaultBriefing.mechanism,
+    proof: project.visualReferences || defaultBriefing.proof,
+    cta: project.ctaText || defaultBriefing.cta,
+  };
+}
+
 export default function AudioVideoStudioPage() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const parsedProjectId = projectId ? Number(projectId) : undefined;
+  const editableProjectId =
+    parsedProjectId && Number.isFinite(parsedProjectId)
+      ? parsedProjectId
+      : undefined;
+  const selectedProjectQuery = useVideoProject(editableProjectId);
+  const selectedProject = selectedProjectQuery.data;
   const videoProjectsQuery = useVideoProjects();
   const createVideoProject = useCreateVideoProject();
+  const updateVideoProject = useUpdateVideoProject();
   const [saveFeedback, setSaveFeedback] = useState("");
-  const [briefing, setBriefing] = useState<StudioBriefing>({
-    title: "MUSA - video manifesto de presenca digital",
-    story: exampleStory,
-    product: "Metodo MUSA",
-    audience: "Mulheres que vendem sua imagem, conhecimento ou atendimento",
-    pain: "Esta se esforcando para aparecer melhor, mas sua presenca digital nao traduz autoridade",
-    promise: "Sair da sensacao de improviso e enxergar os proximos ajustes de imagem com clareza",
-    mechanism: "Diagnostico de presenca publica guiado por IA",
-    proof: "Antes e depois da clareza de posicionamento, bio, imagem e direcao de conteudo",
-    cta: "Fazer o diagnostico MUSA",
-  });
+  const [briefing, setBriefing] = useState<StudioBriefing>(defaultBriefing);
+
+  const isEditingProject = Boolean(editableProjectId);
+  const isSavingProject =
+    createVideoProject.isPending || updateVideoProject.isPending;
+
+  useEffect(() => {
+    if (selectedProject) {
+      setBriefing(buildBriefingFromProject(selectedProject));
+      setSaveFeedback("");
+    }
+  }, [selectedProject]);
 
   const scriptDraft = useMemo(
     () => [
@@ -176,47 +215,67 @@ export default function AudioVideoStudioPage() {
     };
 
   const buildProjectPayload = (): VideoProjectPayload => ({
-    contextType: "PDE",
-    productionMode: "STORY_FIRST_AUDIO_VIDEO",
-    targetChannel: "PDE_AND_SOCIAL",
-    format: "VERTICAL_9_16",
+    productId: selectedProject?.productId,
+    experimentId: selectedProject?.experimentId,
+    salesVideoProfileId: selectedProject?.salesVideoProfileId,
+    campaignKey: selectedProject?.campaignKey ?? undefined,
+    contextType: selectedProject?.contextType || "PDE",
+    productionMode: selectedProject?.productionMode || "STORY_FIRST_AUDIO_VIDEO",
+    targetChannel: selectedProject?.targetChannel || "PDE_AND_SOCIAL",
+    format: selectedProject?.format || "VERTICAL_9_16",
     title: briefing.title,
     objective:
+      selectedProject?.objective ||
       "Testar uma narrativa audiovisual de 3 minutos para aumentar desejo, confianca e acao no Metodo MUSA.",
     storyText: briefing.story,
-    funnelStage: "AWARENESS",
-    primaryMetric: "DIAGNOSTIC_START",
+    funnelStage: selectedProject?.funnelStage || "AWARENESS",
+    primaryMetric: selectedProject?.primaryMetric || "DIAGNOSTIC_START",
     hookText: `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
     scriptText: scriptDraft.join("\n\n"),
-    scenePlan: scenePrompts.join("\n"),
+    scenePlan: selectedProject?.scenePlan || scenePrompts.join("\n"),
     visualReferences: briefing.proof,
     voiceoverPlan:
+      selectedProject?.voiceoverPlan ||
       "Voz proxima, confiante e acolhedora, com ritmo medio e pausas curtas para reforcar pontos de virada.",
     soundtrackPlan:
+      selectedProject?.soundtrackPlan ||
       "Trilha leve, moderna e aspiracional, sempre abaixo da narracao.",
     captionPlan:
+      selectedProject?.captionPlan ||
       "Legendas curtas com palavras-chave de dor, mecanismo, prova e CTA.",
     ctaText: briefing.cta,
-    targetDurationSeconds: 180,
+    targetDurationSeconds: selectedProject?.targetDurationSeconds || 180,
     providerPlan:
+      selectedProject?.providerPlan ||
       "Comecar com roteiro e storyboard; depois testar narracao, cenas-chave e montagem em jobs auditaveis.",
     editingNotes:
+      selectedProject?.editingNotes ||
       "Priorizar cortes limpos, prova visual concreta e CTA sem excesso de texto.",
     qualityGate:
+      selectedProject?.qualityGate ||
       "Aprovar somente se a historia estiver clara, o mecanismo parecer plausivel, o audio for compreensivel e o CTA estiver conectado ao funil.",
-    status: "READY_FOR_SCRIPT",
-    createdBy: "codex-mkt",
+    status: selectedProject?.status || "READY_FOR_SCRIPT",
+    createdBy: isEditingProject ? undefined : "codex-mkt",
     updatedBy: "codex-mkt",
   });
 
-  const handleCreateExampleProject = async () => {
+  const handleSaveProject = async () => {
     setSaveFeedback("");
     try {
+      if (editableProjectId) {
+        const project = await updateVideoProject.mutateAsync({
+          projectId: editableProjectId,
+          payload: buildProjectPayload(),
+        });
+        setSaveFeedback(`Projeto atualizado: #${project.id} - ${project.title}`);
+        return;
+      }
+
       const project = await createVideoProject.mutateAsync(buildProjectPayload());
       setSaveFeedback(`Projeto exemplo criado: #${project.id} - ${project.title}`);
     } catch {
       setSaveFeedback(
-        "Nao foi possivel criar o projeto exemplo agora. Revise a conexao com o backend e tente novamente.",
+        "Nao foi possivel salvar o projeto agora. Revise a conexao com o backend e tente novamente.",
       );
     }
   };
@@ -226,9 +285,38 @@ export default function AudioVideoStudioPage() {
   return (
     <div className="audio-video-studio-page">
       <PageTitle
-        title="Estudio de Audio e Video"
-        subtitle="Todo audio ou video nasce de um projeto. O primeiro passo do projeto e contar uma historia forte o suficiente para vender uma transformacao."
+        title={
+          isEditingProject
+            ? "Editor de Audio e Video"
+            : "Estudio de Audio e Video"
+        }
+        subtitle={
+          isEditingProject
+            ? "Projeto carregado para continuar roteiro, cenas, audio, montagem e revisao comercial."
+            : "Todo audio ou video nasce de um projeto. O primeiro passo do projeto e contar uma historia forte o suficiente para vender uma transformacao."
+        }
       />
+
+      {isEditingProject ? (
+        <Link
+          className="audio-video-studio-page__secondary-action audio-video-studio-page__back-link"
+          to="/audio-video-studio/projects"
+        >
+          Voltar para lista de projetos
+        </Link>
+      ) : null}
+
+      {selectedProjectQuery.isLoading ? (
+        <article className="audio-video-studio-page__project-card">
+          Carregando projeto selecionado...
+        </article>
+      ) : null}
+
+      {selectedProjectQuery.isError ? (
+        <article className="audio-video-studio-page__project-card">
+          Nao foi possivel carregar este projeto.
+        </article>
+      ) : null}
 
       <section className="audio-video-studio-page__intro">
         <div>
@@ -261,10 +349,11 @@ export default function AudioVideoStudioPage() {
           aria-label="Briefing do video de 3 minutos"
         >
           <div className="audio-video-studio-page__section-heading">
-            <h2>Projeto de exemplo</h2>
+            <h2>{isEditingProject ? "Projeto carregado" : "Projeto de exemplo"}</h2>
             <p>
-              Ajuste a historia base e crie um projeto persistido para testar o
-              Estudio.
+              {isEditingProject
+                ? "Continue o trabalho a partir dos dados persistidos neste projeto."
+                : "Ajuste a historia base e crie um projeto persistido para testar o Estudio."}
             </p>
           </div>
           <label>
@@ -327,13 +416,15 @@ export default function AudioVideoStudioPage() {
           <button
             className="audio-video-studio-page__primary-action"
             type="button"
-            onClick={handleCreateExampleProject}
-            disabled={createVideoProject.isPending}
+            onClick={handleSaveProject}
+            disabled={isSavingProject || selectedProjectQuery.isLoading}
           >
             <Save size={18} aria-hidden="true" />
-            {createVideoProject.isPending
-              ? "Criando projeto..."
-              : "Criar projeto exemplo"}
+            {isSavingProject
+              ? "Salvando projeto..."
+              : isEditingProject
+                ? "Salvar continuidade"
+                : "Criar projeto exemplo"}
           </button>
           {saveFeedback ? (
             <p className="audio-video-studio-page__feedback">{saveFeedback}</p>

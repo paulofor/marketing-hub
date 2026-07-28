@@ -8,6 +8,8 @@ public record FunnelAnalyticsExperienceVersionMetricDto(
         long pdeEntries,
         long presenceMapClicks,
         long diagnosticClicks,
+        long videoPartial,
+        long videoComplete,
         long loginStarted,
         long paywallViewed,
         long subscriptionClicked,

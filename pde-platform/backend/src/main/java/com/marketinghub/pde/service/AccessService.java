@@ -857,6 +857,9 @@ public class AccessService {
                   SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS pde_entries,
                   SUM(CASE WHEN event_type = 'PRESENCE_MAP_CHOICE_SELECTED' THEN 1 ELSE 0 END) AS presence_map_clicks,
                   SUM(CASE WHEN event_type = 'DIAGNOSTIC_CHOICE_SELECTED' THEN 1 ELSE 0 END) AS diagnostic_clicks,
+                  SUM(CASE WHEN event_type IN ('VIDEO_PROGRESS_25', 'VIDEO_PROGRESS_50', 'VIDEO_PROGRESS_75') THEN 1 ELSE 0 END)
+                    AS video_partial,
+                  SUM(CASE WHEN event_type = 'VIDEO_COMPLETED' THEN 1 ELSE 0 END) AS video_complete,
                   SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
                   SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
                   SUM(CASE WHEN event_type = 'SUBSCRIPTION_CLICKED' THEN 1 ELSE 0 END) AS subscription_clicked,
@@ -879,6 +882,8 @@ public class AccessService {
                             resultSet.getLong("pde_entries"),
                             resultSet.getLong("presence_map_clicks"),
                             resultSet.getLong("diagnostic_clicks"),
+                            resultSet.getLong("video_partial"),
+                            resultSet.getLong("video_complete"),
                             resultSet.getLong("login_started"),
                             resultSet.getLong("paywall_viewed"),
                             resultSet.getLong("subscription_clicked"),
@@ -903,6 +908,9 @@ public class AccessService {
                   SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS pde_entries,
                   SUM(CASE WHEN event_type IN ('PRESENCE_MAP_CHOICE_SELECTED', 'DIAGNOSTIC_CHOICE_SELECTED') THEN 1 ELSE 0 END)
                     AS first_interaction_clicks,
+                  SUM(CASE WHEN event_type IN ('VIDEO_PROGRESS_25', 'VIDEO_PROGRESS_50', 'VIDEO_PROGRESS_75') THEN 1 ELSE 0 END)
+                    AS video_partial,
+                  SUM(CASE WHEN event_type = 'VIDEO_COMPLETED' THEN 1 ELSE 0 END) AS video_complete,
                   SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
                   SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
                   SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
@@ -941,6 +949,8 @@ public class AccessService {
                             sessions,
                             resultSet.getLong("pde_entries"),
                             firstInteractionClicks,
+                            resultSet.getLong("video_partial"),
+                            resultSet.getLong("video_complete"),
                             resultSet.getLong("login_started"),
                             paywallViewed,
                             checkoutStarted,

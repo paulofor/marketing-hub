@@ -258,7 +258,7 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     buttonLabel: 'Ver meu plano MUSA de 7 dias',
     loadingLabel: 'Preparando seu plano MUSA...',
     pendingLabel: 'Sua Consultora MUSA está preparando seu mapa e a primeira microação prática para hoje.',
-    failedLabel: 'Suas respostas ficaram salvas. Use a missão do Dia 1 manualmente enquanto a consultora automática é configurada.',
+    failedLabel: 'Suas respostas ficaram salvas. Use a missão do Dia 1 agora e tente pedir seu mapa novamente em alguns instantes.',
     completedKicker: 'Meu Mapa de Presença',
     nextStepTitle: 'O que fazer agora',
     nextStepText: 'Aplique hoje uma das microações indicadas. Depois volte aqui e toque em “Registrar Dia 1 concluído” para liberar o próximo passo da sua jornada.',
@@ -303,7 +303,7 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
     buttonLabel: 'Gerar minha assinatura MUSA',
     loadingLabel: 'Montando assinatura...',
     pendingLabel: 'Sua Consultora MUSA está preparando uma orientação curta com seus 3 sinais.',
-    failedLabel: 'Seus sinais ficaram salvos. A consultora automática ainda precisa ser configurada neste ambiente.',
+    failedLabel: 'Seus sinais ficaram salvos. Tente pedir a orientação novamente em alguns instantes.',
     completedKicker: 'Minha assinatura MUSA',
     nextStepTitle: 'O que fazer agora',
     nextStepText: 'Escolha uma situação real da semana, use os sinais recomendados e registre a missão quando tiver uma combinação pronta para repetir.',
@@ -621,37 +621,37 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
     imageUrl: '/assets/musa-diagnostic-slide-1.png',
     visualTitle: 'Comece pelo detalhe que mais rouba intenção.',
-    visualText: 'A primeira tela transforma a dor ampla do espelho em um sinal concreto para a Consultora MUSA ler.',
+    visualText: 'Comece nomeando a sensação do espelho. A partir dela, o MUSA indica um cuidado simples para hoje.',
     journeyEventType: 'PROBLEM_RECOGNIZED',
   },
   {
     key: 'presenceFocus',
-    stageLabel: 'Entrada real mínima',
+    stageLabel: 'Sua rotina',
     question: 'Em qual situação você quer se sentir mais presente primeiro?',
     options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
     imageUrl: '/assets/musa-diagnostic-slide-2.png',
     visualTitle: 'Escolha uma cena real, não uma mudança de vida inteira.',
-    visualText: 'A estrada reduz esforço porque a visitante só precisa apontar onde a presença deve aparecer hoje.',
+    visualText: 'Você só precisa apontar onde quer se sentir mais segura hoje. O primeiro ajuste vem a partir dessa cena.',
     journeyEventType: 'REAL_INPUT_SUBMITTED',
   },
   {
     key: 'desiredSignal',
-    stageLabel: 'Mecanismo MUSA',
+    stageLabel: 'Sinal desejado',
     question: 'Qual sinal você quer comunicar com mais força nessa cena?',
     options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
     imageUrl: '/assets/musa-diagnostic-slide-3.png',
     visualTitle: 'A Consultora MUSA conecta dor, situação e sinal desejado.',
-    visualText: 'Aqui entram os pilares do método: reduzir ruído, escolher peça-sinal e ajustar cor, acabamento e postura.',
+    visualText: 'A partir do que você escolhe, o MUSA mostra qual detalhe pode deixar sua imagem mais coerente e intencional.',
     journeyEventType: 'MECHANISM_VIEWED',
   },
   {
     key: 'startingResource',
-    stageLabel: 'Microresultado gratuito',
+    stageLabel: 'Primeiro cuidado',
     question: 'Com o que você prefere começar hoje, sem comprar nada novo?',
     options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
     imageUrl: '/assets/musa-diagnostic-slide-4.png',
-    visualTitle: 'Antes do e-mail, ela já escolhe o primeiro ponto de ação.',
-    visualText: 'O resultado gratuito nasce das respostas e prepara a continuidade paga como próximo passo natural.',
+    visualTitle: 'Escolha por onde você quer começar hoje.',
+    visualText: 'Você recebe uma sugestão simples para testar hoje e decide depois se quer continuar o plano completo.',
     journeyEventType: 'CATEGORY_UNDERSTOOD',
   },
 ];
@@ -1350,7 +1350,7 @@ function App() {
       window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
       return;
     }
-    setErrorMessage('Checkout de assinatura ainda não configurado para este ambiente.');
+    setErrorMessage('A liberação do acesso completo ainda não está disponível. Tente novamente em alguns instantes.');
   }
 
   function editAccessEmail() {
@@ -1392,12 +1392,12 @@ function App() {
       return authMode === 'login' ? 'Enviamos um novo link para seu e-mail. Abra o link para voltar à sua Área MUSA.' : 'Seu primeiro acesso foi criado. Abra o link enviado por e-mail para ver o diagnóstico e começar o Dia 1.';
     }
     if (result.accessUrl) {
-      return authMode === 'login' ? 'Link de teste encontrado para esse cadastro. Use o botão Abrir minha Área MUSA para voltar.' : 'Primeiro acesso de teste criado. Use o botão Abrir minha Área MUSA para ver o diagnóstico e começar o Dia 1.';
+      return authMode === 'login' ? 'Encontramos seu acesso. Use o botão Abrir minha Área MUSA para voltar.' : 'Seu primeiro acesso foi criado. Use o botão Abrir minha Área MUSA para ver o diagnóstico e começar o Dia 1.';
     }
     if (result.deliveryStatus === 'EMAIL_SEND_FAILED') {
       return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. A equipe MUSA precisa concluir a configuração do domínio de envio.';
     }
-    return 'O envio por e-mail ainda não está configurado neste ambiente. Configure o envio ou habilite o link de teste para entrar.';
+    return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. Tente novamente em alguns instantes.';
   }
 
   function resolvePublicDiagnosticEmailMessage(result: MagicLinkResponse) {
@@ -1405,12 +1405,12 @@ function App() {
       return 'Enviei para seu e-mail o caminho para salvar seu diagnóstico e abrir o roteiro detalhado dos 7 dias.';
     }
     if (result.accessUrl) {
-      return 'Seu roteiro detalhado foi liberado em ambiente de teste. Use o botão para abrir sua Área MUSA.';
+      return 'Seu roteiro detalhado foi liberado. Use o botão para abrir sua Área MUSA.';
     }
     if (result.deliveryStatus === 'EMAIL_SEND_FAILED') {
       return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. A equipe MUSA precisa concluir a configuração do domínio de envio.';
     }
-    return 'Seu acesso foi criado, mas o envio por e-mail ainda não está configurado neste ambiente.';
+    return 'Seu acesso foi criado, mas o e-mail ainda não pôde ser entregue. Tente novamente em alguns instantes.';
   }
 
   function openDevAccess(accessUrl: string) {
@@ -1602,7 +1602,7 @@ function App() {
   async function submitPublicPresenceDiagnostic() {
     const answers = sanitizeAnswers(publicDiagnosticAnswers);
     if (Object.keys(answers).length < publicDiagnosticQuestions.length) {
-      setErrorMessage('Responda as 4 telas para a Consultora MUSA montar seu primeiro ajuste personalizado.');
+      setErrorMessage('Responda os 4 passos para a Consultora MUSA montar seu primeiro ajuste personalizado.');
       return;
     }
     setPublicDiagnosticLoading(true);
@@ -1920,7 +1920,7 @@ function App() {
         <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
           <div className="public-diagnostic-intro">
             <h1>Descubra o detalhe que faz seu look parecer incompleto, sem comprar roupa nova.</h1>
-            <p>Assista à prévia MUSA, escolha uma situação real e receba um primeiro ajuste antes de login, paywall ou compra.</p>
+            <p>Assista à prévia MUSA, escolha uma situação real e receba um primeiro ajuste antes de deixar seu e-mail ou comprar qualquer coisa.</p>
           </div>
 
           {showPublicDiagnosticVideoHero && (
@@ -2001,9 +2001,9 @@ function App() {
                 )}
               </div>
               <div className="public-video-copy">
-                <p className="section-kicker">{showMotivationalTimelineVideo ? 'Microexperiência MUSA v6' : 'Vídeo inicial MUSA'}</p>
+                <p className="section-kicker">{showMotivationalTimelineVideo ? 'Prévia MUSA' : 'Vídeo inicial MUSA'}</p>
                 <h2>{showMotivationalTimelineVideo ? 'Veja a promessa em vídeo e avance direto para seu diagnóstico de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
-                <p>{showMotivationalTimelineVideo ? 'O objetivo desta versão é medir avanço para diagnóstico: a visitante vê valor primeiro, escolhe o ruído visual e recebe um primeiro caminho antes de qualquer barreira.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
+                <p>{showMotivationalTimelineVideo ? 'Você vê a ideia na prática, escolhe o que mais incomoda no espelho e recebe um primeiro caminho para se sentir mais alinhada hoje.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
                 <button
                   className="secondary-button public-video-cta"
                   type="button"
@@ -2079,11 +2079,11 @@ function App() {
               </div>
               <div className="public-diagnostic-stage">
                 <div className="public-diagnostic-stage-top">
-                  <p className="section-kicker">Estrada MUSA</p>
-                  <span>{answeredPublicDiagnosticCount}/{publicDiagnosticQuestions.length} telas</span>
+                  <p className="section-kicker">Seu primeiro passo</p>
+                  <span>{answeredPublicDiagnosticCount}/{publicDiagnosticQuestions.length} passos</span>
                 </div>
-                <h2>Do espelho da dor ao primeiro ajuste de presença, sem pedir e-mail antes do valor.</h2>
-                <div className="public-road-steps" aria-label="Etapas da estrada MUSA">
+                <h2>Transforme a sensação de “falta algo” em uma direção simples para se arrumar com mais intenção.</h2>
+                <div className="public-road-steps" aria-label="Etapas do seu primeiro passo MUSA">
                   {publicDiagnosticQuestions.map((question, index) => (
                     <span key={question.key} className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}>
                       {question.stageLabel}
@@ -2095,13 +2095,13 @@ function App() {
                 </div>
                 <div className="public-progress-strip" aria-label="Progresso do diagnóstico">
                   <span>
-                    <Check size={15} /> 4 telas rápidas
+                    <Check size={15} /> 4 passos rápidos
                   </span>
                   <span>
-                    <Sparkles size={15} /> Microresultado grátis
+                    <Sparkles size={15} /> Primeiro ajuste grátis
                   </span>
                   <span>
-                    <Lock size={15} /> Sem preço antes do resultado
+                    <Lock size={15} /> Você decide depois
                   </span>
                 </div>
               </div>
@@ -2381,7 +2381,7 @@ function App() {
               <div className="video-hero-caption">
                 <span>{heroPlaybackUrl ? 'Prévia em vídeo' : 'Prévia visual'}</span>
                 <strong>Veja o gesto simples que muda a percepção da sua presença.</strong>
-                <p>{heroPlaybackUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro passo prático do Dia 1.' : 'Vídeo hero ainda não configurado neste ambiente. A tela preserva a promessa e bloqueia liberação como vídeo real.'}</p>
+                <p>{heroPlaybackUrl ? 'O Mapa de Presença começa antes do e-mail e mostra o primeiro passo prático do Dia 1.' : 'A prévia em vídeo está sendo preparada. Enquanto isso, você já pode receber seu Mapa de Presença.'}</p>
               </div>
             </div>
           ) : (

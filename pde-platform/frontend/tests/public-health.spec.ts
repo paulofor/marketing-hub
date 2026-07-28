@@ -11,7 +11,7 @@ const defaultContract: Required<PublicHealthContract> = {
   slug: 'metodo-musa-7-dias',
   healthPath: '/',
   requiredTexts: [
-    'Descubra em 30 segundos qual detalhe está deixando sua imagem menos elegante hoje.',
+    'Descubra o detalhe que faz seu look parecer incompleto, sem comprar roupa nova.',
     'Estrada MUSA',
     'Ver meu primeiro passo',
   ],

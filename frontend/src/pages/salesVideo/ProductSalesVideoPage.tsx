@@ -516,7 +516,7 @@ export default function ProductSalesVideoPage() {
         <Metric label="Em produção" value={String(funnelMetrics.running)} />
         <Metric label="Falhas" value={String(funnelMetrics.failed)} />
         <Metric
-          label="Custo total"
+          label="Custo estimado"
           value={formatUsdWithBrl(productCost.total)}
         />
       </section>
@@ -1207,7 +1207,7 @@ export default function ProductSalesVideoPage() {
                 <strong>Jobs e custos do produto</strong>
               </div>
               <span>
-                {productCost.knownCount}/{jobList.length} com custo conhecido
+                {productCost.knownCount}/{jobList.length} com custo estimado
               </span>
             </div>
             <div className="table-responsive">

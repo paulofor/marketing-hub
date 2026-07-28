@@ -6,6 +6,9 @@ import axios from "axios";
 import ProductFinancialPage from "./ProductFinancialPage";
 
 vi.mock("axios");
+vi.mock("echarts-for-react", () => ({
+  default: () => <div data-testid="product-financial-chart" />,
+}));
 
 describe("ProductFinancialPage", () => {
   beforeEach(() => {
@@ -94,6 +97,9 @@ describe("ProductFinancialPage", () => {
     ).toBeTruthy();
     expect(await screen.findByText(/Método MUSA/i)).toBeTruthy();
     expect(screen.getByText(/R\$ 5 por US\$ 1/i)).toBeTruthy();
+    expect(screen.getByText("Evolução financeira")).toBeTruthy();
+    expect(screen.getByText("Composição do custo mensal")).toBeTruthy();
+    expect(screen.getAllByTestId("product-financial-chart")).toHaveLength(2);
     expect(screen.getByText("Resultado dos últimos 4 meses")).toBeTruthy();
 
     const julyRow = screen.getByText("Julho 2026").closest("tr");

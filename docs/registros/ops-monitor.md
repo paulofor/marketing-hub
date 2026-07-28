@@ -1,5 +1,13 @@
 # Registros do monitor operacional
 
+## 2026-07-28 — Criação do monitor dedicado de PDEs críticos
+
+- Decisão: criado o módulo `pde-monitor-worker` para monitoramento 24/7 dos PDEs publicados.
+- Causa-raiz: PDE ativo em campanha é superfície direta de venda; depender do backend principal para descobrir e registrar indisponibilidade cria cadeia operacional longa demais para uma função crítica.
+- Ajuste: o novo módulo lê diretamente `ops_monitored_module` para PDEs críticos e grava diretamente `ops_module_health_check` e `ops_module_incident`.
+- Limite da exceção: banco direto é permitido somente para saúde/incidentes de PDEs críticos; não vale para pipeline, checkout, liberação de acesso ou alteração comercial.
+- Prevenção: testes do módulo protegem seleção de PDE crítico, gravação de heartbeat/incidente, encerramento de incidente e independência do backend principal.
+
 ## 2026-07-27 — Metadados comerciais na tela PDE 24/7
 
 - Causa-raiz: a tela PDE mostrava saúde técnica do endpoint, mas não destacava no topo a versão comercial publicada, o link operacional do produto e a referência de imagem/container.

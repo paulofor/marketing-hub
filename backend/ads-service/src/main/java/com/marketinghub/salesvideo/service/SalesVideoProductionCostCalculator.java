@@ -9,6 +9,18 @@ import org.springframework.util.StringUtils;
 /** Calcula o custo de produção de vídeos gerados por providers de IA. */
 @Component
 public class SalesVideoProductionCostCalculator {
+  private static final BigDecimal LUMA_RAY_32_360_5S = new BigDecimal("0.0600");
+  private static final BigDecimal LUMA_RAY_32_360_10S = new BigDecimal("0.1800");
+  private static final BigDecimal LUMA_RAY_32_540_5S = new BigDecimal("0.1500");
+  private static final BigDecimal LUMA_RAY_32_540_10S = new BigDecimal("0.4500");
+  private static final BigDecimal LUMA_RAY_32_720_5S = new BigDecimal("0.3000");
+  private static final BigDecimal LUMA_RAY_32_720_10S = new BigDecimal("0.9000");
+  private static final BigDecimal LUMA_RAY_32_1080_5S = new BigDecimal("1.2000");
+  private static final BigDecimal LUMA_RAY_32_1080_10S = new BigDecimal("3.6000");
+  private static final BigDecimal KLING_30_STANDARD_720 = new BigDecimal("0.1120");
+  private static final BigDecimal KLING_30_PRO_1080 = new BigDecimal("0.1400");
+  private static final BigDecimal RUNWAY_GEN45 = new BigDecimal("0.1200");
+  private static final BigDecimal HEYGEN_AVATAR_IV_PHOTO_PER_SECOND = new BigDecimal("0.0500");
   private static final BigDecimal VEO_31_STANDARD_720_1080 = new BigDecimal("0.40");
   private static final BigDecimal VEO_31_STANDARD_4K = new BigDecimal("0.60");
   private static final BigDecimal VEO_31_FAST_720 = new BigDecimal("0.10");
@@ -27,6 +39,9 @@ public class SalesVideoProductionCostCalculator {
     if (normalizedDuration == null) {
       return null;
     }
+    if (isLuma(providerName, model)) {
+      return estimateLumaRay32Usd(normalizedDuration, resolution);
+    }
     BigDecimal pricePerSecond = pricePerSecondUsd(providerName, model, resolution);
     if (pricePerSecond == null) {
       return null;
@@ -40,6 +55,15 @@ public class SalesVideoProductionCostCalculator {
   public BigDecimal pricePerSecondUsd(String providerName, String model, String resolution) {
     String normalizedModel = normalize(model);
     String normalizedProvider = normalize(providerName);
+    if (isKling(normalizedProvider, normalizedModel)) {
+      return is1080p(resolution) ? KLING_30_PRO_1080 : KLING_30_STANDARD_720;
+    }
+    if (isRunway(normalizedProvider, normalizedModel)) {
+      return RUNWAY_GEN45;
+    }
+    if (isHeyGen(normalizedProvider, normalizedModel)) {
+      return HEYGEN_AVATAR_IV_PHOTO_PER_SECOND;
+    }
     if (contains(normalizedModel, "omni-flash") || contains(normalizedProvider, "omni-flash")) {
       return GEMINI_OMNI_FLASH;
     }
@@ -61,6 +85,45 @@ public class SalesVideoProductionCostCalculator {
       return is4k(resolution) ? VEO_31_STANDARD_4K : VEO_31_STANDARD_720_1080;
     }
     return null;
+  }
+
+  /** Estima custo da Luma Ray 3.2 por blocos oficiais de 5s ou 10s. */
+  private BigDecimal estimateLumaRay32Usd(Integer durationSeconds, String resolution) {
+    BigDecimal blockPrice = lumaRay32TenSecondPrice(resolution);
+    int blocks = (int) Math.ceil(durationSeconds / 10.0);
+    if (durationSeconds <= 5) {
+      blockPrice = lumaRay32FiveSecondPrice(resolution);
+      blocks = 1;
+    }
+    return blockPrice.multiply(BigDecimal.valueOf(blocks)).setScale(4, RoundingMode.HALF_UP);
+  }
+
+  /** Resolve preço Luma Ray 3.2 de 5 segundos conforme resolução. */
+  private BigDecimal lumaRay32FiveSecondPrice(String resolution) {
+    if (is1080p(resolution)) {
+      return LUMA_RAY_32_1080_5S;
+    }
+    if (is540p(resolution)) {
+      return LUMA_RAY_32_540_5S;
+    }
+    if (is360p(resolution)) {
+      return LUMA_RAY_32_360_5S;
+    }
+    return LUMA_RAY_32_720_5S;
+  }
+
+  /** Resolve preço Luma Ray 3.2 de 10 segundos conforme resolução. */
+  private BigDecimal lumaRay32TenSecondPrice(String resolution) {
+    if (is1080p(resolution)) {
+      return LUMA_RAY_32_1080_10S;
+    }
+    if (is540p(resolution)) {
+      return LUMA_RAY_32_540_10S;
+    }
+    if (is360p(resolution)) {
+      return LUMA_RAY_32_360_10S;
+    }
+    return LUMA_RAY_32_720_10S;
   }
 
   /** Normaliza duração inválida para impedir custo fictício. */
@@ -95,6 +158,16 @@ public class SalesVideoProductionCostCalculator {
     return normalize(resolution).contains("1080");
   }
 
+  /** Verifica se a resolução solicitada é 540p. */
+  private boolean is540p(String resolution) {
+    return normalize(resolution).contains("540");
+  }
+
+  /** Verifica se a resolução solicitada é 360p. */
+  private boolean is360p(String resolution) {
+    return normalize(resolution).contains("360");
+  }
+
   /** Verifica se a resolução solicitada é 4k. */
   private boolean is4k(String resolution) {
     String normalized = normalize(resolution);
@@ -106,6 +179,34 @@ public class SalesVideoProductionCostCalculator {
     return StringUtils.hasText(value)
         ? value.trim().toLowerCase(Locale.ROOT).replace('_', '-')
         : "";
+  }
+
+  /** Identifica modelos ou providers Luma Ray. */
+  private boolean isLuma(String providerName, String model) {
+    String normalizedProvider = normalize(providerName);
+    String normalizedModel = normalize(model);
+    return contains(normalizedProvider, "luma")
+        || contains(normalizedProvider, "ray")
+        || contains(normalizedModel, "luma")
+        || contains(normalizedModel, "ray-3.2");
+  }
+
+  /** Identifica modelos ou providers Kling. */
+  private boolean isKling(String normalizedProvider, String normalizedModel) {
+    return contains(normalizedProvider, "kling") || contains(normalizedModel, "kling");
+  }
+
+  /** Identifica modelos ou providers Runway. */
+  private boolean isRunway(String normalizedProvider, String normalizedModel) {
+    return contains(normalizedProvider, "runway")
+        || contains(normalizedProvider, "runaway")
+        || contains(normalizedModel, "gen4.5")
+        || contains(normalizedModel, "gen-4.5");
+  }
+
+  /** Identifica modelos ou providers HeyGen. */
+  private boolean isHeyGen(String normalizedProvider, String normalizedModel) {
+    return contains(normalizedProvider, "heygen") || contains(normalizedModel, "heygen");
   }
 
   /** Testa presença de um marcador normalizado. */

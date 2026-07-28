@@ -13,6 +13,7 @@ import { useUpdateExperimentVideoAssetReview } from "../../api/experiment/useUpd
 import { useExperimentVideoPerformanceDashboard } from "../../api/experiment/useExperimentVideoPerformanceDashboard";
 import { useTenantContext } from "../../utils/tenantContext";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
+import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import "./ExperimentVideoTab.css";
 
 interface ExperimentVideoTabProps {
@@ -63,6 +64,18 @@ function getAspectRatioStyle(asset: ExperimentVideoAsset) {
 
   const normalizedRatio = asset.aspectRatio.replace(":", " / ");
   return { aspectRatio: normalizedRatio };
+}
+
+function resolveExperimentVideoPlaybackUrl(asset: ExperimentVideoAsset) {
+  const hlsUrl = asset.hlsPlaybackUrl?.trim();
+  if (hlsUrl) {
+    return resolveAssetUrl(hlsUrl);
+  }
+  return asset.assetUrl ? resolveAssetUrl(asset.assetUrl) : "";
+}
+
+function isPdeHeroHlsReady(asset: ExperimentVideoAsset) {
+  return asset.slot !== "LANDING_HERO" || Boolean(asset.hlsPlaybackUrl?.trim());
 }
 
 function getCommercialVideoRole(asset: ExperimentVideoAsset) {
@@ -132,7 +145,7 @@ export default function ExperimentVideoTab({
         (asset) =>
           asset.slot === "LANDING_HERO" &&
           asset.status === "READY" &&
-          Boolean(asset.assetUrl) &&
+          Boolean(resolveExperimentVideoPlaybackUrl(asset)) &&
           getCommercialVideoRole(asset) === "Hero de venda",
       ),
     [sortedAssets],
@@ -165,21 +178,21 @@ export default function ExperimentVideoTab({
           asset.slot === "LANDING_HERO" &&
           asset.status === "READY" &&
           asset.reviewStatus === "APPROVED" &&
-          Boolean(asset.assetUrl),
+          Boolean(resolveExperimentVideoPlaybackUrl(asset)),
       ) ??
       sortedAssets.find(
         (asset) =>
           asset.slot === "LANDING_HERO" &&
           asset.status === "READY" &&
-          Boolean(asset.assetUrl),
+          Boolean(resolveExperimentVideoPlaybackUrl(asset)),
       ) ??
       sortedAssets.find(
-        (asset) => asset.status === "READY" && Boolean(asset.assetUrl),
+        (asset) => asset.status === "READY" && Boolean(resolveExperimentVideoPlaybackUrl(asset)),
       ),
     [sortedAssets],
   );
-  const landingHeroVideoUrl = landingHeroAsset?.assetUrl
-    ? resolveAssetUrl(landingHeroAsset.assetUrl)
+  const landingHeroVideoUrl = landingHeroAsset
+    ? resolveExperimentVideoPlaybackUrl(landingHeroAsset)
     : "";
   const landingHeroPosterUrl = landingHeroAsset?.thumbnailUrl
     ? resolveAssetUrl(landingHeroAsset.thumbnailUrl)
@@ -378,9 +391,14 @@ export default function ExperimentVideoTab({
             <div className="col-12 col-xl-5">
               <div className="experiment-video-preview-card__player-shell">
                 {landingHeroVideoUrl ? (
-                  <video
+                  <AdaptiveVideoPlayer
                     className="experiment-video-preview-card__player"
                     src={landingHeroVideoUrl}
+                    fallbackSrc={
+                      landingHeroAsset?.assetUrl
+                        ? resolveAssetUrl(landingHeroAsset.assetUrl)
+                        : undefined
+                    }
                     poster={landingHeroPosterUrl || undefined}
                     controls
                     playsInline
@@ -406,7 +424,7 @@ export default function ExperimentVideoTab({
                       ? `${landingHeroAsset.durationSeconds}s`
                       : "Duração não registrada"}
                   </span>
-                  {landingHeroAsset.assetUrl && (
+                  {landingHeroVideoUrl && (
                     <a
                       href={landingHeroVideoUrl}
                       target="_blank"
@@ -610,7 +628,10 @@ function ExperimentVideoReviewControls({
   pending: boolean;
 }) {
   const [rejectionReason, setRejectionReason] = useState(asset.rejectionReason ?? "");
-  const canApprove = asset.status === "READY" && Boolean(asset.assetUrl);
+  const canApprove =
+    asset.status === "READY" &&
+    Boolean(resolveExperimentVideoPlaybackUrl(asset)) &&
+    isPdeHeroHlsReady(asset);
   const canReject = asset.status === "READY" && rejectionReason.trim().length > 0;
 
   useEffect(() => {

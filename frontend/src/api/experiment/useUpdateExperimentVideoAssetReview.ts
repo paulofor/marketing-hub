@@ -8,9 +8,10 @@ import {
 interface UpdateExperimentVideoAssetReviewPayload {
   experimentId: number;
   videoAssetId: number;
-  reviewStatus: ExperimentVideoReviewStatus;
+  reviewStatus?: ExperimentVideoReviewStatus;
   rejectionReason?: string;
   reviewedBy?: string;
+  hlsPlaybackUrl?: string;
 }
 
 export function useUpdateExperimentVideoAssetReview() {
@@ -23,6 +24,7 @@ export function useUpdateExperimentVideoAssetReview() {
       reviewStatus,
       rejectionReason,
       reviewedBy,
+      hlsPlaybackUrl,
     }: UpdateExperimentVideoAssetReviewPayload) => {
       const { data } = await axios.patch<ExperimentVideoAsset>(
         `/api/experiments/${experimentId}/video-assets/${videoAssetId}`,
@@ -30,6 +32,7 @@ export function useUpdateExperimentVideoAssetReview() {
           reviewStatus,
           rejectionReason,
           reviewedBy,
+          hlsPlaybackUrl,
         },
       );
       return data;

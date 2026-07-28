@@ -370,6 +370,16 @@
   background: #f0fdf4;
 }
 
+.product-financial-charts {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+}
+
+.product-financial-chart {
+  min-width: 0;
+}
+
 .product-financial-months__label {
   color: #172033;
 }
@@ -1215,6 +1225,10 @@
   }
 
   .product-financial-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .product-financial-charts {
     grid-template-columns: 1fr;
   }
 

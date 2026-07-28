@@ -21,6 +21,7 @@ import {
   HeartPulse,
   Image,
   Instagram,
+  List,
   MessageSquare,
   Mic2,
   Video,
@@ -139,6 +140,13 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/audio-video-studio",
         label: "Estudio de Audio e Video",
         icon: Mic2,
+        children: [
+          {
+            to: "/audio-video-studio/projects",
+            label: "Lista de projetos",
+            icon: List,
+          },
+        ],
       },
       {
         to: "/creative-video-review",

@@ -89,6 +89,7 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
       videoAsset.setAsset(job.getAsset());
       videoAsset.setAssetUrl(job.getAsset().getUrl());
     }
+    resolveHlsPlaybackUrl(job, request).ifPresent(videoAsset::setHlsPlaybackUrl);
     if (job.getPosterAsset() != null) {
       videoAsset.setThumbnailUrl(job.getPosterAsset().getUrl());
     }
@@ -127,6 +128,48 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
           job != null ? job.getId() : null,
           ex);
       return Optional.empty();
+    }
+  }
+
+  /** Extrai a playlist HLS final do job ou do payload auditável enviado pelo worker. */
+  private Optional<String> resolveHlsPlaybackUrl(SalesVideoJob job, JobCompletionRequest request) {
+    return firstHlsUrl(
+        job != null ? job.getStreamPlaybackUrl() : null,
+        request != null ? request.getStreamPlaybackUrl() : null,
+        textMetadataField(request, "hlsPlaybackUrl"),
+        textMetadataField(request, "hls_playback_url"),
+        textMetadataField(request, "streamPlaybackUrl"),
+        textMetadataField(request, "stream_playback_url"));
+  }
+
+  /** Seleciona a primeira URL HLS válida sem promover MP4 como contrato de PDE. */
+  private Optional<String> firstHlsUrl(String... candidates) {
+    for (String candidate : candidates) {
+      if (candidate != null && candidate.trim().contains(".m3u8")) {
+        return Optional.of(candidate.trim());
+      }
+    }
+    return Optional.empty();
+  }
+
+  /** Lê um campo textual do metadata de conclusão quando o worker envia aliases diferentes. */
+  private String textMetadataField(JobCompletionRequest request, String fieldName) {
+    if (request == null
+        || request.getMetadataJson() == null
+        || request.getMetadataJson().isBlank()) {
+      return null;
+    }
+    try {
+      JsonNode metadata = OBJECT_MAPPER.readTree(request.getMetadataJson());
+      JsonNode value = metadata.get(fieldName);
+      return value != null && value.isTextual() ? value.asText() : null;
+    } catch (JsonProcessingException ex) {
+      log.warn(
+          "Falha ao extrair URL HLS do metadata do video. classe={} operacao=textMetadataField fieldName={}",
+          getClass().getSimpleName(),
+          fieldName,
+          ex);
+      return null;
     }
   }
 

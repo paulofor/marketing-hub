@@ -120,6 +120,7 @@ coerente com o histórico da jornada.
 - A v6 usa `musa-pde-entry-v6-video-motivacional`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
 - Em subdominio versionado conhecido, o hostname tem prioridade sobre overrides globais de runtime. Assim, o mesmo deploy pode servir `v5.clubemusa.com.br` e `v6.clubemusa.com.br` simultaneamente sem misturar experiencia, video ou analytics por `experienceVersion`.
 - Videos comerciais do MUSA devem nascer da estrutura versionada de producao de videos do Marketing Hub, com roteiro, job, asset e URL de reproducao auditaveis. O build bloqueia MP4/HLS antigos derivados de `musa-diagnostic-slide-*`.
+- A primeira dobra da v6 deve escolher o video pelo campo `heroVideos` do contrato publico do produto, usando somente item `READY` e `APPROVED` vinculado a asset/job/perfil do Marketing Hub.
 
 ## Login e assinatura MUSA
 

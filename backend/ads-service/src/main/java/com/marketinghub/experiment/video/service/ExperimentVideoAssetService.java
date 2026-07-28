@@ -151,6 +151,7 @@ public class ExperimentVideoAssetService {
             .model(request.model())
             .status(request.status() == null ? ExperimentVideoStatus.PLANNED : request.status())
             .assetUrl(request.assetUrl())
+            .hlsPlaybackUrl(normalizeHlsPlaybackUrl(request.hlsPlaybackUrl()))
             .thumbnailUrl(request.thumbnailUrl())
             .durationSeconds(request.durationSeconds())
             .hasAudio(request.hasAudio())
@@ -181,6 +182,7 @@ public class ExperimentVideoAssetService {
             .landingVideoSlot(resolveLandingVideoSlot(experimentId, request.landingVideoSlotId()))
             .build();
     if (videoAsset.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED) {
+      validateApprovalRequirements(videoAsset);
       validateVisualSourceDiversityForApproval(videoAsset);
     }
     return toDto(repository.save(videoAsset));
@@ -402,6 +404,9 @@ public class ExperimentVideoAssetService {
     if (request.assetUrl() != null) {
       videoAsset.setAssetUrl(request.assetUrl());
     }
+    if (request.hlsPlaybackUrl() != null) {
+      videoAsset.setHlsPlaybackUrl(normalizeHlsPlaybackUrl(request.hlsPlaybackUrl()));
+    }
     if (request.thumbnailUrl() != null) {
       videoAsset.setThumbnailUrl(request.thumbnailUrl());
     }
@@ -484,13 +489,8 @@ public class ExperimentVideoAssetService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "rejectionReason is required when rejecting a video asset");
     }
-    if (newStatus == ExperimentVideoReviewStatus.APPROVED
-        && !Boolean.TRUE.equals(videoAsset.getHasAudio())) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST,
-          "video asset must pass audio quality check before human approval");
-    }
     if (newStatus == ExperimentVideoReviewStatus.APPROVED) {
+      validateApprovalRequirements(videoAsset);
       validateVisualSourceDiversityForApproval(videoAsset);
     }
     videoAsset.setReviewStatus(newStatus);
@@ -537,6 +537,34 @@ public class ExperimentVideoAssetService {
           "Aprovacao bloqueada: video de campanha e hero do PDE usam a mesma origem visual. "
               + "Informe visualSimilarityOverrideReason ou gere uma variacao visual distinta.");
     }
+  }
+
+  /** Valida requisitos minimos para aprovar um video comercial para publicacao. */
+  private void validateApprovalRequirements(ExperimentVideoAsset videoAsset) {
+    if (!Boolean.TRUE.equals(videoAsset.getHasAudio())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "video asset must pass audio quality check before human approval");
+    }
+    if (videoAsset.getSlot() == ExperimentVideoSlot.LANDING_HERO
+        && !StringUtils.hasText(videoAsset.getHlsPlaybackUrl())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "video asset must have hlsPlaybackUrl before approval for PDE landing hero");
+    }
+  }
+
+  /** Normaliza a URL HLS canônica usada por PDEs e rejeita formatos que não sejam playlist. */
+  private String normalizeHlsPlaybackUrl(String hlsPlaybackUrl) {
+    if (!StringUtils.hasText(hlsPlaybackUrl)) {
+      return null;
+    }
+    String normalized = hlsPlaybackUrl.trim();
+    if (!normalized.contains(".m3u8")) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "hlsPlaybackUrl must be an HLS .m3u8 URL");
+    }
+    return normalized;
   }
 
   /** Identifica slots principais que nao devem repetir a mesma origem visual sem controle. */
@@ -1150,6 +1178,7 @@ public class ExperimentVideoAssetService {
         videoAsset.getAsset() != null ? videoAsset.getAsset().getId() : null,
         videoAsset.getLandingVideoSlot() != null ? videoAsset.getLandingVideoSlot().getId() : null,
         videoAsset.getCreatedAt(),
-        videoAsset.getUpdatedAt());
+        videoAsset.getUpdatedAt(),
+        videoAsset.getHlsPlaybackUrl());
   }
 }

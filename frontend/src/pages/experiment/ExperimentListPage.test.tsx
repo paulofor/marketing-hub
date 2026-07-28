@@ -115,7 +115,7 @@ describe("ExperimentListPage", () => {
     expect(
       screen.getByText((content) =>
         content.includes(
-          "Exibindo 1-25 de 26 experimentos, com 25 por página.",
+          "Exibindo 1-25 de 26 experimentos não finalizados, com 25 por página.",
         ),
       ),
     ).toBeTruthy();
@@ -540,6 +540,22 @@ describe("ExperimentListPage", () => {
         updatedAt: "2026-07-02T00:00:00Z",
       },
       {
+        id: "53",
+        nicheId: 10,
+        hypothesisId: "hypothesis-53",
+        name: "Experimento com falha",
+        hypothesis: "Hipótese com falha",
+        cost: 40,
+        startDate: "2026-07-01",
+        endDate: "2026-07-02",
+        creativeApproved: true,
+        status: "FAILED",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-01T00:00:00Z",
+        updatedAt: "2026-07-02T00:00:00Z",
+      },
+      {
         id: "54",
         nicheId: 10,
         hypothesisId: "hypothesis-54",
@@ -586,10 +602,15 @@ describe("ExperimentListPage", () => {
     expect(await screen.findByText("Experimento em execução")).toBeTruthy();
     expect(screen.queryByText("Experimento finalizado")).toBeNull();
     expect(screen.queryByText("Experimento invalidado")).toBeNull();
+    expect(screen.queryByText("Experimento com falha")).toBeNull();
     expect(screen.queryByRole("option", { name: "FINISHED" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "FAILED" })).toBeNull();
+    expect(
+      screen.getByRole("option", { name: "Status não finalizados" }),
+    ).toBeTruthy();
     expect(
       screen.getByText((content) =>
-        content.includes("Exibindo 1-1 de 1 experimentos"),
+        content.includes("Exibindo 1-1 de 1 experimentos não finalizados"),
       ),
     ).toBeTruthy();
   });

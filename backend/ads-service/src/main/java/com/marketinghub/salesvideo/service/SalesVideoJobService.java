@@ -15,6 +15,7 @@ import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.mapper.SalesVideoMapper;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -45,6 +46,7 @@ public class SalesVideoJobService {
   private final AssetRepository assetRepository;
   private final SalesVideoReprocessPolicy reprocessPolicy;
   private final SalesVideoCompletedRenderAssetSync completedRenderAssetSync;
+  private final SalesVideoJobCostMetadataService jobCostMetadataService;
   private final ObjectMapper objectMapper;
 
   /** Cria o serviço com repositórios, política de reprocessamento e porta de sincronizacao. */
@@ -56,6 +58,7 @@ public class SalesVideoJobService {
       AssetRepository assetRepository,
       SalesVideoReprocessPolicy reprocessPolicy,
       SalesVideoCompletedRenderAssetSync completedRenderAssetSync,
+      SalesVideoJobCostMetadataService jobCostMetadataService,
       ObjectMapper objectMapper) {
     this.jobRepository = jobRepository;
     this.eventRepository = eventRepository;
@@ -64,6 +67,7 @@ public class SalesVideoJobService {
     this.assetRepository = assetRepository;
     this.reprocessPolicy = reprocessPolicy;
     this.completedRenderAssetSync = completedRenderAssetSync;
+    this.jobCostMetadataService = jobCostMetadataService;
     this.objectMapper = objectMapper;
   }
 
@@ -117,12 +121,12 @@ public class SalesVideoJobService {
             0,
             Math.max(1, Math.min(limit <= 0 ? 50 : limit, MAX_PAGE_SIZE)),
             Sort.by(Sort.Direction.ASC, "requestedAt"));
-    return jobRepository.findAll(spec, pageable).stream().map(SalesVideoMapper::toDto).toList();
+    return jobRepository.findAll(spec, pageable).stream().map(this::toDto).toList();
   }
 
   @Transactional(readOnly = true)
   public SalesVideoJobDto getJob(Long jobId) {
-    return SalesVideoMapper.toDto(loadJob(jobId));
+    return toDto(loadJob(jobId));
   }
 
   @Transactional(readOnly = true)
@@ -137,7 +141,7 @@ public class SalesVideoJobService {
   public List<SalesVideoJobDto> listJobsByProfile(Long profileId) {
     ensureProfileAccessible(profileId);
     return jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId).stream()
-        .map(SalesVideoMapper::toDto)
+        .map(this::toDto)
         .toList();
   }
 
@@ -148,7 +152,7 @@ public class SalesVideoJobService {
     return jobRepository
         .findByProfileProductIdAndTenantIdOrderByRequestedAtDesc(productId, tenantId)
         .stream()
-        .map(SalesVideoMapper::toDto)
+        .map(this::toDto)
         .toList();
   }
 
@@ -166,7 +170,7 @@ public class SalesVideoJobService {
         job.getStatus(),
         "claim por " + request.getWorkerId(),
         request.getMessage());
-    return SalesVideoMapper.toDto(job);
+    return toDto(job);
   }
 
   @Transactional
@@ -179,7 +183,7 @@ public class SalesVideoJobService {
         job.getStatus(),
         request.getMessage(),
         request.getDetailsJson());
-    return SalesVideoMapper.toDto(job);
+    return toDto(job);
   }
 
   @Transactional
@@ -201,7 +205,7 @@ public class SalesVideoJobService {
         job.getStatus(),
         request.getMessage(),
         request.getDetailsJson());
-    return SalesVideoMapper.toDto(job);
+    return toDto(job);
   }
 
   /** Finaliza um job e bloqueia renders que nao atendem a duracao comercial minima. */
@@ -218,11 +222,18 @@ public class SalesVideoJobService {
       job.setFailureCode(SHORT_DURATION_FAILURE_CODE);
       job.setFailureDetail(durationValidation.message());
     }
+    BigDecimal explicitCostUsd = request.getCostUsd();
+    BigDecimal resolvedCostUsd =
+        jobCostMetadataService.resolveCostUsd(job, request.getMetadataJson(), explicitCostUsd);
+    request.setCostUsd(resolvedCostUsd);
+    String enrichedMetadataJson =
+        jobCostMetadataService.enrichMetadataJson(job, request.getMetadataJson(), explicitCostUsd);
     job.setStatus(finalStatus);
     job.setFinishedAt(Instant.now());
     job.setProviderJobId(request.getProviderJobId());
     job.setStreamPlaybackUrl(normalizeStreamPlaybackUrl(request.getStreamPlaybackUrl()));
-    job.setMetadataJson(request.getMetadataJson());
+    job.setMetadataJson(enrichedMetadataJson);
+    request.setMetadataJson(enrichedMetadataJson);
     attachAsset(job::setAsset, request.getAssetId());
     attachAsset(job::setPosterAsset, request.getPosterAssetId());
     attachAsset(job::setVttAsset, request.getVttAssetId());
@@ -241,7 +252,7 @@ public class SalesVideoJobService {
         finalStatus,
         completionMessage(request, durationValidation),
         completionDetails(request, durationValidation));
-    return SalesVideoMapper.toDto(job);
+    return toDto(job);
   }
 
   @Transactional
@@ -250,6 +261,9 @@ public class SalesVideoJobService {
     SalesVideoStatus previous = job.getStatus();
     SalesVideoStatus newStatus =
         Optional.ofNullable(request.getStatus()).orElse(SalesVideoStatus.VIDEO_FAILED);
+    if (!StringUtils.hasText(job.getMetadataJson())) {
+      job.setMetadataJson(jobCostMetadataService.enrichMetadataJson(job, null, null));
+    }
     job.setStatus(newStatus);
     job.setFailureCode(request.getFailureCode());
     job.setFailureDetail(request.getFailureDetail());
@@ -264,13 +278,16 @@ public class SalesVideoJobService {
         newStatus,
         request.getMessage(),
         request.getFailureDetail());
-    return SalesVideoMapper.toDto(job);
+    return toDto(job);
   }
 
   @Transactional
   public SalesVideoJobDto expire(Long jobId, JobExpirationRequest request) {
     SalesVideoJob job = loadJob(jobId);
     SalesVideoStatus previous = job.getStatus();
+    if (!StringUtils.hasText(job.getMetadataJson())) {
+      job.setMetadataJson(jobCostMetadataService.enrichMetadataJson(job, null, null));
+    }
     job.setStatus(SalesVideoStatus.VIDEO_FAILED);
     job.setFinishedAt(Instant.now());
     jobRepository.save(job);
@@ -282,7 +299,7 @@ public class SalesVideoJobService {
         SalesVideoStatus.VIDEO_FAILED,
         request.getMessage(),
         request.getDetailsJson());
-    return SalesVideoMapper.toDto(job);
+    return toDto(job);
   }
 
   @Transactional
@@ -315,7 +332,7 @@ public class SalesVideoJobService {
         job.getStatus(),
         "Reprocessamento solicitado por " + requestedBy + " (" + request.getReason().name() + ")",
         request.getNotes());
-    return SalesVideoMapper.toDto(newJob);
+    return toDto(newJob);
   }
 
   /** Cria um job de pós-produção a partir de um vídeo bruto já aprovado para visualização. */
@@ -352,7 +369,7 @@ public class SalesVideoJobService {
         sourceJob.getStatus(),
         "Pós-produção solicitada por " + requestedBy,
         "Job de pós-produção #" + postProductionJob.getId());
-    return SalesVideoMapper.toDto(postProductionJob);
+    return toDto(postProductionJob);
   }
 
   /** Cria job de montagem a partir de múltiplos vídeos prontos e auditáveis. */
@@ -384,7 +401,12 @@ public class SalesVideoJobService {
         montageJob.getStatus(),
         "Montagem solicitada com " + sourceJobs.size() + " clipes",
         montageJob.getMetadataJson());
-    return SalesVideoMapper.toDto(montageJob);
+    return toDto(montageJob);
+  }
+
+  /** Converte job para DTO incluindo custo real ou estimado para a tela. */
+  private SalesVideoJobDto toDto(SalesVideoJob job) {
+    return jobCostMetadataService.enrichDto(SalesVideoMapper.toDto(job), job);
   }
 
   private SalesVideoScript maybePersistScriptResult(

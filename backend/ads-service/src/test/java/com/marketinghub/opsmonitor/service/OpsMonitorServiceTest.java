@@ -17,6 +17,8 @@ import com.marketinghub.repository.jpa.opsmonitor.OpsMonitoredModuleRepository;
 import jakarta.persistence.Column;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -221,6 +223,40 @@ class OpsMonitorServiceTest {
     assertThat(availability.getFirst().lastError()).contains("NichoCNAE v3");
     assertThat(availability.getFirst().attemptedUrl())
         .isEqualTo("http://191.252.181.168/actuator/health");
+  }
+
+  /** Garante que o gráfico usa heartbeats recentes quando o resumo diário ainda está vazio. */
+  @Test
+  void listAvailabilityHistoryFallsBackToRecentHealthChecksWhenDailySummaryIsEmpty() {
+    OpsModuleHealthCheck firstCheck = new OpsModuleHealthCheck();
+    firstCheck.setCheckedAt(Instant.parse("2026-07-28T11:05:07Z"));
+    firstCheck.setStatus("ONLINE");
+    OpsModuleHealthCheck secondCheck = new OpsModuleHealthCheck();
+    secondCheck.setCheckedAt(Instant.parse("2026-07-28T11:04:07Z"));
+    secondCheck.setStatus("ONLINE");
+    when(availabilityDailyRepository.findTop30ByModuleCodeOrderByAvailabilityDateDesc(
+            "pde-musa-v6"))
+        .thenReturn(List.of());
+    when(healthCheckRepository.findTop500ByModuleCodeOrderByCheckedAtDesc("pde-musa-v6"))
+        .thenReturn(List.of(firstCheck, secondCheck));
+
+    OpsMonitorService service =
+        new OpsMonitorService(
+            moduleRepository,
+            healthCheckRepository,
+            incidentRepository,
+            availabilityDailyRepository,
+            geraLandingStageExecutionRepository,
+            nichoCnaeV3StageExecutionRepository);
+
+    var history = service.listAvailabilityHistory("pde-musa-v6");
+
+    assertThat(history).hasSize(1);
+    assertThat(history.getFirst().date())
+        .isEqualTo(LocalDate.ofInstant(firstCheck.getCheckedAt(), ZoneOffset.UTC));
+    assertThat(history.getFirst().totalChecks()).isEqualTo(2);
+    assertThat(history.getFirst().successfulChecks()).isEqualTo(2);
+    assertThat(history.getFirst().availabilityPercentage()).isEqualByComparingTo("100.00");
   }
 
   /**

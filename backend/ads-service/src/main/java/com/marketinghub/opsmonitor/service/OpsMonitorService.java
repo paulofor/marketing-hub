@@ -22,11 +22,18 @@ import com.marketinghub.repository.jpa.opsmonitor.OpsModuleHealthCheckRepository
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleIncidentRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsMonitoredModuleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -147,7 +154,8 @@ public class OpsMonitorService {
   /** Lista o histórico diário de disponibilidade do módulo informado. */
   @Transactional(readOnly = true)
   public List<ModuleAvailabilityHistoryResponse> listAvailabilityHistory(String moduleCode) {
-    return availabilityDailyRepository
+    List<ModuleAvailabilityHistoryResponse> consolidatedHistory =
+        availabilityDailyRepository
         .findTop30ByModuleCodeOrderByAvailabilityDateDesc(moduleCode)
         .stream()
         .map(
@@ -161,6 +169,10 @@ public class OpsMonitorService {
                     day.getOfflineSeconds(),
                     day.getDegradedSeconds()))
         .toList();
+    if (!consolidatedHistory.isEmpty()) {
+      return consolidatedHistory;
+    }
+    return buildAvailabilityHistoryFromHealthChecks(moduleCode);
   }
 
   /** Lista incidentes abertos ou o histórico recente de incidentes. */
@@ -224,6 +236,25 @@ public class OpsMonitorService {
         .findByCode(moduleCode)
         .orElseThrow(
             () -> new EntityNotFoundException("Módulo monitorado não encontrado: " + moduleCode));
+  }
+
+  /** Monta histórico diário a partir de heartbeats quando o consolidado ainda não foi gerado. */
+  private List<ModuleAvailabilityHistoryResponse> buildAvailabilityHistoryFromHealthChecks(
+      String moduleCode) {
+    Map<LocalDate, AvailabilityAccumulator> byDate = new LinkedHashMap<>();
+    healthCheckRepository.findTop500ByModuleCodeOrderByCheckedAtDesc(moduleCode).stream()
+        .filter(check -> check.getCheckedAt() != null)
+        .forEach(
+            check -> {
+              LocalDate date = LocalDate.ofInstant(check.getCheckedAt(), ZoneOffset.UTC);
+              byDate.computeIfAbsent(date, ignored -> new AvailabilityAccumulator())
+                  .register(check.getStatus());
+            });
+    return byDate.entrySet().stream()
+        .sorted(Map.Entry.<LocalDate, AvailabilityAccumulator>comparingByKey(Comparator.reverseOrder()))
+        .limit(30)
+        .map(entry -> entry.getValue().toResponse(entry.getKey()))
+        .toList();
   }
 
   /** Converte entidade de módulo para o status administrativo atual. */
@@ -428,6 +459,44 @@ public class OpsMonitorService {
         incident.getSummary(),
         incident.getRootSignal(),
         incident.getLastError());
+  }
+}
+
+/** Acumula heartbeats por dia para gerar histórico operacional quando não há resumo materializado. */
+class AvailabilityAccumulator {
+  private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
+  private int totalChecks;
+  private int successfulChecks;
+  private int failedChecks;
+
+  /** Registra o status de um heartbeat no acumulador diário. */
+  void register(String status) {
+    totalChecks++;
+    if ("ONLINE".equals(status)) {
+      successfulChecks++;
+      return;
+    }
+    if (!"DEGRADED".equals(status)) {
+      failedChecks++;
+    }
+  }
+
+  /** Converte os contadores acumulados no contrato usado pelo gráfico administrativo. */
+  ModuleAvailabilityHistoryResponse toResponse(LocalDate date) {
+    BigDecimal availabilityPercentage =
+        totalChecks == 0
+            ? BigDecimal.ZERO
+            : BigDecimal.valueOf(successfulChecks)
+                .multiply(ONE_HUNDRED)
+                .divide(BigDecimal.valueOf(totalChecks), 2, RoundingMode.HALF_UP);
+    return new ModuleAvailabilityHistoryResponse(
+        date,
+        totalChecks,
+        successfulChecks,
+        failedChecks,
+        availabilityPercentage,
+        0L,
+        0L);
   }
 }
 

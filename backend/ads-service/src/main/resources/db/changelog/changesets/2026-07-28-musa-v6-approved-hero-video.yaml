@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-28-musa-v6-approved-hero-video-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: pde_experience_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET pde_experience_json = JSON_SET(
+                       pde_experience_json,
+                       '$.heroVideos',
+                       JSON_ARRAY(
+                         JSON_OBJECT(
+                           'experienceVersion', 'musa-pde-entry-v6-video-motivacional',
+                           'placement', 'public_diagnostic_initial_explainer',
+                           'playbackUrl', '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8',
+                           'hlsPlaybackUrl', '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8',
+                           'posterUrl', '/assets/musa-editorial-presenca.png',
+                           'autoplay', true,
+                           'muted', true,
+                           'controls', true,
+                           'loop', false,
+                           'playsInline', true,
+                           'source', 'MARKETING_HUB_MANAGED_HLS',
+                           'assetId', 1935,
+                           'experimentVideoAssetId', 22,
+                           'salesVideoProfileId', 35,
+                           'salesVideoJobId', 20462,
+                           'reviewStatus', 'APPROVED',
+                           'status', 'READY'
+                         )
+                       )
+                     )
+               WHERE slug = 'metodo-musa-7-dias'
+                 AND pde_experience_json IS NOT NULL
+                 AND JSON_VALID(pde_experience_json);

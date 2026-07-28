@@ -138,6 +138,16 @@ O frontend PDE deve consumir somente endpoints do próprio backend PDE, preferen
 
 Essa fronteira deve ser validada automaticamente no CI do PDE frontend antes do build. A validação deve bloquear referências diretas a `ads-service`, ao host do backend principal `191.252.181.168`, à porta `8000` do backend principal ou a endpoints fora do contrato PDE.
 
+### Vídeos HLS obrigatórios em PDE
+
+Todo vídeo consumido por PDE público deve ser entregue em HLS (`.m3u8`). MP4 pode existir como arquivo de origem, fallback técnico interno ou artefato de auditoria, mas não deve ser a URL canônica publicada para a experiência PDE.
+
+O Marketing Hub deve gerenciar os HLS usados por PDEs em ativos comerciais rastreáveis. Para vídeos de experimento, o campo canônico é `experiment_video_asset.hls_playback_url`, exposto como `hlsPlaybackUrl` nos contratos da API. Vídeos `LANDING_HERO` destinados a PDE só podem ser aprovados para uso comercial quando estiverem `READY`, com revisão `APPROVED`, áudio validado e `hlsPlaybackUrl` preenchido com playlist `.m3u8`.
+
+Playlist HLS empacotada no build do PDE pode existir apenas como localizacao fisica ou contingencia tecnica. Para uso comercial, essa playlist precisa estar cadastrada no Marketing Hub em ativo rastreavel, visivel na biblioteca de videos e vinculada ao experimento/projeto/job correspondente.
+
+O contrato `heroVideos` do PDE deve priorizar `hlsPlaybackUrl` e manter `playbackUrl` como alias compatível apontando para a mesma playlist HLS. É proibido publicar nova versão PDE usando MP4 como `playbackUrl` principal.
+
 ### Funil comercial obrigatório Clube MUSA/PDE
 
 O Clube MUSA/PDE deve usar um funil de entrada com login antes da compra e paywall interno.
@@ -187,6 +197,21 @@ O contrato `persuasiveJourney` publicado pelo Marketing Hub deve declarar esses 
 ### Analytics obrigatório para campanhas PDE
 
 Toda aplicação PDE usada como destino de campanha deve registrar eventos próprios no backend PDE antes de escalar tráfego pago. A medição mínima deve permitir reconstruir o funil por produto, campanha, origem e dispositivo.
+
+### Monitoramento crítico 24/7 de PDEs
+
+PDE publicado, vendido ou usado como destino ativo de campanha deve ter monitoramento operacional dedicado, independente do backend principal.
+
+Regra canônica:
+
+- o módulo dedicado para disponibilidade crítica é `pde-monitor-worker`;
+- ele pode acessar diretamente o MySQL como exceção explícita à regra geral de que módulos externos não acessam banco;
+- essa exceção vale somente para leitura de PDEs críticos em `ops_monitored_module` e gravação de saúde/incidentes em `ops_module_health_check` e `ops_module_incident`;
+- o monitor deve verificar a URL pública operacional do PDE, priorizando `monitoring_url` quando existir;
+- o monitor não pode orquestrar pipeline, alterar experiência comercial, liberar acesso, modificar produto, processar checkout ou substituir o backend PDE;
+- o objetivo comercial é detectar indisponibilidade de venda/experiência 24/7 sem depender do backend principal ou de uma cadeia de contratos internos.
+
+O `ops-monitor-worker` continua existindo para monitoramento geral de módulos. O `pde-monitor-worker` existe porque PDE ativo em campanha é superfície direta de venda e precisa de caminho curto de observabilidade.
 
 Eventos mínimos:
 
@@ -280,6 +305,7 @@ Para o Clube MUSA, a regra operacional atual é:
 - `v5.clubemusa.com.br` deve servir `musa-pde-entry-v5-video-explicativo` sem vídeo de slides gerado artificialmente;
 - `v6.clubemusa.com.br` deve servir `musa-pde-entry-v6-video-motivacional` sem vídeo de slides gerado artificialmente;
 - vídeos comerciais do MUSA só podem ser usados quando nascerem da estrutura versionada de produção de vídeos do Marketing Hub, com roteiro, job, asset e URL de reprodução auditáveis;
+- vídeos hero por versão devem ser declarados no contrato público do produto em `heroVideos`, incluindo `experienceVersion`, `placement`, `playbackUrl`, `assetId`, `experimentVideoAssetId`, `salesVideoProfileId`, `salesVideoJobId`, `status` e `reviewStatus`;
 - é proibido gerar MP4/HLS comercial do MUSA a partir dos slides/imagens do diagnóstico (`musa-diagnostic-slide-*`) ou servir URLs antigas como `/assets/hls/musa-v5-video-explicativo/index.m3u8`, `/assets/hls/musa-v6-video-motivacional/index.m3u8`, `/assets/musa-v5-video-explicativo.mp4` ou `/assets/musa-v6-video-motivacional.mp4`.
 
 Quando houver hipóteses, criativos ou primeiras dobras concorrentes, a operação deve criar slots produtivos paralelos em vez de depender de ambiente intermediário. A tela de experimento apenas escolhe a versão medida; criação, manutenção e publicação das URLs ficam no fluxo do produto e no pipeline versionado do repositório.

@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CircleDollarSign } from "lucide-react";
+import ReactECharts from "echarts-for-react";
 import { useProductFinancialSummary } from "../../api/product/useProductFinancialSummary";
 import PageTitle from "../../components/PageTitle";
 
@@ -57,6 +58,81 @@ export default function ProductFinancialPage() {
   }
 
   const allLines = [...summary.costs, summary.revenue, summary.profit];
+  const monthlyResultsForChart = [...summary.monthlyResults].reverse();
+  const monthlyChartOption = {
+    color: ["#2563eb", "#16a34a", "#dc2626"],
+    grid: { left: 48, right: 24, top: 32, bottom: 40 },
+    legend: { bottom: 0 },
+    tooltip: {
+      trigger: "axis",
+      valueFormatter: (value: number) => formatBrl(value),
+    },
+    xAxis: {
+      type: "category",
+      data: monthlyResultsForChart.map((month) => month.monthLabel),
+      axisLabel: { color: "#475569" },
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: {
+        color: "#475569",
+        formatter: (value: number) => `R$ ${value}`,
+      },
+      splitLine: { lineStyle: { color: "#e2e8f0" } },
+    },
+    series: [
+      {
+        name: "Custo",
+        type: "bar",
+        data: monthlyResultsForChart.map((month) => month.cost.brl),
+        barMaxWidth: 32,
+      },
+      {
+        name: "Receita",
+        type: "bar",
+        data: monthlyResultsForChart.map((month) => month.revenue.brl),
+        barMaxWidth: 32,
+      },
+      {
+        name: "Lucro",
+        type: "line",
+        data: monthlyResultsForChart.map((month) => month.profit.brl),
+        smooth: true,
+        symbolSize: 8,
+      },
+    ],
+  };
+  const costCompositionData = summary.costs
+    .filter((line) => line.monthly.brl > 0)
+    .map((line) => ({
+      name: line.label,
+      value: line.monthly.brl,
+    }));
+  const costCompositionOption = {
+    color: ["#0f766e", "#7c3aed", "#ea580c", "#0891b2", "#be123c"],
+    legend: { bottom: 0 },
+    tooltip: {
+      trigger: "item",
+      valueFormatter: (value: number) => formatBrl(value),
+    },
+    series: [
+      {
+        name: "Custo mensal",
+        type: "pie",
+        radius: ["42%", "68%"],
+        center: ["50%", "44%"],
+        avoidLabelOverlap: true,
+        label: {
+          formatter: "{b}",
+          color: "#172033",
+        },
+        data:
+          costCompositionData.length > 0
+            ? costCompositionData
+            : [{ name: "Sem custo informado", value: 0 }],
+      },
+    ],
+  };
 
   return (
     <div>
@@ -106,6 +182,35 @@ export default function ProductFinancialPage() {
           <span>Lucro anual</span>
           <strong>{formatUsd(summary.profit.annual.usd)}</strong>
           <small>{formatBrl(summary.profit.annual.brl)}</small>
+        </section>
+      </div>
+
+      <div className="product-financial-charts mb-3">
+        <section className="card product-financial-chart">
+          <div className="card-body">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <h2 className="h6 mb-0">Evolução financeira</h2>
+              <span className="text-muted small">Valores em BRL</span>
+            </div>
+            <ReactECharts
+              option={monthlyChartOption}
+              style={{ height: 320 }}
+              aria-label="Gráfico de evolução mensal de custo, receita e lucro"
+            />
+          </div>
+        </section>
+        <section className="card product-financial-chart">
+          <div className="card-body">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <h2 className="h6 mb-0">Composição do custo mensal</h2>
+              <span className="text-muted small">Por origem de custo</span>
+            </div>
+            <ReactECharts
+              option={costCompositionOption}
+              style={{ height: 320 }}
+              aria-label="Gráfico de composição dos custos mensais"
+            />
+          </div>
         </section>
       </div>
 

@@ -9,6 +9,7 @@ import {
   GitCompare,
   Image as ImageIcon,
   Loader2,
+  Megaphone,
   Pencil,
   PlaySquare,
   Video,
@@ -403,6 +404,13 @@ export default function ProductListPage() {
                       >
                         <ImageIcon size={16} aria-hidden="true" />
                         Imagens Para Vídeos
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/products/${product.id}/ads`}
+                      >
+                        <Megaphone size={16} aria-hidden="true" />
+                        Anúncios
                       </Link>
                       <Link
                         className="product-catalog-card__action-button product-catalog-card__action-button--secondary"

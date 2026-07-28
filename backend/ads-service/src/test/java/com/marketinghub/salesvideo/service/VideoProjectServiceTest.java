@@ -54,6 +54,7 @@ class VideoProjectServiceTest {
             "VERTICAL_9_16",
             "Corte orgânico de presença visual",
             "Gerar clique qualificado para o diagnóstico MUSA",
+            "Uma profissional percebe que sua presença digital não traduz sua autoridade.",
             "AWARENESS",
             "PROFILE_VISIT",
             "Sua imagem comunica antes da sua fala",
@@ -85,6 +86,7 @@ class VideoProjectServiceTest {
     assertThat(captor.getValue().getTenantId()).isEqualTo("tenant-musa");
     assertThat(result.id()).isEqualTo(91L);
     assertThat(result.contextType()).isEqualTo("ORGANIC");
+    assertThat(result.storyText()).contains("presença digital");
     assertThat(result.status()).isEqualTo(VideoProjectStatus.READY_FOR_SCRIPT);
   }
 
@@ -115,6 +117,7 @@ class VideoProjectServiceTest {
             "VERTICAL_9_16",
             "Video de campanha",
             "Aumentar compra do PDE",
+            "A usuária sai de tentativa manual para uma rotina guiada por IA.",
             "CONVERSION",
             "PURCHASE",
             "Gancho",
@@ -139,6 +142,7 @@ class VideoProjectServiceTest {
 
     assertThat(result.title()).isEqualTo("Video de campanha");
     assertThat(result.contextType()).isEqualTo("CAMPAIGN");
+    assertThat(result.storyText()).contains("rotina guiada por IA");
     assertThat(result.status()).isEqualTo(VideoProjectStatus.READY_FOR_RENDER);
   }
 }

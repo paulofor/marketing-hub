@@ -62,6 +62,9 @@ public class VideoProject {
   @Column(name = "objective", nullable = false, length = 1024)
   private String objective;
 
+  @Column(name = "story_text", columnDefinition = "LONGTEXT")
+  private String storyText;
+
   @Column(name = "funnel_stage", length = 64)
   private String funnelStage;
 

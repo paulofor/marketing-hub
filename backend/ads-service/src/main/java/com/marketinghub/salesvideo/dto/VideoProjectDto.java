@@ -17,6 +17,7 @@ public record VideoProjectDto(
     String format,
     String title,
     String objective,
+    String storyText,
     String funnelStage,
     String primaryMetric,
     String hookText,

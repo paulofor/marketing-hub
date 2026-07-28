@@ -175,16 +175,12 @@ const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
 const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
-const MUSA_V5_HERO_STREAM_URL = '/assets/hls/musa-v5-video-explicativo/index.m3u8';
-const MUSA_V6_HERO_STREAM_URL = '/assets/hls/musa-v6-video-motivacional/index.m3u8';
-const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string; heroVideoUrl: string }> = {
+const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string }> = {
   'v5.clubemusa.com.br': {
     experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
-    heroVideoUrl: MUSA_V5_HERO_STREAM_URL,
   },
   'v6.clubemusa.com.br': {
     experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
-    heroVideoUrl: MUSA_V6_HERO_STREAM_URL,
   },
 };
 const MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS = new Set([
@@ -573,23 +569,22 @@ function isMusaVideoExplainerExperience(experienceVersion: string) {
     || experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
 }
 
-function resolveDefaultHeroVideoUrl(experienceVersion: string) {
-  if (experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION) {
-    return MUSA_V6_HERO_STREAM_URL;
-  }
-  return MUSA_V5_HERO_STREAM_URL;
+function isBlockedMusaSlideVideoUrl(videoUrl: string) {
+  return [
+    '/assets/hls/musa-v5-video-explicativo/',
+    '/assets/hls/musa-v6-video-motivacional/',
+    '/assets/musa-v5-video-explicativo',
+    '/assets/musa-v6-video-motivacional',
+  ].some((blockedPath) => videoUrl.includes(blockedPath));
 }
 
-function resolveHeroVideoUrl(experienceVersion: string) {
-  const hostHeroVideoUrl = resolveMusaVersionedHostConfig()?.heroVideoUrl;
-  if (hostHeroVideoUrl) {
-    return hostHeroVideoUrl;
-  }
+function resolveHeroVideoUrl() {
   const streamOverride = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
   if (streamOverride) {
-    return streamOverride;
+    return isBlockedMusaSlideVideoUrl(streamOverride) ? '' : streamOverride;
   }
-  return readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? resolveDefaultHeroVideoUrl(experienceVersion));
+  const videoOverride = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? '');
+  return videoOverride && !isBlockedMusaSlideVideoUrl(videoOverride) ? videoOverride : '';
 }
 
 const presenceBlockers: DiagnosticOption[] = [
@@ -707,7 +702,7 @@ function App() {
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
-  const heroVideoUrl = resolveHeroVideoUrl(currentExperienceVersion);
+  const heroVideoUrl = resolveHeroVideoUrl();
   const heroPlaybackUrl = heroVideoUrl;
 
   const activeMission = useMemo(() => {
@@ -1803,6 +1798,7 @@ function App() {
   const showMotivationalTimelineVideo = currentExperienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
   const showPublishedPublicDiagnosticVideoHero =
     !workspace
+    && Boolean(heroPlaybackUrl)
     && ((isMusaVideoExplainerExperience(currentExperienceVersion) && publicDiagnosticVideoVariant !== 'control')
       || publicDiagnosticVideoVariant === 'video');
   const canRegisterActiveMission = Boolean(canCompleteActiveMission && (!activeMissionGuidanceConfig || isMissionInteractionSaved(activeMission?.id ?? '')));

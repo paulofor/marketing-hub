@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-28-musa-slide-video-block-001
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ops_monitored_module
+              SET enabled = 0,
+                  criticality = 'LOW',
+                  container_image_version = 'BLOQUEADO: videos MUSA gerados por slides foram removidos do fluxo comercial'
+              WHERE code IN ('pde-musa-v5-hls', 'pde-musa-v6-hls');
+  - changeSet:
+      id: 2026-07-28-musa-slide-video-block-002
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pde_production_slot
+              SET notes = 'Videos MUSA gerados por slides estao bloqueados. Usar somente video comercial produzido pelo fluxo versionado do Marketing Hub.',
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE product_slug = 'metodo-musa-7-dias'
+                AND slot_code IN ('v5', 'v6')
+                AND experience_version IN (
+                  'musa-pde-entry-v5-video-explicativo',
+                  'musa-pde-entry-v6-video-motivacional'
+                );

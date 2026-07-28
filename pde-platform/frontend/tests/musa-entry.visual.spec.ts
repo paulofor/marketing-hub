@@ -154,7 +154,7 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
   expect(trackedEvents).toBe(0);
 });
 
-test('exibe video no topo na versao publicada e permite controle para QA', async ({ page }) => {
+test('bloqueia video de slides na versao publicada e permite controle sem player para QA', async ({ page }) => {
   await page.route('/api/pde/access/events', async (route) => {
     await route.fulfill({ json: { status: 'RECORDED' } });
   });
@@ -164,16 +164,15 @@ test('exibe video no topo na versao publicada e permite controle para QA', async
 
   await page.goto('/');
 
-  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
-  await expect(page.locator('video.public-hero-video')).toBeVisible();
-  await expect(page.locator('video.public-hero-video')).toHaveAttribute('src', '/assets/hls/musa-v5-video-explicativo/index.m3u8');
-  await expect(page.getByRole('heading', { name: /Veja em poucos segundos/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
+  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=video');
 
-  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Veja em poucos segundos/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Começar diagnóstico/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
+  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=control');
 
@@ -181,7 +180,7 @@ test('exibe video no topo na versao publicada e permite controle para QA', async
   await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
 });
 
-test('exibe video no topo na versao v6 motivacional', async ({ page }) => {
+test('nao exibe player na versao v6 motivacional sem video real aprovado', async ({ page }) => {
   await page.addInitScript(() => {
     window.__MUSA_RUNTIME_CONFIG__ = {
       VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: 'musa-pde-entry-v6-video-motivacional',
@@ -197,11 +196,8 @@ test('exibe video no topo na versao v6 motivacional', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
-  await expect(page.locator('video.public-hero-video')).toBeVisible();
-  await expect(page.locator('video.public-hero-video')).toHaveAttribute('src', '/assets/hls/musa-v6-video-motivacional/index.m3u8');
-  await expect(page.getByRole('heading', { name: /Veja em poucos segundos/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Começar diagnóstico/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
+  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
 });
 

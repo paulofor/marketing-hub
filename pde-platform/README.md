@@ -115,10 +115,10 @@ coerente com o histórico da jornada.
 - A versao 5 do Clube MUSA deve responder em `https://v5.clubemusa.com.br`.
 - O dominio raiz `https://clubemusa.com.br` nao deve ser usado como URL primaria de campanha quando existir subdominio versionado para a experiencia medida.
 - Cada nova versao de PDE deve publicar e validar seu proprio subdominio, mantendo metricas, UTMs e criativos separados por `experienceVersion`.
-- A v5 e a versao com video explicativo inicial. O frontend gera `public/assets/hls/musa-v5-video-explicativo/index.m3u8` por `npm run generate:musa-videos` durante o build e usa esse stream como video padrao da v5.
-- A v6 e uma experiencia PDE completa com video motivacional inicial. Quando o hostname for `v6.clubemusa.com.br` e nao houver override explicito em runtime, o frontend usa `musa-pde-entry-v6-video-motivacional`, carrega `public/assets/hls/musa-v6-video-motivacional/index.m3u8` no player de entrada e continua imediatamente para o diagnostico/perguntas do Clube MUSA.
+- A v5 usa `musa-pde-entry-v5-video-explicativo`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
+- A v6 usa `musa-pde-entry-v6-video-motivacional`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
 - Em subdominio versionado conhecido, o hostname tem prioridade sobre overrides globais de runtime. Assim, o mesmo deploy pode servir `v5.clubemusa.com.br` e `v6.clubemusa.com.br` simultaneamente sem misturar experiencia, video ou analytics por `experienceVersion`.
-- Os videos v5/v6 devem nascer do script versionado de build, nunca de copia manual para o container, para evitar dominios versionados servindo HTML de fallback no lugar do manifesto HLS.
+- Videos comerciais do MUSA devem nascer da estrutura versionada de producao de videos do Marketing Hub, com roteiro, job, asset e URL de reproducao auditaveis. O build bloqueia MP4/HLS antigos derivados de `musa-diagnostic-slide-*`.
 
 ## Login e assinatura MUSA
 

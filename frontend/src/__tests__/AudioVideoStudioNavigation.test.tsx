@@ -101,4 +101,21 @@ describe("audio video studio navigation", () => {
     expect(screen.getByText(/READY_FOR_SCRIPT/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: /novo projeto/i })).toBeTruthy();
   });
+
+  it("renders example project when there are no persisted projects", async () => {
+    setup(<App />, ["/audio-video-studio/projects"]);
+
+    expect(
+      await screen.findByText(/MUSA PDE v6 - video HLS motivacional/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/HLS LANDING_HERO/i)).toBeTruthy();
+    expect(
+      screen.getByText(
+        /assets\/hls\/musa-v6-microexperiencia-visivel\/index\.m3u8/i,
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(/Nenhum projeto criado ainda/i),
+    ).not.toBeTruthy();
+  });
 });

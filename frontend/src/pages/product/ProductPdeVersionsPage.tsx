@@ -260,9 +260,17 @@ export default function ProductPdeVersionsPage() {
             versões produtivas que os experimentos podem medir.
           </p>
         </div>
-        <Link className="btn btn-outline-secondary" to="/products">
-          Voltar para produtos
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          <Link
+            className="btn btn-outline-primary"
+            to={`/products/${productId}/pde-videos`}
+          >
+            Vídeos PDE
+          </Link>
+          <Link className="btn btn-outline-secondary" to="/products">
+            Voltar para produtos
+          </Link>
+        </div>
       </div>
 
       <div className="card mb-3">

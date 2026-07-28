@@ -15,6 +15,7 @@ import ProductFinancialPage from "./pages/product/ProductFinancialPage";
 import ProductExperimentComparisonPage from "./pages/product/ProductExperimentComparisonPage";
 import ProductVideoImagesPage from "./pages/product/ProductVideoImagesPage";
 import ProductPdeVersionsPage from "./pages/product/ProductPdeVersionsPage";
+import ProductPdeVideosPage from "./pages/product/ProductPdeVideosPage";
 import ProductOrganicVideoPlanPage from "./pages/product/ProductOrganicVideoPlanPage";
 import ProductScientificArticlesPage from "./pages/product/ProductScientificArticlesPage";
 import ProductDiscoveryPage from "./pages/productDiscovery/ProductDiscoveryPage";
@@ -237,6 +238,10 @@ export default function App() {
               <Route
                 path="/products/:productId/pde-versions"
                 element={<ProductPdeVersionsPage />}
+              />
+              <Route
+                path="/products/:productId/pde-videos"
+                element={<ProductPdeVideosPage />}
               />
               <Route
                 path="/products/:productId/organic-videos"

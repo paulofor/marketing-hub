@@ -173,6 +173,33 @@
   margin: 0;
 }
 
+.video-hub-page__hls-box,
+.video-hub-page__review-box {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.video-hub-page__hls-box label,
+.video-hub-page__review-box label {
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.video-hub-page__hls-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+}
+
+.video-hub-page__hls-actions input {
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.42rem 0.55rem;
+  color: #111827;
+}
+
 .video-hub-page__video-body dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -611,6 +638,10 @@
   .video-hub-page__filters {
     justify-content: flex-start;
     margin-top: 0.75rem;
+  }
+
+  .video-hub-page__hls-actions {
+    grid-template-columns: 1fr;
   }
 
   .video-hub-page__badge {

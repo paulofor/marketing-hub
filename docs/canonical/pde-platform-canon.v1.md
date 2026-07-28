@@ -144,6 +144,8 @@ Todo vídeo consumido por PDE público deve ser entregue em HLS (`.m3u8`). MP4 p
 
 O Marketing Hub deve gerenciar os HLS usados por PDEs em ativos comerciais rastreáveis. Para vídeos de experimento, o campo canônico é `experiment_video_asset.hls_playback_url`, exposto como `hlsPlaybackUrl` nos contratos da API. Vídeos `LANDING_HERO` destinados a PDE só podem ser aprovados para uso comercial quando estiverem `READY`, com revisão `APPROVED`, áudio validado e `hlsPlaybackUrl` preenchido com playlist `.m3u8`.
 
+Playlist HLS empacotada no build do PDE pode existir apenas como localizacao fisica ou contingencia tecnica. Para uso comercial, essa playlist precisa estar cadastrada no Marketing Hub em ativo rastreavel, visivel na biblioteca de videos e vinculada ao experimento/projeto/job correspondente.
+
 O contrato `heroVideos` do PDE deve priorizar `hlsPlaybackUrl` e manter `playbackUrl` como alias compatível apontando para a mesma playlist HLS. É proibido publicar nova versão PDE usando MP4 como `playbackUrl` principal.
 
 ### Funil comercial obrigatório Clube MUSA/PDE

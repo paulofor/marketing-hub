@@ -108,6 +108,13 @@
 - Prevenção: a biblioteca de vídeos e a aba de vídeo do experimento priorizam HLS no player e sinalizam se o ativo está pronto para PDE.
 - Impacto comercial esperado: evitar publicação de PDE com vídeo fora do fluxo gerenciável, reduzir abandono por falha de reprodução no celular e manter custo/revisão/asset sob governança do Marketing Hub.
 
+## 2026-07-28 — Cadastro operacional de playlist HLS no Hub
+
+- Problema observado: o HLS da v6 podia estar fisicamente no build do PDE e, por isso, nao ficava facil de encontrar nem corrigir pela tela de videos do Marketing Hub.
+- Causa-raiz tratada: a governanca estava parcialmente no contrato e no banco, mas faltava uma acao administrativa simples para salvar a playlist HLS no ativo comercial.
+- Correção preparada: a biblioteca global de videos passa a exibir e editar a `Playlist HLS do PDE` em cada ativo, gravando `hlsPlaybackUrl` pelo endpoint oficial do experimento.
+- Prevenção: video `LANDING_HERO` continua bloqueado para aprovacao quando nao possui `.m3u8`, e playlists HLS externas ao fluxo completo devem ser cadastradas no Hub antes de uso comercial em PDE.
+
 ## 2026-07-21 — Vídeos de entrada do PDE pelo Marketing Hub
 
 - Problema observado: a nova área `Vídeos` existia como planejamento local no navegador, mas isso não criava artefato rastreável no Marketing Hub.

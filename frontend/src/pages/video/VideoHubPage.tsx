@@ -329,6 +329,23 @@ export default function VideoHubPage() {
     );
   }
 
+  async function handleSaveVideoHls(
+    video: ExperimentVideoAsset,
+    hlsPlaybackUrl: string,
+  ) {
+    const normalizedHlsUrl = hlsPlaybackUrl.trim();
+    if (!normalizedHlsUrl.includes(".m3u8")) {
+      toast.error("Informe uma playlist HLS valida com .m3u8");
+      return;
+    }
+    await updateVideoReview.mutateAsync({
+      experimentId: video.experimentId,
+      videoAssetId: video.id,
+      hlsPlaybackUrl: normalizedHlsUrl,
+    });
+    toast.success("Playlist HLS salva no ativo do Marketing Hub");
+  }
+
   useEffect(() => {
     if (selectedProductId || productList.length === 0) {
       return;
@@ -701,6 +718,7 @@ export default function VideoHubPage() {
                   `Experimento #${video.experimentId}`
                 }
                 onReview={handleVideoReview}
+                onSaveHls={handleSaveVideoHls}
                 reviewPending={updateVideoReview.isPending}
               />
             ))}
@@ -1237,6 +1255,7 @@ function ExperimentVideoCard({
   video,
   experimentName,
   onReview,
+  onSaveHls,
   reviewPending,
 }: {
   video: ExperimentVideoAsset;
@@ -1246,11 +1265,16 @@ function ExperimentVideoCard({
     reviewStatus: ExperimentVideoReviewStatus,
     rejectionReason?: string,
   ) => Promise<void>;
+  onSaveHls: (
+    video: ExperimentVideoAsset,
+    hlsPlaybackUrl: string,
+  ) => Promise<void>;
   reviewPending: boolean;
 }) {
   const [rejectionReason, setRejectionReason] = useState(
     video.rejectionReason ?? "",
   );
+  const [hlsUrlInput, setHlsUrlInput] = useState(video.hlsPlaybackUrl ?? "");
   const hlsPlaybackUrl = video.hlsPlaybackUrl
     ? resolveAssetUrl(video.hlsPlaybackUrl)
     : "";
@@ -1273,6 +1297,10 @@ function ExperimentVideoCard({
   useEffect(() => {
     setRejectionReason(video.rejectionReason ?? "");
   }, [video.id, video.rejectionReason]);
+
+  useEffect(() => {
+    setHlsUrlInput(video.hlsPlaybackUrl ?? "");
+  }, [video.id, video.hlsPlaybackUrl]);
 
   return (
     <article className="video-hub-page__video-card">
@@ -1357,6 +1385,30 @@ function ExperimentVideoCard({
             <span>{video.rejectionReason}</span>
           </div>
         ) : null}
+        <div className="video-hub-page__hls-box">
+          <label htmlFor={`video-hls-${video.id}`}>Playlist HLS do PDE</label>
+          <div className="video-hub-page__hls-actions">
+            <input
+              id={`video-hls-${video.id}`}
+              type="url"
+              value={hlsUrlInput}
+              onChange={(event) => setHlsUrlInput(event.target.value)}
+              placeholder="https://cdn.exemplo.com/video/index.m3u8"
+            />
+            <button
+              className="btn btn-sm btn-outline-primary"
+              type="button"
+              disabled={
+                reviewPending ||
+                hlsUrlInput.trim() === (video.hlsPlaybackUrl ?? "").trim()
+              }
+              onClick={() => onSaveHls(video, hlsUrlInput)}
+            >
+              <Save size={14} aria-hidden="true" />
+              Salvar HLS
+            </button>
+          </div>
+        </div>
         <div className="video-hub-page__review-box">
           <label htmlFor={`video-rejection-${video.id}`}>
             Motivo para reprovar

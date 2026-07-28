@@ -273,9 +273,8 @@ const fallbackProduct: ProductExperience = {
       placement: 'public_diagnostic_initial_explainer',
       playbackUrl: MUSA_APPROVED_HERO_VIDEO_URL,
       hlsPlaybackUrl: MUSA_APPROVED_HERO_VIDEO_URL,
-      posterUrl: '/assets/musa-editorial-presenca.png',
-      autoplay: true,
-      muted: true,
+      autoplay: false,
+      muted: false,
       controls: true,
       loop: false,
       playsInline: true,
@@ -1996,12 +1995,12 @@ function App() {
                   <AdaptiveVideoPlayer
                     className="public-hero-video"
                     src={heroPlaybackUrl}
-                    autoPlay={heroVideo?.autoplay ?? true}
+                    autoPlay={heroVideo?.autoplay ?? !showMotivationalTimelineVideo}
                     controls={heroVideo?.controls ?? showMotivationalTimelineVideo}
-                    muted={heroVideo?.muted ?? true}
+                    muted={heroVideo?.muted ?? false}
                     loop={heroVideo?.loop ?? !showMotivationalTimelineVideo}
                     playsInline={heroVideo?.playsInline ?? true}
-                    poster={heroVideo?.posterUrl ?? "/assets/musa-editorial-presenca.png"}
+                    poster={heroVideo?.posterUrl}
                     onPlaybackEvent={(event) => {
                       if (event.type === 'play') {
                         trackPublicHeroVideoPlayback('VIDEO_PLAY', {

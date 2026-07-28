@@ -156,23 +156,23 @@ export default function ProductFinancialPage() {
       <div className="product-financial-summary mb-3">
         <section className="product-financial-summary__tile">
           <span>Receita mensal</span>
-          <strong>{formatUsd(summary.revenue.monthly.usd)}</strong>
-          <small>{formatBrl(summary.revenue.monthly.brl)}</small>
+          <strong>{formatBrl(summary.revenue.monthly.brl)}</strong>
+          <small>{formatUsd(summary.revenue.monthly.usd)}</small>
         </section>
         <section className="product-financial-summary__tile">
           <span>Custo mensal</span>
           <strong>
-            {formatUsd(
+            {formatBrl(
               summary.costs.reduce(
-                (total, line) => total + line.monthly.usd,
+                (total, line) => total + line.monthly.brl,
                 0,
               ),
             )}
           </strong>
           <small>
-            {formatBrl(
+            {formatUsd(
               summary.costs.reduce(
-                (total, line) => total + line.monthly.brl,
+                (total, line) => total + line.monthly.usd,
                 0,
               ),
             )}
@@ -180,8 +180,8 @@ export default function ProductFinancialPage() {
         </section>
         <section className="product-financial-summary__tile product-financial-summary__tile--profit">
           <span>Lucro anual</span>
-          <strong>{formatUsd(summary.profit.annual.usd)}</strong>
-          <small>{formatBrl(summary.profit.annual.brl)}</small>
+          <strong>{formatBrl(summary.profit.annual.brl)}</strong>
+          <small>{formatUsd(summary.profit.annual.usd)}</small>
         </section>
       </div>
 
@@ -301,12 +301,12 @@ export default function ProductFinancialPage() {
                       </span>
                     </td>
                     <td>
-                      <strong>{formatUsd(line.monthly.usd)}</strong>
-                      <small>{formatBrl(line.monthly.brl)}</small>
+                      <strong>{formatBrl(line.monthly.brl)}</strong>
+                      <small>{formatUsd(line.monthly.usd)}</small>
                     </td>
                     <td>
-                      <strong>{formatUsd(line.annual.usd)}</strong>
-                      <small>{formatBrl(line.annual.brl)}</small>
+                      <strong>{formatBrl(line.annual.brl)}</strong>
+                      <small>{formatUsd(line.annual.usd)}</small>
                     </td>
                     <td className="text-muted small">{line.source}</td>
                   </tr>

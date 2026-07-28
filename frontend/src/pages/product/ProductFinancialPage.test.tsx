@@ -102,6 +102,45 @@ describe("ProductFinancialPage", () => {
     expect(screen.getAllByTestId("product-financial-chart")).toHaveLength(2);
     expect(screen.getByText("Resultado dos últimos 4 meses")).toBeTruthy();
 
+    const revenueTile = screen.getByText("Receita mensal").closest("section");
+    expect(revenueTile).toBeTruthy();
+    expect(
+      within(revenueTile as HTMLElement).getByText("R$ 67,00", {
+        selector: "strong",
+      }),
+    ).toBeTruthy();
+    expect(
+      within(revenueTile as HTMLElement).getByText("$13.40", {
+        selector: "small",
+      }),
+    ).toBeTruthy();
+
+    const costTile = screen.getByText("Custo mensal").closest("section");
+    expect(costTile).toBeTruthy();
+    expect(
+      within(costTile as HTMLElement).getByText("R$ 75,00", {
+        selector: "strong",
+      }),
+    ).toBeTruthy();
+    expect(
+      within(costTile as HTMLElement).getByText("$15.00", {
+        selector: "small",
+      }),
+    ).toBeTruthy();
+
+    const profitTile = screen.getByText("Lucro anual").closest("section");
+    expect(profitTile).toBeTruthy();
+    expect(
+      within(profitTile as HTMLElement).getByText("R$ 270,00", {
+        selector: "strong",
+      }),
+    ).toBeTruthy();
+    expect(
+      within(profitTile as HTMLElement).getByText("$54.00", {
+        selector: "small",
+      }),
+    ).toBeTruthy();
+
     const julyRow = screen.getByText("Julho 2026").closest("tr");
     expect(julyRow).toBeTruthy();
     expect(within(julyRow as HTMLElement).getByText("R$ 75,00")).toBeTruthy();

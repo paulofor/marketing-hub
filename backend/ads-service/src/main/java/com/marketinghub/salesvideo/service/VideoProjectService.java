@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 /** Componente interno que executa o cadastro editorial de projetos de vídeo do Marketing Hub. */
 @Component
 public class VideoProjectService {
+  public static final int MINIMUM_STUDIO_DURATION_SECONDS = 180;
+
   private final VideoProjectRepository repository;
 
   /** Inicializa o serviço com o repositório canônico de projetos de vídeo. */
@@ -57,15 +59,21 @@ public class VideoProjectService {
             .scriptText(trimToNull(request.scriptText()))
             .scenePlan(trimToNull(request.scenePlan()))
             .visualReferences(trimToNull(request.visualReferences()))
+            .characterBible(trimToNull(request.characterBible()))
+            .environmentBible(trimToNull(request.environmentBible()))
+            .objectBible(trimToNull(request.objectBible()))
+            .visualStyleGuide(trimToNull(request.visualStyleGuide()))
+            .imageGenerationPlan(trimToNull(request.imageGenerationPlan()))
+            .continuityRules(trimToNull(request.continuityRules()))
             .voiceoverPlan(trimToNull(request.voiceoverPlan()))
             .soundtrackPlan(trimToNull(request.soundtrackPlan()))
             .captionPlan(trimToNull(request.captionPlan()))
             .ctaText(trimToNull(request.ctaText()))
-            .targetDurationSeconds(request.targetDurationSeconds())
+            .targetDurationSeconds(validatedTargetDurationSeconds(request.targetDurationSeconds()))
             .providerPlan(trimToNull(request.providerPlan()))
             .editingNotes(trimToNull(request.editingNotes()))
             .qualityGate(trimToNull(request.qualityGate()))
-            .status(Objects.requireNonNullElse(request.status(), VideoProjectStatus.DRAFT))
+            .status(validatedStatus(request.status(), request))
             .createdBy(trimToNull(request.createdBy()))
             .updatedBy(trimToNull(request.createdBy()))
             .build();
@@ -99,15 +107,22 @@ public class VideoProjectService {
     project.setScriptText(trimToNull(request.scriptText()));
     project.setScenePlan(trimToNull(request.scenePlan()));
     project.setVisualReferences(trimToNull(request.visualReferences()));
+    project.setCharacterBible(trimToNull(request.characterBible()));
+    project.setEnvironmentBible(trimToNull(request.environmentBible()));
+    project.setObjectBible(trimToNull(request.objectBible()));
+    project.setVisualStyleGuide(trimToNull(request.visualStyleGuide()));
+    project.setImageGenerationPlan(trimToNull(request.imageGenerationPlan()));
+    project.setContinuityRules(trimToNull(request.continuityRules()));
     project.setVoiceoverPlan(trimToNull(request.voiceoverPlan()));
     project.setSoundtrackPlan(trimToNull(request.soundtrackPlan()));
     project.setCaptionPlan(trimToNull(request.captionPlan()));
     project.setCtaText(trimToNull(request.ctaText()));
-    project.setTargetDurationSeconds(request.targetDurationSeconds());
+    project.setTargetDurationSeconds(
+        validatedTargetDurationSeconds(request.targetDurationSeconds()));
     project.setProviderPlan(trimToNull(request.providerPlan()));
     project.setEditingNotes(trimToNull(request.editingNotes()));
     project.setQualityGate(trimToNull(request.qualityGate()));
-    project.setStatus(Objects.requireNonNullElse(request.status(), VideoProjectStatus.DRAFT));
+    project.setStatus(validatedStatus(request.status(), request));
     project.setUpdatedBy(trimToNull(request.updatedBy()));
     return toDto(repository.save(project));
   }
@@ -148,6 +163,85 @@ public class VideoProjectService {
     return value.trim();
   }
 
+  /** Garante que o Estúdio seja usado apenas para vídeos com pelo menos três minutos. */
+  private static Integer validatedTargetDurationSeconds(Integer targetDurationSeconds) {
+    if (targetDurationSeconds == null) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Duração alvo é obrigatória para projeto do Estúdio de Audio e Video");
+    }
+    if (targetDurationSeconds < MINIMUM_STUDIO_DURATION_SECONDS) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Estúdio de Audio e Video só pode gerar vídeos com 180 segundos ou mais");
+    }
+    return targetDurationSeconds;
+  }
+
+  /** Bloqueia avanço para renderização quando a bíblia visual premium ainda não foi definida. */
+  private static VideoProjectStatus validatedStatus(
+      VideoProjectStatus requestedStatus, CreateVideoProjectRequest request) {
+    VideoProjectStatus status =
+        Objects.requireNonNullElse(requestedStatus, VideoProjectStatus.DRAFT);
+    validateVisualBibleForProduction(
+        status,
+        request.characterBible(),
+        request.environmentBible(),
+        request.objectBible(),
+        request.visualStyleGuide(),
+        request.imageGenerationPlan(),
+        request.continuityRules());
+    return status;
+  }
+
+  /** Bloqueia avanço para renderização quando a bíblia visual premium ainda não foi definida. */
+  private static VideoProjectStatus validatedStatus(
+      VideoProjectStatus requestedStatus, UpdateVideoProjectRequest request) {
+    VideoProjectStatus status =
+        Objects.requireNonNullElse(requestedStatus, VideoProjectStatus.DRAFT);
+    validateVisualBibleForProduction(
+        status,
+        request.characterBible(),
+        request.environmentBible(),
+        request.objectBible(),
+        request.visualStyleGuide(),
+        request.imageGenerationPlan(),
+        request.continuityRules());
+    return status;
+  }
+
+  /** Valida os blocos mínimos de continuidade antes de qualquer produção de vídeo premium. */
+  private static void validateVisualBibleForProduction(
+      VideoProjectStatus status,
+      String characterBible,
+      String environmentBible,
+      String objectBible,
+      String visualStyleGuide,
+      String imageGenerationPlan,
+      String continuityRules) {
+    if (!requiresVisualBible(status)) {
+      return;
+    }
+    if (trimToNull(characterBible) == null
+        || trimToNull(environmentBible) == null
+        || trimToNull(objectBible) == null
+        || trimToNull(visualStyleGuide) == null
+        || trimToNull(imageGenerationPlan) == null
+        || trimToNull(continuityRules) == null) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Bíblia visual completa é obrigatória antes de renderizar vídeo no Estúdio");
+    }
+  }
+
+  /** Informa se o status representa construção ou liberação de vídeo. */
+  private static boolean requiresVisualBible(VideoProjectStatus status) {
+    return status == VideoProjectStatus.READY_FOR_RENDER
+        || status == VideoProjectStatus.IN_PRODUCTION
+        || status == VideoProjectStatus.READY_FOR_REVIEW
+        || status == VideoProjectStatus.APPROVED;
+  }
+
   /** Converte a entidade do projeto de vídeo para contrato REST. */
   private static VideoProjectDto toDto(VideoProject project) {
     return new VideoProjectDto(
@@ -170,6 +264,12 @@ public class VideoProjectService {
         project.getScriptText(),
         project.getScenePlan(),
         project.getVisualReferences(),
+        project.getCharacterBible(),
+        project.getEnvironmentBible(),
+        project.getObjectBible(),
+        project.getVisualStyleGuide(),
+        project.getImageGenerationPlan(),
+        project.getContinuityRules(),
         project.getVoiceoverPlan(),
         project.getSoundtrackPlan(),
         project.getCaptionPlan(),

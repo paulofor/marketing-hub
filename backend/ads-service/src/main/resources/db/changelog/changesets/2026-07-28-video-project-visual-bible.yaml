@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-28-video-project-visual-bible-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: video_project
+        - not:
+            columnExists:
+              tableName: video_project
+              columnName: character_bible
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_project
+                ADD COLUMN character_bible LONGTEXT NULL AFTER visual_references,
+                ADD COLUMN environment_bible LONGTEXT NULL AFTER character_bible,
+                ADD COLUMN object_bible LONGTEXT NULL AFTER environment_bible,
+                ADD COLUMN visual_style_guide LONGTEXT NULL AFTER object_bible,
+                ADD COLUMN image_generation_plan LONGTEXT NULL AFTER visual_style_guide,
+                ADD COLUMN continuity_rules LONGTEXT NULL AFTER image_generation_plan;

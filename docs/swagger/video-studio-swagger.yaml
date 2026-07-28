@@ -116,11 +116,38 @@ components:
         scriptText: { type: string, nullable: true }
         scenePlan: { type: string, nullable: true }
         visualReferences: { type: string, nullable: true }
+        characterBible:
+          type: string
+          nullable: true
+          description: Personagens, imagens mestre aprovadas, figurinos e URLs ou IDs de referência.
+        environmentBible:
+          type: string
+          nullable: true
+          description: Ambientes, imagens mestre, ângulos, entradas, saídas e mapa simples de cenário.
+        objectBible:
+          type: string
+          nullable: true
+          description: Produto, objetos, interface, marca, escala e arquivos separados de logotipo ou texto.
+        visualStyleGuide:
+          type: string
+          nullable: true
+          description: Direção visual, acabamento, luz, lente, enquadramento, paleta e textura.
+        imageGenerationPlan:
+          type: string
+          nullable: true
+          description: Plano para solicitar imagens mestre ao modelo de imagem antes da geração de vídeo.
+        continuityRules:
+          type: string
+          nullable: true
+          description: Regras de preservação visual entre cenas, takes e provedores.
         voiceoverPlan: { type: string, nullable: true }
         soundtrackPlan: { type: string, nullable: true }
         captionPlan: { type: string, nullable: true }
         ctaText: { type: string, nullable: true }
-        targetDurationSeconds: { type: integer, nullable: true }
+        targetDurationSeconds:
+          type: integer
+          minimum: 180
+          nullable: true
         providerPlan: { type: string, nullable: true }
         editingNotes: { type: string, nullable: true }
         qualityGate: { type: string, nullable: true }

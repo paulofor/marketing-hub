@@ -35,6 +35,29 @@ O objetivo do estudio e aumentar o valor percebido dos produtos digitais e campa
 
 Cada evolucao do estudio deve preservar a regra principal do sistema: gerar vendas de produtos digitais que entregam valor real com IA aplicada ao dia a dia.
 
+## Duracao minima obrigatoria
+
+O Estudio de Audio e Video deve ser usado somente para videos com **3 minutos ou mais** (`180` segundos ou mais).
+
+Videos abaixo de 3 minutos pertencem aos fluxos rapidos de criativo, anuncio, corte curto, video organico curto ou assets especificos de experimentos. Esses fluxos podem continuar usando provedores e tratamentos existentes, mas nao devem acionar o Estudio.
+
+O Marketing Hub deve bloquear criacao, edicao ou geracao de projeto do Estudio quando `targetDurationSeconds` for menor que `180`. A tela pode orientar o operador, mas o backend deve ser a fonte de verdade desse bloqueio para evitar criacao por API, automacao ou dados legados.
+
+## Biblia visual obrigatoria
+
+Antes de qualquer renderizacao, producao, revisao ou aprovacao de video no Estudio, o projeto deve ter uma **biblia visual** persistida no backend.
+
+A biblia visual deve conter, no minimo:
+
+- personagens e imagens mestre aprovadas, com angulos, figurino, acessorios e URLs ou IDs de referencia;
+- ambientes e imagens mestre, incluindo plano geral, angulo oposto, lateral, entradas, saidas, objetos fixos e mapa simples;
+- objetos, produto e marca, incluindo telas do PDE, interface, logotipo, textos e referencias separadas para composicao;
+- direcao visual, incluindo estilo, luz, lente, textura, paleta, enquadramento e nivel de realismo;
+- plano de geracao de imagem, priorizando solicitar primeiro ao modelo de imagem OpenAI as imagens mestre e frames-chave antes de gerar video;
+- regras de continuidade para preservar rosto, cabelo, figurino, escala, objetos, arquitetura, temperatura de cor e identidade visual entre cenas.
+
+O backend deve bloquear status de construcao ou liberacao de video quando qualquer bloco estiver ausente. A tela deve coletar esses dados como etapa de pre-producao premium, mas nao deve ser a unica barreira de qualidade.
+
 ## Primeiro escopo
 
 A primeira versao deve ser um cockpit de construcao no frontend, deixando clara a fronteira entre:

@@ -1,6 +1,7 @@
 package com.marketinghub.salesvideo.dto;
 
 import com.marketinghub.salesvideo.VideoProjectStatus;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -23,11 +24,17 @@ public record CreateVideoProjectRequest(
     String scriptText,
     String scenePlan,
     String visualReferences,
+    String characterBible,
+    String environmentBible,
+    String objectBible,
+    String visualStyleGuide,
+    String imageGenerationPlan,
+    String continuityRules,
     String voiceoverPlan,
     String soundtrackPlan,
     String captionPlan,
     @Size(max = 1024) String ctaText,
-    Integer targetDurationSeconds,
+    @Min(180) Integer targetDurationSeconds,
     String providerPlan,
     String editingNotes,
     String qualityGate,

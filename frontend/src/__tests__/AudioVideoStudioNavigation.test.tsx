@@ -147,6 +147,36 @@ describe("audio video studio navigation", () => {
     ).toBeTruthy();
   });
 
+  it("blocks audio video studio project below three minutes", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/projects/8") {
+        return Promise.resolve({
+          data: {
+            id: 8,
+            title: "Projeto curto",
+            objective: "Testar corte curto.",
+            storyText: "Historia curta para criativo rapido.",
+            contextType: "PDE",
+            productionMode: "STORY_FIRST_AUDIO_VIDEO",
+            targetChannel: "PDE",
+            format: "VERTICAL_9_16",
+            targetDurationSeconds: 120,
+            status: "READY_FOR_SCRIPT",
+          },
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/projects/8"]);
+
+    expect(await screen.findByText(/120 segundos/i)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /salvar continuidade/i }),
+    ).toBeDisabled();
+  });
+
   it("renders example project when there are no persisted projects", async () => {
     setup(<App />, ["/audio-video-studio/projects"]);
 

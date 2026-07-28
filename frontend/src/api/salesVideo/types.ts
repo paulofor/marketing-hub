@@ -371,6 +371,12 @@ export interface VideoProject {
   scriptText?: string | null;
   scenePlan?: string | null;
   visualReferences?: string | null;
+  characterBible?: string | null;
+  environmentBible?: string | null;
+  objectBible?: string | null;
+  visualStyleGuide?: string | null;
+  imageGenerationPlan?: string | null;
+  continuityRules?: string | null;
   voiceoverPlan?: string | null;
   soundtrackPlan?: string | null;
   captionPlan?: string | null;
@@ -404,6 +410,12 @@ export interface VideoProjectPayload {
   scriptText?: string;
   scenePlan?: string;
   visualReferences?: string;
+  characterBible?: string;
+  environmentBible?: string;
+  objectBible?: string;
+  visualStyleGuide?: string;
+  imageGenerationPlan?: string;
+  continuityRules?: string;
   voiceoverPlan?: string;
   soundtrackPlan?: string;
   captionPlan?: string;

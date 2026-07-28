@@ -24,7 +24,7 @@ const RECOMMENDATION_LABELS: Record<string, string> = {
   priorizar: "Priorizar",
   testar_controlado: "Teste controlado",
   usar_com_cautela: "Usar com cautela",
-  bloquear_ou_regenerar: "Bloquear ou regenerar",
+  bloquear_ou_regenerar: "Regenerar e testar",
 };
 
 export default function VideoProviderManagementPage() {
@@ -215,7 +215,7 @@ function recommendationClass(recommendation?: string) {
     return "is-good";
   }
   if (recommendation === "bloquear_ou_regenerar") {
-    return "is-bad";
+    return "is-warning";
   }
   if (recommendation === "usar_com_cautela") {
     return "is-warning";

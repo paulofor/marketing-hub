@@ -23,6 +23,13 @@
 - Correção preparada: o AI Worker passou a ter modelo próprio para roteiro de vídeo em `SALES_VIDEO_SCRIPT_MODEL`, com default `gpt-5.5`, separado do `OPENAI_MODEL` genérico.
 - Decisão comercial: para MUSA, evitar termos vagos como "imagem coerente" e priorizar linguagem concreta de conversa, como "parar de sentir que falta algo no look", "peça-sinal" e "sem comprar roupa nova".
 
+## 2026-07-28 — Reputação de providers sem bloqueio temporário
+
+- Decisão operacional: não deixar nenhum provider bloqueado enquanto a base comparativa ainda está sendo formada.
+- Causa-raiz tratada: a tela de provedores traduzia reprovação visual ou score baixo como “Bloquear ou regenerar”, o que impedia aprendizado justamente quando precisamos acumular mais amostras por provider.
+- Correção preparada: o backend passa a recomendar `usar_com_cautela` ou `testar_controlado` em vez de bloqueio; o frontend troca o rótulo legado por “Regenerar e testar”.
+- Regra comercial: histórico ruim continua visível e penaliza score, mas não bloqueia novos testes controlados até haver massa de dados suficiente para decisão definitiva.
+
 ## 2026-07-25 — Bloqueio de VEO direto acima de 8 segundos
 
 - Problema observado: pedidos de vídeo VEO podiam ser criados com alvo comercial de 30s, embora o VEO direto entregue clipes curtos de até 8s por render.

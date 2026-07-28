@@ -465,7 +465,7 @@ public class SalesVideoCommercialInsightsService {
           .build();
     }
 
-    /** Define recomendação operacional para o provider conforme score e falhas críticas. */
+    /** Define recomendação operacional para o provider sem bloquear coleta de aprendizado. */
     private String recommendation(
         int score,
         long rejectedAssets,
@@ -473,7 +473,7 @@ public class SalesVideoCommercialInsightsService {
         long operationalFailedJobs,
         long purchases) {
       if (rejectedAssets > 0) {
-        return "bloquear_ou_regenerar";
+        return "usar_com_cautela";
       }
       if (purchases > 0 || score >= 75) {
         return "priorizar";
@@ -482,7 +482,7 @@ public class SalesVideoCommercialInsightsService {
         return "testar_controlado";
       }
       if (score < 40) {
-        return "bloquear_ou_regenerar";
+        return "testar_controlado";
       }
       if (failedJobs > 0 || score < 60) {
         return "usar_com_cautela";
@@ -514,7 +514,7 @@ public class SalesVideoCommercialInsightsService {
         int score,
         String recommendation) {
       if (rejectedAssets > 0) {
-        return "%s tem %d reprovação(ões) visual(is); bloquear uso comercial e regenerar criativo antes de gastar mídia."
+        return "%s tem %d reprovação(ões) visual(is); regenerar criativo e manter teste controlado antes de escalar mídia."
             .formatted(providerName, rejectedAssets);
       }
       if (failedJobs > 0 && failedJobs == operationalFailedJobs) {

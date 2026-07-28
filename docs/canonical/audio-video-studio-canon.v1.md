@@ -35,6 +35,14 @@ O objetivo do estudio e aumentar o valor percebido dos produtos digitais e campa
 
 Cada evolucao do estudio deve preservar a regra principal do sistema: gerar vendas de produtos digitais que entregam valor real com IA aplicada ao dia a dia.
 
+## Duracao minima obrigatoria
+
+O Estudio de Audio e Video deve ser usado somente para videos com **3 minutos ou mais** (`180` segundos ou mais).
+
+Videos abaixo de 3 minutos pertencem aos fluxos rapidos de criativo, anuncio, corte curto, video organico curto ou assets especificos de experimentos. Esses fluxos podem continuar usando provedores e tratamentos existentes, mas nao devem acionar o Estudio.
+
+O Marketing Hub deve bloquear criacao, edicao ou geracao de projeto do Estudio quando `targetDurationSeconds` for menor que `180`. A tela pode orientar o operador, mas o backend deve ser a fonte de verdade desse bloqueio para evitar criacao por API, automacao ou dados legados.
+
 ## Primeiro escopo
 
 A primeira versao deve ser um cockpit de construcao no frontend, deixando clara a fronteira entre:

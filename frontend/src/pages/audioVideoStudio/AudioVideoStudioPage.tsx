@@ -141,6 +141,8 @@ const scenePrompts = [
   "Cena final com CTA, URL, produto ou proximo passo.",
 ];
 
+const MINIMUM_STUDIO_DURATION_SECONDS = 180;
+
 const exampleStory =
   "Uma consultora independente sente que sua presenca digital nao mostra sua autoridade real. Ela tenta postar melhor, ajustar foto, escrever bio e criar conteudo, mas tudo parece solto. Ao entrar no Metodo MUSA, ela recebe um diagnostico guiado por IA que transforma sinais dispersos em uma direcao clara de imagem, conteudo e posicionamento. Em poucos dias, ela entende o que precisa ajustar, passa a se apresentar com mais seguranca e convida outras pessoas para fazerem o mesmo diagnostico.";
 
@@ -188,6 +190,10 @@ export default function AudioVideoStudioPage() {
   const isEditingProject = Boolean(editableProjectId);
   const isSavingProject =
     createVideoProject.isPending || updateVideoProject.isPending;
+  const targetDurationSeconds =
+    selectedProject?.targetDurationSeconds ?? MINIMUM_STUDIO_DURATION_SECONDS;
+  const isDurationBlocked =
+    targetDurationSeconds < MINIMUM_STUDIO_DURATION_SECONDS;
 
   useEffect(() => {
     if (selectedProject) {
@@ -244,7 +250,7 @@ export default function AudioVideoStudioPage() {
       selectedProject?.captionPlan ||
       "Legendas curtas com palavras-chave de dor, mecanismo, prova e CTA.",
     ctaText: briefing.cta,
-    targetDurationSeconds: selectedProject?.targetDurationSeconds || 180,
+    targetDurationSeconds,
     providerPlan:
       selectedProject?.providerPlan ||
       "Comecar com roteiro e storyboard; depois testar narracao, cenas-chave e montagem em jobs auditaveis.",
@@ -261,6 +267,12 @@ export default function AudioVideoStudioPage() {
 
   const handleSaveProject = async () => {
     setSaveFeedback("");
+    if (isDurationBlocked) {
+      setSaveFeedback(
+        "Projeto bloqueado: o Estudio de Audio e Video so pode gerar videos com 180 segundos ou mais.",
+      );
+      return;
+    }
     try {
       if (editableProjectId) {
         const project = await updateVideoProject.mutateAsync({
@@ -343,6 +355,14 @@ export default function AudioVideoStudioPage() {
         </div>
       </section>
 
+      {isDurationBlocked ? (
+        <article className="audio-video-studio-page__duration-block">
+          Este projeto tem {targetDurationSeconds} segundos e esta bloqueado
+          para o Estudio. Use o fluxo rapido de criativo ou crie um projeto com
+          180 segundos ou mais.
+        </article>
+      ) : null}
+
       <section className="audio-video-studio-page__workspace">
         <form
           className="audio-video-studio-page__briefing"
@@ -417,7 +437,9 @@ export default function AudioVideoStudioPage() {
             className="audio-video-studio-page__primary-action"
             type="button"
             onClick={handleSaveProject}
-            disabled={isSavingProject || selectedProjectQuery.isLoading}
+            disabled={
+              isSavingProject || selectedProjectQuery.isLoading || isDurationBlocked
+            }
           >
             <Save size={18} aria-hidden="true" />
             {isSavingProject

@@ -1,6 +1,7 @@
 package com.marketinghub.salesvideo.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -65,7 +66,7 @@ class VideoProjectServiceTest {
             "Trilha leve",
             "Legenda curta",
             "Fazer diagnóstico",
-            45,
+            180,
             "Runway para cenas, FFmpeg para montagem",
             "Corte rápido",
             "Audio audível e CTA claro",
@@ -128,7 +129,7 @@ class VideoProjectServiceTest {
             "Trilha",
             "Legendas",
             "Comprar agora",
-            90,
+            210,
             "Provider plan",
             "Notas",
             "Gate",
@@ -144,5 +145,93 @@ class VideoProjectServiceTest {
     assertThat(result.contextType()).isEqualTo("CAMPAIGN");
     assertThat(result.storyText()).contains("rotina guiada por IA");
     assertThat(result.status()).isEqualTo(VideoProjectStatus.READY_FOR_RENDER);
+  }
+
+  /** Bloqueia criação de projeto abaixo de três minutos para preservar o escopo do Estúdio. */
+  @Test
+  void shouldRejectProjectShorterThanThreeMinutes() {
+    CreateVideoProjectRequest request =
+        new CreateVideoProjectRequest(
+            4L,
+            66L,
+            12L,
+            "musa-organico-001",
+            "ORGANIC",
+            "MIXED_AI_SCENES",
+            "INSTAGRAM_REELS",
+            "VERTICAL_9_16",
+            "Corte orgânico de presença visual",
+            "Gerar clique qualificado para o diagnóstico MUSA",
+            "Uma profissional percebe que sua presença digital não traduz sua autoridade.",
+            "AWARENESS",
+            "PROFILE_VISIT",
+            "Sua imagem comunica antes da sua fala",
+            "Roteiro curto",
+            "Cena 1",
+            "Visual premium",
+            "Voz feminina",
+            "Trilha leve",
+            "Legenda curta",
+            "Fazer diagnóstico",
+            179,
+            "Runway para cenas, FFmpeg para montagem",
+            "Corte rápido",
+            "Audio audível e CTA claro",
+            VideoProjectStatus.READY_FOR_SCRIPT,
+            "editor@marketinghub.io");
+
+    assertThatThrownBy(() -> service.createProject(request))
+        .hasMessageContaining("180 segundos ou mais");
+  }
+
+  /** Bloqueia edição que tente reduzir projeto do Estúdio para menos de três minutos. */
+  @Test
+  void shouldRejectUpdateThatMakesProjectShorterThanThreeMinutes() {
+    VideoProject project =
+        VideoProject.builder()
+            .id(91L)
+            .tenantId("tenant-musa")
+            .contextType("PDE")
+            .productionMode("AVATAR")
+            .targetChannel("PDE")
+            .format("VERTICAL_9_16")
+            .title("Original")
+            .objective("Objetivo original")
+            .targetDurationSeconds(180)
+            .status(VideoProjectStatus.DRAFT)
+            .build();
+    UpdateVideoProjectRequest request =
+        new UpdateVideoProjectRequest(
+            4L,
+            null,
+            null,
+            "musa-campanha",
+            "CAMPAIGN",
+            "MONTAGE",
+            "META_ADS",
+            "VERTICAL_9_16",
+            "Video de campanha",
+            "Aumentar compra do PDE",
+            "A usuária sai de tentativa manual para uma rotina guiada por IA.",
+            "CONVERSION",
+            "PURCHASE",
+            "Gancho",
+            "Roteiro",
+            "Cenas",
+            "Referencias",
+            "Voz",
+            "Trilha",
+            "Legendas",
+            "Comprar agora",
+            120,
+            "Provider plan",
+            "Notas",
+            "Gate",
+            VideoProjectStatus.READY_FOR_RENDER,
+            "editor@marketinghub.io");
+    given(repository.findById(91L)).willReturn(Optional.of(project));
+
+    assertThatThrownBy(() -> service.updateProject(91L, request))
+        .hasMessageContaining("180 segundos ou mais");
   }
 }

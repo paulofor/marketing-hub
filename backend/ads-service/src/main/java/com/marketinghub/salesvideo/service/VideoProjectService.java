@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 /** Componente interno que executa o cadastro editorial de projetos de vídeo do Marketing Hub. */
 @Component
 public class VideoProjectService {
+  public static final int MINIMUM_STUDIO_DURATION_SECONDS = 180;
+
   private final VideoProjectRepository repository;
 
   /** Inicializa o serviço com o repositório canônico de projetos de vídeo. */
@@ -61,7 +63,7 @@ public class VideoProjectService {
             .soundtrackPlan(trimToNull(request.soundtrackPlan()))
             .captionPlan(trimToNull(request.captionPlan()))
             .ctaText(trimToNull(request.ctaText()))
-            .targetDurationSeconds(request.targetDurationSeconds())
+            .targetDurationSeconds(validatedTargetDurationSeconds(request.targetDurationSeconds()))
             .providerPlan(trimToNull(request.providerPlan()))
             .editingNotes(trimToNull(request.editingNotes()))
             .qualityGate(trimToNull(request.qualityGate()))
@@ -103,7 +105,8 @@ public class VideoProjectService {
     project.setSoundtrackPlan(trimToNull(request.soundtrackPlan()));
     project.setCaptionPlan(trimToNull(request.captionPlan()));
     project.setCtaText(trimToNull(request.ctaText()));
-    project.setTargetDurationSeconds(request.targetDurationSeconds());
+    project.setTargetDurationSeconds(
+        validatedTargetDurationSeconds(request.targetDurationSeconds()));
     project.setProviderPlan(trimToNull(request.providerPlan()));
     project.setEditingNotes(trimToNull(request.editingNotes()));
     project.setQualityGate(trimToNull(request.qualityGate()));
@@ -146,6 +149,21 @@ public class VideoProjectService {
       return null;
     }
     return value.trim();
+  }
+
+  /** Garante que o Estúdio seja usado apenas para vídeos com pelo menos três minutos. */
+  private static Integer validatedTargetDurationSeconds(Integer targetDurationSeconds) {
+    if (targetDurationSeconds == null) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Duração alvo é obrigatória para projeto do Estúdio de Audio e Video");
+    }
+    if (targetDurationSeconds < MINIMUM_STUDIO_DURATION_SECONDS) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Estúdio de Audio e Video só pode gerar vídeos com 180 segundos ou mais");
+    }
+    return targetDurationSeconds;
   }
 
   /** Converte a entidade do projeto de vídeo para contrato REST. */

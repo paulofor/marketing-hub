@@ -120,7 +120,10 @@ components:
         soundtrackPlan: { type: string, nullable: true }
         captionPlan: { type: string, nullable: true }
         ctaText: { type: string, nullable: true }
-        targetDurationSeconds: { type: integer, nullable: true }
+        targetDurationSeconds:
+          type: integer
+          minimum: 180
+          nullable: true
         providerPlan: { type: string, nullable: true }
         editingNotes: { type: string, nullable: true }
         qualityGate: { type: string, nullable: true }

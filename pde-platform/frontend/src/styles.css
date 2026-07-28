@@ -513,6 +513,7 @@ textarea {
     linear-gradient(90deg, rgba(122, 36, 68, 0.42), transparent 58%);
   content: '';
   inset: 0;
+  pointer-events: none;
   position: absolute;
 }
 

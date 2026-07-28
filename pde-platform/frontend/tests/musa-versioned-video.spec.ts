@@ -21,6 +21,14 @@ test('v6 publica bloco de video nao-slide e segue direto para o diagnostico', as
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', false);
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('loop', false);
   await expect(page.locator('video.public-hero-video')).not.toHaveAttribute('poster');
+  await expect(page.locator('video.public-hero-video')).toBeVisible();
+  await expect(page.locator('video.public-hero-video')).toHaveCSS('pointer-events', 'auto');
+  const videoReceivesPointer = await page.locator('video.public-hero-video').evaluate((video) => {
+    const rect = video.getBoundingClientRect();
+    const elementAtVideoCenter = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return elementAtVideoCenter === video;
+  });
+  expect(videoReceivesPointer).toBe(true);
   await expect(page.locator('.public-video-play-badge')).toHaveCount(0);
   await expect(page.locator('.public-video-watch-status')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();

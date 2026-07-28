@@ -276,6 +276,8 @@ Um PDE não pode ser considerado pronto para tráfego se o smoke test público f
 
 O Marketing Hub deve ser o painel operacional para decidir qual versão PDE recebe tráfego e qual versão cada experimento mede.
 
+A decisão de direcionamento para uma versão produtiva pertence ao experimento. O repositório de anúncios, o gerador de criativos e o Facebook Ads Worker não devem escolher, inferir, sobrescrever ou redirecionar versão por conta própria. Esses componentes devem apenas consumir a URL/slot/`experienceVersion` já definidos no contrato do experimento e registrar a mesma referência nos eventos e métricas.
+
 GitHub Actions verde não é prova suficiente de publicação produtiva. Antes de liberar tráfego pago ou considerar uma correção publicada, o Marketing Hub deve confirmar:
 
 - URL pública produtiva respondendo;
@@ -310,6 +312,8 @@ Para o Clube MUSA, a regra operacional atual é:
 - é proibido gerar MP4/HLS comercial do MUSA a partir dos slides/imagens do diagnóstico (`musa-diagnostic-slide-*`) ou servir URLs antigas como `/assets/hls/musa-v5-video-explicativo/index.m3u8`, `/assets/hls/musa-v6-video-motivacional/index.m3u8`, `/assets/musa-v5-video-explicativo.mp4` ou `/assets/musa-v6-video-motivacional.mp4`.
 
 Quando houver hipóteses, criativos ou primeiras dobras concorrentes, a operação deve criar slots produtivos paralelos em vez de depender de ambiente intermediário. A tela de experimento apenas escolhe a versão medida; criação, manutenção e publicação das URLs ficam no fluxo do produto e no pipeline versionado do repositório.
+
+O repositório de anúncios deve permanecer neutro em relação à escolha de versão: ele pode receber a URL pública aprovada para montar ou publicar o anúncio, mas não pode conter regra própria do tipo "enviar para v5", "enviar para v6" ou qualquer fallback de versão. Se a versão do destino precisar mudar, a alteração deve ocorrer no experimento/slot produtivo e só depois ser consumida pelo fluxo de anúncios.
 
 ### Slots produtivos versionados do PDE
 
@@ -412,7 +416,7 @@ Um produto PDE só pode ser considerado pronto para tráfego quando:
 4. experiência guiada estiver carregando;
 5. materiais de apoio estiverem disponíveis;
 6. progresso estiver persistindo ou registrado de forma auditável;
-7. o anúncio apontar para a entrada/login do PDE em slot produtivo versionado aprovado, como `https://v5.clubemusa.com.br` para a versão 5, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
+7. o anúncio apontar para a entrada/login do PDE no slot produtivo versionado aprovado pelo experimento, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
 8. produto da cliente não expuser termos técnicos internos.
 9. funil e analytics do PED estiverem registrando eventos próprios de entrada, sessão, UTM, paywall, checkout, compra, liberação e ativação.
 10. health check público comercial estiver publicado e passando com os textos críticos do PDE.

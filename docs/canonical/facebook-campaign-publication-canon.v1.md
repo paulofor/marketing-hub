@@ -19,6 +19,7 @@
 > - formaliza que campanhas de experimento usam orçamento diário no nível do ad set (`budgetMode=ADSET`) e que orçamento de campanha é reservado para etapa futura de escala
 > - formaliza que solicitações de targeting por IA devem usar GPT-5.5 em modo Flex e gerar seeds orientados à taxonomia Meta Ads, mantendo a validação oficial de existência no Facebook Ads Worker
 > - formaliza que criativo de imagem só pode ser tratado como aprovado/publicável quando possuir `image_url` real
+> - formaliza que o repositório/worker de anúncios não decide direcionamento de versão; a versão de destino é decisão do experimento
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -86,6 +87,8 @@ As solicitações de targeting feitas pelo usuário no contexto de nichos, hipó
 | Geração por IA de ativos prévios (ex.: texto/imagem criativa antes da aprovação) | `ai-worker` | Backend `ads-service`, Frontend |
 | Funil de 9 etapas (`experiment_campaign_metric`, eventos do Lead Portal e checkout) | Backend `ads-service` + `lead-portal` | Frontend (aba Funil), operadores, times de mídia |
 
+Regra de destino versionado: o repositório de anúncios e o `facebook-ads-worker` não são donos da decisão de versão. Quando a campanha apontar para produto, PDE, landing ou slot versionado, o destino deve vir do contrato do experimento (`follow_up_action_url`, slot produtivo aprovado ou campo equivalente exposto pelo backend). É proibido o fluxo de anúncios escolher versão por nome, hostname, fallback, regra local ou constante interna. Se o experimento mudar de versão, o backend deve expor o novo destino aprovado e o worker apenas consumirá esse contrato na próxima publicação ou atualização operacional.
+
 ## 4. Entidades e fontes de verdade
 
 | Entidade / Campo | Fonte | Observações |
@@ -110,6 +113,7 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
 2. **Landing criada e aprovada na aba Landing**
    - A landing precisa estar criada no próprio experimento (artefato persistido em `experiment`) e aprovada na aba **Landing**.
    - O critério operacional de publicação é `experiment.follow_up_action_url` preenchido com a URL aprovada para destino da campanha.
+   - Quando a URL representar uma versão produtiva, a escolha dessa versão deve ter sido feita no experimento. O fluxo de anúncios não pode trocar, normalizar ou redirecionar para outra versão.
    - O vínculo é do experimento com a própria landing aprovada; não há dependência bloqueante de `lead_portal_flow` para liberar campanha no Facebook Ads Worker.
    - Para `LOW_TICKET_PRODUCT`, esta regra é mais restritiva: o destino do anúncio precisa ser a página de venda publicada e auditada pelo GeraSalesPage v1. É proibido liberar campanha low-ticket quando `follow_up_action_url` apontar direto para checkout, Mercado Pago ou qualquer URL diferente da página de venda auditada.
    - A página de venda low-ticket precisa conter os coletores públicos mínimos antes da liberação: `page_view`, `page_load_metric`, `section_view_time` e `checkout_click`. Se qualquer coletor estiver ausente, a campanha deve ser bloqueada com mensagem explícita de republicação da página.

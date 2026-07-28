@@ -28,6 +28,7 @@ const FINALIZED_STATUSES = new Set([
   "VALIDATED",
   "INVALIDATED",
   "INCONCLUSIVE",
+  "FAILED",
 ]);
 
 function parseDate(date?: string | null) {
@@ -340,19 +341,19 @@ export default function ExperimentListPage() {
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
-            <option value="">Todos Status</option>
+            <option value="">Status não finalizados</option>
             <option value="PLANNED">PLANNED</option>
             <option value="RUNNING">RUNNING</option>
             <option value="PAUSED">PAUSED</option>
+            <option value="STANDBY">STANDBY</option>
             <option value="USER_STOPPED">USER_STOPPED</option>
-            <option value="FAILED">FAILED</option>
           </select>
         </div>
       </div>
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
         <span className="text-muted small">
-          Exibindo {visibleStart}-{visibleEnd} de {sorted.length} experimentos,
-          com {PAGE_SIZE} por página.
+          Exibindo {visibleStart}-{visibleEnd} de {sorted.length} experimentos
+          não finalizados, com {PAGE_SIZE} por página.
         </span>
         <span className="badge text-bg-light align-self-start align-self-md-center">
           Validação comercial no topo · depois mais recentes

@@ -87,6 +87,11 @@ describe("ProductListPage", () => {
     });
     expect(videoImagesLink).toHaveAttribute("href", "/products/1/video-images");
 
+    const pdeVideosLink = screen.getByRole("link", {
+      name: /Vídeos HLS/i,
+    });
+    expect(pdeVideosLink).toHaveAttribute("href", "/products/1/pde-videos");
+
     const financialLink = screen.getByRole("link", {
       name: /Financeiro/i,
     });

@@ -155,7 +155,7 @@ class SalesVideoCommercialInsightsServiceTest {
     assertThat(response.getProviderScores().get(0).getRecommendation()).isEqualTo("priorizar");
   }
 
-  /** Deve reduzir a pontuação de provider com falha técnica e ativo rejeitado. */
+  /** Deve reduzir a pontuação sem bloquear provider quando ainda precisamos acumular aprendizado. */
   @Test
   void shouldPenalizeRejectedProviderAssets() {
     SalesVideoProfile profile = profile();
@@ -187,7 +187,9 @@ class SalesVideoCommercialInsightsServiceTest {
     assertThat(response.getProviderScores().get(0).getRiskCategory())
         .isEqualTo("REPROVACAO_CRIATIVA");
     assertThat(response.getProviderScores().get(0).getRecommendation())
-        .isEqualTo("bloquear_ou_regenerar");
+        .isEqualTo("usar_com_cautela");
+    assertThat(response.getProviderScores().get(0).getRiskMessage())
+        .contains("manter teste controlado");
   }
 
   /** Deve separar falha operacional de configuração da reprovação criativa do provider. */

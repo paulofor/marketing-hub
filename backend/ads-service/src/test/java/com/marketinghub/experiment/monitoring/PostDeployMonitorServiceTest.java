@@ -227,6 +227,58 @@ class PostDeployMonitorServiceTest {
     assertThat(response.logs().totalLogs()).isEqualTo(1);
   }
 
+  /** Usa a versão do slot ligado ao experimento mesmo quando o PDE global informa outra versão. */
+  @Test
+  void usesExperimentProductionSlotAsCurrentPdeVersion() {
+    Experiment experiment = Experiment.builder().id(76L).build();
+    when(experimentRepository.findById(76L)).thenReturn(Optional.of(experiment));
+    when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.empty());
+    when(apiLogService.findLogs(76L, 50)).thenReturn(List.of());
+    when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
+        .thenReturn(
+            List.of(
+                productionSlotDto("v5", "musa-pde-entry-v5-video-explicativo", 74L),
+                productionSlotDto("v6", "musa-pde-entry-v6-video-motivacional", 76L)));
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias"))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v5-video-explicativo",
+                300,
+                80,
+                70,
+                70,
+                70,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                9000,
+                "2026-07-28T16:03:26Z",
+                List.of(),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v5-video-explicativo", 120, 30, 30, 0, 4, 0, 0, 0, 0, 0),
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v6-video-motivacional", 180, 40, 40, 0, 2, 0, 0, 0, 0, 0)),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of()));
+
+    var response = service.summarize(76L, "metodo-musa-7-dias");
+
+    assertThat(response.pde().currentExperienceVersion())
+        .isEqualTo("musa-pde-entry-v6-video-motivacional");
+    assertThat(response.pdeProductionSlots())
+        .extracting("sourceExperimentId")
+        .contains(76L);
+  }
+
   /** Cria slot produtivo com domínio normalizado para permitir URLs paralelas de hipótese PDE. */
   @Test
   void savesPdeProductionSlotForParallelHypothesisUrl() {
@@ -300,6 +352,12 @@ class PostDeployMonitorServiceTest {
   /** Cria um DTO de slot produtivo para validar a resposta do painel. */
   private com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto
       productionSlotDto(String slotCode, String experienceVersion) {
+    return productionSlotDto(slotCode, experienceVersion, 70L);
+  }
+
+  /** Cria um DTO de slot produtivo com experimento de origem específico. */
+  private com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto
+      productionSlotDto(String slotCode, String experienceVersion, Long sourceExperimentId) {
     PdeProductionSlot slot = productionSlot(slotCode, experienceVersion);
     return new com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto(
         slot.getId(),
@@ -311,7 +369,7 @@ class PostDeployMonitorServiceTest {
         slot.getExperienceVersion(),
         slot.getTargetEnvironment(),
         slot.getStatus(),
-        slot.getSourceExperimentId(),
+        sourceExperimentId,
         slot.getNotes(),
         null,
         null,

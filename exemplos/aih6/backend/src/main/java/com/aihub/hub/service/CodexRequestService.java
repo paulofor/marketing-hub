@@ -45,15 +45,9 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,13 +59,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Serviço responsável por criar, consultar e acompanhar solicitações Codex. */
 @Service
 public class CodexRequestService {
 
     private static final Logger log = LoggerFactory.getLogger(CodexRequestService.class);
-    private static final ZoneId OPERATIONAL_ZONE = ZoneId.of("America/Sao_Paulo");
-    private static final LocalTime OPERATIONAL_DAY_CUTOFF = LocalTime.of(3, 0);
     private static final Duration SANDBOX_NOT_FOUND_GRACE_PERIOD = Duration.ofMinutes(15);
     private static final Set<Long> SANDBOX_REFRESHES_IN_PROGRESS = ConcurrentHashMap.newKeySet();
     private static final List<CodexRequestStatus> ACTIVE_QUEUE_STATUSES = List.of(CodexRequestStatus.PENDING, CodexRequestStatus.RUNNING);
@@ -276,55 +267,6 @@ public class CodexRequestService {
         List<CodexRequest> requests = codexRequestRepository.findAllByOrderByCreatedAtDesc();
         applyInteractionCounts(requests);
         return requests;
-    }
-
-    /** Coleta métricas operacionais agregadas para o cartão flutuante e dashboard. */
-    @Transactional(readOnly = true)
-    public Map<String, Object> collectOperationalMetrics() {
-        ZonedDateTime now = ZonedDateTime.now(OPERATIONAL_ZONE);
-        ZonedDateTime dayStart = resolveOperationalDayStart(now);
-        ZonedDateTime weekStart = now.toLocalDate()
-            .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
-            .atStartOfDay(OPERATIONAL_ZONE);
-        ZonedDateTime monthStart = now.toLocalDate().withDayOfMonth(1).atStartOfDay(OPERATIONAL_ZONE);
-
-        Map<String, Object> metrics = new LinkedHashMap<>();
-        metrics.put("day", buildOperationalPeriod(dayStart.toInstant(), now.toInstant()));
-        metrics.put("week", buildOperationalPeriod(weekStart.toInstant(), now.toInstant()));
-        metrics.put("month", buildOperationalPeriod(monthStart.toInstant(), now.toInstant()));
-        metrics.put("series", Collections.emptyMap());
-        return metrics;
-    }
-
-    /** Resolve o início do dia operacional com corte às 03:00 em São Paulo. */
-    private ZonedDateTime resolveOperationalDayStart(ZonedDateTime now) {
-        LocalDate operationalDate = now.toLocalTime().isBefore(OPERATIONAL_DAY_CUTOFF)
-            ? now.toLocalDate().minusDays(1)
-            : now.toLocalDate();
-        return ZonedDateTime.of(operationalDate, OPERATIONAL_DAY_CUTOFF, OPERATIONAL_ZONE);
-    }
-
-    /** Monta um bucket agregado de solicitações, interações e duração. */
-    private Map<String, Object> buildOperationalPeriod(Instant startsAt, Instant endsAt) {
-        Object[] summary = codexRequestRepository.summarizeOperationalPeriod(startsAt, endsAt);
-        long requestCount = readLong(summary, 0);
-        long durationMs = readLong(summary, 1);
-        long interactionCount = codexInteractionRepository.countByRequestCreatedAtPeriod(startsAt, endsAt);
-
-        Map<String, Object> period = new LinkedHashMap<>();
-        period.put("startsAt", startsAt);
-        period.put("requestCount", requestCount);
-        period.put("interactionCount", interactionCount);
-        period.put("durationMs", durationMs);
-        return period;
-    }
-
-    /** Converte valores numéricos agregados pelo JPA para long com fallback zero. */
-    private long readLong(Object[] values, int index) {
-        if (values == null || index >= values.length || !(values[index] instanceof Number number)) {
-            return 0L;
-        }
-        return number.longValue();
     }
 
     @Transactional(readOnly = true)

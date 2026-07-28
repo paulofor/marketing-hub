@@ -1,0 +1,128 @@
+.audio-video-studio-page {
+  color: #111827;
+}
+
+.audio-video-studio-page__intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1.25rem;
+}
+
+.audio-video-studio-page__intro h2 {
+  max-width: 760px;
+  margin: 0 0 0.55rem;
+  font-size: 1.6rem;
+}
+
+.audio-video-studio-page__intro p {
+  max-width: 860px;
+  margin: 0;
+  color: #475569;
+}
+
+.audio-video-studio-page__eyebrow {
+  margin: 0 0 0.35rem;
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audio-video-studio-page__status,
+.audio-video-studio-page__panel,
+.audio-video-studio-page__pillar {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.audio-video-studio-page__status {
+  display: grid;
+  align-content: center;
+  gap: 0.25rem;
+  padding: 1rem;
+}
+
+.audio-video-studio-page__status span {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.audio-video-studio-page__status strong {
+  font-size: 1.15rem;
+}
+
+.audio-video-studio-page__section {
+  margin-bottom: 1.25rem;
+}
+
+.audio-video-studio-page__section-heading {
+  margin-bottom: 0.85rem;
+}
+
+.audio-video-studio-page__section-heading h2,
+.audio-video-studio-page__panel h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+}
+
+.audio-video-studio-page__section-heading p {
+  max-width: 780px;
+  margin: 0;
+  color: #475569;
+}
+
+.audio-video-studio-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
+}
+
+.audio-video-studio-page__pillar {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+}
+
+.audio-video-studio-page__pillar svg {
+  color: #0f766e;
+}
+
+.audio-video-studio-page__pillar h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.audio-video-studio-page__pillar p {
+  margin: 0;
+  color: #475569;
+}
+
+.audio-video-studio-page__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.audio-video-studio-page__panel {
+  padding: 1rem;
+}
+
+.audio-video-studio-page__panel ul,
+.audio-video-studio-page__panel ol {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.75rem 0 0;
+  padding-left: 1.2rem;
+  color: #334155;
+}
+
+@media (max-width: 760px) {
+  .audio-video-studio-page__intro,
+  .audio-video-studio-page__columns {
+    grid-template-columns: 1fr;
+  }
+}

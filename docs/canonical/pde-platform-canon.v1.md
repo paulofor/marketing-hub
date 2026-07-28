@@ -343,6 +343,18 @@ O produto visto pela cliente não pode expor linguagem interna como:
 - `promessa validada`;
 - `mecanismo validado`.
 
+Essa regra vale para toda nova versão comercial de PDE, incluindo versões futuras do Método MUSA. Antes de publicar ou medir uma nova versão, a primeira dobra, diagnóstico, missões, paywall, orientações da Consultora MUSA, materiais de apoio, CTAs e mensagens de erro devem passar por revisão anti-vazamento técnico.
+
+A linguagem visível deve falar como uma conversa de consumo, não como relatório de construção do produto. A cliente deve sentir:
+
+- "isso foi feito para mim";
+- "eu entendi sem esforço";
+- "parece simples começar";
+- "o resultado combina com minha rotina";
+- "quero continuar para ver meu próximo passo".
+
+Quando uma versão possuir base científica, IA, contrato, estágio, métrica ou decisão de experimento, esses elementos devem permanecer no bastidor e aparecer para a cliente apenas como benefício prático, orientação guiada, exemplo visual, checklist, progresso ou redução de esforço. Termos como IA, algoritmo, pipeline, evento, score, experimento, validação, etapa, schema ou contrato só podem aparecer na experiência pública quando forem indispensáveis para transparência da usuária e escritos em linguagem comum.
+
 Os princípios científicos devem aparecer como:
 
 - decisão guiada;

@@ -83,6 +83,24 @@ public class VideoProject {
   @Column(name = "visual_references", columnDefinition = "LONGTEXT")
   private String visualReferences;
 
+  @Column(name = "character_bible", columnDefinition = "LONGTEXT")
+  private String characterBible;
+
+  @Column(name = "environment_bible", columnDefinition = "LONGTEXT")
+  private String environmentBible;
+
+  @Column(name = "object_bible", columnDefinition = "LONGTEXT")
+  private String objectBible;
+
+  @Column(name = "visual_style_guide", columnDefinition = "LONGTEXT")
+  private String visualStyleGuide;
+
+  @Column(name = "image_generation_plan", columnDefinition = "LONGTEXT")
+  private String imageGenerationPlan;
+
+  @Column(name = "continuity_rules", columnDefinition = "LONGTEXT")
+  private String continuityRules;
+
   @Column(name = "voiceover_plan", columnDefinition = "LONGTEXT")
   private String voiceoverPlan;
 

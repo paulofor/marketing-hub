@@ -33,6 +33,7 @@
 .audio-video-studio-page__status,
 .audio-video-studio-page__briefing,
 .audio-video-studio-page__draft,
+.audio-video-studio-page__visual-bible,
 .audio-video-studio-page__next-action,
 .audio-video-studio-page__timeline-block,
 .audio-video-studio-page__panel,
@@ -137,6 +138,14 @@
 .audio-video-studio-page__briefing {
   display: grid;
   gap: 0.75rem;
+}
+
+.audio-video-studio-page__visual-bible {
+  display: grid;
+  gap: 0.75rem;
+  border-color: #bfdbfe;
+  background: #f8fafc;
+  padding: 0.9rem;
 }
 
 .audio-video-studio-page__briefing label {

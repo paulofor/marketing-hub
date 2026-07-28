@@ -33,6 +33,32 @@ O Estudio de Audio e Video deve ser a area para producoes de maior valor percebi
 - demonstracao guiada de PDE;
 - conteudo premium para aumentar confianca, desejo e conversao.
 
+## Regra de pre-producao premium
+
+Antes de construir ou renderizar video no Estudio, o projeto deve ter uma
+**biblia visual** definida e persistida. Isso evita gerar cada cena apenas por
+texto, que tende a mudar rosto, figurino, objetos e ambientes entre takes.
+
+Blocos obrigatorios da biblia visual:
+
+- personagens: imagens mestre aprovadas, angulos, figurino, acessorios e URLs
+  ou IDs de referencia;
+- ambientes: imagem mestra, angulo oposto, lateral, entradas, saidas, objetos
+  fixos e mapa simples do cenario;
+- objetos/produto/marca: interface do PDE, telas, simbolos, logotipo, textos e
+  referencias separadas para composicao;
+- direcao visual: estilo, luz, lente, textura, paleta, enquadramento e nivel de
+  realismo;
+- plano de geracao de imagem: solicitar primeiro ao modelo de imagem OpenAI as
+  imagens mestre e frames-chave, aprovar esses ativos e so depois gerar video;
+- regras de continuidade: preservar rosto, cabelo, figurino, escala, objetos,
+  arquitetura, temperatura de cor e identidade visual entre cenas.
+
+O backend deve bloquear avanço para renderizacao, producao, revisao ou aprovacao
+quando qualquer bloco da biblia visual estiver ausente. O objetivo nao e burocracia:
+e proteger consistencia premium e reduzir desperdicio com cenas bonitas, mas
+incoerentes entre si.
+
 ## Alternativas avaliadas
 
 ### Alternativa 1: somente documentar

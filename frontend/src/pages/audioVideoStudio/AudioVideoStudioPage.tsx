@@ -32,6 +32,12 @@ type StudioBriefing = {
   mechanism: string;
   proof: string;
   cta: string;
+  characterBible: string;
+  environmentBible: string;
+  objectBible: string;
+  visualStyleGuide: string;
+  imageGenerationPlan: string;
+  continuityRules: string;
 };
 
 const productionPillars = [
@@ -124,6 +130,9 @@ const scriptBlocks = [
 
 const productionChecklist = [
   "Briefing comercial preenchido",
+  "Personagens com imagens mestre aprovadas",
+  "Ambientes com placas visuais e mapa de continuidade",
+  "Objetos/produto com referencias separadas",
   "Roteiro narrado com ate 390 palavras",
   "6 blocos de cena com funcao clara",
   "Voz definida com ritmo, pausas e emocao",
@@ -156,6 +165,18 @@ const defaultBriefing: StudioBriefing = {
   mechanism: "Diagnostico de presenca publica guiado por IA",
   proof: "Antes e depois da clareza de posicionamento, bio, imagem e direcao de conteudo",
   cta: "Fazer o diagnostico MUSA",
+  characterBible:
+    "Personagem principal: mulher consultora, 35-45 anos, rosto frontal, tres quartos, perfil, corpo inteiro, figurino principal, acessorios e URLs/IDs das imagens aprovadas.",
+  environmentBible:
+    "Ambiente principal: escritorio claro e elegante, plano geral, angulo oposto, lateral, detalhes da mesa, entradas/saidas e URL/ID da imagem mestra.",
+  objectBible:
+    "Produto e objetos: tela do diagnostico MUSA, celular, notebook, elementos de marca e qualquer texto/logotipo como arquivo separado para composicao.",
+  visualStyleGuide:
+    "Realista premium, luz suave, pele natural, fundo limpo, composicao vertical 9:16, contraste moderado e paleta elegante sem excesso de efeitos.",
+  imageGenerationPlan:
+    "Solicitar ao modelo de imagem OpenAI primeiro as imagens mestre de personagem, ambiente, produto e frames-chave; aprovar antes de pedir video.",
+  continuityRules:
+    "Manter rosto, cabelo, figurino, acessorios, escala, temperatura de cor, posicao de objetos fixos e arquitetura do ambiente em todas as cenas.",
 };
 
 function buildBriefingFromProject(project: VideoProject): StudioBriefing {
@@ -169,6 +190,13 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     mechanism: project.productionMode || defaultBriefing.mechanism,
     proof: project.visualReferences || defaultBriefing.proof,
     cta: project.ctaText || defaultBriefing.cta,
+    characterBible: project.characterBible || defaultBriefing.characterBible,
+    environmentBible: project.environmentBible || defaultBriefing.environmentBible,
+    objectBible: project.objectBible || defaultBriefing.objectBible,
+    visualStyleGuide: project.visualStyleGuide || defaultBriefing.visualStyleGuide,
+    imageGenerationPlan:
+      project.imageGenerationPlan || defaultBriefing.imageGenerationPlan,
+    continuityRules: project.continuityRules || defaultBriefing.continuityRules,
   };
 }
 
@@ -240,6 +268,12 @@ export default function AudioVideoStudioPage() {
     scriptText: scriptDraft.join("\n\n"),
     scenePlan: selectedProject?.scenePlan || scenePrompts.join("\n"),
     visualReferences: briefing.proof,
+    characterBible: briefing.characterBible,
+    environmentBible: briefing.environmentBible,
+    objectBible: briefing.objectBible,
+    visualStyleGuide: briefing.visualStyleGuide,
+    imageGenerationPlan: briefing.imageGenerationPlan,
+    continuityRules: briefing.continuityRules,
     voiceoverPlan:
       selectedProject?.voiceoverPlan ||
       "Voz proxima, confiante e acolhedora, com ritmo medio e pausas curtas para reforcar pontos de virada.",
@@ -433,6 +467,63 @@ export default function AudioVideoStudioPage() {
             CTA
             <input value={briefing.cta} onChange={updateBriefing("cta")} />
           </label>
+          <div className="audio-video-studio-page__visual-bible">
+            <div className="audio-video-studio-page__section-heading">
+              <h2>Biblia visual premium</h2>
+              <p>
+                Defina referencias mestras antes de gerar cenas para preservar
+                consistencia entre takes.
+              </p>
+            </div>
+            <label>
+              Personagens e imagens mestre
+              <textarea
+                value={briefing.characterBible}
+                onChange={updateBriefing("characterBible")}
+                rows={4}
+              />
+            </label>
+            <label>
+              Ambientes e imagens mestre
+              <textarea
+                value={briefing.environmentBible}
+                onChange={updateBriefing("environmentBible")}
+                rows={4}
+              />
+            </label>
+            <label>
+              Objetos, produto e marca
+              <textarea
+                value={briefing.objectBible}
+                onChange={updateBriefing("objectBible")}
+                rows={3}
+              />
+            </label>
+            <label>
+              Direcao visual e acabamento
+              <textarea
+                value={briefing.visualStyleGuide}
+                onChange={updateBriefing("visualStyleGuide")}
+                rows={3}
+              />
+            </label>
+            <label>
+              Plano para solicitar imagens via OpenAI
+              <textarea
+                value={briefing.imageGenerationPlan}
+                onChange={updateBriefing("imageGenerationPlan")}
+                rows={3}
+              />
+            </label>
+            <label>
+              Regras de continuidade
+              <textarea
+                value={briefing.continuityRules}
+                onChange={updateBriefing("continuityRules")}
+                rows={3}
+              />
+            </label>
+          </div>
           <button
             className="audio-video-studio-page__primary-action"
             type="button"
@@ -466,12 +557,12 @@ export default function AudioVideoStudioPage() {
             ))}
           </ol>
           <div className="audio-video-studio-page__audio-card">
-            <Volume2 size={20} aria-hidden="true" />
+            <Sparkles size={20} aria-hidden="true" />
             <div>
-              <strong>Direcao de audio</strong>
+              <strong>Pre-producao visual</strong>
               <span>
-                Voz proxima, ritmo medio, pausas curtas e trilha baixa para
-                manter clareza.
+                Primeiro aprove imagens de personagem, ambiente, produto e
+                frames-chave; depois gere cenas com essas referencias.
               </span>
             </div>
           </div>

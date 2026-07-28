@@ -62,6 +62,12 @@ class VideoProjectServiceTest {
             "Roteiro curto",
             "Cena 1",
             "Visual premium",
+            "Personagem Ana: rosto frontal, tres quartos, corpo inteiro, figurino principal e URL da imagem aprovada.",
+            "Apartamento claro: plano geral, angulo oposto, lateral, entradas, objetos fixos e URL da imagem aprovada.",
+            "Produto MUSA: tela do diagnostico, simbolo visual, objeto de escala e referencias de interface.",
+            "Imagem limpa, premium, luz suave, pele natural, composicao vertical e paleta elegante.",
+            "Gerar imagens mestre com OpenAI antes do video: personagem, ambiente, produto e frames-chave.",
+            "Nunca alterar rosto, figurino, paleta, posicao dos objetos fixos ou arquitetura entre cenas.",
             "Voz feminina",
             "Trilha leve",
             "Legenda curta",
@@ -125,6 +131,12 @@ class VideoProjectServiceTest {
             "Roteiro",
             "Cenas",
             "Referencias",
+            "Personagem principal com imagens aprovadas em multiplos angulos.",
+            "Ambiente principal com imagem mestra, angulo oposto e mapa simples.",
+            "Produto, interface e objetos de prova salvos como referencias separadas.",
+            "Direcao visual cinematografica, vertical, realista e com luz consistente.",
+            "Solicitar imagens mestre na OpenAI antes dos takes e usar como referencia por cena.",
+            "Preservar rosto, figurino, ambiente, objetos, escala, lente e temperatura de cor.",
             "Voz",
             "Trilha",
             "Legendas",
@@ -169,6 +181,12 @@ class VideoProjectServiceTest {
             "Roteiro curto",
             "Cena 1",
             "Visual premium",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             "Voz feminina",
             "Trilha leve",
             "Legenda curta",
@@ -219,6 +237,12 @@ class VideoProjectServiceTest {
             "Roteiro",
             "Cenas",
             "Referencias",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             "Voz",
             "Trilha",
             "Legendas",
@@ -233,5 +257,48 @@ class VideoProjectServiceTest {
 
     assertThatThrownBy(() -> service.updateProject(91L, request))
         .hasMessageContaining("180 segundos ou mais");
+  }
+
+  /** Bloqueia renderização sem bíblia visual completa para preservar consistência premium. */
+  @Test
+  void shouldRejectRenderStatusWithoutCompleteVisualBible() {
+    CreateVideoProjectRequest request =
+        new CreateVideoProjectRequest(
+            4L,
+            66L,
+            12L,
+            "musa-organico-001",
+            "PDE",
+            "STORY_FIRST_AUDIO_VIDEO",
+            "PDE_AND_SOCIAL",
+            "VERTICAL_9_16",
+            "Manifesto MUSA",
+            "Aumentar inicio do diagnostico",
+            "Historia premium.",
+            "AWARENESS",
+            "DIAGNOSTIC_START",
+            "Gancho",
+            "Roteiro",
+            "Cenas",
+            "Referencias soltas",
+            "Personagem definido",
+            null,
+            "Produto definido",
+            "Estilo definido",
+            "OpenAI gera imagens mestre",
+            "Continuidade definida",
+            "Voz",
+            "Trilha",
+            "Legendas",
+            "Fazer diagnostico",
+            180,
+            "Provider plan",
+            "Notas",
+            "Gate",
+            VideoProjectStatus.READY_FOR_RENDER,
+            "editor@marketinghub.io");
+
+    assertThatThrownBy(() -> service.createProject(request))
+        .hasMessageContaining("Bíblia visual completa");
   }
 }

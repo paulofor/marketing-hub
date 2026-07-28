@@ -27,6 +27,9 @@ databaseChangeLog:
       file: changesets/2026-07-28-video-project-story-text.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-28-video-project-visual-bible.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-27-product-scientific-articles.yaml
       relativeToChangelogFile: true
   - include:

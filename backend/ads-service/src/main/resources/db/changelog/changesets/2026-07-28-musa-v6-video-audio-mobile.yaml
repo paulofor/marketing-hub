@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-28-musa-v6-video-audio-mobile-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: pde_experience_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET pde_experience_json = JSON_REMOVE(
+                       JSON_SET(
+                         pde_experience_json,
+                         '$.heroVideos[0].autoplay', false,
+                         '$.heroVideos[0].muted', false,
+                         '$.heroVideos[0].controls', true,
+                         '$.heroVideos[0].loop', false,
+                         '$.heroVideos[0].playsInline', true
+                       ),
+                       '$.heroVideos[0].posterUrl'
+                     )
+               WHERE slug = 'metodo-musa-7-dias'
+                 AND pde_experience_json IS NOT NULL
+                 AND JSON_VALID(pde_experience_json)
+                 AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.heroVideos[0].experienceVersion')) = 'musa-pde-entry-v6-video-motivacional';

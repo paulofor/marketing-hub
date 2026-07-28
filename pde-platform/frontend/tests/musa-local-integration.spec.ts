@@ -28,8 +28,10 @@ test('v5 e v6 usam backend PDE local real sem HLS de slides e mantem analytics p
   await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toHaveCount(1);
-  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', true);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', false);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', false);
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('controls', true);
+  await expect(page.locator('video.public-hero-video')).not.toHaveAttribute('poster');
 
   await expect.poll(async () => {
     const response = await request.get(`http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/summary`);

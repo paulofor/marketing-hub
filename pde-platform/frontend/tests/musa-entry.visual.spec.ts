@@ -197,9 +197,10 @@ test('exibe player na versao v6 motivacional com video real aprovado', async ({ 
 
   await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
-  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', true);
-  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', true);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', false);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', false);
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('controls', true);
+  await expect(page.locator('video.public-hero-video')).not.toHaveAttribute('poster');
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
 });
 

@@ -28,6 +28,13 @@ class ProductCatalogServiceTest {
         assertThat(product.promise()).contains("7 dias");
         assertThat(product.missions()).hasSize(7);
         assertThat(product.supportMaterials()).hasSize(4);
+        assertThat(product.heroVideos()).singleElement().satisfies(heroVideo -> {
+            assertThat(heroVideo.experienceVersion()).isEqualTo("musa-pde-entry-v6-video-motivacional");
+            assertThat(heroVideo.posterUrl()).isNull();
+            assertThat(heroVideo.autoplay()).isFalse();
+            assertThat(heroVideo.muted()).isFalse();
+            assertThat(heroVideo.controls()).isTrue();
+        });
         assertThat(product.scientificEvidencePack().version()).isEqualTo("musa-evidence-pack-v1");
         assertThat(product.scientificEvidencePack().forbiddenClaims()).contains("garante elegância");
     }

@@ -49,7 +49,6 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-/** Controller REST responsável por expor operações de solicitações Codex. */
 @RestController
 @RequestMapping("/api/codex/requests")
 public class CodexController {
@@ -98,12 +97,6 @@ public class CodexController {
     @PostMapping
     public CodexRequest create(@Valid @RequestBody CreateCodexRequest request) {
         return codexRequestService.create(request);
-    }
-
-    /** Expõe métricas operacionais agregadas das solicitações Codex. */
-    @GetMapping("/metrics")
-    public Map<String, Object> metrics() {
-        return codexRequestService.collectOperationalMetrics();
     }
 
     @GetMapping(value = "/{id}/interactions/download", produces = "application/zip")

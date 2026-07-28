@@ -74,9 +74,11 @@ public class PostDeployMonitorService {
     ExperimentCampaignMetric metric =
         campaignMetricRepository.findByExperiment(experiment).orElse(null);
     PostDeployMetaAdsSummaryDto metaAds = toMetaAdsSummary(metric);
-    PostDeployPdeSummaryDto pde = fetchPdeSummary(resolvedProductSlug);
     List<PostDeployPdeProductionSlotDto> pdeProductionSlots =
         pdeProductionSlotService.listProductionSlotsForProduct(resolvedProductSlug);
+    String monitoredExperienceVersion =
+        resolveMonitoredExperienceVersion(experimentId, pdeProductionSlots);
+    PostDeployPdeSummaryDto pde = fetchPdeSummary(resolvedProductSlug, monitoredExperienceVersion);
     PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
     List<String> alerts = buildAlerts(metaAds, pde, logs);
     PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
@@ -165,10 +167,11 @@ public class PostDeployMonitorService {
   }
 
   /** Consulta o PDE e retorna um resumo indisponível quando houver falha técnica. */
-  private PostDeployPdeSummaryDto fetchPdeSummary(String productSlug) {
+  private PostDeployPdeSummaryDto fetchPdeSummary(
+      String productSlug, String monitoredExperienceVersion) {
     try {
       PdeAnalyticsSummary summary = pdeAnalyticsClient.fetchSummary(productSlug);
-      return toPdeSummary(summary);
+      return toPdeSummary(summary, monitoredExperienceVersion);
     } catch (Exception ex) {
       log.error(
           "Falha ao consultar analytics PDE no monitor pós-deploy; productSlug={}",
@@ -205,17 +208,36 @@ public class PostDeployMonitorService {
     }
   }
 
+  /** Resolve a versão PDE que o experimento deve monitorar a partir do slot vinculado. */
+  private String resolveMonitoredExperienceVersion(
+      Long experimentId, List<PostDeployPdeProductionSlotDto> pdeProductionSlots) {
+    if (pdeProductionSlots == null) {
+      return null;
+    }
+    return pdeProductionSlots.stream()
+        .filter(slot -> experimentId.equals(slot.sourceExperimentId()))
+        .map(PostDeployPdeProductionSlotDto::experienceVersion)
+        .filter(StringUtils::hasText)
+        .findFirst()
+        .orElse(null);
+  }
+
   /** Converte o contrato do PDE em métricas comerciais específicas do painel. */
-  private PostDeployPdeSummaryDto toPdeSummary(PdeAnalyticsSummary summary) {
+  private PostDeployPdeSummaryDto toPdeSummary(
+      PdeAnalyticsSummary summary, String monitoredExperienceVersion) {
     Map<String, Long> events = new LinkedHashMap<>();
     if (summary.events() != null) {
       summary.events().forEach(event -> events.put(event.eventType(), event.total()));
     }
+    String currentExperienceVersion =
+        StringUtils.hasText(monitoredExperienceVersion)
+            ? monitoredExperienceVersion
+            : summary.currentExperienceVersion();
     return new PostDeployPdeSummaryDto(
         true,
         "AVAILABLE",
         null,
-        summary.currentExperienceVersion(),
+        currentExperienceVersion,
         summary.totalEvents(),
         summary.uniqueVisitors(),
         summary.sessions(),

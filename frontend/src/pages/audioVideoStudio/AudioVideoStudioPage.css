@@ -31,6 +31,10 @@
 }
 
 .audio-video-studio-page__status,
+.audio-video-studio-page__briefing,
+.audio-video-studio-page__draft,
+.audio-video-studio-page__next-action,
+.audio-video-studio-page__timeline-block,
 .audio-video-studio-page__panel,
 .audio-video-studio-page__pillar {
   border: 1px solid #e5e7eb;
@@ -45,6 +49,11 @@
   padding: 1rem;
 }
 
+.audio-video-studio-page__status svg,
+.audio-video-studio-page__next-action svg {
+  color: #2563eb;
+}
+
 .audio-video-studio-page__status span {
   color: #64748b;
   font-size: 0.82rem;
@@ -53,6 +62,10 @@
 
 .audio-video-studio-page__status strong {
   font-size: 1.15rem;
+}
+
+.audio-video-studio-page__status small {
+  color: #475569;
 }
 
 .audio-video-studio-page__section {
@@ -101,6 +114,122 @@
   color: #475569;
 }
 
+.audio-video-studio-page__workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.audio-video-studio-page__briefing,
+.audio-video-studio-page__draft {
+  padding: 1rem;
+}
+
+.audio-video-studio-page__briefing {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.audio-video-studio-page__briefing label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.audio-video-studio-page__briefing input,
+.audio-video-studio-page__briefing textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.6rem 0.7rem;
+  color: #111827;
+  font: inherit;
+  font-weight: 500;
+  resize: vertical;
+}
+
+.audio-video-studio-page__briefing input:focus,
+.audio-video-studio-page__briefing textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  outline: none;
+}
+
+.audio-video-studio-page__draft {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.audio-video-studio-page__draft ol {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.75rem 0 1rem;
+  padding-left: 1.2rem;
+  color: #334155;
+}
+
+.audio-video-studio-page__audio-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-top: auto;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  padding: 0.85rem;
+}
+
+.audio-video-studio-page__audio-card svg {
+  flex: 0 0 auto;
+  color: #2563eb;
+}
+
+.audio-video-studio-page__audio-card div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.audio-video-studio-page__audio-card span {
+  color: #334155;
+}
+
+.audio-video-studio-page__timeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.audio-video-studio-page__timeline-block {
+  display: grid;
+  gap: 0.4rem;
+  min-height: 148px;
+  padding: 1rem;
+}
+
+.audio-video-studio-page__timeline-block span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.audio-video-studio-page__timeline-block h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.audio-video-studio-page__timeline-block p {
+  margin: 0;
+  color: #475569;
+}
+
 .audio-video-studio-page__columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -120,9 +249,39 @@
   color: #334155;
 }
 
+.audio-video-studio-page__checklist {
+  padding-left: 0 !important;
+  list-style: none;
+}
+
+.audio-video-studio-page__checklist li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+}
+
+.audio-video-studio-page__checklist svg {
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  color: #16a34a;
+}
+
+.audio-video-studio-page__next-action {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+  color: #1f2937;
+}
+
 @media (max-width: 760px) {
   .audio-video-studio-page__intro,
+  .audio-video-studio-page__workspace,
   .audio-video-studio-page__columns {
     grid-template-columns: 1fr;
+  }
+
+  .audio-video-studio-page__next-action {
+    align-items: flex-start;
   }
 }

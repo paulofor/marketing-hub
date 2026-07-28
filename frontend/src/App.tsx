@@ -159,6 +159,7 @@ import VideoHubPage from "./pages/video/VideoHubPage";
 import VideoProviderManagementPage from "./pages/video/VideoProviderManagementPage";
 import CreativeVideoReviewPage from "./pages/creative/CreativeVideoReviewPage";
 import AudioVideoStudioPage from "./pages/audioVideoStudio/AudioVideoStudioPage";
+import HomePage from "./pages/HomePage";
 
 function LegacyNicheRedirect() {
   const { nicheId } = useParams();
@@ -184,6 +185,7 @@ export default function App() {
           <div className="container-fluid py-4">
             <GlobalAutomationAlerts />
             <Routes>
+              <Route path="/" element={<HomePage />} />
               <Route
                 path="/accounts/facebook"
                 element={<FacebookAccountsPage />}
@@ -661,7 +663,7 @@ export default function App() {
                 path="/settings/email-service"
                 element={<EmailSettingsPage />}
               />
-              <Route path="*" element={<div>Início</div>} />
+              <Route path="*" element={<HomePage />} />
             </Routes>
           </div>
         </main>

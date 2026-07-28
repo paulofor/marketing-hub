@@ -175,6 +175,7 @@ const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
 const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
+const MUSA_V6_MICRO_EXPERIENCE_VIDEO_URL = '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8';
 const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string }> = {
   'v5.clubemusa.com.br': {
     experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
@@ -578,7 +579,11 @@ function isBlockedMusaSlideVideoUrl(videoUrl: string) {
   ].some((blockedPath) => videoUrl.includes(blockedPath));
 }
 
-function resolveHeroVideoUrl() {
+function resolveHeroVideoUrl(experienceVersion: string) {
+  if (experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION) {
+    return MUSA_V6_MICRO_EXPERIENCE_VIDEO_URL;
+  }
+
   const streamOverride = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
   if (streamOverride) {
     return isBlockedMusaSlideVideoUrl(streamOverride) ? '' : streamOverride;
@@ -702,7 +707,7 @@ function App() {
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
-  const heroVideoUrl = resolveHeroVideoUrl();
+  const heroVideoUrl = resolveHeroVideoUrl(currentExperienceVersion);
   const heroPlaybackUrl = heroVideoUrl;
 
   const activeMission = useMemo(() => {
@@ -1914,8 +1919,8 @@ function App() {
       <main className="app-shell public-diagnostic-shell">
         <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
           <div className="public-diagnostic-intro">
-            <h1>Descubra em 30 segundos qual detalhe está deixando sua imagem menos elegante hoje.</h1>
-            <p>Entre pela estrada MUSA: reconheça o ruído, escolha uma situação real e receba um primeiro ajuste antes de salvar o plano.</p>
+            <h1>Descubra o detalhe que faz seu look parecer incompleto, sem comprar roupa nova.</h1>
+            <p>Assista à prévia MUSA, escolha uma situação real e receba um primeiro ajuste antes de login, paywall ou compra.</p>
           </div>
 
           {showPublicDiagnosticVideoHero && (
@@ -1992,9 +1997,9 @@ function App() {
                 </div>
               </div>
               <div className="public-video-copy">
-                <p className="section-kicker">{showMotivationalTimelineVideo ? 'Timeline MUSA' : 'Vídeo inicial MUSA'}</p>
-                <h2>{showMotivationalTimelineVideo ? 'Assista como um primeiro story e siga para seu mapa de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
-                <p>{showMotivationalTimelineVideo ? 'A v6 começa com vídeo motivacional em streaming, registra visualização parcial ou completa e conduz para a escolha das opções sem travar a experiência.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
+                <p className="section-kicker">{showMotivationalTimelineVideo ? 'Microexperiência MUSA v6' : 'Vídeo inicial MUSA'}</p>
+                <h2>{showMotivationalTimelineVideo ? 'Veja a promessa em vídeo e avance direto para seu diagnóstico de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
+                <p>{showMotivationalTimelineVideo ? 'O objetivo desta versão é medir avanço para diagnóstico: a visitante vê valor primeiro, escolhe o ruído visual e recebe um primeiro caminho antes de qualquer barreira.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
                 <button
                   className="secondary-button public-video-cta"
                   type="button"

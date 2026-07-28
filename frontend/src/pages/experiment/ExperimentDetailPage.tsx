@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { ExternalLink, Newspaper } from "lucide-react";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useExperimentDiagnostics } from "../../api/experiment/useExperimentDiagnostics";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
@@ -1973,46 +1974,66 @@ export default function ExperimentDetailPage() {
         </div>
       </div>
       {isPdeMembershipSubscriptionFunnel ? (
-        <div className="card border-0 shadow-sm rounded-3 mt-3">
-          <div className="card-body">
-            <div className="d-flex flex-column flex-lg-row align-items-start justify-content-between gap-3">
-              <div>
-                <div className="text-muted small text-uppercase">
-                  PDE utilizado neste experimento
-                </div>
-                <h2 className="h6 mb-1 mt-1">
-                  {pdeMonitorQuery.isLoading
-                    ? "Carregando versão PDE..."
-                    : experimentPdeVersion || "Versão PDE não vinculada"}
-                </h2>
-                <p className="text-muted small mb-0">
-                  {experimentPdeSlot
-                    ? `Slot ${experimentPdeSlot.slotCode} · ${experimentPdeSlot.domain}`
-                    : "Vincule um slot produtivo PDE para monitorar a versão exata usada na venda."}
-                </p>
+        <section
+          className="experiment-pde-spotlight mt-3"
+          aria-labelledby="experiment-pde-spotlight-title"
+        >
+          <div className="experiment-pde-spotlight__content">
+            <div className="experiment-pde-spotlight__icon" aria-hidden="true">
+              <Newspaper size={20} strokeWidth={2.2} />
+            </div>
+            <div className="experiment-pde-spotlight__body">
+              <div className="experiment-pde-spotlight__kicker">
+                PDE em teste agora
               </div>
-              <div className="d-flex flex-column align-items-start align-items-lg-end gap-2">
-                {experimentPdePreviewUrl ? (
-                  <a
-                    className="btn btn-outline-primary btn-sm"
-                    href={experimentPdePreviewUrl}
-                    target="_blank"
-                    rel="noreferrer"
+              <div className="d-flex flex-column flex-xl-row align-items-start justify-content-between gap-3">
+                <div className="experiment-pde-spotlight__main">
+                  <h2
+                    className="experiment-pde-spotlight__title"
+                    id="experiment-pde-spotlight-title"
                   >
-                    Abrir PDE sem métricas
-                  </a>
-                ) : (
-                  <span className="badge text-bg-warning">
-                    Link indisponível
-                  </span>
-                )}
-                <span className="small text-muted">
-                  Link interno com analytics desligado.
-                </span>
+                    {pdeMonitorQuery.isLoading
+                      ? "Carregando versão PDE..."
+                      : experimentPdeVersion || "Versão PDE não vinculada"}
+                  </h2>
+                  <p className="experiment-pde-spotlight__description">
+                    Esta é a experiência que o anúncio está validando antes de
+                    login, paywall e checkout.
+                  </p>
+                  <div className="experiment-pde-spotlight__meta">
+                    <span>
+                      {experimentPdeSlot
+                        ? `Slot ${experimentPdeSlot.slotCode}`
+                        : "Slot produtivo pendente"}
+                    </span>
+                    <span>
+                      {experimentPdeSlot?.domain ||
+                        "Vincule um domínio PDE para monitorar a venda."}
+                    </span>
+                  </div>
+                </div>
+                <div className="experiment-pde-spotlight__action">
+                  {experimentPdePreviewUrl ? (
+                    <a
+                      className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
+                      href={experimentPdePreviewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink size={16} aria-hidden="true" />
+                      Abrir PDE sem métricas
+                    </a>
+                  ) : (
+                    <span className="badge text-bg-warning">
+                      Link indisponível
+                    </span>
+                  )}
+                  <span>Preview interno com analytics desligado.</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       ) : null}
       {isLoadingDiagnostics ? (
         <div

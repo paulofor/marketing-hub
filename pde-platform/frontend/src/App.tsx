@@ -681,8 +681,8 @@ const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     question: 'O que mais te incomoda quando você se olha pronta?',
     options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
     imageUrl: '/assets/musa-diagnostic-slide-1.png',
-    visualTitle: 'Comece pelo detalhe que mais rouba intenção.',
-    visualText: 'Comece nomeando a sensação do espelho. A partir dela, o MUSA indica um cuidado simples para hoje.',
+    visualTitle: 'Comece pelo sinal que mais rouba elegância da sua presença.',
+    visualText: 'Nomeie o que você sente ao se ver pronta. A partir disso, o MUSA aponta onde reduzir ruído visual e qual cuidado testar primeiro.',
     journeyEventType: 'PROBLEM_RECOGNIZED',
   },
   {
@@ -1981,8 +1981,8 @@ function App() {
       <main className="app-shell public-diagnostic-shell">
         <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
           <div className="public-diagnostic-intro">
-            <h1>Descubra o detalhe que faz seu look parecer incompleto, sem comprar roupa nova.</h1>
-            <p>Assista à prévia MUSA, escolha uma situação real e receba um primeiro ajuste antes de deixar seu e-mail ou comprar qualquer coisa.</p>
+            <h1>Descubra o detalhe que está tirando elegância do seu look, sem comprar roupa nova.</h1>
+            <p>Assista à prévia MUSA, responda 4 escolhas rápidas sobre seu espelho e receba um primeiro ajuste de presença para testar hoje.</p>
           </div>
 
           {showPublicDiagnosticVideoHero && (
@@ -2064,8 +2064,8 @@ function App() {
               </div>
               <div className="public-video-copy">
                 <p className="section-kicker">{showMotivationalTimelineVideo ? 'Prévia MUSA' : 'Vídeo inicial MUSA'}</p>
-                <h2>{showMotivationalTimelineVideo ? 'Veja a promessa em vídeo e avance direto para seu diagnóstico de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
-                <p>{showMotivationalTimelineVideo ? 'Você vê a ideia na prática, escolhe o que mais incomoda no espelho e recebe um primeiro caminho para se sentir mais alinhada hoje.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
+                <h2>{showMotivationalTimelineVideo ? 'Veja como pequenos sinais de roupa, acabamento e postura mudam a percepção de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
+                <p>{showMotivationalTimelineVideo ? 'Depois da prévia, o MUSA usa suas respostas para identificar o ruído visual mais provável e sugerir uma microação simples para hoje.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
                 <button
                   className="secondary-button public-video-cta"
                   type="button"
@@ -2141,11 +2141,11 @@ function App() {
               </div>
               <div className="public-diagnostic-stage">
                 <div className="public-diagnostic-stage-top">
-                  <p className="section-kicker">Seu primeiro passo</p>
+                  <p className="section-kicker">Seu primeiro ajuste MUSA</p>
                   <span>{answeredPublicDiagnosticCount}/{publicDiagnosticQuestions.length} passos</span>
                 </div>
-                <h2>Transforme a sensação de “falta algo” em uma direção simples para se arrumar com mais intenção.</h2>
-                <div className="public-road-steps" aria-label="Etapas do seu primeiro passo MUSA">
+                <h2>Em 4 escolhas, o MUSA identifica o ponto que mais enfraquece sua presença e transforma isso em uma ação simples, elegante e aplicável hoje.</h2>
+                <div className="public-road-steps" aria-label="Etapas do seu primeiro ajuste MUSA">
                   {publicDiagnosticQuestions.map((question, index) => (
                     <span key={question.key} className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}>
                       {question.stageLabel}
@@ -2171,7 +2171,7 @@ function App() {
             {errorMessage && <p className="form-message">{errorMessage}</p>}
             <button className="primary-button public-submit-button" disabled={publicDiagnosticPending || !publicDiagnosticReady} onClick={submitPublicPresenceDiagnostic}>
               {publicDiagnosticPending ? <LoaderCircle className="button-spinner" size={18} /> : <Sparkles size={18} />}
-              {publicDiagnosticPending ? 'Montando seu plano...' : 'Ver meu primeiro passo'}
+              {publicDiagnosticPending ? 'Montando seu plano...' : 'Ver meu ajuste MUSA'}
             </button>
           </section>
 

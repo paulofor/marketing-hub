@@ -6218,3 +6218,10 @@
 - foi feito: o contrato PDE passou a aceitar `heroVideos`, o fallback local da `pde-platform` usa o vídeo aprovado e o frontend escolhe o hero por `experienceVersion`, `placement`, `READY` e `APPROVED`.
 - prevenção: o changelog do backend principal grava o vínculo rastreável no `pde_experience_json` do produto MUSA, removendo a dependência do HLS solto como fonte principal da primeira dobra.
 - impacto comercial esperado: aumentar governança e confiança da escala da v6, evitando que campanhas rodem com vídeo fora da biblioteca, sem custo/revisão/asset rastreável.
+
+## 2026-07-28 — PDE MUSA v6: contrato corrigido para HLS
+
+- decisão comercial do usuário: PDE sempre deve usar HLS e o Marketing Hub deve gerenciar essas playlists.
+- ajuste preparado: a v6 deixa de apontar o hero para MP4 no contrato e passa a usar `/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8` como `playbackUrl` e `hlsPlaybackUrl`.
+- governança adicionada: os ativos `experiment_video_asset.id=22` e `id=23` vinculados ao job `20462` recebem `hls_playback_url`, mantendo o vídeo visível e rastreável no Marketing Hub.
+- prevenção: `LANDING_HERO` aprovado passa a exigir `hlsPlaybackUrl`, evitando que novo PDE entre em campanha com MP4 como contrato principal.

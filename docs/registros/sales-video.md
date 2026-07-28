@@ -100,6 +100,14 @@
 - Correção preparada: `sales_video_job` passou a persistir `stream_playback_url`; o callback de conclusão aceita `streamPlaybackUrl`; os DTOs expõem essa URL; Marketing Hub e PDE priorizam HLS adaptativo com MP4 como fallback.
 - Regra operacional: vídeo bruto/renderizado é ativo de auditoria e contingência; a experiência principal da usuária deve usar stream adaptativo sempre que houver URL processada pelo pipeline de mídia.
 
+## 2026-07-28 — HLS gerenciado para vídeos de PDE
+
+- Decisão comercial: PDE público deve consumir sempre HLS (`.m3u8`); MP4 fica como master, fallback interno ou evidência, mas não como URL canônica de experiência.
+- Causa-raiz tratada: a v6 podia ser padronizada para um vídeo aprovado com MP4 rastreável, mas ainda sem campo explícito de HLS no ativo comercial do Marketing Hub.
+- Correção preparada: `experiment_video_asset` passa a ter `hls_playback_url`, exposto como `hlsPlaybackUrl`; o sync de jobs copia a playlist HLS quando o worker informa `streamPlaybackUrl`; `LANDING_HERO` aprovado exige áudio e HLS.
+- Prevenção: a biblioteca de vídeos e a aba de vídeo do experimento priorizam HLS no player e sinalizam se o ativo está pronto para PDE.
+- Impacto comercial esperado: evitar publicação de PDE com vídeo fora do fluxo gerenciável, reduzir abandono por falha de reprodução no celular e manter custo/revisão/asset sob governança do Marketing Hub.
+
 ## 2026-07-21 — Vídeos de entrada do PDE pelo Marketing Hub
 
 - Problema observado: a nova área `Vídeos` existia como planejamento local no navegador, mas isso não criava artefato rastreável no Marketing Hub.

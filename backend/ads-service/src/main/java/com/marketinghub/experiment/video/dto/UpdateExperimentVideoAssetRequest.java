@@ -35,4 +35,5 @@ public record UpdateExperimentVideoAssetRequest(
     Long salesVideoProfileId,
     Long salesVideoJobId,
     Long assetId,
-    Long landingVideoSlotId) {}
+    Long landingVideoSlotId,
+    String hlsPlaybackUrl) {}

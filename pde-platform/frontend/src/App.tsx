@@ -38,6 +38,7 @@ type HeroVideo = {
   experienceVersion: string;
   placement: string;
   playbackUrl: string;
+  hlsPlaybackUrl?: string;
   posterUrl?: string;
   autoplay?: boolean;
   muted?: boolean;
@@ -195,7 +196,7 @@ const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
 const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
-const MUSA_APPROVED_HERO_VIDEO_URL = 'https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/07/25/misc/c03a67236572-musa-pde-v5-heygen-captioned-final.mp4';
+const MUSA_APPROVED_HERO_VIDEO_URL = '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8';
 const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string }> = {
   'v5.clubemusa.com.br': {
     experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
@@ -271,13 +272,14 @@ const fallbackProduct: ProductExperience = {
       experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
       placement: 'public_diagnostic_initial_explainer',
       playbackUrl: MUSA_APPROVED_HERO_VIDEO_URL,
+      hlsPlaybackUrl: MUSA_APPROVED_HERO_VIDEO_URL,
       posterUrl: '/assets/musa-editorial-presenca.png',
       autoplay: true,
       muted: true,
       controls: true,
       loop: false,
       playsInline: true,
-      source: 'MARKETING_HUB_APPROVED_EXPERIMENT_VIDEO',
+      source: 'MARKETING_HUB_MANAGED_HLS',
       assetId: 1935,
       experimentVideoAssetId: 22,
       salesVideoProfileId: 35,
@@ -623,16 +625,25 @@ function selectApprovedHeroVideo(productExperience: ProductExperience, experienc
   return (productExperience.heroVideos ?? []).find((video) =>
     video.experienceVersion === experienceVersion
     && video.placement === 'public_diagnostic_initial_explainer'
-    && Boolean(video.playbackUrl?.trim())
+    && Boolean(resolveHeroVideoHlsUrl(video))
     && video.status === 'READY'
     && video.reviewStatus === 'APPROVED'
-    && video.source === 'MARKETING_HUB_APPROVED_EXPERIMENT_VIDEO');
+    && ['MARKETING_HUB_APPROVED_EXPERIMENT_VIDEO', 'MARKETING_HUB_MANAGED_HLS'].includes(video.source ?? ''));
+}
+
+function resolveHeroVideoHlsUrl(video: HeroVideo) {
+  const hlsPlaybackUrl = video.hlsPlaybackUrl?.trim();
+  if (hlsPlaybackUrl?.includes('.m3u8')) {
+    return hlsPlaybackUrl;
+  }
+  const playbackUrl = video.playbackUrl?.trim();
+  return playbackUrl?.includes('.m3u8') ? playbackUrl : '';
 }
 
 function resolveHeroVideoUrl(productExperience: ProductExperience, experienceVersion: string) {
   const approvedHeroVideo = selectApprovedHeroVideo(productExperience, experienceVersion);
   if (approvedHeroVideo) {
-    return approvedHeroVideo.playbackUrl.trim();
+    return resolveHeroVideoHlsUrl(approvedHeroVideo);
   }
   const streamOverride = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
   if (streamOverride) {

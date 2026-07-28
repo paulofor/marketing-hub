@@ -1251,14 +1251,22 @@ function ExperimentVideoCard({
   const [rejectionReason, setRejectionReason] = useState(
     video.rejectionReason ?? "",
   );
-  const playbackUrl = video.assetUrl ? resolveAssetUrl(video.assetUrl) : "";
+  const hlsPlaybackUrl = video.hlsPlaybackUrl
+    ? resolveAssetUrl(video.hlsPlaybackUrl)
+    : "";
+  const assetUrl = video.assetUrl ? resolveAssetUrl(video.assetUrl) : "";
+  const playbackUrl = hlsPlaybackUrl || assetUrl;
   const thumbnailUrl = video.thumbnailUrl
     ? resolveAssetUrl(video.thumbnailUrl)
     : "";
+  const pdeReady = video.slot === "LANDING_HERO" && Boolean(hlsPlaybackUrl);
   const blocksRelease =
     video.requiredForRelease &&
     (video.status !== "READY" || video.reviewStatus !== "APPROVED");
-  const canApprove = video.status === "READY" && Boolean(playbackUrl);
+  const canApprove =
+    video.status === "READY" &&
+    Boolean(playbackUrl) &&
+    (video.slot !== "LANDING_HERO" || Boolean(hlsPlaybackUrl));
   const canReject =
     video.status === "READY" && rejectionReason.trim().length > 0;
 
@@ -1270,8 +1278,9 @@ function ExperimentVideoCard({
     <article className="video-hub-page__video-card">
       <div className="video-hub-page__video-preview">
         {playbackUrl ? (
-          <video
+          <AdaptiveVideoPlayer
             src={playbackUrl}
+            fallbackSrc={assetUrl || undefined}
             poster={thumbnailUrl || undefined}
             controls
             playsInline
@@ -1299,6 +1308,10 @@ function ExperimentVideoCard({
         <p>{video.objective}</p>
         <dl>
           <div>
+            <dt>HLS PDE</dt>
+            <dd>{pdeReady ? "Pronto para PDE" : "Pendente"}</dd>
+          </div>
+          <div>
             <dt>Status</dt>
             <dd>{video.status}</dd>
           </div>
@@ -1320,6 +1333,16 @@ function ExperimentVideoCard({
                 : "Não definida"}
             </dd>
           </div>
+          {hlsPlaybackUrl ? (
+            <div>
+              <dt>Playlist HLS</dt>
+              <dd>
+                <a href={hlsPlaybackUrl} target="_blank" rel="noreferrer">
+                  Abrir HLS
+                </a>
+              </dd>
+            </div>
+          ) : null}
           <div>
             <dt>Revisão</dt>
             <dd>

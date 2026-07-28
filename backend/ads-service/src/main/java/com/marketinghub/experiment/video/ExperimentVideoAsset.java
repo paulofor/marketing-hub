@@ -72,6 +72,9 @@ public class ExperimentVideoAsset {
   @Column(name = "asset_url", length = 1024)
   private String assetUrl;
 
+  @Column(name = "hls_playback_url", length = 2048)
+  private String hlsPlaybackUrl;
+
   @Column(name = "thumbnail_url", length = 1024)
   private String thumbnailUrl;
 

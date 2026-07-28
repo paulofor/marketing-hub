@@ -21,6 +21,7 @@ export interface ExperimentVideoAsset {
   model: string;
   status: ExperimentVideoStatus;
   assetUrl?: string | null;
+  hlsPlaybackUrl?: string | null;
   thumbnailUrl?: string | null;
   durationSeconds?: number | null;
   aspectRatio?: string | null;

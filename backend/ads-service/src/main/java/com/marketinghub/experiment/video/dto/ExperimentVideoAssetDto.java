@@ -41,4 +41,5 @@ public record ExperimentVideoAssetDto(
     Long assetId,
     Long landingVideoSlotId,
     Instant createdAt,
-    Instant updatedAt) {}
+    Instant updatedAt,
+    String hlsPlaybackUrl) {}

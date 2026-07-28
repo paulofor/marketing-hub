@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const approvedHeroVideoUrl = 'https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/07/25/misc/c03a67236572-musa-pde-v5-heygen-captioned-final.mp4';
+const approvedHeroVideoUrl = '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8';
 
 test('v6 publica bloco de video nao-slide e segue direto para o diagnostico', async ({ page }) => {
   await page.route('**/api/pde/products/metodo-musa-7-dias', async (route) => {

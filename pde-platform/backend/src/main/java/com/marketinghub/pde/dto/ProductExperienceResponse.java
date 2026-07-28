@@ -45,6 +45,7 @@ public record ProductExperienceResponse(
             String experienceVersion,
             String placement,
             String playbackUrl,
+            String hlsPlaybackUrl,
             String posterUrl,
             Boolean autoplay,
             Boolean muted,

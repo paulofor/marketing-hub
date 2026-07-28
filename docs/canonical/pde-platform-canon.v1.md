@@ -138,6 +138,14 @@ O frontend PDE deve consumir somente endpoints do próprio backend PDE, preferen
 
 Essa fronteira deve ser validada automaticamente no CI do PDE frontend antes do build. A validação deve bloquear referências diretas a `ads-service`, ao host do backend principal `191.252.181.168`, à porta `8000` do backend principal ou a endpoints fora do contrato PDE.
 
+### Vídeos HLS obrigatórios em PDE
+
+Todo vídeo consumido por PDE público deve ser entregue em HLS (`.m3u8`). MP4 pode existir como arquivo de origem, fallback técnico interno ou artefato de auditoria, mas não deve ser a URL canônica publicada para a experiência PDE.
+
+O Marketing Hub deve gerenciar os HLS usados por PDEs em ativos comerciais rastreáveis. Para vídeos de experimento, o campo canônico é `experiment_video_asset.hls_playback_url`, exposto como `hlsPlaybackUrl` nos contratos da API. Vídeos `LANDING_HERO` destinados a PDE só podem ser aprovados para uso comercial quando estiverem `READY`, com revisão `APPROVED`, áudio validado e `hlsPlaybackUrl` preenchido com playlist `.m3u8`.
+
+O contrato `heroVideos` do PDE deve priorizar `hlsPlaybackUrl` e manter `playbackUrl` como alias compatível apontando para a mesma playlist HLS. É proibido publicar nova versão PDE usando MP4 como `playbackUrl` principal.
+
 ### Funil comercial obrigatório Clube MUSA/PDE
 
 O Clube MUSA/PDE deve usar um funil de entrada com login antes da compra e paywall interno.

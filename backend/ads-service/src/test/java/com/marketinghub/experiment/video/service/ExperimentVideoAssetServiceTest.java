@@ -128,6 +128,7 @@ class ExperimentVideoAssetServiceTest {
             null,
             null,
             null,
+            null,
             null);
 
     ExperimentVideoAssetDto dto = service.create(39L, request);
@@ -288,6 +289,7 @@ class ExperimentVideoAssetServiceTest {
             null,
             null,
             null,
+            null,
             null);
 
     ResponseStatusException ex =
@@ -326,6 +328,7 @@ class ExperimentVideoAssetServiceTest {
             null,
             null,
             true,
+            null,
             null,
             null,
             null,
@@ -625,7 +628,8 @@ class ExperimentVideoAssetServiceTest {
             null,
             null,
             null,
-            12L);
+            12L,
+            "https://cdn.test/video/index.m3u8");
 
     assertThrows(ResponseStatusException.class, () -> service.create(39L, request));
   }
@@ -684,14 +688,81 @@ class ExperimentVideoAssetServiceTest {
                 null,
                 null,
                 null,
-                null));
+                null,
+                "https://cdn.test/video/index.m3u8"));
 
     assertThat(dto.status()).isEqualTo(ExperimentVideoStatus.READY);
     assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.APPROVED);
     assertThat(dto.reviewedBy()).isEqualTo("aprovador@marketinghub.local");
     assertThat(dto.reviewedAt()).isNotNull();
     assertThat(dto.assetUrl()).isEqualTo("https://cdn.test/video.mp4");
+    assertThat(dto.hlsPlaybackUrl()).isEqualTo("https://cdn.test/video/index.m3u8");
     assertThat(dto.hasAudio()).isTrue();
+  }
+
+  /** Bloqueia aprovação de hero de PDE quando existe MP4, mas falta playlist HLS. */
+  @Test
+  void shouldRejectLandingHeroApprovalWithoutHlsPlaybackUrl() {
+    Experiment experiment = Experiment.builder().id(39L).build();
+    ExperimentVideoAsset videoAsset =
+        ExperimentVideoAsset.builder()
+            .id(5L)
+            .experiment(experiment)
+            .slot(ExperimentVideoSlot.LANDING_HERO)
+            .objective("Aumentar envio")
+            .primaryMetric("form_submit_rate")
+            .provider("HEYGEN")
+            .model("avatar-iv")
+            .status(ExperimentVideoStatus.READY)
+            .assetUrl("https://cdn.test/video.mp4")
+            .hasAudio(true)
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .requiredForRelease(true)
+            .build();
+    given(experimentRepository.findById(39L)).willReturn(Optional.of(experiment));
+    given(repository.findById(5L)).willReturn(Optional.of(videoAsset));
+
+    ResponseStatusException exception =
+        assertThrows(
+            ResponseStatusException.class,
+            () ->
+                service.update(
+                    39L,
+                    5L,
+                    new UpdateExperimentVideoAssetRequest(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        ExperimentVideoReviewStatus.APPROVED,
+                        null,
+                        "aprovador@marketinghub.local",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null)));
+
+    assertThat(exception.getStatusCode().value()).isEqualTo(400);
+    assertThat(exception.getReason()).contains("hlsPlaybackUrl");
   }
 
   /** Garante que reprovação humana sempre explique a causa para nova criação. */
@@ -746,6 +817,7 @@ class ExperimentVideoAssetServiceTest {
                         ExperimentVideoReviewStatus.REJECTED,
                         " ",
                         "aprovador@marketinghub.local",
+                        null,
                         null,
                         null,
                         null,
@@ -826,6 +898,7 @@ class ExperimentVideoAssetServiceTest {
                         ExperimentVideoReviewStatus.APPROVED,
                         null,
                         "aprovador@marketinghub.local",
+                        null,
                         null,
                         null,
                         null,

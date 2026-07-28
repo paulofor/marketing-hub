@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-28-video-project-story-text-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: video_project
+        - not:
+            columnExists:
+              tableName: video_project
+              columnName: story_text
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_project
+                ADD COLUMN story_text LONGTEXT NULL AFTER objective;

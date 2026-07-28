@@ -364,6 +364,7 @@ export interface VideoProject {
   format: string;
   title: string;
   objective: string;
+  storyText?: string | null;
   funnelStage?: string | null;
   primaryMetric?: string | null;
   hookText?: string | null;
@@ -396,6 +397,7 @@ export interface VideoProjectPayload {
   format: string;
   title: string;
   objective: string;
+  storyText?: string;
   funnelStage?: string;
   primaryMetric?: string;
   hookText?: string;

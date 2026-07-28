@@ -16,6 +16,7 @@ public record CreateVideoProjectRequest(
     @NotBlank @Size(max = 64) String format,
     @NotBlank @Size(max = 255) String title,
     @NotBlank @Size(max = 1024) String objective,
+    String storyText,
     @Size(max = 64) String funnelStage,
     @Size(max = 191) String primaryMetric,
     @Size(max = 1024) String hookText,

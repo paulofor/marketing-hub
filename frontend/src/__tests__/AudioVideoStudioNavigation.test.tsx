@@ -44,11 +44,16 @@ describe("audio video studio navigation", () => {
     expect(
       screen.getByRole("heading", { name: /estudio de audio e video/i }),
     ).toBeTruthy();
-    expect(screen.getByText(/videos com narrativa, som, cenas/i)).toBeTruthy();
+    expect(screen.getByText(/projeto primeiro, historia primeiro/i)).toBeTruthy();
     expect(screen.getByText(/video curto de 3 minutos/i)).toBeTruthy();
     expect(
       screen.getByRole("form", { name: /briefing do video de 3 minutos/i }),
     ).toBeTruthy();
+    expect(screen.getByLabelText(/historia inicial/i)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /criar projeto exemplo/i }),
+    ).toBeTruthy();
+    expect(screen.getByText(/projetos recentes do estudio/i)).toBeTruthy();
     expect(screen.getByText(/estrutura de 3 minutos/i)).toBeTruthy();
     expect(screen.getByText(/plano basico de cenas/i)).toBeTruthy();
     expect(screen.getByText(/checklist de producao/i)).toBeTruthy();

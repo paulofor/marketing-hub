@@ -4,16 +4,24 @@ import {
   FileText,
   Music,
   PlayCircle,
+  Save,
   Scissors,
   Sparkles,
   Timer,
   Volume2,
 } from "lucide-react";
 import { useMemo, useState, type ChangeEvent } from "react";
+import {
+  useCreateVideoProject,
+  useVideoProjects,
+} from "../../api/salesVideo/useVideoProjects";
+import type { VideoProjectPayload } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
 import "./AudioVideoStudioPage.css";
 
 type StudioBriefing = {
+  title: string;
+  story: string;
   product: string;
   audience: string;
   pain: string;
@@ -130,19 +138,28 @@ const scenePrompts = [
   "Cena final com CTA, URL, produto ou proximo passo.",
 ];
 
+const exampleStory =
+  "Uma consultora independente sente que sua presenca digital nao mostra sua autoridade real. Ela tenta postar melhor, ajustar foto, escrever bio e criar conteudo, mas tudo parece solto. Ao entrar no Metodo MUSA, ela recebe um diagnostico guiado por IA que transforma sinais dispersos em uma direcao clara de imagem, conteudo e posicionamento. Em poucos dias, ela entende o que precisa ajustar, passa a se apresentar com mais seguranca e convida outras pessoas para fazerem o mesmo diagnostico.";
+
 export default function AudioVideoStudioPage() {
+  const videoProjectsQuery = useVideoProjects();
+  const createVideoProject = useCreateVideoProject();
+  const [saveFeedback, setSaveFeedback] = useState("");
   const [briefing, setBriefing] = useState<StudioBriefing>({
-    product: "Produto digital com IA aplicada",
-    audience: "Pessoa com dor urgente e pouco tempo",
-    pain: "Esta perdendo tempo tentando resolver manualmente",
-    promise: "Conseguir um resultado pratico em poucos dias",
-    mechanism: "Metodo guiado por IA com passos simples",
-    proof: "Exemplo visual do antes e depois",
-    cta: "Entrar na lista de interesse",
+    title: "MUSA - video manifesto de presenca digital",
+    story: exampleStory,
+    product: "Metodo MUSA",
+    audience: "Mulheres que vendem sua imagem, conhecimento ou atendimento",
+    pain: "Esta se esforcando para aparecer melhor, mas sua presenca digital nao traduz autoridade",
+    promise: "Sair da sensacao de improviso e enxergar os proximos ajustes de imagem com clareza",
+    mechanism: "Diagnostico de presenca publica guiado por IA",
+    proof: "Antes e depois da clareza de posicionamento, bio, imagem e direcao de conteudo",
+    cta: "Fazer o diagnostico MUSA",
   });
 
   const scriptDraft = useMemo(
     () => [
+      `Historia: ${briefing.story}`,
       `Gancho: ${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
       `Promessa: com ${briefing.product}, a proposta e ${briefing.promise.toLowerCase()}.`,
       `Mecanismo: a solucao usa ${briefing.mechanism.toLowerCase()}, reduzindo esforco e aumentando clareza.`,
@@ -158,11 +175,59 @@ export default function AudioVideoStudioPage() {
       setBriefing((current) => ({ ...current, [field]: event.target.value }));
     };
 
+  const buildProjectPayload = (): VideoProjectPayload => ({
+    contextType: "PDE",
+    productionMode: "STORY_FIRST_AUDIO_VIDEO",
+    targetChannel: "PDE_AND_SOCIAL",
+    format: "VERTICAL_9_16",
+    title: briefing.title,
+    objective:
+      "Testar uma narrativa audiovisual de 3 minutos para aumentar desejo, confianca e acao no Metodo MUSA.",
+    storyText: briefing.story,
+    funnelStage: "AWARENESS",
+    primaryMetric: "DIAGNOSTIC_START",
+    hookText: `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
+    scriptText: scriptDraft.join("\n\n"),
+    scenePlan: scenePrompts.join("\n"),
+    visualReferences: briefing.proof,
+    voiceoverPlan:
+      "Voz proxima, confiante e acolhedora, com ritmo medio e pausas curtas para reforcar pontos de virada.",
+    soundtrackPlan:
+      "Trilha leve, moderna e aspiracional, sempre abaixo da narracao.",
+    captionPlan:
+      "Legendas curtas com palavras-chave de dor, mecanismo, prova e CTA.",
+    ctaText: briefing.cta,
+    targetDurationSeconds: 180,
+    providerPlan:
+      "Comecar com roteiro e storyboard; depois testar narracao, cenas-chave e montagem em jobs auditaveis.",
+    editingNotes:
+      "Priorizar cortes limpos, prova visual concreta e CTA sem excesso de texto.",
+    qualityGate:
+      "Aprovar somente se a historia estiver clara, o mecanismo parecer plausivel, o audio for compreensivel e o CTA estiver conectado ao funil.",
+    status: "READY_FOR_SCRIPT",
+    createdBy: "codex-mkt",
+    updatedBy: "codex-mkt",
+  });
+
+  const handleCreateExampleProject = async () => {
+    setSaveFeedback("");
+    try {
+      const project = await createVideoProject.mutateAsync(buildProjectPayload());
+      setSaveFeedback(`Projeto exemplo criado: #${project.id} - ${project.title}`);
+    } catch {
+      setSaveFeedback(
+        "Nao foi possivel criar o projeto exemplo agora. Revise a conexao com o backend e tente novamente.",
+      );
+    }
+  };
+
+  const recentProjects = videoProjectsQuery.data?.slice(0, 4) ?? [];
+
   return (
     <div className="audio-video-studio-page">
       <PageTitle
         title="Estudio de Audio e Video"
-        subtitle="Cockpit inicial para experimentar videos curtos de 3 minutos com roteiro, cenas, audio, montagem e revisao comercial."
+        subtitle="Todo audio ou video nasce de um projeto. O primeiro passo do projeto e contar uma historia forte o suficiente para vender uma transformacao."
       />
 
       <section className="audio-video-studio-page__intro">
@@ -170,11 +235,11 @@ export default function AudioVideoStudioPage() {
           <p className="audio-video-studio-page__eyebrow">
             Experimento 3 minutos
           </p>
-          <h2>Videos com narrativa, som, cenas e acabamento de maior valor.</h2>
+          <h2>Projeto primeiro, historia primeiro, producao depois.</h2>
           <p>
-            Este cockpit inicia a separacao operacional entre videos de rotina e
-            producoes sofisticadas. O foco do estudio e criar pecas que aumentem
-            desejo, confianca e conversao para produtos digitais.
+            O Estudio organiza a producao audiovisual como um ativo comercial:
+            historia, roteiro, cenas, voz, trilha, montagem e revisao antes de
+            qualquer renderizacao.
           </p>
         </div>
         <div
@@ -196,11 +261,24 @@ export default function AudioVideoStudioPage() {
           aria-label="Briefing do video de 3 minutos"
         >
           <div className="audio-video-studio-page__section-heading">
-            <h2>Briefing rapido</h2>
+            <h2>Projeto de exemplo</h2>
             <p>
-              Preencha a base comercial antes de gerar roteiro, cenas e audio.
+              Ajuste a historia base e crie um projeto persistido para testar o
+              Estudio.
             </p>
           </div>
+          <label>
+            Titulo do projeto
+            <input value={briefing.title} onChange={updateBriefing("title")} />
+          </label>
+          <label>
+            Historia inicial
+            <textarea
+              value={briefing.story}
+              onChange={updateBriefing("story")}
+              rows={7}
+            />
+          </label>
           <label>
             Produto
             <input
@@ -246,6 +324,20 @@ export default function AudioVideoStudioPage() {
             CTA
             <input value={briefing.cta} onChange={updateBriefing("cta")} />
           </label>
+          <button
+            className="audio-video-studio-page__primary-action"
+            type="button"
+            onClick={handleCreateExampleProject}
+            disabled={createVideoProject.isPending}
+          >
+            <Save size={18} aria-hidden="true" />
+            {createVideoProject.isPending
+              ? "Criando projeto..."
+              : "Criar projeto exemplo"}
+          </button>
+          {saveFeedback ? (
+            <p className="audio-video-studio-page__feedback">{saveFeedback}</p>
+          ) : null}
         </form>
 
         <div className="audio-video-studio-page__draft">
@@ -270,6 +362,40 @@ export default function AudioVideoStudioPage() {
               </span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="audio-video-studio-page__section">
+        <div className="audio-video-studio-page__section-heading">
+          <h2>Projetos recentes do estudio</h2>
+          <p>
+            Lista operacional para confirmar se o projeto exemplo foi gravado e
+            seguir os proximos testes.
+          </p>
+        </div>
+        <div className="audio-video-studio-page__project-list">
+          {videoProjectsQuery.isLoading ? (
+            <article className="audio-video-studio-page__project-card">
+              Carregando projetos...
+            </article>
+          ) : recentProjects.length > 0 ? (
+            recentProjects.map((project) => (
+              <article
+                className="audio-video-studio-page__project-card"
+                key={project.id}
+              >
+                <span>#{project.id}</span>
+                <h3>{project.title}</h3>
+                <p>{project.storyText || project.objective}</p>
+                <small>{project.status}</small>
+              </article>
+            ))
+          ) : (
+            <article className="audio-video-studio-page__project-card">
+              Nenhum projeto criado ainda. Use o exemplo MUSA para iniciar os
+              testes.
+            </article>
+          )}
         </div>
       </section>
 
@@ -383,8 +509,8 @@ export default function AudioVideoStudioPage() {
         <PlayCircle size={22} aria-hidden="true" />
         <strong>Proximo incremento:</strong>
         <span>
-          persistir projetos do estudio e criar jobs auditaveis de roteiro, voz,
-          cenas e montagem.
+          apos criar o projeto exemplo, evoluir jobs auditaveis de roteiro, voz,
+          cenas, montagem e revisao.
         </span>
       </div>
     </div>

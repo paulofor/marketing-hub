@@ -36,6 +36,7 @@
 .audio-video-studio-page__next-action,
 .audio-video-studio-page__timeline-block,
 .audio-video-studio-page__panel,
+.audio-video-studio-page__project-card,
 .audio-video-studio-page__pillar {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -158,6 +159,36 @@
   outline: none;
 }
 
+.audio-video-studio-page__primary-action {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.audio-video-studio-page__primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.audio-video-studio-page__feedback {
+  margin: 0;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #047857;
+  padding: 0.75rem;
+  font-weight: 700;
+}
+
 .audio-video-studio-page__draft {
   display: flex;
   min-height: 100%;
@@ -195,6 +226,40 @@
 
 .audio-video-studio-page__audio-card span {
   color: #334155;
+}
+
+.audio-video-studio-page__project-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.85rem;
+}
+
+.audio-video-studio-page__project-card {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem;
+}
+
+.audio-video-studio-page__project-card span,
+.audio-video-studio-page__project-card small {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audio-video-studio-page__project-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.audio-video-studio-page__project-card p {
+  display: -webkit-box;
+  margin: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  color: #475569;
 }
 
 .audio-video-studio-page__timeline {

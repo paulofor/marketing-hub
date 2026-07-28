@@ -50,6 +50,7 @@ public class VideoProjectService {
             .format(required(request.format(), "Formato"))
             .title(required(request.title(), "Título"))
             .objective(required(request.objective(), "Objetivo"))
+            .storyText(trimToNull(request.storyText()))
             .funnelStage(trimToNull(request.funnelStage()))
             .primaryMetric(trimToNull(request.primaryMetric()))
             .hookText(trimToNull(request.hookText()))
@@ -91,6 +92,7 @@ public class VideoProjectService {
     project.setFormat(required(request.format(), "Formato"));
     project.setTitle(required(request.title(), "Título"));
     project.setObjective(required(request.objective(), "Objetivo"));
+    project.setStoryText(trimToNull(request.storyText()));
     project.setFunnelStage(trimToNull(request.funnelStage()));
     project.setPrimaryMetric(trimToNull(request.primaryMetric()));
     project.setHookText(trimToNull(request.hookText()));
@@ -161,6 +163,7 @@ public class VideoProjectService {
         project.getFormat(),
         project.getTitle(),
         project.getObjective(),
+        project.getStoryText(),
         project.getFunnelStage(),
         project.getPrimaryMetric(),
         project.getHookText(),

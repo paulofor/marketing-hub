@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('v6 publica PDE com video motivacional inicial e diagnostico em seguida', async ({ page }) => {
+test('v6 publica PDE sem video de slides e segue direto para o diagnostico', async ({ page }) => {
   await page.route('**/api/pde/products/metodo-musa-7-dias', async (route) => {
     await route.fulfill({ status: 404, body: 'not found' });
   });
@@ -8,24 +8,14 @@ test('v6 publica PDE com video motivacional inicial e diagnostico em seguida', a
   await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa');
 
   await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
-  const video = page.locator('video.public-hero-video');
-  await expect(video, 'A v6 deve renderizar o player de video no topo do diagnostico publico').toBeVisible();
-  await expect(video, 'A v6 deve apontar para o HLS motivacional gerado no build').toHaveAttribute(
-    'src',
-    '/assets/hls/musa-v6-video-motivacional/index.m3u8',
-  );
-  await expect(page.locator('.public-video-play-badge span')).toHaveText('Vídeo rápido');
-  await expect(page.getByRole('button', { name: /Começar diagnóstico/i })).toBeVisible();
-
-  await page.getByRole('button', { name: /Começar diagnóstico/i }).click();
-
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
+  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Falta acabamento' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeDisabled();
 });
 
-test('v6 preserva versao e video do hostname mesmo com runtime global de v5', async ({ page }) => {
+test('v6 bloqueia override global para HLS antigo de slides', async ({ page }) => {
   await page.addInitScript(() => {
     window.__MUSA_RUNTIME_CONFIG__ = {
       VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: 'musa-pde-entry-v5-video-explicativo',
@@ -38,7 +28,7 @@ test('v6 preserva versao e video do hostname mesmo com runtime global de v5', as
 
   await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa');
 
-  const video = page.locator('video.public-hero-video');
-  await expect(video).toHaveAttribute('src', '/assets/hls/musa-v6-video-motivacional/index.m3u8');
-  await expect(page.getByText(/Timeline MUSA/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
+  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
 });

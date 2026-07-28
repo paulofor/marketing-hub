@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-07-28 — Bloqueio de vídeos MUSA gerados por slides
+
+- Problema observado: v5/v6 do PDE MUSA estavam usando MP4/HLS gerados a partir de slides do diagnóstico como se fossem vídeos comerciais.
+- Decisão comercial: esse tipo de vídeo fica proibido para MUSA; vídeos comerciais devem nascer da estrutura de produção de vídeos do Marketing Hub, com roteiro, job, asset e URL auditáveis.
+- Correção preparada: remoção dos assets MP4/HLS de slides, bloqueio no build, retirada dos defaults de runtime e atualização da validação de slot para não exigir HLS antigo.
+- Impacto esperado: evitar teste contaminado por criativo fraco e preservar a percepção de valor do PDE antes de enviar tráfego pago.
+
 ## 2026-07-25 — Prompt de roteiro adaptável por produto
 
 - Problema observado: a melhoria de qualidade do roteiro corrigia o MUSA, mas deixava exemplos específicos de moda no prompt global, criando risco de contaminar scripts de outros produtos.

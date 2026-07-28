@@ -9,10 +9,10 @@ test.beforeEach(async ({ request }) => {
   expect(response.ok()).toBeTruthy();
 });
 
-test('v5 e v6 usam backend PDE local real, HLS correto e analytics por versao', async ({ page, request }) => {
+test('v5 e v6 usam backend PDE local real sem HLS de slides e mantem analytics por versao', async ({ page, request }) => {
   await page.goto('http://v5.clubemusa.com.br:57180/?utm_source=local&utm_campaign=v5_local_validation');
-  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
-  await expect(page.locator('video.public-hero-video')).toHaveAttribute('src', '/assets/hls/musa-v5-video-explicativo/index.m3u8');
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
+  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
   await expect.poll(async () => {
     const response = await request.get(`http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/summary`);
     const summary = await response.json();
@@ -26,20 +26,8 @@ test('v5 e v6 usam backend PDE local real, HLS correto e analytics por versao', 
 
   await page.goto('http://v6.clubemusa.com.br:57180/?utm_source=local&utm_campaign=v6_local_validation');
   await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
-  const video = page.locator('video.public-hero-video');
-  await expect(video).toBeVisible();
-  await expect(video).toHaveAttribute('src', '/assets/hls/musa-v6-video-motivacional/index.m3u8');
-
-  const hlsResponse = await page.request.get('http://v6.clubemusa.com.br:57180/assets/hls/musa-v6-video-motivacional/index.m3u8');
-  expect(hlsResponse.ok()).toBeTruthy();
-  expect(hlsResponse.headers()['content-type']).toContain('application/vnd.apple.mpegurl');
-
-  await video.evaluate((element) => {
-    const media = element as HTMLVideoElement;
-    media.muted = true;
-    return media.play();
-  });
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
+  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
 
   await expect.poll(async () => {
     const response = await request.get(`http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/summary`);
@@ -48,6 +36,6 @@ test('v5 e v6 usam backend PDE local real, HLS correto e analytics por versao', 
       (metric: { experienceVersion: string }) => metric.experienceVersion === v6ExperienceVersion,
     );
     const events = new Set((summary.eventBreakdown ?? []).map((metric: { eventType: string }) => metric.eventType));
-    return Boolean(versionMetric?.totalEvents > 0 && events.has('VIDEO_VIEWED') && events.has('VIDEO_PLAY'));
+    return Boolean(versionMetric?.totalEvents > 0 && !events.has('VIDEO_VIEWED') && !events.has('VIDEO_PLAY'));
   }).toBeTruthy();
 });

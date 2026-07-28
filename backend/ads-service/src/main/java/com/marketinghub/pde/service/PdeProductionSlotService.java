@@ -412,14 +412,11 @@ public class PdeProductionSlotService {
     return normalizedPublicUrl + normalizedPath;
   }
 
-  /** Mapeia versões PDE conhecidas para streams HLS que precisam existir no domínio público. */
+  /**
+   * Mapeia versões PDE conhecidas para streams HLS aprovados que precisam existir no domínio
+   * público.
+   */
   private String expectedHlsStream(String experienceVersion) {
-    if ("musa-pde-entry-v5-video-explicativo".equals(experienceVersion)) {
-      return "/assets/hls/musa-v5-video-explicativo/index.m3u8";
-    }
-    if ("musa-pde-entry-v6-video-motivacional".equals(experienceVersion)) {
-      return "/assets/hls/musa-v6-video-motivacional/index.m3u8";
-    }
     return null;
   }
 

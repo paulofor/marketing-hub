@@ -6225,3 +6225,11 @@
 - ajuste preparado: a v6 deixa de apontar o hero para MP4 no contrato e passa a usar `/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8` como `playbackUrl` e `hlsPlaybackUrl`.
 - governança adicionada: os ativos `experiment_video_asset.id=22` e `id=23` vinculados ao job `20462` recebem `hls_playback_url`, mantendo o vídeo visível e rastreável no Marketing Hub.
 - prevenção: `LANDING_HERO` aprovado passa a exigir `hlsPlaybackUrl`, evitando que novo PDE entre em campanha com MP4 como contrato principal.
+
+## 2026-07-28 — PDE MUSA v6: copy reforçada para desejo e microexperiência
+
+- decisão comercial: a v6 deve conduzir a visitante por dor reconhecível, promessa clara, mecanismo simples, microexperiência e continuidade de 7 dias antes da captura/oferta.
+- foi feito: a primeira dobra passou a prometer o detalhe que tira elegância do look, com CTA `Ver meu ajuste MUSA`.
+- foi feito: o bloco de vídeo agora explica sinais de roupa, acabamento e postura, e posiciona a prévia como entrada para identificar ruído visual e sugerir microação.
+- foi feito: o diagnóstico passou a falar de elegância da presença, redução de ruído visual e cuidado inicial aplicável hoje.
+- impacto comercial esperado: aumentar clareza de valor, desejo e avanço para o diagnóstico gratuito antes do paywall.

@@ -9,7 +9,7 @@ test('v6 publica bloco de video nao-slide e segue direto para o diagnostico', as
 
   await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa', { waitUntil: 'domcontentloaded' });
 
-  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toHaveCount(1);
   await expect(page.locator('video.public-hero-video')).toHaveAttribute(
@@ -24,7 +24,7 @@ test('v6 publica bloco de video nao-slide e segue direto para o diagnostico', as
   await expect(page.locator('.public-video-watch-status')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Falta acabamento' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /Ver meu ajuste MUSA/i })).toBeDisabled();
 });
 
 test('v6 bloqueia override global para HLS antigo de slides', async ({ page }) => {
@@ -40,7 +40,7 @@ test('v6 bloqueia override global para HLS antigo de slides', async ({ page }) =
 
   await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa', { waitUntil: 'domcontentloaded' });
 
-  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toHaveAttribute(
     'src',

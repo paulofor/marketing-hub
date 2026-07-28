@@ -48,18 +48,18 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: /look parecer incompleto/i,
+      name: /tirando elegância/i,
       level: 1,
     }),
   ).toBeVisible();
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /Ver meu ajuste MUSA/i })).toBeDisabled();
   await page.getByRole('button', { name: 'Falta acabamento' }).click();
   await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Elegância discreta' }).click();
   await page.getByRole('button', { name: 'Cabelo e pele' }).click();
-  await expect(page.getByRole('button', { name: /Ver meu primeiro passo/i })).toBeEnabled();
-  await page.getByRole('button', { name: /Ver meu primeiro passo/i }).click();
+  await expect(page.getByRole('button', { name: /Ver meu ajuste MUSA/i })).toBeEnabled();
+  await page.getByRole('button', { name: /Ver meu ajuste MUSA/i }).click();
   await expect(page.getByRole('heading', { name: /Seu plano começa reduzindo ruído visual/i })).toBeVisible();
   await expect(page.getByText(/Resultado MUSA gratuito/i)).toBeVisible();
   await expect(page.getByText(/Seu sinal principal hoje/i)).toBeVisible();
@@ -126,7 +126,7 @@ test('continua aguardando diagnostico publico quando IA demora mais que 20 segun
   await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Elegância discreta' }).click();
   await page.getByRole('button', { name: 'Roupa que já tenho' }).click();
-  await page.getByRole('button', { name: /Ver meu primeiro passo/i }).click();
+  await page.getByRole('button', { name: /Ver meu ajuste MUSA/i }).click();
 
   await expect(page.getByRole('button', { name: /Montando seu plano/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Seu plano chegou sem travar a tela/i })).toBeVisible();
@@ -144,7 +144,7 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: /look parecer incompleto/i,
+      name: /tirando elegância/i,
       level: 1,
     }),
   ).toBeVisible();
@@ -166,18 +166,18 @@ test('bloqueia video de slides na versao publicada e permite controle sem player
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
   await expect(page.locator('video.public-hero-video')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=video');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
   await expect(page.locator('video.public-hero-video')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=control');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
 });
 
 test('exibe player na versao v6 motivacional com video real aprovado', async ({ page }) => {
@@ -195,7 +195,7 @@ test('exibe player na versao v6 motivacional com video real aprovado', async ({ 
 
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', true);
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', true);

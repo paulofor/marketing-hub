@@ -26,6 +26,7 @@ class ProductCatalogServiceTest {
 
         assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v5-video-explicativo");
         assertThat(product.promise()).contains("7 dias");
+        assertThat(product.priceLabel()).isEqualTo("R$67");
         assertThat(product.missions()).hasSize(7);
         assertThat(product.supportMaterials()).hasSize(4);
         assertThat(product.heroVideos()).singleElement().satisfies(heroVideo -> {
@@ -52,7 +53,7 @@ class ProductCatalogServiceTest {
                           "name": "Método MUSA pelo Hub",
                           "promise": "Promessa publicada pelo Marketing Hub",
                           "audience": "Mulheres urbanas",
-                          "priceLabel": "",
+                          "priceLabel": "R$67",
                           "theme": {
                             "primary": "#7a2444",
                             "accent": "#d6a75c",
@@ -131,7 +132,7 @@ class ProductCatalogServiceTest {
                           "name": "Método MUSA pela segunda base",
                           "promise": "Promessa publicada pelo fallback",
                           "audience": "Mulheres urbanas",
-                          "priceLabel": "",
+                          "priceLabel": "R$67",
                           "theme": {
                             "primary": "#7a2444",
                             "accent": "#d6a75c",

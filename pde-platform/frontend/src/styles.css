@@ -2095,6 +2095,30 @@ h3 {
   white-space: nowrap;
 }
 
+.paywall-price-highlight {
+  align-items: center;
+  background: #fff8f3;
+  border: 1px solid rgba(214, 167, 92, 0.8);
+  color: #2f5952;
+  display: inline-flex;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 10px 14px;
+}
+
+.paywall-price-highlight span {
+  color: #6b5a51;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.paywall-price-highlight strong {
+  color: #7a2444;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
 .workspace-grid {
   display: grid;
   gap: 24px;

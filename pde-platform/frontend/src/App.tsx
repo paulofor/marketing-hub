@@ -218,7 +218,7 @@ const fallbackProduct: ProductExperience = {
   name: 'Método MUSA - Experiência Guiada de 7 Dias',
   promise: 'Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.',
   audience: 'Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.',
-  priceLabel: '',
+  priceLabel: 'R$67',
   theme: {
     primary: '#7a2444',
     accent: '#d6a75c',
@@ -2577,10 +2577,16 @@ function App() {
             <p className="section-kicker">Liberar área completa</p>
             <h2>Assine o Clube MUSA para continuar seu plano personalizado dos 7 dias.</h2>
             <p>Seu Mapa de Presença inicial já mostrou o primeiro sinal. O acesso completo libera os próximos dias, a sequência de microações e o acompanhamento para transformar isso em presença repetível.</p>
+            {currentProduct.priceLabel && (
+              <div className="paywall-price-highlight" aria-label={`Preço do acesso completo: ${currentProduct.priceLabel}`}>
+                <span>Acesso completo</span>
+                <strong>{currentProduct.priceLabel}</strong>
+              </div>
+            )}
           </div>
           <button className="primary-button" onClick={handleSubscriptionClick}>
             <CreditCard size={18} />
-            Liberar meu plano de 7 dias
+            {currentProduct.priceLabel ? `Liberar por ${currentProduct.priceLabel}` : 'Liberar meu plano de 7 dias'}
           </button>
         </section>
       )}

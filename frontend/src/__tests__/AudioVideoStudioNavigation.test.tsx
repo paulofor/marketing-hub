@@ -97,9 +97,54 @@ describe("audio video studio navigation", () => {
     expect(
       screen.getByRole("heading", { name: /lista de projetos/i }),
     ).toBeTruthy();
-    expect(await screen.findByText(/Projeto MUSA/i)).toBeTruthy();
+    const projectLink = await screen.findByRole("link", {
+      name: /#7 projeto musa/i,
+    });
+    expect(projectLink.getAttribute("href")).toBe(
+      "/audio-video-studio/projects/7",
+    );
     expect(screen.getByText(/READY_FOR_SCRIPT/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: /novo projeto/i })).toBeTruthy();
+  });
+
+  it("opens audio video editor with persisted project loaded", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/projects/7") {
+        return Promise.resolve({
+          data: {
+            id: 7,
+            title: "Projeto MUSA carregado",
+            objective: "Aumentar inicio do diagnostico.",
+            storyText: "Historia persistida para continuar edicao.",
+            contextType: "PDE",
+            productionMode: "STORY_FIRST_AUDIO_VIDEO",
+            targetChannel: "PDE",
+            format: "VERTICAL_9_16",
+            status: "READY_FOR_SCRIPT",
+            ctaText: "Ver meu plano MUSA",
+            visualReferences: "Video HLS da v6",
+            primaryMetric: "DIAGNOSTIC_START",
+          },
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/projects/7"]);
+
+    expect(
+      await screen.findByDisplayValue(/Projeto MUSA carregado/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByDisplayValue(/Historia persistida para continuar edicao/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /salvar continuidade/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /voltar para lista de projetos/i }),
+    ).toBeTruthy();
   });
 
   it("renders example project when there are no persisted projects", async () => {

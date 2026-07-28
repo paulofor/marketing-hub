@@ -418,6 +418,10 @@ export default function App() {
                 element={<AudioVideoStudioProjectsPage />}
               />
               <Route
+                path="/audio-video-studio/projects/:projectId"
+                element={<AudioVideoStudioPage />}
+              />
+              <Route
                 path="/videos/providers"
                 element={<VideoProviderManagementPage />}
               />

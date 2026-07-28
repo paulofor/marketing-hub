@@ -96,10 +96,19 @@ export default function AudioVideoStudioProjectsPage() {
                 {projects.map((project) => (
                   <tr key={project.id}>
                     <td>
-                      <strong>
-                        {project.isExample ? project.id : `#${project.id}`}
-                      </strong>
-                      <span>{project.title}</span>
+                      <Link
+                        className="audio-video-studio-page__project-open-link"
+                        to={
+                          project.isExample
+                            ? "/audio-video-studio"
+                            : `/audio-video-studio/projects/${project.id}`
+                        }
+                      >
+                        <strong>
+                          {project.isExample ? project.id : `#${project.id}`}
+                        </strong>
+                        <span>{project.title}</span>
+                      </Link>
                       <small>{project.objective}</small>
                       {project.isExample ? (
                         <small>

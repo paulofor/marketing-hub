@@ -158,6 +158,7 @@ import FashionChatValidationPage from "./pages/fashionChat/FashionChatValidation
 import VideoHubPage from "./pages/video/VideoHubPage";
 import VideoProviderManagementPage from "./pages/video/VideoProviderManagementPage";
 import CreativeVideoReviewPage from "./pages/creative/CreativeVideoReviewPage";
+import AudioVideoStudioPage from "./pages/audioVideoStudio/AudioVideoStudioPage";
 
 function LegacyNicheRedirect() {
   const { nicheId } = useParams();
@@ -395,6 +396,10 @@ export default function App() {
                 element={<ImageGeneratorPage />}
               />
               <Route path="/videos" element={<VideoHubPage />} />
+              <Route
+                path="/audio-video-studio"
+                element={<AudioVideoStudioPage />}
+              />
               <Route
                 path="/videos/providers"
                 element={<VideoProviderManagementPage />}

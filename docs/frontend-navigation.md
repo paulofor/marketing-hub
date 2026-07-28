@@ -48,6 +48,9 @@ flowchart TD
     root --> funnels("/funnels")
     funnels --> funnel_new("/funnels/new")
     funnels --> funnel_edit("/funnels/:id/edit")
+    root --> videos("/videos")
+    videos --> video_providers("/videos/providers")
+    root --> audio_video_studio("/audio-video-studio")
 ```
 
 The `*` route not shown above renders a simple `Início` placeholder.

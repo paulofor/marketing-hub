@@ -22,6 +22,7 @@ import {
   Image,
   Instagram,
   MessageSquare,
+  Mic2,
   Video,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
@@ -133,6 +134,11 @@ const NAV_SECTIONS: NavSection[] = [
             icon: ShieldCheck,
           },
         ],
+      },
+      {
+        to: "/audio-video-studio",
+        label: "Estudio de Audio e Video",
+        icon: Mic2,
       },
       {
         to: "/creative-video-review",

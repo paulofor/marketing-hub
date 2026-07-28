@@ -1,0 +1,15 @@
+services:
+  pde-monitor-worker:
+    image: ${PDE_MONITOR_WORKER_IMAGE:-ghcr.io/marketing-hub-org/marketing-hub/pde-monitor-worker:latest}
+    container_name: pde-monitor-worker
+    restart: unless-stopped
+    ports:
+      - "${PDE_MONITOR_WORKER_PORT:-8099}:${SERVER_PORT:-8099}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      SERVER_PORT: ${SERVER_PORT:-8099}
+      LOG_FILE_NAME: ${LOG_FILE_NAME:-/tmp/pde-monitor-worker.log}
+      PDE_MONITOR_DB_URL: ${PDE_MONITOR_DB_URL}
+      PDE_MONITOR_DB_USERNAME: ${PDE_MONITOR_DB_USERNAME}
+      PDE_MONITOR_DB_PASSWORD: ${PDE_MONITOR_DB_PASSWORD}

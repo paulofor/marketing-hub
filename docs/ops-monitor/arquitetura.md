@@ -2,6 +2,8 @@
 
 O `ops-monitor-worker` é o executor operacional do monitoramento de saúde dos módulos do Marketing Hub.
 
+Para PDEs críticos publicados, existe um módulo separado: `pde-monitor-worker`. Ele é uma exceção operacional deliberada para disponibilidade 24/7 de produtos digitais vendidos ou usados em campanha ativa.
+
 ## Responsabilidade
 
 - Executar verificações periódicas de saúde.
@@ -15,6 +17,25 @@ O `ops-monitor-worker` é o executor operacional do monitoramento de saúde dos 
 - O backend principal é a fonte de verdade para persistência, histórico e dados exibidos no frontend.
 - O núcleo `com.marketinghub.opsmonitor.pipeline` não conhece etapas concretas.
 - As etapas `healthcheck`, `availability` e `logscan` são independentes entre si.
+
+Essa separação continua válida para o `ops-monitor-worker`. A exceção de banco direto pertence somente ao `pde-monitor-worker`, que lê PDEs críticos em `ops_monitored_module` e grava verificações/incidentes diretamente nas tabelas operacionais.
+
+## PDE Monitor Worker
+
+Responsabilidade:
+
+- monitorar somente módulos `type=PDE`, `criticality=CRITICAL` e `enabled=1`;
+- verificar a URL pública do PDE, priorizando `monitoring_url`;
+- gravar cada verificação em `ops_module_health_check`;
+- abrir incidente em `ops_module_incident` quando o PDE ficar `OFFLINE` ou `DEGRADED`;
+- encerrar incidente aberto quando o PDE voltar a `ONLINE`.
+
+Proibições:
+
+- não executar pipeline;
+- não alterar contrato comercial do PDE;
+- não liberar acesso ou processar checkout;
+- não consumir endpoints administrativos como fonte primária de trabalho.
 
 ## Módulos iniciais
 

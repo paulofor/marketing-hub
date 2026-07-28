@@ -188,6 +188,21 @@ O contrato `persuasiveJourney` publicado pelo Marketing Hub deve declarar esses 
 
 Toda aplicação PDE usada como destino de campanha deve registrar eventos próprios no backend PDE antes de escalar tráfego pago. A medição mínima deve permitir reconstruir o funil por produto, campanha, origem e dispositivo.
 
+### Monitoramento crítico 24/7 de PDEs
+
+PDE publicado, vendido ou usado como destino ativo de campanha deve ter monitoramento operacional dedicado, independente do backend principal.
+
+Regra canônica:
+
+- o módulo dedicado para disponibilidade crítica é `pde-monitor-worker`;
+- ele pode acessar diretamente o MySQL como exceção explícita à regra geral de que módulos externos não acessam banco;
+- essa exceção vale somente para leitura de PDEs críticos em `ops_monitored_module` e gravação de saúde/incidentes em `ops_module_health_check` e `ops_module_incident`;
+- o monitor deve verificar a URL pública operacional do PDE, priorizando `monitoring_url` quando existir;
+- o monitor não pode orquestrar pipeline, alterar experiência comercial, liberar acesso, modificar produto, processar checkout ou substituir o backend PDE;
+- o objetivo comercial é detectar indisponibilidade de venda/experiência 24/7 sem depender do backend principal ou de uma cadeia de contratos internos.
+
+O `ops-monitor-worker` continua existindo para monitoramento geral de módulos. O `pde-monitor-worker` existe porque PDE ativo em campanha é superfície direta de venda e precisa de caminho curto de observabilidade.
+
 Eventos mínimos:
 
 - `PED_ENTRY`;

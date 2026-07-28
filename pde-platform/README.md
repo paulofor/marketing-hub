@@ -115,6 +115,7 @@ coerente com o histórico da jornada.
 - A versao 5 do Clube MUSA deve responder em `https://v5.clubemusa.com.br`.
 - O dominio raiz `https://clubemusa.com.br` nao deve ser usado como URL primaria de campanha quando existir subdominio versionado para a experiencia medida.
 - Cada nova versao de PDE deve publicar e validar seu proprio subdominio, mantendo metricas, UTMs e criativos separados por `experienceVersion`.
+- Duas versoes comerciais diferentes de PDE nunca podem compartilhar a mesma URL publica primaria. Se a URL for a mesma, a experiencia deve ser tratada como a mesma versao para campanha, analytics e decisao de escala.
 - A v5 usa `musa-pde-entry-v5-video-explicativo`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
 - A v6 usa `musa-pde-entry-v6-video-motivacional`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
 - Em subdominio versionado conhecido, o hostname tem prioridade sobre overrides globais de runtime. Assim, o mesmo deploy pode servir `v5.clubemusa.com.br` e `v6.clubemusa.com.br` simultaneamente sem misturar experiencia, video ou analytics por `experienceVersion`.

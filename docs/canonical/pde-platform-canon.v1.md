@@ -266,6 +266,8 @@ Um mesmo produto PDE pode ter múltiplas versões produtivas simultâneas para t
 Regras obrigatórias:
 
 - cada versão pública deve ter subdomínio próprio, slot próprio no Marketing Hub e `experienceVersion` própria;
+- duas versões comerciais diferentes de PDE nunca podem compartilhar a mesma URL pública primária;
+- se a URL pública for igual, a versão comercial deve ser considerada a mesma para fins de campanha, analytics e decisão de escala;
 - o deploy produtivo do PDE deve rodar automaticamente em `main` quando houver alteração versionada do `pde-platform`, mantendo `workflow_dispatch` apenas como acionamento manual adicional;
 - o mesmo motor pode servir múltiplos subdomínios, desde que frontend e backend resolvam a experiência pelo hostname versionado antes de qualquer override global de runtime;
 - nenhum deploy pode ser considerado pronto se `v5` e `v6` entregarem o mesmo `experienceVersion` por engano;
@@ -298,6 +300,8 @@ O modelo canônico é um **slot produtivo PDE** persistido no backend principal 
 - experimento de origem quando existir.
 
 Slots produtivos existem para separar aprendizado comercial e reduzir risco operacional. Um teste novo não deve obrigar a troca global de `clubemusa.com.br` quando for possível publicar uma variação em subdomínio próprio, mantendo eventos por `experienceVersion`, URL de anúncio explícita e histórico de campanha rastreável.
+
+A URL pública primária do slot é parte da identidade comercial da versão. Portanto, não pode existir mais de um slot ativo ou pronto para tráfego com a mesma `publicUrl` apontando para `experienceVersion` diferente. Quando houver reaproveitamento temporário de domínio para rollback ou correção operacional, o Marketing Hub deve preservar a mesma versão comercial ou encerrar o slot anterior antes de ativar outro, registrando a data de troca para não contaminar métricas.
 
 Quando a versão comercial for numerada, o slot produtivo deve usar o subdomínio correspondente à versão, como `v5.clubemusa.com.br` para a versão 5. O domínio raiz pode existir como entrada institucional, legado ou redirecionamento, mas não deve ser a URL primária de uma campanha que mede uma versão específica.
 

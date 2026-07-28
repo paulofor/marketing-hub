@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-28-musa-v6-approved-hero-video.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-27-ops-monitor-pde-hls-streams.yaml
       relativeToChangelogFile: true
   - include:

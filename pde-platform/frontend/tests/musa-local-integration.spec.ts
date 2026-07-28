@@ -26,8 +26,10 @@ test('v5 e v6 usam backend PDE local real sem HLS de slides e mantem analytics p
 
   await page.goto('http://v6.clubemusa.com.br:57180/?utm_source=local&utm_campaign=v6_local_validation');
   await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
-  await expect(page.locator('video.public-hero-video')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
+  await expect(page.locator('video.public-hero-video')).toHaveCount(1);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', true);
+  await expect(page.locator('video.public-hero-video')).toHaveJSProperty('controls', true);
 
   await expect.poll(async () => {
     const response = await request.get(`http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/summary`);
@@ -36,6 +38,6 @@ test('v5 e v6 usam backend PDE local real sem HLS de slides e mantem analytics p
       (metric: { experienceVersion: string }) => metric.experienceVersion === v6ExperienceVersion,
     );
     const events = new Set((summary.eventBreakdown ?? []).map((metric: { eventType: string }) => metric.eventType));
-    return Boolean(versionMetric?.totalEvents > 0 && !events.has('VIDEO_VIEWED') && !events.has('VIDEO_PLAY'));
+    return Boolean(versionMetric?.totalEvents > 0 && events.has('VIDEO_VIEWED'));
   }).toBeTruthy();
 });

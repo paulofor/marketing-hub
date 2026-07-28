@@ -34,6 +34,25 @@ type SupportMaterial = {
   url: string;
 };
 
+type HeroVideo = {
+  experienceVersion: string;
+  placement: string;
+  playbackUrl: string;
+  posterUrl?: string;
+  autoplay?: boolean;
+  muted?: boolean;
+  controls?: boolean;
+  loop?: boolean;
+  playsInline?: boolean;
+  source?: string;
+  assetId?: number;
+  experimentVideoAssetId?: number;
+  salesVideoProfileId?: number;
+  salesVideoJobId?: number;
+  reviewStatus?: string;
+  status?: string;
+};
+
 type ScientificEvidencePack = {
   version: string;
   principles: string[];
@@ -61,6 +80,7 @@ type ProductExperience = {
   diagnostic: Diagnostic;
   missions: Mission[];
   supportMaterials: SupportMaterial[];
+  heroVideos?: HeroVideo[];
   scientificEvidencePack?: ScientificEvidencePack;
   completionOffer: string;
 };
@@ -175,7 +195,7 @@ const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
 const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
 const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
-const MUSA_V6_MICRO_EXPERIENCE_VIDEO_URL = '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8';
+const MUSA_APPROVED_HERO_VIDEO_URL = 'https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/07/25/misc/c03a67236572-musa-pde-v5-heygen-captioned-final.mp4';
 const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string }> = {
   'v5.clubemusa.com.br': {
     experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
@@ -244,6 +264,26 @@ const fallbackProduct: ProductExperience = {
       type: 'Infográfico',
       description: 'Resumo visual do método: coerência, redução de ruído e assinatura pessoal.',
       url: '/materials/mapa-visual-musa.png',
+    },
+  ],
+  heroVideos: [
+    {
+      experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
+      placement: 'public_diagnostic_initial_explainer',
+      playbackUrl: MUSA_APPROVED_HERO_VIDEO_URL,
+      posterUrl: '/assets/musa-editorial-presenca.png',
+      autoplay: true,
+      muted: true,
+      controls: true,
+      loop: false,
+      playsInline: true,
+      source: 'MARKETING_HUB_APPROVED_EXPERIMENT_VIDEO',
+      assetId: 1935,
+      experimentVideoAssetId: 22,
+      salesVideoProfileId: 35,
+      salesVideoJobId: 20462,
+      reviewStatus: 'APPROVED',
+      status: 'READY',
     },
   ],
   completionOffer: 'Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais.',
@@ -579,11 +619,21 @@ function isBlockedMusaSlideVideoUrl(videoUrl: string) {
   ].some((blockedPath) => videoUrl.includes(blockedPath));
 }
 
-function resolveHeroVideoUrl(experienceVersion: string) {
-  if (experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION) {
-    return MUSA_V6_MICRO_EXPERIENCE_VIDEO_URL;
-  }
+function selectApprovedHeroVideo(productExperience: ProductExperience, experienceVersion: string) {
+  return (productExperience.heroVideos ?? []).find((video) =>
+    video.experienceVersion === experienceVersion
+    && video.placement === 'public_diagnostic_initial_explainer'
+    && Boolean(video.playbackUrl?.trim())
+    && video.status === 'READY'
+    && video.reviewStatus === 'APPROVED'
+    && video.source === 'MARKETING_HUB_APPROVED_EXPERIMENT_VIDEO');
+}
 
+function resolveHeroVideoUrl(productExperience: ProductExperience, experienceVersion: string) {
+  const approvedHeroVideo = selectApprovedHeroVideo(productExperience, experienceVersion);
+  if (approvedHeroVideo) {
+    return approvedHeroVideo.playbackUrl.trim();
+  }
   const streamOverride = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
   if (streamOverride) {
     return isBlockedMusaSlideVideoUrl(streamOverride) ? '' : streamOverride;
@@ -707,7 +757,8 @@ function App() {
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
-  const heroVideoUrl = resolveHeroVideoUrl(currentExperienceVersion);
+  const heroVideo = selectApprovedHeroVideo(currentProduct, currentExperienceVersion);
+  const heroVideoUrl = resolveHeroVideoUrl(currentProduct, currentExperienceVersion);
   const heroPlaybackUrl = heroVideoUrl;
 
   const activeMission = useMemo(() => {
@@ -1934,12 +1985,12 @@ function App() {
                   <AdaptiveVideoPlayer
                     className="public-hero-video"
                     src={heroPlaybackUrl}
-                    autoPlay
-                    controls={showMotivationalTimelineVideo}
-                    muted
-                    loop={!showMotivationalTimelineVideo}
-                    playsInline
-                    poster="/assets/musa-editorial-presenca.png"
+                    autoPlay={heroVideo?.autoplay ?? true}
+                    controls={heroVideo?.controls ?? showMotivationalTimelineVideo}
+                    muted={heroVideo?.muted ?? true}
+                    loop={heroVideo?.loop ?? !showMotivationalTimelineVideo}
+                    playsInline={heroVideo?.playsInline ?? true}
+                    poster={heroVideo?.posterUrl ?? "/assets/musa-editorial-presenca.png"}
                     onPlaybackEvent={(event) => {
                       if (event.type === 'play') {
                         trackPublicHeroVideoPlayback('VIDEO_PLAY', {

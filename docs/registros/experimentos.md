@@ -6208,5 +6208,13 @@
 
 - causa-raiz confirmada: a v6 usava o vídeo motivacional na primeira dobra com `muted=false` e `autoplay=false`, fazendo o navegador exibir o primeiro frame parado e criando percepção de vídeo indisponível.
 - foi feito: o player HLS da v6 passou a iniciar automaticamente em modo mudo, com `playsInline` e controles visíveis para a visitante ativar som/play quando desejar.
-- prevenção: os testes da `pde-platform` agora validam que a v6 publicada usa o HLS correto, autoplay mudo, controles ativos e sem loop.
+- prevenção: os testes da `pde-platform` agora validam que a v6 publicada usa vídeo aprovado pelo Marketing Hub, autoplay mudo, controles ativos e sem loop.
 - impacto comercial esperado: aumentar consumo imediato da promessa em vídeo e reduzir abandono por confusão na primeira dobra antes do diagnóstico.
+
+## 2026-07-28 — PDE MUSA v6: vídeo hero rastreável no Marketing Hub
+
+- causa-raiz confirmada via MCP: a v6 publicada usava um HLS estático empacotado no frontend, enquanto o Marketing Hub já tinha vídeo `READY` e `APPROVED` para o produto MUSA: `experiment_video_asset.id=22`, `asset.id=1935`, `sales_video_profile.id=35`, `sales_video_job.id=20462`.
+- decisão comercial: a v6 deve usar somente vídeo hero aprovado e vinculado no contrato público do produto, para que a tela de vídeos, custos, revisão e experimentos sejam a fonte operacional do ativo.
+- foi feito: o contrato PDE passou a aceitar `heroVideos`, o fallback local da `pde-platform` usa o vídeo aprovado e o frontend escolhe o hero por `experienceVersion`, `placement`, `READY` e `APPROVED`.
+- prevenção: o changelog do backend principal grava o vínculo rastreável no `pde_experience_json` do produto MUSA, removendo a dependência do HLS solto como fonte principal da primeira dobra.
+- impacto comercial esperado: aumentar governança e confiança da escala da v6, evitando que campanhas rodem com vídeo fora da biblioteca, sem custo/revisão/asset rastreável.

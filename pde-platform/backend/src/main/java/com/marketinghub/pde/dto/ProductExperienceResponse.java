@@ -15,6 +15,7 @@ public record ProductExperienceResponse(
         DiagnosticDto diagnostic,
         List<MissionDto> missions,
         List<SupportMaterialDto> supportMaterials,
+        List<HeroVideoDto> heroVideos,
         ScientificEvidencePackDto scientificEvidencePack,
         String completionOffer
 ) {
@@ -38,6 +39,26 @@ public record ProductExperienceResponse(
 
     /** Define um material de apoio disponível na biblioteca do produto. */
     public record SupportMaterialDto(String title, String type, String description, String url) {}
+
+    /** Define um vídeo hero aprovado para uma versão pública específica do PDE. */
+    public record HeroVideoDto(
+            String experienceVersion,
+            String placement,
+            String playbackUrl,
+            String posterUrl,
+            Boolean autoplay,
+            Boolean muted,
+            Boolean controls,
+            Boolean loop,
+            Boolean playsInline,
+            String source,
+            Long assetId,
+            Long experimentVideoAssetId,
+            Long salesVideoProfileId,
+            Long salesVideoJobId,
+            String reviewStatus,
+            String status
+    ) {}
 
     /** Define a base científica operacional usada pela IA sem expor artigo bruto à cliente. */
     public record ScientificEvidencePackDto(

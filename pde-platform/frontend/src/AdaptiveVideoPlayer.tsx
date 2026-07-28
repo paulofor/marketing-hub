@@ -63,7 +63,10 @@ export function AdaptiveVideoPlayer({
     progressMarksRef.current.clear();
 
     if (!isHlsSource(src)) {
-      playbackEventRef.current?.({ type: 'error', ...readPlaybackState(video) });
+      video.src = src;
+      if (autoPlay) {
+        video.play().catch(() => undefined);
+      }
       return undefined;
     }
 

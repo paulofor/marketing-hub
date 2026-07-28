@@ -2,6 +2,7 @@ package com.marketinghub.pde.service;
 
 import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.dto.ProductExperienceResponse.DiagnosticDto;
+import com.marketinghub.pde.dto.ProductExperienceResponse.HeroVideoDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.MissionDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.ScientificEvidencePackDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.ScientificReferenceDto;
@@ -90,6 +91,7 @@ public class ProductCatalogService {
                 product.diagnostic(),
                 product.missions(),
                 product.supportMaterials(),
+                product.heroVideos(),
                 product.scientificEvidencePack(),
                 product.completionOffer());
     }
@@ -233,6 +235,24 @@ public class ProductCatalogService {
                                 "Infográfico",
                                 "Resumo visual do método: coerência, redução de ruído e assinatura pessoal.",
                                 "/materials/mapa-visual-musa.png")),
+                List.of(
+                        new HeroVideoDto(
+                                MUSA_V6_EXPERIENCE_VERSION,
+                                "public_diagnostic_initial_explainer",
+                                "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/07/25/misc/c03a67236572-musa-pde-v5-heygen-captioned-final.mp4",
+                                "/assets/musa-editorial-presenca.png",
+                                true,
+                                true,
+                                true,
+                                false,
+                                true,
+                                "MARKETING_HUB_APPROVED_EXPERIMENT_VIDEO",
+                                1935L,
+                                22L,
+                                35L,
+                                20462L,
+                                "APPROVED",
+                                "READY")),
                 createMusaScientificEvidencePack(),
                 "Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais de presença, estilo e autocuidado acessível.");
     }

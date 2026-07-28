@@ -280,6 +280,7 @@ Para o Clube MUSA, a regra operacional atual é:
 - `v5.clubemusa.com.br` deve servir `musa-pde-entry-v5-video-explicativo` sem vídeo de slides gerado artificialmente;
 - `v6.clubemusa.com.br` deve servir `musa-pde-entry-v6-video-motivacional` sem vídeo de slides gerado artificialmente;
 - vídeos comerciais do MUSA só podem ser usados quando nascerem da estrutura versionada de produção de vídeos do Marketing Hub, com roteiro, job, asset e URL de reprodução auditáveis;
+- vídeos hero por versão devem ser declarados no contrato público do produto em `heroVideos`, incluindo `experienceVersion`, `placement`, `playbackUrl`, `assetId`, `experimentVideoAssetId`, `salesVideoProfileId`, `salesVideoJobId`, `status` e `reviewStatus`;
 - é proibido gerar MP4/HLS comercial do MUSA a partir dos slides/imagens do diagnóstico (`musa-diagnostic-slide-*`) ou servir URLs antigas como `/assets/hls/musa-v5-video-explicativo/index.m3u8`, `/assets/hls/musa-v6-video-motivacional/index.m3u8`, `/assets/musa-v5-video-explicativo.mp4` ou `/assets/musa-v6-video-motivacional.mp4`.
 
 Quando houver hipóteses, criativos ou primeiras dobras concorrentes, a operação deve criar slots produtivos paralelos em vez de depender de ambiente intermediário. A tela de experimento apenas escolhe a versão medida; criação, manutenção e publicação das URLs ficam no fluxo do produto e no pipeline versionado do repositório.

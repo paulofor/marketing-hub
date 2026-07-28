@@ -48,7 +48,7 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: /Descubra em 30 segundos/i,
+      name: /look parecer incompleto/i,
       level: 1,
     }),
   ).toBeVisible();
@@ -144,7 +144,7 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: /Descubra em 30 segundos/i,
+      name: /look parecer incompleto/i,
       level: 1,
     }),
   ).toBeVisible();
@@ -166,18 +166,18 @@ test('bloqueia video de slides na versao publicada e permite controle sem player
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
   await expect(page.locator('video.public-hero-video')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=video');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
   await expect(page.locator('video.public-hero-video')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=control');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
 });
 
 test('nao exibe player na versao v6 motivacional sem video real aprovado', async ({ page }) => {
@@ -195,7 +195,7 @@ test('nao exibe player na versao v6 motivacional sem video real aprovado', async
 
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: /Descubra em 30 segundos/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /look parecer incompleto/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
   await expect(page.locator('video.public-hero-video')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();

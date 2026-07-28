@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +77,9 @@ public class ExperimentFunnelService {
   private static final int MAX_CAMPAIGN_CODE_LENGTH = 190;
   private static final long PAGE_VIEW_DEDUPLICATION_WINDOW_SECONDS = 3;
   private static final String DEFAULT_PDE_PRODUCT_SLUG = "metodo-musa-7-dias";
+  private static final Pattern MUSA_VERSIONED_HOST_PATTERN =
+      Pattern.compile(
+          "https?://v(\\d+)\\.clubemusa\\.com\\.br(?:[:/].*)?", Pattern.CASE_INSENSITIVE);
 
   /** Consolida as métricas automáticas e eventos registrados por etapa do funil. */
   public List<ExperimentFunnelStageDto> summarize(Long experimentId) {
@@ -1093,12 +1098,23 @@ public class ExperimentFunnelService {
     }
 
     List<String> attributionCodes = fetchExperimentAttributionCodes(experiment.getId());
-    PdeMembershipMetric metric = aggregatePdeMembershipMetric(summary, attributionCodes);
+    PdeMembershipMetric metric =
+        aggregatePdeMembershipMetric(summary, attributionCodes, experiment.getFollowUpActionUrl());
     mergeMetric(
         stages,
         ExperimentFunnelStage.VISUALIZACAO_FORM,
         new AggregatedMetric(metric.pdeEntries(), null, metric.lastEventAt()),
         "Entradas reais do PDE/MUSA filtradas por UTM da campanha do experimento");
+    mergeMetric(
+        stages,
+        ExperimentFunnelStage.VIDEO_VISTO_PARCIAL,
+        new AggregatedMetric(metric.videoPartial(), null, metric.lastEventAt()),
+        "Consumo parcial do vídeo registrado no analytics PDE/MUSA");
+    mergeMetric(
+        stages,
+        ExperimentFunnelStage.VIDEO_VISTO_COMPLETO,
+        new AggregatedMetric(metric.videoComplete(), null, metric.lastEventAt()),
+        "Consumo completo do vídeo registrado no analytics PDE/MUSA");
     mergeMetric(
         stages,
         ExperimentFunnelStage.ENVIO_FORM,
@@ -1199,24 +1215,18 @@ public class ExperimentFunnelService {
 
   /**
    * Agrega métricas PDE usando apenas origens de tráfego ligadas à campanha quando os códigos
-   * existem.
+   * existem; antes da campanha existir, usa a versão do slot publicado no destino do experimento.
    */
   private PdeMembershipMetric aggregatePdeMembershipMetric(
-      PdeAnalyticsSummary summary, List<String> attributionCodes) {
+      PdeAnalyticsSummary summary, List<String> attributionCodes, String followUpActionUrl) {
     if (attributionCodes == null
         || attributionCodes.isEmpty()
         || summary.trafficSources() == null) {
-      return new PdeMembershipMetric(
-          summary.pedEntries(),
-          summary.loginStarted(),
-          summary.paywallViewed(),
-          Math.max(summary.subscriptionClicked(), summary.checkoutStarted()),
-          summary.subscriptionApproved(),
-          summary.accessReleased(),
-          summary.firstUse(),
-          null);
+      return aggregatePdeMembershipMetricByExperienceVersion(summary, followUpActionUrl);
     }
     long pdeEntries = 0;
+    long videoPartial = 0;
+    long videoComplete = 0;
     long loginStarted = 0;
     long paywallViewed = 0;
     long checkoutIntent = 0;
@@ -1227,6 +1237,8 @@ public class ExperimentFunnelService {
         continue;
       }
       pdeEntries += source.pdeEntries();
+      videoPartial += source.videoPartial();
+      videoComplete += source.videoComplete();
       loginStarted += source.loginStarted();
       paywallViewed += source.paywallViewed();
       checkoutIntent += source.checkoutStarted();
@@ -1235,6 +1247,8 @@ public class ExperimentFunnelService {
     }
     return new PdeMembershipMetric(
         pdeEntries,
+        videoPartial,
+        videoComplete,
         loginStarted,
         paywallViewed,
         checkoutIntent,
@@ -1242,6 +1256,70 @@ public class ExperimentFunnelService {
         summary.accessReleased(),
         summary.firstUse(),
         lastEventAt);
+  }
+
+  /**
+   * Agrega o funil PDE pela versão comercial quando ainda não há UTMs/campanha gravadas para
+   * atribuição.
+   */
+  private PdeMembershipMetric aggregatePdeMembershipMetricByExperienceVersion(
+      PdeAnalyticsSummary summary, String followUpActionUrl) {
+    Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> matchingVersion =
+        findMatchingExperienceVersion(summary, followUpActionUrl);
+    if (matchingVersion.isPresent()) {
+      PdeAnalyticsSummary.PdeExperienceVersionMetric version = matchingVersion.get();
+      return new PdeMembershipMetric(
+          version.pdeEntries(),
+          version.videoPartial(),
+          version.videoComplete(),
+          version.loginStarted(),
+          version.paywallViewed(),
+          Math.max(version.subscriptionClicked(), version.checkoutStarted()),
+          version.subscriptionApproved(),
+          summary.accessReleased(),
+          summary.firstUse(),
+          parsePdeInstant(summary.lastEventAt()));
+    }
+    return new PdeMembershipMetric(
+        summary.pedEntries(),
+        sumPdeEventTypes(summary, "VIDEO_PROGRESS_25", "VIDEO_PROGRESS_50", "VIDEO_PROGRESS_75"),
+        sumPdeEventTypes(summary, "VIDEO_COMPLETED"),
+        summary.loginStarted(),
+        summary.paywallViewed(),
+        Math.max(summary.subscriptionClicked(), summary.checkoutStarted()),
+        summary.subscriptionApproved(),
+        summary.accessReleased(),
+        summary.firstUse(),
+        parsePdeInstant(summary.lastEventAt()));
+  }
+
+  /** Localiza a versão comercial do PDE correspondente ao slot versionado da URL do experimento. */
+  private Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> findMatchingExperienceVersion(
+      PdeAnalyticsSummary summary, String followUpActionUrl) {
+    if (summary.experienceVersions() == null || followUpActionUrl == null) {
+      return Optional.empty();
+    }
+    Matcher matcher = MUSA_VERSIONED_HOST_PATTERN.matcher(followUpActionUrl.trim());
+    if (!matcher.matches()) {
+      return Optional.empty();
+    }
+    String versionToken = "-v" + matcher.group(1) + "-";
+    return summary.experienceVersions().stream()
+        .filter(metric -> metric != null && metric.experienceVersion() != null)
+        .filter(metric -> metric.experienceVersion().contains(versionToken))
+        .findFirst();
+  }
+
+  /** Soma eventos PDE globais preservando compatibilidade com contratos antigos do backend PDE. */
+  private long sumPdeEventTypes(PdeAnalyticsSummary summary, String... eventTypes) {
+    if (summary.events() == null || eventTypes == null || eventTypes.length == 0) {
+      return 0;
+    }
+    List<String> expected = Arrays.asList(eventTypes);
+    return summary.events().stream()
+        .filter(metric -> metric != null && expected.contains(metric.eventType()))
+        .mapToLong(PdeAnalyticsSummary.PdeEventMetric::total)
+        .sum();
   }
 
   /** Confirma se a origem PDE pertence ao experimento por campanha ou criativo Meta. */
@@ -2179,6 +2257,8 @@ public class ExperimentFunnelService {
   /** Métrica consolidada do funil PDE/MUSA já atribuída ao experimento. */
   private record PdeMembershipMetric(
       long pdeEntries,
+      long videoPartial,
+      long videoComplete,
       long loginStarted,
       long paywallViewed,
       long checkoutIntent,

@@ -98,7 +98,7 @@ class PostDeployMonitorServiceTest {
                 List.of(),
                 List.of(
                     new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v3", 80, 15, 15, 0, 0, 0, 0, 0, 0, 0)),
+                        "musa-pde-entry-v3", 80, 15, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
                 List.of(
                     new PdeAnalyticsSummary.PdeTrafficSourceMetric(
                         "Meta",
@@ -108,6 +108,8 @@ class PostDeployMonitorServiceTest {
                         "criativo-a",
                         15,
                         15,
+                        0,
+                        0,
                         0,
                         0,
                         0,
@@ -214,7 +216,7 @@ class PostDeployMonitorServiceTest {
                 List.of(new PdeAnalyticsSummary.PdeEventMetric("PRESENCE_MAP_CHOICE_SELECTED", 6)),
                 List.of(
                     new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v3", 120, 20, 20, 6, 0, 5, 2, 2, 1, 1)),
+                        "musa-pde-entry-v3", 120, 20, 20, 6, 0, 0, 0, 5, 2, 2, 1, 1)),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -262,9 +264,33 @@ class PostDeployMonitorServiceTest {
                 List.of(),
                 List.of(
                     new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v5-video-explicativo", 120, 30, 30, 0, 4, 0, 0, 0, 0, 0),
+                        "musa-pde-entry-v5-video-explicativo",
+                        120,
+                        30,
+                        30,
+                        0,
+                        4,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0),
                     new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v6-video-motivacional", 180, 40, 40, 0, 2, 0, 0, 0, 0, 0)),
+                        "musa-pde-entry-v6-video-motivacional",
+                        180,
+                        40,
+                        40,
+                        0,
+                        2,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0)),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -274,9 +300,7 @@ class PostDeployMonitorServiceTest {
 
     assertThat(response.pde().currentExperienceVersion())
         .isEqualTo("musa-pde-entry-v6-video-motivacional");
-    assertThat(response.pdeProductionSlots())
-        .extracting("sourceExperimentId")
-        .contains(76L);
+    assertThat(response.pdeProductionSlots()).extracting("sourceExperimentId").contains(76L);
   }
 
   /** Cria slot produtivo com domínio normalizado para permitir URLs paralelas de hipótese PDE. */

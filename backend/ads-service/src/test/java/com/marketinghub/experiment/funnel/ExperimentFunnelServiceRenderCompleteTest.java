@@ -932,6 +932,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         0,
                         0,
                         0,
+                        0,
+                        0,
                         0.0,
                         0.0,
                         0.0,
@@ -947,6 +949,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         1,
                         1,
                         1,
+                        0,
+                        0,
                         0,
                         0,
                         0,
@@ -1031,6 +1035,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         0,
                         0,
                         0,
+                        0,
+                        0,
                         0.0,
                         0.0,
                         0.0,
@@ -1050,6 +1056,110 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .orElseThrow();
     assertEquals(10, pdeEntry.getTotalCount());
     assertEquals(Instant.parse("2026-07-23T02:00:00Z"), pdeEntry.getLastEventAt());
+  }
+
+  /**
+   * Valida que o funil PDE sem campanha publicada usa a versão da URL do experimento e contabiliza
+   * consumo de vídeo.
+   */
+  @Test
+  void summarizePdeMembershipUsesExperimentVersionAndVideoMetricsBeforeCampaignExists() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(76L)
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .followUpActionUrl("https://v6.clubemusa.com.br")
+            .build();
+    when(experimentRepository.findById(76L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.aggregateManualByExperiment(76L, null)).thenReturn(List.of());
+    when(jdbcTemplate.queryForList(
+            any(String.class),
+            eq(String.class),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
+        .thenReturn(List.of());
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias"))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v5-video-explicativo",
+                2570,
+                195,
+                218,
+                225,
+                225,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                79377913,
+                "2026-07-28T22:04:06Z",
+                List.of(),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v5-video-explicativo",
+                        1269,
+                        108,
+                        106,
+                        0,
+                        4,
+                        20,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0),
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v6-video-motivacional",
+                        915,
+                        65,
+                        70,
+                        0,
+                        2,
+                        34,
+                        12,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0)),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of()));
+
+    var summary = service.summarize(76L);
+
+    var pdeEntry =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VISUALIZACAO_FORM)
+            .findFirst()
+            .orElseThrow();
+    var videoPartial =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VIDEO_VISTO_PARCIAL)
+            .findFirst()
+            .orElseThrow();
+    var videoComplete =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VIDEO_VISTO_COMPLETO)
+            .findFirst()
+            .orElseThrow();
+
+    assertEquals(70, pdeEntry.getTotalCount());
+    assertEquals(34, videoPartial.getTotalCount());
+    assertEquals(12, videoComplete.getTotalCount());
   }
 
   /** Valida que render-complete rejeita slug vazio. */

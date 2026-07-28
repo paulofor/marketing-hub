@@ -68,6 +68,7 @@ Quando uma alteração de PDE for publicada, o relatório/painel deve separar pe
 - versão da experiência;
 - data/hora de publicação;
 - eventos de entrada, clique, login, paywall, checkout e compra;
+- consumo de vídeo parcial e completo segmentado pela mesma versão/origem usada no funil;
 - decisão comercial tomada para aquela versão.
 
 Se a versão da experiência não estiver disponível nos eventos, a comparação deve ser considerada incompleta: pode indicar tendência por janela de tempo, mas não deve ser usada como prova limpa de melhora ou piora entre formatos.

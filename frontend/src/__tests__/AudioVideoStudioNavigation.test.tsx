@@ -37,6 +37,13 @@ describe("audio video studio navigation", () => {
       screen.getByRole("heading", { name: /estudio de audio e video/i }),
     ).toBeTruthy();
     expect(screen.getByText(/videos com narrativa, som, cenas/i)).toBeTruthy();
+    expect(screen.getByText(/video curto de 3 minutos/i)).toBeTruthy();
+    expect(
+      screen.getByRole("form", { name: /briefing do video de 3 minutos/i }),
+    ).toBeTruthy();
+    expect(screen.getByText(/estrutura de 3 minutos/i)).toBeTruthy();
+    expect(screen.getByText(/plano basico de cenas/i)).toBeTruthy();
+    expect(screen.getByText(/checklist de producao/i)).toBeTruthy();
     expect(screen.getByText(/o que continua onde esta/i)).toBeTruthy();
   });
 });

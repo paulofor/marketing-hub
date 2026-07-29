@@ -527,13 +527,13 @@ export default function CriativosTab({
   const creativeSections = [
     {
       id: "approved",
-      title: "Aprovados",
+      title: "Anúncios do produto aprovados",
       badgeClass: "text-bg-success",
       creatives: readyCreatives,
     },
     {
       id: "pending",
-      title: "Aguardando aprovação",
+      title: "Anúncios do produto em revisão",
       badgeClass: "text-bg-warning",
       creatives: pendingCreatives,
     },
@@ -896,7 +896,7 @@ export default function CriativosTab({
           </div>
         )}
         <label className="form-label" htmlFor="experiment-page-id">
-          Página do Facebook deste experimento
+          Página do Facebook usada pelo experimento
         </label>
         <div className="d-flex flex-wrap gap-2">
           <select
@@ -946,8 +946,9 @@ export default function CriativosTab({
           </button>
         </div>
         <div className="form-text">
-          Todos os criativos aprovados publicarão na página selecionada. Deixe
-          em branco para usar a página padrão configurada no worker.
+          Os anúncios do produto aprovados para este experimento publicarão na
+          página selecionada. Deixe em branco para usar a página padrão
+          configurada no worker.
         </div>
       </div>
       {pipelineAvailable ? (
@@ -1025,10 +1026,12 @@ export default function CriativosTab({
           <div className="creative-empty-icon" aria-hidden>
             🎨
           </div>
-          <h3 className="h6 fw-semibold mb-1">Nenhum criativo cadastrado</h3>
+          <h3 className="h6 fw-semibold mb-1">
+            Nenhum anúncio do produto em uso
+          </h3>
           <p className="text-muted mb-2">
-            Gere anúncios pelo pipeline para começar a testar variações e
-            construir seu acervo criativo.
+            Gere ou selecione anúncios do produto PDE antes de liberar tráfego
+            para este experimento.
           </p>
         </div>
       ) : creativeSections.length === 0 ? (

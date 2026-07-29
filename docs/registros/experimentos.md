@@ -1,3 +1,11 @@
+## 2026-07-29 — Experimento 76: anúncios passam a ser lidos como ativo do produto
+
+- causa-raiz confirmada no código: a aba Criativos do experimento consumia `/api/experiments/{id}/creatives`, reforçando o modelo antigo de criativo preso ao experimento, enquanto o produto PDE já possui biblioteca própria em `/api/products/{productId}/ads`.
+- problema comercial: o anúncio aprovado do experimento 76 aparecia na biblioteca do produto MUSA, mas a comparação do produto contava `creative_variant` e mostrava `0/0`, criando leitura errada de que o experimento não tinha anúncio aprovado.
+- foi feito: criado contrato `/api/products/experiments/{experimentId}/ads-in-use` para expor anúncios do produto em uso no experimento, a aba passou a consumir essa visão e os rótulos foram ajustados para “anúncios do produto”.
+- prevenção: a comparação do produto agora conta a tabela real `creative`, e testes de frontend/backend protegem o contrato para evitar retorno à leitura antiga.
+- impacto comercial esperado: preservar aprendizado criativo por produto PDE, evitar duplicação de anúncios e liberar experimentos com leitura correta do ativo criativo reutilizável.
+
 ## 2026-07-29 — Experimento 76: aba de páginas sem falso A/B
 
 - causa-raiz confirmada via endpoint e MCP: o experimento 76 está `PLANNED`, com variável primária de destino PDE MUSA v6, `0` seleções em `experiment_sales_page_type_selection` e `0` testes em `experiment_sales_page_ab_test`.

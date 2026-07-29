@@ -150,6 +150,47 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.ads[0].imageUrl").value("https://cdn.example.com/musa-ad.png"));
   }
 
+  /** Deve expor os anúncios do produto que estão em uso no experimento. */
+  @Test
+  void getExperimentAdsInUse() throws Exception {
+    var response =
+        new ProductAdLibraryResponse(
+            1L,
+            "Método MUSA",
+            "metodo-musa-7-dias",
+            "VALIDACAO_COMERCIAL",
+            "O experimento já usa anúncio aprovado do produto.",
+            List.of(
+                new ProductAdLibraryItemResponse(
+                    253L,
+                    76L,
+                    "MUSA-H001-E011",
+                    "PLANNED",
+                    "IMAGE",
+                    "READY",
+                    "Presença elegante em 7 dias",
+                    "Descubra o ajuste que muda sua imagem hoje.",
+                    "Controle criativo do produto.",
+                    "LEARN_MORE",
+                    "https://clubemusa.com.br",
+                    "https://cdn.example.com/musa-76.png",
+                    null,
+                    null,
+                    "Pode ser reaproveitado em novos experimentos.",
+                    Instant.parse("2026-07-29T12:00:00Z"))));
+
+    when(service.getExperimentAdsInUse(76L)).thenReturn(response);
+
+    mockMvc
+        .perform(get("/api/products/experiments/{experimentId}/ads-in-use", 76L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productId").value(1L))
+        .andExpect(jsonPath("$.productSlug").value("metodo-musa-7-dias"))
+        .andExpect(jsonPath("$.ads[0].creativeId").value(253L))
+        .andExpect(jsonPath("$.ads[0].experimentId").value(76L))
+        .andExpect(jsonPath("$.ads[0].status").value("READY"));
+  }
+
   /** Deve expor o resumo financeiro do produto no contrato canônico. */
   @Test
   void getFinancialSummary() throws Exception {

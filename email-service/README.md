@@ -96,6 +96,8 @@ registrar os envios.
 | `SPRING_MAIL_SMTP_AUTH` | Habilitar autenticação | `true` |
 | `SPRING_MAIL_SMTP_STARTTLS_ENABLE` | Habilitar STARTTLS | `false` |
 | `SPRING_MAIL_SMTP_SSL_ENABLE` | Habilitar SSL/TLS (porta 465) | `true` |
+| `SPRING_MAIL_DEBUG` | Habilitar log detalhado de sessão SMTP | `false` |
+| `MANAGEMENT_HEALTH_MAIL_ENABLED` | Incluir teste SMTP no health do Actuator | `false` |
 | `MARKETING_HUB_BASE_URL` | Base URL do backend Marketing Hub | `http://191.252.181.168:8000` |
 | `MARKETING_HUB_CONNECT_TIMEOUT` | Timeout de conexão com o backend (ms) | `2000` |
 | `MARKETING_HUB_READ_TIMEOUT` | Timeout de leitura do backend (ms) | `60000` |
@@ -134,6 +136,8 @@ SPRING_MAIL_PASSWORD=Russo007&
 SPRING_MAIL_SMTP_AUTH=true
 SPRING_MAIL_SMTP_STARTTLS_ENABLE=false
 SPRING_MAIL_SMTP_SSL_ENABLE=true
+SPRING_MAIL_DEBUG=false
+MANAGEMENT_HEALTH_MAIL_ENABLED=false
 EMAIL_SERVICE_FROM_ADDRESS=imagens@oportunidadebrasil.shop
 EMAIL_SERVICE_DRY_RUN=false
 EMAIL_TRACKING_BASE_URL=https://email-service.exemplo.com/api/v1/tracking/pixel

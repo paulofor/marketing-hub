@@ -23,7 +23,7 @@ spring:
     password: ${SPRING_MAIL_PASSWORD:Russo007&}
     properties:
       mail:
-        debug: true
+        debug: ${SPRING_MAIL_DEBUG:false}
         smtp:
           auth: ${SPRING_MAIL_SMTP_AUTH:true}
           starttls:
@@ -44,6 +44,9 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+  health:
+    mail:
+      enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false}
 clients:
   marketing-hub:
     base-url: ${MARKETING_HUB_BASE_URL:http://191.252.181.168:8000}
@@ -124,4 +127,3 @@ premium-delivery:
     scheduler:
       delay: ${PREMIUM_DELIVERY_EMAIL_DELAY:60000}
       initial-delay: ${PREMIUM_DELIVERY_EMAIL_INITIAL_DELAY:30000}
-

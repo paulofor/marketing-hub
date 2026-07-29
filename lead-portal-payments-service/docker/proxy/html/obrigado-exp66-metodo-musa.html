@@ -27,7 +27,7 @@
         <h2 id="statusTitle">Verificando pedido</h2>
         <p id="statusText">Se o pagamento foi aprovado, o acesso ao kit aparece nesta página. Se ficar pendente, acompanhe a confirmação do Mercado Pago.</p>
         <div class="cta-row hidden" id="downloadActions">
-          <a class="btn" id="pdeButton" href="http://191.252.102.54:5176/" target="_blank" rel="noreferrer">Começar Dia 1 na Área MUSA</a>
+          <a class="btn" id="pdeButton" href="https://v5.clubemusa.com.br/" target="_blank" rel="noreferrer">Começar Dia 1 na Área MUSA</a>
           <a class="btn secondary" id="downloadButton" href="https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip" download>Baixar materiais de apoio</a>
           <a class="btn secondary" href="https://pagamentopalf.site/sales-page-exp66.html">Voltar para a página de venda</a>
         </div>
@@ -58,7 +58,7 @@
   var experimentId = 66;
   var endpoint = '/mh-api/experiments/' + experimentId + '/funnel/events';
   var downloadUrl = 'https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip';
-  var pdeUrl = 'http://191.252.102.54:5176/';
+  var pdeUrl = 'https://v5.clubemusa.com.br/';
   var startedAt = Date.now();
   var params = new URLSearchParams(window.location.search || '');
   var status = (params.get('status') || params.get('collection_status') || params.get('result') || '').toLowerCase();

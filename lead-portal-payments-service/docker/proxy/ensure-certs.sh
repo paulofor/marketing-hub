@@ -21,8 +21,17 @@ for DOMAIN in $SSL_DOMAINS; do
     SRC_DIR="${FALLBACK_CERT_DIR}"
     echo "[proxy] Let's Encrypt certificate not found; using fallback development certificate for ${DOMAIN}" >&2
   else
-    echo "[proxy] ERROR: no SSL certificate available for ${DOMAIN} (checked ${LE_CERT_DIR} and fallback ${FALLBACK_CERT_DIR})" >&2
-    exit 1
+    if ! command -v openssl >/dev/null 2>&1; then
+      echo "[proxy] ERROR: no SSL certificate available for ${DOMAIN} and openssl is unavailable" >&2
+      exit 1
+    fi
+    echo "[proxy] Let's Encrypt certificate not found; generating temporary self-signed certificate for ${DOMAIN}" >&2
+    openssl req -x509 -nodes -newkey rsa:2048 -days 7 \
+      -keyout "${TARGET_CERT_DIR}/privkey.pem" \
+      -out "${TARGET_CERT_DIR}/fullchain.pem" \
+      -subj "/CN=${DOMAIN}" >/dev/null 2>&1
+    chmod 600 "${TARGET_CERT_DIR}/privkey.pem"
+    continue
   fi
 
   cp "${SRC_DIR}/fullchain.pem" "${TARGET_CERT_DIR}/fullchain.pem"

@@ -6265,3 +6265,11 @@
 - foi feito: a validação de textos obrigatórios continua usando HTML + bundles, mas textos proibidos passam a ser checados apenas no HTML público entregue ao usuário.
 - prevenção: adicionado teste de regressão para aprovar SPA quando a copy obrigatória está no bundle e a palavra técnica existe somente como implementação interna.
 - impacto comercial esperado: liberar campanhas de PDE React/SPA sem derrubar gates comerciais reais de copy ou erro visível ao usuário.
+
+## 2026-07-29 — Experimento 76: erro temporário da Meta não deve invalidar campanha
+
+- causa-raiz confirmada: o experimento 76 estava pronto no Marketing Hub, com slot PDE v6 `ACTIVE` e validação `OK`, mas a Meta retornou `OAuthException code=2` / `Service temporarily unavailable` ao criar o ad creative; o worker tratava esse erro transitório como falha comercial definitiva e marcava o experimento como `FAILED`.
+- evidência operacional: o worker consumiu `/api/facebook-campaigns/experiments-ready`, criou campanha/ad set externos, tentou o criativo com `image_hash` e recebeu erro temporário da Meta duas vezes; em ambas, limpou campanha/ad set parciais antes de encerrar.
+- foi feito: o `facebook-ads-worker` passou a reconhecer erro temporário da plataforma Meta e manter o experimento elegível para retry posterior, sem enviar `PATCH /experiments/{id}/status?status=FAILED`.
+- prevenção: adicionado teste cobrindo falha temporária da Meta no criativo principal e no fallback simples, garantindo cleanup dos objetos parciais sem invalidar o experimento.
+- impacto comercial esperado: reduzir falsos bloqueios de campanha por instabilidade externa da Meta e manter o fluxo apto a publicar quando a plataforma voltar a aceitar o criativo.

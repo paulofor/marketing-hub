@@ -686,6 +686,24 @@ public class FacebookCampaignService {
                 ex
             );
             markExperimentAsFailed(exp.id(), ex.getMessage());
+        } catch (WebClientResponseException ex) {
+            if (isRetryableFacebookPlatformError(ex)) {
+                LOGGER.warn(
+                    "Facebook returned a temporary platform error while processing experiment {}; keeping it eligible for a later retry. status={}, message={}",
+                    exp.id(),
+                    ex.getRawStatusCode(),
+                    ex.getMessage(),
+                    ex
+                );
+                return;
+            }
+            LOGGER.error(
+                "Unexpected Facebook API error while processing experiment {}: {}",
+                exp.id(),
+                ex.getMessage(),
+                ex
+            );
+            markExperimentAsFailed(exp.id(), ex.getMessage());
         } catch (Exception ex) {
             LOGGER.error(
                 "Unexpected error while processing experiment {}: {}",
@@ -2673,6 +2691,32 @@ public class FacebookCampaignService {
             || combinedMessage.contains("image was not downloaded")
             || combinedMessage.contains("unable to download")
             || combinedMessage.contains("não foi possível baixar sua imagem");
+    }
+
+    /**
+     * Identifica erros temporários da plataforma Meta que devem aguardar nova tentativa.
+     */
+    private boolean isRetryableFacebookPlatformError(WebClientResponseException ex) {
+        if (ex == null) {
+            return false;
+        }
+        JsonNode errorNode = parseJson(ex.getResponseBodyAsString());
+        if (errorNode == null) {
+            return false;
+        }
+        JsonNode details = errorNode.path("error");
+        if (details.path("code").asInt() == 2) {
+            return true;
+        }
+        String combinedMessage = (
+            details.path("message").asText("")
+                + " "
+                + details.path("error_user_title").asText("")
+                + " "
+                + details.path("error_user_msg").asText("")
+        ).toLowerCase();
+        return combinedMessage.contains("service temporarily unavailable")
+            || combinedMessage.contains("erro interno");
     }
 
     private boolean isInstagramPermissionError(FacebookPermissionException ex) {

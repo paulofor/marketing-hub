@@ -568,6 +568,60 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Garante que indisponibilidade temporária da Meta não invalida o experimento.
+    void keepsExperimentEligibleWhenFacebookAdCreativeCreationIsTemporarilyUnavailable() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-meta-temporary\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
+        facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("experiments ready");
+        takeBackendRequest("creatives ready");
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeFacebookRequest("facebook ad image upload");
+        takeFacebookRequest("facebook campaign");
+        takeFacebookRequest("facebook ad set");
+        takeFacebookRequest("facebook creative primary");
+        takeFacebookRequest("facebook creative fallback");
+        RecordedRequest cleanupAdSet = takeFacebookRequest("facebook cleanup ad set");
+        assertEquals("DELETE", cleanupAdSet.getMethod());
+        RecordedRequest cleanupCampaign = takeFacebookRequest("facebook cleanup campaign");
+        assertEquals("DELETE", cleanupCampaign.getMethod());
+    }
+
+    @Test
     // Garante que a ausência de limites da Meta gera aviso, mas não bloqueia teste controlado.
     void continuesCampaignCreationWhenReachBoundsAreUnavailable() throws Exception {
         reachEstimateResponseBody = "{\"data\":[{\"users\":1234}]}";

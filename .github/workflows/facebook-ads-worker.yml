@@ -91,13 +91,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
-      group: deploy-vps-191-252-120-96
+      group: deploy-vps-191-252-210-83
       cancel-in-progress: false
     permissions:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 191.252.120.96
+      DEPLOY_HOST: 191.252.210.83
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.FACEBOOK_ADS_WORKER_REMOTE_PATH || '/root/facebook-ads-worker' }}
       IMAGE_REGISTRY: ghcr.io

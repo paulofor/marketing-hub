@@ -688,7 +688,7 @@ O Dockerfile usa Java 21 e gera um jar único (`app.jar`) a partir do Maven. Tok
 ### Pipeline de deploy automático
 
 O workflow `.github/workflows/facebook-ads-worker.yml` replica o fluxo do AI Worker: roda testes Maven, builda a imagem e publica no GitHub Container Registry em
-`ghcr.io/<owner>/facebook-ads-worker:latest` (e com tag do commit). Em pushes para `main`, o action sobe a stack via SSH no VPS `191.252.120.96`, sincronizando os arquivos do diretório `facebook-ads-worker/` e usando `docker-compose.deploy.yml` para apontar para a imagem publicada. Configure os segredos `VPS_SSH_KEY`, `FACEBOOK_ADS_WORKER_REMOTE_PATH` (opcional) e `GHCR_TOKEN`/`GHCR_USERNAME` se for usar credenciais próprias do registry.
+`ghcr.io/<owner>/facebook-ads-worker:latest` (e com tag do commit). Em pushes para `main`, o action sobe a stack via SSH no VPS `191.252.210.83`, sincronizando os arquivos do diretório `facebook-ads-worker/` e usando `docker-compose.deploy.yml` para apontar para a imagem publicada. Configure os segredos `VPS_SSH_CHAVE`, `VPS_SSH_KEY` ou `SSH_PRIVATE_KEY`, `FACEBOOK_ADS_WORKER_REMOTE_PATH` (opcional) e `GHCR_TOKEN`/`GHCR_USERNAME` se for usar credenciais próprias do registry.
 
 
 ## Logs em arquivo no container

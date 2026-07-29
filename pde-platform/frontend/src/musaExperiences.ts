@@ -105,6 +105,9 @@ export const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-
 export const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
 export const MUSA_V7_EXPERIENCE_VERSION = 'musa-pde-entry-v7-espelho-antes-de-sair';
 
+const MUSA_V5_LEGACY_HOSTS = ['v1.clubemusa.com.br', 'v2.clubemusa.com.br'];
+const MUSA_V7_RESERVED_HOSTS = ['v8.clubemusa.com.br', 'v9.clubemusa.com.br', 'v10.clubemusa.com.br'];
+
 const MUSA_APPROVED_HERO_VIDEO_URL = '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8';
 
 const basePublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
@@ -237,6 +240,14 @@ const MUSA_VERSIONED_HOSTS: Record<string, string> = Object.values(musaExperienc
     hosts[contract.primaryHost as string] = contract.experienceVersion;
     return hosts;
   }, {});
+
+MUSA_V7_RESERVED_HOSTS.forEach((host) => {
+  MUSA_VERSIONED_HOSTS[host] = MUSA_V7_EXPERIENCE_VERSION;
+});
+
+MUSA_V5_LEGACY_HOSTS.forEach((host) => {
+  MUSA_VERSIONED_HOSTS[host] = MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
+});
 
 export const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',

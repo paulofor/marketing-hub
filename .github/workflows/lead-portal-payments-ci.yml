@@ -181,7 +181,7 @@ jobs:
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && export CERTBOT_PRIMARY_DOMAIN=clubemusa.com.br \
-            && export CERTBOT_EXTRA_DOMAINS='v5.clubemusa.com.br v6.clubemusa.com.br v7.clubemusa.com.br v8.clubemusa.com.br v9.clubemusa.com.br v10.clubemusa.com.br' \
+            && export CERTBOT_EXTRA_DOMAINS='v1.clubemusa.com.br v2.clubemusa.com.br v5.clubemusa.com.br v6.clubemusa.com.br v7.clubemusa.com.br v8.clubemusa.com.br v9.clubemusa.com.br v10.clubemusa.com.br' \
             && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
             && docker compose -f docker-compose.deploy.yml up -d proxy"
       - name: Clean build artifacts from repository

@@ -114,6 +114,36 @@ class ProductCatalogServiceTest {
         assertThat(product.funnelVersion()).isEqualTo("musa-membership-funnel-v1");
     }
 
+    /** Confirma que slots futuros reservados usam a experiência estável até terem contrato próprio. */
+    @Test
+    void appliesStableExperienceForReservedFutureHosts() {
+        ProductCatalogService service = new ProductCatalogService(
+                RestClient.builder(),
+                "",
+                "musa-pde-entry-v5-video-explicativo");
+
+        assertThat(service.getProductForHost("metodo-musa-7-dias", "v8.clubemusa.com.br").experienceVersion())
+                .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+        assertThat(service.getProductForHost("metodo-musa-7-dias", "v9.clubemusa.com.br").experienceVersion())
+                .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+        assertThat(service.getProductForHost("metodo-musa-7-dias", "v10.clubemusa.com.br").experienceVersion())
+                .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+    }
+
+    /** Confirma que slots legados continuam funcionais na experiência estável de entrada. */
+    @Test
+    void appliesStableEntryExperienceForLegacyHosts() {
+        ProductCatalogService service = new ProductCatalogService(
+                RestClient.builder(),
+                "",
+                "musa-pde-entry-v6-video-motivacional");
+
+        assertThat(service.getProductForHost("metodo-musa-7-dias", "v1.clubemusa.com.br").experienceVersion())
+                .isEqualTo("musa-pde-entry-v5-video-explicativo");
+        assertThat(service.getProductForHost("metodo-musa-7-dias", "v2.clubemusa.com.br").experienceVersion())
+                .isEqualTo("musa-pde-entry-v5-video-explicativo");
+    }
+
     /** Confirma que o catálogo tenta a próxima base quando a primeira URL do Hub falha. */
     @Test
     void returnsMarketingHubProductFromFallbackBaseUrl() {

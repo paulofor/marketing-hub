@@ -1,0 +1,15 @@
+services:
+  social-media-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: marketinghub/social-media-worker:latest
+    restart: unless-stopped
+    environment:
+      SOCIAL_BACKEND_BASE_URL: ${SOCIAL_BACKEND_BASE_URL:-http://191.252.181.168}
+      SOCIAL_BACKEND_AUTH_TOKEN: ${SOCIAL_BACKEND_AUTH_TOKEN:-}
+      SOCIAL_YOUTUBE_DRY_RUN: ${SOCIAL_YOUTUBE_DRY_RUN:-true}
+      SOCIAL_YOUTUBE_ACCESS_TOKEN: ${SOCIAL_YOUTUBE_ACCESS_TOKEN:-}
+      SOCIAL_YOUTUBE_DEFAULT_PRIVACY_STATUS: ${SOCIAL_YOUTUBE_DEFAULT_PRIVACY_STATUS:-private}
+    ports:
+      - "${SOCIAL_MEDIA_WORKER_PORT:-8097}:8097"

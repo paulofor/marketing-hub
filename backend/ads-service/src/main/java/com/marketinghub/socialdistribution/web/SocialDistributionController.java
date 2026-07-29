@@ -57,11 +57,24 @@ public class SocialDistributionController {
     return service.listQueuedPublications();
   }
 
+  /** Marca uma publicação como em execução pelo worker oficial. */
+  @PostMapping("/publications/{id}/publishing")
+  public SocialVideoPublicationResponse markPublishing(@PathVariable Long id) {
+    return service.markPublishing(id);
+  }
+
   /** Marca uma publicação como publicada e registra o link final. */
   @PostMapping("/publications/{id}/published")
   public SocialVideoPublicationResponse markPublished(
       @PathVariable Long id, @RequestBody MarkSocialVideoPublishedRequest request) {
     return service.markPublished(id, request);
+  }
+
+  /** Marca uma publicação como falha após retorno do worker oficial. */
+  @PostMapping("/publications/{id}/failed")
+  public SocialVideoPublicationResponse markFailed(
+      @PathVariable Long id, @RequestBody MarkSocialVideoFailedRequest request) {
+    return service.markFailed(id, request);
   }
 
   /** Registra uma leitura de métricas da publicação. */

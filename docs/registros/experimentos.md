@@ -6318,3 +6318,12 @@
 - foi feito: o GitHub Actions passou a aceitar `frontend_slot` (`none`, `v5`, `v6`, `v7`, `all`) e só publica o frontend público selecionado; em push automático, o padrão é não atualizar frontend de slot público.
 - prevenção: README e cânone do PDE registram que `v5.clubemusa.com.br`, `v6.clubemusa.com.br` e `v7.clubemusa.com.br` devem apontar para seus containers/portas próprios, reservando `all` apenas para mudança comum aprovada.
 - impacto comercial esperado: permitir evolução da v6/v7 sem afetar clientes na v5, reduzindo risco de queda de conversão, regressão visual e contaminação de métricas.
+
+## 2026-07-29 — Experimento 76: pausa de gasto e diagnóstico do 502 no PDE v6
+
+- ação operacional executada: o experimento 76 foi pausado pelo endpoint canônico do backend; a campanha Meta `120250665503920326` ficou `PAUSED` com motivo `ADMIN_EXPERIMENT_PAUSED` e `stop_completed_at` preenchido.
+- evidência comercial: a campanha tinha 314 impressões, 30 cliques, R$ 4,74 de gasto e 0 leads no snapshot sincronizado.
+- evidência do PDE: o v6 registrou 5 sessões humanas mobile vindas de mídia paga, com entrada, hero, vídeo e tempo de tela; não houve evento de início de diagnóstico, paywall ou checkout.
+- causa-raiz operacional provável: `https://v6.clubemusa.com.br` responde 502 pelo Nginx público, enquanto a porta direta do frontend v6 (`http://191.252.102.54:5177`) responde 200 e o backend PDE (`http://191.252.102.54:8096/actuator/health`) está `UP`; isso indica quebra no proxy/rede Docker dos upstreams `pde-platform-frontend-v5/v6/v7`, não falha geral do backend PDE.
+- decisão comercial: manter o gasto pausado até o domínio público versionado voltar a responder 200 e o funil registrar diagnóstico, paywall e checkout em teste real mobile.
+- próximo passo recomendado: corrigir o proxy público do Clube MUSA ou reconectar o serviço `lead-portal-payments-service` à network `public-net` onde estão os frontends PDE, validar `v5`, `v6` e `v7` via HTTPS e só então reativar tráfego.

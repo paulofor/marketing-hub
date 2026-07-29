@@ -72,7 +72,7 @@ jobs:
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/product-discovery-worker:buildcache,mode=max
       - name: Expose image tag
         id: image_tag
-        run: echo "value=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+        run: echo "value=${IMAGE_SHA_TAG}" >> "$GITHUB_OUTPUT"
 
   deploy:
     if: github.ref == 'refs/heads/main'
@@ -80,6 +80,9 @@ jobs:
       - test
       - docker
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-vps-191-252-120-96
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: read
@@ -139,7 +142,11 @@ jobs:
       - name: Publish service
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
-            && test -s /root/infra/brave-token/brave_api_key \
+            && install -m 700 -d /root/infra/brave-token \
+            && if [ ! -s /root/infra/brave-token/brave_api_key ]; then \
+              echo 'Erro: informe a chave Brave em /root/infra/brave-token/brave_api_key antes de publicar o Product Discovery Worker.' >&2; \
+              exit 1; \
+            fi \
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
             && export PRODUCT_DISCOVERY_WORKER_IMAGE='${IMAGE_NAMESPACE}/product-discovery-worker:${IMAGE_TAG}' \

@@ -71,7 +71,7 @@ jobs:
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/image-watermark-service:buildcache,mode=max
       - name: Expose image tag
         id: image_tag
-        run: echo "value=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+        run: echo "value=${IMAGE_SHA_TAG}" >> "$GITHUB_OUTPUT"
 
   deploy:
     if: github.ref == 'refs/heads/main'
@@ -79,6 +79,9 @@ jobs:
       - test
       - docker
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-vps-191-252-120-96
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: read

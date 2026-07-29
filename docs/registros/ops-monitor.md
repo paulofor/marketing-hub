@@ -1,5 +1,12 @@
 # Registros do monitor operacional
 
+## 2026-07-29 — Cadastro das VPS do projeto
+
+- Decisão operacional: as VPS usadas pelos workflows passam a aparecer no Ops Monitor como camada própria `type=VPS`, separada dos módulos de aplicação.
+- Evidência usada: workflows e deploys versionados apontam os hosts `191.252.181.168`, `177.153.62.107`, `191.252.102.54`, `191.252.120.96`, `191.252.210.83` e o proxy público Clube MUSA `163.245.200.7`.
+- Ajuste: criado changeset idempotente para cadastrar os 6 IPs em `ops_monitored_module`, usando o melhor endpoint público conhecido por host.
+- Prevenção: a operação passa a enxergar indisponibilidade de infraestrutura sem depender apenas dos cadastros específicos de cada worker ou produto.
+
 ## 2026-07-29 — Confiabilidade do status exibido no painel
 
 - Problema observado: a tela podia manter módulos como `OFFLINE` com base em heartbeat antigo, mesmo quando validação direta posterior já encontrava o serviço respondendo.

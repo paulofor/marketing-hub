@@ -136,6 +136,45 @@ class ProductServiceTest {
     assertThat(updated.getMarketNiche()).isSameAs(niche);
   }
 
+  /** Deve incluir VPS ativa como custo fixo mensal no financeiro do produto PDE. */
+  @Test
+  void getFinancialSummaryIncludesPdeInfrastructureCost() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+    ProductService service =
+        new ProductService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            mock(AssetRepository.class),
+            mock(ProductVideoImageRepository.class),
+            mock(ProductVideoProviderAvatarRepository.class),
+            mock(ImageGeneratorService.class),
+            mock(AssetStorageService.class),
+            objectMapper,
+            jdbcTemplate);
+    Product product =
+        Product.builder().id(1L).name("Método MUSA").slug("metodo-musa-7-dias").build();
+
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(jdbcTemplate.queryForObject(
+            org.mockito.ArgumentMatchers.contains("FROM pde_vps_server"),
+            org.mockito.ArgumentMatchers.eq(BigDecimal.class),
+            org.mockito.ArgumentMatchers.eq("metodo-musa-7-dias")))
+        .thenReturn(new BigDecimal("49.90"));
+
+    var response = service.getFinancialSummary(1L);
+
+    assertThat(response.costs())
+        .anySatisfy(
+            cost -> {
+              assertThat(cost.type()).isEqualTo("PDE_INFRASTRUCTURE");
+              assertThat(cost.label()).isEqualTo("Infraestrutura VPS PDE");
+              assertThat(cost.monthly().brl()).isEqualByComparingTo("49.90");
+              assertThat(cost.annual().brl()).isEqualByComparingTo("598.80");
+            });
+  }
+
   /** Deve aprovar a imagem semente de vídeo do produto com nome de personagem. */
   @Test
   void updateVideoSeedImageApprovesReadyImageAsset() {

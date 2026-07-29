@@ -299,6 +299,13 @@ public class ProductService {
             productLevelPdeCost(product),
             productLevelPdeCost(product),
             "Valor ai_cost registrado no cadastro do produto.");
+    ProductFinancialLineResponse pdeInfrastructure =
+        brlCostLine(
+            "PDE_INFRASTRUCTURE",
+            "Infraestrutura VPS PDE",
+            pdeInfrastructureCost(product),
+            pdeInfrastructureCost(product).multiply(new BigDecimal("12")),
+            "Soma do custo mensal de VPS ativas ou staging vinculadas ao produto.");
     ProductFinancialLineResponse otherCosts =
         brlCostLine(
             "OTHER",
@@ -317,6 +324,7 @@ public class ProductService {
                 videoProduction.monthly(),
                 media.monthly(),
                 pdeProduction.monthly(),
+                pdeInfrastructure.monthly(),
                 otherCosts.monthly()));
     ProductFinancialAmountResponse annualProfit =
         subtract(
@@ -325,6 +333,7 @@ public class ProductService {
                 videoProduction.annual(),
                 media.annual(),
                 pdeProduction.annual(),
+                pdeInfrastructure.annual(),
                 otherCosts.annual()));
     ProductFinancialLineResponse profit =
         new ProductFinancialLineResponse(
@@ -342,7 +351,7 @@ public class ProductService {
         monthStart,
         yearStart,
         buildMonthlyFinancialResults(product, marketNicheId),
-        List.of(videoProduction, media, pdeProduction, otherCosts),
+        List.of(videoProduction, media, pdeProduction, pdeInfrastructure, otherCosts),
         revenue,
         profit);
   }
@@ -568,7 +577,8 @@ public class ProductService {
     }
     return repository.findAll().stream()
         .filter(
-            product -> extractExperimentIds(product.getAssociatedExperiments()).contains(experimentId))
+            product ->
+                extractExperimentIds(product.getAssociatedExperiments()).contains(experimentId))
         .findFirst()
         .orElseThrow(
             () ->
@@ -863,7 +873,8 @@ public class ProductService {
           sumAmounts(
               amountFromUsd(videoCostUsd(marketNicheId, start, end)),
               amountFromBrl(mediaCostBrl(marketNicheId, start, end)),
-              amountFromBrl(productLevelPdeCostForPeriod(product, month)));
+              amountFromBrl(productLevelPdeCostForPeriod(product, month)),
+              amountFromBrl(pdeInfrastructureCost(product)));
       ProductFinancialAmountResponse revenue = amountFromBrl(revenueBrl(marketNicheId, start, end));
       results.add(
           new ProductFinancialMonthlyResultResponse(
@@ -971,6 +982,21 @@ public class ProductService {
     Instant referenceInstant = Optional.ofNullable(product.getCreatedAt()).orElse(Instant.now());
     YearMonth costMonth = YearMonth.from(referenceInstant.atZone(ZoneOffset.UTC));
     return costMonth.equals(month) ? aiCost : BigDecimal.ZERO;
+  }
+
+  /** Retorna o custo fixo mensal de infraestrutura VPS vinculado ao produto. */
+  private BigDecimal pdeInfrastructureCost(Product product) {
+    if (!StringUtils.hasText(product.getSlug())) {
+      return BigDecimal.ZERO;
+    }
+    return queryBigDecimal(
+        """
+        SELECT COALESCE(SUM(monthly_cost_brl), 0)
+        FROM pde_vps_server
+        WHERE product_slug = ?
+          AND status IN ('ACTIVE', 'STAGING')
+        """,
+        product.getSlug().trim());
   }
 
   /** Soma receitas aprovadas em reais por período para o nicho do produto. */

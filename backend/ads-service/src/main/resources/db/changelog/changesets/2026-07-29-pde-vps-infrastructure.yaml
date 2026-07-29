@@ -1,0 +1,84 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-29-pde-vps-infrastructure.yaml
+  - changeSet:
+      id: 2026-07-29-pde-vps-infrastructure-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: pde_vps_server
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE pde_vps_server (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                name VARCHAR(120) NOT NULL,
+                provider VARCHAR(80) NOT NULL,
+                ip_address VARCHAR(120) NOT NULL,
+                plan_name VARCHAR(120) NULL,
+                region VARCHAR(120) NULL,
+                vcpu_count INT NULL,
+                ram_gb INT NULL,
+                storage_gb INT NULL,
+                monthly_cost_brl DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                product_slug VARCHAR(191) NULL,
+                environment VARCHAR(64) NOT NULL DEFAULT 'production',
+                domains LONGTEXT NULL,
+                status VARCHAR(32) NOT NULL DEFAULT 'PLANNED',
+                notes LONGTEXT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_pde_vps_server_product_status (product_slug, status),
+                KEY idx_pde_vps_server_provider (provider),
+                KEY idx_pde_vps_server_ip (ip_address)
+              );
+  - changeSet:
+      id: 2026-07-29-pde-vps-infrastructure-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_vps_server
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT COUNT(*) FROM pde_vps_server WHERE ip_address = '163.245.200.7'"
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pde_vps_server (
+                name,
+                provider,
+                ip_address,
+                plan_name,
+                region,
+                monthly_cost_brl,
+                product_slug,
+                environment,
+                domains,
+                status,
+                notes
+              ) VALUES (
+                'DokeHost PDE principal',
+                'DokeHost',
+                '163.245.200.7',
+                'VPS Linux',
+                'Brasil',
+                0.00,
+                'metodo-musa-7-dias',
+                'production',
+                'v5.clubemusa.com.br, v6.clubemusa.com.br, v7.clubemusa.com.br',
+                'PLANNED',
+                'Cadastro inicial do novo VPS dos PDEs. Atualizar custo mensal após confirmação do plano contratado.'
+              );

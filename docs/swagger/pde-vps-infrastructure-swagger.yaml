@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info:
+  title: PDE VPS Infrastructure API
+  version: 1.0.0
+paths:
+  /api/pde/vps:
+    get:
+      summary: Lista VPS de PDE e custo fixo mensal consolidado.
+      responses:
+        "200":
+          description: VPS cadastradas.
+    post:
+      summary: Cadastra VPS usada por PDE.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavePdeVpsServerRequest"
+      responses:
+        "200":
+          description: VPS cadastrada.
+  /api/pde/vps/{id}:
+    put:
+      summary: Atualiza VPS usada por PDE.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavePdeVpsServerRequest"
+      responses:
+        "200":
+          description: VPS atualizada.
+    delete:
+      summary: Remove VPS do cadastro de PDE.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: VPS removida.
+components:
+  schemas:
+    SavePdeVpsServerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        provider:
+          type: string
+          example: DokeHost
+        ipAddress:
+          type: string
+          example: 163.245.200.7
+        planName:
+          type: string
+        region:
+          type: string
+        vcpuCount:
+          type: integer
+        ramGb:
+          type: integer
+        storageGb:
+          type: integer
+        monthlyCostBrl:
+          type: number
+        productSlug:
+          type: string
+        environment:
+          type: string
+        domains:
+          type: string
+        status:
+          type: string
+          enum: [PLANNED, ACTIVE, STAGING, PAUSED, RETIRED]
+        notes:
+          type: string

@@ -19,6 +19,7 @@ import ProductPdeVideosPage from "./pages/product/ProductPdeVideosPage";
 import ProductOrganicVideoPlanPage from "./pages/product/ProductOrganicVideoPlanPage";
 import ProductAdsPage from "./pages/product/ProductAdsPage";
 import ProductScientificArticlesPage from "./pages/product/ProductScientificArticlesPage";
+import PdeVpsManagementPage from "./pages/pde/PdeVpsManagementPage";
 import ProductDiscoveryPage from "./pages/productDiscovery/ProductDiscoveryPage";
 import ProductDiscoveryCycleDetailPage from "./pages/productDiscovery/ProductDiscoveryCycleDetailPage";
 import ProductSalesVideoPage from "./pages/salesVideo/ProductSalesVideoPage";
@@ -223,6 +224,7 @@ export default function App() {
                 path="/product-discovery/cycles/:cycleId"
                 element={<ProductDiscoveryCycleDetailPage />}
               />
+              <Route path="/pde/vps" element={<PdeVpsManagementPage />} />
               <Route path="/products/new" element={<NewProductPage />} />
               <Route path="/products/:id/edit" element={<EditProductPage />} />
               <Route

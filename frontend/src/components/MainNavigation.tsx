@@ -24,6 +24,7 @@ import {
   List,
   MessageSquare,
   Mic2,
+  Server,
   Send,
   Video,
 } from "lucide-react";
@@ -73,6 +74,7 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Descoberta PDE",
         icon: Search,
       },
+      { to: "/pde/vps", label: "Infra dos PDEs", icon: Server },
       { to: "/products", label: "Produtos", icon: Package },
       { to: "/niches", label: "Nichos", icon: nicheIcon },
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },

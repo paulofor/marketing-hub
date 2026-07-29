@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Mic2,
   Send,
+  Server,
   Video,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
@@ -196,6 +197,18 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/settings/privacy-policy",
         label: "Política de privacidade",
         icon: ShieldCheck,
+      },
+      {
+        to: "/microservices",
+        label: "Microserviços",
+        icon: Server,
+        children: [
+          {
+            to: "/microservices/vps-inventory",
+            label: "Inventário VPS",
+            icon: Server,
+          },
+        ],
       },
     ],
   },

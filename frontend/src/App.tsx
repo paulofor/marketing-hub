@@ -42,6 +42,7 @@ import EditOpenAiModelPage from "./pages/openaiModel/EditOpenAiModelPage";
 import MicroserviceListPage from "./pages/microservice/MicroserviceListPage";
 import NewMicroservicePage from "./pages/microservice/NewMicroservicePage";
 import EditMicroservicePage from "./pages/microservice/EditMicroservicePage";
+import OperationalInventoryPage from "./pages/microservice/OperationalInventoryPage";
 import DifferentiatedTechnologyListPage from "./pages/differentiatedTechnology/DifferentiatedTechnologyListPage";
 import NewDifferentiatedTechnologyPage from "./pages/differentiatedTechnology/NewDifferentiatedTechnologyPage";
 import EditDifferentiatedTechnologyPage from "./pages/differentiatedTechnology/EditDifferentiatedTechnologyPage";
@@ -380,6 +381,10 @@ export default function App() {
               <Route path="/agents/:id/edit" element={<EditAgentPage />} />
               <Route path="/agent-themes" element={<AgentThemePage />} />
               <Route path="/microservices" element={<MicroserviceListPage />} />
+              <Route
+                path="/microservices/vps-inventory"
+                element={<OperationalInventoryPage />}
+              />
               <Route
                 path="/microservices/errors"
                 element={<MicroserviceExceptionListPage />}

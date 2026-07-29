@@ -120,4 +120,21 @@ class MicroserviceDiscoveryServiceTest {
     assertTrue(deployment.secretReferences().contains("SSH_PRIVATE_KEY"));
     assertEquals("manual", deployment.triggerMode());
   }
+
+  @Test
+  void shouldUseFallbackDeploymentInventoryWhenWorkflowsAreUnavailable() {
+    MicroserviceDiscoveryService service =
+        new MicroserviceDiscoveryService(
+            "non-existent-compose.yml", "non-existent-workflows", "/health");
+
+    List<DeploymentWorkflowInventoryDto> deployments = service.discoverDeploymentsFromWorkflows();
+
+    assertEquals(6, deployments.size());
+    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.181.168")));
+    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("177.153.62.107")));
+    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.102.54")));
+    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.120.96")));
+    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.210.83")));
+    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("163.245.200.7")));
+  }
 }

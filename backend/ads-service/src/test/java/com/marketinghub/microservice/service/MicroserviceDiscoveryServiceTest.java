@@ -3,6 +3,7 @@ package com.marketinghub.microservice.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.marketinghub.microservice.dto.DeploymentWorkflowInventoryDto;
 import com.marketinghub.microservice.dto.DiscoveredMicroserviceDto;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +32,8 @@ class MicroserviceDiscoveryServiceTest {
                 """);
 
     MicroserviceDiscoveryService service =
-        new MicroserviceDiscoveryService(composeFile.toString(), "/healthz");
+        new MicroserviceDiscoveryService(
+            composeFile.toString(), "non-existent-workflows", "/healthz");
 
     List<DiscoveredMicroserviceDto> discovered = service.discoverFromCompose();
 
@@ -64,10 +66,58 @@ class MicroserviceDiscoveryServiceTest {
   @Test
   void shouldReturnEmptyListWhenFileDoesNotExist() {
     MicroserviceDiscoveryService service =
-        new MicroserviceDiscoveryService("non-existent-compose.yml", "/health");
+        new MicroserviceDiscoveryService(
+            "non-existent-compose.yml", "non-existent-workflows", "/health");
 
     List<DiscoveredMicroserviceDto> discovered = service.discoverFromCompose();
 
     assertTrue(discovered.isEmpty());
+  }
+
+  @Test
+  void shouldDiscoverDeploymentInventoryFromWorkflows() throws IOException {
+    Path workflowsPath = Files.createTempDirectory("workflows");
+    Path workflowFile = workflowsPath.resolve("lead-portal-ci.yml");
+    Files.writeString(
+        workflowFile,
+        """
+                name: CI - Lead Portal
+                on:
+                  push:
+                    branches: [ main ]
+                  workflow_dispatch:
+                jobs:
+                  deploy:
+                    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+                    runs-on: ubuntu-latest
+                    env:
+                      DEPLOY_HOST: 191.252.120.96
+                      DEPLOY_USER: root
+                      REMOTE_PATH: ${{ secrets.LEAD_PORTAL_REMOTE_PATH || '/root/lead-portal' }}
+                    steps:
+                      - name: Configure SSH
+                        env:
+                          VPS_SSH_KEY: ${{ secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
+                        run: echo ok
+                """);
+
+    MicroserviceDiscoveryService service =
+        new MicroserviceDiscoveryService(
+            "non-existent-compose.yml", workflowsPath.toString(), "/health");
+
+    List<DeploymentWorkflowInventoryDto> deployments = service.discoverDeploymentsFromWorkflows();
+
+    assertEquals(1, deployments.size());
+    DeploymentWorkflowInventoryDto deployment = deployments.getFirst();
+    assertEquals("lead-portal-ci.yml", deployment.workflowFile());
+    assertEquals("CI - Lead Portal", deployment.workflowName());
+    assertEquals("deploy", deployment.jobName());
+    assertEquals("191.252.120.96", deployment.deployHost());
+    assertEquals("root", deployment.deployUser());
+    assertEquals(
+        "${{ secrets.LEAD_PORTAL_REMOTE_PATH || '/root/lead-portal' }}", deployment.remotePath());
+    assertTrue(deployment.secretReferences().contains("VPS_SSH_CHAVE"));
+    assertTrue(deployment.secretReferences().contains("SSH_PRIVATE_KEY"));
+    assertEquals("manual", deployment.triggerMode());
   }
 }

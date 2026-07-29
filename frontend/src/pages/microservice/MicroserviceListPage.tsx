@@ -39,6 +39,12 @@ export default function MicroserviceListPage() {
         <Link className="btn btn-outline-secondary" to="/microservices/errors">
           Ver erros
         </Link>
+        <Link
+          className="btn btn-outline-secondary"
+          to="/microservices/vps-inventory"
+        >
+          Inventário VPS
+        </Link>
       </div>
       <div className="table-responsive">
         <table className="table">
@@ -74,7 +80,10 @@ export default function MicroserviceListPage() {
                           {formatDateTime(service.lastExceptionAt)}
                         </span>
                       </div>
-                      <div className="text-truncate small" title={service.lastExceptionMessage ?? undefined}>
+                      <div
+                        className="text-truncate small"
+                        title={service.lastExceptionMessage ?? undefined}
+                      >
                         {service.lastExceptionMessage}
                       </div>
                       <Link
@@ -85,13 +94,17 @@ export default function MicroserviceListPage() {
                       </Link>
                     </div>
                   ) : (
-                    <span className="text-body-secondary">Sem erros registrados</span>
+                    <span className="text-body-secondary">
+                      Sem erros registrados
+                    </span>
                   )}
                 </td>
                 <td className="d-flex gap-2">
                   <button
                     className="btn btn-sm btn-outline-primary"
-                    onClick={() => navigate(`/microservices/${service.id}/edit`)}
+                    onClick={() =>
+                      navigate(`/microservices/${service.id}/edit`)
+                    }
                   >
                     Editar
                   </button>

@@ -1,6 +1,6 @@
 package com.marketinghub.microservice.dto;
 
-/** Lightweight projection with data discovered from docker-compose. */
+/** Projeção leve com dados descobertos a partir do docker-compose. */
 public record DiscoveredMicroserviceDto(
     String serviceName,
     String image,

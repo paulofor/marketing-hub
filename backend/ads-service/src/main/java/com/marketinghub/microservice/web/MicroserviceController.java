@@ -4,6 +4,7 @@ import com.marketinghub.microservice.Microservice;
 import com.marketinghub.microservice.dto.CreateMicroserviceRequest;
 import com.marketinghub.microservice.dto.DiscoveredMicroserviceDto;
 import com.marketinghub.microservice.dto.MicroserviceDto;
+import com.marketinghub.microservice.dto.OperationalInventoryDto;
 import com.marketinghub.microservice.exception.dto.MicroserviceExceptionSummary;
 import com.marketinghub.microservice.exception.service.MicroserviceExceptionService;
 import com.marketinghub.microservice.mapper.MicroserviceMapper;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.*;
 
-/** REST controller for microservice registry. */
+/** Responsabilidade: expor o cadastro e o inventário operacional de microserviços. */
 @RestController
 @RequestMapping("/api/microservices")
 public class MicroserviceController {
@@ -33,6 +34,7 @@ public class MicroserviceController {
     this.discoveryService = discoveryService;
   }
 
+  /** Cria um microserviço no cadastro administrativo. */
   @PostMapping
   public MicroserviceDto create(@RequestBody CreateMicroserviceRequest request) {
     Microservice created = service.create(request);
@@ -41,6 +43,7 @@ public class MicroserviceController {
     return mapper.toDto(created, summary);
   }
 
+  /** Lista os microserviços cadastrados com resumo de falhas recentes. */
   @GetMapping
   public List<MicroserviceDto> list() {
     List<Microservice> microservices = service.list();
@@ -49,6 +52,7 @@ public class MicroserviceController {
     return microservices.stream().map(ms -> mapper.toDto(ms, summaries.get(ms.getId()))).toList();
   }
 
+  /** Busca um microserviço cadastrado por identificador. */
   @GetMapping("/{id}")
   public MicroserviceDto get(@PathVariable Long id) {
     Microservice microservice = service.get(id);
@@ -57,11 +61,19 @@ public class MicroserviceController {
     return mapper.toDto(microservice, summary);
   }
 
+  /** Lista serviços descobertos no docker-compose configurado. */
   @GetMapping("/discover")
   public List<DiscoveredMicroserviceDto> discoverFromCompose() {
     return discoveryService.discoverFromCompose();
   }
 
+  /** Lista o inventário versionado de portas, hosts e secrets de deploy. */
+  @GetMapping("/operational-inventory")
+  public OperationalInventoryDto operationalInventory() {
+    return discoveryService.discoverOperationalInventory();
+  }
+
+  /** Atualiza um microserviço cadastrado. */
   @PutMapping("/{id}")
   public MicroserviceDto update(
       @PathVariable Long id, @RequestBody CreateMicroserviceRequest request) {
@@ -71,6 +83,7 @@ public class MicroserviceController {
     return mapper.toDto(microservice, summary);
   }
 
+  /** Remove um microserviço do cadastro administrativo. */
   @DeleteMapping("/{id}")
   public void delete(@PathVariable Long id) {
     service.delete(id);

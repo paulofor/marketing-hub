@@ -349,6 +349,8 @@ O workflow oficial de publicação do `pde-platform` deve validar cada slot prod
 
 Como os subdomínios versionados do Clube MUSA são superfície direta de campanha, o workflow oficial do `pde-platform` também deve garantir que o proxy HTTPS público esteja ativo antes de aprovar a publicação. Se o proxy do `lead-portal-payments-service` estiver disponível no host, o workflow deve recriá-lo/recarregá-lo pelo Compose versionado e reconectá-lo à network pública usada pelo PDE. Se nenhum container publicar a porta 443 ou nenhum proxy puder ser encontrado, a publicação deve falhar com diagnóstico operacional claro; nunca considerar a v5/v6 pronta apenas porque as portas diretas `5176`/`5177` respondem.
 
+O DNS público dos subdomínios versionados do Clube MUSA deve apontar para o mesmo host oficial usado pelo workflow de deploy do PDE e pelo proxy HTTPS do `lead-portal-payments-service`. A validação produtiva deve falhar explicitamente quando `v5.clubemusa.com.br`, `v6.clubemusa.com.br`, `v7.clubemusa.com.br` ou slot futuro resolverem para IP diferente do host de deploy, porque isso envia tráfego pago para infraestrutura fora do caminho publicado e contamina a leitura comercial do experimento.
+
 ## Contrato mínimo de produto
 
 Cada produto PDE deve ter, no mínimo:

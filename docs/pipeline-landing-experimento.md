@@ -76,7 +76,7 @@ Os logs em produção reforçam que o fluxo `exp-10-landing` está ativo (`FlowE
 
 ## Monitoramento e deploy automático
 1. **Logs do Portal do Lead** (`https://oportunidadebrasil.shop/api/ops-lp-observability-v2/logfile`): confirme entradas `Render-complete` para o slug após aplicar/aprovar.
-2. **Logs do Worker AI** (`http://191.252.120.96:4567/worker-observability/logfile`): monitore o ciclo do `ExperimentLeadPortalFlowScheduler` e o status das imagens (`WEB_READY`).
+2. **Logs do Worker AI** (`http://191.252.210.83:4567/worker-observability/logfile`, enquanto o deploy temporário no host 210.83 estiver ativo): monitore o ciclo do `ExperimentLeadPortalFlowScheduler` e o status das imagens (`WEB_READY`).
 3. **Banco** (`lead_portal_flow.approved`): use consultas rápidas para confirmar que o flag mudou após a aprovação.
 4. Não faça ajustes manuais no servidor. O deploy do formulário ocorre automaticamente quando: (a) o HTML é aplicado; (b) o fluxo está associado ao experimento; (c) o fluxo está aprovado. O worker copia os assets para o CDN e publica o slug sem ação humana.
 

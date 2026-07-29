@@ -1505,6 +1505,9 @@ databaseChangeLog:
   - include:
       file: changesets/2026-07-29-facebook-ads-worker-host-210-83.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-07-29-ai-worker-host-210-83.yaml
+      relativeToChangelogFile: true
 
   - include:
       file: changesets/2026-07-24-experiment-learned-lessons.yaml

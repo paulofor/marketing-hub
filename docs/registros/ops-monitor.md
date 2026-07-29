@@ -102,3 +102,10 @@
 - Causa-raiz tratada: a tool `java_module_logs` do MCP aceitava apenas filtro literal, e o backend não tinha resposta/log global padronizado para exceção 500 não tratada com `requestId`, `status` e `endpoint`.
 - Correção aplicada: o MCP passou a aceitar filtros estruturados `httpStatus`, `endpoint` e `requestId`; o backend passou a registrar erro 500 não tratado com esses campos e retornar `requestId` no corpo da resposta.
 - Prevenção de recorrência: testes de contrato cobrem o filtro estruturado do MCP e a resposta 500 rastreável do backend.
+
+## 2026-07-29 — AI Worker temporariamente no host 210.83
+
+- Decisão operacional: publicar temporariamente o `ai-worker` em `191.252.210.83` para reduzir dependência do host `191.252.120.96`, que apresentou instabilidade durante a retomada dos workers.
+- Causa-raiz operacional tratada: execução local confirmou que o worker não deteriora o VPS por carga anormal, mas o scheduler de targeting repetia chamadas com `gpt-5.5` em limite de taxa; por isso o deploy passa a fixar `OPENAI_TARGETING_REQUEST_MODEL=gpt-5.2`.
+- Correção aplicada: workflow do `ai-worker` passa a publicar no host `191.252.210.83`, o Compose expõe a variável de modelo de targeting e o Ops Monitor passa a verificar `http://191.252.210.83:4567/worker-observability/health`.
+- Prevenção de recorrência: o override fica versionado no deploy, evitando retry infinito por configuração implícita quando o host for recriado.

@@ -112,13 +112,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
-      group: deploy-vps-191-252-120-96
+      group: deploy-vps-191-252-210-83
       cancel-in-progress: false
     permissions:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 191.252.120.96
+      DEPLOY_HOST: 191.252.210.83
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.AI_WORKER_REMOTE_PATH || '/root/ai-worker' }}
       IMAGE_REGISTRY: ghcr.io
@@ -176,6 +176,7 @@ jobs:
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
             && export AI_WORKER_IMAGE='${IMAGE_NAMESPACE}/ai-worker:${IMAGE_TAG}' \
+            && export OPENAI_TARGETING_REQUEST_MODEL='gpt-5.2' \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
             && docker image prune -af"

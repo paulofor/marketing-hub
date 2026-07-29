@@ -35,8 +35,15 @@ function resolvePlaybackUrl(
   }
 }
 
-function describeVideoPosition(index: number) {
-  return index === 0 ? "Principal" : `Variação ${index}`;
+function describeVideoFunction(index: number) {
+  const videoFunctions = [
+    "Abertura / hero",
+    "Prova visual",
+    "Mecanismo",
+    "Objeção",
+    "Reforço de CTA",
+  ];
+  return videoFunctions[index] ?? "Função complementar";
 }
 
 function findSlotVideos(
@@ -98,7 +105,7 @@ export default function ProductPdeVideosPage() {
           <PageTitle>Vídeos das versões PDE</PageTitle>
           <p className="text-muted mb-0">
             {product.name || product.slug} · cada versão PDE pode ter mais de
-            um vídeo HLS para hero, variações comerciais e testes futuros.
+            um vídeo HLS com funções comerciais complementares.
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
@@ -152,9 +159,11 @@ export default function ProductPdeVideosPage() {
                     {primaryVideo && playbackUrl ? (
                       <>
                         <div className="alert alert-info py-2 mb-3">
-                          A versão PDE aceita múltiplos vídeos. O player abaixo
-                          destaca o melhor aprovado; a tabela preserva todas as
-                          variações HLS vinculadas ao experimento origem.
+                          A versão PDE aceita múltiplos vídeos com funções
+                          diferentes, como abertura, prova, mecanismo, objeções
+                          e reforço de CTA. O player abaixo destaca o primeiro
+                          aprovado para prévia; a tabela preserva todos os HLS
+                          vinculados ao experimento origem.
                         </div>
                         <div className="ratio ratio-16x9 bg-dark rounded overflow-hidden mb-3">
                           <AdaptiveVideoPlayer
@@ -168,7 +177,7 @@ export default function ProductPdeVideosPage() {
                           <table className="table table-sm mb-0">
                             <thead>
                               <tr>
-                                <th scope="col">Uso</th>
+                                <th scope="col">Função</th>
                                 <th scope="col">Ativo</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Duração</th>
@@ -184,7 +193,7 @@ export default function ProductPdeVideosPage() {
                                 return (
                                   <tr key={video.id}>
                                     <th scope="row">
-                                      {describeVideoPosition(index)}
+                                      {describeVideoFunction(index)}
                                     </th>
                                     <td>#{video.id}</td>
                                     <td>

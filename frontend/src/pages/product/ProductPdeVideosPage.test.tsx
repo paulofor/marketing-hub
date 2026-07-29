@@ -102,7 +102,7 @@ describe("ProductPdeVideosPage", () => {
     cleanup();
   });
 
-  it("deixa claro que uma versão PDE pode ter múltiplos vídeos HLS", async () => {
+  it("deixa claro que uma versão PDE pode ter múltiplos vídeos HLS complementares", async () => {
     renderPage();
 
     expect(await screen.findByText("v6")).toBeTruthy();
@@ -110,8 +110,8 @@ describe("ProductPdeVideosPage", () => {
     expect(
       screen.getByText(/A versão PDE aceita múltiplos vídeos/i),
     ).toBeTruthy();
-    expect(screen.getByText("Principal")).toBeTruthy();
-    expect(screen.getByText("Variação 1")).toBeTruthy();
+    expect(screen.getByText("Abertura / hero")).toBeTruthy();
+    expect(screen.getByText("Prova visual")).toBeTruthy();
     expect(screen.getByText("#31")).toBeTruthy();
     expect(screen.getByText("#30")).toBeTruthy();
     expect(

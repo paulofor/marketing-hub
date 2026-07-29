@@ -35,7 +35,7 @@ O produto não deve ficar preso a um único experimento. Experimento é evidênc
 O primeiro produto cadastrado é o Método MUSA - Presença Elegante em 7 Dias.
 
 - Slug: `metodo-musa-7-dias`.
-- URL pública: `http://191.252.102.54:5176/`.
+- URL pública: `https://v5.clubemusa.com.br/`.
 - Tipo: PDE - Produto Digital Experiencial.
 - Status: validação comercial.
 - Preço atual: R$67.

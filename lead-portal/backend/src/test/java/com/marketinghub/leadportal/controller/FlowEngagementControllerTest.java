@@ -58,6 +58,7 @@ class FlowEngagementControllerTest {
 
         mockMvc.perform(post("/api/flows/flow-slug/page-analytics")
                         .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Forwarded-For", "179.210.58.3, 10.0.0.1")
                         .content("{\"eventId\":\"evt-1\",\"eventType\":\"page_view\",\"operatingSystem\":\"android\",\"screenWidth\":390,\"screenHeight\":844}"))
                 .andExpect(status().isAccepted());
 
@@ -66,7 +67,8 @@ class FlowEngagementControllerTest {
                 argThat(payload -> "page_view".equals(payload.get("eventType"))
                         && "evt-1".equals(payload.get("eventId"))
                         && "android".equals(payload.get("operatingSystem"))
-                        && Integer.valueOf(390).equals(payload.get("screenWidth"))));
+                        && Integer.valueOf(390).equals(payload.get("screenWidth"))
+                        && "179.210.58.3".equals(payload.get("clientIp"))));
     }
 
     /**

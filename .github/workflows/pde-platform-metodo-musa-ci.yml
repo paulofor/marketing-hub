@@ -168,7 +168,7 @@ jobs:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 191.252.102.54
+      DEPLOY_HOST: 163.245.200.7
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.PDE_PLATFORM_REMOTE_PATH != '' && secrets.PDE_PLATFORM_REMOTE_PATH || '/root/pde-platform' }}
       IMAGE_TAG: ${{ needs.docker.outputs['image-tag'] }}
@@ -202,6 +202,30 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
           printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -o ConnectTimeout=60" >> "$GITHUB_ENV"
+      - name: Ensure Docker runtime on VPS
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' <<'REMOTE_DOCKER_BOOTSTRAP'
+          set -euo pipefail
+          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            systemctl enable --now docker >/dev/null 2>&1 || true
+            exit 0
+          fi
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y ca-certificates curl gnupg lsb-release
+          install -m 0755 -d /etc/apt/keyrings
+          if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          fi
+          chmod a+r /etc/apt/keyrings/docker.gpg
+          . /etc/os-release
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" > /etc/apt/sources.list.d/docker.list
+          apt-get update
+          apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          systemctl enable --now docker
+          docker version
+          docker compose version
+          REMOTE_DOCKER_BOOTSTRAP
       - name: Sync compose file
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
@@ -242,6 +266,7 @@ jobs:
             && export OPENAI_API_KEY='${OPENAI_API_KEY}' \
             && export OPENAI_API_KEY_FILE='${OPENAI_API_KEY_FILE}' \
             && export OPENAI_API_KEY_HOST_FILE='${OPENAI_API_KEY_HOST_FILE}' \
+            && if [ ! -s \"${OPENAI_API_KEY_HOST_FILE}\" ] && [ -n \"${OPENAI_API_KEY}\" ]; then install -m 700 -d \"\$(dirname \"${OPENAI_API_KEY_HOST_FILE}\")\" && printf '%s' \"${OPENAI_API_KEY}\" > \"${OPENAI_API_KEY_HOST_FILE}\" && chmod 600 \"${OPENAI_API_KEY_HOST_FILE}\"; fi \
             && test -s \"${OPENAI_API_KEY_HOST_FILE}\" \
             && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
             && FRONTEND_SERVICES='' \
@@ -263,7 +288,8 @@ jobs:
               docker inspect pde-platform-backend --format '{{json .State}}' >&2 || true; \
               exit 1 \
             )) \
-            && for proxy_container in lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 proxy; do \
+            && PROXY_CONTAINERS=\"lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 lead-portal-payments-proxy-1 lead-portal-payments_proxy_1 proxy \$(docker ps --filter publish=443 --format '{{.Names}}' || true)\" \
+            && for proxy_container in \${PROXY_CONTAINERS}; do \
               if docker inspect \"\${proxy_container}\" >/dev/null 2>&1; then \
                 docker network connect ${PDE_PLATFORM_NETWORK} \"\${proxy_container}\" >/dev/null 2>&1 || true; \
                 docker kill -s HUP \"\${proxy_container}\" >/dev/null 2>&1 || true; \

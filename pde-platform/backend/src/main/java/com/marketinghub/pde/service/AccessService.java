@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -68,6 +69,7 @@ public class AccessService {
     private final boolean exposeMagicLinkInResponse;
     private final PdeMailService mailService;
     private final GoogleIdentityService googleIdentityService;
+    private final Set<String> internalExcludedIps;
     private final Map<String, AccessGrant> accessByToken = new ConcurrentHashMap<>();
 
     /** Recebe dependências e carrega os acessos persistidos em disco. */
@@ -82,6 +84,7 @@ public class AccessService {
             @Value("${pde.access.require-jdbc:false}") boolean requireJdbcStorage,
             @Value("${pde.access.app-base-url:http://localhost:5176}") String appBaseUrl,
             @Value("${pde.access.expose-magic-link-in-response:false}") boolean exposeMagicLinkInResponse,
+            @Value("${pde.analytics.internal-excluded-ips:}") String internalExcludedIps,
             PdeDatabaseMigrationService databaseMigrationService,
             PdeMailService mailService,
             GoogleIdentityService googleIdentityService) {
@@ -96,6 +99,7 @@ public class AccessService {
         this.exposeMagicLinkInResponse = exposeMagicLinkInResponse;
         this.mailService = mailService;
         this.googleIdentityService = googleIdentityService;
+        this.internalExcludedIps = parseInternalExcludedIps(internalExcludedIps);
         validateJdbcStorageRequirement();
         if (usesJdbcStorage() && databaseMigrationService != null) {
             databaseMigrationService.migrateIfNeeded();
@@ -126,6 +130,36 @@ public class AccessService {
                 requireJdbcStorage,
                 appBaseUrl,
                 exposeMagicLinkInResponse,
+                "",
+                mailService,
+                googleIdentityService);
+    }
+
+    /** Recebe dependências explícitas para testes que precisam controlar a lista de IPs internos. */
+    public AccessService(
+            ProductCatalogService productCatalogService,
+            ObjectMapper objectMapper,
+            String storagePath,
+            String jdbcUrl,
+            String jdbcUsername,
+            String jdbcPassword,
+            boolean requireJdbcStorage,
+            String appBaseUrl,
+            boolean exposeMagicLinkInResponse,
+            String internalExcludedIps,
+            PdeMailService mailService,
+            GoogleIdentityService googleIdentityService) {
+        this(
+                productCatalogService,
+                objectMapper,
+                storagePath,
+                jdbcUrl,
+                jdbcUsername,
+                jdbcPassword,
+                requireJdbcStorage,
+                appBaseUrl,
+                exposeMagicLinkInResponse,
+                internalExcludedIps,
                 null,
                 mailService,
                 googleIdentityService);
@@ -291,6 +325,15 @@ public class AccessService {
         ProductExperienceResponse product = productCatalogService.getProduct(request.productSlug());
         String normalizedEventType = normalizeEventType(request.eventType());
         String eventId = UUID.randomUUID().toString();
+        if (isInternalExcludedIp(request.clientIp())) {
+            log.info(
+                    "Evento PDE ignorado por IP interno; eventId={}, productSlug={}, eventType={}, clientIp={}",
+                    eventId,
+                    request.productSlug(),
+                    normalizedEventType,
+                    request.clientIp().trim());
+            return new FunnelEventResponse(eventId, normalizedEventType, "IGNORED_INTERNAL_IP");
+        }
         if (usesJdbcStorage()) {
             persistFunnelEventInDatabaseWithRetry(eventId, request, normalizedEventType, product);
         } else {
@@ -302,6 +345,22 @@ public class AccessService {
                     request.accessToken());
         }
         return new FunnelEventResponse(eventId, normalizedEventType, "RECORDED");
+    }
+
+    /** Converte a configuração textual em conjunto de IPs internos a ignorar. */
+    private Set<String> parseInternalExcludedIps(String excludedIps) {
+        if (excludedIps == null || excludedIps.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(excludedIps.split(","))
+                .map(String::trim)
+                .filter(ip -> !ip.isBlank())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    /** Verifica se o IP da requisição deve ficar fora das métricas comerciais. */
+    private boolean isInternalExcludedIp(String clientIp) {
+        return clientIp != null && internalExcludedIps.contains(clientIp.trim());
     }
 
     /** Persiste evento comercial com retentativa para oscilação transitória do MySQL. */

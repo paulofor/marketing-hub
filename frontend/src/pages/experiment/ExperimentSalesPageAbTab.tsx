@@ -110,18 +110,10 @@ export default function ExperimentSalesPageAbTab({
   >(null);
 
   useEffect(() => {
-    if (selections && selections.length > 0) {
+    if (selections) {
       setSelectedTypeCodes(selections.map((selection) => selection.typeCode));
-      return;
     }
-    if (types && types.length > 0 && selectedTypeCodes.length === 0) {
-      setSelectedTypeCodes(
-        types
-          .filter((type) => type.defaultForAbTest)
-          .map((type) => type.code),
-      );
-    }
-  }, [selections, selectedTypeCodes.length, types]);
+  }, [selections]);
 
   const selectedTypes = useMemo(() => {
     const allTypes = types ?? [];
@@ -129,6 +121,15 @@ export default function ExperimentSalesPageAbTab({
       .map((code) => allTypes.find((type) => type.code === code))
       .filter((type): type is SalesPageType => Boolean(type));
   }, [selectedTypeCodes, types]);
+
+  const persistedSelectedTypes = useMemo(() => {
+    const allTypes = types ?? [];
+    return (selections ?? [])
+      .map((selection) => allTypes.find((type) => type.code === selection.typeCode))
+      .filter((type): type is SalesPageType => Boolean(type));
+  }, [selections, types]);
+
+  const hasPersistedAbTestConfiguration = persistedSelectedTypes.length === MAX_AB_TEST_TYPES;
 
   const toggleType = (typeCode: string) => {
     setSelectionFeedback(null);
@@ -169,7 +170,7 @@ export default function ExperimentSalesPageAbTab({
     return (
       <div className="d-flex justify-content-center py-5">
         <div className="spinner-border" role="status">
-          <span className="visually-hidden">Carregando teste A/B...</span>
+          <span className="visually-hidden">Carregando páginas de venda...</span>
         </div>
       </div>
     );
@@ -178,7 +179,7 @@ export default function ExperimentSalesPageAbTab({
   if (isError) {
     return (
       <div className="alert alert-danger mt-3" role="alert">
-        Não foi possível carregar os resultados do teste A/B.
+        Não foi possível carregar os resultados por tipo de página.
       </div>
     );
   }
@@ -233,7 +234,7 @@ export default function ExperimentSalesPageAbTab({
       ) : null}
       {selectionFeedback === "limit" ? (
         <div className="alert alert-warning mb-0" role="alert">
-          Teste A/B aceita somente 2 variantes. Remova uma opção antes de
+          A seleção aceita no máximo 2 tipos. Remova uma opção antes de
           escolher outra.
         </div>
       ) : null}
@@ -282,23 +283,34 @@ export default function ExperimentSalesPageAbTab({
         </div>
       )}
 
-      {selectedTypes.length > 0 ? (
+      {hasPersistedAbTestConfiguration ? (
         <div className="alert alert-info mb-0" role="status">
           <strong>Planejamento A/B:</strong>{" "}
-          {selectedTypes
+          {persistedSelectedTypes
             .map((type, index) => `Variante ${String.fromCharCode(65 + index)}: ${type.name}`)
             .join(" · ")}
+        </div>
+      ) : persistedSelectedTypes.length === 1 ? (
+        <div className="alert alert-info mb-0" role="status">
+          <strong>Tipo de página configurado:</strong>{" "}
+          {persistedSelectedTypes[0].name}
+        </div>
+      ) : selectedTypes.length > 0 ? (
+        <div className="alert alert-light border mb-0" role="status">
+          <strong>Seleção em edição:</strong>{" "}
+          {selectedTypes.map((type) => type.name).join(" · ")}. Salve para
+          configurar este experimento.
         </div>
       ) : null}
 
       <div className="creative-toolbar align-items-start">
         <div>
           <h5 className="mb-1 d-flex align-items-center gap-2">
-            <FlaskConical size={18} /> Resultados do teste A/B
+            <FlaskConical size={18} /> Resultados por tipo de página
           </h5>
           <p className="text-muted small mb-0">
-            Comparação por variante usando eventos reais com parâmetro A/B na URL
-            da página publicada.
+            Comparação por variante somente quando existir teste A/B salvo no
+            backend e eventos reais com parâmetro A/B na URL publicada.
           </p>
         </div>
       </div>

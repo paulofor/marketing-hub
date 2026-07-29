@@ -1,3 +1,11 @@
+## 2026-07-29 — Experimento 76: aba de páginas sem falso A/B
+
+- causa-raiz confirmada via endpoint e MCP: o experimento 76 está `PLANNED`, com variável primária de destino PDE MUSA v6, `0` seleções em `experiment_sales_page_type_selection` e `0` testes em `experiment_sales_page_ab_test`.
+- problema comercial: a aba pré-selecionava tipos `defaultForAbTest` no frontend e mostrava `Planejamento A/B`, criando leitura incorreta de que o experimento era teste A/B.
+- foi feito: a aba foi renomeada para `Páginas de venda` e deixou de inferir A/B localmente; `Planejamento A/B` aparece somente quando houver duas seleções salvas vindas do backend.
+- prevenção: adicionado teste de regressão garantindo que tipos default não geram marcação A/B sem configuração persistida.
+- impacto comercial esperado: melhorar a confiança da leitura do experimento antes de liberar tráfego, evitando decisão de campanha baseada em marcação falsa de teste.
+
 ## 2026-07-28 — PDE/MUSA: validacao pos-deploy exigia videos antigos bloqueados
 
 - causa-raiz confirmada no Actions e no host publico: o deploy do PDE subiu saudavel, mas o workflow de producao ainda exigia `/assets/musa-v5-video-explicativo.mp4` e `/assets/musa-v6-video-motivacional.mp4`; esses ativos ja estavam proibidos pelo build por serem videos antigos derivados de slides, entao o Nginx servia o fallback HTML do SPA e a validacao tratava como erro de MP4.

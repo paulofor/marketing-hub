@@ -61,6 +61,7 @@ public class ExperimentFunnelService {
   private final JdbcTemplate jdbcTemplate;
   private final ExperimentFunnelStandbyService standbyService;
   private final PdeAnalyticsClient pdeAnalyticsClient;
+  private final InternalAnalyticsTrafficFilter internalAnalyticsTrafficFilter;
 
   static final String FLOW_SCOPE_CONDITION =
       """
@@ -424,6 +425,14 @@ public class ExperimentFunnelService {
     }
     log.info("landing_page_analytics_raw flowSlug={} payload={}", flowSlug.trim(), request);
     validateLandingAnalyticsRequest(request);
+    if (internalAnalyticsTrafficFilter.isInternal(request.clientIp())) {
+      log.info(
+          "landing_page_analytics_internal_traffic_ignored flowSlug={} eventId={} clientIp={}",
+          flowSlug.trim(),
+          request.eventId().trim(),
+          request.clientIp().trim());
+      return;
+    }
     Experiment experiment = resolveExperimentByFlowSlug(flowSlug.trim());
 
     Long elapsedMs = resolveLandingAnalyticsElapsedMs(request);
@@ -432,7 +441,7 @@ public class ExperimentFunnelService {
     String payload = buildLandingAnalyticsPayload(request, elapsedMs);
 
     log.info(
-        "landing_page_analytics experimentId={} flowSlug={} eventId={} visitorId={} eventType={} sectionId={} elapsedMs={} sessionId={} pageUrl={} occurredAt={} userAgent={} deviceType={}",
+        "landing_page_analytics experimentId={} flowSlug={} eventId={} visitorId={} eventType={} sectionId={} elapsedMs={} sessionId={} pageUrl={} occurredAt={} userAgent={} deviceType={} clientIp={}",
         experiment.getId(),
         flowSlug.trim(),
         request.eventId().trim(),
@@ -444,7 +453,8 @@ public class ExperimentFunnelService {
         request.pageUrl(),
         occurredAt,
         request.userAgent(),
-        normalizeLandingAnalyticsDeviceType(request.deviceType(), request.userAgent()));
+        normalizeLandingAnalyticsDeviceType(request.deviceType(), request.userAgent()),
+        request.clientIp());
 
     ExperimentFunnelStage stage = resolveStageForLandingAnalyticsEvent(experiment, eventType);
     if (stage != null) {
@@ -679,6 +689,7 @@ public class ExperimentFunnelService {
     String resourceErrorCount =
         request.resourceErrorCount() == null ? "" : request.resourceErrorCount().toString();
     String connectionType = sanitizePayloadValue(request.connectionType());
+    String clientIp = sanitizePayloadValue(request.clientIp());
     String videoId = sanitizePayloadValue(request.videoId());
     String videoCurrentTimeMs =
         request.videoCurrentTimeMs() == null ? "" : request.videoCurrentTimeMs().toString();
@@ -720,6 +731,8 @@ public class ExperimentFunnelService {
         + sanitizePayloadValue(resourceErrorCount)
         + ";connectionType="
         + connectionType
+        + ";clientIp="
+        + clientIp
         + ";videoId="
         + videoId
         + ";videoCurrentTimeMs="

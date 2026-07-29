@@ -910,6 +910,40 @@ class AccessServiceTest {
         });
     }
 
+    /** Confirma que IP interno configurado não entra nas métricas comportamentais do PDE. */
+    @Test
+    void ignoresInternalIpFunnelEvents() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                "",
+                "",
+                "",
+                false,
+                "http://localhost:5176",
+                true,
+                "179.210.58.3",
+                null,
+                null);
+
+        var response = accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "SCREEN_TIME",
+                null,
+                "cliente@sandbox.local",
+                "TEST",
+                "test",
+                "https://v6.clubemusa.com.br/",
+                "179.210.58.3",
+                "SamsungBrowser Android",
+                Map.of("screenName", "login_first_access", "visibleMs", 4389000)));
+
+        assertThat(response.eventType()).isEqualTo("SCREEN_TIME");
+        assertThat(response.status()).isEqualTo("IGNORED_INTERNAL_IP");
+    }
+
     /** Confirma que eventos fora do contrato continuam bloqueados. */
     @Test
     void rejectsUnsupportedFunnelEvent() {

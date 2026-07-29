@@ -54,6 +54,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
   @Mock private PdeAnalyticsClient pdeAnalyticsClient;
 
+  @Mock private InternalAnalyticsTrafficFilter internalAnalyticsTrafficFilter;
+
   @InjectMocks private ExperimentFunnelService service;
 
   /** Configura stubs comuns para permitir criação de eventos normalizados novos. */
@@ -65,6 +67,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
     lenient()
         .when(landingAnalyticsEventRepository.aggregateVisitorsByExperiment(any(), any()))
         .thenReturn(List.of());
+    lenient().when(internalAnalyticsTrafficFilter.isInternal(any())).thenReturn(false);
   }
 
   /** Valida que o render-complete grava visualização do formulário com visitante e campanha. */
@@ -142,6 +145,45 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals(ExperimentFunnelStage.VISUALIZACAO_FORM, saved.getStage());
     assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
     assertEquals(Instant.parse("2026-06-04T21:00:00Z"), saved.getOccurredAt());
+  }
+
+  /** Valida que IP interno configurado não grava analytics nem evento de funil comercial. */
+  @Test
+  void registerLandingPageAnalyticsIgnoresInternalClientIp() {
+    when(internalAnalyticsTrafficFilter.isInternal("179.210.58.3")).thenReturn(true);
+
+    service.registerLandingPageAnalyticsEvent(
+        "exp-36-landing-geralanding",
+        new RegisterLandingPageAnalyticsEventRequest(
+            "event-internal-1",
+            "page_view",
+            "visitor-1",
+            "session-1",
+            null,
+            null,
+            null,
+            "https://v6.clubemusa.com.br/",
+            Instant.parse("2026-07-29T13:10:17Z"),
+            "SamsungBrowser Android",
+            "mobile",
+            "android",
+            390,
+            844,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "179.210.58.3",
+            null,
+            null,
+            null,
+            null));
+
+    verify(experimentRepository, never()).findFirstByLeadPortalFlowSlug(any());
+    verify(eventRepository, never()).save(any(ExperimentFunnelEvent.class));
+    verify(landingAnalyticsEventRepository, never())
+        .save(any(ExperimentLandingAnalyticsEvent.class));
   }
 
   /** Valida que venda low-ticket registra clique real no checkout sem depender de formulário. */

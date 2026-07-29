@@ -5,6 +5,7 @@ import com.marketinghub.leadportal.service.ExperimentFunnelTrackingClient;
 import com.marketinghub.leadportal.service.ExperimentFunnelTrackingClient.TrackingResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -60,9 +61,11 @@ public class FlowEngagementController {
     @PostMapping("/{slug}/page-analytics")
     public ResponseEntity<Void> registerPageAnalytics(
             @PathVariable("slug") String slug,
-            @RequestBody(required = false) String requestBody) {
+            @RequestBody(required = false) String requestBody,
+            HttpServletRequest request) {
         log.info("Page-analytics raw recebido no Lead Portal. slug={}, rawPayload={}", slug, requestBody);
         Map<String, Object> payload = parsePageAnalyticsRequest(slug, requestBody);
+        payload = enrichPageAnalyticsPayloadWithClientIp(payload, request);
         Object eventType = payload == null ? null : payload.get("eventType");
         Object eventId = payload == null ? null : payload.get("eventId");
         log.info("Page-analytics parseado no Lead Portal. slug={}, eventType={}, eventIdPresent={}",
@@ -87,6 +90,30 @@ public class FlowEngagementController {
             log.warn("Payload inválido em page-analytics. slug={}, rawPayload={}", slug, requestBody, ex);
             return Map.of();
         }
+    }
+
+    /**
+     * Adiciona o IP público resolvido pelo Lead Portal ao payload encaminhado ao Marketing Hub.
+     */
+    private Map<String, Object> enrichPageAnalyticsPayloadWithClientIp(
+            Map<String, Object> payload, HttpServletRequest request) {
+        Map<String, Object> enriched = new java.util.HashMap<>(payload == null ? Map.of() : payload);
+        String clientIp = resolveClientIp(request);
+        if (clientIp != null && !clientIp.isBlank()) {
+            enriched.put("clientIp", clientIp);
+        }
+        return enriched;
+    }
+
+    /**
+     * Resolve o IP do visitante priorizando o primeiro endereço informado pelo proxy público.
+     */
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",", 2)[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     /**

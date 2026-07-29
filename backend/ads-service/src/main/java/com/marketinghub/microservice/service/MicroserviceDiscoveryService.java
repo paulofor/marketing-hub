@@ -26,6 +26,8 @@ import org.yaml.snakeyaml.Yaml;
  */
 @Service
 public class MicroserviceDiscoveryService {
+  private static final String FALLBACK_DEPLOYMENTS_RESOURCE =
+      "operational-inventory/project-vps-deployments.yaml";
   private static final Pattern SECRET_REFERENCE_PATTERN = Pattern.compile("secrets\\.([A-Z0-9_]+)");
 
   private final Path composePath;
@@ -82,7 +84,7 @@ public class MicroserviceDiscoveryService {
   /** Descobre os deploys declarados nos workflows versionados do repositório. */
   public List<DeploymentWorkflowInventoryDto> discoverDeploymentsFromWorkflows() {
     if (!Files.isDirectory(workflowsPath)) {
-      return List.of();
+      return discoverDeploymentsFromFallbackResource();
     }
 
     try (var stream = Files.list(workflowsPath)) {
@@ -96,10 +98,74 @@ public class MicroserviceDiscoveryService {
           Comparator.comparing(DeploymentWorkflowInventoryDto::deployHost)
               .thenComparing(DeploymentWorkflowInventoryDto::workflowFile)
               .thenComparing(DeploymentWorkflowInventoryDto::jobName));
+      if (deployments.isEmpty()) {
+        return discoverDeploymentsFromFallbackResource();
+      }
       return deployments;
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to read workflows at " + workflowsPath, e);
     }
+  }
+
+  /** Carrega o inventário VPS embarcado quando os workflows não estão disponíveis no runtime. */
+  private List<DeploymentWorkflowInventoryDto> discoverDeploymentsFromFallbackResource() {
+    try (InputStream inputStream =
+        MicroserviceDiscoveryService.class
+            .getClassLoader()
+            .getResourceAsStream(FALLBACK_DEPLOYMENTS_RESOURCE)) {
+      if (inputStream == null) {
+        return List.of();
+      }
+
+      Yaml yaml = new Yaml();
+      Object data = yaml.load(inputStream);
+      if (!(data instanceof Map<?, ?> root)) {
+        return List.of();
+      }
+      Object deploymentsNode = root.get("deployments");
+      if (!(deploymentsNode instanceof Iterable<?> deployments)) {
+        return List.of();
+      }
+
+      List<DeploymentWorkflowInventoryDto> discovered = new ArrayList<>();
+      for (Object deploymentNode : deployments) {
+        DeploymentWorkflowInventoryDto deployment = toFallbackDeploymentDto(deploymentNode);
+        if (deployment != null) {
+          discovered.add(deployment);
+        }
+      }
+      discovered.sort(
+          Comparator.comparing(DeploymentWorkflowInventoryDto::deployHost)
+              .thenComparing(DeploymentWorkflowInventoryDto::workflowFile)
+              .thenComparing(DeploymentWorkflowInventoryDto::jobName));
+      return discovered;
+    } catch (IOException e) {
+      throw new UncheckedIOException(
+          "Failed to read fallback deployment inventory at " + FALLBACK_DEPLOYMENTS_RESOURCE, e);
+    }
+  }
+
+  /** Converte um item do inventário embarcado para DTO da tela de VPS. */
+  private DeploymentWorkflowInventoryDto toFallbackDeploymentDto(Object deploymentNode) {
+    Map<?, ?> deployment = asMap(deploymentNode);
+    if (deployment.isEmpty()) {
+      return null;
+    }
+
+    String deployHost = textOrDefault(deployment.get("deployHost"), null);
+    if (!hasText(deployHost)) {
+      return null;
+    }
+
+    return new DeploymentWorkflowInventoryDto(
+        textOrDefault(deployment.get("workflowFile"), "inventario-versionado.yaml"),
+        textOrDefault(deployment.get("workflowName"), "Inventario VPS versionado"),
+        textOrDefault(deployment.get("jobName"), "deploy"),
+        deployHost,
+        textOrDefault(deployment.get("deployUser"), null),
+        textOrDefault(deployment.get("remotePath"), null),
+        toTextList(deployment.get("secretReferences")),
+        textOrDefault(deployment.get("triggerMode"), "automatico"));
   }
 
   /** Converte uma entrada de serviço do docker-compose para DTO de descoberta. */
@@ -332,6 +398,22 @@ public class MicroserviceDiscoveryService {
       return text;
     }
     return fallback;
+  }
+
+  /** Converte uma lista YAML simples em lista textual para exposição segura na tela. */
+  private List<String> toTextList(Object value) {
+    if (!(value instanceof Iterable<?> iterable)) {
+      return List.of();
+    }
+
+    List<String> result = new ArrayList<>();
+    for (Object item : iterable) {
+      String text = textOrDefault(item, null);
+      if (hasText(text)) {
+        result.add(text);
+      }
+    }
+    return List.copyOf(result);
   }
 
   /** Verifica se o texto tem conteúdo útil. */

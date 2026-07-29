@@ -1,5 +1,20 @@
 # Registros do monitor operacional
 
+## 2026-07-29 — Cadastro das VPS do projeto
+
+- Decisão operacional: as VPS usadas pelos workflows passam a aparecer no Ops Monitor como camada própria `type=VPS`, separada dos módulos de aplicação.
+- Evidência usada: workflows e deploys versionados apontam os hosts `191.252.181.168`, `177.153.62.107`, `191.252.102.54`, `191.252.120.96`, `191.252.210.83` e o proxy público Clube MUSA `163.245.200.7`.
+- Ajuste: criado changeset idempotente para cadastrar os 6 IPs em `ops_monitored_module`, usando o melhor endpoint público conhecido por host.
+- Prevenção: a operação passa a enxergar indisponibilidade de infraestrutura sem depender apenas dos cadastros específicos de cada worker ou produto.
+
+## 2026-07-29 — Inventário VPS visível na tela administrativa
+
+- Problema: a tela `/microservices/vps-inventory` dependia de `.github/workflows` no filesystem do backend; no deploy produtivo o endpoint retornava `services=[]` e `deployments=[]`.
+- Causa-raiz: os workflows são fonte versionada do repositório, mas não ficam disponíveis automaticamente dentro do artefato runtime do backend.
+- Ajuste: o backend passou a embarcar `operational-inventory/project-vps-deployments.yaml` com os 6 VPS operacionais como fallback quando a pasta de workflows não existir ou não tiver deploys detectáveis.
+- Decisão: o cadastro operacional de módulos foi unificado em `ops_monitored_module`, com criação/edição/desativação pela tela administrativa em `/microservices`. Novos módulos e VPS não devem ser inseridos por Liquibase; o inventário de workflows fica apenas como apoio de descoberta/preenchimento.
+- Prevenção: a tela passa a ter uma fonte versionada dentro do artefato publicado, sem depender de arquivos ausentes no servidor.
+
 ## 2026-07-29 — Confiabilidade do status exibido no painel
 
 - Problema observado: a tela podia manter módulos como `OFFLINE` com base em heartbeat antigo, mesmo quando validação direta posterior já encontrava o serviço respondendo.

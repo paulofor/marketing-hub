@@ -5,15 +5,19 @@ import com.marketinghub.opsmonitor.service.listAvailability.ModuleAvailabilityRe
 import com.marketinghub.opsmonitor.service.listAvailabilityHistory.ModuleAvailabilityHistoryResponse;
 import com.marketinghub.opsmonitor.service.listIncidents.ModuleIncidentResponse;
 import com.marketinghub.opsmonitor.service.listPendingChecks.PendingModuleCheckResponse;
+import com.marketinghub.opsmonitor.service.moduleRegistry.OpsMonitoredModuleRequest;
+import com.marketinghub.opsmonitor.service.moduleRegistry.OpsMonitoredModuleResponse;
 import com.marketinghub.opsmonitor.service.registerHeartbeat.RegisterModuleHeartbeatRequest;
 import com.marketinghub.opsmonitor.service.registerHeartbeat.RegisterModuleHeartbeatResponse;
 import com.marketinghub.opsmonitor.service.registerIncident.RegisterModuleIncidentRequest;
 import com.marketinghub.opsmonitor.service.registerIncident.RegisterModuleIncidentResponse;
 import com.marketinghub.opsmonitor.service.summary.OpsMonitorSummaryResponse;
 import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -53,6 +57,38 @@ public class OpsMonitorController {
   @GetMapping("/api/ops-monitor/v1/summary")
   public OpsMonitorSummaryResponse summary() {
     return service.getSummary();
+  }
+
+  /** Lista o cadastro canônico completo de módulos monitorados. */
+  @GetMapping("/api/ops-monitor/v1/modules")
+  public List<OpsMonitoredModuleResponse> listRegisteredModules() {
+    return service.listRegisteredModules();
+  }
+
+  /** Cria um módulo no cadastro canônico do monitor. */
+  @PostMapping("/api/ops-monitor/v1/modules")
+  public OpsMonitoredModuleResponse createRegisteredModule(
+      @RequestBody OpsMonitoredModuleRequest request) {
+    return service.createRegisteredModule(request);
+  }
+
+  /** Busca um módulo monitorado para edição administrativa. */
+  @GetMapping("/api/ops-monitor/v1/modules/{moduleCode}")
+  public OpsMonitoredModuleResponse getRegisteredModule(@PathVariable String moduleCode) {
+    return service.getRegisteredModule(moduleCode);
+  }
+
+  /** Atualiza um módulo no cadastro canônico do monitor. */
+  @PutMapping("/api/ops-monitor/v1/modules/{moduleCode}")
+  public OpsMonitoredModuleResponse updateRegisteredModule(
+      @PathVariable String moduleCode, @RequestBody OpsMonitoredModuleRequest request) {
+    return service.updateRegisteredModule(moduleCode, request);
+  }
+
+  /** Desativa um módulo do monitor sem remover histórico operacional. */
+  @DeleteMapping("/api/ops-monitor/v1/modules/{moduleCode}")
+  public void disableRegisteredModule(@PathVariable String moduleCode) {
+    service.disableRegisteredModule(moduleCode);
   }
 
   /** Retorna o status atual dos módulos monitorados. */

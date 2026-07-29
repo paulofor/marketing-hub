@@ -1,29 +1,17 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useMicroservices } from "../../api/microservice/useMicroservices";
-import { useDeleteMicroservice } from "../../api/microservice/useDeleteMicroservice";
+import { useDisableOpsMonitorModule } from "../../api/opsMonitor/useDisableOpsMonitorModule";
+import { useOpsMonitorModules } from "../../api/opsMonitor/useOpsMonitorModules";
 import PageTitle from "../../components/PageTitle";
-
-function formatDateTime(value?: string | null) {
-  if (!value) return null;
-  try {
-    return new Intl.DateTimeFormat("pt-BR", {
-      dateStyle: "short",
-      timeStyle: "short",
-    }).format(new Date(value));
-  } catch (error) {
-    return value;
-  }
-}
 
 export default function MicroserviceListPage() {
   const navigate = useNavigate();
-  const { data, isLoading } = useMicroservices();
-  const remove = useDeleteMicroservice();
-  const microservices = Array.isArray(data) ? data : [];
+  const { data, isLoading } = useOpsMonitorModules();
+  const disable = useDisableOpsMonitorModule();
+  const modules = Array.isArray(data) ? data : [];
 
-  const handleDelete = (id: number) => {
-    if (confirm("Deseja realmente remover este microserviço?")) {
-      remove.mutate(id);
+  const handleDisable = (code: string) => {
+    if (confirm("Deseja realmente desativar este módulo no monitor?")) {
+      disable.mutate(code);
     }
   };
 
@@ -32,12 +20,13 @@ export default function MicroserviceListPage() {
   return (
     <div>
       <PageTitle>Microserviços</PageTitle>
+      <div className="alert alert-info">
+        Cadastro único: esta tela grava diretamente os módulos monitorados pelo
+        Ops Monitor. O inventário VPS serve apenas como apoio de preenchimento.
+      </div>
       <div className="d-flex gap-2 mb-3">
         <Link className="btn btn-primary" to="/microservices/new">
-          Novo microserviço
-        </Link>
-        <Link className="btn btn-outline-secondary" to="/microservices/errors">
-          Ver erros
+          Novo módulo
         </Link>
         <Link
           className="btn btn-outline-secondary"
@@ -51,77 +40,60 @@ export default function MicroserviceListPage() {
           <thead>
             <tr>
               <th>Nome</th>
-              <th>Categoria</th>
-              <th>Status</th>
+              <th>Código</th>
+              <th>Tipo</th>
+              <th>Ativo</th>
               <th>Base URL</th>
-              <th>Responsável</th>
+              <th>Criticidade</th>
               <th>Healthcheck</th>
-              <th>Último erro</th>
+              <th>Versão</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            {microservices.map((service) => (
-              <tr key={service.id}>
-                <td>{service.name}</td>
-                <td>{service.category || "-"}</td>
-                <td>{service.status || "-"}</td>
-                <td>{service.baseUrl || "-"}</td>
-                <td>{service.owner || "-"}</td>
-                <td>{service.healthCheckPath || "-"}</td>
-                <td style={{ maxWidth: 240 }}>
-                  {service.lastExceptionAt ? (
-                    <div>
-                      <div className="d-flex align-items-center gap-2 mb-1">
-                        <span className="badge text-bg-danger">
-                          {service.lastExceptionSeverity || "ERROR"}
-                        </span>
-                        <span className="text-body-secondary small">
-                          {formatDateTime(service.lastExceptionAt)}
-                        </span>
-                      </div>
-                      <div
-                        className="text-truncate small"
-                        title={service.lastExceptionMessage ?? undefined}
-                      >
-                        {service.lastExceptionMessage}
-                      </div>
-                      <Link
-                        className="small"
-                        to={`/microservices/errors?microserviceId=${service.id}`}
-                      >
-                        Ver histórico ({service.exceptionCount ?? 0})
-                      </Link>
-                    </div>
-                  ) : (
-                    <span className="text-body-secondary">
-                      Sem erros registrados
-                    </span>
-                  )}
+            {modules.map((module) => (
+              <tr key={module.code}>
+                <td>{module.name}</td>
+                <td>
+                  <code>{module.code}</code>
                 </td>
+                <td>{module.type || "-"}</td>
+                <td>
+                  <span
+                    className={`badge ${module.enabled ? "text-bg-success" : "text-bg-secondary"}`}
+                  >
+                    {module.enabled ? "Sim" : "Não"}
+                  </span>
+                </td>
+                <td>{module.baseUrl || "-"}</td>
+                <td>{module.criticality || "-"}</td>
+                <td>{module.healthPath || "-"}</td>
+                <td>{module.publishedVersion || "-"}</td>
                 <td className="d-flex gap-2">
                   <button
                     className="btn btn-sm btn-outline-primary"
                     onClick={() =>
-                      navigate(`/microservices/${service.id}/edit`)
+                      navigate(
+                        `/microservices/${encodeURIComponent(module.code)}/edit`,
+                      )
                     }
                   >
                     Editar
                   </button>
                   <button
                     className="btn btn-sm btn-outline-danger"
-                    onClick={() => handleDelete(service.id)}
-                    disabled={remove.isPending}
+                    onClick={() => handleDisable(module.code)}
+                    disabled={disable.isPending || !module.enabled}
                   >
-                    {remove.isPending ? "Removendo..." : "Excluir"}
+                    {disable.isPending ? "Desativando..." : "Desativar"}
                   </button>
                 </td>
               </tr>
             ))}
-            {microservices.length === 0 ? (
+            {modules.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center text-muted">
-                  Nenhum microserviço cadastrado ainda.
+                <td colSpan={9} className="text-center text-muted">
+                  Nenhum módulo cadastrado ainda.
                 </td>
               </tr>
             ) : null}

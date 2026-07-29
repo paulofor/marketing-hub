@@ -89,6 +89,7 @@ jobs:
       - test
       - docker
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     concurrency:
       group: deploy-vps-191-252-120-96
       cancel-in-progress: false

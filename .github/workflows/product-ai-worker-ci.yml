@@ -88,6 +88,7 @@ jobs:
       - test
       - docker
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     concurrency:
       group: deploy-vps-191-252-120-96
       cancel-in-progress: false
@@ -152,6 +153,7 @@ jobs:
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
+            && export PRODUCT_AI_WORKER_IMAGE='${IMAGE_NAMESPACE}/product-ai-worker:${IMAGE_TAG}' \
             && docker compose -f docker-compose.yml pull \
             && docker compose -f docker-compose.yml up -d --remove-orphans \
             && docker image prune -af"

@@ -81,6 +81,13 @@ function formatHistoryDuration(seconds: number) {
   return seconds > 0 ? formatDuration(seconds) : "0s";
 }
 
+function formatCheckAge(seconds?: number | null) {
+  if (!seconds) {
+    return "";
+  }
+  return `há ${formatDuration(seconds)}`;
+}
+
 function getImpact(module: ModuleAvailability) {
   if (module.type === "PDE") {
     return (
@@ -564,6 +571,12 @@ export default function OpsMonitorPage({
                     <span className={`badge ${STATUS_BADGES[module.status]}`}>
                       {STATUS_LABELS[module.status]}
                     </span>
+                    {module.heartbeatStale ? (
+                      <div className="text-muted small mt-1">
+                        Monitor atrasado{" "}
+                        {formatCheckAge(module.lastCheckAgeSeconds)}
+                      </div>
+                    ) : null}
                   </td>
                   <td>{module.criticality}</td>
                   <td>{formatDateTime(module.lastCheckedAt)}</td>
@@ -573,7 +586,7 @@ export default function OpsMonitorPage({
                       : "Sem resposta"}
                   </td>
                   <td className="ops-monitor-page__table-error">
-                    {module.lastError ?? "Sem erro"}
+                    {module.lastError ?? module.statusReason ?? "Sem erro"}
                   </td>
                   <td>
                     <code>{module.attemptedUrl ?? "Sem URL"}</code>

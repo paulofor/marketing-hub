@@ -25,6 +25,9 @@ export interface ModuleAvailability {
   lastResponseTimeMs?: number | null;
   lastError?: string | null;
   attemptedUrl?: string | null;
+  lastCheckAgeSeconds?: number | null;
+  heartbeatStale?: boolean;
+  statusReason?: string | null;
 }
 
 export interface ModuleAvailabilityHistory {
@@ -38,7 +41,7 @@ export interface ModuleAvailabilityHistory {
 }
 
 export interface ModuleIncident {
-  id: number;
+  id: number | null;
   moduleCode: string;
   moduleName: string;
   status: string;

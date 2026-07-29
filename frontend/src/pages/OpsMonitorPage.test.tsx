@@ -52,6 +52,9 @@ describe("OpsMonitorPage", () => {
               lastResponseTimeMs: null,
               lastError: "timeout",
               attemptedUrl: "http://191.252.181.168/actuator/health",
+              lastCheckAgeSeconds: 90,
+              heartbeatStale: false,
+              statusReason: "Último heartbeat dentro da janela esperada",
             },
           ],
         });
@@ -140,6 +143,9 @@ describe("OpsMonitorPage", () => {
               lastResponseTimeMs: 120,
               lastError: null,
               attemptedUrl: "https://v5.clubemusa.com.br/healthz",
+              lastCheckAgeSeconds: 60,
+              heartbeatStale: false,
+              statusReason: "Último heartbeat dentro da janela esperada",
             },
           ],
         });
@@ -195,6 +201,63 @@ describe("OpsMonitorPage", () => {
     expect(await screen.findByText("2min")).toBeInTheDocument();
     expect(
       await screen.findByText("Monitoramento 24/7 das versões vendidas."),
+    ).toBeInTheDocument();
+  });
+
+  it("destaca heartbeat vencido como monitor atrasado", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/ops-monitor/v1/summary") {
+        return Promise.resolve({
+          data: {
+            online: 0,
+            degraded: 0,
+            offline: 0,
+            unknown: 1,
+            openIncidents: 0,
+          },
+        });
+      }
+      if (url === "/api/ops-monitor/v1/modules/availability") {
+        return Promise.resolve({
+          data: [
+            {
+              moduleCode: "backend",
+              name: "Backend",
+              type: "BACKEND",
+              criticality: "CRITICAL",
+              status: "UNKNOWN",
+              lastCheckedAt: "2026-07-29T04:38:26Z",
+              lastResponseTimeMs: 5000,
+              lastError:
+                "Monitor sem heartbeat recente há 47min; última leitura gravada foi OFFLINE.",
+              attemptedUrl:
+                "http://191.252.181.168/ops-mh-observability-v2/health",
+              lastCheckAgeSeconds: 2820,
+              heartbeatStale: true,
+              statusReason:
+                "Monitor sem heartbeat recente; revalidar antes de tratar como indisponibilidade atual",
+            },
+          ],
+        });
+      }
+      if (url === "/api/ops-monitor/v1/modules/backend/availability-history") {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === "/api/ops-monitor/v1/incidents/open") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Monitor atrasado há 47min"),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Monitor sem heartbeat recente há 47min; última leitura gravada foi OFFLINE.",
+      ),
     ).toBeInTheDocument();
   });
 });

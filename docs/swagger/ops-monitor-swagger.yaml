@@ -129,3 +129,15 @@ components:
           type: string
           nullable: true
           description: URL completa de healthcheck que o monitor tenta acessar para o módulo.
+        lastCheckAgeSeconds:
+          type: integer
+          format: int64
+          nullable: true
+          description: Idade em segundos do último heartbeat usado na classificação.
+        heartbeatStale:
+          type: boolean
+          description: Indica que o último heartbeat ultrapassou a janela operacional configurada.
+        statusReason:
+          type: string
+          nullable: true
+          description: Motivo administrativo para o status efetivo exibido no painel.

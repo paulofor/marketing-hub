@@ -144,7 +144,7 @@ public class OpsMonitorService {
   /** Lista a disponibilidade atual filtrada por criticidade e tipo quando informado. */
   @Transactional(readOnly = true)
   public List<ModuleAvailabilityResponse> listAvailability(String criticality, String type) {
-    return moduleRepository.findAll().stream()
+    return moduleRepository.findByEnabledTrueOrderByCodeAsc().stream()
         .filter(module -> matchesFilter(module.getCriticality(), criticality))
         .filter(module -> matchesFilter(module.getType(), type))
         .map(this::toAvailabilityResponse)
@@ -276,7 +276,10 @@ public class OpsMonitorService {
             incident.startedAt(),
             null,
             incident.lastError(),
-            buildAttemptedUrl(module));
+            buildAttemptedUrl(module),
+            null,
+            false,
+            "Fila operacional antiga detectada");
       }
     }
     if (OPRM_COLETOR_MEI_MODULE_CODE.equals(module.getCode())) {
@@ -296,27 +299,15 @@ public class OpsMonitorService {
             incident.startedAt(),
             null,
             incident.lastError(),
-            buildAttemptedUrl(module));
+            buildAttemptedUrl(module),
+            null,
+            false,
+            "Fila operacional antiga detectada");
       }
     }
     return healthCheckRepository
         .findTop1ByModuleCodeOrderByCheckedAtDesc(module.getCode())
-        .map(
-            check ->
-                new ModuleAvailabilityResponse(
-                    module.getCode(),
-                    module.getName(),
-                    module.getType(),
-                    module.getCriticality(),
-                    module.getPublishedVersion(),
-                    module.getProductUrl(),
-                    module.getMonitoringUrl(),
-                    module.getContainerImageVersion(),
-                    check.getStatus(),
-                    check.getCheckedAt(),
-                    check.getResponseTimeMs(),
-                    check.getErrorMessage(),
-                    buildAttemptedUrl(module)))
+        .map(check -> toAvailabilityResponse(module, check))
         .orElseGet(
             () ->
                 new ModuleAvailabilityResponse(
@@ -332,7 +323,59 @@ public class OpsMonitorService {
                     null,
                     null,
                     null,
-                    buildAttemptedUrl(module)));
+                    buildAttemptedUrl(module),
+                    null,
+                    false,
+                    "Módulo ainda não recebeu verificação do monitor"));
+  }
+
+  /** Converte o último heartbeat no status atual, marcando leituras vencidas como desconhecidas. */
+  private ModuleAvailabilityResponse toAvailabilityResponse(
+      OpsMonitoredModule module, OpsModuleHealthCheck check) {
+    Instant now = Instant.now();
+    Long ageSeconds =
+        check.getCheckedAt() == null ? null : Duration.between(check.getCheckedAt(), now).toSeconds();
+    boolean heartbeatStale =
+        ageSeconds != null
+            && module.getOfflineThresholdSeconds() != null
+            && ageSeconds > module.getOfflineThresholdSeconds();
+    String status = heartbeatStale ? "UNKNOWN" : check.getStatus();
+    String statusReason =
+        heartbeatStale
+            ? "Monitor sem heartbeat recente; revalidar antes de tratar como indisponibilidade atual"
+            : "Último heartbeat dentro da janela esperada";
+    String lastError =
+        heartbeatStale
+            ? buildStaleHeartbeatMessage(ageSeconds, check.getStatus())
+            : check.getErrorMessage();
+    return new ModuleAvailabilityResponse(
+        module.getCode(),
+        module.getName(),
+        module.getType(),
+        module.getCriticality(),
+        module.getPublishedVersion(),
+        module.getProductUrl(),
+        module.getMonitoringUrl(),
+        module.getContainerImageVersion(),
+        status,
+        check.getCheckedAt(),
+        check.getResponseTimeMs(),
+        lastError,
+        buildAttemptedUrl(module),
+        ageSeconds,
+        heartbeatStale,
+        statusReason);
+  }
+
+  /** Monta mensagem administrativa para heartbeat antigo sem mascarar o status original. */
+  private String buildStaleHeartbeatMessage(Long ageSeconds, String previousStatus) {
+    long safeAge = ageSeconds == null ? 0L : ageSeconds;
+    long minutes = Math.max(1L, safeAge / 60L);
+    return "Monitor sem heartbeat recente há "
+        + minutes
+        + "min; última leitura gravada foi "
+        + previousStatus
+        + ".";
   }
 
   /** Monta a URL de healthcheck que o worker deve tentar para o módulo monitorado. */

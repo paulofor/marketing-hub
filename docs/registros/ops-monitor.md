@@ -1,5 +1,12 @@
 # Registros do monitor operacional
 
+## 2026-07-29 — Confiabilidade do status exibido no painel
+
+- Problema observado: a tela podia manter módulos como `OFFLINE` com base em heartbeat antigo, mesmo quando validação direta posterior já encontrava o serviço respondendo.
+- Causa-raiz tratada: o contrato administrativo não diferenciava queda atual de monitor atrasado/desatualizado, e a listagem de disponibilidade incluía módulos desabilitados que o worker não verificava mais.
+- Ajuste: `modules/availability` passou a listar apenas módulos habilitados e a retornar `UNKNOWN` com `heartbeatStale=true`, `lastCheckAgeSeconds` e `statusReason` quando a última verificação excede `offlineThresholdSeconds`.
+- Prevenção: testes de backend e frontend cobrem heartbeat vencido como monitor atrasado, evitando falso alerta operacional de serviço fora do ar.
+
 ## 2026-07-28 — Criação do monitor dedicado de PDEs críticos
 
 - Decisão: criado o módulo `pde-monitor-worker` para monitoramento 24/7 dos PDEs publicados.

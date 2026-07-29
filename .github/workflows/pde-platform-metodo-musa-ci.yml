@@ -263,7 +263,8 @@ jobs:
               docker inspect pde-platform-backend --format '{{json .State}}' >&2 || true; \
               exit 1 \
             )) \
-            && for proxy_container in lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 proxy; do \
+            && PROXY_CONTAINERS=\"lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 lead-portal-payments-proxy-1 lead-portal-payments_proxy_1 proxy \$(docker ps --filter publish=443 --format '{{.Names}}' || true)\" \
+            && for proxy_container in \${PROXY_CONTAINERS}; do \
               if docker inspect \"\${proxy_container}\" >/dev/null 2>&1; then \
                 docker network connect ${PDE_PLATFORM_NETWORK} \"\${proxy_container}\" >/dev/null 2>&1 || true; \
                 docker kill -s HUP \"\${proxy_container}\" >/dev/null 2>&1 || true; \

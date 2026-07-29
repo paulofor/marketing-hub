@@ -47,6 +47,9 @@ public final class SocialDistributionDtos {
   public record MarkSocialVideoPublishedRequest(
       String publishedUrl, String externalPostId, Instant publishedAt) {}
 
+  /** Dados para registrar falha retornada pelo executor de publicação. */
+  public record MarkSocialVideoFailedRequest(String errorCategory, String errorMessage) {}
+
   /** Dados para registrar métrica posterior da publicação. */
   public record RecordSocialPublicationMetricRequest(
       Long views,
@@ -80,7 +83,8 @@ public final class SocialDistributionDtos {
       Instant scheduledAt,
       Instant queuedAt,
       Instant publishedAt,
-      SocialPublicationMetricResponse latestMetric) {}
+      SocialPublicationMetricResponse latestMetric,
+      String socialAccountExternalAccountId) {}
 
   /** Resposta de métrica posterior da publicação. */
   public record SocialPublicationMetricResponse(

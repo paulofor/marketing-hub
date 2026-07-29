@@ -41,6 +41,7 @@ export interface SocialVideoPublication {
   assetId?: number;
   socialAccountId?: number;
   socialAccountName?: string;
+  socialAccountExternalAccountId?: string;
   platform: SocialPlatform;
   videoFormat: SocialVideoFormat;
   status: SocialVideoPublicationStatus;

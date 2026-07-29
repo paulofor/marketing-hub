@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.socialdistribution.dto.SocialDistributionDtos.CreateSocialVideoPublicationRequest;
+import com.marketinghub.socialdistribution.dto.SocialDistributionDtos.MarkSocialVideoFailedRequest;
+import com.marketinghub.socialdistribution.dto.SocialDistributionDtos.MarkSocialVideoPublishedRequest;
 import com.marketinghub.socialdistribution.dto.SocialDistributionDtos.RecordSocialPublicationMetricRequest;
 import com.marketinghub.socialdistribution.dto.SocialDistributionDtos.SaveSocialAccountRequest;
 import com.marketinghub.socialdistribution.dto.SocialDistributionDtos.SocialAccountResponse;
@@ -93,6 +95,41 @@ class SocialDistributionServiceTest {
 
     assertThat(queued.status()).isEqualTo(SocialVideoPublicationStatus.QUEUED);
     assertThat(queued.publishPayloadJson()).contains("YOUTUBE", "YOUTUBE_SHORT");
+    assertThat(queued.socialAccountExternalAccountId()).isEqualTo("channel-123");
+  }
+
+  /** Registra sucesso e falha do worker para fechar o ciclo operacional da fila. */
+  @Test
+  void recordsWorkerPublicationResult() {
+    Product product = productRepository.save(Product.builder().slug("musa").name("MUSA").build());
+    SocialVideoPublicationResponse publication =
+        service.createPublication(
+            new CreateSocialVideoPublicationRequest(
+                product.getId(),
+                null,
+                null,
+                SocialPlatform.YOUTUBE,
+                SocialVideoFormat.YOUTUBE_SHORT,
+                "Short MUSA",
+                "Legenda",
+                "#Shorts",
+                "https://cdn.example.test/video.mp4",
+                null));
+
+    SocialVideoPublicationResponse publishing = service.markPublishing(publication.id());
+    SocialVideoPublicationResponse failed =
+        service.markFailed(
+            publication.id(), new MarkSocialVideoFailedRequest("YOUTUBE_ERROR", "quota"));
+    SocialVideoPublicationResponse published =
+        service.markPublished(
+            publication.id(),
+            new MarkSocialVideoPublishedRequest("https://youtube.com/watch?v=abc", "abc", null));
+
+    assertThat(publishing.status()).isEqualTo(SocialVideoPublicationStatus.PUBLISHING);
+    assertThat(failed.status()).isEqualTo(SocialVideoPublicationStatus.FAILED);
+    assertThat(failed.failureReason()).contains("YOUTUBE_ERROR", "quota");
+    assertThat(published.status()).isEqualTo(SocialVideoPublicationStatus.PUBLISHED);
+    assertThat(published.publishedUrl()).contains("youtube.com");
   }
 
   /** Registra métricas sem aceitar valores negativos na leitura comercial. */

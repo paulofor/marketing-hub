@@ -160,6 +160,26 @@ public class SocialDistributionService {
     return toPublicationResponse(publicationRepository.save(publication));
   }
 
+  /** Marca uma publicação como em processamento pelo executor externo. */
+  @Transactional
+  public SocialVideoPublicationResponse markPublishing(Long publicationId) {
+    SocialVideoPublication publication = getPublication(publicationId);
+    publication.setStatus(SocialVideoPublicationStatus.PUBLISHING);
+    publication.setFailureReason(null);
+    return toPublicationResponse(publicationRepository.save(publication));
+  }
+
+  /** Marca uma publicação como falha preservando causa acionável para o operador. */
+  @Transactional
+  public SocialVideoPublicationResponse markFailed(
+      Long publicationId, MarkSocialVideoFailedRequest request) {
+    SocialVideoPublication publication = getPublication(publicationId);
+    publication.setStatus(SocialVideoPublicationStatus.FAILED);
+    publication.setFailureReason(
+        normalizeFailureReason(request.errorCategory(), request.errorMessage()));
+    return toPublicationResponse(publicationRepository.save(publication));
+  }
+
   /** Registra a leitura de métricas posterior de uma publicação. */
   @Transactional
   public SocialPublicationMetricResponse recordMetric(
@@ -340,7 +360,8 @@ public class SocialDistributionService {
         publication.getScheduledAt(),
         publication.getQueuedAt(),
         publication.getPublishedAt(),
-        metric);
+        metric,
+        account != null ? account.getExternalAccountId() : null);
   }
 
   /** Converte métrica de publicação em resposta REST. */
@@ -391,5 +412,15 @@ public class SocialDistributionService {
       return null;
     }
     return Math.max(0L, value);
+  }
+
+  /** Normaliza a falha operacional recebida do worker para exibição na tela. */
+  private String normalizeFailureReason(String errorCategory, String errorMessage) {
+    String category = StringUtils.hasText(errorCategory) ? errorCategory.trim() : "WORKER_ERROR";
+    String message =
+        StringUtils.hasText(errorMessage)
+            ? errorMessage.trim()
+            : "Falha não detalhada pelo executor de mídia social.";
+    return category + ": " + message;
   }
 }

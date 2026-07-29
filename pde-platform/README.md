@@ -56,7 +56,7 @@ Docker:
 docker compose -f pde-platform/docker-compose.yml up --build
 ```
 
-Validação local integrada v5/v6:
+Validação local integrada v5/v6/v7:
 
 ```bash
 bash pde-platform/scripts/test-musa-local-integration.sh
@@ -64,16 +64,16 @@ bash pde-platform/scripts/test-musa-local-integration.sh
 
 Esse comando sobe um MySQL 5.7 local de teste, inicia o backend PDE na porta
 `8096`, inicia o frontend PDE na porta `57180` e roda Playwright nos hostnames
-versionados `v5.clubemusa.com.br` e `v6.clubemusa.com.br` sem interceptar
-`/api`. A validação confirma que o frontend conversa com o backend real pelo
-proxy, que cada hostname resolve sua `experienceVersion`, que o HLS da v6 é
-servido como `application/vnd.apple.mpegurl` e que eventos de vídeo entram no analytics persistido.
+versionados `v5.clubemusa.com.br`, `v6.clubemusa.com.br` e `v7.clubemusa.com.br`
+sem interceptar `/api`. A validação confirma que o frontend conversa com o
+backend real pelo proxy, que cada hostname resolve sua `experienceVersion`, que o
+HLS da v6 é servido como `application/vnd.apple.mpegurl` e que eventos de vídeo entram no analytics persistido.
 Use `PDE_KEEP_LOCAL_DB=1` para manter o banco após o teste e inspecionar os
 dados gravados.
 
-O deploy produtivo do Método MUSA também valida os dois subdomínios
-versionados. Em `main`, o workflow publica automaticamente a stack e executa
-smoke tests para `v5` e `v6`, incluindo health público, renderização, diagnóstico
+O deploy produtivo do Método MUSA também valida os subdomínios versionados. Em
+`main`, o workflow publica automaticamente a stack e executa smoke tests para
+`v5`, `v6` e futuras versões ativas, incluindo health público, renderização, diagnóstico
 público, `experienceVersion` esperada e stream HLS real. `workflow_dispatch`
 continua disponível apenas como acionamento manual adicional.
 
@@ -118,7 +118,10 @@ coerente com o histórico da jornada.
 - Duas versoes comerciais diferentes de PDE nunca podem compartilhar a mesma URL publica primaria. Se a URL for a mesma, a experiencia deve ser tratada como a mesma versao para campanha, analytics e decisao de escala.
 - A v5 usa `musa-pde-entry-v5-video-explicativo`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
 - A v6 usa `musa-pde-entry-v6-video-motivacional`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
+- A v7 usa `musa-pde-entry-v7-espelho-antes-de-sair` e deve nascer com contrato proprio de perguntas, copy da microexperiencia e videos funcionais, sem editar diretamente o contrato da v6.
 - Em subdominio versionado conhecido, o hostname tem prioridade sobre overrides globais de runtime. Assim, o mesmo deploy pode servir `v5.clubemusa.com.br` e `v6.clubemusa.com.br` simultaneamente sem misturar experiencia, video ou analytics por `experienceVersion`.
+- O frontend do MUSA concentra a resolucao comercial de versoes em `src/musaExperiences.ts`. Mudancas de copy, perguntas publicas, videos e comportamento de primeira dobra devem entrar no contrato da versao alvo, nao em condicionais soltas no `App.tsx`.
+- Versao ativa em campanha nao deve receber mudanca funcional junto com versao nova. Se a mudanca for necessaria para a v7, crie ou altere o contrato da v7 e mantenha teste provando que a v6 continua com o mesmo texto, pergunta, video e `experienceVersion`.
 - Videos comerciais do MUSA devem nascer da estrutura versionada de producao de videos do Marketing Hub, com roteiro, job, asset e URL de reproducao auditaveis. O build bloqueia MP4/HLS antigos derivados de `musa-diagnostic-slide-*`.
 - Cada versao PDE pode ter mais de um video comercial no campo `heroVideos`, com funcoes complementares como abertura/hero, prova visual, explicacao do mecanismo, quebra de objecoes e reforco de CTA. A primeira dobra escolhe o primeiro item apto da versao pelo `experienceVersion`, `placement`, `READY` e `APPROVED` para prévia/reproducao inicial, sem tratar os demais como variacoes inferiores ou como teste A/B obrigatorio.
 

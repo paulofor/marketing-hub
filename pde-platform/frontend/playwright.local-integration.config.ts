@@ -9,7 +9,7 @@ const chromiumExecutablePath =
 const launchOptions = {
   ...(chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : {}),
   args: [
-    '--host-resolver-rules=MAP v5.clubemusa.com.br 127.0.0.1,MAP v6.clubemusa.com.br 127.0.0.1',
+    '--host-resolver-rules=MAP v5.clubemusa.com.br 127.0.0.1,MAP v6.clubemusa.com.br 127.0.0.1,MAP v7.clubemusa.com.br 127.0.0.1',
     '--autoplay-policy=no-user-gesture-required',
   ],
 };

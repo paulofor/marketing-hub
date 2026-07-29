@@ -2,89 +2,17 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, CalendarDays, Check, ChevronRight, ClipboardCheck, CreditCard, Gauge, KeyRound, Library, LoaderCircle, Lock, LogIn, Mail, Pencil, Sparkles, Target, User } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import { AdaptiveVideoPlayer } from './AdaptiveVideoPlayer';
+import {
+  fallbackProduct,
+  isMusaDesireRoadExperience,
+  isMusaVideoExplainerExperience,
+  type ProductExperience,
+  resolveHeroVideoUrl,
+  resolveMusaExperienceContract,
+  resolveMusaVersionedHostConfig,
+  selectApprovedHeroVideo,
+} from './musaExperiences';
 import './styles.css';
-
-type Theme = {
-  primary: string;
-  accent: string;
-  background: string;
-  imageUrl: string;
-};
-
-type Diagnostic = {
-  title: string;
-  intro: string;
-  questions: string[];
-};
-
-type Mission = {
-  id: string;
-  day: number;
-  title: string;
-  principle: string;
-  action: string;
-  evidence: string;
-  visualCue: string;
-};
-
-type SupportMaterial = {
-  title: string;
-  type: string;
-  description: string;
-  url: string;
-};
-
-type HeroVideo = {
-  experienceVersion: string;
-  placement: string;
-  playbackUrl: string;
-  hlsPlaybackUrl?: string;
-  posterUrl?: string;
-  autoplay?: boolean;
-  muted?: boolean;
-  controls?: boolean;
-  loop?: boolean;
-  playsInline?: boolean;
-  source?: string;
-  assetId?: number;
-  experimentVideoAssetId?: number;
-  salesVideoProfileId?: number;
-  salesVideoJobId?: number;
-  reviewStatus?: string;
-  status?: string;
-};
-
-type ScientificEvidencePack = {
-  version: string;
-  principles: string[];
-  practicalApplications: string[];
-  allowedLanguage: string[];
-  forbiddenClaims: string[];
-  references: {
-    authors: string;
-    year: string;
-    title: string;
-    source: string;
-    doi: string;
-  }[];
-};
-
-type ProductExperience = {
-  slug: string;
-  experienceVersion?: string;
-  funnelVersion?: string;
-  name: string;
-  promise: string;
-  audience: string;
-  priceLabel: string;
-  theme: Theme;
-  diagnostic: Diagnostic;
-  missions: Mission[];
-  supportMaterials: SupportMaterial[];
-  heroVideos?: HeroVideo[];
-  scientificEvidencePack?: ScientificEvidencePack;
-  completionOffer: string;
-};
 
 type Workspace = {
   product: ProductExperience;
@@ -165,17 +93,6 @@ type MissionGuidanceConfig = {
   fields: MissionGuidanceField[];
 };
 
-type PublicDiagnosticQuestion = {
-  key: string;
-  stageLabel: string;
-  question: string;
-  options: string[];
-  imageUrl: string;
-  visualTitle: string;
-  visualText: string;
-  journeyEventType: string;
-};
-
 type PublicDiagnosticVideoVariant = 'control' | 'video';
 
 declare global {
@@ -194,101 +111,6 @@ declare global {
 const PUBLIC_DIAGNOSTIC_MAX_POLL_ATTEMPTS = 90;
 const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
-const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
-const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
-const MUSA_APPROVED_HERO_VIDEO_URL = '/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8';
-const MUSA_VERSIONED_HOSTS: Record<string, { experienceVersion: string }> = {
-  'v5.clubemusa.com.br': {
-    experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
-  },
-  'v6.clubemusa.com.br': {
-    experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
-  },
-};
-const MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS = new Set([
-  'musa-pde-entry-v5-estrada-desejo',
-  MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
-  MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
-]);
-
-const fallbackProduct: ProductExperience = {
-  slug: 'metodo-musa-7-dias',
-  experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
-  funnelVersion: 'musa-membership-funnel-v1',
-  name: 'Método MUSA - Experiência Guiada de 7 Dias',
-  promise: 'Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.',
-  audience: 'Mulheres urbanas que querem se sentir mais marcantes, alinhadas e seguras usando escolhas acessíveis.',
-  priceLabel: 'R$67',
-  theme: {
-    primary: '#7a2444',
-    accent: '#d6a75c',
-    background: '#fff8f3',
-    imageUrl: '/assets/musa-cover.png',
-  },
-  diagnostic: {
-    title: 'Mapa de Presença MUSA',
-    intro: 'Comece pelo espelho: descubra o primeiro passo para sua imagem comunicar mais intenção hoje, usando o que você já tem.',
-    questions: ['O que minha imagem comunica hoje?'],
-  },
-  missions: [
-    {
-      id: 'dia-1-ruido-visual',
-      day: 1,
-      title: 'Ler o sinal que sua imagem comunica',
-      principle: 'A presença cresce quando você identifica o sinal visual que mais distancia sua imagem da mulher que você quer transmitir.',
-      action: 'Hoje você não vai tentar mudar tudo. Vista ou separe uma combinação real, olhe roupa, cabelo, pele, perfume e detalhe final, identifique o sinal que deixa sua imagem comum ou desalinhada e escolha uma microação para comunicar mais intenção.',
-      evidence: 'Frase preenchida: hoje minha imagem comunica menos intenção quando...',
-      visualCue: 'Compare a sensação antes/depois de remover ruído visual ou reforçar um sinal de presença.',
-    },
-  ],
-  supportMaterials: [
-    {
-      title: 'E-book Método MUSA',
-      type: 'PDF',
-      description: 'Guia de consulta para entender o método, ver exemplos e revisar sua semana.',
-      url: '/materials/metodo-musa-ebook.pdf',
-    },
-    {
-      title: 'Experiência Guiada MUSA',
-      type: 'HTML',
-      description: 'Versão navegável da experiência para consultar a ordem, o diagnóstico e as missões de 7 dias.',
-      url: '/materials/experiencia-guiada-musa.html',
-    },
-    {
-      title: 'Plano, Checklists e Templates',
-      type: 'CSV',
-      description: 'Planilha com a ordem de aplicação, critérios de conclusão e pontos de atenção de cada material.',
-      url: '/materials/plano-checklists-e-templates.csv',
-    },
-    {
-      title: 'Mapa Visual MUSA',
-      type: 'Infográfico',
-      description: 'Resumo visual do método: coerência, redução de ruído e assinatura pessoal.',
-      url: '/materials/mapa-visual-musa.png',
-    },
-  ],
-  heroVideos: [
-    {
-      experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
-      placement: 'public_diagnostic_initial_explainer',
-      playbackUrl: MUSA_APPROVED_HERO_VIDEO_URL,
-      hlsPlaybackUrl: MUSA_APPROVED_HERO_VIDEO_URL,
-      autoplay: false,
-      muted: false,
-      controls: true,
-      loop: false,
-      playsInline: true,
-      source: 'MARKETING_HUB_MANAGED_HLS',
-      assetId: 1935,
-      experimentVideoAssetId: 22,
-      salesVideoProfileId: 35,
-      salesVideoJobId: 20462,
-      reviewStatus: 'APPROVED',
-      status: 'READY',
-    },
-  ],
-  completionOffer: 'Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais.',
-};
 
 const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
   'dia-1-ruido-visual': {
@@ -580,13 +402,13 @@ function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLI
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
 }
 
-function resolveMusaVersionedHostConfig() {
+function resolveCurrentMusaVersionedHostConfig() {
   const hostname = window.location.hostname.toLowerCase();
-  return MUSA_VERSIONED_HOSTS[hostname];
+  return resolveMusaVersionedHostConfig(hostname);
 }
 
 function resolveHostExperienceVersionOverride() {
-  return resolveMusaVersionedHostConfig()?.experienceVersion ?? '';
+  return resolveCurrentMusaVersionedHostConfig()?.experienceVersion ?? '';
 }
 
 function applyExperienceOverrides(productExperience: ProductExperience) {
@@ -600,56 +422,6 @@ function applyExperienceOverrides(productExperience: ProductExperience) {
     ...productExperience,
     experienceVersion: selectedExperienceVersion,
   };
-}
-
-function isMusaDesireRoadExperience(experienceVersion: string) {
-  return MUSA_DESIRE_ROAD_EXPERIENCE_VERSIONS.has(experienceVersion);
-}
-
-function isMusaVideoExplainerExperience(experienceVersion: string) {
-  return experienceVersion === MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION
-    || experienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
-}
-
-function isBlockedMusaSlideVideoUrl(videoUrl: string) {
-  return [
-    '/assets/hls/musa-v5-video-explicativo/',
-    '/assets/hls/musa-v6-video-motivacional/',
-    '/assets/musa-v5-video-explicativo',
-    '/assets/musa-v6-video-motivacional',
-  ].some((blockedPath) => videoUrl.includes(blockedPath));
-}
-
-function selectApprovedHeroVideo(productExperience: ProductExperience, experienceVersion: string) {
-  return (productExperience.heroVideos ?? []).find((video) =>
-    video.experienceVersion === experienceVersion
-    && video.placement === 'public_diagnostic_initial_explainer'
-    && Boolean(resolveHeroVideoHlsUrl(video))
-    && video.status === 'READY'
-    && video.reviewStatus === 'APPROVED'
-    && ['MARKETING_HUB_APPROVED_EXPERIMENT_VIDEO', 'MARKETING_HUB_MANAGED_HLS'].includes(video.source ?? ''));
-}
-
-function resolveHeroVideoHlsUrl(video: HeroVideo) {
-  const hlsPlaybackUrl = video.hlsPlaybackUrl?.trim();
-  if (hlsPlaybackUrl?.includes('.m3u8')) {
-    return hlsPlaybackUrl;
-  }
-  const playbackUrl = video.playbackUrl?.trim();
-  return playbackUrl?.includes('.m3u8') ? playbackUrl : '';
-}
-
-function resolveHeroVideoUrl(productExperience: ProductExperience, experienceVersion: string) {
-  const approvedHeroVideo = selectApprovedHeroVideo(productExperience, experienceVersion);
-  if (approvedHeroVideo) {
-    return resolveHeroVideoHlsUrl(approvedHeroVideo);
-  }
-  const streamOverride = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
-  if (streamOverride) {
-    return isBlockedMusaSlideVideoUrl(streamOverride) ? '' : streamOverride;
-  }
-  const videoOverride = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? '');
-  return videoOverride && !isBlockedMusaSlideVideoUrl(videoOverride) ? videoOverride : '';
 }
 
 const presenceBlockers: DiagnosticOption[] = [
@@ -670,49 +442,6 @@ const desiredPresenceSignals: DiagnosticOption[] = [
     key: 'imagem_com_intencao',
     label: 'Imagem com intenção',
     description: 'Sentir que roupa, beleza e detalhe final contam a mesma história.',
-  },
-];
-
-const publicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
-  {
-    key: 'mainObstacle',
-    stageLabel: 'Espelho da dor',
-    question: 'O que mais te incomoda quando você se olha pronta?',
-    options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
-    imageUrl: '/assets/musa-diagnostic-slide-1.png',
-    visualTitle: 'Comece pelo sinal que mais rouba elegância da sua presença.',
-    visualText: 'Nomeie o que você sente ao se ver pronta. A partir disso, o MUSA aponta onde reduzir ruído visual e qual cuidado testar primeiro.',
-    journeyEventType: 'PROBLEM_RECOGNIZED',
-  },
-  {
-    key: 'presenceFocus',
-    stageLabel: 'Sua rotina',
-    question: 'Em qual situação você quer se sentir mais presente primeiro?',
-    options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
-    imageUrl: '/assets/musa-diagnostic-slide-2.png',
-    visualTitle: 'Escolha uma cena real, não uma mudança de vida inteira.',
-    visualText: 'Você só precisa apontar onde quer se sentir mais segura hoje. O primeiro ajuste vem a partir dessa cena.',
-    journeyEventType: 'REAL_INPUT_SUBMITTED',
-  },
-  {
-    key: 'desiredSignal',
-    stageLabel: 'Sinal desejado',
-    question: 'Qual sinal você quer comunicar com mais força nessa cena?',
-    options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
-    imageUrl: '/assets/musa-diagnostic-slide-3.png',
-    visualTitle: 'A Consultora MUSA conecta dor, situação e sinal desejado.',
-    visualText: 'A partir do que você escolhe, o MUSA mostra qual detalhe pode deixar sua imagem mais coerente e intencional.',
-    journeyEventType: 'MECHANISM_VIEWED',
-  },
-  {
-    key: 'startingResource',
-    stageLabel: 'Primeiro cuidado',
-    question: 'Com o que você prefere começar hoje, sem comprar nada novo?',
-    options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
-    imageUrl: '/assets/musa-diagnostic-slide-4.png',
-    visualTitle: 'Escolha por onde você quer começar hoje.',
-    visualText: 'Você recebe uma sugestão simples para testar hoje e decide depois se quer continuar o plano completo.',
-    journeyEventType: 'CATEGORY_UNDERSTOOD',
   },
 ];
 
@@ -765,10 +494,14 @@ function App() {
   const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
   const currentProduct = workspace?.product ?? product;
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
+  const currentMusaExperience = resolveMusaExperienceContract(currentExperienceVersion);
+  const publicDiagnosticQuestions = currentMusaExperience.publicDiagnosticQuestions;
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
+  const heroStreamOverride = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');
+  const heroVideoOverride = readRuntimeConfigValue('VITE_MUSA_HERO_VIDEO_URL', (import.meta.env.VITE_MUSA_HERO_VIDEO_URL as string | undefined) ?? '');
   const heroVideo = selectApprovedHeroVideo(currentProduct, currentExperienceVersion);
-  const heroVideoUrl = resolveHeroVideoUrl(currentProduct, currentExperienceVersion);
+  const heroVideoUrl = resolveHeroVideoUrl(currentProduct, currentExperienceVersion, heroStreamOverride, heroVideoOverride);
   const heroPlaybackUrl = heroVideoUrl;
 
   const activeMission = useMemo(() => {
@@ -1862,7 +1595,7 @@ function App() {
   const selectedDesiredPresence = desiredPresenceSignals.find((option) => option.key === desiredPresence);
   const diagnosticReadyForEmail = authMode === 'login' || Boolean(presenceBlocker && desiredPresence);
   const showVideoHero = currentExperienceVersion === 'musa-pde-entry-v4-video-hero';
-  const showMotivationalTimelineVideo = currentExperienceVersion === MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION;
+  const showMotivationalTimelineVideo = currentMusaExperience.usesMotivationalTimelineVideo;
   const showPublishedPublicDiagnosticVideoHero =
     !workspace
     && Boolean(heroPlaybackUrl)

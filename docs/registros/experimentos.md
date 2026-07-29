@@ -6300,3 +6300,12 @@
 - foi feito: o monitor pós-deploy passou a mostrar qualidade do tráfego e avisar quando robôs/crawlers/QA foram removidos dos KPIs.
 - prevenção: teste automatizado cobre uma sessão humana e uma sessão de robô no mesmo produto, garantindo que apenas a humana entre nos KPIs comerciais e que a suspeita permaneça auditável.
 - impacto comercial esperado: proteger decisões de escala, pausa e ajuste de copy/funil contra ruído de tráfego não humano quando o experimento estiver no ar.
+
+## 2026-07-29 — PDE MUSA: contrato estrutural separado por versão
+
+- causa-raiz confirmada no frontend: v5 e v6 eram resolvidas por hostname, mas copy, perguntas publicas, regras de video e fallback ficavam concentrados no `App.tsx`, aumentando o risco de uma mudanca da v7 alterar a experiencia da v6 em campanha.
+- decisão comercial: uma versao PDE em campanha deve ter contrato proprio de entrada publica, perguntas, videos e comportamento de primeira dobra; versoes novas nao devem alterar contratos ativos como efeito colateral.
+- foi feito: criado `pde-platform/frontend/src/musaExperiences.ts` como catalogo versionado do MUSA, com contratos explicitos para v5, v6 e v7 (`musa-pde-entry-v7-espelho-antes-de-sair`).
+- foi feito: o `App.tsx` passou a consumir o contrato da versao ativa para perguntas publicas, flags de video, hostname e fallback, reduzindo condicionais comerciais soltas.
+- prevenção: teste Playwright cobre `v7.clubemusa.com.br` com pergunta propria e reabre `v6.clubemusa.com.br` para garantir que a pergunta da v6 nao mudou.
+- impacto comercial esperado: proteger a leitura e a conversao da v6 enquanto a v7 evolui com novos videos complementares, nova copy e nova microexperiencia sem contaminar campanha ativa.

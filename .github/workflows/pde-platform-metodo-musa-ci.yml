@@ -163,7 +163,7 @@ jobs:
       - backend
       - frontend
       - docker
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.target_environment == 'production'))
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.target_environment == 'production'
     permissions:
       contents: read
       packages: read

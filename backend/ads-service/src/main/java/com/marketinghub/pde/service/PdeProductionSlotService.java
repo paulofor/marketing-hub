@@ -14,9 +14,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,6 +36,8 @@ public class PdeProductionSlotService {
   private static final Duration VALIDATION_TIMEOUT = Duration.ofSeconds(12);
   private static final String VALIDATION_OK = "OK";
   private static final String VALIDATION_FAILED = "FAILED";
+  private static final Pattern SCRIPT_SRC_PATTERN =
+      Pattern.compile("<script[^>]+src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
 
   private final PdeProductionSlotRepository repository;
   private final HttpClient httpClient;
@@ -230,7 +236,8 @@ public class PdeProductionSlotService {
           healthPath,
           resolvedUrl);
     }
-    Optional<String> textValidationError = validatePageTexts(contract, page.body());
+    String validationDocument = page.body() + "\n" + loadScriptAssets(resolvedUrl, page.body());
+    Optional<String> textValidationError = validatePageTexts(contract, validationDocument);
     if (textValidationError.isPresent()) {
       return ValidationResult.failed(
           page.statusCode(),
@@ -286,6 +293,33 @@ public class PdeProductionSlotService {
     HttpRequest request =
         HttpRequest.newBuilder(URI.create(url)).timeout(VALIDATION_TIMEOUT).GET().build();
     return httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+  }
+
+  /** Carrega os bundles JavaScript referenciados pela entrada SPA para validar copy renderizada. */
+  private String loadScriptAssets(String pageUrl, String pageHtml)
+      throws IOException, InterruptedException {
+    StringBuilder assets = new StringBuilder();
+    for (String scriptUrl : scriptAssetUrls(pageUrl, pageHtml)) {
+      HttpResponse<String> response = get(scriptUrl);
+      if (isSuccess(response) && response.body() != null) {
+        assets.append('\n').append(response.body());
+      }
+    }
+    return assets.toString();
+  }
+
+  /** Extrai URLs absolutas dos scripts da entrada pública do PDE. */
+  private Set<String> scriptAssetUrls(String pageUrl, String pageHtml) {
+    Set<String> urls = new LinkedHashSet<>();
+    Matcher matcher = SCRIPT_SRC_PATTERN.matcher(pageHtml);
+    URI base = URI.create(pageUrl);
+    while (matcher.find()) {
+      String src = matcher.group(1);
+      if (StringUtils.hasText(src)) {
+        urls.add(base.resolve(src.trim()).toString());
+      }
+    }
+    return urls;
   }
 
   /** Informa se a resposta HTTP está na faixa de sucesso. */

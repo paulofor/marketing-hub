@@ -38,6 +38,8 @@ flowchart TD
     service --> fetch["GET /facebook-campaigns/experiments-ready"]
     fetch --> experiments["Experimentos prontos"]
     experiments --> service
+    service --> pageInstagram["GET /v20.0/{pageId}?fields=instagram_business_account"]
+    pageInstagram --> service
     service --> createCampaign["POST /v20.0/act_<adAccountId>/campaigns"]
     createCampaign --> createAdSet["POST /v20.0/act_<adAccountId>/adsets"]
     createAdSet --> uploadImage["POST /v20.0/act_<adAccountId>/adimages"]
@@ -88,7 +90,7 @@ flowchart TD
 | `optimization_goal` | Conta configurada (`worker-config.adSetOptimizationGoal`); forçado para `LEAD_GENERATION` quando o criativo referencia um formulário de leads | Default `LINK_CLICKS` |
 | `destination_type` | Conta configurada (`worker-config.adSetDestinationType`) ou `ON_AD` quando o criativo referencia um formulário de leads | Ajustado dinamicamente conforme o destino resolvido |
 | `targeting.geo_locations.countries` | Conta configurada (`worker-config.adSetTargetCountry`) | Segmentação inicial simplificada |
-| `promoted_object.page_id` | Conta configurada (`worker-config.defaultPageId`) ou página associada ao experimento | Necessário para campanhas de tráfego |
+| `promoted_object.page_id` | Página associada ao experimento ou fallback `worker-config.defaultPageId` | Necessário para campanhas de tráfego; a página do experimento tem prioridade |
 | `status` | Constante | `PAUSED` |
 | `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
@@ -108,8 +110,8 @@ flowchart TD
 | Campo | Origem | Observações |
 | --- | --- | --- |
 | `name` | `Experiment.name` + sufixo | Nome amigável para o criativo |
-| `object_story_spec.page_id` | Conta configurada (`worker-config.defaultPageId`) ou página associada ao experimento | Página responsável pelo anúncio |
-| `object_story_spec.instagram_user_id` | Conta configurada (`worker-config.defaultInstagramActorId`) | Opcional; usado quando há Instagram vinculado |
+| `object_story_spec.page_id` | Página associada ao experimento ou fallback `worker-config.defaultPageId` | Página responsável pelo anúncio; antes da criação o worker valida se ela está conectada ao Instagram usado |
+| `object_story_spec.instagram_user_id` | `Creative.instagramUserId`, `Experiment.instagramAccount.code` ou `worker-config.defaultInstagramActorId` | Opcional; quando presente, exige Page conectada ao mesmo Instagram na Graph API |
 | `object_story_spec.link_data.message` | Template (`worker-config.defaultCreativeMessageTemplate`) | Substitui `%s` pelo nome do experimento |
 | `object_story_spec.link_data.link` | Conta configurada (`worker-config.defaultWebsiteUrl`) ou `Creative.destinationUrl` | O worker envia apenas quando existe URL; formulários de leads funcionam sem este campo |
 | `object_story_spec.link_data.call_to_action.type` | Conta configurada (`worker-config.defaultCallToActionType`) ou `Creative.cta` | Lista completa documentada em [call-to-action-types.md](call-to-action-types.md) |
@@ -162,7 +164,7 @@ para o backend.
 | `facebookAccountId` | `worker-config.accountId` | Mantém rastreabilidade com a conta utilizada pelo worker |
 | `adSet.id` | Resposta da Graph API (ad set) | Persistido como `facebook_ads_ad_set.id` |
 | `adSet.targetCountry` | `worker-config.adSetTargetCountry` | Serializado para JSON em `facebook_ads_ad_set.targeting_json` |
-| `adSet.pageId` | `worker-config.defaultPageId` ou página associada ao experimento | Serializado como `promoted_object_json` |
+| `adSet.pageId` | Página associada ao experimento ou fallback `worker-config.defaultPageId` | Serializado como `promoted_object_json`; pares Page/Instagram incompatíveis são bloqueados com `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED` |
 | `adCreative.id` | Resposta da Graph API (criativo) | Persistido como `facebook_ads_ad_creative.id` |
 | `adCreative.websiteUrl` | Configuração do worker ou criativo aprovado | Serializado em `link_data_json` |
 | `adCreative.leadGenFormId` | `Creative.leadGenFormId` ou fallback da conta | Persistido em `link_data_json.call_to_action.value.lead_gen_form_id` |

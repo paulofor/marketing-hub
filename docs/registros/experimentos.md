@@ -6274,6 +6274,16 @@
 - prevenção: adicionado teste cobrindo falha temporária da Meta no criativo principal e no fallback simples, garantindo cleanup dos objetos parciais sem invalidar o experimento.
 - impacto comercial esperado: reduzir falsos bloqueios de campanha por instabilidade externa da Meta e manter o fluxo apto a publicar quando a plataforma voltar a aceitar o criativo.
 
+## 2026-07-29 — Experimento 76: Page/Instagram incompatível antes da publicação
+
+- correção da análise anterior: o `OAuthException code=2` / `Service temporarily unavailable` não deve ser aceito como temporário quando a Meta retorna `is_transient=false` ou `error_subcode=3858799`; esse padrão já mascarou rejeição estrutural de criativo.
+- causa-raiz confirmada via MCP/banco: o experimento 76 estava vinculado à Page `50 Termos Tecnologia` (`258279417366622`), mas usava o Instagram `@produtividade360_` (`17841468261725306`), conectado à Page `Produtividade 360` (`485863027935937`).
+- foi feito: o `facebook-ads-worker` passou a priorizar a página vinculada ao experimento sobre o `defaultPageId` da conta e validar na Graph API se a Page está conectada ao `instagram_user_id` usado pelo criativo antes de criar campanha/ad set/criativo/anúncio.
+- foi feito: pares incompatíveis agora bloqueiam cedo com `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED`, registram causa acionável e não criam objetos parciais na Meta.
+- foi feito: criado changelog incremental para trocar o experimento 76 para a Page correta `Produtividade 360`, voltar `FAILED` para `PLANNED` e limpar a liberação anterior para nova tentativa pelo fluxo normal.
+- prevenção: teste automatizado cobre Page sem Instagram conectado e teste de erro Meta exige `is_transient=true` para retry, impedindo que `code=2` enganoso volte a mascarar problema de configuração.
+- impacto comercial esperado: evitar bloqueios repetidos na publicação paga e impedir gasto/objetos parciais com identidade social errada.
+
 ## 2026-07-29 — PDE MUSA: versão pode ter múltiplos vídeos complementares
 
 - decisão comercial: uma versão PDE não deve ser tratada como dona de um único vídeo, nem como uma hierarquia de `principal` contra `variações`; ela pode ter vídeos com funções complementares, como abertura/hero, prova visual, explicação do mecanismo, quebra de objeções e reforço de CTA.

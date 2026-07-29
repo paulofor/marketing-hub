@@ -90,9 +90,16 @@ sequenceDiagram
    consulta `/api/facebook-campaigns/experiments/{id}/creatives-ready`, contrato exclusivo
    do módulo Facebook para consumo de criativos, e recebe somente criativos `READY`.
    Falhas nessa etapa impedem a criação da campanha específica, mas não interrompem o ciclo.
-5. **Resolver página, destino e mensagens** – Antes de falar com a Graph API o
-   worker calcula página do Facebook, Instagram user ID, URL/lead form e CTA,
-   combinando valores vindos do experimento com os defaults da conta.
+5. **Resolver página, Instagram, destino e mensagens** – Antes de criar qualquer
+   objeto de campanha, o worker calcula a página do Facebook priorizando a
+   página vinculada ao experimento; o `defaultPageId` da conta entra apenas como
+   fallback. Quando existe `instagram_user_id` no criativo, na conta Instagram
+   do experimento ou no default da conta, o worker consulta a Page na Graph API
+   (`/{pageId}?fields=instagram_business_account,connected_instagram_account`)
+   e bloqueia a publicação se a Page não estiver conectada a esse Instagram.
+   O bloqueio registra `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED`, marca o
+   experimento como `FAILED` com causa acionável e impede criação parcial na
+   Meta.
 6. **Criar a hierarquia na Graph API** – A sequência de chamadas `POST` cria a
    campanha (`/campaigns`), conjunto (`/adsets`), faz upload da imagem em
    `/adimages` para obter `image_hash`, cria o criativo (`/adcreatives`)
@@ -130,6 +137,7 @@ sequenceDiagram
 
 | Método | Caminho (versão inclusa) | Origem | Dados relevantes | Observações |
 | --- | --- | --- | --- | --- |
+| GET | `/v23.0/{pageId}?fields=instagram_business_account,connected_instagram_account` | `FacebookAdsService.fetchPageInstagramConnection` | Page selecionada no experimento e conta Instagram conectada | Gate pré-publicação para impedir par Page/Instagram incompatível antes de `/campaigns` e `/adcreatives` |
 | POST | `/v23.0/act_<adAccountId>/campaigns` | `FacebookAdsService.createCampaign` | Nome, objetivo dinâmico (`OUTCOME_TRAFFIC` ou `OUTCOME_LEADS`), `special_ad_categories=[]`, `status=PAUSED` | Usado tanto para campanhas Facebook quanto Instagram |
 | POST | `/v23.0/act_<adAccountId>/adsets` | `FacebookAdsService.createAdSet` | Daily budget, billing event, optimization goal, destination type, targeting por país, promoted page | Inclui `bid_strategy` e `bid_amount` quando configurados |
 | POST | `/v23.0/act_<adAccountId>/adimages` | `FacebookAdsService.uploadAdImage` | upload binário/URL da imagem do criativo + `access_token` | Upload é independente do anúncio/criativo e retorna `image_hash` reutilizável na biblioteca da conta |

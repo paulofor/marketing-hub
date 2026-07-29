@@ -189,16 +189,20 @@ experimento como `FAILED` e não cria campanha, ad set, criativo ou anúncio.
    dos criativos e registra o resultado em log (`success`/`fallback`) para cada
    peça selecionada no experimento.
 5. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
-   contendo o `page_id` definido na conta selecionada no backend. Quando a conta
-   não possui `defaultPageId`, o worker utiliza a página vinculada ao
-   experimento no backend (exposta como `facebookPage`, `associatedFacebookPage`
-   ou `facebookPageAssociation`) e ignora o experimento caso nenhuma associação
-   exista. A mesma regra vale para a identidade do Instagram: o worker consome o
-   campo `instagramAccount` retornado pelo backend ou o `defaultInstagramActorId`
-   configurado na conta e popula `instagram_user_id` quando disponível. Caso
-   nenhum identificador esteja disponível, o worker registra o aviso e segue
-   sem `instagram_user_id`, mantendo a criação do criativo para preservar
-   compatibilidade de conta.
+   contendo o `page_id` da página vinculada ao experimento no backend (exposta
+   como `facebookPage`, `associatedFacebookPage` ou `facebookPageAssociation`).
+   O `defaultPageId` da configuração só é usado como fallback quando o
+   experimento não informa página. Antes de criar campanha, o worker consulta a
+   Graph API da Page (`/{pageId}?fields=instagram_business_account,connected_instagram_account`)
+   e bloqueia a publicação se a página não estiver conectada ao
+   `instagram_user_id` que será usado nos criativos. Nessa situação o job recebe
+   o passo `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED`, o experimento é marcado
+   como `FAILED` com causa acionável e nenhum objeto parcial é criado na Meta.
+   A identidade do Instagram vem primeiro do criativo, depois de
+   `instagramAccount` retornado pelo backend ou do `defaultInstagramActorId`
+   configurado na conta. Caso nenhum identificador esteja disponível, o worker
+   registra o aviso e segue sem `instagram_user_id`, mantendo a criação do
+   criativo para preservar compatibilidade de conta.
    O conjunto de anúncios é sempre normalizado para veiculação exclusiva no
    Instagram (`publisher_platforms=["instagram"]` e
    `instagram_positions=["stream","story","reels","explore"]`), removendo

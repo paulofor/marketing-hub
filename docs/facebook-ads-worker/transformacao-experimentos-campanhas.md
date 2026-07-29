@@ -19,6 +19,8 @@ flowchart TD
     scheduler["FacebookCampaignScheduler"] --> service["FacebookCampaignService"]
     service --> backendFetch["GET /facebook-campaigns/experiments-ready"]
     backendFetch --> service
+    service --> pageInstagram["GET /v20.0/{pageId}?fields=instagram_business_account"]
+    pageInstagram --> service
     service --> campaign["POST /v20.0/act_{adAccountId}/campaigns"]
     campaign --> adset["POST /v20.0/act_{adAccountId}/adsets"]
     adset --> adimages["POST /v20.0/act_{adAccountId}/adimages"]
@@ -46,7 +48,16 @@ consulta `listReadyForCampaign()` no serviço de experimentos ([FacebookAdsCampa
 
 ### 2. Criação da hierarquia na Graph API
 
-Para cada experimento, o worker utiliza o
+Para cada experimento, o worker usa primeiro a página vinculada ao experimento;
+o `defaultPageId` da conta fica apenas como fallback operacional. Quando existe
+`instagram_user_id` no criativo, na conta Instagram do experimento ou no default
+da conta, o worker consulta a Graph API da Page para confirmar que ela está
+conectada ao mesmo Instagram. Se a Page não estiver conectada, a publicação é
+bloqueada com `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED`, o experimento é
+marcado como `FAILED` e nenhuma campanha/ad set/criativo/anúncio parcial é
+criado na Meta.
+
+Depois desse gate, o worker utiliza o
 [FacebookAdsService](../../facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/FacebookAdsService.java) para
 montar a hierarquia completa:
 

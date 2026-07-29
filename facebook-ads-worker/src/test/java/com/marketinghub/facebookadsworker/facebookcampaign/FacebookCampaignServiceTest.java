@@ -210,6 +210,16 @@ class FacebookCampaignServiceTest {
                 .setBody(reachEstimateResponseBody)
                 .addHeader("Content-Type", "application/json")
         );
+        facebook.enqueuePriorityConditionalResponse(
+            request -> request.getPath() != null
+                && request.getPath().startsWith("/v23.0/")
+                && request.getPath().contains("fields=instagram_business_account")
+                && !request.getPath().startsWith("/v23.0/999?")
+                && "GET".equals(request.getMethod()),
+            () -> new MockResponse()
+                .setBody("{\"id\":\"84\",\"instagram_business_account\":{\"id\":\"21\",\"username\":\"estudio\"}}")
+                .addHeader("Content-Type", "application/json")
+        );
     }
 
     @AfterEach
@@ -294,15 +304,18 @@ class FacebookCampaignServiceTest {
             boolean isImageAssetRequest = "/creative-image.jpg".equals(path) && "GET".equals(request.getMethod());
             boolean isVideoAssetRequest = "/creative-video.mp4".equals(path) && "GET".equals(request.getMethod());
             boolean isReachEstimateRequest = path != null && path.contains("/reachestimate?");
+            boolean isPageInstagramValidation = path != null && path.contains("fields=instagram_business_account");
             String normalizedDescription = description.toLowerCase();
             boolean expectsAdImage = normalizedDescription.contains("ad image");
             boolean expectsImageAsset = normalizedDescription.contains("image asset");
             boolean expectsVideoAsset = normalizedDescription.contains("video asset");
             boolean expectsReachEstimate = normalizedDescription.contains("reach");
+            boolean expectsPageInstagramValidation = normalizedDescription.contains("page instagram");
             if ((isAdImageRequest && !expectsAdImage)
                 || (isImageAssetRequest && !expectsImageAsset)
                 || (isVideoAssetRequest && !expectsVideoAsset)
-                || (isReachEstimateRequest && !expectsReachEstimate)) {
+                || (isReachEstimateRequest && !expectsReachEstimate)
+                || (isPageInstagramValidation && !expectsPageInstagramValidation)) {
                 continue;
             }
             return request;
@@ -392,7 +405,7 @@ class FacebookCampaignServiceTest {
         assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
         assertFalse(adSetPayload.has("bid_amount"));
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
-        assertEquals("42", adSetPayload.get("promoted_object").get("page_id").asText());
+        assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
         JsonNode targeting = adSetPayload.get("targeting");
         assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
         assertFalse(targeting.has("work_positions"));
@@ -405,7 +418,7 @@ class FacebookCampaignServiceTest {
         JsonNode creativePayload = objectMapper.readTree(postCreative.getBody().inputStream());
         assertEquals("Exp - Creative", creativePayload.get("name").asText());
         JsonNode storySpec = creativePayload.get("object_story_spec");
-        assertEquals("42", storySpec.get("page_id").asText());
+        assertEquals("84", storySpec.get("page_id").asText());
         JsonNode linkData = storySpec.get("link_data");
         assertEquals("Texto Criativo", linkData.get("message").asText());
         assertEquals("https://exp.example/landing", linkData.get("link").asText());
@@ -498,7 +511,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
-            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
+            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"is_transient\":true,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
@@ -533,7 +546,7 @@ class FacebookCampaignServiceTest {
         JsonNode fallbackPayload = objectMapper.readTree(fallbackCreative.getBody().inputStream());
         assertEquals("Exp - Creative - Link Fallback", fallbackPayload.get("name").asText());
         JsonNode storySpec = fallbackPayload.get("object_story_spec");
-        assertEquals("42", storySpec.get("page_id").asText());
+        assertEquals("84", storySpec.get("page_id").asText());
         assertEquals("21", storySpec.get("instagram_user_id").asText());
         JsonNode fallbackLinkData = storySpec.get("link_data");
         assertEquals("Texto Criativo", fallbackLinkData.get("message").asText());
@@ -585,11 +598,11 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
-            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
+            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"is_transient\":true,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse()
             .setResponseCode(400)
-            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
+            .setBody("{\"error\":{\"message\":\"Service temporarily unavailable\",\"type\":\"OAuthException\",\"code\":2,\"is_transient\":true,\"error_user_msg\":\"Não foi possível criar o criativo do anúncio\"}}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"success\":true}")
             .addHeader("Content-Type", "application/json"));
@@ -619,6 +632,48 @@ class FacebookCampaignServiceTest {
         assertEquals("DELETE", cleanupAdSet.getMethod());
         RecordedRequest cleanupCampaign = takeFacebookRequest("facebook cleanup campaign");
         assertEquals("DELETE", cleanupCampaign.getMethod());
+    }
+
+    @Test
+    // Garante bloqueio antes da publicacao quando a pagina nao esta conectada ao Instagram do criativo.
+    void blocksPublicationWhenSelectedPageIsNotConnectedToCreativeInstagramActor() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"999\",\"name\":\"Página desligada\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"21\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-page-ig-block\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueuePriorityConditionalResponse(
+            request -> request.getPath() != null
+                && request.getPath().startsWith("/v23.0/999?")
+                && request.getPath().contains("fields=instagram_business_account")
+                && "GET".equals(request.getMethod()),
+            () -> new MockResponse()
+                .setBody("{\"id\":\"999\"}")
+                .addHeader("Content-Type", "application/json")
+        );
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("experiments ready");
+        takeBackendRequest("creatives ready");
+        RecordedRequest pageValidation = takeFacebookRequest("page instagram validation");
+        assertEquals("GET", pageValidation.getMethod());
+        assertTrue(pageValidation.getPath().startsWith("/v23.0/999?"));
+
+        RecordedRequest failureStep = takeBackendRequestMatching(
+            "page instagram connection failure step",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+                && request.getBody().clone().readUtf8().contains("CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED")
+        );
+        JsonNode failurePayload = objectMapper.readTree(failureStep.getBody().inputStream());
+        assertEquals("job-page-ig-block", failurePayload.get("jobId").asText());
+        assertTrue(failurePayload.get("errorMessage").asText().contains("não está conectada ao Instagram"));
+
+        takeBackendRequestMatching(
+            "experiment failed status update",
+            request -> request.getPath().contains("/status?status=FAILED") && "PATCH".equals(request.getMethod())
+        );
+        assertEquals(1, facebook.getRequestCount());
     }
 
     @Test
@@ -734,7 +789,7 @@ class FacebookCampaignServiceTest {
                 && "PATCH".equals(request.getMethod())
         );
         assertNotNull(failedStatusRequest);
-        assertEquals(1, facebook.getRequestCount());
+        assertEquals(2, facebook.getRequestCount());
     }
 
     @Test
@@ -1518,7 +1573,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest postCampaign = takeFacebookRequest("facebook request");
         assertEquals("POST", postCampaign.getMethod());
         assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
-        assertEquals(4, facebook.getRequestCount());
+        assertEquals(5, facebook.getRequestCount());
 
         RecordedRequest patch = takeBackendRequestMatching(
             "experiment failed status update",
@@ -1577,7 +1632,7 @@ class FacebookCampaignServiceTest {
         assertEquals("GET", secondGet.getMethod());
         assertEquals("/api/facebook-campaigns/experiments-ready", secondGet.getPath());
 
-        assertEquals(4, facebook.getRequestCount());
+        assertEquals(5, facebook.getRequestCount());
         assertTrue(backend.getRequestCount() >= 8);
     }
 
@@ -2243,7 +2298,7 @@ class FacebookCampaignServiceTest {
                 && "PATCH".equals(request.getMethod())
         );
         assertNotNull(failedStatusRequest);
-        assertEquals(6, facebook.getRequestCount());
+        assertEquals(7, facebook.getRequestCount());
     }
 
     /**

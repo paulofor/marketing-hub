@@ -202,6 +202,48 @@ public class FacebookAdsService {
         return createInstagramCampaign(adAccountId, name, objective);
     }
 
+    /**
+     * Consulta a conta Instagram conectada a uma página para validar o ator antes de criar criativos.
+     */
+    public PageInstagramConnection fetchPageInstagramConnection(String pageId) {
+        if (!hasText(pageId)) {
+            throw new IllegalArgumentException("pageId must not be blank");
+        }
+        String fields = "instagram_business_account,connected_instagram_account";
+        String path = UriComponentsBuilder
+            .fromPath(buildVersionedPath("/" + pageId.trim()))
+            .queryParam("fields", fields)
+            .queryParam("access_token", requireAccessToken())
+            .build(false)
+            .toUriString();
+        FacebookApiResponse response = executeGet(path);
+        JsonNode body = response != null ? response.body() : null;
+        if (body == null || body.isNull()) {
+            return new PageInstagramConnection(pageId.trim(), null, null);
+        }
+        ConnectedInstagramAccount businessAccount = parseConnectedInstagramAccount(body.path("instagram_business_account"));
+        ConnectedInstagramAccount connectedAccount = parseConnectedInstagramAccount(body.path("connected_instagram_account"));
+        return new PageInstagramConnection(body.path("id").asText(pageId.trim()), businessAccount, connectedAccount);
+    }
+
+    /**
+     * Extrai o identificador e o username da conta Instagram retornada pela Graph API.
+     */
+    private ConnectedInstagramAccount parseConnectedInstagramAccount(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        String id = node.path("id").asText(null);
+        String username = node.path("username").asText(null);
+        if (!hasText(id) && !hasText(username)) {
+            return null;
+        }
+        return new ConnectedInstagramAccount(
+            hasText(id) ? id.trim() : null,
+            hasText(username) ? username.trim() : null
+        );
+    }
+
 
     /**
      * Cria uma audiência customizada de lista de clientes na Meta.
@@ -2091,6 +2133,14 @@ private FacebookInterest searchInterest(String interestName, String locale) {
 
     public record FacebookInterest(String id, String name) {}
     private record FacebookTargetingCategory(String id, String name) {}
+
+    public record PageInstagramConnection(
+        String pageId,
+        ConnectedInstagramAccount instagramBusinessAccount,
+        ConnectedInstagramAccount connectedInstagramAccount
+    ) {}
+
+    public record ConnectedInstagramAccount(String id, String username) {}
 
     /** Cria um criativo na Meta usando link_data para imagem ou video_data para vídeo. */
     public String createAdCreative(String adAccountId, AdCreativeRequest request) {

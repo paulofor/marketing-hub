@@ -180,6 +180,7 @@ jobs:
       PDE_PLATFORM_FRONTEND_V6_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V6_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V6_PORT || '5177' }}
       PDE_PLATFORM_FRONTEND_V7_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V7_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V7_PORT || '5178' }}
       PDE_PLATFORM_BACKEND_PORT: ${{ secrets.PDE_PLATFORM_BACKEND_PORT != '' && secrets.PDE_PLATFORM_BACKEND_PORT || '8096' }}
+      LEAD_PORTAL_PAYMENTS_REMOTE_PATH: ${{ secrets.LEAD_PORTAL_PAYMENTS_REMOTE_PATH != '' && secrets.LEAD_PORTAL_PAYMENTS_REMOTE_PATH || '/root/lead-portal-payments-service' }}
       AWS_REGION: ${{ secrets.PDE_MAIL_AWS_REGION != '' && secrets.PDE_MAIL_AWS_REGION || 'us-east-1' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.PDE_MAIL_AWS_ACCESS_KEY_ID != '' && secrets.PDE_MAIL_AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY != '' && secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
@@ -296,6 +297,35 @@ jobs:
               fi; \
             done \
             && docker image prune -af"
+      - name: Ensure Clube MUSA public proxy
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && (docker network inspect ${PDE_PLATFORM_NETWORK} >/dev/null 2>&1 || docker network create ${PDE_PLATFORM_NETWORK}) \
+            && if [ -f '${LEAD_PORTAL_PAYMENTS_REMOTE_PATH}/docker-compose.deploy.yml' ]; then \
+              cd '${LEAD_PORTAL_PAYMENTS_REMOTE_PATH}' \
+              && export LEAD_PORTAL_PAYMENTS_NETWORK='${PDE_PLATFORM_NETWORK}' \
+              && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:latest' \
+              && docker compose -f docker-compose.deploy.yml up -d --no-deps proxy; \
+            fi \
+            && PROXY_CONTAINERS=\"lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 lead-portal-payments-proxy-1 lead-portal-payments_proxy_1 proxy \$(docker ps --filter publish=443 --format '{{.Names}}' || true)\" \
+            && PROXY_FOUND=false \
+            && for proxy_container in \${PROXY_CONTAINERS}; do \
+              if docker inspect \"\${proxy_container}\" >/dev/null 2>&1; then \
+                PROXY_FOUND=true; \
+                docker network connect ${PDE_PLATFORM_NETWORK} \"\${proxy_container}\" >/dev/null 2>&1 || true; \
+                docker kill -s HUP \"\${proxy_container}\" >/dev/null 2>&1 || true; \
+              fi; \
+            done \
+            && if [ \"\${PROXY_FOUND}\" != 'true' ]; then \
+              echo 'Nenhum container de proxy HTTPS do Clube MUSA encontrado. Publique lead-portal-payments-service com o proxy antes de liberar PDE.' >&2; \
+              docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Status}}' >&2 || true; \
+              exit 1; \
+            fi \
+            && if ! docker ps --filter publish=443 --format '{{.Names}}' | grep -q .; then \
+              echo 'Nenhum container ativo publica a porta 443 no host do Clube MUSA.' >&2; \
+              docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Status}}' >&2 || true; \
+              exit 1; \
+            fi"
       - name: Validate production public container ports
         run: |
           if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v5" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then

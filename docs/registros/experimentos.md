@@ -6328,3 +6328,11 @@
 - decisão comercial: manter o gasto pausado até o domínio público versionado voltar a responder 200 e o funil registrar diagnóstico, paywall e checkout em teste real mobile.
 - próximo passo recomendado: corrigir o proxy público do Clube MUSA ou reconectar o serviço `lead-portal-payments-service` à network `public-net` onde estão os frontends PDE, validar `v5`, `v6` e `v7` via HTTPS e só então reativar tráfego.
 - prevenção aplicada no deploy: o workflow do `pde-platform` passa a reconectar/recarregar o proxy público quando o PDE é publicado e a validar `https://v5.clubemusa.com.br` e `https://v6.clubemusa.com.br` via `/healthz` e página inicial; assim a Action não fica verde apenas porque as portas diretas `5176/5177` respondem enquanto a rota real de tráfego pago continua 502.
+
+## 2026-07-29 — Clube MUSA: v6 indisponível por ausência de HTTPS público
+
+- causa-raiz operacional confirmada por validação pública: `https://v5.clubemusa.com.br`, `https://v6.clubemusa.com.br` e `https://v7.clubemusa.com.br` recusavam conexão na porta 443, indicando indisponibilidade do proxy HTTPS público do Clube MUSA, não apenas uma falha isolada da experiência v6.
+- histórico usado: o incidente anterior já apontava que portas diretas do PDE podiam responder enquanto a rota real de tráfego pago quebrava no proxy público; por isso a correção precisava proteger o caminho HTTPS final.
+- foi feito: o workflow do `pde-platform` passou a executar uma etapa explícita de recuperação/validação do proxy público, recriando o proxy oficial do `lead-portal-payments-service` quando o Compose remoto estiver disponível, reconectando-o à network pública do PDE e bloqueando o deploy se nenhum container publicar a porta 443.
+- prevenção: o cânone do PDE agora exige que a publicação falhe quando não houver proxy HTTPS ativo, evitando liberar tráfego ou considerar a v6 pronta apenas por health de container/porta direta.
+- impacto comercial esperado: reduzir perda de cliques pagos por destino indisponível e impedir retomada de campanha enquanto o caminho real `https://v6.clubemusa.com.br` não estiver validado.

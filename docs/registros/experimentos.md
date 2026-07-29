@@ -6257,3 +6257,11 @@
 - foi feito: a tela passou a exibir explicitamente se os dados PDE são validação pré-campanha ou performance de campanha.
 - prevenção: teste automatizado cobre o caso de sessões PDE existentes antes da primeira entrega Meta, impedindo que QA/acesso direto pareça resultado de campanha.
 - impacto comercial esperado: evitar decisão errada de criativo, funil ou escala antes de existir tráfego pago real.
+
+## 2026-07-29 — Experimento 76: validação PDE v6 sem falso bloqueio por bundle
+
+- causa-raiz confirmada: a correção que permitiu validar copy de React/SPA em bundles JavaScript passou a aplicar também a lista de textos técnicos proibidos nesses bundles; com isso, strings internas como `schema` bloqueavam a v6 mesmo sem aparecerem para a cliente final.
+- evidência: no navegador mobile, a página `https://v6.clubemusa.com.br` não exibe `schema`; o texto aparece apenas como string técnica no JavaScript, enquanto a validação publicada registrou `Texto técnico proibido encontrado: schema`.
+- foi feito: a validação de textos obrigatórios continua usando HTML + bundles, mas textos proibidos passam a ser checados apenas no HTML público entregue ao usuário.
+- prevenção: adicionado teste de regressão para aprovar SPA quando a copy obrigatória está no bundle e a palavra técnica existe somente como implementação interna.
+- impacto comercial esperado: liberar campanhas de PDE React/SPA sem derrubar gates comerciais reais de copy ou erro visível ao usuário.

@@ -299,12 +299,13 @@ public class ProductService {
             productLevelPdeCost(product),
             productLevelPdeCost(product),
             "Valor ai_cost registrado no cadastro do produto.");
+    BigDecimal monthlyPdeInfrastructureCost = pdeInfrastructureCost(product);
     ProductFinancialLineResponse pdeInfrastructure =
         brlCostLine(
             "PDE_INFRASTRUCTURE",
             "Infraestrutura VPS PDE",
-            pdeInfrastructureCost(product),
-            pdeInfrastructureCost(product).multiply(new BigDecimal("12")),
+            monthlyPdeInfrastructureCost,
+            monthlyPdeInfrastructureCost.multiply(new BigDecimal("12")),
             "Soma do custo mensal de VPS ativas ou staging vinculadas ao produto.");
     ProductFinancialLineResponse otherCosts =
         brlCostLine(

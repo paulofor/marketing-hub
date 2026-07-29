@@ -168,8 +168,8 @@ jobs:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 163.245.200.7
-      DEPLOY_USER: root
+      DEPLOY_HOST: ${{ secrets.PDE_PLATFORM_DEPLOY_HOST != '' && secrets.PDE_PLATFORM_DEPLOY_HOST || '163.245.200.7' }}
+      DEPLOY_USER: ${{ secrets.PDE_PLATFORM_DEPLOY_USER != '' && secrets.PDE_PLATFORM_DEPLOY_USER || secrets.VPS_DEPLOY_USER != '' && secrets.VPS_DEPLOY_USER || 'root' }}
       REMOTE_PATH: ${{ secrets.PDE_PLATFORM_REMOTE_PATH != '' && secrets.PDE_PLATFORM_REMOTE_PATH || '/root/pde-platform' }}
       IMAGE_TAG: ${{ needs.docker.outputs['image-tag'] }}
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}

@@ -93,8 +93,8 @@ jobs:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 163.245.200.7
-      DEPLOY_USER: root
+      DEPLOY_HOST: ${{ secrets.LEAD_PORTAL_PAYMENTS_DEPLOY_HOST != '' && secrets.LEAD_PORTAL_PAYMENTS_DEPLOY_HOST || '163.245.200.7' }}
+      DEPLOY_USER: ${{ secrets.LEAD_PORTAL_PAYMENTS_DEPLOY_USER != '' && secrets.LEAD_PORTAL_PAYMENTS_DEPLOY_USER || secrets.VPS_DEPLOY_USER != '' && secrets.VPS_DEPLOY_USER || 'root' }}
       REMOTE_PATH: ${{ secrets.LEAD_PORTAL_PAYMENTS_REMOTE_PATH || '/root/lead-portal-payments-service' }}
       IMAGE_REGISTRY: ghcr.io
       IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}

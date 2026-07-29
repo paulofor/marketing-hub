@@ -26,8 +26,6 @@ services:
       retries: 5
       start_period: 20s
     networks:
-      default:
-        ipv4_address: 172.30.0.2
       public-net:
         aliases:
           - lead-backend
@@ -49,8 +47,6 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      default:
-        ipv4_address: 172.30.0.3
       public-net:
         aliases:
           - lead-frontend
@@ -78,8 +74,6 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
     networks:
-      default:
-        ipv4_address: 172.30.0.4
       public-net:
         aliases:
           - public-proxy
@@ -107,15 +101,9 @@ services:
       - /var/log/letsencrypt:/var/log/letsencrypt
     restart: "no"
     networks:
-      default:
-        ipv4_address: 172.30.0.6
+      - default
 
 networks:
-  default:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.30.0.0/24
   public-net:
     name: public-net
     external: true

@@ -10,6 +10,7 @@ on:
     paths:
       - 'lead-portal/**'
       - '.github/workflows/lead-portal-ci.yml'
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -112,7 +113,7 @@ jobs:
         run: echo "value=${IMAGE_SHA_TAG}" >> "$GITHUB_OUTPUT"
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     needs:
       - backend
       - frontend

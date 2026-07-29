@@ -84,7 +84,7 @@ jobs:
         run: echo "value=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     needs:
       - test
       - docker

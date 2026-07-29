@@ -27,9 +27,16 @@ public class ProductCatalogService {
     private static final String MUSA_PRICE_LABEL = "R$67";
     private static final String MUSA_V5_EXPERIENCE_VERSION = "musa-pde-entry-v5-video-explicativo";
     private static final String MUSA_V6_EXPERIENCE_VERSION = "musa-pde-entry-v6-video-motivacional";
+    private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
     private static final Map<String, String> MUSA_VERSIONED_HOST_EXPERIENCES = Map.of(
+            "v1.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
+            "v2.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
             "v5.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
-            "v6.clubemusa.com.br", MUSA_V6_EXPERIENCE_VERSION);
+            "v6.clubemusa.com.br", MUSA_V6_EXPERIENCE_VERSION,
+            "v7.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
+            "v8.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
+            "v9.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
+            "v10.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION);
 
     private final Map<String, ProductExperienceResponse> products = Map.of(
             "metodo-musa-7-dias", createMusaProduct());

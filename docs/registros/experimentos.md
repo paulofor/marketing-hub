@@ -6336,3 +6336,11 @@
 - foi feito: o workflow do `pde-platform` passou a executar uma etapa explícita de recuperação/validação do proxy público, recriando o proxy oficial do `lead-portal-payments-service` quando o Compose remoto estiver disponível, reconectando-o à network pública do PDE e bloqueando o deploy se nenhum container publicar a porta 443.
 - prevenção: o cânone do PDE agora exige que a publicação falhe quando não houver proxy HTTPS ativo, evitando liberar tráfego ou considerar a v6 pronta apenas por health de container/porta direta.
 - impacto comercial esperado: reduzir perda de cliques pagos por destino indisponível e impedir retomada de campanha enquanto o caminho real `https://v6.clubemusa.com.br` não estiver validado.
+
+## 2026-07-29 — Clube MUSA: v6 com DNS divergente do host PDE
+
+- causa-raiz operacional confirmada por validação pública: `v6.clubemusa.com.br` resolve para `163.245.200.7`, mas esse host recusa conexões em `80`, `443` e `5177`; a porta direta da v6 responde `200` em `http://191.252.102.54:5177/healthz`.
+- histórico usado: registros anteriores do PDE já confirmavam o Clube MUSA publicado em `191.252.102.54:8096` e a v6 respondendo diretamente em `191.252.102.54:5177`, enquanto o inventário e os workflows ainda apontavam para `163.245.200.7`.
+- ajuste preparado: workflows de publicação do `pde-platform` e do `lead-portal-payments-service`, compose default do PDE e inventário operacional foram alinhados para `191.252.102.54`.
+- prevenção: a validação HTTPS pública do workflow do PDE agora falha explicitamente se `v5`, `v6` ou `v7` resolverem para IP diferente do host oficial de deploy antes de validar `/healthz` e página inicial.
+- impacto comercial esperado: impedir que a campanha mande cliques pagos para um domínio cujo DNS aponta para host sem proxy ativo, reduzindo perda direta de tráfego e protegendo a leitura da v6.

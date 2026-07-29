@@ -1306,6 +1306,7 @@ function App() {
         visitorId: visitorIdRef.current,
         sessionId: sessionIdRef.current,
         referrerUrl: document.referrer || undefined,
+        userAgent: navigator.userAgent,
         deviceType: resolveDeviceType(),
         screenWidth: window.screen.width,
         screenHeight: window.screen.height,

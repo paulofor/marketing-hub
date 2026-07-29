@@ -443,17 +443,18 @@ class AccessServiceTest {
                 "TEST",
                 "test",
                 "http://localhost:5176/?utm_source=ig&utm_campaign=campanha&utm_content=criativo",
-                Map.of(
-                        "visitorId", "visitor-mobile",
-                        "sessionId", "session-mobile",
-                        "utmSource", "ig",
-                        "utmCampaign", "campanha",
-                        "utmContent", "criativo",
-                        "deviceType", "mobile",
-                        "screenWidth", 390,
-                        "screenHeight", 844,
-                        "viewportWidth", 390,
-                        "viewportHeight", 844)));
+                Map.ofEntries(
+                        Map.entry("visitorId", "visitor-mobile"),
+                        Map.entry("sessionId", "session-mobile"),
+                        Map.entry("utmSource", "ig"),
+                        Map.entry("utmCampaign", "campanha"),
+                        Map.entry("utmContent", "criativo"),
+                        Map.entry("userAgent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1"),
+                        Map.entry("deviceType", "mobile"),
+                        Map.entry("screenWidth", 390),
+                        Map.entry("screenHeight", 844),
+                        Map.entry("viewportWidth", 390),
+                        Map.entry("viewportHeight", 844))));
 
         var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
 
@@ -515,6 +516,7 @@ class AccessServiceTest {
                 Map.of(
                         "visitorId", "visitor-remarketing",
                         "sessionId", "session-remarketing",
+                        "userAgent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1",
                         "utmSource", "instagram",
                         "utmMedium", "remarketing",
                         "utmCampaign", "exp-71-remarketing")));
@@ -524,6 +526,77 @@ class AccessServiceTest {
         assertThat(summary.trafficSources())
                 .singleElement()
                 .satisfies(source -> assertThat(source.trafficChannel()).isEqualTo("Remarketing"));
+    }
+
+    /** Confirma que robôs ficam fora dos KPIs comerciais e seguem disponíveis para auditoria. */
+    @Test
+    void excludesBotTrafficFromCommercialAnalyticsAndKeepsAuditBreakdown() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_traffic_quality;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "PAGE_VIEW",
+                null,
+                "cliente@sandbox.local",
+                "TEST",
+                "test",
+                "https://clubemusa.com.br/?utm_source=ig&utm_campaign=campanha",
+                "201.10.10.10",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1",
+                Map.of(
+                        "visitorId", "visitor-human",
+                        "sessionId", "session-human",
+                        "utmSource", "ig",
+                        "utmCampaign", "campanha",
+                        "deviceType", "mobile")));
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "PAGE_VIEW",
+                null,
+                null,
+                "TEST",
+                "test",
+                "https://clubemusa.com.br/",
+                "163.245.203.201",
+                "Mozilla/5.0 (compatible; HeadlessChrome crawler)",
+                Map.of(
+                        "visitorId", "visitor-bot",
+                        "sessionId", "session-bot",
+                        "deviceType", "desktop")));
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isEqualTo(1);
+        assertThat(summary.rawTotalEvents()).isEqualTo(2);
+        assertThat(summary.sessions()).isEqualTo(1);
+        assertThat(summary.rawSessions()).isEqualTo(2);
+        assertThat(summary.humanSessions()).isEqualTo(1);
+        assertThat(summary.botSuspectedSessions()).isEqualTo(1);
+        assertThat(summary.trafficSources())
+                .singleElement()
+                .satisfies(source -> assertThat(source.utmSource()).isEqualTo("ig"));
+        assertThat(summary.trafficQualityBreakdown())
+                .extracting("trafficQuality")
+                .contains("HUMAN", "BOT_SUSPECTED");
+        assertThat(summary.recentJourneys())
+                .anySatisfy(journey -> {
+                    assertThat(journey.sessionId()).isEqualTo("session-bot");
+                    assertThat(journey.trafficQuality()).isEqualTo("BOT_SUSPECTED");
+                    assertThat(journey.trafficProvider()).isEqualTo("META");
+                });
     }
 
     /** Confirma que jornadas por sessão retornam vazio no modo local sem banco analítico. */
@@ -900,6 +973,10 @@ class AccessServiceTest {
                       source VARCHAR(120),
                       page_url VARCHAR(1024),
                       client_ip VARCHAR(45),
+                      user_agent VARCHAR(512),
+                      traffic_quality VARCHAR(40),
+                      traffic_quality_reason VARCHAR(120),
+                      traffic_provider VARCHAR(80),
                       referrer_url VARCHAR(1024),
                       session_id VARCHAR(64),
                       visitor_id VARCHAR(64),

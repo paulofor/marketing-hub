@@ -14,6 +14,7 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeScreenSizeDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSessionJourneyDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficQualityDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
@@ -203,8 +204,16 @@ public class PostDeployMonitorService {
           0,
           0,
           0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
           null,
           Map.<String, Long>of(),
+          List.of(),
           List.of(),
           List.of(),
           List.of(),
@@ -249,8 +258,15 @@ public class PostDeployMonitorService {
             : "Usar estes dados apenas para QA/acessos internos; não tomar decisão de campanha até Meta Ads registrar entrega.",
         currentExperienceVersion,
         summary.totalEvents(),
+        summary.rawTotalEvents(),
         summary.uniqueVisitors(),
         summary.sessions(),
+        summary.rawSessions(),
+        summary.humanSessions(),
+        summary.botSuspectedSessions(),
+        summary.platformCrawlerSessions(),
+        summary.internalQaSessions(),
+        summary.unknownSessions(),
         summary.pedEntries(),
         summary.pageViews(),
         eventTotal(events, "PRESENCE_MAP_CHOICE_SELECTED"),
@@ -268,6 +284,7 @@ public class PostDeployMonitorService {
         events,
         toExperienceVersionDtos(summary),
         toTrafficSourceDtos(summary),
+        toTrafficQualityDtos(summary),
         toDeviceDtos(summary),
         toScreenSizeDtos(summary),
         toSessionJourneyDtos(summary));
@@ -361,6 +378,23 @@ public class PostDeployMonitorService {
         .toList();
   }
 
+  /** Converte a auditoria de qualidade de tráfego PDE para exibição no painel administrativo. */
+  private List<PostDeployPdeTrafficQualityDto> toTrafficQualityDtos(PdeAnalyticsSummary summary) {
+    if (summary.trafficQualityBreakdown() == null) {
+      return List.of();
+    }
+    return summary.trafficQualityBreakdown().stream()
+        .map(
+            quality ->
+                new PostDeployPdeTrafficQualityDto(
+                    quality.trafficQuality(),
+                    quality.label(),
+                    quality.sessions(),
+                    quality.events(),
+                    quality.percentage()))
+        .toList();
+  }
+
   /** Converte jornadas recentes do PDE sem expor a lista completa de passos técnicos. */
   private List<PostDeployPdeSessionJourneyDto> toSessionJourneyDtos(PdeAnalyticsSummary summary) {
     if (summary.recentJourneys() == null) {
@@ -373,6 +407,10 @@ public class PostDeployMonitorService {
                     journey.sessionId(),
                     journey.visitorId(),
                     journey.clientIp(),
+                    journey.userAgent(),
+                    journey.trafficQuality(),
+                    journey.trafficQualityReason(),
+                    journey.trafficProvider(),
                     journey.firstEventAt(),
                     journey.lastEventAt(),
                     journey.totalVisibleMs(),
@@ -475,6 +513,12 @@ public class PostDeployMonitorService {
     if (!hasCampaignTraffic(metaAds) && pde.available() && pde.sessions() > 0) {
       alerts.add(
           "Eventos PDE detectados antes de impressões Meta; tratar como validação pré-campanha, não performance.");
+    }
+    if (pde.available()
+        && (pde.botSuspectedSessions() + pde.platformCrawlerSessions() + pde.internalQaSessions())
+            > 0) {
+      alerts.add(
+          "Sessões de robô, crawler ou QA foram excluídas dos KPIs comerciais e preservadas na auditoria.");
     }
     if (spendAtLeast(metaAds, ZERO_INTERACTION_SPEND_THRESHOLD)
         && pde.available()

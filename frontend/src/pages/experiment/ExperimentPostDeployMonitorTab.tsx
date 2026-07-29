@@ -123,6 +123,7 @@ export default function ExperimentPostDeployMonitorTab({
   const monitor = monitorQuery.data;
   const pdeProductionSlots = monitor?.pdeProductionSlots ?? [];
   const trafficSources = monitor?.pde.trafficSources ?? [];
+  const trafficQualityBreakdown = monitor?.pde.trafficQualityBreakdown ?? [];
   const recentJourneys = monitor?.pde.recentJourneys ?? [];
 
   const pdeRows = useMemo(
@@ -271,6 +272,24 @@ export default function ExperimentPostDeployMonitorTab({
               <div className="alert alert-light border small mb-3">
                 {monitor.pde.measurementRecommendation}
               </div>
+              <div className="row g-2 mb-3">
+                <Metric
+                  label="Sessões humanas"
+                  value={formatNumber(monitor.pde.humanSessions)}
+                />
+                <Metric
+                  label="Sessões brutas"
+                  value={formatNumber(monitor.pde.rawSessions)}
+                />
+                <Metric
+                  label="Robô/crawler/QA"
+                  value={formatNumber(
+                    monitor.pde.botSuspectedSessions +
+                      monitor.pde.platformCrawlerSessions +
+                      monitor.pde.internalQaSessions,
+                  )}
+                />
+              </div>
               <div className="table-responsive">
                 <table className="table table-sm align-middle mb-0">
                   <tbody>
@@ -325,6 +344,48 @@ export default function ExperimentPostDeployMonitorTab({
           </div>
         </div>
       </div>
+
+      {trafficQualityBreakdown.length > 0 ? (
+        <div className="card">
+          <div className="card-body">
+            <h6 className="card-title mb-1">Qualidade do tráfego PDE</h6>
+            <p className="text-muted small mb-3">
+              KPIs comerciais usam apenas sessões humanas elegíveis. Robôs,
+              crawlers e QA ficam preservados para auditoria.
+            </p>
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Classificação</th>
+                    <th className="text-end">Sessões</th>
+                    <th className="text-end">Eventos</th>
+                    <th className="text-end">Participação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trafficQualityBreakdown.map((quality) => (
+                    <tr key={quality.trafficQuality}>
+                      <td className="fw-semibold">
+                        {quality.label || quality.trafficQuality}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(quality.sessions)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(quality.events)}
+                      </td>
+                      <td className="text-end">
+                        {formatPercent(quality.percentage)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="card">
         <div className="card-body">
@@ -516,6 +577,7 @@ export default function ExperimentPostDeployMonitorTab({
                   <tr>
                     <th>Sessão</th>
                     <th>IP</th>
+                    <th>Qualidade</th>
                     <th>Abandono</th>
                     <th>Última ação</th>
                     <th>Telas/seções</th>
@@ -531,6 +593,23 @@ export default function ExperimentPostDeployMonitorTab({
                         {(journey.sessionId ?? "sem-sessao").slice(0, 12)}
                       </td>
                       <td className="font-monospace small">{journey.clientIp ?? "—"}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            journey.trafficQuality === "HUMAN"
+                              ? "text-bg-success"
+                              : "text-bg-secondary"
+                          }`}
+                          title={[
+                            journey.trafficQualityReason,
+                            journey.trafficProvider,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        >
+                          {journey.trafficQuality ?? "UNKNOWN"}
+                        </span>
+                      </td>
                       <td className="fw-semibold">{abandonmentLabel(journey.abandonmentPoint)}</td>
                       <td>{journey.lastActionName ?? journey.lastEventType ?? "—"}</td>
                       <td className="small text-muted">

@@ -6280,3 +6280,13 @@
 - foi feito: a tela `Vídeos das versões PDE` passou a informar explicitamente que cada versão aceita múltiplos HLS funcionais e lista todos os vídeos vinculados ao experimento origem, sem rotular os demais como variações inferiores.
 - prevenção: adicionado teste de frontend garantindo que dois vídeos `LANDING_HERO` HLS da mesma versão sejam exibidos como funções complementares, sem esconder o segundo ativo e sem induzir leitura de A/B.
 - impacto comercial esperado: aumentar governança dos ativos de vídeo do PDE e facilitar construção de experiências com vídeos complementares sem duplicar versões ou perder histórico comercial.
+
+## 2026-07-29 — PDE MUSA: tráfego humano separado de robôs no analytics
+
+- causa-raiz confirmada: acessos de robôs, crawlers de plataforma, QA e datacenter podiam entrar na mesma métrica de sessões usada para leitura comercial do PDE.
+- decisão comercial: KPIs de campanha devem contar apenas sessões humanas elegíveis; tráfego suspeito precisa ficar preservado em auditoria, sem distorcer taxa de conversão, abandono ou consumo de vídeo.
+- foi feito: o backend PDE passou a persistir `user_agent`, `traffic_quality`, motivo e provedor inferido por evento, classificando sessões como `HUMAN`, `BOT_SUSPECTED`, `PLATFORM_CRAWLER`, `INTERNAL_QA` ou `UNKNOWN`.
+- foi feito: o resumo do PDE passou a excluir tráfego não humano dos agregados comerciais e expor sessões brutas, humanas e suspeitas separadamente.
+- foi feito: o monitor pós-deploy passou a mostrar qualidade do tráfego e avisar quando robôs/crawlers/QA foram removidos dos KPIs.
+- prevenção: teste automatizado cobre uma sessão humana e uma sessão de robô no mesmo produto, garantindo que apenas a humana entre nos KPIs comerciais e que a suspeita permaneça auditável.
+- impacto comercial esperado: proteger decisões de escala, pausa e ajuste de copy/funil contra ruído de tráfego não humano quando o experimento estiver no ar.

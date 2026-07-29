@@ -242,12 +242,17 @@ Metadados mínimos por evento quando disponíveis:
 - `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`;
 - URL da página;
 - URL de referência;
+- user-agent informado pelo navegador ou requisição;
+- IP público resolvido pelo backend quando disponível;
+- qualidade de tráfego classificada pelo backend (`HUMAN`, `BOT_SUSPECTED`, `PLATFORM_CRAWLER`, `INTERNAL_QA` ou `UNKNOWN`), com motivo e provedor inferido quando possível;
 - tipo de dispositivo;
 - tamanho de tela e viewport;
 - seção, ação ou material acionado;
 - tempo visível quando o evento representar permanência.
 
 O backend PDE deve persistir esses eventos em estrutura consultável e expor resumo agregado para decisão comercial. Logs técnicos não substituem analytics persistido. Antes de liberar nova campanha para o Clube MUSA/PDE, deve ser possível responder no mínimo: quantas pessoas entraram, quantas iniciaram login, quantas concluíram login, quantas viram paywall, quantas clicaram em assinatura, quantas iniciaram checkout, quantas tiveram compra aprovada, quantas receberam acesso e quantas fizeram primeiro uso.
+
+KPIs comerciais de campanha devem considerar por padrão apenas sessões classificadas como `HUMAN`. Sessões `BOT_SUSPECTED`, `PLATFORM_CRAWLER`, `INTERNAL_QA` e `UNKNOWN` devem permanecer persistidas para auditoria, diagnóstico técnico e investigação de tráfego, mas não podem inflar sessões, page views, breakdown por dispositivo, UTMs ou taxa de conversão usados para decisão de mídia.
 
 ### Health check público obrigatório por PDE
 

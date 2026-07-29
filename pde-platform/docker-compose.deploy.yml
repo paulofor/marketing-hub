@@ -16,7 +16,7 @@ services:
       PDE_DEPLOY_FRONTEND_URL: ${PDE_DEPLOY_FRONTEND_URL:-https://v5.clubemusa.com.br}
       PDE_DEPLOY_BACKEND_URL: ${PDE_DEPLOY_BACKEND_URL:-http://191.252.102.54:8096}
       PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:-}
-      PDE_DEPLOY_FRONTEND_PUBLIC_PORT: ${PDE_PLATFORM_FRONTEND_PORT:-5176}
+      PDE_DEPLOY_FRONTEND_PUBLIC_PORT: ${PDE_PLATFORM_FRONTEND_V5_PORT:-5176}
       PDE_DEPLOY_BACKEND_PUBLIC_PORT: ${PDE_PLATFORM_BACKEND_PORT:-8096}
       PDE_ACCESS_JDBC_URL: ${PDE_ACCESS_JDBC_URL:?PDE_ACCESS_JDBC_URL is required for PDE production analytics}
       PDE_ACCESS_JDBC_USERNAME: ${PDE_ACCESS_JDBC_USERNAME:?PDE_ACCESS_JDBC_USERNAME is required for PDE production analytics}
@@ -52,21 +52,71 @@ services:
       retries: 20
       start_period: 90s
 
-  pde-platform-frontend:
-    image: ${PDE_PLATFORM_FRONTEND_IMAGE:?PDE_PLATFORM_FRONTEND_IMAGE is required}
-    container_name: pde-platform-frontend
+  pde-platform-frontend-v5:
+    image: ${PDE_PLATFORM_FRONTEND_V5_IMAGE:?PDE_PLATFORM_FRONTEND_V5_IMAGE is required}
+    container_name: pde-platform-frontend-v5
     depends_on:
       pde-platform-backend:
         condition: service_healthy
     restart: unless-stopped
     ports:
-      - "${PDE_PLATFORM_FRONTEND_PORT:-5176}:80"
+      - "${PDE_PLATFORM_FRONTEND_V5_PORT:-5176}:80"
     environment:
       VITE_MUSA_CHECKOUT_URL: ${VITE_MUSA_CHECKOUT_URL:-https://go.pepper.com.br/owm6x}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
-      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: ${VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE:-musa-pde-entry-v5-video-explicativo}
-      VITE_MUSA_HERO_STREAM_URL: ${VITE_MUSA_HERO_STREAM_URL:-}
-      VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_HERO_VIDEO_URL:-}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v5-video-explicativo
+      VITE_MUSA_HERO_STREAM_URL: ${VITE_MUSA_V5_HERO_STREAM_URL:-}
+      VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_V5_HERO_VIDEO_URL:-}
+      PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
+    networks:
+      - pde-platform-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  pde-platform-frontend-v6:
+    image: ${PDE_PLATFORM_FRONTEND_V6_IMAGE:?PDE_PLATFORM_FRONTEND_V6_IMAGE is required}
+    container_name: pde-platform-frontend-v6
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "${PDE_PLATFORM_FRONTEND_V6_PORT:-5177}:80"
+    environment:
+      VITE_MUSA_CHECKOUT_URL: ${VITE_MUSA_CHECKOUT_URL:-https://go.pepper.com.br/owm6x}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v6-video-motivacional
+      VITE_MUSA_HERO_STREAM_URL: ${VITE_MUSA_V6_HERO_STREAM_URL:-}
+      VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_V6_HERO_VIDEO_URL:-}
+      PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
+    networks:
+      - pde-platform-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  pde-platform-frontend-v7:
+    image: ${PDE_PLATFORM_FRONTEND_V7_IMAGE:?PDE_PLATFORM_FRONTEND_V7_IMAGE is required}
+    container_name: pde-platform-frontend-v7
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "${PDE_PLATFORM_FRONTEND_V7_PORT:-5178}:80"
+    environment:
+      VITE_MUSA_CHECKOUT_URL: ${VITE_MUSA_CHECKOUT_URL:-https://go.pepper.com.br/owm6x}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v7-espelho-antes-de-sair
+      VITE_MUSA_HERO_STREAM_URL: ${VITE_MUSA_V7_HERO_STREAM_URL:-}
+      VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_V7_HERO_VIDEO_URL:-}
       PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
     networks:
       - pde-platform-net

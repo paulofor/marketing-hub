@@ -16,4 +16,7 @@ public record ModuleAvailabilityResponse(
     Instant lastCheckedAt,
     Long lastResponseTimeMs,
     String lastError,
-    String attemptedUrl) {}
+    String attemptedUrl,
+    Long lastCheckAgeSeconds,
+    boolean heartbeatStale,
+    String statusReason) {}

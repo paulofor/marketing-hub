@@ -44,7 +44,11 @@ GET /api/ops-monitor/v1/incidents/history?criticality=CRITICAL&type=WORKER
 ```
 
 - `criticality`: `CRITICAL`, `HIGH`, `MEDIUM` ou `LOW`.
-- `type`: `BACKEND`, `WORKER`, `COLLECTOR`, `PORTAL` ou `SERVICE`.
+- `type`: `BACKEND`, `WORKER`, `COLLECTOR`, `PORTAL`, `SERVICE` ou `PDE`.
+
+## Confiabilidade do status atual
+
+O endpoint `modules/availability` lista apenas módulos habilitados no cadastro operacional. Quando o último heartbeat passa da janela `offlineThresholdSeconds`, o backend retorna `status=UNKNOWN`, `heartbeatStale=true`, `lastCheckAgeSeconds` e `statusReason`. Assim, a tela diferencia queda confirmada de monitor atrasado antes de acionar recuperação operacional.
 
 ## Módulos monitorados na fase 4
 

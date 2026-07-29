@@ -88,7 +88,8 @@ class OpsMonitorServiceTest {
     highCollector.setType("COLLECTOR");
     highCollector.setCriticality("HIGH");
 
-    when(moduleRepository.findAll()).thenReturn(List.of(criticalWorker, highCollector));
+    when(moduleRepository.findByEnabledTrueOrderByCodeAsc())
+        .thenReturn(List.of(criticalWorker, highCollector));
     when(healthCheckRepository.findTop1ByModuleCodeOrderByCheckedAtDesc("ai-worker"))
         .thenReturn(Optional.empty());
 
@@ -200,7 +201,7 @@ class OpsMonitorServiceTest {
     execution.setStageCode("cnae-intake");
     execution.setStatus(OprmNichoCnaeV3StageExecutionStatus.PENDING);
     execution.setCreatedAt(Instant.now().minusSeconds(900));
-    when(moduleRepository.findAll()).thenReturn(List.of(collector));
+    when(moduleRepository.findByEnabledTrueOrderByCodeAsc()).thenReturn(List.of(collector));
     when(nichoCnaeV3StageExecutionRepository.findTop20ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
             org.mockito.ArgumentMatchers.eq(OprmNichoCnaeV3StageExecutionStatus.PENDING),
             org.mockito.ArgumentMatchers.any(Instant.class)))
@@ -223,6 +224,44 @@ class OpsMonitorServiceTest {
     assertThat(availability.getFirst().lastError()).contains("NichoCNAE v3");
     assertThat(availability.getFirst().attemptedUrl())
         .isEqualTo("http://191.252.181.168/actuator/health");
+  }
+
+  /** Garante que heartbeat vencido não aparece como queda atual confiável no painel. */
+  @Test
+  void listAvailabilityMarksStaleHeartbeatAsUnknown() {
+    OpsMonitoredModule module = new OpsMonitoredModule();
+    module.setCode("backend");
+    module.setName("Backend principal");
+    module.setType("BACKEND");
+    module.setBaseUrl("http://191.252.181.168");
+    module.setHealthPath("/ops-mh-observability-v2/health");
+    module.setCriticality("CRITICAL");
+    module.setOfflineThresholdSeconds(300);
+    OpsModuleHealthCheck staleCheck = new OpsModuleHealthCheck();
+    staleCheck.setCheckedAt(Instant.now().minusSeconds(900));
+    staleCheck.setStatus("OFFLINE");
+    staleCheck.setResponseTimeMs(5000L);
+    staleCheck.setErrorMessage("timeout antigo");
+    when(moduleRepository.findByEnabledTrueOrderByCodeAsc()).thenReturn(List.of(module));
+    when(healthCheckRepository.findTop1ByModuleCodeOrderByCheckedAtDesc("backend"))
+        .thenReturn(Optional.of(staleCheck));
+
+    OpsMonitorService service =
+        new OpsMonitorService(
+            moduleRepository,
+            healthCheckRepository,
+            incidentRepository,
+            availabilityDailyRepository,
+            geraLandingStageExecutionRepository,
+            nichoCnaeV3StageExecutionRepository);
+
+    var availability = service.listAvailability("CRITICAL", "BACKEND");
+
+    assertThat(availability).hasSize(1);
+    assertThat(availability.getFirst().status()).isEqualTo("UNKNOWN");
+    assertThat(availability.getFirst().heartbeatStale()).isTrue();
+    assertThat(availability.getFirst().lastCheckAgeSeconds()).isGreaterThan(300);
+    assertThat(availability.getFirst().lastError()).contains("última leitura gravada foi OFFLINE");
   }
 
   /** Garante que o gráfico usa heartbeats recentes quando o resumo diário ainda está vazio. */

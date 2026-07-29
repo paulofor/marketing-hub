@@ -9,6 +9,8 @@
 
 O `ops-monitor-worker` não acessa o banco diretamente. Toda gravação desse worker passa pelo backend.
 
+Nas consultas administrativas, o backend usa somente módulos `enabled=1`. Heartbeat antigo não é tratado como queda atual: quando `checked_at` excede `offline_threshold_seconds`, o status efetivo retornado para a tela é `UNKNOWN`, com metadados de atraso para indicar que a confiabilidade do monitor está vencida.
+
 Exceção crítica: o `pde-monitor-worker` acessa o banco diretamente para disponibilidade 24/7 de PDEs publicados. O escopo permitido é:
 
 - ler `ops_monitored_module` filtrando `type=PDE`, `criticality=CRITICAL` e `enabled=1`;

@@ -19,6 +19,7 @@ import { useSalesVideoCommercialPlaybooks } from "../../api/salesVideo/useSalesV
 import { useCreateSalesVideoCommercialPlaybook } from "../../api/salesVideo/useCreateSalesVideoCommercialPlaybook";
 import { useCreateSalesVideoConversionEvent } from "../../api/salesVideo/useCreateSalesVideoConversionEvent";
 import { useSalesVideoPerformanceSummary } from "../../api/salesVideo/useSalesVideoPerformanceSummary";
+import { useProductVideoProviderAvatars } from "../../api/product/useProductVideoProviderAvatars";
 import { useAsset } from "../../api/media/useAsset";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import {
@@ -47,10 +48,14 @@ const AVATAR_STRATEGY_LABELS: Record<string, string> = {
   PROPRIETARY_AVATAR_READY: "Avatar proprietario aprovado",
 };
 const DEFAULT_AVATAR_STRATEGY = "PLATFORM_TEST_AVATAR";
+const DEFAULT_HEYGEN_VOICE_ID = "0edbc867be6f48c5be8ff8b0fbca0802";
 
 export default function SalesVideoProfileDetailPage() {
   const { profileId } = useParams();
   const { data: profile, isLoading } = useSalesVideoProfile(profileId);
+  const { data: providerAvatars } = useProductVideoProviderAvatars(
+    profile?.productId,
+  );
   const { data: jobs } = useSalesVideoJobs(profileId);
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>(undefined);
   const { data: jobEvents, isLoading: eventsLoading } = useSalesVideoJobEvents(selectedJobId);
@@ -73,6 +78,7 @@ export default function SalesVideoProfileDetailPage() {
     providerFamily: DEFAULT_SALES_VIDEO_PROVIDER.providerFamily,
     providerName: DEFAULT_SALES_VIDEO_PROVIDER.providerName,
     executionMode: "TEST" as SalesVideoExecutionMode,
+    heyGenVoiceId: DEFAULT_HEYGEN_VOICE_ID,
   });
   const [complianceForm, setComplianceForm] = useState({
     requiresConsent: false,
@@ -198,6 +204,21 @@ export default function SalesVideoProfileDetailPage() {
   const watchablePlaybackUrl = watchableStreamUrl || watchableAssetUrl;
   const selectedRenderProvider =
     findSalesVideoProviderOption(renderForm.providerName) ?? DEFAULT_SALES_VIDEO_PROVIDER;
+  const selectedHeyGenAvatar = useMemo(
+    () =>
+      (providerAvatars ?? []).find(
+        (avatar) =>
+          avatar.provider.toUpperCase() === "HEYGEN" &&
+          avatar.supportsReusableAvatar &&
+          Boolean(avatar.providerAvatarId?.trim()),
+      ),
+    [providerAvatars],
+  );
+  const heyGenAvatarMissing =
+    selectedRenderProvider.providerName === "HEYGEN" && !selectedHeyGenAvatar;
+  const heyGenVoiceMissing =
+    selectedRenderProvider.providerName === "HEYGEN" &&
+    !renderForm.heyGenVoiceId.trim();
 
   if (!profileId) {
     return (
@@ -262,13 +283,26 @@ export default function SalesVideoProfileDetailPage() {
       toast.error("Informe quem está solicitando o render");
       return;
     }
+    if (heyGenAvatarMissing) {
+      toast.error("Cadastre o avatar HeyGen reutilizável do produto antes do render");
+      return;
+    }
+    if (heyGenVoiceMissing) {
+      toast.error("Informe a voz HeyGen antes do render");
+      return;
+    }
     try {
       await requestRender.mutateAsync({
         requestedBy: tenantContext.userEmail,
         providerFamily: selectedRenderProvider.providerFamily,
         providerName: selectedRenderProvider.providerName,
         executionMode: renderForm.executionMode,
-        metadataJson: buildSalesVideoRenderMetadata(selectedRenderProvider),
+        metadataJson: buildSalesVideoRenderMetadata(selectedRenderProvider, {
+          heygenAvatarId: selectedHeyGenAvatar?.providerAvatarId ?? undefined,
+          heygenAvatarGroupId:
+            selectedHeyGenAvatar?.providerAvatarGroupId ?? undefined,
+          heygenVoiceId: renderForm.heyGenVoiceId.trim() || undefined,
+        }),
       });
       toast.success("Render solicitado");
     } catch (error) {
@@ -655,8 +689,46 @@ export default function SalesVideoProfileDetailPage() {
                     O pedido envia plano de montagem em cenas e exige stream HLS publicável como
                     entrega principal.
                   </p>
+                  {heyGenAvatarMissing ? (
+                    <div className="alert alert-warning mt-2 mb-0">
+                      Cadastre o avatar HeyGen reutilizável do produto antes de solicitar este
+                      render.
+                    </div>
+                  ) : null}
+                  {selectedRenderProvider.providerName === "HEYGEN" && selectedHeyGenAvatar ? (
+                    <p className="form-text mb-0">
+                      Avatar HeyGen: {selectedHeyGenAvatar.characterName}.
+                    </p>
+                  ) : null}
+                  {selectedRenderProvider.providerName === "HEYGEN" ? (
+                    <div className="mt-2">
+                      <label className="form-label">Voz HeyGen</label>
+                      <input
+                        className="form-control"
+                        value={renderForm.heyGenVoiceId}
+                        onChange={(event) =>
+                          setRenderForm((prev) => ({
+                            ...prev,
+                            heyGenVoiceId: event.target.value,
+                          }))
+                        }
+                        placeholder="voice_id"
+                      />
+                      <p className="form-text mb-0">
+                        Padrão inicial: Sofia Brazil - Friendly, voz feminina em português.
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
-                <button className="btn btn-outline-primary" type="submit" disabled={requestRender.isPending}>
+                <button
+                  className="btn btn-outline-primary"
+                  type="submit"
+                  disabled={
+                    requestRender.isPending ||
+                    heyGenAvatarMissing ||
+                    heyGenVoiceMissing
+                  }
+                >
                   {requestRender.isPending && <span className="spinner-border spinner-border-sm me-2" />}
                   {requestRender.isPending ? "Solicitando..." : "Solicitar render"}
                 </button>

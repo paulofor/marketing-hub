@@ -24,6 +24,7 @@ import { useAsset } from "../../api/media/useAsset";
 import { useAssets } from "../../api/media/useAssets";
 import { useProduct } from "../../api/product/useProduct";
 import { useUpdateProductVideoSeedImage } from "../../api/product/useUpdateProductVideoSeedImage";
+import { useProductVideoProviderAvatars } from "../../api/product/useProductVideoProviderAvatars";
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
 import { useCreateSalesVideoProfile } from "../../api/salesVideo/useCreateSalesVideoProfile";
 import { useProductSalesVideoJobs } from "../../api/salesVideo/useProductSalesVideoJobs";
@@ -78,6 +79,7 @@ const DEFAULT_POST_PRODUCTION_VOICE = [
 
 const DEFAULT_POST_PRODUCTION_CAPTION =
   "Presença elegante começa com pequenos sinais. Veja seu Plano MUSA de 7 dias.";
+const DEFAULT_HEYGEN_VOICE_ID = "0edbc867be6f48c5be8ff8b0fbca0802";
 
 const DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT =
   "Imagem-base MUSA anti-sensualizacao: mulher brasileira adulta em um ambiente claro e cotidiano, organizando roupa e anotacoes do plano, postura natural, expressao de alivio e clareza, elegancia acessivel, sem pose sedutora, sem foco corporal, sem luxo ostensivo.";
@@ -113,6 +115,8 @@ export default function ProductSalesVideoPage() {
   const { productId } = useParams();
   const tenantContext = useTenantContext();
   const { data: product, isLoading: productLoading } = useProduct(productId);
+  const { data: providerAvatars, isLoading: providerAvatarsLoading } =
+    useProductVideoProviderAvatars(productId);
   const { data: readyAssets, isLoading: assetsLoading } = useAssets("READY");
   const { data: profiles, isLoading: profilesLoading } =
     useSalesVideoProfiles(productId);
@@ -141,6 +145,7 @@ export default function ProductSalesVideoPage() {
   const [postProductionCaption, setPostProductionCaption] = useState(
     DEFAULT_POST_PRODUCTION_CAPTION,
   );
+  const [heyGenVoiceId, setHeyGenVoiceId] = useState(DEFAULT_HEYGEN_VOICE_ID);
   const [montageJobIds, setMontageJobIds] = useState<string[]>([]);
   const [profileForm, setProfileForm] =
     useState<ProfileFormState>(emptyProfileForm);
@@ -203,6 +208,16 @@ export default function ProductSalesVideoPage() {
   const selectedProvider =
     findSalesVideoProviderOption(selectedProviderName) ??
     DEFAULT_SALES_VIDEO_PROVIDER;
+  const selectedHeyGenAvatar = useMemo(
+    () =>
+      (providerAvatars ?? []).find(
+        (avatar) =>
+          avatar.provider.toUpperCase() === "HEYGEN" &&
+          avatar.supportsReusableAvatar &&
+          Boolean(avatar.providerAvatarId?.trim()),
+      ),
+    [providerAvatars],
+  );
   const providerDurationLimitExceeded = Boolean(
     selectedProvider.maxDirectDurationSeconds &&
     selectedProfile?.targetDurationSeconds &&
@@ -213,6 +228,10 @@ export default function ProductSalesVideoPage() {
     providerDurationLimitExceeded && selectedProvider.maxDirectDurationSeconds
       ? `${selectedProvider.label} aceita no máximo ${selectedProvider.maxDirectDurationSeconds}s por solicitação. Use montagem por cenas ou outro provider para vídeos maiores.`
       : "";
+  const heyGenAvatarMissing =
+    selectedProvider.providerName === "HEYGEN" && !selectedHeyGenAvatar;
+  const heyGenVoiceMissing =
+    selectedProvider.providerName === "HEYGEN" && !heyGenVoiceId.trim();
   const selectedVideoObjective = selectedVideoJob
     ? describeVideoObjective(selectedProfile, selectedVideoJob)
     : undefined;
@@ -350,6 +369,14 @@ export default function ProductSalesVideoPage() {
       toast.error(providerDurationLimitMessage);
       return;
     }
+    if (heyGenAvatarMissing) {
+      toast.error("Cadastre o avatar HeyGen reutilizável do produto antes do render");
+      return;
+    }
+    if (heyGenVoiceMissing) {
+      toast.error("Informe a voz HeyGen antes do render");
+      return;
+    }
     try {
       await requestRender.mutateAsync({
         requestedBy: tenantContext.userEmail,
@@ -363,6 +390,10 @@ export default function ProductSalesVideoPage() {
           referenceImageCount: Number(referenceImageCount),
           sourceImageAssetId: selectedSeedImageAsset?.id,
           sourceImageUrl: selectedSeedImageAsset?.publicUrl ?? undefined,
+          heygenAvatarId: selectedHeyGenAvatar?.providerAvatarId ?? undefined,
+          heygenAvatarGroupId:
+            selectedHeyGenAvatar?.providerAvatarGroupId ?? undefined,
+          heygenVoiceId: heyGenVoiceId.trim() || undefined,
         }),
       });
       toast.success("Geração de vídeo solicitada");
@@ -466,7 +497,13 @@ export default function ProductSalesVideoPage() {
     }
   };
 
-  if (productLoading || profilesLoading || jobsLoading || assetsLoading) {
+  if (
+    productLoading ||
+    profilesLoading ||
+    jobsLoading ||
+    assetsLoading ||
+    providerAvatarsLoading
+  ) {
     return (
       <div>
         <PageTitle>Vídeos do Produto #{productId}</PageTitle>
@@ -934,7 +971,9 @@ export default function ProductSalesVideoPage() {
                   disabled={
                     !effectiveProfileId ||
                     requestRender.isPending ||
-                    providerDurationLimitExceeded
+                    providerDurationLimitExceeded ||
+                    heyGenAvatarMissing ||
+                    heyGenVoiceMissing
                   }
                 >
                   <PlayCircle size={16} aria-hidden="true" />
@@ -1011,6 +1050,50 @@ export default function ProductSalesVideoPage() {
                     </div>
                   </div>
                   <p>{providerDurationLimitMessage}</p>
+                </div>
+              ) : null}
+              {heyGenAvatarMissing ? (
+                <div className="product-video-page__quality product-video-page__quality--blocked">
+                  <div className="product-video-page__quality-header">
+                    <AlertTriangle size={18} aria-hidden="true" />
+                    <div>
+                      <span>Pedido bloqueado pelo provider</span>
+                      <strong>Avatar HeyGen não cadastrado</strong>
+                    </div>
+                  </div>
+                  <p>
+                    Registre o avatar reutilizável do produto em
+                    /api/products/{productId}/video-provider-avatars antes de
+                    solicitar o render com HeyGen.
+                  </p>
+                </div>
+              ) : null}
+              {selectedProvider.providerName === "HEYGEN" &&
+              selectedHeyGenAvatar ? (
+                <div className="product-video-page__provider-note">
+                  <strong>{selectedHeyGenAvatar.characterName}</strong>
+                  <span>
+                    Avatar HeyGen cadastrado para este produto e incluído no
+                    metadata do render.
+                  </span>
+                </div>
+              ) : null}
+              {selectedProvider.providerName === "HEYGEN" ? (
+                <div>
+                  <label className="form-label" htmlFor="heygen-voice-id">
+                    Voz HeyGen
+                  </label>
+                  <input
+                    id="heygen-voice-id"
+                    className="form-control"
+                    value={heyGenVoiceId}
+                    onChange={(event) => setHeyGenVoiceId(event.target.value)}
+                    placeholder="voice_id"
+                  />
+                  <p className="form-text mb-0">
+                    Padrão inicial: Sofia Brazil - Friendly, voz feminina em
+                    português para a Sofia MUSA.
+                  </p>
                 </div>
               ) : null}
               {selectedProvider.supportsOpenAiReferenceImage ? (

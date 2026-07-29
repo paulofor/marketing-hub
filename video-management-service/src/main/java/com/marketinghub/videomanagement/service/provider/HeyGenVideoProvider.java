@@ -190,7 +190,7 @@ public class HeyGenVideoProvider implements VideoProvider {
             payload.put("motion_prompt", buildMotionPrompt(job, profile, script, metadata));
         }
         if (StringUtils.hasText(config.getBackgroundValue())) {
-            payload.put("background", Map.of("value", config.getBackgroundValue()));
+            payload.put("background", Map.of("type", "color", "value", config.getBackgroundValue()));
         }
         if (config.isCaptionEnabled()) {
             payload.put("caption", Map.of("file_format", "srt", "style", config.getCaptionStyle()));

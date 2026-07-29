@@ -20,6 +20,9 @@ export type SalesVideoRenderMetadataOptions = {
   referenceImageCount?: number;
   sourceImageAssetId?: number;
   sourceImageUrl?: string;
+  heygenAvatarId?: string;
+  heygenAvatarGroupId?: string;
+  heygenVoiceId?: string;
 };
 
 export const DEFAULT_VISUAL_PROVIDER_DIRECTIVES = [
@@ -128,6 +131,9 @@ export function buildSalesVideoRenderMetadata(
   );
   const sourceImageUrl = renderOptions?.sourceImageUrl?.trim();
   const sourceImageAssetId = renderOptions?.sourceImageAssetId;
+  const heygenAvatarId = renderOptions?.heygenAvatarId?.trim();
+  const heygenAvatarGroupId = renderOptions?.heygenAvatarGroupId?.trim();
+  const heygenVoiceId = renderOptions?.heygenVoiceId?.trim();
   const providerUsesApprovedSourceImage = Boolean(
     sourceImageUrl && provider.providerName !== "LUMA_RAY_3_2",
   );
@@ -167,6 +173,22 @@ export function buildSalesVideoRenderMetadata(
       stream_required: true,
       stream_target: "HLS_ADAPTIVE",
     },
+    heygen_avatar:
+      provider.providerName === "HEYGEN"
+        ? {
+            heygen_avatar_id: heygenAvatarId || null,
+            heygen_avatar_group_id: heygenAvatarGroupId || null,
+            heygen_voice_id: heygenVoiceId || null,
+          }
+        : undefined,
+    heygen_avatar_id:
+      provider.providerName === "HEYGEN" ? heygenAvatarId || null : undefined,
+    heygen_avatar_group_id:
+      provider.providerName === "HEYGEN"
+        ? heygenAvatarGroupId || null
+        : undefined,
+    heygen_voice_id:
+      provider.providerName === "HEYGEN" ? heygenVoiceId || null : undefined,
     assembly_plan: {
       required: true,
       final_target_duration_seconds: 30,

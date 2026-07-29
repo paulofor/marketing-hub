@@ -65,6 +65,13 @@
 - Correção preparada: `sales_video_profile` passa a registrar `avatar_strategy`, com opção para testar avatar pronto, planejar avatar proprietário ou usar avatar proprietário aprovado; a criação de vídeo no frontend expõe essa escolha.
 - Regra operacional: usar avatar pronto para medir dor, promessa e clique com baixo custo; só investir em avatar proprietário depois de sinal positivo de atenção/conversão.
 
+## 2026-07-29 — Contrato HeyGen exige background tipado
+
+- Problema observado: o job MUSA PDE v7 com avatar e voz corretos chegou na API HeyGen, mas foi rejeitado com `invalid_parameter` em `background.type`.
+- Causa-raiz tratada: o `video-management-service` enviava `background.value`, mas a API HeyGen v3 espera o objeto de fundo tipado.
+- Correção preparada: o payload HeyGen agora envia `background: { type: "color", value: "#F8F0EA" }` e o teste do provider valida esse contrato.
+- Regra operacional: erro 400 de provider deve ser investigado pelo contrato real enviado, não tratado como instabilidade temporária.
+
 ## 2026-07-24 — Adapter direto HeyGen para avatar com voz sincronizada
 
 - Problema observado: HeyGen aparecia na combo do Marketing Hub, mas ainda dependia de implementação futura no executor para criar asset real.

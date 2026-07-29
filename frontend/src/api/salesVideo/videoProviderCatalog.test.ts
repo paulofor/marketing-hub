@@ -67,10 +67,28 @@ describe("videoProviderCatalog", () => {
     expect(provider?.supportsOpenAiReferenceImage).toBe(false);
     expect(provider?.recommendedUse).toContain("HEYGEN_API_KEY");
 
-    const metadata = JSON.parse(buildSalesVideoRenderMetadata(provider!));
+    const metadata = JSON.parse(
+      buildSalesVideoRenderMetadata(provider!, {
+        heygenAvatarId: "281a1e5b526841b0865ea466dfb33ab9",
+        heygenAvatarGroupId: "3952e73a14d94871b8130274e27287ee",
+        heygenVoiceId: "0edbc867be6f48c5be8ff8b0fbca0802",
+      }),
+    );
 
     expect(metadata.provider_strategy.provider_name).toBe("HEYGEN");
     expect(metadata.provider_strategy.supports_scene_assembly).toBe(false);
+    expect(metadata.heygen_avatar_id).toBe(
+      "281a1e5b526841b0865ea466dfb33ab9",
+    );
+    expect(metadata.heygen_avatar.heygen_avatar_group_id).toBe(
+      "3952e73a14d94871b8130274e27287ee",
+    );
+    expect(metadata.heygen_voice_id).toBe(
+      "0edbc867be6f48c5be8ff8b0fbca0802",
+    );
+    expect(metadata.heygen_avatar.heygen_voice_id).toBe(
+      "0edbc867be6f48c5be8ff8b0fbca0802",
+    );
   });
 
   it("limita VEO a renders diretos de ate 8 segundos", () => {

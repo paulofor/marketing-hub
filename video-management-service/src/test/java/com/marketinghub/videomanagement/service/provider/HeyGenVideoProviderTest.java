@@ -88,6 +88,9 @@ class HeyGenVideoProviderTest {
                 .contains("\"voice_id\":\"voice-ptbr\"")
                 .contains("\"aspect_ratio\":\"9:16\"")
                 .contains("\"output_format\":\"mp4\"")
+                .contains("\"background\"")
+                .contains("\"type\":\"color\"")
+                .contains("\"value\":\"#F8F0EA\"")
                 .doesNotContain("\"motion_prompt\"");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v3/videos/heygen-video-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/heygen-video-123.mp4");

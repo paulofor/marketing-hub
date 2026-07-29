@@ -78,6 +78,10 @@ jobs:
   deploy:
     name: Deploy (Ops Monitor Worker)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-vps-191-252-120-96
+      cancel-in-progress: false
     needs: build-and-push
     if: github.ref == 'refs/heads/main'
     environment: production

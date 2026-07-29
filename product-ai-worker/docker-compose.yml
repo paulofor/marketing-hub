@@ -1,6 +1,6 @@
 services:
   product-ai-worker:
-    image: ghcr.io/paulofor/marketing-hub/product-ai-worker:latest
+    image: ${PRODUCT_AI_WORKER_IMAGE:-ghcr.io/paulofor/marketing-hub/product-ai-worker:latest}
     container_name: product-ai-worker
     restart: unless-stopped
     ports:

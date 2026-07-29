@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-29-facebook-ads-worker-host-210-83
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ops_monitored_module
+              SET base_url = 'http://191.252.210.83:8082',
+                  health_path = '/worker-observability/health',
+                  log_path = '/worker-observability/logfile'
+              WHERE code = 'facebook-ads-worker';

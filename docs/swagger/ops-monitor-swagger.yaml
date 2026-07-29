@@ -33,6 +33,77 @@ paths:
       summary: Retorna resumo executivo de saúde operacional
       responses:
         '200': { description: OK }
+  /api/ops-monitor/v1/modules:
+    get:
+      summary: Lista cadastro canônico de módulos monitorados
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OpsMonitoredModule'
+    post:
+      summary: Cria módulo monitorado pelo sistema administrativo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpsMonitoredModuleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpsMonitoredModule'
+  /api/ops-monitor/v1/modules/{moduleCode}:
+    get:
+      summary: Busca módulo monitorado para edição
+      parameters:
+        - in: path
+          name: moduleCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpsMonitoredModule'
+    put:
+      summary: Atualiza módulo monitorado pelo sistema administrativo
+      parameters:
+        - in: path
+          name: moduleCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpsMonitoredModuleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpsMonitoredModule'
+    delete:
+      summary: Desativa módulo monitorado sem apagar histórico operacional
+      parameters:
+        - in: path
+          name: moduleCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
   /api/ops-monitor/v1/modules/availability:
     get:
       summary: Lista status atual dos módulos
@@ -98,6 +169,31 @@ paths:
 
 components:
   schemas:
+    OpsMonitoredModuleRequest:
+      type: object
+      required: [code, name, type, baseUrl, healthPath]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        type: { type: string, enum: [BACKEND, FRONTEND, WORKER, COLLECTOR, PORTAL, SERVICE, PDE, VPS] }
+        baseUrl: { type: string }
+        healthPath: { type: string }
+        logPath: { type: string, nullable: true }
+        publishedVersion: { type: string, nullable: true }
+        productUrl: { type: string, nullable: true }
+        monitoringUrl: { type: string, nullable: true }
+        containerImageVersion: { type: string, nullable: true }
+        enabled: { type: boolean }
+        criticality: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        offlineThresholdSeconds: { type: integer, format: int32 }
+    OpsMonitoredModule:
+      allOf:
+        - $ref: '#/components/schemas/OpsMonitoredModuleRequest'
+        - type: object
+          properties:
+            id: { type: integer, format: int64 }
+            createdAt: { type: string, format: date-time, nullable: true }
+            updatedAt: { type: string, format: date-time, nullable: true }
     ModuleAvailabilityResponse:
       type: object
       properties:

@@ -12,4 +12,7 @@ public interface OpsMonitoredModuleRepository extends JpaRepository<OpsMonitored
 
   /** Lista módulos habilitados para consumo pelo worker. */
   List<OpsMonitoredModule> findByEnabledTrueOrderByCodeAsc();
+
+  /** Lista todos os módulos para manutenção administrativa do cadastro canônico. */
+  List<OpsMonitoredModule> findAllByOrderByCodeAsc();
 }

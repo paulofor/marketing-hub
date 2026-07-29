@@ -1,6 +1,7 @@
 package com.marketinghub.opsmonitor.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -8,6 +9,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutio
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.opsmonitor.OpsModuleHealthCheck;
 import com.marketinghub.opsmonitor.OpsMonitoredModule;
+import com.marketinghub.opsmonitor.service.moduleRegistry.OpsMonitoredModuleRequest;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleAvailabilityDailyRepository;
@@ -69,6 +71,113 @@ class OpsMonitorServiceTest {
     assertThat(pending).hasSize(1);
     assertThat(pending.getFirst().moduleCode()).isEqualTo("backend");
     assertThat(pending.getFirst().healthPath()).isEqualTo("/actuator/health");
+  }
+
+  /** Garante que a tela cria módulo diretamente no cadastro canônico do monitor. */
+  @Test
+  void createRegisteredModulePersistsOpsMonitorModule() {
+    when(moduleRepository.findByCode("novo-worker")).thenReturn(Optional.empty());
+    when(moduleRepository.save(org.mockito.ArgumentMatchers.any(OpsMonitoredModule.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    OpsMonitorService service =
+        new OpsMonitorService(
+            moduleRepository,
+            healthCheckRepository,
+            incidentRepository,
+            availabilityDailyRepository,
+            geraLandingStageExecutionRepository,
+            nichoCnaeV3StageExecutionRepository);
+
+    var response =
+        service.createRegisteredModule(
+            new OpsMonitoredModuleRequest(
+                " novo-worker ",
+                "Novo Worker",
+                "worker",
+                "http://191.252.120.96:8090",
+                "/actuator/health",
+                "/actuator/logfile",
+                "v1",
+                null,
+                null,
+                null,
+                true,
+                "critical",
+                120));
+
+    assertThat(response.code()).isEqualTo("novo-worker");
+    assertThat(response.type()).isEqualTo("WORKER");
+    assertThat(response.criticality()).isEqualTo("CRITICAL");
+    assertThat(response.offlineThresholdSeconds()).isEqualTo(120);
+  }
+
+  /** Garante que edição administrativa preserva o código operacional do módulo. */
+  @Test
+  void updateRegisteredModuleKeepsModuleCodeAndUpdatesEditableFields() {
+    OpsMonitoredModule module = new OpsMonitoredModule();
+    module.setCode("ai-worker");
+    module.setName("AI Worker");
+    module.setType("WORKER");
+    module.setBaseUrl("http://191.252.210.83:4567");
+    module.setHealthPath("/worker-observability/health");
+    module.setCriticality("HIGH");
+    module.setOfflineThresholdSeconds(300);
+    when(moduleRepository.findByCode("ai-worker")).thenReturn(Optional.of(module));
+    when(moduleRepository.save(module)).thenReturn(module);
+    OpsMonitorService service =
+        new OpsMonitorService(
+            moduleRepository,
+            healthCheckRepository,
+            incidentRepository,
+            availabilityDailyRepository,
+            geraLandingStageExecutionRepository,
+            nichoCnaeV3StageExecutionRepository);
+
+    var response =
+        service.updateRegisteredModule(
+            "ai-worker",
+            new OpsMonitoredModuleRequest(
+                "outro-codigo",
+                "AI Worker Produção",
+                "worker",
+                "http://191.252.210.83:4567",
+                "/healthz",
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                "critical",
+                180));
+
+    assertThat(response.code()).isEqualTo("ai-worker");
+    assertThat(response.name()).isEqualTo("AI Worker Produção");
+    assertThat(response.healthPath()).isEqualTo("/healthz");
+    assertThat(response.criticality()).isEqualTo("CRITICAL");
+    assertThat(response.offlineThresholdSeconds()).isEqualTo(180);
+  }
+
+  /** Garante que remoção pela tela desativa o monitor sem apagar histórico vinculado. */
+  @Test
+  void disableRegisteredModuleKeepsRecordForOperationalHistory() {
+    OpsMonitoredModule module = new OpsMonitoredModule();
+    module.setCode("pde-musa-v7");
+    module.setEnabled(true);
+    when(moduleRepository.findByCode("pde-musa-v7")).thenReturn(Optional.of(module));
+    OpsMonitorService service =
+        new OpsMonitorService(
+            moduleRepository,
+            healthCheckRepository,
+            incidentRepository,
+            availabilityDailyRepository,
+            geraLandingStageExecutionRepository,
+            nichoCnaeV3StageExecutionRepository);
+
+    service.disableRegisteredModule("pde-musa-v7");
+
+    assertThat(module.isEnabled()).isFalse();
+    verify(moduleRepository).save(module);
   }
 
   /** Garante que a disponibilidade respeita filtros administrativos por criticidade e tipo. */

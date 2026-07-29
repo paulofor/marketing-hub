@@ -10,6 +10,8 @@ import com.marketinghub.opsmonitor.service.listAvailability.ModuleAvailabilityRe
 import com.marketinghub.opsmonitor.service.listAvailabilityHistory.ModuleAvailabilityHistoryResponse;
 import com.marketinghub.opsmonitor.service.listIncidents.ModuleIncidentResponse;
 import com.marketinghub.opsmonitor.service.listPendingChecks.PendingModuleCheckResponse;
+import com.marketinghub.opsmonitor.service.moduleRegistry.OpsMonitoredModuleRequest;
+import com.marketinghub.opsmonitor.service.moduleRegistry.OpsMonitoredModuleResponse;
 import com.marketinghub.opsmonitor.service.registerHeartbeat.RegisterModuleHeartbeatRequest;
 import com.marketinghub.opsmonitor.service.registerHeartbeat.RegisterModuleHeartbeatResponse;
 import com.marketinghub.opsmonitor.service.registerIncident.RegisterModuleIncidentRequest;
@@ -33,10 +35,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Orquestra contratos, persistência e consultas administrativas do monitoramento operacional. */
 @Service
@@ -96,6 +102,54 @@ public class OpsMonitorService {
                     module.getCriticality(),
                     module.getOfflineThresholdSeconds()))
         .toList();
+  }
+
+  /** Lista todos os módulos cadastrados na fonte canônica do Ops Monitor. */
+  @Transactional(readOnly = true)
+  public List<OpsMonitoredModuleResponse> listRegisteredModules() {
+    return moduleRepository.findAllByOrderByCodeAsc().stream()
+        .map(this::toModuleRegistryResponse)
+        .toList();
+  }
+
+  /** Busca um módulo cadastrado pelo código operacional. */
+  @Transactional(readOnly = true)
+  public OpsMonitoredModuleResponse getRegisteredModule(String moduleCode) {
+    return toModuleRegistryResponse(findModule(moduleCode));
+  }
+
+  /** Cria um módulo monitorado pela tela administrativa. */
+  @Transactional
+  public OpsMonitoredModuleResponse createRegisteredModule(OpsMonitoredModuleRequest request) {
+    String code = normalizeCode(request.code());
+    moduleRepository
+        .findByCode(code)
+        .ifPresent(
+            existing -> {
+              throw new ResponseStatusException(
+                  HttpStatus.CONFLICT, "Já existe módulo monitorado com o código " + code);
+            });
+    OpsMonitoredModule module = new OpsMonitoredModule();
+    module.setCode(code);
+    applyModuleRegistryRequest(module, request);
+    return toModuleRegistryResponse(moduleRepository.save(module));
+  }
+
+  /** Atualiza um módulo monitorado pela tela administrativa. */
+  @Transactional
+  public OpsMonitoredModuleResponse updateRegisteredModule(
+      String moduleCode, OpsMonitoredModuleRequest request) {
+    OpsMonitoredModule module = findModule(moduleCode);
+    applyModuleRegistryRequest(module, request);
+    return toModuleRegistryResponse(moduleRepository.save(module));
+  }
+
+  /** Desativa um módulo monitorado sem apagar histórico operacional vinculado. */
+  @Transactional
+  public void disableRegisteredModule(String moduleCode) {
+    OpsMonitoredModule module = findModule(moduleCode);
+    module.setEnabled(false);
+    moduleRepository.save(module);
   }
 
   /** Registra o heartbeat recebido do worker para um módulo monitorado. */
@@ -228,6 +282,72 @@ public class OpsMonitorService {
   /** Valida se um valor passa pelo filtro opcional recebido da tela. */
   private boolean matchesFilter(String value, String filter) {
     return filter == null || filter.isBlank() || value.equalsIgnoreCase(filter);
+  }
+
+  /** Aplica os campos editáveis da tela administrativa no módulo monitorado. */
+  private void applyModuleRegistryRequest(
+      OpsMonitoredModule module, OpsMonitoredModuleRequest request) {
+    module.setName(normalizeRequired(request.name(), "Nome"));
+    module.setType(normalizeRequired(request.type(), "Tipo").toUpperCase(Locale.US));
+    module.setBaseUrl(normalizeRequired(request.baseUrl(), "Base URL"));
+    module.setHealthPath(normalizeRequired(request.healthPath(), "Healthcheck"));
+    module.setLogPath(normalizeOptional(request.logPath()));
+    module.setPublishedVersion(normalizeOptional(request.publishedVersion()));
+    module.setProductUrl(normalizeOptional(request.productUrl()));
+    module.setMonitoringUrl(normalizeOptional(request.monitoringUrl()));
+    module.setContainerImageVersion(normalizeOptional(request.containerImageVersion()));
+    module.setEnabled(request.enabled() == null || request.enabled());
+    module.setCriticality(
+        normalizeOptional(request.criticality()) == null
+            ? "HIGH"
+            : normalizeOptional(request.criticality()).toUpperCase(Locale.US));
+    module.setOfflineThresholdSeconds(
+        request.offlineThresholdSeconds() == null ? 300 : request.offlineThresholdSeconds());
+  }
+
+  /** Normaliza campo obrigatório de cadastro e falha com mensagem clara quando vazio. */
+  private String normalizeRequired(String value, String fieldName) {
+    if (!StringUtils.hasText(value)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " é obrigatório");
+    }
+    return value.trim();
+  }
+
+  /** Normaliza e valida o código usado em URLs e contratos do monitor. */
+  private String normalizeCode(String value) {
+    String code = normalizeRequired(value, "Código").toLowerCase(Locale.US);
+    if (!code.matches("[a-z0-9][a-z0-9._-]*")) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Código deve usar apenas letras minúsculas, números, ponto, hífen ou sublinhado");
+    }
+    return code;
+  }
+
+  /** Normaliza campo opcional vazio para nulo antes de persistir. */
+  private String normalizeOptional(String value) {
+    return StringUtils.hasText(value) ? value.trim() : null;
+  }
+
+  /** Converte a entidade canônica para contrato administrativo completo. */
+  private OpsMonitoredModuleResponse toModuleRegistryResponse(OpsMonitoredModule module) {
+    return new OpsMonitoredModuleResponse(
+        module.getId(),
+        module.getCode(),
+        module.getName(),
+        module.getType(),
+        module.getBaseUrl(),
+        module.getHealthPath(),
+        module.getLogPath(),
+        module.getPublishedVersion(),
+        module.getProductUrl(),
+        module.getMonitoringUrl(),
+        module.getContainerImageVersion(),
+        module.isEnabled(),
+        module.getCriticality(),
+        module.getOfflineThresholdSeconds(),
+        module.getCreatedAt(),
+        module.getUpdatedAt());
   }
 
   /** Busca um módulo monitorado pelo código e falha quando ele não existe. */

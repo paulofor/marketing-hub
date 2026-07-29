@@ -12,6 +12,7 @@
 - Problema: a tela `/microservices/vps-inventory` dependia de `.github/workflows` no filesystem do backend; no deploy produtivo o endpoint retornava `services=[]` e `deployments=[]`.
 - Causa-raiz: os workflows são fonte versionada do repositório, mas não ficam disponíveis automaticamente dentro do artefato runtime do backend.
 - Ajuste: o backend passou a embarcar `operational-inventory/project-vps-deployments.yaml` com os 6 VPS operacionais como fallback quando a pasta de workflows não existir ou não tiver deploys detectáveis.
+- Decisão: o cadastro operacional de módulos foi unificado em `ops_monitored_module`, com criação/edição/desativação pela tela administrativa em `/microservices`. Novos módulos e VPS não devem ser inseridos por Liquibase; o inventário de workflows fica apenas como apoio de descoberta/preenchimento.
 - Prevenção: a tela passa a ter uma fonte versionada dentro do artefato publicado, sem depender de arquivos ausentes no servidor.
 
 ## 2026-07-29 — Confiabilidade do status exibido no painel

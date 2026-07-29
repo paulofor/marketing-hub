@@ -1,25 +1,32 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreateMicroservice } from "../../api/microservice/useCreateMicroservice";
-import PageTitle from "../../components/PageTitle";
-import { MicroservicePayload } from "../../api/microservice/useCreateMicroservice";
 import { useDiscoveredMicroservices } from "../../api/microservice/useDiscoveredMicroservices";
+import {
+  OpsMonitorModulePayload,
+  useCreateOpsMonitorModule,
+} from "../../api/opsMonitor/useCreateOpsMonitorModule";
+import PageTitle from "../../components/PageTitle";
 
-const defaultForm: MicroservicePayload = {
+const defaultForm: OpsMonitorModulePayload = {
+  code: "",
   name: "",
-  description: "",
+  type: "SERVICE",
   baseUrl: "",
-  category: "",
-  status: "ACTIVE",
-  owner: "",
-  documentationUrl: "",
-  healthCheckPath: "",
+  healthPath: "/actuator/health",
+  logPath: "",
+  publishedVersion: "",
+  productUrl: "",
+  monitoringUrl: "",
+  containerImageVersion: "",
+  enabled: true,
+  criticality: "HIGH",
+  offlineThresholdSeconds: 300,
 };
 
 export default function NewMicroservicePage() {
-  const [form, setForm] = useState<MicroservicePayload>(defaultForm);
+  const [form, setForm] = useState<OpsMonitorModulePayload>(defaultForm);
   const navigate = useNavigate();
-  const create = useCreateMicroservice();
+  const create = useCreateOpsMonitorModule();
   const {
     data: discoveredServices = [],
     isLoading: isLoadingDiscovery,
@@ -42,23 +49,23 @@ export default function NewMicroservicePage() {
 
     setForm((current) => ({
       ...current,
+      code: current.code || serviceName,
       name: suggestion.serviceName,
       baseUrl: suggestion.baseUrl ?? current.baseUrl,
-      healthCheckPath:
-        suggestion.healthCheckPath || current.healthCheckPath || "",
+      healthPath: suggestion.healthCheckPath || current.healthPath || "",
     }));
   };
 
   return (
     <div>
-      <PageTitle>Novo microserviço</PageTitle>
+      <PageTitle>Novo módulo monitorado</PageTitle>
       <div className="card mb-4">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <div>
               <div className="fw-semibold">Preencher usando docker-compose</div>
               <div className="text-body-secondary small">
-                Selecione um serviço para sugerir o nome, Base URL e caminho de
+                Selecione um serviço para sugerir o código, nome, Base URL e
                 healthcheck a partir das portas publicadas.
               </div>
             </div>
@@ -82,7 +89,9 @@ export default function NewMicroservicePage() {
             className="form-select"
             onChange={(event) => applyDiscovery(event.target.value)}
             disabled={
-              isLoadingDiscovery || isFetchingDiscovery || !discoveredServices.length
+              isLoadingDiscovery ||
+              isFetchingDiscovery ||
+              !discoveredServices.length
             }
             defaultValue=""
           >
@@ -93,11 +102,12 @@ export default function NewMicroservicePage() {
             </option>
             {discoveredServices.map((service) => (
               <option key={service.serviceName} value={service.serviceName}>
-                {service.serviceName} — {service.baseUrl}
+                {service.serviceName} - {service.baseUrl}
               </option>
             ))}
           </select>
-          {!isLoadingDiscovery && !isFetchingDiscovery &&
+          {!isLoadingDiscovery &&
+            !isFetchingDiscovery &&
             discoveredServices.length === 0 && (
               <div className="text-body-secondary small mt-2">
                 Nenhum serviço encontrado no docker-compose configurado.
@@ -106,6 +116,47 @@ export default function NewMicroservicePage() {
         </div>
       </div>
       <div className="row g-3">
+        <div className="col-md-4">
+          <label className="form-label">
+            Código <span className="text-danger">*</span>
+          </label>
+          <input
+            className="form-control"
+            value={form.code}
+            onChange={(e) => setForm({ ...form, code: e.target.value })}
+            placeholder="ex: ai-worker"
+          />
+        </div>
+        <div className="col-md-4">
+          <label className="form-label">Tipo</label>
+          <select
+            className="form-select"
+            value={form.type}
+            onChange={(e) => setForm({ ...form, type: e.target.value })}
+          >
+            <option value="BACKEND">Backend</option>
+            <option value="FRONTEND">Frontend</option>
+            <option value="WORKER">Worker</option>
+            <option value="COLLECTOR">Coletor</option>
+            <option value="SERVICE">Serviço</option>
+            <option value="PORTAL">Portal</option>
+            <option value="PDE">PDE</option>
+            <option value="VPS">VPS</option>
+          </select>
+        </div>
+        <div className="col-md-4">
+          <label className="form-label">Criticidade</label>
+          <select
+            className="form-select"
+            value={form.criticality}
+            onChange={(e) => setForm({ ...form, criticality: e.target.value })}
+          >
+            <option value="CRITICAL">Crítica</option>
+            <option value="HIGH">Alta</option>
+            <option value="MEDIUM">Média</option>
+            <option value="LOW">Baixa</option>
+          </select>
+        </div>
         <div className="col-md-6">
           <label className="form-label">
             Nome <span className="text-danger">*</span>
@@ -115,27 +166,6 @@ export default function NewMicroservicePage() {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
-        </div>
-        <div className="col-md-3">
-          <label className="form-label">Categoria</label>
-          <input
-            className="form-control"
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            placeholder="ex: infraestrutura, IA"
-          />
-        </div>
-        <div className="col-md-3">
-          <label className="form-label">Status</label>
-          <select
-            className="form-select"
-            value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value })}
-          >
-            <option value="ACTIVE">Ativo</option>
-            <option value="INACTIVE">Inativo</option>
-            <option value="DEPRECATED">Descontinuado</option>
-          </select>
         </div>
         <div className="col-md-6">
           <label className="form-label">
@@ -152,49 +182,99 @@ export default function NewMicroservicePage() {
           <label className="form-label">Caminho de healthcheck</label>
           <input
             className="form-control"
-            value={form.healthCheckPath}
-            onChange={(e) =>
-              setForm({ ...form, healthCheckPath: e.target.value })
-            }
+            value={form.healthPath}
+            onChange={(e) => setForm({ ...form, healthPath: e.target.value })}
             placeholder="/health | /status"
           />
         </div>
         <div className="col-md-6">
-          <label className="form-label">Responsável</label>
+          <label className="form-label">Caminho de log</label>
           <input
             className="form-control"
-            value={form.owner}
-            onChange={(e) => setForm({ ...form, owner: e.target.value })}
-            placeholder="Squad ou pessoa de contato"
+            value={form.logPath ?? ""}
+            onChange={(e) => setForm({ ...form, logPath: e.target.value })}
+            placeholder="/actuator/logfile"
           />
         </div>
         <div className="col-md-6">
-          <label className="form-label">URL da documentação</label>
+          <label className="form-label">Versão publicada</label>
           <input
             className="form-control"
-            value={form.documentationUrl}
+            value={form.publishedVersion ?? ""}
             onChange={(e) =>
-              setForm({ ...form, documentationUrl: e.target.value })
+              setForm({ ...form, publishedVersion: e.target.value })
             }
-            placeholder="https://docs.seuservico.com"
+            placeholder="tag, versão ou slot"
           />
         </div>
-        <div className="col-12">
-          <label className="form-label">Descrição</label>
-          <textarea
+        <div className="col-md-6">
+          <label className="form-label">Imagem/versão de container</label>
+          <input
             className="form-control"
-            rows={4}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="Resumo das responsabilidades, SLAs e integrações"
+            value={form.containerImageVersion ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, containerImageVersion: e.target.value })
+            }
+            placeholder="registry/imagem:tag"
           />
+        </div>
+        <div className="col-md-6">
+          <label className="form-label">URL do produto</label>
+          <input
+            className="form-control"
+            value={form.productUrl ?? ""}
+            onChange={(e) => setForm({ ...form, productUrl: e.target.value })}
+            placeholder="https://produto.exemplo.com"
+          />
+        </div>
+        <div className="col-md-6">
+          <label className="form-label">URL de monitoramento</label>
+          <input
+            className="form-control"
+            value={form.monitoringUrl ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, monitoringUrl: e.target.value })
+            }
+            placeholder="https://produto.exemplo.com?mh_monitor=1"
+          />
+        </div>
+        <div className="col-md-3">
+          <label className="form-label">Limite offline (s)</label>
+          <input
+            className="form-control"
+            type="number"
+            min={30}
+            value={form.offlineThresholdSeconds}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                offlineThresholdSeconds: Number(e.target.value),
+              })
+            }
+          />
+        </div>
+        <div className="col-md-3 d-flex align-items-end">
+          <div className="form-check">
+            <input
+              className="form-check-input"
+              id="enabled"
+              type="checkbox"
+              checked={form.enabled}
+              onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
+            />
+            <label className="form-check-label" htmlFor="enabled">
+              Monitorar ativo
+            </label>
+          </div>
         </div>
       </div>
       <div className="mt-4 d-flex gap-2">
         <button
           className="btn btn-primary"
           onClick={submit}
-          disabled={create.isPending || !form.name || !form.baseUrl}
+          disabled={
+            create.isPending || !form.code || !form.name || !form.baseUrl
+          }
         >
           {create.isPending && (
             <span

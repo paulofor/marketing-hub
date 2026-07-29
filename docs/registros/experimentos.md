@@ -6273,3 +6273,10 @@
 - foi feito: o `facebook-ads-worker` passou a reconhecer erro temporário da plataforma Meta e manter o experimento elegível para retry posterior, sem enviar `PATCH /experiments/{id}/status?status=FAILED`.
 - prevenção: adicionado teste cobrindo falha temporária da Meta no criativo principal e no fallback simples, garantindo cleanup dos objetos parciais sem invalidar o experimento.
 - impacto comercial esperado: reduzir falsos bloqueios de campanha por instabilidade externa da Meta e manter o fluxo apto a publicar quando a plataforma voltar a aceitar o criativo.
+
+## 2026-07-29 — PDE MUSA: versão pode ter múltiplos vídeos
+
+- decisão comercial: uma versão PDE não deve ser tratada como dona de um único vídeo; ela pode ter hero principal, variações de hook, prova, explicativo e outros vídeos HLS usados em testes ou evoluções da experiência.
+- foi feito: a tela `Vídeos das versões PDE` passou a informar explicitamente que cada versão aceita múltiplos HLS e lista todas as variações vinculadas ao experimento origem, mantendo apenas o melhor aprovado como destaque no player.
+- prevenção: adicionado teste de frontend garantindo que dois vídeos `LANDING_HERO` HLS da mesma versão sejam exibidos como `Principal` e `Variação`, sem esconder o segundo ativo.
+- impacto comercial esperado: aumentar governança dos ativos de vídeo do PDE e facilitar testes de criativo/primeira dobra sem duplicar versões ou perder histórico comercial.

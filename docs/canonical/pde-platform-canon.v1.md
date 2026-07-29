@@ -347,6 +347,8 @@ Quando uma mesma imagem do frontend PDE for reutilizada por mais de um subdomín
 
 O workflow oficial de publicação do `pde-platform` deve validar cada slot produtivo versionado ativo ou pronto, no mínimo `https://v5.clubemusa.com.br` e `https://v6.clubemusa.com.br` enquanto ambos existirem. A validação pós-deploy precisa provar health público, renderização da entrada, contrato público e jornada diagnóstica em cada subdomínio, porque um único smoke test no domínio raiz não comprova teste simultâneo de versões.
 
+Como os subdomínios versionados do Clube MUSA são superfície direta de campanha, o workflow oficial do `pde-platform` também deve garantir que o proxy HTTPS público esteja ativo antes de aprovar a publicação. Se o proxy do `lead-portal-payments-service` estiver disponível no host, o workflow deve recriá-lo/recarregá-lo pelo Compose versionado e reconectá-lo à network pública usada pelo PDE. Se nenhum container publicar a porta 443 ou nenhum proxy puder ser encontrado, a publicação deve falhar com diagnóstico operacional claro; nunca considerar a v5/v6 pronta apenas porque as portas diretas `5176`/`5177` respondem.
+
 ## Contrato mínimo de produto
 
 Cada produto PDE deve ter, no mínimo:

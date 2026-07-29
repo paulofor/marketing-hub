@@ -263,6 +263,12 @@ jobs:
               docker inspect pde-platform-backend --format '{{json .State}}' >&2 || true; \
               exit 1 \
             )) \
+            && for proxy_container in lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 proxy; do \
+              if docker inspect \"\${proxy_container}\" >/dev/null 2>&1; then \
+                docker network connect ${PDE_PLATFORM_NETWORK} \"\${proxy_container}\" >/dev/null 2>&1 || true; \
+                docker kill -s HUP \"\${proxy_container}\" >/dev/null 2>&1 || true; \
+              fi; \
+            done \
             && docker image prune -af"
       - name: Validate production public container ports
         run: |
@@ -290,6 +296,20 @@ jobs:
             docker compose -f docker-compose.deploy.yml logs --tail=200 pde-platform-backend >&2 || true; \
             exit 1"
           curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}/actuator/health"
+      - name: Validate production public HTTPS routes
+        run: |
+          validate_public_slot() {
+            local slot="$1"
+            local url="https://${slot}.clubemusa.com.br"
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "${url}/healthz" | tee "/tmp/pde-${slot}-healthz.json"
+            grep -q '"status":"UP"' "/tmp/pde-${slot}-healthz.json"
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null "${url}/"
+          }
+          validate_public_slot v5
+          validate_public_slot v6
+          if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then
+            validate_public_slot v7
+          fi
       - name: Set up Node for production rendering smoke
         uses: actions/setup-node@v4
         with:

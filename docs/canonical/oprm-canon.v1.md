@@ -8,6 +8,18 @@ Este documento define regras canônicas específicas do módulo OPRM para a inge
 
 Evitar fechamento prematuro de `import run` que destrói a totalização de market size por CNAE.
 
+## Decisão operacional vigente — uso reduzido do OPRM Coletor MEI
+
+A partir de 2026-07-29, o `oprm-coletor-mei` deve ser tratado como módulo legado/de baixo uso na operação diária do Marketing Hub.
+
+Regras vigentes:
+
+1. O módulo não deve ser priorizado para ocupar VPS com pouca memória enquanto houver módulos diretamente ligados a venda, captura, entrega, anúncios, monitoramento ou produção ativa.
+2. O módulo só deve ser reativado quando houver demanda explícita de pesquisa OPRM/NichoCNAE, enriquecimento de público MEI/autônomo ou auditoria histórica que dependa dos contratos deste cânone.
+3. Alertas de monitoramento desse módulo devem ser interpretados com prioridade operacional baixa, salvo quando uma execução OPRM tiver sido solicitada conscientemente pelo usuário.
+4. Novas evoluções nesse executor devem exigir justificativa comercial objetiva: descoberta de nicho com potencial de venda, melhoria de público, evidência de rotina/dor ou insumo direto para hipótese/oferta.
+5. Esta decisão não apaga o histórico técnico nem autoriza remover tabelas, endpoints, workflows ou código sem análise própria de impacto e plano de descontinuação.
+
 ## Regra obrigatória — fechamento de run de importação
 
 - É proibido finalizar (`completeRun`/`finalize-latest-started`) uma run OPRM CNPJ/CNAE quando existir ao menos um arquivo de dataset `ESTABELECIMENTOS` em `STARTED`.

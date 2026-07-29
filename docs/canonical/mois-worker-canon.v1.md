@@ -17,6 +17,18 @@ O worker processa de forma assíncrona jobs `PENDING` da biblioteca de páginas 
 4. conclusão do job com payload estruturado de análise;
 5. marcação de falha em caso de erro.
 
+## 3.1 Decisão operacional vigente — uso reduzido do MOIS Sales Library Worker
+
+A partir de 2026-07-29, o `mois-sales-library-worker` deve ser tratado como módulo legado/de baixo uso na operação diária do Marketing Hub.
+
+Regras vigentes:
+
+1. O módulo não deve ser priorizado para ocupar VPS com pouca memória enquanto houver módulos diretamente ligados a venda, captura, entrega, anúncios, monitoramento ou produção ativa.
+2. O módulo só deve ser reativado quando houver demanda explícita de análise de biblioteca de páginas de venda, dossiê de produto MOIS ou auditoria histórica que dependa dos contratos deste cânone.
+3. Alertas de monitoramento desse módulo devem ser interpretados com prioridade operacional baixa, salvo quando uma execução MOIS tiver sido solicitada conscientemente pelo usuário.
+4. Novas evoluções nesse worker devem exigir justificativa comercial objetiva: aprendizado de oferta, melhoria de copy, descoberta de prova, benchmark de página de venda ou outro impacto claro no funil.
+5. Esta decisão não apaga o histórico técnico nem autoriza remover tabelas, endpoints, workflows ou código sem análise própria de impacto e plano de descontinuação.
+
 ## 4. Fluxo canônico
 1. Worker chama `POST /api/mois/sales-library/jobs:claim` com `workspaceId` e `source`.
 2. Backend retorna job e promove estado para `FETCHING`.

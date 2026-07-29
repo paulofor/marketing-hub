@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5176,
-    allowedHosts: ['v5.clubemusa.com.br', 'v6.clubemusa.com.br'],
+    allowedHosts: ['v5.clubemusa.com.br', 'v6.clubemusa.com.br', 'v7.clubemusa.com.br'],
     proxy: {
       '/api': {
         target: 'http://localhost:8096',
@@ -14,6 +14,6 @@ export default defineConfig({
     },
   },
   preview: {
-    allowedHosts: ['v5.clubemusa.com.br', 'v6.clubemusa.com.br'],
+    allowedHosts: ['v5.clubemusa.com.br', 'v6.clubemusa.com.br', 'v7.clubemusa.com.br'],
   },
 });

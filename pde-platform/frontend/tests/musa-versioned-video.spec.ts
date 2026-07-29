@@ -56,3 +56,21 @@ test('v6 bloqueia override global para HLS antigo de slides', async ({ page }) =
     approvedHeroVideoUrl,
   );
 });
+
+test('v7 usa contrato proprio sem alterar as perguntas publicas da v6', async ({ page }) => {
+  await page.route('**/api/pde/products/metodo-musa-7-dias', async (route) => {
+    await route.fulfill({ status: 404, body: 'not found' });
+  });
+
+  await page.goto('http://v7.clubemusa.com.br:57180/?mh_preview=qa&musa_video_variant=control', { waitUntil: 'domcontentloaded' });
+
+  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Falta acabamento' })).toBeVisible();
+  await expect(page.getByText('Quando você se olha pronta, o que mais faz o look parecer simples demais?')).toBeVisible();
+  await expect(page.getByText('O que mais te incomoda quando você se olha pronta?')).toHaveCount(0);
+
+  await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa&musa_video_variant=control', { waitUntil: 'domcontentloaded' });
+
+  await expect(page.getByText('O que mais te incomoda quando você se olha pronta?')).toBeVisible();
+  await expect(page.getByText('Quando você se olha pronta, o que mais faz o look parecer simples demais?')).toHaveCount(0);
+});

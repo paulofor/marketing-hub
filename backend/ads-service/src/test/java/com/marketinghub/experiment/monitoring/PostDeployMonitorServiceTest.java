@@ -303,6 +303,65 @@ class PostDeployMonitorServiceTest {
     assertThat(response.pdeProductionSlots()).extracting("sourceExperimentId").contains(76L);
   }
 
+  /** Mantém eventos PDE pré-campanha fora da decisão comercial quando a Meta ainda não entregou. */
+  @Test
+  void treatsPdeSessionsAsPreLaunchValidationWhenMetaHasNoDelivery() {
+    Experiment experiment = Experiment.builder().id(76L).build();
+    when(experimentRepository.findById(76L)).thenReturn(Optional.of(experiment));
+    when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.empty());
+    when(apiLogService.findLogs(76L, 50)).thenReturn(List.of());
+    when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
+        .thenReturn(List.of(productionSlotDto("v6", "musa-pde-entry-v6-video-motivacional", 76L)));
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias"))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v6-video-motivacional",
+                936,
+                67,
+                67,
+                67,
+                67,
+                4,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                12000,
+                "2026-07-28T16:03:26Z",
+                List.of(new PdeAnalyticsSummary.PdeEventMetric("PRESENCE_MAP_CHOICE_SELECTED", 4)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v6-video-motivacional",
+                        936,
+                        67,
+                        67,
+                        4,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0)),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of()));
+
+    var response = service.summarize(76L, "metodo-musa-7-dias");
+
+    assertThat(response.decision()).isEqualTo(PostDeployMonitorDecision.WAITING_DATA);
+    assertThat(response.pde().measurementMode()).isEqualTo("PRE_LAUNCH_VALIDATION");
+    assertThat(response.pde().measurementLabel()).isEqualTo("Validação pré-campanha");
+    assertThat(response.alerts()).anyMatch(alert -> alert.contains("antes de impressões Meta"));
+    assertThat(response.recommendation()).contains("tráfego real");
+  }
+
   /** Cria slot produtivo com domínio normalizado para permitir URLs paralelas de hipótese PDE. */
   @Test
   void savesPdeProductionSlotForParallelHypothesisUrl() {

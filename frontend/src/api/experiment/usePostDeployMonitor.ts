@@ -28,6 +28,13 @@ export interface PostDeployPdeSummary {
   available: boolean;
   status: string;
   errorMessage?: string | null;
+  measurementMode:
+    | "CAMPAIGN_PERFORMANCE"
+    | "PRE_LAUNCH_VALIDATION"
+    | "UNAVAILABLE"
+    | string;
+  measurementLabel: string;
+  measurementRecommendation: string;
   currentExperienceVersion?: string | null;
   totalEvents: number;
   uniqueVisitors: number;

@@ -6241,3 +6241,11 @@
 - foi feito: o bloco de vídeo agora explica sinais de roupa, acabamento e postura, e posiciona a prévia como entrada para identificar ruído visual e sugerir microação.
 - foi feito: o diagnóstico passou a falar de elegância da presença, redução de ruído visual e cuidado inicial aplicável hoje.
 - impacto comercial esperado: aumentar clareza de valor, desejo e avanço para o diagnóstico gratuito antes do paywall.
+
+## 2026-07-29 — Experimento 76: analytics PDE separado de campanha
+
+- causa-raiz confirmada: o monitor pós-deploy usava sessões do PDE na decisão comercial mesmo quando a Meta ainda não tinha impressões, cliques ou gasto sincronizados.
+- foi feito: o backend passou a classificar o analytics PDE como `Validação pré-campanha` quando não existe entrega Meta e mantém a decisão em `Aguardando dados`.
+- foi feito: a tela passou a exibir explicitamente se os dados PDE são validação pré-campanha ou performance de campanha.
+- prevenção: teste automatizado cobre o caso de sessões PDE existentes antes da primeira entrega Meta, impedindo que QA/acesso direto pareça resultado de campanha.
+- impacto comercial esperado: evitar decisão errada de criativo, funil ou escala antes de existir tráfego pago real.

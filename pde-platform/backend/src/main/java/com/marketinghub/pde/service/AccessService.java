@@ -9,6 +9,7 @@ import com.marketinghub.pde.dto.FunnelAnalyticsSessionJourneyDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSessionStepDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsTrafficSourceMetricDto;
+import com.marketinghub.pde.dto.FunnelAnalyticsTrafficQualityMetricDto;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
 import com.marketinghub.pde.dto.MagicLinkResponse;
@@ -53,6 +54,8 @@ public class AccessService {
     private static final TypeReference<Map<String, StoredAccessGrant>> STORE_TYPE = new TypeReference<>() {};
     private static final int FUNNEL_EVENT_PERSIST_ATTEMPTS = 3;
     private static final ZoneId OPERATIONAL_TIME_ZONE = ZoneId.of("America/Sao_Paulo");
+    private static final String TRAFFIC_QUALITY_HUMAN = "HUMAN";
+    private static final String COMMERCIAL_TRAFFIC_FILTER = " traffic_quality = 'HUMAN' ";
 
     private final ProductCatalogService productCatalogService;
     private final ObjectMapper objectMapper;
@@ -336,7 +339,7 @@ public class AccessService {
                 : lastFailure;
     }
 
-    /** Consolida métricas de funil e analytics para decisão de próximas campanhas. */
+    /** Consolida métricas comerciais de humanos e preserva auditoria de tráfego não elegível. */
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(String productSlug) {
         ProductExperienceResponse product = productCatalogService.getProduct(productSlug);
         if (!usesJdbcStorage()) {
@@ -344,20 +347,45 @@ public class AccessService {
         }
         String summarySql = """
                 SELECT
-                  COUNT(*) AS total_events,
-                  COUNT(DISTINCT visitor_id) AS unique_visitors,
-                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions,
-                  SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS ped_entries,
-                  SUM(CASE WHEN event_type = 'PAGE_VIEW' THEN 1 ELSE 0 END) AS page_views,
-                  SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
-                  SUM(CASE WHEN event_type = 'LOGIN_COMPLETED' THEN 1 ELSE 0 END) AS login_completed,
-                  SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
-                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_CLICKED' THEN 1 ELSE 0 END) AS subscription_clicked,
-                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' THEN 1 ELSE 0 END) AS subscription_approved,
-                  SUM(CASE WHEN event_type = 'ACCESS_RELEASED' THEN 1 ELSE 0 END) AS access_released,
-                  SUM(CASE WHEN event_type = 'FIRST_USE' THEN 1 ELSE 0 END) AS first_use,
-                  SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
-                  COALESCE(SUM(visible_ms), 0) AS total_visible_ms,
+                  SUM(CASE WHEN """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS total_events,
+                  COUNT(*) AS raw_total_events,
+                  COUNT(DISTINCT CASE WHEN """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN visitor_id ELSE NULL END) AS unique_visitors,
+                  COUNT(DISTINCT CASE WHEN """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN COALESCE(session_id, event_id) ELSE NULL END) AS sessions,
+                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS raw_sessions,
+                  COUNT(DISTINCT CASE WHEN traffic_quality = 'HUMAN' THEN COALESCE(session_id, event_id) ELSE NULL END) AS human_sessions,
+                  COUNT(DISTINCT CASE WHEN traffic_quality = 'BOT_SUSPECTED' THEN COALESCE(session_id, event_id) ELSE NULL END)
+                    AS bot_suspected_sessions,
+                  COUNT(DISTINCT CASE WHEN traffic_quality = 'PLATFORM_CRAWLER' THEN COALESCE(session_id, event_id) ELSE NULL END)
+                    AS platform_crawler_sessions,
+                  COUNT(DISTINCT CASE WHEN traffic_quality = 'INTERNAL_QA' THEN COALESCE(session_id, event_id) ELSE NULL END)
+                    AS internal_qa_sessions,
+                  COUNT(DISTINCT CASE WHEN traffic_quality IS NULL OR traffic_quality = 'UNKNOWN'
+                    THEN COALESCE(session_id, event_id) ELSE NULL END) AS unknown_sessions,
+                  SUM(CASE WHEN event_type = 'PED_ENTRY' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS ped_entries,
+                  SUM(CASE WHEN event_type = 'PAGE_VIEW' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS page_views,
+                  SUM(CASE WHEN event_type = 'LOGIN_STARTED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS login_started,
+                  SUM(CASE WHEN event_type = 'LOGIN_COMPLETED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS login_completed,
+                  SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS paywall_viewed,
+                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_CLICKED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS subscription_clicked,
+                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS subscription_approved,
+                  SUM(CASE WHEN event_type = 'ACCESS_RELEASED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS access_released,
+                  SUM(CASE WHEN event_type = 'FIRST_USE' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS first_use,
+                  SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS checkout_started,
+                  COALESCE(SUM(CASE WHEN """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN visible_ms ELSE 0 END), 0) AS total_visible_ms,
                   MAX(occurred_at) AS last_event_at
                 FROM pde_funnel_event
                 WHERE product_slug = ?
@@ -371,8 +399,15 @@ public class AccessService {
                             productSlug,
                             product.experienceVersion(),
                             resultSet.getLong("total_events"),
+                            resultSet.getLong("raw_total_events"),
                             resultSet.getLong("unique_visitors"),
                             resultSet.getLong("sessions"),
+                            resultSet.getLong("raw_sessions"),
+                            resultSet.getLong("human_sessions"),
+                            resultSet.getLong("bot_suspected_sessions"),
+                            resultSet.getLong("platform_crawler_sessions"),
+                            resultSet.getLong("internal_qa_sessions"),
+                            resultSet.getLong("unknown_sessions"),
                             resultSet.getLong("ped_entries"),
                             resultSet.getLong("page_views"),
                             resultSet.getLong("login_started"),
@@ -388,6 +423,7 @@ public class AccessService {
                             loadFunnelEventMetrics(connection, productSlug),
                             loadExperienceVersionMetrics(connection, productSlug),
                             loadTrafficSourceMetrics(connection, productSlug),
+                            loadTrafficQualityMetrics(connection, productSlug),
                             loadDeviceMetrics(connection, productSlug),
                             loadScreenSizeMetrics(connection, productSlug),
                             loadSessionJourneyDtos(connection, productSlug, 20));
@@ -424,6 +460,10 @@ public class AccessService {
                   COALESCE(e.session_id, e.event_id) AS resolved_session_id,
                   e.visitor_id,
                   e.client_ip,
+                  e.user_agent,
+                  e.traffic_quality,
+                  e.traffic_quality_reason,
+                  e.traffic_provider,
                   e.event_type,
                   e.page_url,
                   e.visible_ms,
@@ -763,8 +803,37 @@ public class AccessService {
     /** Retorna métricas vazias quando o backend está em modo local sem banco analítico. */
     private FunnelAnalyticsSummaryResponse emptyFunnelAnalytics(String productSlug) {
         return new FunnelAnalyticsSummaryResponse(
-                productSlug, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+                productSlug,
+                null,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                null,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
     }
 
     /** Converte uma linha JDBC em evento normalizado de jornada. */
@@ -774,6 +843,10 @@ public class AccessService {
         return new SessionJourneyEvent(
                 resultSet.getString("visitor_id"),
                 resultSet.getString("client_ip"),
+                resultSet.getString("user_agent"),
+                resultSet.getString("traffic_quality"),
+                resultSet.getString("traffic_quality_reason"),
+                resultSet.getString("traffic_provider"),
                 resultSet.getString("event_type"),
                 resultSet.getString("page_url"),
                 nullableLong(resultSet, "visible_ms"),
@@ -829,6 +902,7 @@ public class AccessService {
                 SELECT event_type, COUNT(*) AS total
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND traffic_quality = 'HUMAN'
                 GROUP BY event_type
                 ORDER BY total DESC, event_type
                 """;
@@ -867,6 +941,7 @@ public class AccessService {
                   SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' THEN 1 ELSE 0 END) AS subscription_approved
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND traffic_quality = 'HUMAN'
                 GROUP BY COALESCE(NULLIF(experience_version, ''), 'sem-versao')
                 ORDER BY MAX(occurred_at) DESC
                 """;
@@ -919,6 +994,7 @@ public class AccessService {
                   MAX(occurred_at) AS last_event_at
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND traffic_quality = 'HUMAN'
                 GROUP BY
                   COALESCE(NULLIF(utm_source, ''), 'sem-origem'),
                   COALESCE(NULLIF(utm_medium, ''), 'sem-meio'),
@@ -961,6 +1037,39 @@ public class AccessService {
                             percentage(subscriptionApproved, sessions),
                             resultSet.getLong("total_visible_ms"),
                             timestampAsOperationalText(lastEventAt)));
+                }
+                return metrics;
+            }
+        }
+    }
+
+    /** Lê a auditoria de qualidade de tráfego sem misturar robôs nos KPIs comerciais. */
+    private List<FunnelAnalyticsTrafficQualityMetricDto> loadTrafficQualityMetrics(
+            Connection connection, String productSlug) throws SQLException {
+        long rawSessions = countRawSessions(connection, productSlug);
+        String sql = """
+                SELECT
+                  COALESCE(NULLIF(traffic_quality, ''), 'UNKNOWN') AS resolved_traffic_quality,
+                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions,
+                  COUNT(*) AS events
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                GROUP BY COALESCE(NULLIF(traffic_quality, ''), 'UNKNOWN')
+                ORDER BY sessions DESC, events DESC
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<FunnelAnalyticsTrafficQualityMetricDto> metrics = new java.util.ArrayList<>();
+                while (resultSet.next()) {
+                    String trafficQuality = resultSet.getString("resolved_traffic_quality");
+                    long sessions = resultSet.getLong("sessions");
+                    metrics.add(new FunnelAnalyticsTrafficQualityMetricDto(
+                            trafficQuality,
+                            trafficQualityLabel(trafficQuality),
+                            sessions,
+                            resultSet.getLong("events"),
+                            percentage(sessions, rawSessions)));
                 }
                 return metrics;
             }
@@ -1020,6 +1129,7 @@ public class AccessService {
                   COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND traffic_quality = 'HUMAN'
                 GROUP BY COALESCE(NULLIF(device_type, ''), 'desktop')
                 """;
         Map<String, Long> sessionsByDevice = new java.util.HashMap<>();
@@ -1053,6 +1163,7 @@ public class AccessService {
                   COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND traffic_quality = 'HUMAN'
                   AND viewport_width IS NOT NULL
                   AND viewport_height IS NOT NULL
                 GROUP BY viewport_width, viewport_height
@@ -1088,6 +1199,7 @@ public class AccessService {
                 SELECT COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND traffic_quality = 'HUMAN'
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
@@ -1095,6 +1207,32 @@ public class AccessService {
                 return resultSet.next() ? resultSet.getLong("sessions") : 0L;
             }
         }
+    }
+
+    /** Conta sessões brutas para calcular a participação de robôs e validadores. */
+    private long countRawSessions(Connection connection, String productSlug) throws SQLException {
+        String sql = """
+                SELECT COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getLong("sessions") : 0L;
+            }
+        }
+    }
+
+    /** Retorna rótulo operacional para a auditoria de qualidade de tráfego. */
+    private String trafficQualityLabel(String trafficQuality) {
+        return switch (trafficQuality) {
+            case "HUMAN" -> "Humano elegível";
+            case "BOT_SUSPECTED" -> "Robô suspeito";
+            case "PLATFORM_CRAWLER" -> "Crawler de plataforma";
+            case "INTERNAL_QA" -> "QA interno";
+            default -> "Desconhecido/legado";
+        };
     }
 
     /** Normaliza o dispositivo para os grupos exibidos na tela de marketing. */
@@ -1313,16 +1451,18 @@ public class AccessService {
         String sql = """
                 INSERT INTO pde_funnel_event (
                   event_id, product_slug, experience_version, access_token, email, normalized_email, event_type,
-                  provider, source, page_url, client_ip, referrer_url, session_id, visitor_id,
+                  provider, source, page_url, client_ip, user_agent, traffic_quality, traffic_quality_reason,
+                  traffic_provider, referrer_url, session_id, visitor_id,
                   utm_source, utm_medium, utm_campaign, utm_content, utm_term,
                   device_type, screen_width, screen_height, viewport_width, viewport_height,
                   visible_ms, section_id, action_name, metadata_json, occurred_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """;
         try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             Map<String, Object> metadata = request.metadata();
+            TrafficClassification trafficClassification = classifyTraffic(request, eventType, metadata);
             statement.setString(1, eventId);
             statement.setString(2, request.productSlug());
             statement.setString(3, blankToNull(resolveExperienceVersion(metadata, product)));
@@ -1334,23 +1474,27 @@ public class AccessService {
             statement.setString(9, blankToNull(request.source()));
             statement.setString(10, blankToNull(request.pageUrl()));
             statement.setString(11, blankToNull(request.clientIp()));
-            statement.setString(12, blankToNull(metadataString(metadata, "referrerUrl")));
-            statement.setString(13, blankToNull(metadataString(metadata, "sessionId")));
-            statement.setString(14, blankToNull(metadataString(metadata, "visitorId")));
-            statement.setString(15, blankToNull(metadataString(metadata, "utmSource")));
-            statement.setString(16, blankToNull(metadataString(metadata, "utmMedium")));
-            statement.setString(17, blankToNull(metadataString(metadata, "utmCampaign")));
-            statement.setString(18, blankToNull(metadataString(metadata, "utmContent")));
-            statement.setString(19, blankToNull(metadataString(metadata, "utmTerm")));
-            statement.setString(20, blankToNull(metadataString(metadata, "deviceType")));
-            setInteger(statement, 21, metadataLong(metadata, "screenWidth"));
-            setInteger(statement, 22, metadataLong(metadata, "screenHeight"));
-            setInteger(statement, 23, metadataLong(metadata, "viewportWidth"));
-            setInteger(statement, 24, metadataLong(metadata, "viewportHeight"));
-            setLong(statement, 25, metadataLong(metadata, "visibleMs"));
-            statement.setString(26, blankToNull(metadataString(metadata, "sectionId")));
-            statement.setString(27, blankToNull(metadataString(metadata, "actionName")));
-            statement.setString(28, metadata == null ? null : objectMapper.writeValueAsString(metadata));
+            statement.setString(12, blankToNull(resolveUserAgent(request, metadata)));
+            statement.setString(13, trafficClassification.quality());
+            statement.setString(14, trafficClassification.reason());
+            statement.setString(15, trafficClassification.provider());
+            statement.setString(16, blankToNull(metadataString(metadata, "referrerUrl")));
+            statement.setString(17, blankToNull(metadataString(metadata, "sessionId")));
+            statement.setString(18, blankToNull(metadataString(metadata, "visitorId")));
+            statement.setString(19, blankToNull(metadataString(metadata, "utmSource")));
+            statement.setString(20, blankToNull(metadataString(metadata, "utmMedium")));
+            statement.setString(21, blankToNull(metadataString(metadata, "utmCampaign")));
+            statement.setString(22, blankToNull(metadataString(metadata, "utmContent")));
+            statement.setString(23, blankToNull(metadataString(metadata, "utmTerm")));
+            statement.setString(24, blankToNull(metadataString(metadata, "deviceType")));
+            setInteger(statement, 25, metadataLong(metadata, "screenWidth"));
+            setInteger(statement, 26, metadataLong(metadata, "screenHeight"));
+            setInteger(statement, 27, metadataLong(metadata, "viewportWidth"));
+            setInteger(statement, 28, metadataLong(metadata, "viewportHeight"));
+            setLong(statement, 29, metadataLong(metadata, "visibleMs"));
+            statement.setString(30, blankToNull(metadataString(metadata, "sectionId")));
+            statement.setString(31, blankToNull(metadataString(metadata, "actionName")));
+            statement.setString(32, metadata == null ? null : objectMapper.writeValueAsString(metadata));
             statement.executeUpdate();
         } catch (SQLException | IOException ex) {
             log.error(
@@ -1360,6 +1504,108 @@ public class AccessService {
                     eventType,
                     ex);
             throw new IllegalStateException("Não foi possível persistir evento PDE no banco Marketing Hub", ex);
+        }
+    }
+
+    /** Classifica o tráfego no momento da ingestão para proteger KPIs de campanha. */
+    private TrafficClassification classifyTraffic(
+            FunnelEventRequest request, String eventType, Map<String, Object> metadata) {
+        String userAgent = normalizeTrafficText(resolveUserAgent(request, metadata));
+        String clientIp = blankToNull(request.clientIp());
+        String provider = resolveTrafficProvider(clientIp, userAgent);
+        if (isFunctionalPurchaseEvent(eventType)) {
+            return new TrafficClassification(TRAFFIC_QUALITY_HUMAN, "FUNNEL_RESULT_EVENT", provider);
+        }
+        if (clientIp != null && isPrivateOrLoopbackIp(clientIp)) {
+            return new TrafficClassification("INTERNAL_QA", "PRIVATE_OR_LOOPBACK_IP", provider);
+        }
+        if (containsAny(userAgent, "bot", "crawler", "spider", "preview", "facebookexternalhit", "facebot", "tiktokbot",
+                "googlebot", "bingbot", "slurp", "lighthouse", "pagespeed", "headlesschrome", "playwright", "selenium",
+                "curl", "wget", "python-requests", "uptimerobot")) {
+            return new TrafficClassification(
+                    containsAny(userAgent, "facebook", "facebot", "tiktok", "googlebot", "bingbot")
+                            ? "PLATFORM_CRAWLER"
+                            : "BOT_SUSPECTED",
+                    "BOT_USER_AGENT",
+                    provider);
+        }
+        if (containsAny(provider, "AMAZON", "MICROSOFT", "META", "GOOGLE_CLOUD", "INTERSERVER")) {
+            return new TrafficClassification("BOT_SUSPECTED", "DATACENTER_PROVIDER", provider);
+        }
+        if (userAgent.isBlank()) {
+            return new TrafficClassification("UNKNOWN", "MISSING_USER_AGENT", provider);
+        }
+        return new TrafficClassification(TRAFFIC_QUALITY_HUMAN, "BROWSER_TRAFFIC", provider);
+    }
+
+    /** Trata eventos finais de compra/acesso como resultado funcional, não como pageview de robô. */
+    private boolean isFunctionalPurchaseEvent(String eventType) {
+        return Set.of("SUBSCRIPTION_APPROVED", "ACCESS_RELEASED", "FIRST_USE", "PURCHASE_COMPLETED")
+                .contains(eventType);
+    }
+
+    /** Resolve o user-agent mais confiável entre header recebido e metadado legado. */
+    private String resolveUserAgent(FunnelEventRequest request, Map<String, Object> metadata) {
+        String requestUserAgent = request.userAgent();
+        if (requestUserAgent != null && !requestUserAgent.isBlank()) {
+            return requestUserAgent;
+        }
+        return metadataString(metadata, "userAgent");
+    }
+
+    /** Infere provedor operacional básico do IP ou user-agent sem consultar serviço externo. */
+    private String resolveTrafficProvider(String clientIp, String normalizedUserAgent) {
+        if (clientIp == null || clientIp.isBlank()) {
+            return normalizedUserAgent.isBlank() ? "UNKNOWN" : "BROWSER_OR_UNKNOWN";
+        }
+        if (clientIp.startsWith("10.") || clientIp.startsWith("192.168.") || clientIp.startsWith("127.")) {
+            return "PRIVATE_NETWORK";
+        }
+        if (clientIp.startsWith("172.")) {
+            Integer secondOctet = ipOctet(clientIp, 1);
+            if (secondOctet != null && secondOctet >= 16 && secondOctet <= 31) {
+                return "PRIVATE_NETWORK";
+            }
+        }
+        if (clientIp.startsWith("163.245.") || clientIp.startsWith("31.13.") || clientIp.startsWith("69.63.")) {
+            return "META";
+        }
+        if (clientIp.startsWith("20.") || clientIp.startsWith("40.") || clientIp.startsWith("52.96.")
+                || clientIp.startsWith("104.40.")) {
+            return "MICROSOFT";
+        }
+        if (clientIp.startsWith("34.") || clientIp.startsWith("35.") || clientIp.startsWith("66.249.")) {
+            return "GOOGLE_CLOUD";
+        }
+        if (clientIp.startsWith("13.")
+                || clientIp.startsWith("18.")
+                || clientIp.startsWith("52.")
+                || clientIp.startsWith("54.")) {
+            return "AMAZON";
+        }
+        if (clientIp.startsWith("66.45.") || clientIp.startsWith("209.159.")) {
+            return "INTERSERVER";
+        }
+        return "UNKNOWN";
+    }
+
+    /** Identifica IPs privados ou locais que representam QA interno, não campanha. */
+    private boolean isPrivateOrLoopbackIp(String clientIp) {
+        String provider = resolveTrafficProvider(clientIp, "");
+        return "PRIVATE_NETWORK".equals(provider);
+    }
+
+    /** Lê um octeto de IPv4 quando o endereço está no formato esperado. */
+    private Integer ipOctet(String clientIp, int index) {
+        String[] parts = clientIp.split("\\.");
+        if (parts.length <= index) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(parts[index]);
+        } catch (NumberFormatException ex) {
+            log.warn("IP PDE inválido ao classificar tráfego; clientIp={}", clientIp);
+            return null;
         }
     }
 
@@ -1421,6 +1667,10 @@ public class AccessService {
     private record SessionJourneyEvent(
             String visitorId,
             String clientIp,
+            String userAgent,
+            String trafficQuality,
+            String trafficQualityReason,
+            String trafficProvider,
             String eventType,
             String pageUrl,
             Long visibleMs,
@@ -1442,6 +1692,10 @@ public class AccessService {
         private final Set<String> sectionIds = new LinkedHashSet<>();
         private String visitorId;
         private String clientIp;
+        private String userAgent;
+        private String trafficQuality;
+        private String trafficQualityReason;
+        private String trafficProvider;
         private Instant firstEventAt;
         private Instant lastEventAt;
         private long totalVisibleMs;
@@ -1470,6 +1724,18 @@ public class AccessService {
             }
             if (clientIp == null || clientIp.isBlank()) {
                 clientIp = event.clientIp();
+            }
+            if (userAgent == null || userAgent.isBlank()) {
+                userAgent = event.userAgent();
+            }
+            if (trafficQuality == null || trafficQuality.isBlank()) {
+                trafficQuality = event.trafficQuality();
+            }
+            if (trafficQualityReason == null || trafficQualityReason.isBlank()) {
+                trafficQualityReason = event.trafficQualityReason();
+            }
+            if (trafficProvider == null || trafficProvider.isBlank()) {
+                trafficProvider = event.trafficProvider();
             }
             firstEventAt = firstEventAt == null || event.occurredAt().isBefore(firstEventAt)
                     ? event.occurredAt()
@@ -1514,6 +1780,10 @@ public class AccessService {
                     sessionId,
                     visitorId,
                     clientIp,
+                    userAgent,
+                    trafficQuality,
+                    trafficQualityReason,
+                    trafficProvider,
                     steps.isEmpty() ? null : steps.get(0).occurredAt(),
                     steps.isEmpty() ? null : steps.get(steps.size() - 1).occurredAt(),
                     totalVisibleMs,
@@ -1590,6 +1860,9 @@ public class AccessService {
             }
         }
     }
+
+    /** Guarda a classificação de qualidade persistida junto ao evento bruto. */
+    private record TrafficClassification(String quality, String reason, String provider) {}
 
     /** Representa o formato persistido do acesso para armazenamento em JSON. */
     private record StoredAccessGrant(

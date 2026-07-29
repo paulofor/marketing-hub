@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-29-experiment-76-facebook-page-reconnect-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - tableExists:
+            tableName: fb_page
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT COUNT(*)
+                FROM experiment e
+                JOIN fb_page wrong_page
+                  ON wrong_page.id = e.facebook_page_id
+                JOIN fb_page correct_page
+                  ON correct_page.page_id = '485863027935937'
+               WHERE e.id = 76
+                 AND wrong_page.page_id = '258279417366622'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE experiment e
+              JOIN fb_page correct_page
+                ON correct_page.page_id = '485863027935937'
+              LEFT JOIN fb_page current_page
+                ON current_page.id = e.facebook_page_id
+                 SET e.facebook_page_id = correct_page.id,
+                     e.status = CASE WHEN e.status = 'FAILED' THEN 'PLANNED' ELSE e.status END,
+                     e.facebook_release_requested_at = NULL,
+                     e.last_status_change_reason = 'Página Facebook desconectada do Instagram do experimento; corrigido para Produtividade 360 antes de nova liberação.',
+                     e.last_status_change_action = 'FACEBOOK_PAGE_RECONNECTED',
+                     e.last_status_changed_at = CURRENT_TIMESTAMP
+               WHERE e.id = 76
+                 AND (e.facebook_page_id IS NULL OR e.facebook_page_id <> correct_page.id)
+                 AND (current_page.page_id IS NULL OR current_page.page_id = '258279417366622');

@@ -37,8 +37,15 @@ export interface PostDeployPdeSummary {
   measurementRecommendation: string;
   currentExperienceVersion?: string | null;
   totalEvents: number;
+  rawTotalEvents: number;
   uniqueVisitors: number;
   sessions: number;
+  rawSessions: number;
+  humanSessions: number;
+  botSuspectedSessions: number;
+  platformCrawlerSessions: number;
+  internalQaSessions: number;
+  unknownSessions: number;
   pdeEntries: number;
   pageViews: number;
   presenceMapClicks: number;
@@ -56,9 +63,18 @@ export interface PostDeployPdeSummary {
   events: Record<string, number>;
   experienceVersions: PostDeployPdeExperienceVersion[];
   trafficSources: PostDeployPdeTrafficSource[];
+  trafficQualityBreakdown: PostDeployPdeTrafficQuality[];
   deviceBreakdown: PostDeployPdeDevice[];
   screenSizeBreakdown: PostDeployPdeScreenSize[];
   recentJourneys: PostDeployPdeSessionJourney[];
+}
+
+export interface PostDeployPdeTrafficQuality {
+  trafficQuality: string;
+  label: string;
+  sessions: number;
+  events: number;
+  percentage: number;
 }
 
 export interface PostDeployPdeDevice {
@@ -114,6 +130,10 @@ export interface PostDeployPdeSessionJourney {
   sessionId: string;
   visitorId?: string | null;
   clientIp?: string | null;
+  userAgent?: string | null;
+  trafficQuality?: string | null;
+  trafficQualityReason?: string | null;
+  trafficProvider?: string | null;
   firstEventAt?: string | null;
   lastEventAt?: string | null;
   totalVisibleMs: number;

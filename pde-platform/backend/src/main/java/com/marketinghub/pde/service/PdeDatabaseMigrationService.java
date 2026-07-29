@@ -22,6 +22,11 @@ public class PdeDatabaseMigrationService {
     private static final String EXPERIENCE_VERSION_COLUMN = "experience_version";
     private static final String EXPERIENCE_VERSION_INDEX = "idx_pde_funnel_product_version_time";
     private static final String CLIENT_IP_COLUMN = "client_ip";
+    private static final String USER_AGENT_COLUMN = "user_agent";
+    private static final String TRAFFIC_QUALITY_COLUMN = "traffic_quality";
+    private static final String TRAFFIC_QUALITY_REASON_COLUMN = "traffic_quality_reason";
+    private static final String TRAFFIC_PROVIDER_COLUMN = "traffic_provider";
+    private static final String TRAFFIC_QUALITY_INDEX = "idx_pde_funnel_product_quality_time";
     private static final String AI_GUIDANCE_TABLE = "pde_ai_guidance_request";
     private static final String ACCESS_TOKEN_COLUMN = "access_token";
     private static final String AI_GUIDANCE_ACCESS_GRANT_FK = "fk_pde_ai_guidance_access_grant";
@@ -157,6 +162,56 @@ public class PdeDatabaseMigrationService {
                 CLIENT_IP_COLUMN)) {
             executeSql(connection, "ALTER TABLE pde_funnel_event ADD COLUMN client_ip VARCHAR(45) NULL AFTER page_url");
             log.info("Coluna de IP do visitante criada no funil PDE; column={}", CLIENT_IP_COLUMN);
+        }
+        if (!objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                FUNNEL_EVENT_TABLE,
+                USER_AGENT_COLUMN)) {
+            executeSql(connection, "ALTER TABLE pde_funnel_event ADD COLUMN user_agent VARCHAR(512) NULL AFTER client_ip");
+            log.info("Coluna de user-agent criada no funil PDE; column={}", USER_AGENT_COLUMN);
+        }
+        if (!objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                FUNNEL_EVENT_TABLE,
+                TRAFFIC_QUALITY_COLUMN)) {
+            executeSql(connection, "ALTER TABLE pde_funnel_event ADD COLUMN traffic_quality VARCHAR(40) NULL AFTER user_agent");
+            log.info("Coluna de qualidade de tráfego criada no funil PDE; column={}", TRAFFIC_QUALITY_COLUMN);
+        }
+        if (!objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                FUNNEL_EVENT_TABLE,
+                TRAFFIC_QUALITY_REASON_COLUMN)) {
+            executeSql(connection,
+                    "ALTER TABLE pde_funnel_event ADD COLUMN traffic_quality_reason VARCHAR(120) NULL AFTER traffic_quality");
+            log.info("Coluna de motivo de qualidade de tráfego criada no funil PDE; column={}", TRAFFIC_QUALITY_REASON_COLUMN);
+        }
+        if (!objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                FUNNEL_EVENT_TABLE,
+                TRAFFIC_PROVIDER_COLUMN)) {
+            executeSql(connection, "ALTER TABLE pde_funnel_event ADD COLUMN traffic_provider VARCHAR(80) NULL AFTER traffic_quality_reason");
+            log.info("Coluna de provedor de tráfego criada no funil PDE; column={}", TRAFFIC_PROVIDER_COLUMN);
+        }
+        if (!objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+                FUNNEL_EVENT_TABLE,
+                TRAFFIC_QUALITY_INDEX)) {
+            executeSql(
+                    connection,
+                    "ALTER TABLE pde_funnel_event "
+                            + "ADD KEY idx_pde_funnel_product_quality_time "
+                            + "(product_slug(100), traffic_quality(40), occurred_at)");
+            log.info("Índice de qualidade de tráfego criado no funil PDE; index={}", TRAFFIC_QUALITY_INDEX);
         }
     }
 

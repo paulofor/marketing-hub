@@ -126,6 +126,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - enviar `experimentType` no contrato `/api/facebook-campaigns/experiments-ready` para o worker não degradar `LOW_TICKET_PRODUCT + SALES` para campanha de leads quando existir `freeReward` secundário.
   - exigir `facebookPixelId` para `LOW_TICKET_PRODUCT + SALES` antes de entrar na fila e publicar o ad set com `optimization_goal=OFFSITE_CONVERSIONS`, `promoted_object.pixel_id` e `custom_event_type=PURCHASE`.
   - adicionar `facebook_ads_campaign.publication_key` com unicidade para novas publicações, impedindo que retry/concorrência grave duas campanhas novas para o mesmo experimento no backend.
+  - validar antes de `/campaigns` e `/adcreatives` que a Page selecionada no experimento está conectada ao `instagram_user_id` usado pelo criativo, bloqueando pares incompatíveis com `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED`.
 - **Módulos envolvidos**:
   - `backend/ads-service`;
   - `facebook-ads-worker`;
@@ -149,6 +150,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - teste garantindo orçamento por Ad Set e `is_adset_budget_sharing_enabled=false` em campanha sem orçamento.
   - teste garantindo que o contrato do backend expõe `experimentType=LOW_TICKET_PRODUCT` e que o worker publica `campaignObjective=SALES` como `OUTCOME_SALES`.
   - teste garantindo que campanha low-ticket de venda só é considerada pronta com pixel e que o worker usa `OFFSITE_CONVERSIONS` + evento `PURCHASE`.
+  - teste garantindo que Page sem Instagram conectado bloqueia a publicação antes de criar qualquer objeto parcial na Meta.
 - **Regra preventiva**:
   - nunca corrigir publicação Facebook apenas pelo erro atual da Meta; comparar payload esperado, payload enviado, resposta, estado do experimento, campanha persistida e job steps.
 

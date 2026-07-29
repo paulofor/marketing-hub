@@ -6265,3 +6265,38 @@
 - foi feito: a validação de textos obrigatórios continua usando HTML + bundles, mas textos proibidos passam a ser checados apenas no HTML público entregue ao usuário.
 - prevenção: adicionado teste de regressão para aprovar SPA quando a copy obrigatória está no bundle e a palavra técnica existe somente como implementação interna.
 - impacto comercial esperado: liberar campanhas de PDE React/SPA sem derrubar gates comerciais reais de copy ou erro visível ao usuário.
+
+## 2026-07-29 — Experimento 76: erro temporário da Meta não deve invalidar campanha
+
+- causa-raiz confirmada: o experimento 76 estava pronto no Marketing Hub, com slot PDE v6 `ACTIVE` e validação `OK`, mas a Meta retornou `OAuthException code=2` / `Service temporarily unavailable` ao criar o ad creative; o worker tratava esse erro transitório como falha comercial definitiva e marcava o experimento como `FAILED`.
+- evidência operacional: o worker consumiu `/api/facebook-campaigns/experiments-ready`, criou campanha/ad set externos, tentou o criativo com `image_hash` e recebeu erro temporário da Meta duas vezes; em ambas, limpou campanha/ad set parciais antes de encerrar.
+- foi feito: o `facebook-ads-worker` passou a reconhecer erro temporário da plataforma Meta e manter o experimento elegível para retry posterior, sem enviar `PATCH /experiments/{id}/status?status=FAILED`.
+- prevenção: adicionado teste cobrindo falha temporária da Meta no criativo principal e no fallback simples, garantindo cleanup dos objetos parciais sem invalidar o experimento.
+- impacto comercial esperado: reduzir falsos bloqueios de campanha por instabilidade externa da Meta e manter o fluxo apto a publicar quando a plataforma voltar a aceitar o criativo.
+
+## 2026-07-29 — Experimento 76: Page/Instagram incompatível antes da publicação
+
+- correção da análise anterior: o `OAuthException code=2` / `Service temporarily unavailable` não deve ser aceito como temporário quando a Meta retorna `is_transient=false` ou `error_subcode=3858799`; esse padrão já mascarou rejeição estrutural de criativo.
+- causa-raiz confirmada via MCP/banco: o experimento 76 estava vinculado à Page `50 Termos Tecnologia` (`258279417366622`), mas usava o Instagram `@produtividade360_` (`17841468261725306`), conectado à Page `Produtividade 360` (`485863027935937`).
+- foi feito: o `facebook-ads-worker` passou a priorizar a página vinculada ao experimento sobre o `defaultPageId` da conta e validar na Graph API se a Page está conectada ao `instagram_user_id` usado pelo criativo antes de criar campanha/ad set/criativo/anúncio.
+- foi feito: pares incompatíveis agora bloqueiam cedo com `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED`, registram causa acionável e não criam objetos parciais na Meta.
+- foi feito: criado changelog incremental para trocar o experimento 76 para a Page correta `Produtividade 360`, voltar `FAILED` para `PLANNED` e limpar a liberação anterior para nova tentativa pelo fluxo normal.
+- prevenção: teste automatizado cobre Page sem Instagram conectado e teste de erro Meta exige `is_transient=true` para retry, impedindo que `code=2` enganoso volte a mascarar problema de configuração.
+- impacto comercial esperado: evitar bloqueios repetidos na publicação paga e impedir gasto/objetos parciais com identidade social errada.
+
+## 2026-07-29 — PDE MUSA: versão pode ter múltiplos vídeos complementares
+
+- decisão comercial: uma versão PDE não deve ser tratada como dona de um único vídeo, nem como uma hierarquia de `principal` contra `variações`; ela pode ter vídeos com funções complementares, como abertura/hero, prova visual, explicação do mecanismo, quebra de objeções e reforço de CTA.
+- foi feito: a tela `Vídeos das versões PDE` passou a informar explicitamente que cada versão aceita múltiplos HLS funcionais e lista todos os vídeos vinculados ao experimento origem, sem rotular os demais como variações inferiores.
+- prevenção: adicionado teste de frontend garantindo que dois vídeos `LANDING_HERO` HLS da mesma versão sejam exibidos como funções complementares, sem esconder o segundo ativo e sem induzir leitura de A/B.
+- impacto comercial esperado: aumentar governança dos ativos de vídeo do PDE e facilitar construção de experiências com vídeos complementares sem duplicar versões ou perder histórico comercial.
+
+## 2026-07-29 — PDE MUSA: tráfego humano separado de robôs no analytics
+
+- causa-raiz confirmada: acessos de robôs, crawlers de plataforma, QA e datacenter podiam entrar na mesma métrica de sessões usada para leitura comercial do PDE.
+- decisão comercial: KPIs de campanha devem contar apenas sessões humanas elegíveis; tráfego suspeito precisa ficar preservado em auditoria, sem distorcer taxa de conversão, abandono ou consumo de vídeo.
+- foi feito: o backend PDE passou a persistir `user_agent`, `traffic_quality`, motivo e provedor inferido por evento, classificando sessões como `HUMAN`, `BOT_SUSPECTED`, `PLATFORM_CRAWLER`, `INTERNAL_QA` ou `UNKNOWN`.
+- foi feito: o resumo do PDE passou a excluir tráfego não humano dos agregados comerciais e expor sessões brutas, humanas e suspeitas separadamente.
+- foi feito: o monitor pós-deploy passou a mostrar qualidade do tráfego e avisar quando robôs/crawlers/QA foram removidos dos KPIs.
+- prevenção: teste automatizado cobre uma sessão humana e uma sessão de robô no mesmo produto, garantindo que apenas a humana entre nos KPIs comerciais e que a suspeita permaneça auditável.
+- impacto comercial esperado: proteger decisões de escala, pausa e ajuste de copy/funil contra ruído de tráfego não humano quando o experimento estiver no ar.

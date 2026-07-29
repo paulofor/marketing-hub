@@ -3,6 +3,9 @@ databaseChangeLog:
       file: changesets/2026-07-29-social-distribution.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-29-experiment-76-facebook-page-reconnect.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-28-experiment-video-hls-playback-url.yaml
       relativeToChangelogFile: true
   - include:

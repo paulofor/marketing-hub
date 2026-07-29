@@ -35,6 +35,17 @@ function resolvePlaybackUrl(
   }
 }
 
+function describeVideoFunction(index: number) {
+  const videoFunctions = [
+    "Abertura / hero",
+    "Prova visual",
+    "Mecanismo",
+    "Objeção",
+    "Reforço de CTA",
+  ];
+  return videoFunctions[index] ?? "Função complementar";
+}
+
 function findSlotVideos(
   slot: PostDeployPdeProductionSlot,
   assets: ExperimentVideoAsset[],
@@ -93,8 +104,8 @@ export default function ProductPdeVideosPage() {
         <div>
           <PageTitle>Vídeos das versões PDE</PageTitle>
           <p className="text-muted mb-0">
-            {product.name || product.slug} · vídeos HLS usados como hero nas
-            versões produtivas do PDE.
+            {product.name || product.slug} · cada versão PDE pode ter mais de
+            um vídeo HLS com funções comerciais complementares.
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
@@ -136,12 +147,24 @@ export default function ProductPdeVideosPage() {
                         <div className="small text-muted font-monospace mt-1">
                           {slot.experienceVersion}
                         </div>
+                        <div className="small text-muted mt-1">
+                          {slotVideos.length} vídeo
+                          {slotVideos.length === 1 ? "" : "s"} HLS vinculado
+                          {slotVideos.length === 1 ? "" : "s"}
+                        </div>
                       </div>
                       <span className="badge text-bg-light">{slot.status}</span>
                     </div>
 
                     {primaryVideo && playbackUrl ? (
                       <>
+                        <div className="alert alert-info py-2 mb-3">
+                          A versão PDE aceita múltiplos vídeos com funções
+                          diferentes, como abertura, prova, mecanismo, objeções
+                          e reforço de CTA. O player abaixo destaca o primeiro
+                          aprovado para prévia; a tabela preserva todos os HLS
+                          vinculados ao experimento origem.
+                        </div>
                         <div className="ratio ratio-16x9 bg-dark rounded overflow-hidden mb-3">
                           <AdaptiveVideoPlayer
                             src={playbackUrl}
@@ -152,50 +175,56 @@ export default function ProductPdeVideosPage() {
                         </div>
                         <div className="table-responsive">
                           <table className="table table-sm mb-0">
+                            <thead>
+                              <tr>
+                                <th scope="col">Função</th>
+                                <th scope="col">Ativo</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Duração</th>
+                                <th scope="col">HLS</th>
+                              </tr>
+                            </thead>
                             <tbody>
-                              <tr>
-                                <th scope="row">HLS</th>
-                                <td className="font-monospace small">
-                                  <a
-                                    href={playbackUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                  >
-                                    {playbackUrl}
-                                  </a>
-                                </td>
-                              </tr>
-                              <tr>
-                                <th scope="row">Experimento</th>
-                                <td>{slot.sourceExperimentId}</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">Ativo</th>
-                                <td>#{primaryVideo.id}</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">Status</th>
-                                <td>
-                                  {primaryVideo.status} ·{" "}
-                                  {primaryVideo.reviewStatus}
-                                </td>
-                              </tr>
-                              <tr>
-                                <th scope="row">Duração</th>
-                                <td>
-                                  {formatDuration(
-                                    primaryVideo.durationSeconds,
-                                  )}
-                                </td>
-                              </tr>
+                              {slotVideos.map((video, index) => {
+                                const videoPlaybackUrl = resolvePlaybackUrl(
+                                  slot,
+                                  video,
+                                );
+                                return (
+                                  <tr key={video.id}>
+                                    <th scope="row">
+                                      {describeVideoFunction(index)}
+                                    </th>
+                                    <td>#{video.id}</td>
+                                    <td>
+                                      {video.status} · {video.reviewStatus}
+                                    </td>
+                                    <td>
+                                      {formatDuration(video.durationSeconds)}
+                                    </td>
+                                    <td className="font-monospace small">
+                                      <a
+                                        href={videoPlaybackUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        {videoPlaybackUrl}
+                                      </a>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
+                        </div>
+                        <div className="small text-muted mt-2">
+                          Experimento origem: {slot.sourceExperimentId}
                         </div>
                       </>
                     ) : (
                       <div className="alert alert-warning mb-3">
-                        Esta versão ainda não tem vídeo HLS LANDING_HERO
-                        vinculado ao experimento origem.
+                        Esta versão ainda não tem vídeos HLS LANDING_HERO
+                        vinculados ao experimento origem.
                       </div>
                     )}
 

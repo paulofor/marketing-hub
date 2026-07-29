@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS pde_funnel_event (
   source VARCHAR(120) NULL,
   page_url VARCHAR(1024) NULL,
   client_ip VARCHAR(45) NULL,
+  user_agent VARCHAR(512) NULL,
+  traffic_quality VARCHAR(40) NULL,
+  traffic_quality_reason VARCHAR(120) NULL,
+  traffic_provider VARCHAR(80) NULL,
   referrer_url VARCHAR(1024) NULL,
   session_id VARCHAR(64) NULL,
   visitor_id VARCHAR(64) NULL,
@@ -58,6 +62,7 @@ CREATE TABLE IF NOT EXISTS pde_funnel_event (
   PRIMARY KEY (id),
   UNIQUE KEY uk_pde_funnel_event_event_id (event_id),
   KEY idx_pde_funnel_product_version_time (product_slug, experience_version, occurred_at),
+  KEY idx_pde_funnel_product_quality_time (product_slug, traffic_quality, occurred_at),
   KEY idx_pde_funnel_product_event_time (product_slug, event_type, occurred_at),
   KEY idx_pde_funnel_session_time (session_id, occurred_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

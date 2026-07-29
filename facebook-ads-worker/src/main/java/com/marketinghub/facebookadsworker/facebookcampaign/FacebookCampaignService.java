@@ -306,7 +306,7 @@ public class FacebookCampaignService {
     }
 
     /**
-     * Publica um experimento liberado no Facebook Ads usando orçamento no ad set para validação controlada e a melhor fonte de targeting disponível.
+     * Publica uma campanha de experimento validando contratos, página, Instagram, público e criativos antes de criar objetos na Meta.
      */
     private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
         String campaignId = null;
@@ -420,6 +420,7 @@ public class FacebookCampaignService {
                 return;
             }
             validateCreativePayloadsHaveImageUrls(exp, creativePayloads);
+            validatePageInstagramConnectionsBeforePublication(exp, resolvedPageId, creativePayloads);
 
             if (!StringUtils.hasText(creativePayloads.get(0).instagramActorId())) {
                 LOGGER.warn(
@@ -681,6 +682,24 @@ public class FacebookCampaignService {
         } catch (TargetingNormalizationException ex) {
             LOGGER.error(
                 "Skipping experiment {} because targeting could not be normalized: {}",
+                exp.id(),
+                ex.getMessage(),
+                ex
+            );
+            markExperimentAsFailed(exp.id(), ex.getMessage());
+        } catch (WebClientResponseException ex) {
+            if (isRetryableFacebookPlatformError(ex)) {
+                LOGGER.warn(
+                    "Facebook returned a temporary platform error while processing experiment {}; keeping it eligible for a later retry. status={}, message={}",
+                    exp.id(),
+                    ex.getRawStatusCode(),
+                    ex.getMessage(),
+                    ex
+                );
+                return;
+            }
+            LOGGER.error(
+                "Unexpected Facebook API error while processing experiment {}: {}",
                 exp.id(),
                 ex.getMessage(),
                 ex
@@ -949,11 +968,14 @@ public class FacebookCampaignService {
         return template;
     }
 
+    /**
+     * Resolve a página Facebook priorizando a página vinculada ao experimento e usando a configuração global só como fallback.
+     */
     private String resolvePageId(FacebookWorkerConfiguration config, Experiment experiment) {
         String configPageId = config.defaultPageId();
         Experiment.FacebookPage associatedPage = experiment.associatedPage();
         String experimentPageId = associatedPage != null ? associatedPage.pageId() : null;
-        return coalesce(configPageId, experimentPageId, experiment.pageId());
+        return coalesce(experimentPageId, experiment.pageId(), configPageId);
     }
 
     private String resolveDailyBudget(Experiment experiment, FacebookWorkerConfiguration config) {
@@ -962,6 +984,82 @@ public class FacebookCampaignService {
             return dailyBudget.movePointRight(2).setScale(0, RoundingMode.HALF_UP).toPlainString();
         }
         return config.adSetDailyBudget();
+    }
+
+    /**
+     * Bloqueia a publicação quando a página selecionada não está conectada ao Instagram do experimento.
+     */
+    private void validatePageInstagramConnectionsBeforePublication(
+        Experiment experiment,
+        String pageId,
+        List<CreativePublicationPayload> creativePayloads
+    ) {
+        List<String> instagramActorIds = creativePayloads.stream()
+            .map(CreativePublicationPayload::instagramActorId)
+            .filter(StringUtils::hasText)
+            .map(String::trim)
+            .distinct()
+            .toList();
+        if (instagramActorIds.isEmpty()) {
+            return;
+        }
+        FacebookAdsService.PageInstagramConnection connection = executeFacebookCallWithLogging(
+            experiment.publicationJobId(),
+            experiment.id(),
+            ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+            () -> facebookAdsService.fetchPageInstagramConnection(pageId)
+        );
+        for (String instagramActorId : instagramActorIds) {
+            if (!isInstagramActorConnectedToPage(connection, instagramActorId)) {
+                String connectedDescription = describePageInstagramConnection(connection);
+                String reason = "Campanha bloqueada: a página Facebook selecionada (%s) não está conectada ao Instagram usado pelo experimento (%s). Desligue essa página deste experimento e selecione a página conectada ao Instagram correto antes de publicar. Instagram conectado na página: %s."
+                    .formatted(pageId, instagramActorId, connectedDescription);
+                experimentFacebookApiLogClient.logPublicationJobFailureStep(
+                    experiment.publicationJobId(),
+                    experiment.id(),
+                    "CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED",
+                    reason
+                );
+                throw new IllegalStateException(reason);
+            }
+        }
+    }
+
+    /**
+     * Confirma se a Graph API retornou o mesmo ator Instagram como conta conectada da página.
+     */
+    private boolean isInstagramActorConnectedToPage(
+        FacebookAdsService.PageInstagramConnection connection,
+        String instagramActorId
+    ) {
+        if (connection == null || !StringUtils.hasText(instagramActorId)) {
+            return false;
+        }
+        String normalizedActor = instagramActorId.trim();
+        return Stream.of(connection.instagramBusinessAccount(), connection.connectedInstagramAccount())
+            .filter(Objects::nonNull)
+            .map(FacebookAdsService.ConnectedInstagramAccount::id)
+            .filter(StringUtils::hasText)
+            .anyMatch(id -> normalizedActor.equals(id.trim()));
+    }
+
+    /**
+     * Formata a conta Instagram conectada para mensagem operacional de bloqueio.
+     */
+    private String describePageInstagramConnection(FacebookAdsService.PageInstagramConnection connection) {
+        if (connection == null) {
+            return "nenhum retorno da Graph API";
+        }
+        List<String> accounts = Stream.of(connection.instagramBusinessAccount(), connection.connectedInstagramAccount())
+            .filter(Objects::nonNull)
+            .map(account -> {
+                String id = StringUtils.hasText(account.id()) ? account.id() : "sem id";
+                String username = StringUtils.hasText(account.username()) ? "@" + account.username() : "sem username";
+                return id + " (" + username + ")";
+            })
+            .distinct()
+            .toList();
+        return accounts.isEmpty() ? "nenhum Instagram conectado" : String.join(", ", accounts);
     }
 
     /**
@@ -2673,6 +2771,39 @@ public class FacebookCampaignService {
             || combinedMessage.contains("image was not downloaded")
             || combinedMessage.contains("unable to download")
             || combinedMessage.contains("não foi possível baixar sua imagem");
+    }
+
+    /**
+     * Identifica erros temporários da plataforma Meta que devem aguardar nova tentativa.
+     */
+    private boolean isRetryableFacebookPlatformError(WebClientResponseException ex) {
+        if (ex == null) {
+            return false;
+        }
+        JsonNode errorNode = parseJson(ex.getResponseBodyAsString());
+        if (errorNode == null) {
+            return false;
+        }
+        JsonNode details = errorNode.path("error");
+        if (details.path("error_subcode").asInt() == 3858799) {
+            return false;
+        }
+        if (details.has("is_transient") && !details.path("is_transient").asBoolean(false)) {
+            return false;
+        }
+        if (details.path("code").asInt() == 2 && details.path("is_transient").asBoolean(false)) {
+            return true;
+        }
+        String combinedMessage = (
+            details.path("message").asText("")
+                + " "
+                + details.path("error_user_title").asText("")
+                + " "
+                + details.path("error_user_msg").asText("")
+        ).toLowerCase();
+        return details.path("is_transient").asBoolean(false)
+            && (combinedMessage.contains("service temporarily unavailable")
+                || combinedMessage.contains("erro interno"));
     }
 
     private boolean isInstagramPermissionError(FacebookPermissionException ex) {

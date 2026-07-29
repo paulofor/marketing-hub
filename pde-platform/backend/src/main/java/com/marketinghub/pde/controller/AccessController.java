@@ -115,7 +115,8 @@ public class AccessController {
     public FunnelEventResponse recordFunnelEvent(
             @Valid @RequestBody FunnelEventRequest request,
             HttpServletRequest httpRequest) {
-        return accessService.recordFunnelEvent(request.withClientIp(resolveClientIp(httpRequest)));
+        return accessService.recordFunnelEvent(
+                request.withRequestTrafficContext(resolveClientIp(httpRequest), httpRequest.getHeader("User-Agent")));
     }
 
     /** Resolve o IP público mais provável preservado pelo proxy antes do backend PDE. */

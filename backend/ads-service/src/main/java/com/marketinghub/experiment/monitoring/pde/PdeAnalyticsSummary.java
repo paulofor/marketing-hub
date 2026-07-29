@@ -7,8 +7,15 @@ public record PdeAnalyticsSummary(
     String productSlug,
     String currentExperienceVersion,
     long totalEvents,
+    long rawTotalEvents,
     long uniqueVisitors,
     long sessions,
+    long rawSessions,
+    long humanSessions,
+    long botSuspectedSessions,
+    long platformCrawlerSessions,
+    long internalQaSessions,
+    long unknownSessions,
     long pedEntries,
     long pageViews,
     long loginStarted,
@@ -24,9 +31,69 @@ public record PdeAnalyticsSummary(
     List<PdeEventMetric> events,
     List<PdeExperienceVersionMetric> experienceVersions,
     List<PdeTrafficSourceMetric> trafficSources,
+    List<PdeTrafficQualityMetric> trafficQualityBreakdown,
     List<PdeDeviceMetric> deviceBreakdown,
     List<PdeScreenSizeMetric> screenSizeBreakdown,
     List<PdeSessionJourney> recentJourneys) {
+  /** Mantém compatibilidade com fixtures e contratos antigos sem auditoria de qualidade. */
+  public PdeAnalyticsSummary(
+      String productSlug,
+      String currentExperienceVersion,
+      long totalEvents,
+      long uniqueVisitors,
+      long sessions,
+      long pedEntries,
+      long pageViews,
+      long loginStarted,
+      long loginCompleted,
+      long paywallViewed,
+      long subscriptionClicked,
+      long subscriptionApproved,
+      long accessReleased,
+      long firstUse,
+      long checkoutStarted,
+      long totalVisibleMs,
+      String lastEventAt,
+      List<PdeEventMetric> events,
+      List<PdeExperienceVersionMetric> experienceVersions,
+      List<PdeTrafficSourceMetric> trafficSources,
+      List<PdeDeviceMetric> deviceBreakdown,
+      List<PdeScreenSizeMetric> screenSizeBreakdown,
+      List<PdeSessionJourney> recentJourneys) {
+    this(
+        productSlug,
+        currentExperienceVersion,
+        totalEvents,
+        totalEvents,
+        uniqueVisitors,
+        sessions,
+        sessions,
+        sessions,
+        0,
+        0,
+        0,
+        0,
+        pedEntries,
+        pageViews,
+        loginStarted,
+        loginCompleted,
+        paywallViewed,
+        subscriptionClicked,
+        subscriptionApproved,
+        accessReleased,
+        firstUse,
+        checkoutStarted,
+        totalVisibleMs,
+        lastEventAt,
+        events,
+        experienceVersions,
+        trafficSources,
+        List.of(),
+        deviceBreakdown,
+        screenSizeBreakdown,
+        recentJourneys);
+  }
+
   /** Representa a contagem agregada por tipo de evento do PDE. */
   public record PdeEventMetric(String eventType, long total) {}
 
@@ -69,6 +136,10 @@ public record PdeAnalyticsSummary(
       long totalVisibleMs,
       String lastEventAt) {}
 
+  /** Representa sessões agrupadas por qualidade de tráfego do PDE. */
+  public record PdeTrafficQualityMetric(
+      String trafficQuality, String label, long sessions, long events, double percentage) {}
+
   /** Representa sessões do PDE por dispositivo capturado no navegador. */
   public record PdeDeviceMetric(
       String deviceType, String label, long sessions, double percentage) {}
@@ -87,6 +158,10 @@ public record PdeAnalyticsSummary(
       String sessionId,
       String visitorId,
       String clientIp,
+      String userAgent,
+      String trafficQuality,
+      String trafficQualityReason,
+      String trafficProvider,
       String firstEventAt,
       String lastEventAt,
       long totalVisibleMs,
@@ -104,5 +179,56 @@ public record PdeAnalyticsSummary(
       boolean subscriptionApproved,
       String abandonmentPoint,
       String lastEventType,
-      String lastActionName) {}
+      String lastActionName) {
+    /** Mantém compatibilidade com jornadas antigas sem classificação de tráfego. */
+    public PdeSessionJourney(
+        String sessionId,
+        String visitorId,
+        String clientIp,
+        String firstEventAt,
+        String lastEventAt,
+        long totalVisibleMs,
+        long maxScrollDepthPercent,
+        List<String> screenNames,
+        List<String> sectionIds,
+        boolean fieldFocused,
+        boolean fieldInputStarted,
+        boolean fieldFilled,
+        boolean ctaClicked,
+        boolean loginStarted,
+        boolean loginCompleted,
+        boolean paywallViewed,
+        boolean checkoutStarted,
+        boolean subscriptionApproved,
+        String abandonmentPoint,
+        String lastEventType,
+        String lastActionName) {
+      this(
+          sessionId,
+          visitorId,
+          clientIp,
+          null,
+          "HUMAN",
+          "LEGACY_CONTRACT",
+          null,
+          firstEventAt,
+          lastEventAt,
+          totalVisibleMs,
+          maxScrollDepthPercent,
+          screenNames,
+          sectionIds,
+          fieldFocused,
+          fieldInputStarted,
+          fieldFilled,
+          ctaClicked,
+          loginStarted,
+          loginCompleted,
+          paywallViewed,
+          checkoutStarted,
+          subscriptionApproved,
+          abandonmentPoint,
+          lastEventType,
+          lastActionName);
+    }
+  }
 }

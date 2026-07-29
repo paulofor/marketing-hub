@@ -393,14 +393,15 @@ public class ProductService {
                ) AS campaign_status,
                (
                    SELECT COUNT(*)
-                   FROM creative_variant cv
-                   WHERE cv.experiment_id = e.id
+                   FROM creative c
+                   WHERE c.experiment_id = e.id
                ) AS total_creatives,
-               CASE WHEN e.creative_approved = 1 THEN (
+               (
                    SELECT COUNT(*)
-                   FROM creative_variant cv
-                   WHERE cv.experiment_id = e.id
-               ) ELSE 0 END AS approved_creatives
+                   FROM creative c
+                   WHERE c.experiment_id = e.id
+                     AND c.status = 'READY'
+               ) AS approved_creatives
         FROM experiment e
         LEFT JOIN experiment_campaign_metric metric ON metric.experiment_id = e.id
         """
@@ -530,6 +531,82 @@ public class ProductService {
         ads);
   }
 
+  /** Consolida anúncios do produto que estão vinculados ao experimento informado. */
+  @Transactional(readOnly = true)
+  public ProductAdLibraryResponse getExperimentAdsInUse(Long experimentId) {
+    Product product = findProductByExperiment(experimentId);
+    List<ProductAdLibraryItemResponse> ads = listAdsForExperiment(experimentId);
+    return new ProductAdLibraryResponse(
+        product.getId(),
+        product.getName(),
+        product.getSlug(),
+        product.getCommercialStatus(),
+        recommendExperimentAdsInUseAction(ads),
+        ads);
+  }
+
+  /** Busca o produto canônico associado ao nicho do experimento informado. */
+  private Product findProductByExperiment(Long experimentId) {
+    Optional<Product> productByNiche =
+        jdbcTemplate
+            .query(
+                """
+                SELECT p.id
+                FROM product p
+                JOIN experiment e ON e.niche_id = p.market_niche_id
+                WHERE e.id = ?
+                ORDER BY p.updated_at DESC, p.created_at DESC, p.id DESC
+                LIMIT 1
+                """,
+                (rs, rowNum) -> rs.getLong("id"),
+                experimentId)
+            .stream()
+            .findFirst()
+            .flatMap(repository::findById);
+    if (productByNiche.isPresent()) {
+      return productByNiche.get();
+    }
+    return repository.findAll().stream()
+        .filter(
+            product -> extractExperimentIds(product.getAssociatedExperiments()).contains(experimentId))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Produto canônico não encontrado para o experimento informado."));
+  }
+
+  /** Lista anúncios em uso no experimento com o mesmo contrato da biblioteca do produto. */
+  private List<ProductAdLibraryItemResponse> listAdsForExperiment(Long experimentId) {
+    return jdbcTemplate.query(
+        """
+        SELECT c.id AS creative_id,
+               c.experiment_id AS experiment_id,
+               e.name AS experiment_name,
+               e.status AS experiment_status,
+               c.ad_format AS format,
+               c.status AS creative_status,
+               c.headline AS headline,
+               c.primary_text AS primary_text,
+               c.description AS description,
+               c.call_to_action AS cta,
+               c.destination_url AS destination_url,
+               c.image_url AS image_url,
+               c.video_url AS video_url,
+               c.video_id AS video_id,
+               c.reviewed_at AS reviewed_at
+        FROM creative c
+        JOIN experiment e ON e.id = c.experiment_id
+        WHERE c.experiment_id = ?
+        ORDER BY CASE WHEN c.status = 'READY' THEN 0 ELSE 1 END,
+                 c.reviewed_at DESC,
+                 c.id DESC
+        """,
+        (rs, rowNum) -> mapAdLibraryItem(rs),
+        experimentId);
+  }
+
   /** Monta o filtro canônico de experimentos vinculados ao produto. */
   private ProductExperimentScope buildProductExperimentScope(Product product) {
     List<Long> explicitExperimentIds = extractExperimentIds(product.getAssociatedExperiments());
@@ -573,6 +650,40 @@ public class ProductService {
       return "Priorize anúncios prontos como controle criativo e teste novas audiências ou versões PDE sem misturar variáveis.";
     }
     return "A biblioteca tem anúncios, mas nenhum pronto; concluir revisão comercial antes de usar em novos experimentos.";
+  }
+
+  /** Resume a ação recomendada para os anúncios do produto usados no experimento. */
+  private String recommendExperimentAdsInUseAction(List<ProductAdLibraryItemResponse> ads) {
+    if (ads.isEmpty()) {
+      return "Este experimento ainda não usa anúncios do produto; selecione ou gere ao menos um anúncio antes de liberar tráfego.";
+    }
+    long readyAds = ads.stream().filter(ad -> "READY".equalsIgnoreCase(ad.status())).count();
+    if (readyAds > 0) {
+      return "O experimento já usa anúncio aprovado do produto; trate o criativo como ativo reutilizável e controle outras variáveis.";
+    }
+    return "O experimento tem anúncios do produto, mas nenhum aprovado; conclua a revisão antes de colocar campanha em execução.";
+  }
+
+  /** Converte uma linha SQL no contrato público de anúncio reutilizável. */
+  private ProductAdLibraryItemResponse mapAdLibraryItem(java.sql.ResultSet rs)
+      throws java.sql.SQLException {
+    return new ProductAdLibraryItemResponse(
+        rs.getLong("creative_id"),
+        rs.getLong("experiment_id"),
+        rs.getString("experiment_name"),
+        rs.getString("experiment_status"),
+        rs.getString("format"),
+        rs.getString("creative_status"),
+        rs.getString("headline"),
+        rs.getString("primary_text"),
+        rs.getString("description"),
+        rs.getString("cta"),
+        rs.getString("destination_url"),
+        rs.getString("image_url"),
+        rs.getString("video_url"),
+        rs.getString("video_id"),
+        recommendAdReuse(rs.getString("creative_status"), rs.getString("format")),
+        rs.getTimestamp("reviewed_at") != null ? rs.getTimestamp("reviewed_at").toInstant() : null);
   }
 
   /** Escopo SQL seguro para consultar experimentos relacionados ao produto. */

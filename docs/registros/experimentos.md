@@ -1,3 +1,19 @@
+## 2026-07-29 — Experimento 76: anúncios passam a ser lidos como ativo do produto
+
+- causa-raiz confirmada no código: a aba Criativos do experimento consumia `/api/experiments/{id}/creatives`, reforçando o modelo antigo de criativo preso ao experimento, enquanto o produto PDE já possui biblioteca própria em `/api/products/{productId}/ads`.
+- problema comercial: o anúncio aprovado do experimento 76 aparecia na biblioteca do produto MUSA, mas a comparação do produto contava `creative_variant` e mostrava `0/0`, criando leitura errada de que o experimento não tinha anúncio aprovado.
+- foi feito: criado contrato `/api/products/experiments/{experimentId}/ads-in-use` para expor anúncios do produto em uso no experimento, a aba passou a consumir essa visão e os rótulos foram ajustados para “anúncios do produto”.
+- prevenção: a comparação do produto agora conta a tabela real `creative`, e testes de frontend/backend protegem o contrato para evitar retorno à leitura antiga.
+- impacto comercial esperado: preservar aprendizado criativo por produto PDE, evitar duplicação de anúncios e liberar experimentos com leitura correta do ativo criativo reutilizável.
+
+## 2026-07-29 — Experimento 76: aba de páginas sem falso A/B
+
+- causa-raiz confirmada via endpoint e MCP: o experimento 76 está `PLANNED`, com variável primária de destino PDE MUSA v6, `0` seleções em `experiment_sales_page_type_selection` e `0` testes em `experiment_sales_page_ab_test`.
+- problema comercial: a aba pré-selecionava tipos `defaultForAbTest` no frontend e mostrava `Planejamento A/B`, criando leitura incorreta de que o experimento era teste A/B.
+- foi feito: a aba foi renomeada para `Páginas de venda` e deixou de inferir A/B localmente; `Planejamento A/B` aparece somente quando houver duas seleções salvas vindas do backend.
+- prevenção: adicionado teste de regressão garantindo que tipos default não geram marcação A/B sem configuração persistida.
+- impacto comercial esperado: melhorar a confiança da leitura do experimento antes de liberar tráfego, evitando decisão de campanha baseada em marcação falsa de teste.
+
 ## 2026-07-28 — PDE/MUSA: validacao pos-deploy exigia videos antigos bloqueados
 
 - causa-raiz confirmada no Actions e no host publico: o deploy do PDE subiu saudavel, mas o workflow de producao ainda exigia `/assets/musa-v5-video-explicativo.mp4` e `/assets/musa-v6-video-motivacional.mp4`; esses ativos ja estavam proibidos pelo build por serem videos antigos derivados de slides, entao o Nginx servia o fallback HTML do SPA e a validacao tratava como erro de MP4.
@@ -6233,3 +6249,11 @@
 - foi feito: o bloco de vídeo agora explica sinais de roupa, acabamento e postura, e posiciona a prévia como entrada para identificar ruído visual e sugerir microação.
 - foi feito: o diagnóstico passou a falar de elegância da presença, redução de ruído visual e cuidado inicial aplicável hoje.
 - impacto comercial esperado: aumentar clareza de valor, desejo e avanço para o diagnóstico gratuito antes do paywall.
+
+## 2026-07-29 — Experimento 76: analytics PDE separado de campanha
+
+- causa-raiz confirmada: o monitor pós-deploy usava sessões do PDE na decisão comercial mesmo quando a Meta ainda não tinha impressões, cliques ou gasto sincronizados.
+- foi feito: o backend passou a classificar o analytics PDE como `Validação pré-campanha` quando não existe entrega Meta e mantém a decisão em `Aguardando dados`.
+- foi feito: a tela passou a exibir explicitamente se os dados PDE são validação pré-campanha ou performance de campanha.
+- prevenção: teste automatizado cobre o caso de sessões PDE existentes antes da primeira entrega Meta, impedindo que QA/acesso direto pareça resultado de campanha.
+- impacto comercial esperado: evitar decisão errada de criativo, funil ou escala antes de existir tráfego pago real.

@@ -88,6 +88,12 @@ public class ProductController {
     return service.getAdLibrary(id);
   }
 
+  /** Retorna anúncios do produto que estão em uso por um experimento específico. */
+  @GetMapping("/experiments/{experimentId}/ads-in-use")
+  public ProductAdLibraryResponse getExperimentAdsInUse(@PathVariable Long experimentId) {
+    return service.getExperimentAdsInUse(experimentId);
+  }
+
   /** Retorna o playbook de vídeos orgânicos recomendado para o produto. */
   @GetMapping("/{id}/organic-video-plan")
   public ProductOrganicVideoPlanResponse getOrganicVideoPlan(@PathVariable Long id) {

@@ -149,6 +149,57 @@ class PdeProductionSlotServiceTest {
             org.mockito.ArgumentMatchers.any());
   }
 
+  /** Deve aprovar copy pública renderizada por bundle JavaScript em entrada SPA. */
+  @Test
+  void recordsOkValidationWhenRequiredCopyIsInsideSpaScriptBundle() throws Exception {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(6L)
+            .slotCode("v6")
+            .productSlug("metodo-musa-7-dias")
+            .domain("v6.clubemusa.com.br")
+            .publicUrl("https://v6.clubemusa.com.br")
+            .experienceVersion("musa-pde-entry-v6-video-motivacional")
+            .targetEnvironment("production-v6")
+            .status(PdeProductionSlotStatus.PLANNED)
+            .createdAt(Instant.parse("2026-07-24T10:00:00Z"))
+            .updatedAt(Instant.parse("2026-07-24T10:00:00Z"))
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(repository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v6"))
+        .thenReturn(Optional.of(slot));
+    HttpResponse<String> healthResponse = response(200, "{\"status\":\"UP\"}");
+    HttpResponse<String> contractResponse =
+        response(
+            200,
+            "{\"slug\":\"metodo-musa-7-dias\",\"healthPath\":\"/\",\"requiredTexts\":[\"Descubra o detalhe\"],\"forbiddenTexts\":[\"Application error\"]}");
+    HttpResponse<String> pageResponse =
+        response(
+            200,
+            "<html><body><div id=\"root\"></div><script type=\"module\" src=\"/assets/index.js\"></script></body></html>");
+    HttpResponse<String> scriptResponse = response(200, "const title = 'Descubra o detalhe';");
+    org.mockito.Mockito.doReturn(healthResponse)
+        .doReturn(contractResponse)
+        .doReturn(pageResponse)
+        .doReturn(scriptResponse)
+        .when(httpClient)
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response = service.validateProductionSlot("metodo-musa-7-dias", "v6");
+
+    assertThat(response.validationStatus()).isEqualTo("OK");
+    assertThat(response.validationSummary()).isEqualTo("URL produtiva validada");
+    org.mockito.Mockito.verify(httpClient, org.mockito.Mockito.times(4))
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+  }
+
   /** Cria resposta HTTP simulada para validação de contrato do slot. */
   @SuppressWarnings("unchecked")
   private HttpResponse<String> response(int statusCode) {

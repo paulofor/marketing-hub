@@ -103,6 +103,19 @@ function decisionBadgeClass(decision: PostDeployMonitorDecision) {
   }
 }
 
+function pdeMeasurementBadgeClass(mode?: string | null) {
+  switch (mode) {
+    case "CAMPAIGN_PERFORMANCE":
+      return "text-bg-success";
+    case "PRE_LAUNCH_VALIDATION":
+      return "text-bg-info";
+    case "UNAVAILABLE":
+      return "text-bg-danger";
+    default:
+      return "text-bg-secondary";
+  }
+}
+
 export default function ExperimentPostDeployMonitorTab({
   experimentId,
 }: ExperimentPostDeployMonitorTabProps) {
@@ -234,17 +247,29 @@ export default function ExperimentPostDeployMonitorTab({
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
                 <h6 className="card-title mb-0">PDE</h6>
-                <span
-                  className={`badge ${monitor.pde.available ? "text-bg-success" : "text-bg-danger"}`}
-                >
-                  {monitor.pde.available ? "Online" : "Indisponível"}
-                </span>
+                <div className="d-flex gap-1 flex-wrap justify-content-end">
+                  <span
+                    className={`badge ${monitor.pde.available ? "text-bg-success" : "text-bg-danger"}`}
+                  >
+                    {monitor.pde.available ? "Online" : "Indisponível"}
+                  </span>
+                  <span
+                    className={`badge ${pdeMeasurementBadgeClass(
+                      monitor.pde.measurementMode,
+                    )}`}
+                  >
+                    {monitor.pde.measurementLabel}
+                  </span>
+                </div>
               </div>
               <div className="small text-muted mb-2">
                 Versão medida:{" "}
                 <span className="fw-semibold">
                   {monitor.pde.currentExperienceVersion ?? "sem versão"}
                 </span>
+              </div>
+              <div className="alert alert-light border small mb-3">
+                {monitor.pde.measurementRecommendation}
               </div>
               <div className="table-responsive">
                 <table className="table table-sm align-middle mb-0">

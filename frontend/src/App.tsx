@@ -30,6 +30,7 @@ import NewSuccessProductPage from "./pages/successProduct/NewSuccessProductPage"
 import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetailPage";
 import EditSuccessProductPage from "./pages/successProduct/EditSuccessProductPage";
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
+import SocialDistributionPage from "./pages/socialDistribution/SocialDistributionPage";
 import NicheListPage from "./pages/niche/NicheListPage";
 import NicheVideoProductionPage from "./pages/niche/NicheVideoProductionPage";
 import AiServiceListPage from "./pages/aiService/AiServiceListPage";
@@ -200,6 +201,10 @@ export default function App() {
               <Route
                 path="/accounts/instagram/:id/posts"
                 element={<InstagramPostsPage />}
+              />
+              <Route
+                path="/social-distribution"
+                element={<SocialDistributionPage />}
               />
               <Route path="/media" element={<MediaListPage />} />
               <Route path="/media/new" element={<NewMediaPage />} />

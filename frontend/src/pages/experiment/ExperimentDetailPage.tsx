@@ -70,7 +70,7 @@ const experimentDetailTabs = [
   { value: "construction", label: "Construção", manualOnly: true },
   { value: "funnel", label: "Funil de vendas" },
   { value: "post-deploy", label: "Pós-deploy" },
-  { value: "ab-test", label: "Teste A/B" },
+  { value: "ab-test", label: "Páginas de venda" },
   { value: "analytics", label: "Analytics" },
   { value: "creatives", label: "Criativos" },
   { value: "landing", label: "Landing" },

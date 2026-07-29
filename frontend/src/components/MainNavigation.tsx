@@ -24,6 +24,7 @@ import {
   List,
   MessageSquare,
   Mic2,
+  Send,
   Video,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
@@ -152,6 +153,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/creative-video-review",
         label: "Aprovar vídeos",
         icon: BadgeCheck,
+      },
+      {
+        to: "/social-distribution",
+        label: "Distribuição orgânica",
+        icon: Send,
       },
       { to: "/ai/image-generator", label: "Gerador de Imagens", icon: Image },
       {

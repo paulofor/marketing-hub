@@ -18,7 +18,7 @@ describe("CriativosTab", () => {
   });
   it("shows preview", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({
           data: [
             {
@@ -48,7 +48,7 @@ describe("CriativosTab", () => {
 
   it("shows image prompt below ad card when toggled", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({
           data: [
             {
@@ -95,7 +95,7 @@ describe("CriativosTab", () => {
 
   it("shows previous image prompt below ad card when toggled", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({
           data: [
             {
@@ -135,7 +135,7 @@ describe("CriativosTab", () => {
 
   it("shows intermediate image prompt below ad card when toggled", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({
           data: [
             {
@@ -177,7 +177,7 @@ describe("CriativosTab", () => {
 
   it("shows pipeline banner when data is available", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({ data: [] });
       }
       if (url.endsWith("/experiments/1")) {
@@ -206,7 +206,7 @@ describe("CriativosTab", () => {
 
   it("shows pipeline progress banner when worker is running", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({ data: [] });
       }
       if (url.endsWith("/experiments/1")) {
@@ -233,7 +233,7 @@ describe("CriativosTab", () => {
 
   it("shows recoverable pipeline failure from backend status", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({ data: [] });
       }
       if (url.endsWith("/experiments/1")) {
@@ -268,7 +268,7 @@ describe("CriativosTab", () => {
 
   it("starts GeraAnuncio v2 from the first stage using the explicit experiment route", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({ data: [] });
       }
       if (url.endsWith("/experiments/1")) {
@@ -317,7 +317,7 @@ describe("CriativosTab", () => {
 
   it("hides the previous generation failure while a retry request is pending", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({ data: [] });
       }
       if (url.endsWith("/experiments/1")) {
@@ -339,9 +339,10 @@ describe("CriativosTab", () => {
     });
     let resolveRetry: (value: unknown) => void = () => {};
     (axios.post as any).mockImplementation(
-      () => new Promise((resolve) => {
-        resolveRetry = resolve;
-      }),
+      () =>
+        new Promise((resolve) => {
+          resolveRetry = resolve;
+        }),
     );
 
     const client = new QueryClient({
@@ -374,7 +375,7 @@ describe("CriativosTab", () => {
 
   it("clears approval loading state when the backend rejects the update", async () => {
     (axios.get as any).mockImplementation((url: string) => {
-      if (url.endsWith("/experiments/1/creatives")) {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({
           data: [
             {

@@ -78,7 +78,9 @@ public class PostDeployMonitorService {
         pdeProductionSlotService.listProductionSlotsForProduct(resolvedProductSlug);
     String monitoredExperienceVersion =
         resolveMonitoredExperienceVersion(experimentId, pdeProductionSlots);
-    PostDeployPdeSummaryDto pde = fetchPdeSummary(resolvedProductSlug, monitoredExperienceVersion);
+    boolean campaignTrafficActive = hasCampaignTraffic(metaAds);
+    PostDeployPdeSummaryDto pde =
+        fetchPdeSummary(resolvedProductSlug, monitoredExperienceVersion, campaignTrafficActive);
     PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
     List<String> alerts = buildAlerts(metaAds, pde, logs);
     PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
@@ -168,10 +170,10 @@ public class PostDeployMonitorService {
 
   /** Consulta o PDE e retorna um resumo indisponível quando houver falha técnica. */
   private PostDeployPdeSummaryDto fetchPdeSummary(
-      String productSlug, String monitoredExperienceVersion) {
+      String productSlug, String monitoredExperienceVersion, boolean campaignTrafficActive) {
     try {
       PdeAnalyticsSummary summary = pdeAnalyticsClient.fetchSummary(productSlug);
-      return toPdeSummary(summary, monitoredExperienceVersion);
+      return toPdeSummary(summary, monitoredExperienceVersion, campaignTrafficActive);
     } catch (Exception ex) {
       log.error(
           "Falha ao consultar analytics PDE no monitor pós-deploy; productSlug={}",
@@ -181,6 +183,9 @@ public class PostDeployMonitorService {
           false,
           "UNAVAILABLE",
           ex.getMessage(),
+          "UNAVAILABLE",
+          "Analytics PDE indisponível",
+          "Corrigir disponibilidade do PDE antes de avaliar campanha ou validação.",
           null,
           0,
           0,
@@ -224,7 +229,7 @@ public class PostDeployMonitorService {
 
   /** Converte o contrato do PDE em métricas comerciais específicas do painel. */
   private PostDeployPdeSummaryDto toPdeSummary(
-      PdeAnalyticsSummary summary, String monitoredExperienceVersion) {
+      PdeAnalyticsSummary summary, String monitoredExperienceVersion, boolean campaignTrafficActive) {
     Map<String, Long> events = new LinkedHashMap<>();
     if (summary.events() != null) {
       summary.events().forEach(event -> events.put(event.eventType(), event.total()));
@@ -237,6 +242,11 @@ public class PostDeployMonitorService {
         true,
         "AVAILABLE",
         null,
+        campaignTrafficActive ? "CAMPAIGN_PERFORMANCE" : "PRE_LAUNCH_VALIDATION",
+        campaignTrafficActive ? "Performance de campanha" : "Validação pré-campanha",
+        campaignTrafficActive
+            ? "Usar estes dados para leitura de funil enquanto houver entrega Meta sincronizada."
+            : "Usar estes dados apenas para QA/acessos internos; não tomar decisão de campanha até Meta Ads registrar entrega.",
         currentExperienceVersion,
         summary.totalEvents(),
         summary.uniqueVisitors(),
@@ -462,6 +472,10 @@ public class PostDeployMonitorService {
     if (logs.errorLogs() > 0) {
       alerts.add("Há erros recentes nos logs da API Meta Ads.");
     }
+    if (!hasCampaignTraffic(metaAds) && pde.available() && pde.sessions() > 0) {
+      alerts.add(
+          "Eventos PDE detectados antes de impressões Meta; tratar como validação pré-campanha, não performance.");
+    }
     if (spendAtLeast(metaAds, ZERO_INTERACTION_SPEND_THRESHOLD)
         && pde.available()
         && firstInteractionCount(pde) == 0) {
@@ -477,6 +491,9 @@ public class PostDeployMonitorService {
       PostDeployFacebookLogSummaryDto logs) {
     if (!pde.available() || StringUtils.hasText(metaAds.lastSyncError()) || logs.errorLogs() > 0) {
       return PostDeployMonitorDecision.TECHNICAL_ATTENTION;
+    }
+    if (!hasCampaignTraffic(metaAds)) {
+      return PostDeployMonitorDecision.WAITING_DATA;
     }
     if (pde.subscriptionApproved() > 0) {
       return PostDeployMonitorDecision.SCALE_GRADUALLY;
@@ -495,6 +512,19 @@ public class PostDeployMonitorService {
   /** Verifica se o gasto rastreado atingiu o limite informado. */
   private boolean spendAtLeast(PostDeployMetaAdsSummaryDto metaAds, BigDecimal threshold) {
     return metaAds.spend() != null && metaAds.spend().compareTo(threshold) >= 0;
+  }
+
+  /** Identifica se já existe entrega real da campanha Meta para leitura comercial. */
+  private boolean hasCampaignTraffic(PostDeployMetaAdsSummaryDto metaAds) {
+    return positive(metaAds.impressions())
+        || positive(metaAds.clicks())
+        || positive(metaAds.leads())
+        || (metaAds.spend() != null && metaAds.spend().compareTo(BigDecimal.ZERO) > 0);
+  }
+
+  /** Verifica se uma métrica numérica foi sincronizada com valor positivo. */
+  private boolean positive(Long value) {
+    return value != null && value > 0;
   }
 
   /** Conta a primeira interação comercial relevante dentro do PDE. */

@@ -1,0 +1,116 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-29-social-distribution-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: social_account
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE social_account (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                platform VARCHAR(32) NOT NULL,
+                display_name VARCHAR(191) NOT NULL,
+                handle VARCHAR(191) NULL,
+                external_account_id VARCHAR(191) NULL,
+                connection_mode VARCHAR(32) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                required_scopes LONGTEXT NULL,
+                setup_notes LONGTEXT NULL,
+                connected_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                INDEX idx_social_account_platform (platform),
+                INDEX idx_social_account_status (status)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-07-29-social-distribution-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: social_video_publication
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE social_video_publication (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                product_id BIGINT NOT NULL,
+                asset_id BIGINT NULL,
+                social_account_id BIGINT NULL,
+                platform VARCHAR(32) NOT NULL,
+                video_format VARCHAR(32) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                title VARCHAR(191) NOT NULL,
+                caption LONGTEXT NULL,
+                hashtags LONGTEXT NULL,
+                video_url VARCHAR(1024) NULL,
+                published_url VARCHAR(1024) NULL,
+                external_post_id VARCHAR(191) NULL,
+                failure_reason LONGTEXT NULL,
+                publish_payload_json LONGTEXT NULL,
+                scheduled_at DATETIME NULL,
+                queued_at DATETIME NULL,
+                published_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                INDEX idx_social_video_product (product_id),
+                INDEX idx_social_video_platform_status (platform, status),
+                INDEX idx_social_video_account (social_account_id),
+                CONSTRAINT fk_social_video_product
+                  FOREIGN KEY (product_id) REFERENCES product (id),
+                CONSTRAINT fk_social_video_asset
+                  FOREIGN KEY (asset_id) REFERENCES asset (id),
+                CONSTRAINT fk_social_video_account
+                  FOREIGN KEY (social_account_id) REFERENCES social_account (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-07-29-social-distribution-003
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: social_publication_metric
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE social_publication_metric (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                publication_id BIGINT NOT NULL,
+                views BIGINT NULL,
+                likes BIGINT NULL,
+                comments BIGINT NULL,
+                shares BIGINT NULL,
+                clicks BIGINT NULL,
+                raw_payload_json LONGTEXT NULL,
+                captured_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                INDEX idx_social_metric_publication_captured (publication_id, captured_at),
+                CONSTRAINT fk_social_metric_publication
+                  FOREIGN KEY (publication_id) REFERENCES social_video_publication (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

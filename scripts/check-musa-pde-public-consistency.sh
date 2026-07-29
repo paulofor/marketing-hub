@@ -118,6 +118,12 @@ if expected_experience_version:
             "Versão publica PDE divergente: "
             f"url={pde_public_base_url} esperado={expected_experience_version} retornado={pde_alias_version}"
         )
+    runtime_config = (base / "runtime-config.js").read_text(encoding="utf-8", errors="replace")
+    if expected_experience_version not in runtime_config:
+        raise SystemExit(
+            "Runtime config publico PDE divergente: "
+            f"url={pde_public_base_url}/runtime-config.js esperado={expected_experience_version}"
+        )
 
 health = (base / "pde-health.txt").read_text(encoding="utf-8", errors="replace")
 if "UP" not in health.upper():

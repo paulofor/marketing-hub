@@ -6309,3 +6309,12 @@
 - foi feito: o `App.tsx` passou a consumir o contrato da versao ativa para perguntas publicas, flags de video, hostname e fallback, reduzindo condicionais comerciais soltas.
 - prevenção: teste Playwright cobre `v7.clubemusa.com.br` com pergunta propria e reabre `v6.clubemusa.com.br` para garantir que a pergunta da v6 nao mudou.
 - impacto comercial esperado: proteger a leitura e a conversao da v6 enquanto a v7 evolui com novos videos complementares, nova copy e nova microexperiencia sem contaminar campanha ativa.
+
+## 2026-07-29 — PDE MUSA: deploy frontend independente por versão
+
+- causa-raiz confirmada no fluxo de publicação: apesar dos contratos por `experienceVersion`, `v5` e `v6` ainda eram atendidas pelo mesmo serviço produtivo `pde-platform-frontend`; assim, publicar uma correção de v6 também recriava/atualizava a v5.
+- decisão comercial: versão PDE com cliente, tráfego, campanha ou aprendizado ativo não pode ser atualizada como efeito colateral de outra versão.
+- foi feito: o Compose produtivo passou a declarar frontends separados `pde-platform-frontend-v5`, `pde-platform-frontend-v6` e `pde-platform-frontend-v7`, com portas independentes e override fixo da versão esperada.
+- foi feito: o GitHub Actions passou a aceitar `frontend_slot` (`none`, `v5`, `v6`, `v7`, `all`) e só publica o frontend público selecionado; em push automático, o padrão é não atualizar frontend de slot público.
+- prevenção: README e cânone do PDE registram que `v5.clubemusa.com.br`, `v6.clubemusa.com.br` e `v7.clubemusa.com.br` devem apontar para seus containers/portas próprios, reservando `all` apenas para mudança comum aprovada.
+- impacto comercial esperado: permitir evolução da v6/v7 sem afetar clientes na v5, reduzindo risco de queda de conversão, regressão visual e contaminação de métricas.

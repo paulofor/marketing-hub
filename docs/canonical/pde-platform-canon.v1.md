@@ -301,8 +301,8 @@ Regras obrigatórias:
 - cada versão pública deve ter subdomínio próprio, slot próprio no Marketing Hub e `experienceVersion` própria;
 - duas versões comerciais diferentes de PDE nunca podem compartilhar a mesma URL pública primária;
 - se a URL pública for igual, a versão comercial deve ser considerada a mesma para fins de campanha, analytics e decisão de escala;
-- o deploy produtivo do PDE deve rodar automaticamente em `main` quando houver alteração versionada do `pde-platform`, mantendo `workflow_dispatch` apenas como acionamento manual adicional;
-- o mesmo motor pode servir múltiplos subdomínios, desde que frontend e backend resolvam a experiência pelo hostname versionado antes de qualquer override global de runtime;
+- o deploy produtivo do backend/worker do PDE pode rodar automaticamente em `main`, mas o frontend público de uma versão com tráfego ou cliente em uso só pode ser atualizado por slot explícito (`v5`, `v6`, `all` ou equivalente), nunca como efeito colateral de outra versão;
+- o mesmo motor pode atender múltiplos subdomínios, mas cada frontend público em campanha deve ter container/porta/proxy próprios para permitir deploy e rollback independente por versão;
 - nenhum deploy pode ser considerado pronto se `v5` e `v6` entregarem o mesmo `experienceVersion` por engano;
 - quando a versão depender de vídeo, o smoke test deve validar que o stream HLS público esperado retorna manifesto e segmentos reais, nunca HTML fallback;
 - a validação pós-deploy deve cobrir cada subdomínio versionado com health público, renderização, endpoint PDE, diagnóstico público, versão esperada e asset crítico esperado;
@@ -343,7 +343,7 @@ Quando a versão comercial for numerada, o slot produtivo deve usar o subdomíni
 
 O Marketing Hub pode cadastrar e acompanhar slots antes da automação completa de infraestrutura. A publicação real continua proibida por SSH manual: o deploy deve ser feito por workflow, Compose, Dockerfile ou pipeline versionados do repositório.
 
-Quando uma mesma imagem/deploy do frontend PDE servir mais de um subdomínio versionado, o hostname público do slot é a fonte decisiva da versão comercial exibida. Overrides globais de runtime podem existir para ambientes não versionados, preview ou rollback operacional, mas não podem fazer `v6.clubemusa.com.br` registrar ou renderizar a experiência da `v5`, nem o inverso. O frontend deve resolver `experienceVersion` e ativo obrigatório de vídeo pelo hostname quando ele corresponder a um slot produtivo versionado conhecido.
+Quando uma mesma imagem do frontend PDE for reutilizada por mais de um subdomínio versionado, o deploy não deve recriar todos os subdomínios automaticamente. Cada slot público deve rodar em serviço próprio, com override fixo da `experienceVersion` esperada e proxy dedicado. O hostname público continua sendo a fonte decisiva da versão comercial exibida, mas isolamento operacional de container/porta é obrigatório para impedir que uma publicação da v6 reinicie ou atualize a v5.
 
 O workflow oficial de publicação do `pde-platform` deve validar cada slot produtivo versionado ativo ou pronto, no mínimo `https://v5.clubemusa.com.br` e `https://v6.clubemusa.com.br` enquanto ambos existirem. A validação pós-deploy precisa provar health público, renderização da entrada, contrato público e jornada diagnóstica em cada subdomínio, porque um único smoke test no domínio raiz não comprova teste simultâneo de versões.
 

@@ -236,8 +236,8 @@ public class PdeProductionSlotService {
           healthPath,
           resolvedUrl);
     }
-    String validationDocument = page.body() + "\n" + loadScriptAssets(resolvedUrl, page.body());
-    Optional<String> textValidationError = validatePageTexts(contract, validationDocument);
+    String scriptAssets = loadScriptAssets(resolvedUrl, page.body());
+    Optional<String> textValidationError = validatePageTexts(contract, page.body(), scriptAssets);
     if (textValidationError.isPresent()) {
       return ValidationResult.failed(
           page.statusCode(),
@@ -410,10 +410,12 @@ public class PdeProductionSlotService {
   }
 
   /** Confere textos obrigatórios e proibidos declarados no contrato público do PDE. */
-  private Optional<String> validatePageTexts(JsonNode contract, String pageHtml) {
+  private Optional<String> validatePageTexts(
+      JsonNode contract, String pageHtml, String scriptAssets) {
+    String requiredSearchDocument = pageHtml + "\n" + scriptAssets;
     for (JsonNode requiredText : contract.withArray("requiredTexts")) {
       String text = requiredText.asText("");
-      if (StringUtils.hasText(text) && !pageHtml.contains(text)) {
+      if (StringUtils.hasText(text) && !requiredSearchDocument.contains(text)) {
         return Optional.of("Texto obrigatório ausente: " + text);
       }
     }

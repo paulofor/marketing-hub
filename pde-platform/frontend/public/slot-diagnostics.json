@@ -1,0 +1,12 @@
+{
+  "status": "UP",
+  "surface": "pde-platform-frontend",
+  "slot": "local",
+  "publicUrl": "http://127.0.0.1:57180",
+  "experienceVersion": "local",
+  "image": "local",
+  "imageTag": "local",
+  "commitSha": "local",
+  "deployedAt": "",
+  "containerHostname": "local"
+}

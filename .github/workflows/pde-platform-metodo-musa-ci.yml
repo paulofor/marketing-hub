@@ -280,7 +280,9 @@ jobs:
               *) echo 'Slot frontend PDE invalido: ${PDE_DEPLOY_FRONTEND_SLOT}' >&2; exit 1 ;; \
             esac \
             && docker compose -f docker-compose.deploy.yml pull pde-platform-backend pde-ai-worker \${FRONTEND_SERVICES} \
-            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend pde-platform-frontend-v5 >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend-v6 >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend-v7 >/dev/null 2>&1 || true; fi \
             && (docker rm -f pde-platform-backend pde-ai-worker >/dev/null 2>&1 || true) \
             && (docker compose -f docker-compose.deploy.yml up -d pde-platform-backend pde-ai-worker \${FRONTEND_SERVICES} || ( \
               echo 'Falha ao publicar PDE Platform. Coletando diagnostico dos containers.' >&2; \
@@ -331,14 +333,17 @@ jobs:
           if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v5" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/healthz"
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/slot-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v5-video-explicativo"'
           fi
           if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v6" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/healthz"
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/slot-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v6-video-motivacional"'
           fi
           if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/healthz"
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/slot-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"'
           fi
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
@@ -369,6 +374,10 @@ jobs:
             validate_dns_points_to_deploy_host "${slot}.clubemusa.com.br"
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "${url}/healthz" | tee "/tmp/pde-${slot}-healthz.json"
             grep -q '"status":"UP"' "/tmp/pde-${slot}-healthz.json"
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "${url}/slot-diagnostics.json" | tee "/tmp/pde-${slot}-slot-diagnostics.json"
+            grep -q '"experienceVersion"' "/tmp/pde-${slot}-slot-diagnostics.json"
+            grep -q '"commitSha"' "/tmp/pde-${slot}-slot-diagnostics.json"
+            grep -q '"image"' "/tmp/pde-${slot}-slot-diagnostics.json"
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null "${url}/"
           }
           validate_public_slot v5

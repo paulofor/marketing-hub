@@ -43,6 +43,7 @@ main() {
   local backend_alias_url="${BACKEND_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}"
   local pde_alias_url="${PDE_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}"
   local pde_health_url="${PDE_PUBLIC_BASE_URL%/}/healthz"
+  local pde_slot_diagnostics_url="${PDE_PUBLIC_BASE_URL%/}/slot-diagnostics.json"
   local pde_page_url="${PDE_PUBLIC_BASE_URL%/}/"
   local runtime_config_url="${PDE_PUBLIC_BASE_URL%/}/runtime-config.js"
 
@@ -50,6 +51,7 @@ main() {
   fetch_url "${backend_alias_url}" "${TMP_DIR}/backend-alias.json"
   fetch_url "${pde_alias_url}" "${TMP_DIR}/pde-alias.json"
   fetch_url "${pde_health_url}" "${TMP_DIR}/pde-health.txt"
+  fetch_url "${pde_slot_diagnostics_url}" "${TMP_DIR}/slot-diagnostics.json"
   fetch_url "${pde_page_url}" "${TMP_DIR}/pde-page.html"
   fetch_url "${runtime_config_url}" "${TMP_DIR}/runtime-config.js"
   if [[ -n "${EXPECTED_HERO_VIDEO_PATH}" ]]; then
@@ -88,6 +90,7 @@ def field(payload, key):
 canonical = load_json("canonical.json")
 backend_alias = load_json("backend-alias.json")
 pde_alias = load_json("pde-alias.json")
+slot_diagnostics = load_json("slot-diagnostics.json")
 
 canonical_slug = field(canonical, "slug")
 if canonical_slug != product_slug:
@@ -128,6 +131,21 @@ if expected_experience_version:
 health = (base / "pde-health.txt").read_text(encoding="utf-8", errors="replace")
 if "UP" not in health.upper():
     raise SystemExit("Health público do PDE não contém status UP")
+
+if field(slot_diagnostics, "status").upper() != "UP":
+    raise SystemExit("Diagnóstico público do slot PDE não contém status UP")
+
+for key in ["slot", "experienceVersion", "image", "imageTag", "commitSha"]:
+    field(slot_diagnostics, key)
+
+if expected_experience_version:
+    slot_experience_version = field(slot_diagnostics, "experienceVersion")
+    if slot_experience_version != expected_experience_version:
+        raise SystemExit(
+            "Diagnóstico público do slot PDE divergente: "
+            f"url={pde_public_base_url}/slot-diagnostics.json "
+            f"esperado={expected_experience_version} retornado={slot_experience_version}"
+        )
 
 page = (base / "pde-page.html").read_text(encoding="utf-8", errors="replace")
 required_page_markers = ["root", "assets"]

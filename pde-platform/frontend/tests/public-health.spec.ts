@@ -7,6 +7,16 @@ type PublicHealthContract = {
   forbiddenTexts?: string[];
 };
 
+type SlotDiagnostics = {
+  status?: string;
+  slot?: string;
+  publicUrl?: string;
+  experienceVersion?: string;
+  image?: string;
+  imageTag?: string;
+  commitSha?: string;
+};
+
 const defaultContract: Required<PublicHealthContract> = {
   slug: 'metodo-musa-7-dias',
   healthPath: '/',
@@ -57,6 +67,15 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
   const staticHealth = await request.get('/healthz');
   expect(staticHealth.ok()).toBeTruthy();
   expect(await staticHealth.text()).toContain('"status":"UP"');
+
+  const slotDiagnostics = await request.get('/slot-diagnostics.json');
+  expect(slotDiagnostics.ok()).toBeTruthy();
+  const diagnostics = (await slotDiagnostics.json()) as SlotDiagnostics;
+  expect(diagnostics.status).toBe('UP');
+  expect(diagnostics.experienceVersion).toBeTruthy();
+  expect(diagnostics.slot).toBeTruthy();
+  expect(diagnostics.image).toBeTruthy();
+  expect(diagnostics.commitSha).toBeTruthy();
 
   const response = await page.goto(contract.healthPath, { waitUntil: 'networkidle' });
   expect(response?.ok()).toBeTruthy();

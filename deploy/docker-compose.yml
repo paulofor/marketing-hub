@@ -25,23 +25,8 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-      - tiktok-ads-worker
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
-
-  tiktok-ads-worker:
-    image: ${TIKTOK_ADS_WORKER_IMAGE:-marketinghub-tiktok-ads-worker}:${TIKTOK_ADS_WORKER_IMAGE_TAG:-2026.07.30}
-    container_name: marketinghub-tiktok-ads-worker
-    restart: unless-stopped
-    environment:
-      TIKTOK_STORAGE_FILE: ${TIKTOK_STORAGE_FILE:-/app/data/tiktok-accounts.json}
-      LOGGING_FILE_NAME: ${TIKTOK_ADS_WORKER_LOG_FILE:-/app/logs/tiktok-ads-worker.log}
-      TZ: America/Sao_Paulo
-    ports:
-      - "${TIKTOK_ADS_WORKER_PORT:-8097}:8097"
-    volumes:
-      - ./volumes/tiktok-ads-worker/data:/app/data
-      - ./volumes/tiktok-ads-worker/logs:/app/logs
 
   video-management:
     image: ${VIDEO_MGMT_IMAGE:-marketinghub-video-management}:${VIDEO_MGMT_IMAGE_TAG:-2026.04.15}
@@ -147,11 +132,17 @@ services:
       MCP_LOG_PDE_PLATFORM_BACKEND_PATH: ${MCP_LOG_PDE_PLATFORM_BACKEND_PATH:-http://163.245.200.7:8096/actuator/logfile}
       MCP_LOG_VIDEO_MANAGEMENT_SERVICE_PATH: ${MCP_LOG_VIDEO_MANAGEMENT_SERVICE_PATH:-http://177.153.62.107:8095/actuator/logfile}
       MCP_CHAT_LOG_ALLOWED_CONTAINERS: ${MCP_CHAT_LOG_ALLOWED_CONTAINERS:-marketinghub-fashion-chat}
+      MCP_VPS_HOST_INVENTORY_ENABLED: ${MCP_VPS_HOST_INVENTORY_ENABLED:-false}
+      MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS: ${MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS:-191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,177.153.62.107,163.245.200.7}
+      MCP_VPS_HOST_INVENTORY_USER: ${MCP_VPS_HOST_INVENTORY_USER:-root}
+      MCP_VPS_HOST_INVENTORY_IDENTITY_FILE: ${MCP_VPS_HOST_INVENTORY_IDENTITY_FILE:-/opt/marketinghub/mcp/ssh/id_ed25519}
+      MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE: ${MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE:-/opt/marketinghub/mcp/ssh/known_hosts}
       TZ: America/Sao_Paulo
     ports:
       - "${MCP_SERVER_PORT:-8096}:8096"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/marketinghub/mcp/ssh:/opt/marketinghub/mcp/ssh:ro
 
   mcp-nginx:
     image: nginx:1.27-alpine

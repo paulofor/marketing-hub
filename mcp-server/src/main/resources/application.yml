@@ -74,6 +74,14 @@ mcp:
     max-lines: ${MCP_DOCKER_OPS_MAX_LINES:500}
     timeout-seconds: ${MCP_DOCKER_OPS_TIMEOUT_SECONDS:30}
     restart-enabled: ${MCP_DOCKER_OPS_RESTART_ENABLED:false}
+  vps-host-inventory:
+    enabled: ${MCP_VPS_HOST_INVENTORY_ENABLED:false}
+    allowed-hosts: ${MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS:191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,177.153.62.107,163.245.200.7}
+    ssh-command: ${MCP_VPS_HOST_INVENTORY_SSH_COMMAND:ssh}
+    user: ${MCP_VPS_HOST_INVENTORY_USER:root}
+    identity-file: ${MCP_VPS_HOST_INVENTORY_IDENTITY_FILE:/opt/marketinghub/mcp/ssh/id_ed25519}
+    known-hosts-file: ${MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE:/opt/marketinghub/mcp/ssh/known_hosts}
+    timeout-seconds: ${MCP_VPS_HOST_INVENTORY_TIMEOUT_SECONDS:20}
   product-discovery-worker:
     enabled: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_ENABLED:true}
     container: ${MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER:product-discovery-worker}

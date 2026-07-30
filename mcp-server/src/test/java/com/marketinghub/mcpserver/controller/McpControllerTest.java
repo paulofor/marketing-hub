@@ -86,6 +86,13 @@ class McpControllerTest {
         registry.add("mcp.docker-ops.max-lines", () -> "500");
         registry.add("mcp.docker-ops.timeout-seconds", () -> "5");
         registry.add("mcp.docker-ops.restart-enabled", () -> "false");
+        registry.add("mcp.vps-host-inventory.enabled", () -> "true");
+        registry.add("mcp.vps-host-inventory.allowed-hosts", () -> "191.252.210.83,191.252.120.96");
+        registry.add("mcp.vps-host-inventory.ssh-command", () -> TEST_LOG_DIR.resolve("ssh-fake.sh").toString());
+        registry.add("mcp.vps-host-inventory.user", () -> "root");
+        registry.add("mcp.vps-host-inventory.identity-file", () -> TEST_LOG_DIR.resolve("id_ed25519").toString());
+        registry.add("mcp.vps-host-inventory.known-hosts-file", () -> TEST_LOG_DIR.resolve("known_hosts").toString());
+        registry.add("mcp.vps-host-inventory.timeout-seconds", () -> "5");
         registry.add("mcp.product-discovery-worker.enabled", () -> "true");
         registry.add("mcp.product-discovery-worker.container", () -> "product-discovery-worker");
         registry.add("mcp.product-discovery-worker.docker-command", () -> TEST_LOG_DIR.resolve("docker-fake.sh").toString());
@@ -178,6 +185,19 @@ class McpControllerTest {
                         + "echo \"2026-07-12T10:00:01Z health ok\"\n",
                 StandardCharsets.UTF_8);
         fakeDocker.toFile().setExecutable(true);
+        Path fakeSsh = TEST_LOG_DIR.resolve("ssh-fake.sh");
+        Files.writeString(fakeSsh,
+                "#!/usr/bin/env sh\n"
+                        + "echo '__MCP_HOSTNAME__'\n"
+                        + "echo 'ads-vps'\n"
+                        + "echo '__MCP_CPU__'\n"
+                        + "echo '4'\n"
+                        + "echo '__MCP_MEMORY__'\n"
+                        + "echo 'Mem: 7900 3200 4700'\n"
+                        + "echo '__MCP_DOCKER__'\n"
+                        + "echo 'facebook-ads-worker|Up 2 days|ghcr.io/acme/facebook:sha'\n",
+                StandardCharsets.UTF_8);
+        fakeSsh.toFile().setExecutable(true);
     }
 
     /**
@@ -580,6 +600,40 @@ class McpControllerTest {
                         .value("docker restart is disabled (set mcp.docker-ops.restart-enabled=true)"));
     }
 
+    /**
+     * Garante que a tool de inventário VPS consulta somente host liberado.
+     */
+    @Test
+    void shouldInspectAllowedVpsHost() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":29,"method":"tools/call","params":{"name":"vps_host_inventory","arguments":{"host":"191.252.210.83"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.host").value("191.252.210.83"))
+                .andExpect(jsonPath("$.result.structuredContent.sections.hostname[0]").value("ads-vps"))
+                .andExpect(jsonPath("$.result.structuredContent.sections.cpu[0]").value("4"))
+                .andExpect(jsonPath("$.result.structuredContent.sections.docker[0]")
+                        .value("facebook-ads-worker|Up 2 days|ghcr.io/acme/facebook:sha"));
+    }
+
+    /**
+     * Garante que a tool de inventário VPS rejeita host fora da allowlist.
+     */
+    @Test
+    void shouldRejectVpsHostOutsideAllowList() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":30,"method":"tools/call","params":{"name":"vps_host_inventory","arguments":{"host":"10.0.0.1"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32602))
+                .andExpect(jsonPath("$.error.message")
+                        .value("host must be one of: 191.252.210.83, 191.252.120.96"));
+    }
+
 
 
     /**
@@ -664,6 +718,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("product-discovery-worker")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("docker_ops")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("vps_host_inventory")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("marketinghub-backend")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("product_discovery_worker_health")));
     }

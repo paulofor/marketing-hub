@@ -21,6 +21,7 @@ public record McpProperties(
         @NotNull @Valid Logs logs,
         @NotNull @Valid ChatLogs chatLogs,
         @NotNull @Valid DockerOps dockerOps,
+        @NotNull @Valid VpsHostInventory vpsHostInventory,
         @NotNull @Valid ProductDiscoveryWorker productDiscoveryWorker,
         @NotNull @Valid Meta meta,
         @NotNull @Valid Github github
@@ -74,6 +75,20 @@ public record McpProperties(
             @Positive int maxLines,
             @Positive int timeoutSeconds,
             boolean restartEnabled
+    ) {
+    }
+
+    /**
+     * Define o acesso SSH restrito usado para inventário físico dos VPS permitidos.
+     */
+    public record VpsHostInventory(
+            boolean enabled,
+            @NotEmpty List<@NotBlank String> allowedHosts,
+            @NotBlank String sshCommand,
+            @NotBlank String user,
+            @NotBlank String identityFile,
+            @NotBlank String knownHostsFile,
+            @Positive int timeoutSeconds
     ) {
     }
 

@@ -112,6 +112,15 @@ class ChatContainerLogServiceTest {
                 5,
                 false
         );
+        McpProperties.VpsHostInventory vpsHostInventory = new McpProperties.VpsHostInventory(
+                false,
+                List.of("191.252.210.83"),
+                "ssh",
+                "root",
+                "/tmp/id_ed25519",
+                "/tmp/known_hosts",
+                5
+        );
         McpProperties.Meta meta = new McpProperties.Meta(
                 true,
                 "https://graph.facebook.com",
@@ -128,6 +137,6 @@ class ChatContainerLogServiceTest {
                 ""
         );
         return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, dockerOps,
-                productDiscoveryWorker, meta, github);
+                vpsHostInventory, productDiscoveryWorker, meta, github);
     }
 }

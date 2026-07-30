@@ -641,11 +641,8 @@ class AccessServiceTest {
                 .extracting("trafficQuality")
                 .contains("HUMAN", "BOT_SUSPECTED");
         assertThat(summary.recentJourneys())
-                .anySatisfy(journey -> {
-                    assertThat(journey.sessionId()).isEqualTo("session-bot");
-                    assertThat(journey.trafficQuality()).isEqualTo("BOT_SUSPECTED");
-                    assertThat(journey.trafficProvider()).isEqualTo("META");
-                });
+                .singleElement()
+                .satisfies(journey -> assertThat(journey.sessionId()).isEqualTo("session-human"));
     }
 
     /** Confirma que jornadas por sessão retornam vazio no modo local sem banco analítico. */
@@ -673,12 +670,12 @@ class AccessServiceTest {
                 var statement = connection.createStatement()) {
             statement.execute("""
                     INSERT INTO pde_funnel_event (
-                      event_id, product_slug, event_type, source, page_url, session_id, visitor_id,
+                      event_id, product_slug, event_type, source, page_url, traffic_quality, session_id, visitor_id,
                       visible_ms, action_name, metadata_json, occurred_at
                     )
                     VALUES (
                       'event-session-time-1', 'metodo-musa-7-dias', 'PAGE_VISIBLE_TIME', 'test',
-                      'https://clubemusa.com.br/acesso', 'session-time-1', 'visitor-time-1',
+                      'https://clubemusa.com.br/acesso', 'HUMAN', 'session-time-1', 'visitor-time-1',
                       1200, 'page_visibility_flush', '{"screenName":"login_first_access"}',
                       TIMESTAMP '2026-07-24 21:07:16'
                     )

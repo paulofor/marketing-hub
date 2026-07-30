@@ -564,11 +564,13 @@ public class AccessService {
                     MAX(occurred_at) AS last_event_at
                   FROM pde_funnel_event
                   WHERE product_slug = ?
+                    AND traffic_quality = 'HUMAN'
                   GROUP BY COALESCE(session_id, event_id)
                   ORDER BY last_event_at DESC
                   LIMIT ?
                 ) recent ON recent.resolved_session_id = COALESCE(e.session_id, e.event_id)
                 WHERE e.product_slug = ?
+                  AND e.traffic_quality = 'HUMAN'
                 ORDER BY recent.last_event_at DESC, e.occurred_at ASC, e.id ASC
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

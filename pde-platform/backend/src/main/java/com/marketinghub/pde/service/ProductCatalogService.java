@@ -67,7 +67,17 @@ public class ProductCatalogService {
 
     /** Retorna a experiência configurada considerando o hostname versionado de produção. */
     public ProductExperienceResponse getProductForHost(String slug, String host) {
-        Optional<ProductExperienceResponse> marketingHubProduct = loadMarketingHubProduct(slug, host);
+        return getProductForRequest(slug, host, "", "");
+    }
+
+    /** Retorna a experiência considerando host, slot e versão informados pela superfície pública. */
+    public ProductExperienceResponse getProductForRequest(
+            String slug,
+            String host,
+            String requestedSlotCode,
+            String requestedExperienceVersion) {
+        Optional<ProductExperienceResponse> marketingHubProduct =
+                loadMarketingHubProduct(slug, host, requestedSlotCode, requestedExperienceVersion);
         if (marketingHubProduct.isPresent()) {
             return applyDefaultLayout(marketingHubProduct.get());
         }
@@ -75,12 +85,23 @@ public class ProductCatalogService {
         if (product == null) {
             throw new IllegalArgumentException("Produto PDE não encontrado: " + slug);
         }
-        return applyExperienceVersionOverride(product, host);
+        return applyExperienceVersionOverride(product, host, requestedExperienceVersion);
     }
 
     /** Aplica override operacional ou versão derivada do hostname sem alterar o contrato base. */
     private ProductExperienceResponse applyExperienceVersionOverride(ProductExperienceResponse product, String host) {
+        return applyExperienceVersionOverride(product, host, "");
+    }
+
+    /** Aplica versão solicitada, override operacional ou versão derivada do hostname sem alterar o contrato base. */
+    private ProductExperienceResponse applyExperienceVersionOverride(
+            ProductExperienceResponse product,
+            String host,
+            String requestedExperienceVersion) {
         String selectedExperienceVersion = resolveHostExperienceVersion(host);
+        if (!StringUtils.hasText(selectedExperienceVersion)) {
+            selectedExperienceVersion = requestedExperienceVersion;
+        }
         if (!StringUtils.hasText(selectedExperienceVersion)) {
             selectedExperienceVersion = experienceVersionOverride;
         }
@@ -158,11 +179,16 @@ public class ProductCatalogService {
     }
 
     /** Carrega o contrato PDE publicado pelo Marketing Hub quando a integração estiver configurada. */
-    private Optional<ProductExperienceResponse> loadMarketingHubProduct(String slug, String host) {
+    private Optional<ProductExperienceResponse> loadMarketingHubProduct(
+            String slug,
+            String host,
+            String requestedSlotCode,
+            String requestedExperienceVersion) {
         if (marketingHubBaseUrls.isEmpty()) {
             return Optional.empty();
         }
-        String slotCode = resolveHostSlotCode(host);
+        String slotCode = StringUtils.hasText(requestedSlotCode) ? requestedSlotCode.trim() : resolveHostSlotCode(host);
+        String experienceVersion = StringUtils.hasText(requestedExperienceVersion) ? requestedExperienceVersion.trim() : "";
         for (String baseUrl : marketingHubBaseUrls) {
             try {
                 ProductExperienceResponse product = restClientBuilder.clone()
@@ -173,6 +199,8 @@ public class ProductCatalogService {
                             var builder = uriBuilder.path("/api/products/public/{slug}/pde-experience");
                             if (StringUtils.hasText(slotCode)) {
                                 builder.queryParam("slotCode", slotCode);
+                            } else if (StringUtils.hasText(experienceVersion)) {
+                                builder.queryParam("experienceVersion", experienceVersion);
                             }
                             return builder.build(slug);
                         })

@@ -30,8 +30,15 @@ export default defineConfig({
   },
   webServer: [
     {
+      command: 'node tests/marketing-hub-contract-server.mjs',
+      url: 'http://127.0.0.1:57181/api/products/public/metodo-musa-7-dias/pde-experience?slotCode=v6',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
       command: [
         'env',
+        'PDE_MARKETING_HUB_BASE_URL=http://127.0.0.1:57181',
         `PDE_ACCESS_JDBC_URL="jdbc:mysql://127.0.0.1:${mysqlPort}/pde_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"`,
         'PDE_ACCESS_JDBC_USERNAME=pde',
         'PDE_ACCESS_JDBC_PASSWORD=pde',

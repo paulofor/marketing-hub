@@ -5,6 +5,8 @@ PRODUCT_SLUG=${PRODUCT_SLUG:-metodo-musa-7-dias}
 BACKEND_PUBLIC_BASE_URL=${BACKEND_PUBLIC_BASE_URL:-http://191.252.181.168}
 PDE_PUBLIC_BASE_URL=${PDE_PUBLIC_BASE_URL:-https://v5.clubemusa.com.br}
 EXPECTED_EXPERIENCE_VERSION=${EXPECTED_EXPERIENCE_VERSION:-}
+EXPECTED_SLOT_CODE=${EXPECTED_SLOT_CODE:-}
+EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE=${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE:-}
 EXPECTED_HERO_VIDEO_PATH=${EXPECTED_HERO_VIDEO_PATH:-}
 TIMEOUT_SECONDS=${TIMEOUT_SECONDS:-30}
 TMP_DIR=""
@@ -39,9 +41,26 @@ main() {
   TMP_DIR="$(mktemp -d)"
   trap 'rm -rf "${TMP_DIR}"' EXIT
 
-  local canonical_url="${BACKEND_PUBLIC_BASE_URL%/}/api/products/public/${PRODUCT_SLUG}/pde-experience"
-  local backend_alias_url="${BACKEND_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}"
-  local pde_alias_url="${PDE_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}"
+  local slot_code="${EXPECTED_SLOT_CODE}"
+  if [[ -z "${slot_code}" ]]; then
+    slot_code="$(python3 - "${PDE_PUBLIC_BASE_URL}" <<'PY'
+from urllib.parse import urlparse
+import sys
+host = urlparse(sys.argv[1]).hostname or ""
+slot = host.split(".", 1)[0]
+print(slot if slot.startswith("v") and slot[1:].isdigit() else "")
+PY
+)"
+  fi
+  local contract_query=""
+  if [[ -n "${slot_code}" ]]; then
+    contract_query="?slotCode=${slot_code}"
+  elif [[ -n "${EXPECTED_EXPERIENCE_VERSION}" ]]; then
+    contract_query="?experienceVersion=${EXPECTED_EXPERIENCE_VERSION}"
+  fi
+  local canonical_url="${BACKEND_PUBLIC_BASE_URL%/}/api/products/public/${PRODUCT_SLUG}/pde-experience${contract_query}"
+  local backend_alias_url="${BACKEND_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}${contract_query}"
+  local pde_alias_url="${PDE_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}${contract_query}"
   local pde_health_url="${PDE_PUBLIC_BASE_URL%/}/healthz"
   local pde_slot_diagnostics_url="${PDE_PUBLIC_BASE_URL%/}/slot-diagnostics.json"
   local pde_page_url="${PDE_PUBLIC_BASE_URL%/}/"
@@ -63,7 +82,7 @@ main() {
       "${video_url}" >"${TMP_DIR}/hero-video-content-type.txt"
   fi
 
-  python3 - "${PRODUCT_SLUG}" "${TMP_DIR}" "${PDE_PUBLIC_BASE_URL}" "${EXPECTED_EXPERIENCE_VERSION}" "${EXPECTED_HERO_VIDEO_PATH}" <<'PY'
+  python3 - "${PRODUCT_SLUG}" "${TMP_DIR}" "${PDE_PUBLIC_BASE_URL}" "${EXPECTED_EXPERIENCE_VERSION}" "${EXPECTED_HERO_VIDEO_PATH}" "${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE}" <<'PY'
 import json
 import pathlib
 import sys
@@ -87,6 +106,13 @@ def field(payload, key):
         raise SystemExit(f"Campo obrigatório ausente ou vazio: {key}")
     return str(value)
 
+def without_nulls(value):
+    if isinstance(value, dict):
+        return {key: without_nulls(item) for key, item in value.items() if item is not None}
+    if isinstance(value, list):
+        return [without_nulls(item) for item in value]
+    return value
+
 canonical = load_json("canonical.json")
 backend_alias = load_json("backend-alias.json")
 pde_alias = load_json("pde-alias.json")
@@ -105,13 +131,22 @@ for key in comparison_fields:
             f"backend-alias divergente no campo {key}: esperado={expected} retornado={actual}"
         )
 
-pde_comparison_fields = ["slug", "funnelVersion"] if expected_experience_version else comparison_fields
+pde_comparison_fields = comparison_fields
 for key in pde_comparison_fields:
     expected = field(canonical, key)
     actual = field(pde_alias, key)
     if actual != expected:
         raise SystemExit(
             f"pde-alias divergente no campo {key}: esperado={expected} retornado={actual}"
+        )
+
+canonical_layout_key = canonical.get("layoutKey")
+if canonical_layout_key is not None and str(canonical_layout_key).strip():
+    pde_layout_key = field(pde_alias, "layoutKey")
+    if pde_layout_key != str(canonical_layout_key):
+        raise SystemExit(
+            "Layout público PDE divergente do contrato publicado: "
+            f"esperado={canonical_layout_key} retornado={pde_layout_key}"
         )
 
 if expected_experience_version:
@@ -127,6 +162,29 @@ if expected_experience_version:
             "Runtime config publico PDE divergente: "
             f"url={pde_public_base_url}/runtime-config.js esperado={expected_experience_version}"
         )
+
+expected_public_first_fold_headline = sys.argv[6].strip() if len(sys.argv) > 6 else ""
+canonical_first_fold = canonical.get("publicFirstFold")
+pde_first_fold = pde_alias.get("publicFirstFold")
+if expected_public_first_fold_headline:
+    if not isinstance(pde_first_fold, dict) or pde_first_fold.get("headline") != expected_public_first_fold_headline:
+        raise SystemExit(
+            "Copy pública PDE não contém a headline esperada: "
+            f"esperado={expected_public_first_fold_headline!r} "
+            f"retornado={(pde_first_fold or {}).get('headline')!r}"
+        )
+elif isinstance(canonical_first_fold, dict) and canonical_first_fold.get("headline"):
+    if pde_first_fold != canonical_first_fold:
+        raise SystemExit(
+            "Copy pública PDE divergente do contrato publicado: "
+            f"headline_esperada={canonical_first_fold.get('headline')!r} "
+            f"headline_retornada={(pde_first_fold or {}).get('headline')!r}"
+        )
+
+canonical_hero_videos = canonical.get("heroVideos") or []
+pde_hero_videos = pde_alias.get("heroVideos") or []
+if without_nulls(canonical_hero_videos) != without_nulls(pde_hero_videos):
+    raise SystemExit("Vídeos hero públicos do PDE divergem do contrato canônico publicado")
 
 health = (base / "pde-health.txt").read_text(encoding="utf-8", errors="replace")
 if "UP" not in health.upper():

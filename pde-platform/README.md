@@ -37,6 +37,12 @@ HTTP simples do container. Para validar o que evita tela branca comercial, use
 publicada, exige JavaScript carregado e confere os textos comerciais obrigatorios
 do contrato publico em `GET /pde-health-contract.json`.
 
+Cada slot publico tambem deve expor `GET /slot-diagnostics.json`, com `slot`,
+`publicUrl`, `experienceVersion`, `image`, `imageTag`, `commitSha` e
+`deployedAt`. Esse endpoint e gerado no start do container de frontend e serve
+para confirmar rapidamente se `v5`, `v6` ou `v7` esta rodando a imagem e a
+versao comercial esperadas antes de liberar trafego de campanha.
+
 Todo PDE produzido para campanha deve publicar seu proprio
 `pde-health-contract.json` com:
 

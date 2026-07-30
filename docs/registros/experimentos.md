@@ -6351,3 +6351,11 @@
 - ajuste preparado: workflows de publicação do `pde-platform` e do `lead-portal-payments-service`, compose default do PDE e inventário operacional foram alinhados para `191.252.102.54`.
 - prevenção: a validação HTTPS pública do workflow do PDE agora falha explicitamente se `v5`, `v6` ou `v7` resolverem para IP diferente do host oficial de deploy antes de validar `/healthz` e página inicial.
 - impacto comercial esperado: impedir que a campanha mande cliques pagos para um domínio cujo DNS aponta para host sem proxy ativo, reduzindo perda direta de tráfego e protegendo a leitura da v6.
+
+## 2026-07-29 — Clube MUSA: deploy v6 bloqueado por porta presa
+
+- causa-raiz operacional confirmada no GitHub Actions: o deploy manual do PDE MUSA no commit `dd59dd0` ja removia `pde-platform-frontend-v6` pelo nome, mas ainda falhou com `Bind for 0.0.0.0:5177 failed: port is already allocated`.
+- histórico usado: a execução anterior no commit `a329996` falhou pelo mesmo sintoma, e a nova execução mostrou que limpar apenas nomes canônicos não era suficiente porque outro container Docker podia publicar a porta dedicada do slot.
+- ajuste preparado: antes do `docker compose up`, o workflow passa a remover qualquer container Docker que publique a porta do slot selecionado (`5176`, `5177` ou `5178`), além dos nomes canônicos e legados.
+- prevenção: o deploy deixa de depender apenas do nome do container e passa a tratar a porta dedicada do slot como recurso operacional exclusivo da versão PDE.
+- impacto comercial esperado: reduzir falhas de publicação de versões em campanha por resíduo operacional no host e acelerar a recuperação de destinos pagos do Clube MUSA.

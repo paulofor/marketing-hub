@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
+import TiktokAccountsPage from "./pages/tiktok/TiktokAccountsPage";
 import MediaListPage from "./pages/media/MediaListPage";
 import NewMediaPage from "./pages/media/NewMediaPage";
 import MediaDetailPage from "./pages/media/MediaDetailPage";
@@ -197,6 +198,7 @@ export default function App() {
                 path="/accounts/instagram"
                 element={<InstagramAccountsPage />}
               />
+              <Route path="/accounts/tiktok" element={<TiktokAccountsPage />} />
               <Route
                 path="/accounts/instagram/:id/posts"
                 element={<InstagramPostsPage />}

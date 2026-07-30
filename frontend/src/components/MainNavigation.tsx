@@ -26,6 +26,7 @@ import {
   Send,
   Server,
   Video,
+  Music2,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -61,6 +62,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/accounts/instagram",
         label: "Contas do Instagram",
         icon: Instagram,
+      },
+      {
+        to: "/accounts/tiktok",
+        label: "Contas TikTok Ads",
+        icon: Music2,
       },
     ],
   },

@@ -6373,3 +6373,11 @@
 - ajuste preparado: o backend passa a entregar o painel `/api/products/{id}/pde-videos` já resolvido por versão e HLS; o frontend `/products/{productId}/pde-videos` deixa de cruzar assets localmente por `sourceExperimentId`.
 - prevenção: o painel avisa quando um vídeo pertence a outro experimento, mas o HLS aponta para a versão exibida, preservando a verdade da campanha e a auditoria operacional.
 - impacto comercial esperado: evitar revisão e decisão de campanha sobre vídeo associado à versão errada do MUSA.
+
+## 2026-07-30 — Clube MUSA: editor/publicador PDE por slot
+
+- problema observado: a fase de testes do Clube MUSA ficava presa entre cadastro de slot, contrato geral do produto e fallback local do `pde-platform`, dificultando atualizar a v6 sem afetar outras versões ou depender de novo deploy de copy.
+- decisão comercial: cada URL versionada de PDE precisa ter contrato de experiência editável e publicado pelo Marketing Hub, com rascunho e publicação separados, para testar promessa, perguntas, vídeos, CTA e oferta com independência operacional.
+- ajuste preparado: o slot produtivo PDE passa a persistir `draft_experience_json`, `published_experience_json`, `published_by` e `published_at`; a tela de versões PDE ganhou editor/publicador de contrato por slot; o endpoint público aceita `slotCode`/`experienceVersion`; o backend do `pde-platform` consulta o Marketing Hub com o slot derivado do host, como `slotCode=v6`.
+- prevenção: se não houver contrato publicado no slot, o endpoint mantém fallback para o contrato geral do produto, preservando compatibilidade; quando houver publicação, a URL versionada passa a consumir a experiência específica daquele slot.
+- impacto comercial esperado: acelerar testes de copy/funil da v6, reduzir risco de contaminar v5/v7 e permitir aprendizado comercial por versão antes de escalar tráfego pago.

@@ -384,10 +384,13 @@ class PostDeployMonitorServiceTest {
                 null,
                 null,
                 "musa-pde-entry-v5-estrada-desejo",
+                "estrada-desejo",
                 null,
                 PdeProductionSlotStatus.PLANNED,
                 null,
-                "Hipotese 2"));
+                "Hipotese 2",
+                null,
+                null));
 
     assertThat(response.id()).isEqualTo(1L);
     assertThat(response.domain()).isEqualTo("v2.clubemusa.com.br");
@@ -450,10 +453,15 @@ class PostDeployMonitorServiceTest {
         slot.getPublicUrl(),
         slot.getBackendUrl(),
         slot.getExperienceVersion(),
+        "video-explicativo",
         slot.getTargetEnvironment(),
         slot.getStatus(),
         sourceExperimentId,
         slot.getNotes(),
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,

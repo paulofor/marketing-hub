@@ -1,5 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-30-pde-slot-editable-contract.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-07-30-pde-official-host-slug-correction.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-30-pde-official-host-163.yaml
       relativeToChangelogFile: true
   - include:
@@ -1491,6 +1497,10 @@ databaseChangeLog:
 
   - include:
       file: changesets/2026-07-24-pde-production-slots.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-30-pde-slot-layout-key.yaml
       relativeToChangelogFile: true
 
   - include:

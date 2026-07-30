@@ -56,6 +56,10 @@ public class PdeProductionSlot {
   @Column(name = "experience_version", nullable = false, length = 120)
   private String experienceVersion;
 
+  /** Chave do layout público usado para renderizar a versão sem herdar outra URL. */
+  @Column(name = "layout_key", nullable = false, length = 80)
+  private String layoutKey;
+
   /** Ambiente alvo usado pelo pipeline oficial de publicação. */
   @Column(name = "target_environment", nullable = false, length = 64)
   private String targetEnvironment;
@@ -72,6 +76,22 @@ public class PdeProductionSlot {
   /** Observações comerciais e operacionais do slot. */
   @Column(name = "notes", columnDefinition = "LONGTEXT")
   private String notes;
+
+  /** Contrato PDE em rascunho editado pelo Marketing Hub para este slot. */
+  @Column(name = "draft_experience_json", columnDefinition = "LONGTEXT")
+  private String draftExperienceJson;
+
+  /** Contrato PDE publicado e consumido pela URL versionada deste slot. */
+  @Column(name = "published_experience_json", columnDefinition = "LONGTEXT")
+  private String publishedExperienceJson;
+
+  /** Usuário operacional que publicou o último contrato do slot. */
+  @Column(name = "published_by", length = 191)
+  private String publishedBy;
+
+  /** Data da última publicação de contrato comercial deste slot. */
+  @Column(name = "published_at")
+  private Instant publishedAt;
 
   /** Status da última validação real da URL pública do slot. */
   @Column(name = "validation_status", length = 32)

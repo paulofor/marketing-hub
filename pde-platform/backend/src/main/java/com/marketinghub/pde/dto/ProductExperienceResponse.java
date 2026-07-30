@@ -6,6 +6,7 @@ import java.util.List;
 public record ProductExperienceResponse(
         String slug,
         String experienceVersion,
+        String layoutKey,
         String funnelVersion,
         String name,
         String promise,

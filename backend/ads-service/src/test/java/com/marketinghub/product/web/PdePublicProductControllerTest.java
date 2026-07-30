@@ -6,7 +6,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.product.service.ProductService;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,17 +24,23 @@ class PdePublicProductControllerTest {
   private MockMvc mockMvc;
 
   @Mock private ProductService productService;
+  @Mock private PdeProductionSlotService pdeProductionSlotService;
 
   /** Monta o controller isolado para validar o contrato público PDE. */
   @BeforeEach
   void setUp() {
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new PdePublicProductController(productService)).build();
+        MockMvcBuilders.standaloneSetup(
+                new PdePublicProductController(productService, pdeProductionSlotService))
+            .build();
   }
 
   /** Deve expor o mesmo contrato PDE canônico pela rota pública usada pelo Clube MUSA. */
   @Test
   void getPublicPdeProduct() throws Exception {
+    when(pdeProductionSlotService.findPublishedExperienceJson(
+            "metodo-musa-7-dias", null, null))
+        .thenReturn(Optional.empty());
     when(productService.getPublicPdeExperienceJson("metodo-musa-7-dias"))
         .thenReturn("{\"slug\":\"metodo-musa-7-dias\",\"missions\":[]}");
 

@@ -67,9 +67,9 @@ public class ProductCatalogService {
 
     /** Retorna a experiência configurada considerando o hostname versionado de produção. */
     public ProductExperienceResponse getProductForHost(String slug, String host) {
-        Optional<ProductExperienceResponse> marketingHubProduct = loadMarketingHubProduct(slug);
+        Optional<ProductExperienceResponse> marketingHubProduct = loadMarketingHubProduct(slug, host);
         if (marketingHubProduct.isPresent()) {
-            return applyExperienceVersionOverride(marketingHubProduct.get(), host);
+            return applyDefaultLayout(marketingHubProduct.get());
         }
         ProductExperienceResponse product = products.get(slug);
         if (product == null) {
@@ -90,6 +90,7 @@ public class ProductCatalogService {
         return new ProductExperienceResponse(
                 product.slug(),
                 selectedExperienceVersion.trim(),
+                product.layoutKey(),
                 product.funnelVersion(),
                 product.name(),
                 product.promise(),
@@ -104,6 +105,47 @@ public class ProductCatalogService {
                 product.completionOffer());
     }
 
+    /** Garante compatibilidade para contratos antigos do Hub que ainda não declaram layout. */
+    private ProductExperienceResponse applyDefaultLayout(ProductExperienceResponse product) {
+        if (StringUtils.hasText(product.layoutKey())) {
+            return product;
+        }
+        return new ProductExperienceResponse(
+                product.slug(),
+                product.experienceVersion(),
+                layoutKeyForExperienceVersion(product.experienceVersion()),
+                product.funnelVersion(),
+                product.name(),
+                product.promise(),
+                product.audience(),
+                product.priceLabel(),
+                product.theme(),
+                product.diagnostic(),
+                product.missions(),
+                product.supportMaterials(),
+                product.heroVideos(),
+                product.scientificEvidencePack(),
+                product.completionOffer());
+    }
+
+    /** Deriva a chave de layout conhecida a partir da versão quando o contrato for legado. */
+    private static String layoutKeyForExperienceVersion(String experienceVersion) {
+        if (!StringUtils.hasText(experienceVersion)) {
+            return "video-explicativo";
+        }
+        String normalized = experienceVersion.toLowerCase();
+        if (normalized.contains("video-motivacional")) {
+            return "video-motivacional";
+        }
+        if (normalized.contains("espelho-antes-de-sair")) {
+            return "espelho-antes-de-sair";
+        }
+        if (normalized.contains("estrada-desejo")) {
+            return "estrada-desejo";
+        }
+        return "video-explicativo";
+    }
+
     /** Resolve a versão comercial esperada para subdomínios públicos versionados do MUSA. */
     private static String resolveHostExperienceVersion(String host) {
         if (!StringUtils.hasText(host)) {
@@ -114,17 +156,24 @@ public class ProductCatalogService {
     }
 
     /** Carrega o contrato PDE publicado pelo Marketing Hub quando a integração estiver configurada. */
-    private Optional<ProductExperienceResponse> loadMarketingHubProduct(String slug) {
+    private Optional<ProductExperienceResponse> loadMarketingHubProduct(String slug, String host) {
         if (marketingHubBaseUrls.isEmpty()) {
             return Optional.empty();
         }
+        String slotCode = resolveHostSlotCode(host);
         for (String baseUrl : marketingHubBaseUrls) {
             try {
                 ProductExperienceResponse product = restClientBuilder.clone()
                         .baseUrl(baseUrl)
                         .build()
                         .get()
-                        .uri("/api/products/public/{slug}/pde-experience", slug)
+                        .uri(uriBuilder -> {
+                            var builder = uriBuilder.path("/api/products/public/{slug}/pde-experience");
+                            if (StringUtils.hasText(slotCode)) {
+                                builder.queryParam("slotCode", slotCode);
+                            }
+                            return builder.build(slug);
+                        })
                         .retrieve()
                         .body(ProductExperienceResponse.class);
                 return Optional.ofNullable(product);
@@ -136,6 +185,17 @@ public class ProductCatalogService {
         log.warn("Experiência PDE do Marketing Hub indisponível em todas as bases configuradas; usando catálogo local: slug={}",
                 slug);
         return Optional.empty();
+    }
+
+    /** Extrai o código do slot produtivo a partir do hostname público versionado. */
+    private static String resolveHostSlotCode(String host) {
+        if (!StringUtils.hasText(host)) {
+            return "";
+        }
+        String normalizedHost = host.split(":", 2)[0].trim().toLowerCase();
+        int dotIndex = normalizedHost.indexOf('.');
+        String candidate = dotIndex > 0 ? normalizedHost.substring(0, dotIndex) : normalizedHost;
+        return candidate.matches("v\\d+") ? candidate : "";
     }
 
     /** Converte a configuração de URLs do Marketing Hub em uma lista ordenada de fallback. */
@@ -155,6 +215,7 @@ public class ProductCatalogService {
         return new ProductExperienceResponse(
                 "metodo-musa-7-dias",
                 MUSA_V5_EXPERIENCE_VERSION,
+                "video-explicativo",
                 "musa-membership-funnel-v1",
                 "Método MUSA - Experiência Guiada de 7 Dias",
                 "Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.",

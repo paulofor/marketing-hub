@@ -66,6 +66,7 @@ export type ScientificEvidencePack = {
 export type ProductExperience = {
   slug: string;
   experienceVersion?: string;
+  layoutKey?: string;
   funnelVersion?: string;
   name: string;
   promise: string;
@@ -93,6 +94,7 @@ export type PublicDiagnosticQuestion = {
 
 export type MusaExperienceContract = {
   experienceVersion: string;
+  layoutKey: string;
   primaryHost?: string;
   publicDiagnosticQuestions: PublicDiagnosticQuestion[];
   usesDesireRoad: boolean;
@@ -208,6 +210,7 @@ const musaV7PublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
 const musaExperienceContracts: Record<string, MusaExperienceContract> = {
   'musa-pde-entry-v5-estrada-desejo': {
     experienceVersion: 'musa-pde-entry-v5-estrada-desejo',
+    layoutKey: 'estrada-desejo',
     publicDiagnosticQuestions: basePublicDiagnosticQuestions,
     usesDesireRoad: true,
     supportsPublishedPublicDiagnosticVideoHero: false,
@@ -216,6 +219,7 @@ const musaExperienceContracts: Record<string, MusaExperienceContract> = {
   },
   [MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION]: {
     experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+    layoutKey: 'video-explicativo',
     primaryHost: 'v5.clubemusa.com.br',
     publicDiagnosticQuestions: basePublicDiagnosticQuestions,
     usesDesireRoad: true,
@@ -225,6 +229,7 @@ const musaExperienceContracts: Record<string, MusaExperienceContract> = {
   },
   [MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION]: {
     experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
+    layoutKey: 'video-motivacional',
     primaryHost: 'v6.clubemusa.com.br',
     publicDiagnosticQuestions: basePublicDiagnosticQuestions,
     usesDesireRoad: true,
@@ -234,6 +239,7 @@ const musaExperienceContracts: Record<string, MusaExperienceContract> = {
   },
   [MUSA_V7_EXPERIENCE_VERSION]: {
     experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
+    layoutKey: 'espelho-antes-de-sair',
     primaryHost: 'v7.clubemusa.com.br',
     publicDiagnosticQuestions: musaV7PublicDiagnosticQuestions,
     usesDesireRoad: true,
@@ -242,6 +248,12 @@ const musaExperienceContracts: Record<string, MusaExperienceContract> = {
     videoPlacements: ['opening_mirror', 'visual_proof', 'mechanism_explainer', 'objection_breaker', 'cta_reinforcement'],
   },
 };
+
+const musaExperienceContractsByLayout: Record<string, MusaExperienceContract> = Object.values(musaExperienceContracts)
+  .reduce<Record<string, MusaExperienceContract>>((layouts, contract) => {
+    layouts[contract.layoutKey] = contract;
+    return layouts;
+  }, {});
 
 const MUSA_VERSIONED_HOSTS: Record<string, string> = Object.values(musaExperienceContracts)
   .filter((contract) => contract.primaryHost)
@@ -328,6 +340,7 @@ export const MUSA_POINTED_DOMAINS: MusaPointedDomain[] = [
 export const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',
   experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+  layoutKey: 'video-explicativo',
   funnelVersion: 'musa-membership-funnel-v1',
   name: 'Método MUSA - Experiência Guiada de 7 Dias',
   promise: 'Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.',
@@ -409,9 +422,17 @@ export function resolveMusaVersionedHostConfig(hostname: string) {
   return experienceVersion ? { experienceVersion } : undefined;
 }
 
-export function resolveMusaExperienceContract(experienceVersion: string) {
+export function resolveMusaExperienceContract(experienceVersion: string, layoutKey = '') {
+  const layoutContract = layoutKey ? musaExperienceContractsByLayout[layoutKey] : undefined;
+  if (layoutContract) {
+    return {
+      ...layoutContract,
+      experienceVersion: experienceVersion || layoutContract.experienceVersion,
+    };
+  }
   return musaExperienceContracts[experienceVersion] ?? {
     experienceVersion,
+    layoutKey: 'diagnostico-classico',
     publicDiagnosticQuestions: basePublicDiagnosticQuestions,
     usesDesireRoad: false,
     supportsPublishedPublicDiagnosticVideoHero: false,

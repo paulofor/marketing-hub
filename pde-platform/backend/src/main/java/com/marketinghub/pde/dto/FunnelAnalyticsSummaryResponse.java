@@ -30,6 +30,7 @@ public record FunnelAnalyticsSummaryResponse(
         String lastEventAt,
         List<FunnelAnalyticsEventMetricDto> events,
         List<FunnelAnalyticsExperienceVersionMetricDto> experienceVersions,
+        List<FunnelAnalyticsLayoutMetricDto> layouts,
         List<FunnelAnalyticsTrafficSourceMetricDto> trafficSources,
         List<FunnelAnalyticsTrafficQualityMetricDto> trafficQualityBreakdown,
         List<FunnelAnalyticsDeviceMetricDto> deviceBreakdown,

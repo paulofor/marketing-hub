@@ -5,6 +5,7 @@ import com.marketinghub.pde.dto.FunnelAnalyticsResetResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsEventMetricDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsExperienceVersionMetricDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsJourneyResponse;
+import com.marketinghub.pde.dto.FunnelAnalyticsLayoutMetricDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSessionJourneyDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSessionStepDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
@@ -481,6 +482,7 @@ public class AccessService {
                             timestampAsOperationalText(resultSet, "last_event_at"),
                             loadFunnelEventMetrics(connection, productSlug),
                             loadExperienceVersionMetrics(connection, productSlug),
+                            loadLayoutMetrics(connection, productSlug),
                             loadTrafficSourceMetrics(connection, productSlug),
                             loadTrafficQualityMetrics(connection, productSlug),
                             loadDeviceMetrics(connection, productSlug),
@@ -892,6 +894,7 @@ public class AccessService {
                 List.of(),
                 List.of(),
                 List.of(),
+                List.of(),
                 List.of());
     }
 
@@ -1025,6 +1028,41 @@ public class AccessService {
                             resultSet.getLong("subscription_approved")));
                 }
                 return metrics;
+            }
+        }
+    }
+
+    /** Lê as métricas agregadas por layout para comparar formatos visuais independentes do PDE. */
+    private List<FunnelAnalyticsLayoutMetricDto> loadLayoutMetrics(Connection connection, String productSlug)
+            throws SQLException, IOException {
+        String sql = """
+                SELECT
+                  event_id,
+                  event_type,
+                  session_id,
+                  metadata_json
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                  AND traffic_quality = 'HUMAN'
+                ORDER BY occurred_at DESC, id DESC
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<String, LayoutMetricBuilder> builders = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    Map<String, Object> metadata = readMetadata(resultSet.getString("metadata_json"));
+                    String layoutKey = metadataString(metadata, "layoutKey");
+                    if (layoutKey == null || layoutKey.isBlank()) {
+                        layoutKey = "sem-layout";
+                    }
+                    LayoutMetricBuilder builder = builders.computeIfAbsent(layoutKey, LayoutMetricBuilder::new);
+                    builder.add(
+                            resultSet.getString("event_type"),
+                            resultSet.getString("session_id"),
+                            resultSet.getString("event_id"));
+                }
+                return builders.values().stream().map(LayoutMetricBuilder::toDto).toList();
             }
         }
     }
@@ -1742,6 +1780,61 @@ public class AccessService {
             Long maxScrollDepthPercent,
             String fieldName,
             String elementText) {}
+
+    /** Acumula eventos por layout para comparar formatos visuais sem depender de função JSON do banco. */
+    private static class LayoutMetricBuilder {
+        private final String layoutKey;
+        private final Set<String> sessions = new LinkedHashSet<>();
+        private long totalEvents;
+        private long pdeEntries;
+        private long diagnosticClicks;
+        private long videoPartial;
+        private long videoComplete;
+        private long paywallViewed;
+        private long checkoutStarted;
+        private long subscriptionApproved;
+
+        /** Cria acumulador para um layout específico da experiência pública. */
+        private LayoutMetricBuilder(String layoutKey) {
+            this.layoutKey = layoutKey;
+        }
+
+        /** Adiciona um evento humano ao acumulador do layout. */
+        private void add(String eventType, String sessionId, String eventId) {
+            totalEvents += 1;
+            sessions.add(sessionId == null || sessionId.isBlank() ? eventId : sessionId);
+            if ("PED_ENTRY".equals(eventType)) {
+                pdeEntries += 1;
+            } else if ("DIAGNOSTIC_CHOICE_SELECTED".equals(eventType)) {
+                diagnosticClicks += 1;
+            } else if (Set.of("VIDEO_PROGRESS_25", "VIDEO_PROGRESS_50", "VIDEO_PROGRESS_75").contains(eventType)) {
+                videoPartial += 1;
+            } else if ("VIDEO_COMPLETED".equals(eventType)) {
+                videoComplete += 1;
+            } else if ("PAYWALL_VIEWED".equals(eventType)) {
+                paywallViewed += 1;
+            } else if ("CHECKOUT_STARTED".equals(eventType)) {
+                checkoutStarted += 1;
+            } else if ("SUBSCRIPTION_APPROVED".equals(eventType)) {
+                subscriptionApproved += 1;
+            }
+        }
+
+        /** Converte os acumuladores em DTO público de analytics por layout. */
+        private FunnelAnalyticsLayoutMetricDto toDto() {
+            return new FunnelAnalyticsLayoutMetricDto(
+                    layoutKey,
+                    totalEvents,
+                    sessions.size(),
+                    pdeEntries,
+                    diagnosticClicks,
+                    videoPartial,
+                    videoComplete,
+                    paywallViewed,
+                    checkoutStarted,
+                    subscriptionApproved);
+        }
+    }
 
     /** Acumula eventos de uma sessão e calcula sinais comerciais de abandono. */
     private static class SessionJourneyBuilder {

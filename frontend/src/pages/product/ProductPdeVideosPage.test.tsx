@@ -54,6 +54,7 @@ describe("ProductPdeVideosPage", () => {
                 domain: "v6.clubemusa.com.br",
                 publicUrl: "https://v6.clubemusa.com.br",
                 experienceVersion: "musa-pde-entry-v6-video-motivacional",
+                layoutKey: "video-motivacional",
                 targetEnvironment: "production",
                 status: "ACTIVE",
                 sourceExperimentId: 76,

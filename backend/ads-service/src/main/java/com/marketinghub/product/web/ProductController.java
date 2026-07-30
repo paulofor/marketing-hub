@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.pde.service.PdeProductionSlotService;
+import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
@@ -201,6 +202,17 @@ public class ProductController {
     return pdeProductionSlotService.validateProductionSlot(product.getSlug(), slotCode);
   }
 
+  /** Publica o contrato comercial editável de uma versão produtiva PDE. */
+  @PostMapping("/{id}/pde-production-slots/{slotCode}/publish")
+  public PostDeployPdeProductionSlotDto publishPdeProductionSlotContract(
+      @PathVariable Long id,
+      @PathVariable String slotCode,
+      @RequestBody PublishPdeProductionSlotContractRequest request) {
+    Product product = service.getProduct(id);
+    return pdeProductionSlotService.publishProductionSlotContract(
+        product.getSlug(), slotCode, request);
+  }
+
   /** Lista os produtos comerciais cadastrados no Marketing Hub. */
   @GetMapping
   public List<ProductDto> list() {
@@ -237,10 +249,17 @@ public class ProductController {
   @GetMapping(
       value = "/public/{productCode}/pde-experience",
       produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<String> getPublicPdeExperience(@PathVariable String productCode) {
+  public ResponseEntity<String> getPublicPdeExperience(
+      @PathVariable String productCode,
+      @RequestParam(required = false) String slotCode,
+      @RequestParam(required = false) String experienceVersion) {
+    String body =
+        pdeProductionSlotService
+            .findPublishedExperienceJson(productCode, slotCode, experienceVersion)
+            .orElseGet(() -> service.getPublicPdeExperienceJson(productCode));
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_JSON)
-        .body(service.getPublicPdeExperienceJson(productCode));
+        .body(body);
   }
 
   /** Retorna a jornada persuasiva interativa cadastrada no contrato PDE do produto. */

@@ -2,6 +2,7 @@ package com.marketinghub.pde.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
@@ -10,6 +11,7 @@ import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoAssetDto;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
@@ -45,6 +47,7 @@ public class PdeProductionSlotService {
   private static final Duration VALIDATION_TIMEOUT = Duration.ofSeconds(12);
   private static final String VALIDATION_OK = "OK";
   private static final String VALIDATION_FAILED = "FAILED";
+  private static final String DEFAULT_LAYOUT_KEY = "video-explicativo";
   private static final Pattern SCRIPT_SRC_PATTERN =
       Pattern.compile("<script[^>]+src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
 
@@ -113,6 +116,8 @@ public class PdeProductionSlotService {
         StringUtils.hasText(request.backendUrl()) ? request.backendUrl().trim() : null);
     slot.setExperienceVersion(
         normalizeRequired(request.experienceVersion(), "Versão PDE obrigatória"));
+    slot.setLayoutKey(
+        normalizeLayoutKey(request.layoutKey(), slotCode, slot.getExperienceVersion()));
     slot.setTargetEnvironment(
         StringUtils.hasText(request.targetEnvironment())
             ? request.targetEnvironment().trim()
@@ -123,7 +128,57 @@ public class PdeProductionSlotService {
             ? request.sourceExperimentId()
             : defaultSourceExperimentId);
     slot.setNotes(StringUtils.hasText(request.notes()) ? request.notes().trim() : null);
+    slot.setDraftExperienceJson(normalizeOptionalJson(request.draftExperienceJson()));
     return toProductionSlotDto(repository.save(slot));
+  }
+
+  /** Publica o contrato comercial do slot para consumo da URL versionada do PDE. */
+  public PostDeployPdeProductionSlotDto publishProductionSlotContract(
+      String productSlug, String slotCode, PublishPdeProductionSlotContractRequest request) {
+    String resolvedProductSlug = resolveProductSlug(productSlug);
+    String normalizedSlotCode =
+        normalizeRequired(slotCode, "Código do slot PDE obrigatório").toLowerCase(Locale.ROOT);
+    PdeProductionSlot slot =
+        repository
+            .findByProductSlugAndSlotCode(resolvedProductSlug, normalizedSlotCode)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Slot PDE não encontrado"));
+    String contractJson =
+        StringUtils.hasText(request.experienceJson())
+            ? request.experienceJson()
+            : slot.getDraftExperienceJson();
+    String normalizedContract =
+        normalizeRequiredJson(
+            contractJson,
+            "Informe o contrato JSON do PDE para publicar",
+            slot.getExperienceVersion(),
+            slot.getLayoutKey());
+    slot.setDraftExperienceJson(normalizedContract);
+    slot.setPublishedExperienceJson(normalizedContract);
+    slot.setPublishedBy(
+        StringUtils.hasText(request.publishedBy()) ? request.publishedBy().trim() : null);
+    slot.setPublishedAt(Instant.now());
+    return toProductionSlotDto(repository.save(slot));
+  }
+
+  /** Retorna o contrato PDE publicado por slot ou versão, quando existir. */
+  public Optional<String> findPublishedExperienceJson(
+      String productSlug, String slotCode, String experienceVersion) {
+    String resolvedProductSlug = resolveProductSlug(productSlug);
+    Optional<PdeProductionSlot> slot = Optional.empty();
+    if (StringUtils.hasText(slotCode)) {
+      slot =
+          repository.findByProductSlugAndSlotCode(
+              resolvedProductSlug, slotCode.trim().toLowerCase(Locale.ROOT));
+    }
+    if (slot.isEmpty() && StringUtils.hasText(experienceVersion)) {
+      slot =
+          repository.findFirstByProductSlugAndExperienceVersionOrderByPublishedAtDesc(
+              resolvedProductSlug, experienceVersion.trim());
+    }
+    return slot.map(PdeProductionSlot::getPublishedExperienceJson)
+        .filter(StringUtils::hasText)
+        .map(String::trim);
   }
 
   /** Valida por HTTP se a URL produtiva entrega o contrato público declarado para o PDE. */
@@ -185,10 +240,15 @@ public class PdeProductionSlotService {
         slot.getPublicUrl(),
         slot.getBackendUrl(),
         slot.getExperienceVersion(),
+        resolveSlotLayoutKey(slot),
         slot.getTargetEnvironment(),
         slot.getStatus(),
         slot.getSourceExperimentId(),
         slot.getNotes(),
+        slot.getDraftExperienceJson(),
+        slot.getPublishedExperienceJson(),
+        slot.getPublishedBy(),
+        slot.getPublishedAt(),
         slot.getValidationStatus(),
         slot.getValidationCheckedAt(),
         slot.getValidationHttpStatus(),
@@ -606,6 +666,67 @@ public class PdeProductionSlotService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
     return value.trim();
+  }
+
+  /** Normaliza JSON opcional de contrato PDE antes de persistir como rascunho. */
+  private String normalizeOptionalJson(String rawJson) {
+    if (!StringUtils.hasText(rawJson)) {
+      return null;
+    }
+    return normalizeRequiredJson(rawJson, "Contrato JSON da experiência PDE inválido");
+  }
+
+  /** Valida e formata o JSON obrigatório do contrato PDE. */
+  private String normalizeRequiredJson(String rawJson, String message) {
+    return normalizeRequiredJson(rawJson, message, null, null);
+  }
+
+  /** Valida, completa e formata o JSON obrigatório do contrato PDE. */
+  private String normalizeRequiredJson(
+      String rawJson, String message, String experienceVersion, String layoutKey) {
+    if (!StringUtils.hasText(rawJson)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+    try {
+      JsonNode parsed = objectMapper.readTree(rawJson);
+      if (!parsed.isObject()) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Contrato JSON da experiência PDE deve ser um objeto");
+      }
+      ObjectNode contract = (ObjectNode) parsed;
+      if (StringUtils.hasText(experienceVersion)) {
+        contract.put("experienceVersion", experienceVersion.trim());
+      }
+      if (StringUtils.hasText(layoutKey)) {
+        contract.put("layoutKey", layoutKey.trim());
+      }
+      return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
+    } catch (IOException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message, ex);
+    }
+  }
+
+  /** Normaliza a chave de layout do slot ou deriva uma opção canônica da versão atual. */
+  private String normalizeLayoutKey(String layoutKey, String slotCode, String experienceVersion) {
+    if (StringUtils.hasText(layoutKey)) {
+      return layoutKey.trim().toLowerCase(Locale.ROOT);
+    }
+    if ("v6".equals(slotCode)) {
+      return "video-motivacional";
+    }
+    if ("v7".equals(slotCode)) {
+      return "espelho-antes-de-sair";
+    }
+    if (StringUtils.hasText(experienceVersion)
+        && experienceVersion.toLowerCase(Locale.ROOT).contains("estrada-desejo")) {
+      return "estrada-desejo";
+    }
+    return DEFAULT_LAYOUT_KEY;
+  }
+
+  /** Retorna a chave de layout persistida ou uma chave compatível para registros legados. */
+  private String resolveSlotLayoutKey(PdeProductionSlot slot) {
+    return normalizeLayoutKey(slot.getLayoutKey(), slot.getSlotCode(), slot.getExperienceVersion());
   }
 
   /** Normaliza domínio removendo protocolo e barra final para evitar duplicidade operacional. */

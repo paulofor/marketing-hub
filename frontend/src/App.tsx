@@ -44,6 +44,7 @@ import EditOpenAiModelPage from "./pages/openaiModel/EditOpenAiModelPage";
 import MicroserviceListPage from "./pages/microservice/MicroserviceListPage";
 import NewMicroservicePage from "./pages/microservice/NewMicroservicePage";
 import EditMicroservicePage from "./pages/microservice/EditMicroservicePage";
+import EditVpsHostInventoryPage from "./pages/microservice/EditVpsHostInventoryPage";
 import OperationalInventoryPage from "./pages/microservice/OperationalInventoryPage";
 import DifferentiatedTechnologyListPage from "./pages/differentiatedTechnology/DifferentiatedTechnologyListPage";
 import NewDifferentiatedTechnologyPage from "./pages/differentiatedTechnology/NewDifferentiatedTechnologyPage";
@@ -387,6 +388,10 @@ export default function App() {
               <Route
                 path="/microservices/vps-inventory"
                 element={<OperationalInventoryPage />}
+              />
+              <Route
+                path="/microservices/vps-inventory/:host/edit"
+                element={<EditVpsHostInventoryPage />}
               />
               <Route
                 path="/microservices/errors"

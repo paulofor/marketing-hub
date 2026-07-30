@@ -5,6 +5,8 @@ import com.marketinghub.microservice.dto.CreateMicroserviceRequest;
 import com.marketinghub.microservice.dto.DiscoveredMicroserviceDto;
 import com.marketinghub.microservice.dto.MicroserviceDto;
 import com.marketinghub.microservice.dto.OperationalInventoryDto;
+import com.marketinghub.microservice.dto.UpdateVpsHostInventoryRequest;
+import com.marketinghub.microservice.dto.VpsHostInventoryDto;
 import com.marketinghub.microservice.exception.dto.MicroserviceExceptionSummary;
 import com.marketinghub.microservice.exception.service.MicroserviceExceptionService;
 import com.marketinghub.microservice.mapper.MicroserviceMapper;
@@ -71,6 +73,19 @@ public class MicroserviceController {
   @GetMapping("/operational-inventory")
   public OperationalInventoryDto operationalInventory() {
     return discoveryService.discoverOperationalInventory();
+  }
+
+  /** Busca os dados editáveis de um host VPS. */
+  @GetMapping("/operational-inventory/hosts/{host}")
+  public VpsHostInventoryDto getVpsHost(@PathVariable String host) {
+    return discoveryService.getHostInventory(host);
+  }
+
+  /** Atualiza os dados físicos, financeiros e operacionais de um host VPS. */
+  @PutMapping("/operational-inventory/hosts/{host}")
+  public VpsHostInventoryDto updateVpsHost(
+      @PathVariable String host, @RequestBody UpdateVpsHostInventoryRequest request) {
+    return discoveryService.updateHostInventory(host, request);
   }
 
   /** Atualiza um microserviço cadastrado. */

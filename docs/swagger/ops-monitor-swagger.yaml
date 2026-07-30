@@ -104,6 +104,51 @@ paths:
           schema: { type: string }
       responses:
         '200': { description: OK }
+  /api/microservices/operational-inventory:
+    get:
+      summary: Lista inventário operacional de serviços, deploys e hosts VPS
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationalInventory'
+  /api/microservices/operational-inventory/hosts/{host}:
+    get:
+      summary: Busca dados editáveis de um host VPS
+      parameters:
+        - in: path
+          name: host
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VpsHostInventory'
+    put:
+      summary: Atualiza dados físicos, financeiros e operacionais de um host VPS
+      parameters:
+        - in: path
+          name: host
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VpsHostInventoryUpdateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VpsHostInventory'
   /api/ops-monitor/v1/modules/availability:
     get:
       summary: Lista status atual dos módulos
@@ -237,3 +282,36 @@ components:
           type: string
           nullable: true
           description: Motivo administrativo para o status efetivo exibido no painel.
+    OperationalInventory:
+      type: object
+      properties:
+        services:
+          type: array
+          items: { type: object }
+        deployments:
+          type: array
+          items: { type: object }
+        hosts:
+          type: array
+          items:
+            $ref: '#/components/schemas/VpsHostInventory'
+    VpsHostInventoryUpdateRequest:
+      type: object
+      properties:
+        providerName: { type: string, nullable: true }
+        providerEvidence: { type: string, nullable: true }
+        cpu: { type: string, nullable: true }
+        memoryGb: { type: integer, format: int32, nullable: true }
+        diskGb: { type: integer, format: int32, nullable: true }
+        operatingSystem: { type: string, nullable: true }
+        monthlyCostBrl: { type: number, nullable: true }
+        billingCycle: { type: string, nullable: true }
+        costEvidence: { type: string, nullable: true }
+        physicalSpecsEvidence: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+    VpsHostInventory:
+      allOf:
+        - $ref: '#/components/schemas/VpsHostInventoryUpdateRequest'
+        - type: object
+          properties:
+            host: { type: string }

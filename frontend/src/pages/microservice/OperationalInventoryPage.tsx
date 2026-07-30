@@ -94,6 +94,7 @@ export default function OperationalInventoryPage() {
                 <th>Sistema</th>
                 <th>Custo mensal</th>
                 <th>Evidência</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -131,11 +132,19 @@ export default function OperationalInventoryPage() {
                       </div>
                     ) : null}
                   </td>
+                  <td>
+                    <Link
+                      className="btn btn-sm btn-outline-primary"
+                      to={`/microservices/vps-inventory/${encodeURIComponent(host.host)}/edit`}
+                    >
+                      Editar
+                    </Link>
+                  </td>
                 </tr>
               ))}
               {hosts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center text-muted">
+                  <td colSpan={9} className="text-center text-muted">
                     Nenhum host VPS cadastrado no inventário operacional.
                   </td>
                 </tr>

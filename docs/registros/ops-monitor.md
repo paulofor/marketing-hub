@@ -15,6 +15,13 @@
 - Decisão: o cadastro operacional de módulos foi unificado em `ops_monitored_module`, com criação/edição/desativação pela tela administrativa em `/microservices`. Novos módulos e VPS não devem ser inseridos por Liquibase; o inventário de workflows fica apenas como apoio de descoberta/preenchimento.
 - Prevenção: a tela passa a ter uma fonte versionada dentro do artefato publicado, sem depender de arquivos ausentes no servidor.
 
+## 2026-07-30 — Edição administrativa dos dados de hosts VPS
+
+- Problema: a tela `/microservices/vps-inventory` mostrava capacidade, provedor, custo e evidências dos hosts VPS, mas esses dados vinham apenas do YAML embarcado e não eram editáveis pelo sistema após deploy.
+- Causa-raiz: o inventário físico/financeiro de VPS estava modelado como fallback versionado, não como cadastro operacional persistido.
+- Ajuste: criado cadastro persistido `ops_vps_host_inventory` com endpoints administrativos de busca/edição por host e botão `Editar` em cada linha de host VPS.
+- Prevenção de recorrência: o backend agora combina o YAML como base inicial com as edições persistidas em banco, preservando os 6 hosts conhecidos e permitindo correção operacional sem novo deploy de código.
+
 ## 2026-07-29 — Confiabilidade do status exibido no painel
 
 - Problema observado: a tela podia manter módulos como `OFFLINE` com base em heartbeat antigo, mesmo quando validação direta posterior já encontrava o serviço respondendo.

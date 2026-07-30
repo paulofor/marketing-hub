@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-30-vps-host-inventory-editable-001
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: ops_vps_host_inventory
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE ops_vps_host_inventory (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                host VARCHAR(120) NOT NULL,
+                provider_name VARCHAR(180) NULL,
+                provider_evidence VARCHAR(1000) NULL,
+                cpu VARCHAR(120) NULL,
+                memory_gb INT NULL,
+                disk_gb INT NULL,
+                operating_system VARCHAR(180) NULL,
+                monthly_cost_brl DECIMAL(10,2) NULL,
+                billing_cycle VARCHAR(120) NULL,
+                cost_evidence VARCHAR(1000) NULL,
+                physical_specs_evidence VARCHAR(1000) NULL,
+                notes VARCHAR(1500) NULL,
+                created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_ops_vps_host_inventory_host (host)
+              );

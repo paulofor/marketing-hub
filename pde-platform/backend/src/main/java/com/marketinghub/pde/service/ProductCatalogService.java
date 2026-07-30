@@ -69,7 +69,7 @@ public class ProductCatalogService {
     public ProductExperienceResponse getProductForHost(String slug, String host) {
         Optional<ProductExperienceResponse> marketingHubProduct = loadMarketingHubProduct(slug, host);
         if (marketingHubProduct.isPresent()) {
-            return applyExperienceVersionOverride(marketingHubProduct.get(), host);
+            return applyDefaultLayout(marketingHubProduct.get());
         }
         ProductExperienceResponse product = products.get(slug);
         if (product == null) {
@@ -90,6 +90,7 @@ public class ProductCatalogService {
         return new ProductExperienceResponse(
                 product.slug(),
                 selectedExperienceVersion.trim(),
+                product.layoutKey(),
                 product.funnelVersion(),
                 product.name(),
                 product.promise(),
@@ -102,6 +103,47 @@ public class ProductCatalogService {
                 product.heroVideos(),
                 product.scientificEvidencePack(),
                 product.completionOffer());
+    }
+
+    /** Garante compatibilidade para contratos antigos do Hub que ainda não declaram layout. */
+    private ProductExperienceResponse applyDefaultLayout(ProductExperienceResponse product) {
+        if (StringUtils.hasText(product.layoutKey())) {
+            return product;
+        }
+        return new ProductExperienceResponse(
+                product.slug(),
+                product.experienceVersion(),
+                layoutKeyForExperienceVersion(product.experienceVersion()),
+                product.funnelVersion(),
+                product.name(),
+                product.promise(),
+                product.audience(),
+                product.priceLabel(),
+                product.theme(),
+                product.diagnostic(),
+                product.missions(),
+                product.supportMaterials(),
+                product.heroVideos(),
+                product.scientificEvidencePack(),
+                product.completionOffer());
+    }
+
+    /** Deriva a chave de layout conhecida a partir da versão quando o contrato for legado. */
+    private static String layoutKeyForExperienceVersion(String experienceVersion) {
+        if (!StringUtils.hasText(experienceVersion)) {
+            return "video-explicativo";
+        }
+        String normalized = experienceVersion.toLowerCase();
+        if (normalized.contains("video-motivacional")) {
+            return "video-motivacional";
+        }
+        if (normalized.contains("espelho-antes-de-sair")) {
+            return "espelho-antes-de-sair";
+        }
+        if (normalized.contains("estrada-desejo")) {
+            return "estrada-desejo";
+        }
+        return "video-explicativo";
     }
 
     /** Resolve a versão comercial esperada para subdomínios públicos versionados do MUSA. */
@@ -173,6 +215,7 @@ public class ProductCatalogService {
         return new ProductExperienceResponse(
                 "metodo-musa-7-dias",
                 MUSA_V5_EXPERIENCE_VERSION,
+                "video-explicativo",
                 "musa-membership-funnel-v1",
                 "Método MUSA - Experiência Guiada de 7 Dias",
                 "Descubra o que sua imagem comunica sem intenção e monte em 7 dias uma presença mais elegante, marcante e coerente sem depender de luxo caro.",

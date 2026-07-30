@@ -2,6 +2,7 @@ package com.marketinghub.pde.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
@@ -46,6 +47,7 @@ public class PdeProductionSlotService {
   private static final Duration VALIDATION_TIMEOUT = Duration.ofSeconds(12);
   private static final String VALIDATION_OK = "OK";
   private static final String VALIDATION_FAILED = "FAILED";
+  private static final String DEFAULT_LAYOUT_KEY = "video-explicativo";
   private static final Pattern SCRIPT_SRC_PATTERN =
       Pattern.compile("<script[^>]+src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
 
@@ -114,6 +116,8 @@ public class PdeProductionSlotService {
         StringUtils.hasText(request.backendUrl()) ? request.backendUrl().trim() : null);
     slot.setExperienceVersion(
         normalizeRequired(request.experienceVersion(), "Versão PDE obrigatória"));
+    slot.setLayoutKey(
+        normalizeLayoutKey(request.layoutKey(), slotCode, slot.getExperienceVersion()));
     slot.setTargetEnvironment(
         StringUtils.hasText(request.targetEnvironment())
             ? request.targetEnvironment().trim()
@@ -144,7 +148,11 @@ public class PdeProductionSlotService {
             ? request.experienceJson()
             : slot.getDraftExperienceJson();
     String normalizedContract =
-        normalizeRequiredJson(contractJson, "Informe o contrato JSON do PDE para publicar");
+        normalizeRequiredJson(
+            contractJson,
+            "Informe o contrato JSON do PDE para publicar",
+            slot.getExperienceVersion(),
+            slot.getLayoutKey());
     slot.setDraftExperienceJson(normalizedContract);
     slot.setPublishedExperienceJson(normalizedContract);
     slot.setPublishedBy(
@@ -168,8 +176,7 @@ public class PdeProductionSlotService {
           repository.findFirstByProductSlugAndExperienceVersionOrderByPublishedAtDesc(
               resolvedProductSlug, experienceVersion.trim());
     }
-    return slot
-        .map(PdeProductionSlot::getPublishedExperienceJson)
+    return slot.map(PdeProductionSlot::getPublishedExperienceJson)
         .filter(StringUtils::hasText)
         .map(String::trim);
   }
@@ -233,6 +240,7 @@ public class PdeProductionSlotService {
         slot.getPublicUrl(),
         slot.getBackendUrl(),
         slot.getExperienceVersion(),
+        resolveSlotLayoutKey(slot),
         slot.getTargetEnvironment(),
         slot.getStatus(),
         slot.getSourceExperimentId(),
@@ -670,6 +678,12 @@ public class PdeProductionSlotService {
 
   /** Valida e formata o JSON obrigatório do contrato PDE. */
   private String normalizeRequiredJson(String rawJson, String message) {
+    return normalizeRequiredJson(rawJson, message, null, null);
+  }
+
+  /** Valida, completa e formata o JSON obrigatório do contrato PDE. */
+  private String normalizeRequiredJson(
+      String rawJson, String message, String experienceVersion, String layoutKey) {
     if (!StringUtils.hasText(rawJson)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
@@ -679,10 +693,40 @@ public class PdeProductionSlotService {
         throw new ResponseStatusException(
             HttpStatus.BAD_REQUEST, "Contrato JSON da experiência PDE deve ser um objeto");
       }
+      ObjectNode contract = (ObjectNode) parsed;
+      if (StringUtils.hasText(experienceVersion)) {
+        contract.put("experienceVersion", experienceVersion.trim());
+      }
+      if (StringUtils.hasText(layoutKey)) {
+        contract.put("layoutKey", layoutKey.trim());
+      }
       return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
     } catch (IOException ex) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message, ex);
     }
+  }
+
+  /** Normaliza a chave de layout do slot ou deriva uma opção canônica da versão atual. */
+  private String normalizeLayoutKey(String layoutKey, String slotCode, String experienceVersion) {
+    if (StringUtils.hasText(layoutKey)) {
+      return layoutKey.trim().toLowerCase(Locale.ROOT);
+    }
+    if ("v6".equals(slotCode)) {
+      return "video-motivacional";
+    }
+    if ("v7".equals(slotCode)) {
+      return "espelho-antes-de-sair";
+    }
+    if (StringUtils.hasText(experienceVersion)
+        && experienceVersion.toLowerCase(Locale.ROOT).contains("estrada-desejo")) {
+      return "estrada-desejo";
+    }
+    return DEFAULT_LAYOUT_KEY;
+  }
+
+  /** Retorna a chave de layout persistida ou uma chave compatível para registros legados. */
+  private String resolveSlotLayoutKey(PdeProductionSlot slot) {
+    return normalizeLayoutKey(slot.getLayoutKey(), slot.getSlotCode(), slot.getExperienceVersion());
   }
 
   /** Normaliza domínio removendo protocolo e barra final para evitar duplicidade operacional. */

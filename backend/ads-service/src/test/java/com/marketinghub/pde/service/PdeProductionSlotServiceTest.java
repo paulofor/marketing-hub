@@ -12,6 +12,7 @@ import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.net.http.HttpClient;
@@ -64,6 +65,7 @@ class PdeProductionSlotServiceTest {
                 null,
                 null,
                 "musa-pde-entry-v5-estrada-desejo",
+                "estrada-desejo",
                 null,
                 PdeProductionSlotStatus.PLANNED,
                 null,
@@ -75,8 +77,47 @@ class PdeProductionSlotServiceTest {
     assertThat(response.productSlug()).isEqualTo("metodo-musa-7-dias");
     assertThat(response.domain()).isEqualTo("v2.clubemusa.com.br");
     assertThat(response.publicUrl()).isEqualTo("https://v2.clubemusa.com.br");
+    assertThat(response.layoutKey()).isEqualTo("estrada-desejo");
     assertThat(response.targetEnvironment()).isEqualTo("production-v2");
     assertThat(response.sourceExperimentId()).isEqualTo(71L);
+  }
+
+  /** Deve publicar contrato preenchendo a identidade independente de versão e layout do slot. */
+  @Test
+  void publishesSlotContractWithVersionAndLayoutIdentity() throws Exception {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(6L)
+            .slotCode("v6")
+            .productSlug("metodo-musa-7-dias")
+            .domain("v6.clubemusa.com.br")
+            .publicUrl("https://v6.clubemusa.com.br")
+            .experienceVersion("musa-v6-teste-publicado")
+            .layoutKey("layout-custom-v6")
+            .targetEnvironment("production-v6")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .createdAt(Instant.parse("2026-07-30T10:00:00Z"))
+            .updatedAt(Instant.parse("2026-07-30T10:00:00Z"))
+            .build();
+    ObjectMapper mapper = new ObjectMapper();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(repository, videoAssetRepository, httpClient, mapper);
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v6"))
+        .thenReturn(Optional.of(slot));
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response =
+        service.publishProductionSlotContract(
+            "metodo-musa-7-dias",
+            "v6",
+            new PublishPdeProductionSlotContractRequest(
+                "{\"slug\":\"metodo-musa-7-dias\",\"name\":\"MUSA v6\"}", "Marketing Hub"));
+
+    var published = mapper.readTree(response.publishedExperienceJson());
+    assertThat(response.layoutKey()).isEqualTo("layout-custom-v6");
+    assertThat(published.get("experienceVersion").asText()).isEqualTo("musa-v6-teste-publicado");
+    assertThat(published.get("layoutKey").asText()).isEqualTo("layout-custom-v6");
   }
 
   /** Deve resolver vídeo HLS pelo token de versão antes do experimento de origem. */

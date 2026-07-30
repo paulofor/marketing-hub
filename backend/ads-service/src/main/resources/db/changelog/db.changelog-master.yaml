@@ -1500,6 +1500,10 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-07-30-pde-slot-layout-key.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-07-26-musa-v5-production-slot.yaml
       relativeToChangelogFile: true
 

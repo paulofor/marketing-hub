@@ -25,6 +25,33 @@ const statusLabels: Record<PdeProductionSlotStatus, string> = {
   RETIRED: "Encerrado",
 };
 
+const layoutOptions = [
+  {
+    value: "video-explicativo",
+    label: "Vídeo explicativo",
+  },
+  {
+    value: "video-motivacional",
+    label: "Vídeo motivacional",
+  },
+  {
+    value: "espelho-antes-de-sair",
+    label: "Espelho antes de sair",
+  },
+  {
+    value: "estrada-desejo",
+    label: "Estrada do desejo",
+  },
+  {
+    value: "diagnostico-classico",
+    label: "Diagnóstico clássico",
+  },
+  {
+    value: "layout-custom-v6",
+    label: "Layout custom v6",
+  },
+];
+
 function hasExplicitTimeZone(value: string) {
   return /(?:z|[+-]\d{2}:?\d{2})$/i.test(value.trim());
 }
@@ -239,6 +266,7 @@ export default function ProductPdeVersionsPage() {
     slotCode: "v2",
     domain: "v2.clubemusa.com.br",
     experienceVersion: "musa-pde-entry-v5-estrada-desejo",
+    layoutKey: "estrada-desejo",
     sourceExperimentId: "",
     status: "PLANNED" as PdeProductionSlotStatus,
     notes: "",
@@ -276,6 +304,7 @@ export default function ProductPdeVersionsPage() {
       publicUrl: selectedEditorSlot.publicUrl,
       backendUrl: selectedEditorSlot.backendUrl || undefined,
       experienceVersion: selectedEditorSlot.experienceVersion,
+      layoutKey: selectedEditorSlot.layoutKey,
       targetEnvironment: selectedEditorSlot.targetEnvironment,
       sourceExperimentId: selectedEditorSlot.sourceExperimentId || undefined,
       status: selectedEditorSlot.status,
@@ -336,6 +365,7 @@ export default function ProductPdeVersionsPage() {
                 slotCode: form.slotCode,
                 domain: form.domain,
                 experienceVersion: form.experienceVersion,
+                layoutKey: form.layoutKey,
                 sourceExperimentId: form.sourceExperimentId
                   ? Number(form.sourceExperimentId)
                   : undefined,
@@ -403,6 +433,33 @@ export default function ProductPdeVersionsPage() {
                 }
                 required
               />
+            </div>
+            <div className="col-12 col-md-2">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-layout"
+              >
+                Layout
+              </label>
+              <input
+                id="pde-slot-layout"
+                className="form-control form-control-sm"
+                list="pde-layout-options"
+                value={form.layoutKey}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    layoutKey: event.target.value,
+                  }))
+                }
+              />
+              <datalist id="pde-layout-options">
+                {layoutOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </datalist>
             </div>
             <div className="col-12 col-md-2">
               <label
@@ -593,6 +650,9 @@ export default function ProductPdeVersionsPage() {
                 <div className="small text-muted">
                   Versão: {selectedEditorSlot?.experienceVersion || "—"}
                 </div>
+                <div className="small text-muted">
+                  Layout: {selectedEditorSlot?.layoutKey || "—"}
+                </div>
               </div>
               <div className="col-12">
                 <label
@@ -671,6 +731,7 @@ function SlotTable({
               <th>Slot</th>
               <th>Status</th>
               <th>Versão PDE</th>
+              <th>Layout</th>
               <th>URL pública</th>
               <th>Validação</th>
               <th>Entrega URL</th>
@@ -686,7 +747,7 @@ function SlotTable({
           <tbody>
             {slots.length === 0 ? (
               <tr>
-                <td colSpan={13} className="text-muted">
+                <td colSpan={14} className="text-muted">
                   {emptyMessage}
                 </td>
               </tr>
@@ -732,6 +793,11 @@ function SlotTable({
                       {slot.notes && (
                         <div className="small text-muted">{slot.notes}</div>
                       )}
+                    </td>
+                    <td>
+                      <span className="badge text-bg-light">
+                        {slot.layoutKey}
+                      </span>
                     </td>
                     <td>
                       <a href={slot.publicUrl} target="_blank" rel="noreferrer">

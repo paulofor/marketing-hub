@@ -169,6 +169,7 @@ export interface PostDeployPdeProductionSlot {
   publicUrl: string;
   backendUrl?: string | null;
   experienceVersion: string;
+  layoutKey: string;
   targetEnvironment: string;
   status: PdeProductionSlotStatus;
   sourceExperimentId?: number | null;
@@ -196,6 +197,7 @@ export interface SavePdeProductionSlotRequest {
   publicUrl?: string;
   backendUrl?: string;
   experienceVersion: string;
+  layoutKey?: string;
   targetEnvironment?: string;
   status?: PdeProductionSlotStatus;
   sourceExperimentId?: number;

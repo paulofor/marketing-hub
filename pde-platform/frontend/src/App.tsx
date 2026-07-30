@@ -4,8 +4,6 @@ import { createRoot } from 'react-dom/client';
 import { AdaptiveVideoPlayer } from './AdaptiveVideoPlayer';
 import {
   fallbackProduct,
-  isMusaDesireRoadExperience,
-  isMusaVideoExplainerExperience,
   type ProductExperience,
   resolveHeroVideoUrl,
   resolveMusaExperienceContract,
@@ -411,9 +409,9 @@ function resolveHostExperienceVersionOverride() {
   return resolveCurrentMusaVersionedHostConfig()?.experienceVersion ?? '';
 }
 
-function applyExperienceOverrides(productExperience: ProductExperience) {
+function applyExperienceOverrides(productExperience: ProductExperience, allowHostOverride = true) {
   const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
-  const hostExperienceVersionOverride = resolveHostExperienceVersionOverride();
+  const hostExperienceVersionOverride = allowHostOverride ? resolveHostExperienceVersionOverride() : '';
   const selectedExperienceVersion = hostExperienceVersionOverride || experienceVersionOverride;
   if (!selectedExperienceVersion) {
     return productExperience;
@@ -494,7 +492,7 @@ function App() {
   const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
   const currentProduct = workspace?.product ?? product;
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
-  const currentMusaExperience = resolveMusaExperienceContract(currentExperienceVersion);
+  const currentMusaExperience = resolveMusaExperienceContract(currentExperienceVersion, currentProduct.layoutKey);
   const publicDiagnosticQuestions = currentMusaExperience.publicDiagnosticQuestions;
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
@@ -542,7 +540,7 @@ function App() {
     fetch('/api/pde/products/metodo-musa-7-dias')
       .then((response) => (response.ok ? response.json() : fallbackProduct))
       .then((data: ProductExperience) => {
-        const resolvedProduct = applyExperienceOverrides(data);
+        const resolvedProduct = applyExperienceOverrides(data, false);
         setProduct(resolvedProduct);
         setActiveMissionId(resolvedProduct.missions[0]?.id ?? '');
       })
@@ -593,7 +591,8 @@ function App() {
 
   useEffect(() => {
     const experienceVersion = resolveExperienceVersion(product);
-    if (workspace || publicRoadPresentedTrackedRef.current || !isMusaDesireRoadExperience(experienceVersion)) {
+    const musaExperience = resolveMusaExperienceContract(experienceVersion, product.layoutKey);
+    if (workspace || publicRoadPresentedTrackedRef.current || !musaExperience.usesDesireRoad) {
       return;
     }
     publicRoadPresentedTrackedRef.current = true;
@@ -603,7 +602,7 @@ function App() {
         journeyVersion: experienceVersion,
       },
     });
-  }, [workspace, product.experienceVersion]);
+  }, [workspace, product.experienceVersion, product.layoutKey]);
 
   useEffect(() => {
     if (workspace || publicDiagnosticGuidance?.status !== 'COMPLETED') {
@@ -963,7 +962,7 @@ function App() {
     const data = (await response.json()) as Workspace;
     const resolvedWorkspace = {
       ...data,
-      product: applyExperienceOverrides(data.product),
+      product: applyExperienceOverrides(data.product, false),
     };
     setWorkspace(resolvedWorkspace);
     setProduct(resolvedWorkspace.product);
@@ -1369,7 +1368,7 @@ function App() {
     const data = (await response.json()) as Workspace;
     const resolvedWorkspace = {
       ...data,
-      product: applyExperienceOverrides(data.product),
+      product: applyExperienceOverrides(data.product, false),
     };
     setWorkspace(resolvedWorkspace);
     setProduct(resolvedWorkspace.product);
@@ -1599,7 +1598,7 @@ function App() {
   const showPublishedPublicDiagnosticVideoHero =
     !workspace
     && Boolean(heroPlaybackUrl)
-    && ((isMusaVideoExplainerExperience(currentExperienceVersion) && publicDiagnosticVideoVariant !== 'control')
+    && ((currentMusaExperience.supportsPublishedPublicDiagnosticVideoHero && publicDiagnosticVideoVariant !== 'control')
       || publicDiagnosticVideoVariant === 'video');
   const canRegisterActiveMission = Boolean(canCompleteActiveMission && (!activeMissionGuidanceConfig || isMissionInteractionSaved(activeMission?.id ?? '')));
 

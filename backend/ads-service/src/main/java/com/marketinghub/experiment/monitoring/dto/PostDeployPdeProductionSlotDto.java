@@ -12,6 +12,7 @@ public record PostDeployPdeProductionSlotDto(
     String publicUrl,
     String backendUrl,
     String experienceVersion,
+    String layoutKey,
     String targetEnvironment,
     PdeProductionSlotStatus status,
     Long sourceExperimentId,

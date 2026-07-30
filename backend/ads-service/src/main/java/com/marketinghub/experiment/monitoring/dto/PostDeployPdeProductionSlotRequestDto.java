@@ -12,6 +12,7 @@ public record PostDeployPdeProductionSlotRequestDto(
     @Size(max = 512) String publicUrl,
     @Size(max = 512) String backendUrl,
     @NotBlank @Size(max = 120) String experienceVersion,
+    @Size(max = 80) String layoutKey,
     @Size(max = 64) String targetEnvironment,
     PdeProductionSlotStatus status,
     Long sourceExperimentId,

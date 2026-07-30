@@ -56,6 +56,10 @@ public class PdeProductionSlot {
   @Column(name = "experience_version", nullable = false, length = 120)
   private String experienceVersion;
 
+  /** Chave do layout público usado para renderizar a versão sem herdar outra URL. */
+  @Column(name = "layout_key", nullable = false, length = 80)
+  private String layoutKey;
+
   /** Ambiente alvo usado pelo pipeline oficial de publicação. */
   @Column(name = "target_environment", nullable = false, length = 64)
   private String targetEnvironment;

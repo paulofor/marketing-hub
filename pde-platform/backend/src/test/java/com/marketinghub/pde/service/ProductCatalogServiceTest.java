@@ -25,6 +25,7 @@ class ProductCatalogServiceTest {
         var product = service.getProduct("metodo-musa-7-dias");
 
         assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v5-video-explicativo");
+        assertThat(product.layoutKey()).isEqualTo("video-explicativo");
         assertThat(product.promise()).contains("7 dias");
         assertThat(product.priceLabel()).isEqualTo("R$67");
         assertThat(product.missions()).hasSize(7);
@@ -97,6 +98,7 @@ class ProductCatalogServiceTest {
                         {
                           "slug": "metodo-musa-7-dias",
                           "experienceVersion": "musa-v6-teste-publicado",
+                          "layoutKey": "layout-custom-v6",
                           "name": "Método MUSA v6 editável",
                           "promise": "Promessa independente da v6",
                           "audience": "Mulheres urbanas",
@@ -130,7 +132,8 @@ class ProductCatalogServiceTest {
         var product = service.getProductForHost("metodo-musa-7-dias", "v6.clubemusa.com.br");
 
         assertThat(product.name()).isEqualTo("Método MUSA v6 editável");
-        assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v6-video-motivacional");
+        assertThat(product.experienceVersion()).isEqualTo("musa-v6-teste-publicado");
+        assertThat(product.layoutKey()).isEqualTo("layout-custom-v6");
         server.verify();
     }
 

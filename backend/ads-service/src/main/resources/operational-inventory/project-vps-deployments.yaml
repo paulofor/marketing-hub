@@ -1,3 +1,77 @@
+hosts:
+  - host: "177.153.62.107"
+    providerName: "Locaweb Serviços de Internet S/A"
+    providerEvidence: "RDAP registro.br: bloco 177.153.0.0/16, AS27715, entidade Locaweb Serviços de Internet S/A"
+    cpu: null
+    memoryGb: null
+    diskGb: null
+    operatingSystem: null
+    monthlyCostBrl: null
+    billingCycle: null
+    costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
+    physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
+    notes: "Host usado por serviços MOIS, MDS, OPRM legado e vídeo conforme workflows e cadastro microservice."
+  - host: "191.252.102.54"
+    providerName: "Locaweb Serviços de Internet S/A"
+    providerEvidence: "RDAP registro.br: bloco 191.252.0.0/16, AS27715, entidade Locaweb Serviços de Internet S/A"
+    cpu: null
+    memoryGb: null
+    diskGb: null
+    operatingSystem: null
+    monthlyCostBrl: null
+    billingCycle: null
+    costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
+    physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
+    notes: "Host comercial confirmado no banco para PDE Platform, Clube MUSA v5/v6/v7, institutional site e lead portal payments."
+  - host: "191.252.120.96"
+    providerName: "Locaweb Serviços de Internet S/A"
+    providerEvidence: "RDAP registro.br: bloco 191.252.0.0/16, AS27715, entidade Locaweb Serviços de Internet S/A"
+    cpu: null
+    memoryGb: null
+    diskGb: null
+    operatingSystem: null
+    monthlyCostBrl: null
+    billingCycle: null
+    costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
+    physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
+    notes: "Host usado por Lead Portal, workers de produto, email e monitoramento conforme cadastro microservice."
+  - host: "191.252.181.168"
+    providerName: "Locaweb Serviços de Internet S/A"
+    providerEvidence: "RDAP registro.br: bloco 191.252.0.0/16, AS27715, entidade Locaweb Serviços de Internet S/A"
+    cpu: null
+    memoryGb: null
+    diskGb: null
+    operatingSystem: null
+    monthlyCostBrl: null
+    billingCycle: null
+    costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
+    physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
+    notes: "Host do backend principal e frontend administrativo confirmado pelo banco e workflow deploy-containers.yml."
+  - host: "191.252.210.83"
+    providerName: "Locaweb Serviços de Internet S/A"
+    providerEvidence: "RDAP registro.br: bloco 191.252.0.0/16, AS27715, entidade Locaweb Serviços de Internet S/A"
+    cpu: null
+    memoryGb: null
+    diskGb: null
+    operatingSystem: null
+    monthlyCostBrl: null
+    billingCycle: null
+    costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
+    physicalSpecsEvidence: "Pendente: MCP/docker_ops confirmou container permitido no host MCP, mas não expõe CPU, memória e disco do host"
+    notes: "Host do MCP, AI Worker, Facebook Ads Worker e Fashion Chat; docker_ops confirmou marketinghub-fashion-chat ativo."
+  - host: "163.245.200.7"
+    providerName: null
+    providerEvidence: "Pendente: RDAP público não retornou entidade útil na consulta da sandbox"
+    cpu: null
+    memoryGb: null
+    diskGb: null
+    operatingSystem: null
+    monthlyCostBrl: null
+    billingCycle: null
+    costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
+    physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
+    notes: "Host ainda aparece como proxy público Clube MUSA no inventário versionado; histórico recente aponta migração operacional para 191.252.102.54."
+
 deployments:
   - workflowFile: ".github/workflows/deploy-containers.yml"
     workflowName: "Deploy Containers"
@@ -39,6 +113,19 @@ deployments:
     deployUser: "root"
     remotePath: "${{ secrets.LEAD_PORTAL_REMOTE_PATH || '/root/lead-portal' }}"
     secretReferences:
+      - "VPS_SSH_CHAVE"
+      - "SSH_PRIVATE_KEY"
+    triggerMode: "automatico"
+  - workflowFile: ".github/workflows/lead-portal-payments-ci.yml"
+    workflowName: "CI - Lead Portal Payments"
+    jobName: "deploy"
+    deployHost: "191.252.102.54"
+    deployUser: "root"
+    remotePath: "/opt/marketinghub/containers"
+    secretReferences:
+      - "LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY"
+      - "PDE_PLATFORM_VPS_SSH_KEY"
+      - "VPS_SSH_KEY"
       - "VPS_SSH_CHAVE"
       - "SSH_PRIVATE_KEY"
     triggerMode: "automatico"

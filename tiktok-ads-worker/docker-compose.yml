@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  tiktok-ads-worker:
+    container_name: tiktok-ads-worker
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: marketinghub/tiktok-ads-worker:latest
+    restart: unless-stopped
+    environment:
+      TIKTOK_STORAGE_FILE: ${TIKTOK_STORAGE_FILE:-/app/data/tiktok-accounts.json}
+      LOGGING_FILE_NAME: ${TIKTOK_ADS_WORKER_LOG_FILE:-/app/logs/tiktok-ads-worker.log}
+    ports:
+      - "${TIKTOK_ADS_WORKER_PORT:-8097}:8097"
+    volumes:
+      - ${TIKTOK_ADS_WORKER_DATA_DIR:-./data}:/app/data
+      - ${TIKTOK_ADS_WORKER_LOG_DIR:-./logs}:/app/logs

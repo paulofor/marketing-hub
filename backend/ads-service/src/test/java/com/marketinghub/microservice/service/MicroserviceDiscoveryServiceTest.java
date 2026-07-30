@@ -131,11 +131,37 @@ class MicroserviceDiscoveryServiceTest {
 
     List<DeploymentWorkflowInventoryDto> deployments = service.discoverDeploymentsFromWorkflows();
 
-    assertEquals(6, deployments.size());
+    assertEquals(7, deployments.size());
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.181.168")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("177.153.62.107")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.120.96")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.210.83")));
+    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.102.54")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("163.245.200.7")));
+  }
+
+  /** Deve expor o cadastro físico e financeiro dos hosts VPS no inventário operacional. */
+  @Test
+  void shouldExposeFallbackVpsHostsInOperationalInventory() {
+    MicroserviceDiscoveryService service =
+        new MicroserviceDiscoveryService(
+            "non-existent-compose.yml", "non-existent-workflows", "/health");
+
+    var inventory = service.discoverOperationalInventory();
+
+    assertEquals(6, inventory.hosts().size());
+    assertTrue(
+        inventory.hosts().stream()
+            .anyMatch(
+                host ->
+                    host.host().equals("191.252.102.54")
+                        && host.providerName().equals("Locaweb Serviços de Internet S/A")
+                        && host.physicalSpecsEvidence().contains("Pendente")));
+    assertTrue(
+        inventory.hosts().stream()
+            .anyMatch(
+                host ->
+                    host.host().equals("191.252.210.83")
+                        && host.notes().contains("docker_ops confirmou")));
   }
 }

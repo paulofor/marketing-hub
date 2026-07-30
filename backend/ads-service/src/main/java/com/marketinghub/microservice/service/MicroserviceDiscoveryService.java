@@ -3,9 +3,11 @@ package com.marketinghub.microservice.service;
 import com.marketinghub.microservice.dto.DeploymentWorkflowInventoryDto;
 import com.marketinghub.microservice.dto.DiscoveredMicroserviceDto;
 import com.marketinghub.microservice.dto.OperationalInventoryDto;
+import com.marketinghub.microservice.dto.VpsHostInventoryDto;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -78,7 +80,10 @@ public class MicroserviceDiscoveryService {
 
   /** Consolida portas do compose e dados de deploy dos workflows em um único inventário. */
   public OperationalInventoryDto discoverOperationalInventory() {
-    return new OperationalInventoryDto(discoverFromCompose(), discoverDeploymentsFromWorkflows());
+    return new OperationalInventoryDto(
+        discoverFromCompose(),
+        discoverDeploymentsFromWorkflows(),
+        discoverHostsFromFallbackResource());
   }
 
   /** Descobre os deploys declarados nos workflows versionados do repositório. */
@@ -143,6 +148,68 @@ public class MicroserviceDiscoveryService {
       throw new UncheckedIOException(
           "Failed to read fallback deployment inventory at " + FALLBACK_DEPLOYMENTS_RESOURCE, e);
     }
+  }
+
+  /** Carrega o cadastro versionado de hosts VPS com provedor, capacidade e custo. */
+  private List<VpsHostInventoryDto> discoverHostsFromFallbackResource() {
+    try (InputStream inputStream =
+        MicroserviceDiscoveryService.class
+            .getClassLoader()
+            .getResourceAsStream(FALLBACK_DEPLOYMENTS_RESOURCE)) {
+      if (inputStream == null) {
+        return List.of();
+      }
+
+      Yaml yaml = new Yaml();
+      Object data = yaml.load(inputStream);
+      if (!(data instanceof Map<?, ?> root)) {
+        return List.of();
+      }
+      Object hostsNode = root.get("hosts");
+      if (!(hostsNode instanceof Iterable<?> hosts)) {
+        return List.of();
+      }
+
+      List<VpsHostInventoryDto> discovered = new ArrayList<>();
+      for (Object hostNode : hosts) {
+        VpsHostInventoryDto host = toFallbackHostDto(hostNode);
+        if (host != null) {
+          discovered.add(host);
+        }
+      }
+      discovered.sort(Comparator.comparing(VpsHostInventoryDto::host));
+      return discovered;
+    } catch (IOException e) {
+      throw new UncheckedIOException(
+          "Failed to read fallback host inventory at " + FALLBACK_DEPLOYMENTS_RESOURCE, e);
+    }
+  }
+
+  /** Converte um item do cadastro de hosts para DTO seguro da tela. */
+  private VpsHostInventoryDto toFallbackHostDto(Object hostNode) {
+    Map<?, ?> host = asMap(hostNode);
+    if (host.isEmpty()) {
+      return null;
+    }
+
+    String hostAddress = textOrDefault(host.get("host"), null);
+    if (!hasText(hostAddress)) {
+      return null;
+    }
+
+    return new VpsHostInventoryDto(
+        hostAddress,
+        textOrDefault(host.get("providerName"), null),
+        textOrDefault(host.get("providerEvidence"), null),
+        textOrDefault(host.get("cpu"), null),
+        integerOrNull(host.get("memoryGb")),
+        integerOrNull(host.get("diskGb")),
+        textOrDefault(host.get("operatingSystem"), null),
+        decimalOrNull(host.get("monthlyCostBrl")),
+        textOrDefault(host.get("billingCycle"), null),
+        textOrDefault(host.get("costEvidence"), null),
+        textOrDefault(host.get("physicalSpecsEvidence"), null),
+        textOrDefault(host.get("notes"), null));
   }
 
   /** Converte um item do inventário embarcado para DTO da tela de VPS. */
@@ -414,6 +481,25 @@ public class MicroserviceDiscoveryService {
       }
     }
     return List.copyOf(result);
+  }
+
+  /** Converte número YAML para inteiro quando o cadastro trouxe valor confirmado. */
+  private Integer integerOrNull(Object value) {
+    if (value instanceof Number number) {
+      return number.intValue();
+    }
+    return null;
+  }
+
+  /** Converte número YAML para decimal quando há custo confirmado. */
+  private BigDecimal decimalOrNull(Object value) {
+    if (value instanceof BigDecimal decimal) {
+      return decimal;
+    }
+    if (value instanceof Number number) {
+      return BigDecimal.valueOf(number.doubleValue());
+    }
+    return null;
   }
 
   /** Verifica se o texto tem conteúdo útil. */

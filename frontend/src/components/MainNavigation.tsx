@@ -14,6 +14,7 @@ import {
   Users,
   Workflow,
   AlertTriangle,
+  FileText,
   Search,
   Mail,
   Microscope,
@@ -26,6 +27,7 @@ import {
   Send,
   Server,
   Video,
+  Music2,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -61,6 +63,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/accounts/instagram",
         label: "Contas do Instagram",
         icon: Instagram,
+      },
+      {
+        to: "/accounts/tiktok",
+        label: "Contas TikTok Ads",
+        icon: Music2,
       },
     ],
   },
@@ -160,6 +167,7 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Send,
       },
       { to: "/ai/image-generator", label: "Gerador de Imagens", icon: Image },
+      { to: "/pde-copy", label: "Copy PDE", icon: FileText },
       {
         to: "/facebook-campaigns/ready",
         label: "Experimentos prontos",

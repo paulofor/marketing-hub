@@ -10,11 +10,26 @@ function triggerLabel(mode?: string | null) {
   return mode === "manual" ? "Manual" : "Automático";
 }
 
+function formatMemory(value?: number | null) {
+  return value === undefined || value === null ? "-" : `${value} GB`;
+}
+
+function formatMoney(value?: number | null) {
+  if (value === undefined || value === null) {
+    return "-";
+  }
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 export default function OperationalInventoryPage() {
   const { data, isLoading, isError, refetch, isFetching } =
     useOperationalInventory();
   const services = data?.services ?? [];
   const deployments = data?.deployments ?? [];
+  const hosts = data?.hosts ?? [];
 
   const duplicatedPorts = new Set(
     services
@@ -36,8 +51,9 @@ export default function OperationalInventoryPage() {
         <div>
           <PageTitle>Inventário VPS</PageTitle>
           <p className="text-body-secondary mb-0">
-            Mapa versionado de portas, hosts e referências de chaves de deploy
-            para reduzir falhas de publicação por conflito de infraestrutura.
+            Mapa versionado de portas, hosts, provedores, capacidade, custos e
+            referências de chaves de deploy para reduzir falhas de publicação
+            por conflito de infraestrutura.
           </p>
         </div>
         <div className="d-flex gap-2">
@@ -60,6 +76,74 @@ export default function OperationalInventoryPage() {
           Não foi possível carregar o inventário operacional.
         </div>
       ) : null}
+
+      <section className="mb-4">
+        <div className="d-flex align-items-center justify-content-between mb-2">
+          <h2 className="h5 mb-0">Hosts VPS</h2>
+          <span className="badge text-bg-light">{hosts.length} hosts</span>
+        </div>
+        <div className="table-responsive">
+          <table className="table align-middle">
+            <thead>
+              <tr>
+                <th>Host</th>
+                <th>Provedor</th>
+                <th>CPU</th>
+                <th>Memória</th>
+                <th>Disco</th>
+                <th>Sistema</th>
+                <th>Custo mensal</th>
+                <th>Evidência</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hosts.map((host) => (
+                <tr key={host.host}>
+                  <td>{host.host}</td>
+                  <td>
+                    <div>{formatValue(host.providerName)}</div>
+                    {host.providerEvidence ? (
+                      <div className="text-body-secondary small">
+                        {host.providerEvidence}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td>{formatValue(host.cpu)}</td>
+                  <td>{formatMemory(host.memoryGb)}</td>
+                  <td>{formatMemory(host.diskGb)}</td>
+                  <td>{formatValue(host.operatingSystem)}</td>
+                  <td>
+                    <div>{formatMoney(host.monthlyCostBrl)}</div>
+                    <div className="text-body-secondary small">
+                      {formatValue(host.billingCycle)}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="small">
+                      Specs: {formatValue(host.physicalSpecsEvidence)}
+                    </div>
+                    <div className="small">
+                      Custo: {formatValue(host.costEvidence)}
+                    </div>
+                    {host.notes ? (
+                      <div className="text-body-secondary small">
+                        {host.notes}
+                      </div>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+              {hosts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center text-muted">
+                    Nenhum host VPS cadastrado no inventário operacional.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className="mb-4">
         <div className="d-flex align-items-center justify-content-between mb-2">

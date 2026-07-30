@@ -77,8 +77,19 @@ export type ProductExperience = {
   missions: Mission[];
   supportMaterials: SupportMaterial[];
   heroVideos?: HeroVideo[];
+  publicFirstFold?: PublicFirstFold;
   scientificEvidencePack?: ScientificEvidencePack;
   completionOffer: string;
+};
+
+export type PublicFirstFold = {
+  headline?: string;
+  supportingText?: string;
+  videoKicker?: string;
+  videoHeadline?: string;
+  videoSupportingText?: string;
+  videoExtraText?: string;
+  videoCtaLabel?: string;
 };
 
 export type PublicDiagnosticQuestion = {

@@ -1,0 +1,4 @@
+services:
+  tiktok-ads-worker:
+    image: ${TIKTOK_ADS_WORKER_IMAGE}
+    build: null

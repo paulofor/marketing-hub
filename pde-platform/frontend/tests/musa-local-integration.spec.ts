@@ -26,7 +26,7 @@ test('v5, v6 e v7 usam backend PDE local real sem misturar contratos versionados
   await request.post(`http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/reset-campaign-start`);
 
   await page.goto('http://v6.clubemusa.com.br:57180/?utm_source=local&utm_campaign=v6_local_validation');
-  await expect(page.getByRole('heading', { name: /imagem menos elegante/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /falta presença/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toHaveCount(1);
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', false);

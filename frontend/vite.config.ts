@@ -15,6 +15,7 @@ export default defineConfig(async () => {
       port: 5173,
       hmr: false,
       proxy: {
+        "/api/tiktok": "http://127.0.0.1:8097",
         // Codex/dev access should use the backend through port 80; port 8000 can be unavailable behind the proxy.
         "/api": "http://191.252.181.168",
       },

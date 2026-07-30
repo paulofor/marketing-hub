@@ -13,9 +13,25 @@ export interface DeploymentWorkflowInventory {
   triggerMode: "manual" | "automatico" | string;
 }
 
+export interface VpsHostInventory {
+  host: string;
+  providerName?: string | null;
+  providerEvidence?: string | null;
+  cpu?: string | null;
+  memoryGb?: number | null;
+  diskGb?: number | null;
+  operatingSystem?: string | null;
+  monthlyCostBrl?: number | null;
+  billingCycle?: string | null;
+  costEvidence?: string | null;
+  physicalSpecsEvidence?: string | null;
+  notes?: string | null;
+}
+
 export interface OperationalInventory {
   services: DiscoveredMicroservice[];
   deployments: DeploymentWorkflowInventory[];
+  hosts: VpsHostInventory[];
 }
 
 export function useOperationalInventory() {

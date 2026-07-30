@@ -367,6 +367,10 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
     expect(screen.getAllByText("Custo total").length).toBeGreaterThan(0);
     expect(screen.getByText("Receita mínima")).toBeTruthy();
+    expect(screen.getByText("Direcionamento de verbas")).toBeTruthy();
+    expect(screen.getByText("Detalhe abaixo do custo mensal")).toBeTruthy();
+    expect(screen.getByText("Vídeos e criativos")).toBeTruthy();
+    expect(screen.getByText("Sem classificação")).toBeTruthy();
     expect(screen.getByText("Funil acumulado do mês")).toBeTruthy();
     expect(
       screen.getAllByText("Clique no plano ou checkout").length,

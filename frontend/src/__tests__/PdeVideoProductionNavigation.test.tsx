@@ -52,6 +52,12 @@ describe("pde video production navigation", () => {
     expect(screen.getByText(/aprovação humana/i)).toBeTruthy();
     expect(screen.getByText(/vinculação ao pde versionado/i)).toBeTruthy();
     expect(screen.getByText(/métricas por etapa/i)).toBeTruthy();
+    expect(screen.getByText(/gate de hipótese/i)).toBeTruthy();
+    expect(screen.getByText(/gate de qualidade comercial/i)).toBeTruthy();
+    expect(screen.getByText(/gate de performance/i)).toBeTruthy();
+    expect(screen.getByText(/antes de gerar/i)).toBeTruthy();
+    expect(screen.getByText(/antes de aprovar/i)).toBeTruthy();
+    expect(screen.getByText(/depois de publicar/i)).toBeTruthy();
     expect(screen.getByRole("heading", { name: /aprendizado/i })).toBeTruthy();
     expect(
       screen.getByRole("link", { name: /estúdio de áudio e vídeo/i }),

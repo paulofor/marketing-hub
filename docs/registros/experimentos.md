@@ -6409,3 +6409,4 @@
 - Criado no Marketing Hub o item de menu **Produção de Vídeo PDE** para organizar o processo comercial de vídeos interativos por capítulos.
 - A tela documenta o fluxo: briefing científico-comercial, roteiro por cena, storyboard/prompt, geração, controle de qualidade, aprovação humana, vinculação ao PDE versionado, métricas e aprendizado.
 - Direção comercial aplicada ao MUSA: começar com 5 capítulos curtos para transformar conceitos científicos em desejo, prova visual e avanço para diagnóstico/paywall antes de escalar produção premium.
+- Evolução aplicada: a tela passou a explicitar 3 gates de decisão para impedir avanço por gosto visual: hipótese antes de gerar, qualidade comercial antes de aprovar e performance depois de publicar.

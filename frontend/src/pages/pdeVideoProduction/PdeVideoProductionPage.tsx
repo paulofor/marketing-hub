@@ -16,10 +16,12 @@ import {
   Video,
 } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
+import { useProductPdeProductionSlots } from "../../api/product/usePdeProductionSlots";
 import { useProducts } from "../../api/product/useProducts";
 import type { Product } from "../../api/product/useProducts";
 import { useProductPdeVersionVideos } from "../../api/product/usePdeVersionVideos";
 import type { PdeVersionVideoPanel } from "../../api/product/usePdeVersionVideos";
+import type { PostDeployPdeProductionSlot } from "../../api/experiment/usePostDeployMonitor";
 import { useProductSalesVideoJobs } from "../../api/salesVideo/useProductSalesVideoJobs";
 import { useSalesVideoPerformanceSummary } from "../../api/salesVideo/useSalesVideoPerformanceSummary";
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
@@ -38,6 +40,12 @@ type FunnelSlot = {
   objective: string;
   metric: string;
   kind?: SalesVideoProfile["videoKind"];
+};
+
+type SlotReadiness = {
+  label: string;
+  tone: "blocked" | "warning" | "ready" | "learning";
+  nextAction: string;
 };
 
 type ProductionStep = {
@@ -205,7 +213,11 @@ function latestJobForProfile(
   profile: SalesVideoProfile,
   jobs: SalesVideoJob[],
 ) {
-  return jobs.find((job) => job.profileId === profile.id) ?? profile.lastJob;
+  return (
+    jobs.find((job) => job.profileId === profile.id) ??
+    profile.lastJob ??
+    undefined
+  );
 }
 
 function matchProfileForSlot(slot: FunnelSlot, profiles: SalesVideoProfile[]) {
@@ -229,6 +241,27 @@ function matchProjectForSlot(slot: FunnelSlot, projects: VideoProject[]) {
   });
 }
 
+function matchPdePanelForSlot(
+  slot: FunnelSlot,
+  panels: PdeVersionVideoPanel[],
+) {
+  const normalizedSlot = slot.label.toLowerCase();
+  return panels.find((panel) => {
+    const slotText = [
+      panel.slot.slotCode,
+      panel.slot.experienceVersion,
+      panel.slot.notes,
+      ...panel.videos.map((video) =>
+        [video.objective, video.primaryMetric].join(" "),
+      ),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return slotText.includes(slot.key) || slotText.includes(normalizedSlot);
+  });
+}
+
 function countHlsVideos(panels: PdeVersionVideoPanel[]) {
   return panels.reduce(
     (total, panel) =>
@@ -245,6 +278,63 @@ function latestPdePanel(panels: PdeVersionVideoPanel[]) {
       numeric: true,
     }),
   )[0];
+}
+
+function latestExperienceVersion(
+  pdePanels: PdeVersionVideoPanel[],
+  slots: PostDeployPdeProductionSlot[],
+) {
+  return (
+    latestPdePanel(pdePanels)?.slot.experienceVersion ??
+    latestSlotPanel(slots)?.experienceVersion ??
+    "Sem versao carregada"
+  );
+}
+
+function readinessForSlot({
+  profile,
+  project,
+  job,
+  hlsVideos,
+}: {
+  profile?: SalesVideoProfile;
+  project?: VideoProject;
+  job?: SalesVideoJob;
+  hlsVideos: number;
+}): SlotReadiness {
+  if (hlsVideos > 0) {
+    return {
+      label: "Aprendendo",
+      tone: "learning",
+      nextAction: "Ler retencao, checkout e compra antes de escalar.",
+    };
+  }
+  if (profile?.status === "VIDEO_READY" || job?.status === "VIDEO_READY") {
+    return {
+      label: "Pronto sem HLS",
+      tone: "warning",
+      nextAction: "Vincular ao PDE e publicar HLS no slot correto.",
+    };
+  }
+  if (job) {
+    return {
+      label: "Em producao",
+      tone: "warning",
+      nextAction: "Acompanhar job e revisar qualidade comercial.",
+    };
+  }
+  if (profile || project) {
+    return {
+      label: "Briefing iniciado",
+      tone: "warning",
+      nextAction: "Concluir roteiro, cenas e solicitar geracao.",
+    };
+  }
+  return {
+    label: "Sem briefing",
+    tone: "blocked",
+    nextAction: "Criar briefing comercial antes de gerar video.",
+  };
 }
 
 export default function PdeVideoProductionPage() {
@@ -268,6 +358,9 @@ export default function PdeVideoProductionPage() {
   );
   const profilesQuery = useSalesVideoProfiles(selectedProductId || undefined);
   const jobsQuery = useProductSalesVideoJobs(selectedProductId || undefined);
+  const productionSlotsQuery = useProductPdeProductionSlots(
+    selectedProductId || undefined,
+  );
   const pdeVideosQuery = useProductPdeVersionVideos(
     selectedProductId || undefined,
   );
@@ -289,9 +382,12 @@ export default function PdeVideoProductionPage() {
     () => pdeVideosQuery.data ?? [],
     [pdeVideosQuery.data],
   );
+  const productionSlots = useMemo(
+    () => productionSlotsQuery.data ?? [],
+    [productionSlotsQuery.data],
+  );
   const selectedProfileId = profiles[0]?.id;
   const performanceQuery = useSalesVideoPerformanceSummary(selectedProfileId);
-  const latestPanel = latestPdePanel(pdePanels);
   const hlsVideos = countHlsVideos(pdePanels);
 
   const profileWithReadyVideo = profiles.filter(
@@ -305,6 +401,22 @@ export default function PdeVideoProductionPage() {
       job.status,
     ),
   ).length;
+  const slotsWithBlockers = funnelSlots.filter((slot) => {
+    const profile = matchProfileForSlot(slot, profiles);
+    const project = matchProjectForSlot(slot, productProjects);
+    const panel = matchPdePanelForSlot(slot, pdePanels);
+    const job = profile ? latestJobForProfile(profile, jobs) : undefined;
+    return (
+      readinessForSlot({
+        profile,
+        project,
+        job,
+        hlsVideos:
+          panel?.videos.filter((video) => Boolean(video.hlsPlaybackUrl?.trim()))
+            .length ?? 0,
+      }).tone === "blocked"
+    );
+  }).length;
 
   return (
     <div className="pde-video-production-page">
@@ -366,8 +478,13 @@ export default function PdeVideoProductionPage() {
         <MetricCard label="Videos HLS em PDE" value={formatNumber(hlsVideos)} />
         <MetricCard
           label="Versoes PDE"
-          value={formatNumber(pdePanels.length)}
-          detail={latestPanel?.slot.experienceVersion ?? "Sem versao carregada"}
+          value={formatNumber(productionSlots.length || pdePanels.length)}
+          detail={latestExperienceVersion(pdePanels, productionSlots)}
+        />
+        <MetricCard
+          label="Slots sem briefing"
+          value={formatNumber(slotsWithBlockers)}
+          detail="Prioridade de producao"
         />
       </section>
 
@@ -393,6 +510,7 @@ export default function PdeVideoProductionPage() {
 
         {profilesQuery.isLoading ||
         jobsQuery.isLoading ||
+        productionSlotsQuery.isLoading ||
         pdeVideosQuery.isLoading ? (
           <p className="text-muted mb-0">Carregando cockpit de producao...</p>
         ) : (
@@ -403,6 +521,17 @@ export default function PdeVideoProductionPage() {
               const job = profile
                 ? latestJobForProfile(profile, jobs)
                 : undefined;
+              const panel = matchPdePanelForSlot(slot, pdePanels);
+              const slotHlsVideos =
+                panel?.videos.filter((video) =>
+                  Boolean(video.hlsPlaybackUrl?.trim()),
+                ).length ?? 0;
+              const readiness = readinessForSlot({
+                profile,
+                project,
+                job,
+                hlsVideos: slotHlsVideos,
+              });
               return (
                 <article
                   className="pde-video-production-page__slot"
@@ -412,6 +541,11 @@ export default function PdeVideoProductionPage() {
                     <span>{slot.label}</span>
                     <small>{slot.metric}</small>
                   </div>
+                  <span
+                    className={`pde-video-production-page__slot-status pde-video-production-page__slot-status--${readiness.tone}`}
+                  >
+                    {readiness.label}
+                  </span>
                   <p>{slot.objective}</p>
                   <dl>
                     <div>
@@ -438,7 +572,19 @@ export default function PdeVideoProductionPage() {
                           : "Sem job recente"}
                       </dd>
                     </div>
+                    <div>
+                      <dt>HLS</dt>
+                      <dd>
+                        {slotHlsVideos > 0
+                          ? `${slotHlsVideos} pronto(s)`
+                          : "Sem HLS publicado"}
+                      </dd>
+                    </div>
                   </dl>
+                  <div className="pde-video-production-page__next-action">
+                    <strong>Proxima acao</strong>
+                    <span>{readiness.nextAction}</span>
+                  </div>
                   <div className="pde-video-production-page__slot-actions">
                     {profile ? (
                       <Link
@@ -552,7 +698,8 @@ export default function PdeVideoProductionPage() {
         {pdePanels.length === 0 ? (
           <div className="alert alert-light border mb-0">
             Nenhuma versao PDE com videos HLS foi carregada para o produto
-            selecionado.
+            selecionado. Cadastre ou publique o slot produtivo antes de tratar o
+            video como pronto para escala.
           </div>
         ) : (
           <div className="pde-video-production-page__version-list">
@@ -579,6 +726,14 @@ export default function PdeVideoProductionPage() {
       </section>
     </div>
   );
+}
+
+function latestSlotPanel(slots: PostDeployPdeProductionSlot[]) {
+  return [...slots].sort((current, next) =>
+    next.slotCode.localeCompare(current.slotCode, "pt-BR", {
+      numeric: true,
+    }),
+  )[0];
 }
 
 function MetricCard({

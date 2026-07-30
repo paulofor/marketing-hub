@@ -1,4 +1,4 @@
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -82,5 +82,132 @@ describe("pde video production navigation", () => {
       0,
     );
     expect(screen.getAllByText(/compras/i).length).toBeGreaterThan(0);
+  });
+
+  it("shows commercial readiness and next action by PDE funnel slot", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 4,
+              name: "MUSA",
+              slug: "musa",
+              productType: "PDE",
+              promise: "Diagnostico visual imediato",
+              niche: "Moda",
+              avatar: "Mulheres",
+              explicitPain: "Look sem presenca",
+              uniqueMechanism: "Microajustes visuais",
+              tripwire: "Plano MUSA",
+              riskReversal: "Garantia",
+              socialProof: "Casos reais",
+              checkoutMonetization: "R$ 67",
+              funnel: "PDE",
+              creativeVolume: "Alto",
+              storytelling: "Direto",
+              aiCost: 0,
+            },
+          ],
+        });
+      }
+      if (url === "/api/products/4/sales-videos/profiles") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 91,
+              productId: 4,
+              videoKind: "HERO",
+              title: "Abertura MUSA",
+              avatarStrategy: "PLATFORM_TEST_AVATAR",
+              requiresConsent: false,
+              status: "PUBLISHED",
+            },
+          ],
+        });
+      }
+      if (url === "/api/products/4/sales-videos/jobs") {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === "/api/products/4/pde-production-slots") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 7,
+              slotCode: "v6",
+              productSlug: "musa",
+              domain: "v6.clubemusa.com.br",
+              publicUrl: "https://v6.clubemusa.com.br",
+              experienceVersion: "musa-pde-entry-v6-video-motivacional",
+              layoutKey: "musa",
+              targetEnvironment: "production",
+              status: "ACTIVE",
+            },
+          ],
+        });
+      }
+      if (url === "/api/products/4/pde-videos") {
+        return Promise.resolve({
+          data: [
+            {
+              slot: {
+                id: 7,
+                slotCode: "v6-abertura",
+                productSlug: "musa",
+                domain: "v6.clubemusa.com.br",
+                publicUrl: "https://v6.clubemusa.com.br",
+                experienceVersion: "musa-pde-entry-v6-video-motivacional",
+                layoutKey: "musa",
+                targetEnvironment: "production",
+                status: "ACTIVE",
+              },
+              videos: [
+                {
+                  assignmentSource: "PUBLISHED_CONTRACT",
+                  objective: "Abertura",
+                  primaryMetric: "Play e progresso 25%",
+                  provider: "LUMA",
+                  model: "ray",
+                  status: "PUBLISHED",
+                  reviewStatus: "APPROVED",
+                  hlsPlaybackUrl: "https://cdn.example/video.m3u8",
+                },
+              ],
+              alerts: [],
+            },
+          ],
+        });
+      }
+      if (url === "/api/video-projects") {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === "/api/sales-videos/profiles/91/performance-summary") {
+        return Promise.resolve({
+          data: {
+            profileId: 91,
+            totalViews: 20,
+            totalLeads: 4,
+            totalQualifiedLeads: 2,
+            totalCheckoutStarted: 1,
+            totalPurchases: 1,
+            totalRevenue: 67,
+            variants: [],
+            providerScores: [],
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/pde-video-production"]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Aprendendo")).toBeTruthy();
+    });
+    expect(screen.getAllByText("Sem briefing").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/Ler retencao, checkout e compra antes de escalar/i),
+    ).toBeTruthy();
+    expect(screen.getByText("Slots sem briefing")).toBeTruthy();
   });
 });

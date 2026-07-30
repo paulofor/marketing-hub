@@ -165,6 +165,34 @@
   text-align: right;
 }
 
+.pde-video-production-page__slot-status {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pde-video-production-page__slot-status--blocked {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.pde-video-production-page__slot-status--warning {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.pde-video-production-page__slot-status--ready {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.pde-video-production-page__slot-status--learning {
+  background: #ecfdf5;
+  color: #047857;
+}
+
 .pde-video-production-page__slot p,
 .pde-video-production-page__step p {
   margin: 0;
@@ -193,6 +221,26 @@
   margin: 0;
   color: #334155;
   font-size: 0.88rem;
+}
+
+.pde-video-production-page__next-action {
+  display: grid;
+  gap: 0.2rem;
+  border-left: 3px solid #0f766e;
+  background: #f0fdfa;
+  padding: 0.55rem 0.65rem;
+}
+
+.pde-video-production-page__next-action strong {
+  color: #0f766e;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.pde-video-production-page__next-action span {
+  color: #134e4a;
+  font-size: 0.88rem;
+  font-weight: 650;
 }
 
 .pde-video-production-page__slot-actions {

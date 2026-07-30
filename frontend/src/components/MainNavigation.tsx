@@ -14,7 +14,6 @@ import {
   Users,
   Workflow,
   AlertTriangle,
-  CreditCard,
   Search,
   Mail,
   Microscope,
@@ -170,10 +169,6 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/ops-monitor", label: "Operação / Saúde", icon: HeartPulse },
       { to: "/ops-monitor/pde", label: "Saúde PDE 24/7", icon: HeartPulse },
     ],
-  },
-  {
-    title: "Financeiro",
-    items: [{ to: "/payments", label: "Pagamentos", icon: CreditCard }],
   },
   {
     title: "Configurações",

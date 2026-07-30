@@ -41,6 +41,16 @@ cat > "$DIAGNOSTICS_FILE" <<EOF
   "imageTag": "$(json_escape "$DEPLOY_IMAGE_TAG")",
   "commitSha": "$(json_escape "$DEPLOY_COMMIT_SHA")",
   "deployedAt": "$(json_escape "$DEPLOYED_AT")",
-  "containerHostname": "$(json_escape "$CONTAINER_HOSTNAME")"
+  "containerHostname": "$(json_escape "$CONTAINER_HOSTNAME")",
+  "knownPointedDomains": [
+    {"host": "v1.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "legacy", "experienceVersion": "musa-pde-entry-v5-video-explicativo"},
+    {"host": "v2.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "legacy", "experienceVersion": "musa-pde-entry-v5-video-explicativo"},
+    {"host": "v5.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "active", "experienceVersion": "musa-pde-entry-v5-video-explicativo"},
+    {"host": "v6.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "active", "experienceVersion": "musa-pde-entry-v6-video-motivacional"},
+    {"host": "v7.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "active", "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"},
+    {"host": "v8.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "reserved", "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"},
+    {"host": "v9.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "reserved", "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"},
+    {"host": "v10.clubemusa.com.br", "observedAddress": "163.245.200.7", "role": "reserved", "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"}
+  ]
 }
 EOF

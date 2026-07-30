@@ -298,6 +298,10 @@ Um mesmo produto PDE pode ter múltiplas versões produtivas simultâneas para t
 
 Regras obrigatórias:
 
+- todos os PDEs públicos devem ser publicados no host oficial `163.245.200.7`;
+- workflows, inventário operacional, proxy HTTPS, certificados, validações pós-deploy, smoke tests e diagnósticos públicos de PDE devem usar `163.245.200.7` como fonte de verdade do host produtivo;
+- é proibido publicar PDE produtivo em outro host sem decisão explícita registrada neste cânone antes da alteração;
+- o DNS dos subdomínios versionados de PDE deve resolver para `163.245.200.7` antes de liberar tráfego, campanha ou validação comercial como pronta;
 - cada versão pública deve ter subdomínio próprio, slot próprio no Marketing Hub e `experienceVersion` própria;
 - duas versões comerciais diferentes de PDE nunca podem compartilhar a mesma URL pública primária;
 - se a URL pública for igual, a versão comercial deve ser considerada a mesma para fins de campanha, analytics e decisão de escala;
@@ -350,6 +354,8 @@ O workflow oficial de publicação do `pde-platform` deve validar cada slot prod
 Como os subdomínios versionados do Clube MUSA são superfície direta de campanha, o workflow oficial do `pde-platform` também deve garantir que o proxy HTTPS público esteja ativo antes de aprovar a publicação. Se o proxy do `lead-portal-payments-service` estiver disponível no host, o workflow deve recriá-lo/recarregá-lo pelo Compose versionado e reconectá-lo à network pública usada pelo PDE. Se nenhum container publicar a porta 443 ou nenhum proxy puder ser encontrado, a publicação deve falhar com diagnóstico operacional claro; nunca considerar a v5/v6 pronta apenas porque as portas diretas `5176`/`5177` respondem.
 
 O DNS público dos subdomínios versionados do Clube MUSA deve apontar para o mesmo host oficial usado pelo workflow de deploy do PDE e pelo proxy HTTPS do `lead-portal-payments-service`. A validação produtiva deve falhar explicitamente quando `v5.clubemusa.com.br`, `v6.clubemusa.com.br`, `v7.clubemusa.com.br` ou slot futuro resolverem para IP diferente do host de deploy, porque isso envia tráfego pago para infraestrutura fora do caminho publicado e contamina a leitura comercial do experimento.
+
+Para evitar ambiguidade operacional, o host oficial citado nesta regra é `163.245.200.7`. Qualquer referência operacional de PDE a outro host deve ser tratada como divergência a corrigir antes de publicar ou reativar campanha.
 
 ## Contrato mínimo de produto
 

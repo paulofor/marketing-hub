@@ -137,9 +137,9 @@ O workflow `CI – Lead Portal Payments Service` (`.github/workflows/lead-portal
 
 1. **Testes** – roda `mvn test` com Java 21.
 2. **Build da imagem** – monta a imagem multi-stage e publica no GitHub Container Registry (`ghcr.io/<owner>/lead-portal-payments-service`) com tags `latest` e o SHA do commit, reaproveitando cache remoto.
-3. **Deploy** – apenas em pushes para `main`, o GitHub Actions acessa o VPS `191.252.102.54`, cria um backup remoto de `docker/proxy/html`, sincroniza este diretório via `rsync`, instala Docker/Compose quando necessário, força o login no GHCR, garante que a network Docker (`public-net` por padrão) exista, aplica `docker compose -f docker-compose.deploy.yml up -d --remove-orphans` e finaliza com `docker image prune -af` para remover imagens antigas. O compose de deploy é autônomo e usa somente a imagem publicada, sem herdar o `build` do compose local.
+3. **Deploy** – apenas em pushes para `main`, o GitHub Actions acessa o VPS `163.245.200.7`, cria um backup remoto de `docker/proxy/html`, sincroniza este diretório via `rsync`, instala Docker/Compose quando necessário, força o login no GHCR, garante que a network Docker (`public-net` por padrão) exista, aplica `docker compose -f docker-compose.deploy.yml up -d --remove-orphans` e finaliza com `docker image prune -af` para remover imagens antigas. O compose de deploy é autônomo e usa somente a imagem publicada, sem herdar o `build` do compose local.
 
-Depois que o DNS de `clubemusa.com.br` e subdomínios versionados apontar para `191.252.102.54`, execute o workflow manualmente com `issue_clubemusa_certificate=true` para emitir/renovar o certificado Let's Encrypt do Clube MUSA e recriar o proxy.
+Depois que o DNS de `clubemusa.com.br` e subdomínios versionados apontar para `163.245.200.7`, execute o workflow manualmente com `issue_clubemusa_certificate=true` para emitir/renovar o certificado Let's Encrypt do Clube MUSA e recriar o proxy.
 
 O `rsync` continua usando `--delete` para manter o serviço limpo, mas protege contra deleção os ativos comerciais públicos gerados pelo Marketing Hub antes de entrarem no `main`:
 
@@ -153,7 +153,7 @@ Essa proteção evita apagar páginas de venda, páginas premium de pós-compra 
 
 | Segredo | Descrição |
 | --- | --- |
-| `VPS_SSH_KEY` | Chave privada (ed25519) com acesso root ao host `191.252.102.54`. |
+| `VPS_SSH_KEY` | Chave privada (ed25519) com acesso root ao host `163.245.200.7`. |
 | `LEAD_PORTAL_PAYMENTS_REMOTE_PATH` *(opcional)* | Caminho remoto (default `/root/lead-portal-payments-service`). |
 | `LEAD_PORTAL_PAYMENTS_NETWORK` *(opcional)* | Nome da network Docker a ser usada no VPS (default `public-net`). |
 | `GHCR_USERNAME` *(opcional)* | Usuário para login no GHCR (por padrão usa o owner do repo). |

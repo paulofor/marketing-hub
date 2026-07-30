@@ -24,7 +24,7 @@ deployments:
   - workflowFile: ".github/workflows/pde-platform-metodo-musa-ci.yml"
     workflowName: "CI - PDE Platform Metodo MUSA"
     jobName: "deploy"
-    deployHost: "191.252.102.54"
+    deployHost: "163.245.200.7"
     deployUser: "root"
     remotePath: "${{ secrets.PDE_PLATFORM_REMOTE_PATH != '' && secrets.PDE_PLATFORM_REMOTE_PATH || '/root/pde-platform' }}"
     secretReferences:

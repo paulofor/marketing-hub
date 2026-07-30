@@ -1,3 +1,11 @@
+## 2026-07-30 — Experimento 76: analytics PDE deixa de cair por breakdown de UTM
+
+- causa-raiz confirmada no backend PDE: o resumo `/api/pde/access/analytics/metodo-musa-7-dias/summary` podia retornar erro 500 quando o breakdown de origem de tráfego exigia ordenação pesada no MySQL 5.7.
+- problema comercial: a tela do experimento 76 ficava com "Analytics PDE indisponível", impedindo cruzar Meta Ads, sessões PDE, UTMs/criativos e avanço real no funil.
+- foi feito: a consulta de origem de tráfego passou a agregar primeiro por sessão e depois por UTM/campanha/criativo, reduzindo `COUNT(DISTINCT)` sobre eventos brutos.
+- foi feito: o backend PDE passou a carregar breakdowns auxiliares de forma isolada, com log completo e retorno parcial, para que uma falha em origem, dispositivo, layout ou jornada recente não derrube os KPIs principais do resumo.
+- prevenção: criada migração idempotente para índice de leitura por produto, qualidade de tráfego, UTM e sessão; testes cobrem o índice e o resumo parcial quando breakdown auxiliar falha.
+
 ## 2026-07-30 — Clube MUSA: deploy limpa containers por slot
 
 - causa-raiz operacional confirmada no workflow de producao: o build e o push das imagens do PDE MUSA concluiam, mas a publicacao com `frontend_slot=all` falhava porque um container anterior do slot `v6` mantinha a porta `5177` ocupada.

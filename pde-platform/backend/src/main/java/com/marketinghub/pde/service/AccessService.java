@@ -480,21 +480,46 @@ public class AccessService {
                             resultSet.getLong("checkout_started"),
                             resultSet.getLong("total_visible_ms"),
                             timestampAsOperationalText(resultSet, "last_event_at"),
-                            loadFunnelEventMetrics(connection, productSlug),
-                            loadExperienceVersionMetrics(connection, productSlug),
-                            loadLayoutMetrics(connection, productSlug),
-                            loadTrafficSourceMetrics(connection, productSlug),
-                            loadTrafficQualityMetrics(connection, productSlug),
-                            loadDeviceMetrics(connection, productSlug),
-                            loadScreenSizeMetrics(connection, productSlug),
-                            loadSessionJourneyDtos(connection, productSlug, 20));
+                            loadOptionalAnalyticsBreakdown(
+                                    connection, productSlug, "events", this::loadFunnelEventMetrics),
+                            loadOptionalAnalyticsBreakdown(
+                                    connection, productSlug, "experienceVersions", this::loadExperienceVersionMetrics),
+                            loadOptionalAnalyticsBreakdown(
+                                    connection, productSlug, "layouts", this::loadLayoutMetrics),
+                            loadOptionalAnalyticsBreakdown(
+                                    connection, productSlug, "trafficSources", this::loadTrafficSourceMetrics),
+                            loadOptionalAnalyticsBreakdown(
+                                    connection, productSlug, "trafficQuality", this::loadTrafficQualityMetrics),
+                            loadOptionalAnalyticsBreakdown(
+                                    connection, productSlug, "devices", this::loadDeviceMetrics),
+                            loadOptionalAnalyticsBreakdown(
+                                    connection, productSlug, "screenSizes", this::loadScreenSizeMetrics),
+                            loadOptionalAnalyticsBreakdown(
+                                    connection, productSlug, "recentJourneys",
+                                    (analyticsConnection, analyticsProductSlug) ->
+                                            loadSessionJourneyDtos(analyticsConnection, analyticsProductSlug, 20)));
                 }
             }
-        } catch (SQLException | IOException ex) {
+        } catch (SQLException ex) {
             log.error("Falha ao consolidar analytics PDE; productSlug={}", productSlug, ex);
             throw new IllegalStateException("Não foi possível consolidar analytics PDE", ex);
         }
         return emptyFunnelAnalytics(productSlug);
+    }
+
+    /** Carrega um bloco auxiliar do resumo sem derrubar os KPIs principais quando a quebra falhar. */
+    private <T> List<T> loadOptionalAnalyticsBreakdown(
+            Connection connection, String productSlug, String breakdownName, AnalyticsBreakdownLoader<T> loader) {
+        try {
+            return loader.load(connection, productSlug);
+        } catch (SQLException | IOException ex) {
+            log.error(
+                    "Falha ao carregar breakdown do analytics PDE; productSlug={}, breakdown={}",
+                    productSlug,
+                    breakdownName,
+                    ex);
+            return List.of();
+        }
     }
 
     /** Consolida jornadas recentes por sessão para diagnosticar onde a visitante abandonou. */
@@ -1072,31 +1097,55 @@ public class AccessService {
             throws SQLException {
         String sql = """
                 SELECT
-                  COALESCE(NULLIF(utm_source, ''), 'sem-origem') AS resolved_utm_source,
-                  COALESCE(NULLIF(utm_medium, ''), 'sem-meio') AS resolved_utm_medium,
-                  COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha') AS resolved_utm_campaign,
-                  COALESCE(NULLIF(utm_content, ''), 'sem-criativo') AS resolved_utm_content,
-                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions,
-                  SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS pde_entries,
-                  SUM(CASE WHEN event_type IN ('PRESENCE_MAP_CHOICE_SELECTED', 'DIAGNOSTIC_CHOICE_SELECTED') THEN 1 ELSE 0 END)
-                    AS first_interaction_clicks,
-                  SUM(CASE WHEN event_type IN ('VIDEO_PROGRESS_25', 'VIDEO_PROGRESS_50', 'VIDEO_PROGRESS_75') THEN 1 ELSE 0 END)
-                    AS video_partial,
-                  SUM(CASE WHEN event_type = 'VIDEO_COMPLETED' THEN 1 ELSE 0 END) AS video_complete,
-                  SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
-                  SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
-                  SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
-                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' THEN 1 ELSE 0 END) AS subscription_approved,
-                  COALESCE(SUM(visible_ms), 0) AS total_visible_ms,
-                  MAX(occurred_at) AS last_event_at
-                FROM pde_funnel_event
-                WHERE product_slug = ?
-                  AND traffic_quality = 'HUMAN'
+                  resolved_utm_source,
+                  resolved_utm_medium,
+                  resolved_utm_campaign,
+                  resolved_utm_content,
+                  COUNT(*) AS sessions,
+                  SUM(pde_entries) AS pde_entries,
+                  SUM(first_interaction_clicks) AS first_interaction_clicks,
+                  SUM(video_partial) AS video_partial,
+                  SUM(video_complete) AS video_complete,
+                  SUM(login_started) AS login_started,
+                  SUM(paywall_viewed) AS paywall_viewed,
+                  SUM(checkout_started) AS checkout_started,
+                  SUM(subscription_approved) AS subscription_approved,
+                  COALESCE(SUM(total_visible_ms), 0) AS total_visible_ms,
+                  MAX(last_event_at) AS last_event_at
+                FROM (
+                  SELECT
+                    COALESCE(NULLIF(utm_source, ''), 'sem-origem') AS resolved_utm_source,
+                    COALESCE(NULLIF(utm_medium, ''), 'sem-meio') AS resolved_utm_medium,
+                    COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha') AS resolved_utm_campaign,
+                    COALESCE(NULLIF(utm_content, ''), 'sem-criativo') AS resolved_utm_content,
+                    COALESCE(session_id, event_id) AS resolved_session_id,
+                    SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS pde_entries,
+                    SUM(CASE WHEN event_type IN ('PRESENCE_MAP_CHOICE_SELECTED', 'DIAGNOSTIC_CHOICE_SELECTED') THEN 1 ELSE 0 END)
+                      AS first_interaction_clicks,
+                    SUM(CASE WHEN event_type IN ('VIDEO_PROGRESS_25', 'VIDEO_PROGRESS_50', 'VIDEO_PROGRESS_75') THEN 1 ELSE 0 END)
+                      AS video_partial,
+                    SUM(CASE WHEN event_type = 'VIDEO_COMPLETED' THEN 1 ELSE 0 END) AS video_complete,
+                    SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
+                    SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
+                    SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
+                    SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' THEN 1 ELSE 0 END) AS subscription_approved,
+                    COALESCE(SUM(visible_ms), 0) AS total_visible_ms,
+                    MAX(occurred_at) AS last_event_at
+                  FROM pde_funnel_event
+                  WHERE product_slug = ?
+                    AND traffic_quality = 'HUMAN'
+                  GROUP BY
+                    COALESCE(NULLIF(utm_source, ''), 'sem-origem'),
+                    COALESCE(NULLIF(utm_medium, ''), 'sem-meio'),
+                    COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha'),
+                    COALESCE(NULLIF(utm_content, ''), 'sem-criativo'),
+                    COALESCE(session_id, event_id)
+                ) session_traffic
                 GROUP BY
-                  COALESCE(NULLIF(utm_source, ''), 'sem-origem'),
-                  COALESCE(NULLIF(utm_medium, ''), 'sem-meio'),
-                  COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha'),
-                  COALESCE(NULLIF(utm_content, ''), 'sem-criativo')
+                  resolved_utm_source,
+                  resolved_utm_medium,
+                  resolved_utm_campaign,
+                  resolved_utm_content
                 ORDER BY sessions DESC, last_event_at DESC
                 LIMIT 20
                 """;
@@ -1138,6 +1187,14 @@ public class AccessService {
                 return metrics;
             }
         }
+    }
+
+    /** Define o contrato dos carregadores auxiliares do resumo analítico. */
+    @FunctionalInterface
+    private interface AnalyticsBreakdownLoader<T> {
+
+        /** Carrega um breakdown específico usando a conexão compartilhada do resumo. */
+        List<T> load(Connection connection, String productSlug) throws SQLException, IOException;
     }
 
     /** Lê a auditoria de qualidade de tráfego sem misturar robôs nos KPIs comerciais. */

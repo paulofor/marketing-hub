@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-30-pde-official-host-163.yaml
+  - changeSet:
+      id: 2026-07-30-pde-official-host-163-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: public_url
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+                 SET public_url = 'http://163.245.200.7:5176/',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE code = 'metodo-musa-7-dias'
+                 AND product_type = 'PDE - Produto Digital Experiencial';

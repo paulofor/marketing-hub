@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/** Responsabilidade: validar a descoberta de microserviços e inventário de deploy. */
 class MicroserviceDiscoveryServiceTest {
 
   @Test
@@ -121,6 +122,7 @@ class MicroserviceDiscoveryServiceTest {
     assertEquals("manual", deployment.triggerMode());
   }
 
+  /** Deve usar o inventário fallback quando os workflows não estão disponíveis. */
   @Test
   void shouldUseFallbackDeploymentInventoryWhenWorkflowsAreUnavailable() {
     MicroserviceDiscoveryService service =
@@ -132,7 +134,6 @@ class MicroserviceDiscoveryServiceTest {
     assertEquals(6, deployments.size());
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.181.168")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("177.153.62.107")));
-    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.102.54")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.120.96")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.210.83")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("163.245.200.7")));

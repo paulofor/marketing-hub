@@ -168,7 +168,7 @@ jobs:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 191.252.102.54
+      DEPLOY_HOST: 163.245.200.7
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.PDE_PLATFORM_REMOTE_PATH != '' && secrets.PDE_PLATFORM_REMOTE_PATH || '/root/pde-platform' }}
       IMAGE_TAG: ${{ needs.docker.outputs['image-tag'] }}

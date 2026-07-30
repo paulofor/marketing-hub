@@ -6359,3 +6359,10 @@
 - ajuste preparado: antes do `docker compose up`, o workflow passa a remover qualquer container Docker que publique a porta do slot selecionado (`5176`, `5177` ou `5178`), além dos nomes canônicos e legados.
 - prevenção: o deploy deixa de depender apenas do nome do container e passa a tratar a porta dedicada do slot como recurso operacional exclusivo da versão PDE.
 - impacto comercial esperado: reduzir falhas de publicação de versões em campanha por resíduo operacional no host e acelerar a recuperação de destinos pagos do Clube MUSA.
+
+## 2026-07-30 — Regra oficial: todos os PDEs no host 163.245.200.7
+
+- decisão operacional do usuário: todos os PDEs devem ser publicados em `163.245.200.7`.
+- ajuste preparado: cânone do PDE, workflows do `pde-platform` e do proxy `lead-portal-payments-service`, inventário operacional, defaults de logs do MCP, compose produtivo do PDE, documentação de secrets/deploy e AGENTS foram alinhados para `163.245.200.7`.
+- prevenção: o deploy e a validação pública dos slots PDE passam a tratar qualquer referência operacional a outro host como divergência antes de liberar campanha ou tráfego pago.
+- impacto comercial esperado: reduzir perda de cliques pagos por divergência entre DNS, proxy e container publicado, mantendo a leitura de conversão dos PDEs em uma infraestrutura única.

@@ -46,7 +46,7 @@ mcp:
     lead-portal-path: ${MCP_LOG_LEAD_PORTAL_PATH:http://191.252.120.96:8082/public/runtime-logs/tail?lines=300}
     facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:http://191.252.120.96:8082/public/runtime-logs/tail?lines=300}
     email-service-path: ${MCP_LOG_EMAIL_SERVICE_PATH:http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log}
-    lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:http://191.252.102.54:8092/api/v1/logs/runtime?lines=200}
+    lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:http://163.245.200.7:8092/api/v1/logs/runtime?lines=200}
     mds-path: ${MCP_LOG_MDS_PATH:http://177.153.62.107:8091/actuator/logfile}
     mois-path: ${MCP_LOG_MOIS_PATH:http://191.252.120.96:8097/actuator/logfile}
     mois-sales-library-worker-path: ${MCP_LOG_MOIS_SALES_LIBRARY_WORKER_PATH:http://191.252.120.96:8097/actuator/logfile}
@@ -54,7 +54,7 @@ mcp:
     clickbank-coletor-mois-path: ${MCP_LOG_CLICKBANK_COLETOR_MOIS_PATH:http://177.153.62.107:9096/internal/ops-monitor/logfile}
     oprm-coletor-receita-path: ${MCP_LOG_OPRM_COLETOR_RECEITA_PATH:http://191.252.120.96:8094/actuator/logfile}
     ops-monitor-worker-path: ${MCP_LOG_OPS_MONITOR_WORKER_PATH:http://191.252.120.96:8098/actuator/logfile}
-    pde-platform-backend-path: ${MCP_LOG_PDE_PLATFORM_BACKEND_PATH:http://191.252.102.54:8096/actuator/logfile}
+    pde-platform-backend-path: ${MCP_LOG_PDE_PLATFORM_BACKEND_PATH:http://163.245.200.7:8096/actuator/logfile}
     video-management-service-path: ${MCP_LOG_VIDEO_MANAGEMENT_SERVICE_PATH:http://177.153.62.107:8095/actuator/logfile}
     fetch-timeout-seconds: ${MCP_LOG_FETCH_TIMEOUT_SECONDS:45}
     fetch-attempts: ${MCP_LOG_FETCH_ATTEMPTS:3}

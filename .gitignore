@@ -27,6 +27,8 @@ lead-portal/backend/data
 /tmp/
 /backend/.idea/
 /backend/ads-service/target/
+**/logs/*.log
+**/*.log.*
 log.exec
 chaves/
 local/

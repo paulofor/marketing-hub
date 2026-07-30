@@ -25,23 +25,8 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-      - tiktok-ads-worker
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
-
-  tiktok-ads-worker:
-    image: ${TIKTOK_ADS_WORKER_IMAGE:-marketinghub-tiktok-ads-worker}:${TIKTOK_ADS_WORKER_IMAGE_TAG:-2026.07.30}
-    container_name: marketinghub-tiktok-ads-worker
-    restart: unless-stopped
-    environment:
-      TIKTOK_STORAGE_FILE: ${TIKTOK_STORAGE_FILE:-/app/data/tiktok-accounts.json}
-      LOGGING_FILE_NAME: ${TIKTOK_ADS_WORKER_LOG_FILE:-/app/logs/tiktok-ads-worker.log}
-      TZ: America/Sao_Paulo
-    ports:
-      - "${TIKTOK_ADS_WORKER_PORT:-8097}:8097"
-    volumes:
-      - ./volumes/tiktok-ads-worker/data:/app/data
-      - ./volumes/tiktok-ads-worker/logs:/app/logs
 
   video-management:
     image: ${VIDEO_MGMT_IMAGE:-marketinghub-video-management}:${VIDEO_MGMT_IMAGE_TAG:-2026.04.15}

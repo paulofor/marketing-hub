@@ -69,9 +69,10 @@ jobs:
               backend/ads-service/*) backend=true ;;
               frontend/*) frontend=true ;;
               video-management-service/*) video=true ;;
+              deploy/bin/apply-video-only.sh) video_deploy_descriptor=true ;;
               deploy/bin/*) app_deploy_sync=true ;;
-              deploy/docker-compose.yml) app_deploy_descriptor=true; video_deploy_descriptor=true ;;
-              deploy/nginx/*) app_deploy_descriptor=true; video_deploy_descriptor=true ;;
+              deploy/docker-compose.yml) app_deploy_descriptor=true ;;
+              deploy/nginx/*) app_deploy_descriptor=true ;;
             esac
           done <<< "${changed_files}"
 

@@ -6366,3 +6366,10 @@
 - ajuste preparado: cânone do PDE, workflows do `pde-platform` e do proxy `lead-portal-payments-service`, inventário operacional, defaults de logs do MCP, compose produtivo do PDE, documentação de secrets/deploy e AGENTS foram alinhados para `163.245.200.7`.
 - prevenção: o deploy e a validação pública dos slots PDE passam a tratar qualquer referência operacional a outro host como divergência antes de liberar campanha ou tráfego pago.
 - impacto comercial esperado: reduzir perda de cliques pagos por divergência entre DNS, proxy e container publicado, mantendo a leitura de conversão dos PDEs em uma infraestrutura única.
+
+## 2026-07-30 — Clube MUSA: painel de vídeo por versão PDE
+
+- problema observado: o painel administrativo de vídeos por versão podia induzir leitura errada, exibindo vídeo da v6 em slot diferente quando a origem histórica do experimento não representava a versão comercial publicada.
+- ajuste preparado: o backend passa a entregar o painel `/api/products/{id}/pde-videos` já resolvido por versão e HLS; o frontend `/products/{productId}/pde-videos` deixa de cruzar assets localmente por `sourceExperimentId`.
+- prevenção: o painel avisa quando um vídeo pertence a outro experimento, mas o HLS aponta para a versão exibida, preservando a verdade da campanha e a auditoria operacional.
+- impacto comercial esperado: evitar revisão e decisão de campanha sobre vídeo associado à versão errada do MUSA.

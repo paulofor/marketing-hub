@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.pde.service.PdeProductionSlotService;
+import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.ProductDto;
@@ -174,6 +175,13 @@ public class ProductController {
   public List<PostDeployPdeProductionSlotDto> listPdeProductionSlots(@PathVariable Long id) {
     Product product = service.getProduct(id);
     return pdeProductionSlotService.listProductionSlotsForProduct(product.getSlug());
+  }
+
+  /** Lista os vídeos HLS resolvidos pelo backend para cada versão produtiva PDE do produto. */
+  @GetMapping("/{id}/pde-videos")
+  public List<PdeProductionSlotVideoPanelDto> listPdeVersionVideos(@PathVariable Long id) {
+    Product product = service.getProduct(id);
+    return pdeProductionSlotService.listProductionSlotVideosForProduct(product.getSlug());
   }
 
   /** Cria ou atualiza uma versão produtiva PDE a partir do cadastro do produto. */

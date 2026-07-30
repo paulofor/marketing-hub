@@ -7,6 +7,7 @@ import {
   GitBranch,
   CircleDollarSign,
   Eye,
+  FileText,
   GitCompare,
   Image as ImageIcon,
   Loader2,
@@ -448,6 +449,15 @@ export default function ProductListPage() {
                         >
                           <GitBranch size={16} aria-hidden="true" />
                           Versões PDE
+                        </Link>
+                      )}
+                      {showPdeJourneyAction && (
+                        <Link
+                          className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                          to="/pde-copy"
+                        >
+                          <FileText size={16} aria-hidden="true" />
+                          Copy PDE
                         </Link>
                       )}
                       {previewQaUrl && (

@@ -14,6 +14,7 @@ import {
   Users,
   Workflow,
   AlertTriangle,
+  FileText,
   Search,
   Mail,
   Microscope,
@@ -166,6 +167,7 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Send,
       },
       { to: "/ai/image-generator", label: "Gerador de Imagens", icon: Image },
+      { to: "/pde-copy", label: "Copy PDE", icon: FileText },
       {
         to: "/facebook-campaigns/ready",
         label: "Experimentos prontos",

@@ -409,6 +409,16 @@ function resolveHostExperienceVersionOverride() {
   return resolveCurrentMusaVersionedHostConfig()?.experienceVersion ?? '';
 }
 
+function resolvePublicProductUrl() {
+  const query = new URLSearchParams();
+  const hostExperienceVersion = resolveHostExperienceVersionOverride();
+  if (hostExperienceVersion) {
+    query.set('experienceVersion', hostExperienceVersion);
+  }
+  const queryString = query.toString();
+  return `/api/pde/products/metodo-musa-7-dias${queryString ? `?${queryString}` : ''}`;
+}
+
 function applyExperienceOverrides(productExperience: ProductExperience, allowHostOverride = true) {
   const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
   const hostExperienceVersionOverride = allowHostOverride ? resolveHostExperienceVersionOverride() : '';
@@ -539,10 +549,10 @@ function App() {
       loadWorkspace(tokenFromPath, true).catch(() => setErrorMessage('Não encontramos esse acesso. Confira o link recebido após a compra.'));
       return;
     }
-    fetch('/api/pde/products/metodo-musa-7-dias')
+    fetch(resolvePublicProductUrl())
       .then(async (response) => ({
         productExperience: response.ok ? ((await response.json()) as ProductExperience) : fallbackProduct,
-        allowHostOverride: !response.ok,
+        allowHostOverride: true,
       }))
       .then(({ productExperience, allowHostOverride }) => {
         const resolvedProduct = applyExperienceOverrides(productExperience, allowHostOverride);
@@ -1606,6 +1616,24 @@ function App() {
     && Boolean(heroPlaybackUrl)
     && ((currentMusaExperience.supportsPublishedPublicDiagnosticVideoHero && publicDiagnosticVideoVariant !== 'control')
       || publicDiagnosticVideoVariant === 'video');
+  const publicFirstFold = currentProduct.publicFirstFold ?? {};
+  const publicFirstFoldHeadline = publicFirstFold.headline?.trim() || 'Você se arruma, mas ainda sente que falta presença?';
+  const publicFirstFoldSupportingText = publicFirstFold.supportingText?.trim()
+    || 'Em poucos minutos, o MUSA identifica o detalhe que está deixando sua imagem mais comum do que deveria e mostra um primeiro ajuste para testar hoje, usando o que você já tem.';
+  const publicVideoKicker = publicFirstFold.videoKicker?.trim() || (showMotivationalTimelineVideo ? 'Prévia MUSA' : 'Vídeo inicial MUSA');
+  const publicVideoHeadline = publicFirstFold.videoHeadline?.trim()
+    || (showMotivationalTimelineVideo
+      ? 'Antes de pensar em roupa nova, encontre o sinal que apaga sua presença.'
+      : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.');
+  const publicVideoSupportingText = publicFirstFold.videoSupportingText?.trim()
+    || (showMotivationalTimelineVideo
+      ? 'Às vezes o look não está errado. Ele só está sem uma intenção visível. Um acabamento, uma cor, uma combinação ou uma postura podem deixar sua presença mais coerente com muito menos esforço do que você imagina.'
+      : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.');
+  const publicVideoExtraText = publicFirstFold.videoExtraText?.trim()
+    || (showMotivationalTimelineVideo
+      ? 'O MUSA usa 4 escolhas simples sobre seu espelho, sua rotina e o sinal que você quer transmitir para apontar onde sua imagem perde força e qual microação pode deixar você mais pronta hoje.'
+      : '');
+  const publicVideoCtaLabel = publicFirstFold.videoCtaLabel?.trim() || 'Ver meu primeiro ajuste MUSA';
   const canRegisterActiveMission = Boolean(canCompleteActiveMission && (!activeMissionGuidanceConfig || isMissionInteractionSaved(activeMission?.id ?? '')));
 
   useEffect(() => {
@@ -1719,8 +1747,8 @@ function App() {
       <main className="app-shell public-diagnostic-shell">
         <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
           <div className="public-diagnostic-intro">
-            <h1>Você se arruma, mas ainda sente que falta presença?</h1>
-            <p>Em poucos minutos, o MUSA identifica o detalhe que está deixando sua imagem mais comum do que deveria e mostra um primeiro ajuste para testar hoje, usando o que você já tem.</p>
+            <h1>{publicFirstFoldHeadline}</h1>
+            <p>{publicFirstFoldSupportingText}</p>
           </div>
 
           {showPublicDiagnosticVideoHero && (
@@ -1801,11 +1829,11 @@ function App() {
                 )}
               </div>
               <div className="public-video-copy">
-                <p className="section-kicker">{showMotivationalTimelineVideo ? 'Prévia MUSA' : 'Vídeo inicial MUSA'}</p>
-                <h2>{showMotivationalTimelineVideo ? 'Antes de pensar em roupa nova, encontre o sinal que apaga sua presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
-                <p>{showMotivationalTimelineVideo ? 'Às vezes o look não está errado. Ele só está sem uma intenção visível. Um acabamento, uma cor, uma combinação ou uma postura podem deixar sua presença mais coerente com muito menos esforço do que você imagina.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
-                {showMotivationalTimelineVideo && (
-                  <p>O MUSA usa 4 escolhas simples sobre seu espelho, sua rotina e o sinal que você quer transmitir para apontar onde sua imagem perde força e qual microação pode deixar você mais pronta hoje.</p>
+                <p className="section-kicker">{publicVideoKicker}</p>
+                <h2>{publicVideoHeadline}</h2>
+                <p>{publicVideoSupportingText}</p>
+                {publicVideoExtraText && (
+                  <p>{publicVideoExtraText}</p>
                 )}
                 <button
                   className="secondary-button public-video-cta"
@@ -1822,7 +1850,7 @@ function App() {
                     document.querySelector('.public-diagnostic-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
                 >
-                  Ver meu primeiro ajuste MUSA
+                  {publicVideoCtaLabel}
                   <ChevronRight size={17} />
                 </button>
               </div>

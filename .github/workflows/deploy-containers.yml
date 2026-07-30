@@ -371,11 +371,11 @@ jobs:
           }
 
           if [[ -f artifacts/backend-image.tar ]]; then
-            retry rsync -az --partial --append-verify -e "ssh ${SSH_OPTS}" artifacts/backend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image.tar
+            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/backend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image-${{ github.sha }}.tar
           fi
 
           if [[ -f artifacts/frontend-image.tar ]]; then
-            retry rsync -az --partial --append-verify -e "ssh ${SSH_OPTS}" artifacts/frontend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/frontend-image.tar
+            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/frontend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/frontend-image-${{ github.sha }}.tar
           fi
 
       - name: Remove unchanged APP image artifacts
@@ -406,7 +406,7 @@ jobs:
         run: |
           ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply.sh"
           timeout -k 30s 18m ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image.tar FRONTEND_TAR=/tmp/frontend-image.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
+            "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image-${GIT_SHA}.tar FRONTEND_TAR=/tmp/frontend-image-${GIT_SHA}.tar VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
 
   deploy-video-management:
     name: Deploy video management
@@ -477,7 +477,7 @@ jobs:
             done
           }
 
-          retry scp ${SSH_OPTS} artifacts/video-management-image.tar ${VPS_USER}@${VIDEO_VPS_IP}:/tmp/video-management-image.tar
+          retry scp ${SSH_OPTS} artifacts/video-management-image.tar ${VPS_USER}@${VIDEO_VPS_IP}:/tmp/video-management-image-${{ github.sha }}.tar
 
       - name: Remove unchanged VIDEO image artifact
         if: needs.detect-changes.outputs.video != 'true'
@@ -503,4 +503,4 @@ jobs:
 
           retry ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-video-only.sh"
           retry timeout 30m ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} VIDEO_TAR=/tmp/video-management-image.tar VIDEO_IMAGE=${VIDEO_IMAGE} VIDEO_BACKEND_BASE_URL=http://${APP_VPS_IP} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-video-only.sh"
+            "IMAGE_TAG=${GIT_SHA} VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar VIDEO_IMAGE=${VIDEO_IMAGE} VIDEO_BACKEND_BASE_URL=http://${APP_VPS_IP} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-video-only.sh"

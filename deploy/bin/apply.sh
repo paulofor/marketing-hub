@@ -90,6 +90,17 @@ prepare_image_load() {
   docker image prune -f >/dev/null 2>&1 || true
 }
 
+require_loaded_image() {
+  local image="$1"
+
+  if docker image inspect "${image}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log "Erro: imagem esperada ${image} não encontrada após docker load; abortando para evitar deploy com imagem antiga."
+  return 1
+}
+
 wait_http() {
   local name="$1"
   local url="$2"
@@ -121,6 +132,7 @@ mkdir -p volumes/backend/uploads volumes/backend/logs
 if [[ -f "${BACKEND_TAR}" ]]; then
   prepare_image_load "backend" "${BACKEND_TAR}"
   run_with_timeout_and_diagnostics "docker load backend (${BACKEND_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${BACKEND_TAR}"
+  require_loaded_image "${BACKEND_IMAGE}:${IMAGE_TAG}"
 else
   log "Arquivo de imagem backend não encontrado em ${BACKEND_TAR}; mantendo imagem local atual."
 fi
@@ -128,6 +140,7 @@ fi
 if [[ -f "${FRONTEND_TAR}" ]]; then
   prepare_image_load "frontend" "${FRONTEND_TAR}"
   run_with_timeout_and_diagnostics "docker load frontend (${FRONTEND_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${FRONTEND_TAR}"
+  require_loaded_image "${FRONTEND_IMAGE}:${IMAGE_TAG}"
 else
   log "Arquivo de imagem frontend não encontrado em ${FRONTEND_TAR}; mantendo imagem local atual."
 fi
@@ -135,6 +148,7 @@ fi
 if [[ -f "${VIDEO_TAR}" ]]; then
   prepare_image_load "video-management" "${VIDEO_TAR}"
   run_with_timeout_and_diagnostics "docker load video-management (${VIDEO_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${VIDEO_TAR}"
+  require_loaded_image "${VIDEO_IMAGE}:${IMAGE_TAG}"
 else
   log "Arquivo de imagem video-management não encontrado em ${VIDEO_TAR}; mantendo imagem local atual."
 fi

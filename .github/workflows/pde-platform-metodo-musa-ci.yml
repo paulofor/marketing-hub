@@ -185,6 +185,10 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.PDE_MAIL_AWS_ACCESS_KEY_ID != '' && secrets.PDE_MAIL_AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY != '' && secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.PDE_MAIL_AWS_SESSION_TOKEN != '' && secrets.PDE_MAIL_AWS_SESSION_TOKEN || secrets.AWS_SESSION_TOKEN }}
+      PDE_ACCESS_JDBC_URL: ${{ secrets.PDE_ACCESS_JDBC_URL }}
+      PDE_ACCESS_JDBC_USERNAME: ${{ secrets.PDE_ACCESS_JDBC_USERNAME }}
+      PDE_ACCESS_JDBC_PASSWORD: ${{ secrets.PDE_ACCESS_JDBC_PASSWORD }}
+      PDE_PEPPER_API_TOKEN: ${{ secrets.PDE_PEPPER_API_TOKEN != '' && secrets.PDE_PEPPER_API_TOKEN || secrets.PEPPER_API_TOKEN }}
       OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
       OPENAI_API_KEY_FILE: ${{ secrets.PDE_OPENAI_API_KEY_FILE != '' && secrets.PDE_OPENAI_API_KEY_FILE || secrets.OPENAI_API_KEY_FILE != '' && secrets.OPENAI_API_KEY_FILE || '/run/secrets/openai_api_key' }}
       OPENAI_API_KEY_HOST_FILE: ${{ secrets.PDE_OPENAI_API_KEY_HOST_FILE != '' && secrets.PDE_OPENAI_API_KEY_HOST_FILE || secrets.OPENAI_API_KEY_HOST_FILE != '' && secrets.OPENAI_API_KEY_HOST_FILE || '/root/infra/openai-token/openai_api_key' }}
@@ -264,6 +268,10 @@ jobs:
             && export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}' \
             && export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}' \
             && export AWS_SESSION_TOKEN='${AWS_SESSION_TOKEN}' \
+            && export PDE_ACCESS_JDBC_URL='${PDE_ACCESS_JDBC_URL}' \
+            && export PDE_ACCESS_JDBC_USERNAME='${PDE_ACCESS_JDBC_USERNAME}' \
+            && export PDE_ACCESS_JDBC_PASSWORD='${PDE_ACCESS_JDBC_PASSWORD}' \
+            && export PDE_PEPPER_API_TOKEN='${PDE_PEPPER_API_TOKEN}' \
             && export OPENAI_API_KEY='${OPENAI_API_KEY}' \
             && export OPENAI_API_KEY_FILE='${OPENAI_API_KEY_FILE}' \
             && export OPENAI_API_KEY_HOST_FILE='${OPENAI_API_KEY_HOST_FILE}' \

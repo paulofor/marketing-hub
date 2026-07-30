@@ -541,6 +541,11 @@ public class AccessService {
     /** Carrega as jornadas mais recentes usando a conexão informada. */
     private List<FunnelAnalyticsSessionJourneyDto> loadSessionJourneyDtos(Connection connection, String productSlug, int limit)
             throws SQLException, IOException {
+        List<String> recentSessionIds = loadRecentHumanSessionIds(connection, productSlug, limit);
+        if (recentSessionIds.isEmpty()) {
+            return List.of();
+        }
+        String placeholders = String.join(", ", java.util.Collections.nCopies(recentSessionIds.size(), "?"));
         String sql = """
                 SELECT
                   COALESCE(e.session_id, e.event_id) AS resolved_session_id,
@@ -558,35 +563,58 @@ public class AccessService {
                   e.metadata_json,
                   e.occurred_at
                 FROM pde_funnel_event e
-                JOIN (
-                  SELECT
-                    COALESCE(session_id, event_id) AS resolved_session_id,
-                    MAX(occurred_at) AS last_event_at
-                  FROM pde_funnel_event
-                  WHERE product_slug = ?
-                    AND traffic_quality = 'HUMAN'
-                  GROUP BY COALESCE(session_id, event_id)
-                  ORDER BY last_event_at DESC
-                  LIMIT ?
-                ) recent ON recent.resolved_session_id = COALESCE(e.session_id, e.event_id)
                 WHERE e.product_slug = ?
                   AND e.traffic_quality = 'HUMAN'
-                ORDER BY recent.last_event_at DESC, e.occurred_at ASC, e.id ASC
+                  AND COALESCE(e.session_id, e.event_id) IN (""" + placeholders + """
+                  )
+                ORDER BY e.occurred_at ASC, e.id ASC
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
-            statement.setInt(2, limit);
-            statement.setString(3, productSlug);
+            for (int index = 0; index < recentSessionIds.size(); index++) {
+                statement.setString(index + 2, recentSessionIds.get(index));
+            }
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<String, SessionJourneyBuilder> builders = new LinkedHashMap<>();
+                recentSessionIds.forEach(sessionId -> builders.put(sessionId, new SessionJourneyBuilder(sessionId)));
                 while (resultSet.next()) {
                     String sessionId = resultSet.getString("resolved_session_id");
-                    SessionJourneyBuilder builder = builders.computeIfAbsent(sessionId, SessionJourneyBuilder::new);
+                    SessionJourneyBuilder builder = builders.get(sessionId);
+                    if (builder == null) {
+                        continue;
+                    }
                     builder.add(toSessionJourneyEvent(resultSet));
                 }
                 return builders.values().stream()
                         .map(SessionJourneyBuilder::toDto)
                         .toList();
+            }
+        }
+    }
+
+    /** Seleciona sessões humanas recentes com leitura indexável antes de carregar os passos da jornada. */
+    private List<String> loadRecentHumanSessionIds(Connection connection, String productSlug, int limit) throws SQLException {
+        String sql = """
+                SELECT COALESCE(session_id, event_id) AS resolved_session_id
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                  AND traffic_quality = 'HUMAN'
+                ORDER BY occurred_at DESC, id DESC
+                LIMIT ?
+                """;
+        int scanLimit = Math.max(limit * 20, limit);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            statement.setInt(2, scanLimit);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Set<String> sessionIds = new LinkedHashSet<>();
+                while (resultSet.next() && sessionIds.size() < limit) {
+                    String sessionId = resultSet.getString("resolved_session_id");
+                    if (sessionId != null && !sessionId.isBlank()) {
+                        sessionIds.add(sessionId);
+                    }
+                }
+                return new ArrayList<>(sessionIds);
             }
         }
     }

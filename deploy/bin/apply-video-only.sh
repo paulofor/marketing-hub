@@ -6,17 +6,22 @@ VIDEO_TAR=${VIDEO_TAR:-/tmp/video-management-image.tar}
 VIDEO_IMAGE=${VIDEO_IMAGE:-marketinghub-video-management}
 IMAGE_TAG=${IMAGE_TAG:-latest}
 VIDEO_BACKEND_BASE_URL=${VIDEO_BACKEND_BASE_URL:-http://191.252.181.168}
+IMAGE_TAR_LOADED=false
 
 mkdir -p "${DEPLOY_DIR}"
 cd "${DEPLOY_DIR}"
 
 if [[ -f "${VIDEO_TAR}" ]]; then
   docker load -i "${VIDEO_TAR}"
+  IMAGE_TAR_LOADED=true
 fi
 
 if [[ "${IMAGE_TAG}" != "latest" ]]; then
   if docker image inspect "${VIDEO_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
     docker tag "${VIDEO_IMAGE}:${IMAGE_TAG}" "${VIDEO_IMAGE}:latest"
+  elif [[ "${IMAGE_TAR_LOADED}" == "true" ]]; then
+    echo "[apply-video-only.sh] Erro: imagem esperada ${VIDEO_IMAGE}:${IMAGE_TAG} não encontrada após docker load; abortando para evitar deploy com imagem antiga." >&2
+    exit 1
   else
     echo "[apply-video-only.sh] Aviso: imagem ${VIDEO_IMAGE}:${IMAGE_TAG} não encontrada; mantendo latest atual." >&2
   fi

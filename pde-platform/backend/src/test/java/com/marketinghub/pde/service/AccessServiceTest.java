@@ -707,6 +707,59 @@ class AccessServiceTest {
                 });
     }
 
+    /** Confirma que o resumo carrega jornadas recentes sem derrubar o analytics por ordenação pesada. */
+    @Test
+    void summarizesRecentSessionJourneysWithBoundedQuery() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_session_journey_bounded;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            for (int sessionIndex = 1; sessionIndex <= 35; sessionIndex++) {
+                for (int eventIndex = 1; eventIndex <= 3; eventIndex++) {
+                    statement.execute("""
+                            INSERT INTO pde_funnel_event (
+                              event_id, product_slug, event_type, source, page_url, traffic_quality,
+                              session_id, visitor_id, visible_ms, action_name, metadata_json, occurred_at
+                            )
+                            VALUES (
+                              'event-bounded-%d-%d', 'metodo-musa-7-dias', 'PAGE_VISIBLE_TIME', 'test',
+                              'https://clubemusa.com.br/acesso', 'HUMAN', 'session-bounded-%d',
+                              'visitor-bounded-%d', 1000, 'page_visibility_flush', '{"screenName":"login_first_access"}',
+                              TIMESTAMP '2026-07-24 21:%02d:%02d'
+                            )
+                            """.formatted(
+                            sessionIndex,
+                            eventIndex,
+                            sessionIndex,
+                            sessionIndex,
+                            sessionIndex,
+                            eventIndex));
+                }
+            }
+        }
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isEqualTo(105);
+        assertThat(summary.sessions()).isEqualTo(35);
+        assertThat(summary.recentJourneys()).hasSize(20);
+        assertThat(summary.recentJourneys().get(0).sessionId()).isEqualTo("session-bounded-35");
+        assertThat(summary.recentJourneys().get(19).sessionId()).isEqualTo("session-bounded-16");
+        assertThat(summary.recentJourneys().get(0).steps()).hasSize(3);
+    }
+
     /** Confirma que ambiente comercial não inicia sem persistência JDBC obrigatória. */
     @Test
     void rejectsStartupWhenJdbcStorageIsRequiredWithoutJdbcUrl() {

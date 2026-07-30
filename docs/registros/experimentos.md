@@ -6410,3 +6410,11 @@
 - A tela documenta o fluxo: briefing científico-comercial, roteiro por cena, storyboard/prompt, geração, controle de qualidade, aprovação humana, vinculação ao PDE versionado, métricas e aprendizado.
 - Direção comercial aplicada ao MUSA: começar com 5 capítulos curtos para transformar conceitos científicos em desejo, prova visual e avanço para diagnóstico/paywall antes de escalar produção premium.
 - Evolução aplicada: a tela passou a explicitar 3 gates de decisão para impedir avanço por gosto visual: hipótese antes de gerar, qualidade comercial antes de aprovar e performance depois de publicar.
+
+## 2026-07-30 — Experimento 76: correção do analytics PDE pós-clique
+
+- causa-raiz confirmada via MCP/logs: o endpoint `https://v6.clubemusa.com.br/api/pde/access/analytics/metodo-musa-7-dias/summary` retornava `500` porque a consolidação de jornadas recentes no backend PDE fazia `JOIN` com subconsulta `GROUP BY + ORDER BY`, gerando `Out of sort memory` no MySQL.
+- evidência comercial preservada: o banco PDE tinha eventos reais para `metodo-musa-7-dias`, então os zeros exibidos no painel não significavam rejeição da oferta; eram cegueira técnica após o clique.
+- ajuste preparado: o backend PDE agora seleciona primeiro sessões humanas recentes com leitura limitada e depois carrega os passos dessas sessões, mantendo KPIs principais, UTMs e jornadas sem exigir ordenação pesada.
+- prevenção: teste de contrato cobre 35 sessões e 105 eventos, garantindo que o resumo continue entregando métricas comerciais e limite as 20 jornadas recentes sem derrubar o analytics.
+- impacto comercial esperado: recuperar a leitura clique -> entrada PDE -> vídeo/diagnóstico/paywall/checkout, evitando pausar ou escalar campanha com base em zeros falsos.

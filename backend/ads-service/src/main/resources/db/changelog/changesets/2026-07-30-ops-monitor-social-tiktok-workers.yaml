@@ -1,0 +1,76 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-30-ops-monitor-social-tiktok-workers-001
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ops_monitored_module
+                (code, name, type, base_url, health_path, log_path, published_version, monitoring_url, enabled, criticality, offline_threshold_seconds)
+              SELECT
+                'social-media-worker',
+                'Social Media Worker',
+                'WORKER',
+                'http://191.252.210.83:8099',
+                '/actuator/health',
+                '/actuator/logfile',
+                'v1-youtube',
+                'mcp:vps_host_inventory host=191.252.210.83 container=social-media-worker',
+                1,
+                'HIGH',
+                300
+              FROM DUAL WHERE NOT EXISTS (
+                SELECT 1 FROM ops_monitored_module WHERE code = 'social-media-worker'
+              );
+
+              UPDATE ops_monitored_module
+              SET name = 'Social Media Worker',
+                  type = 'WORKER',
+                  base_url = 'http://191.252.210.83:8099',
+                  health_path = '/actuator/health',
+                  log_path = '/actuator/logfile',
+                  published_version = 'v1-youtube',
+                  monitoring_url = 'mcp:vps_host_inventory host=191.252.210.83 container=social-media-worker',
+                  enabled = 1,
+                  criticality = 'HIGH',
+                  offline_threshold_seconds = 300
+              WHERE code = 'social-media-worker';
+
+              INSERT INTO ops_monitored_module
+                (code, name, type, base_url, health_path, log_path, published_version, monitoring_url, enabled, criticality, offline_threshold_seconds)
+              SELECT
+                'tiktok-ads-worker',
+                'TikTok Ads Worker',
+                'WORKER',
+                'http://191.252.210.83:8097',
+                '/actuator/health',
+                '/actuator/logfile',
+                'v1',
+                'mcp:vps_host_inventory host=191.252.210.83 container=tiktok-ads-worker',
+                1,
+                'HIGH',
+                300
+              FROM DUAL WHERE NOT EXISTS (
+                SELECT 1 FROM ops_monitored_module WHERE code = 'tiktok-ads-worker'
+              );
+
+              UPDATE ops_monitored_module
+              SET name = 'TikTok Ads Worker',
+                  type = 'WORKER',
+                  base_url = 'http://191.252.210.83:8097',
+                  health_path = '/actuator/health',
+                  log_path = '/actuator/logfile',
+                  published_version = 'v1',
+                  monitoring_url = 'mcp:vps_host_inventory host=191.252.210.83 container=tiktok-ads-worker',
+                  enabled = 1,
+                  criticality = 'HIGH',
+                  offline_threshold_seconds = 300
+              WHERE code = 'tiktok-ads-worker';

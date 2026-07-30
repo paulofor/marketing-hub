@@ -11,5 +11,8 @@ services:
       SOCIAL_YOUTUBE_DRY_RUN: ${SOCIAL_YOUTUBE_DRY_RUN:-true}
       SOCIAL_YOUTUBE_ACCESS_TOKEN: ${SOCIAL_YOUTUBE_ACCESS_TOKEN:-}
       SOCIAL_YOUTUBE_DEFAULT_PRIVACY_STATUS: ${SOCIAL_YOUTUBE_DEFAULT_PRIVACY_STATUS:-private}
+      LOGGING_FILE_NAME: ${SOCIAL_MEDIA_WORKER_LOG_FILE:-/app/logs/social-media-worker.log}
     ports:
-      - "${SOCIAL_MEDIA_WORKER_PORT:-8097}:8097"
+      - "${SOCIAL_MEDIA_WORKER_PORT:-8099}:8097"
+    volumes:
+      - ${SOCIAL_MEDIA_WORKER_LOG_DIR:-./volumes/social-media-worker/logs}:/app/logs

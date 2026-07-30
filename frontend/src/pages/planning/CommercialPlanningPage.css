@@ -128,6 +128,85 @@
   background: #2563eb;
 }
 
+.commercial-planning-budget-direction {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+}
+
+.commercial-planning-budget-direction-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.commercial-planning-budget-direction-header h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.commercial-planning-budget-direction-header > span {
+  max-width: 320px;
+  color: #667085;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.commercial-planning-budget-direction-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.commercial-planning-budget-direction-item {
+  display: grid;
+  min-width: 0;
+  gap: 0.55rem;
+  padding: 0.85rem;
+  border: 1px solid #d9dee7;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.commercial-planning-budget-direction-item div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.commercial-planning-budget-direction-item span {
+  color: #667085;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.commercial-planning-budget-direction-item strong {
+  color: #101828;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.commercial-planning-budget-direction-item b {
+  color: #2563eb;
+  font-size: 0.85rem;
+}
+
+.commercial-planning-budget-direction-item p {
+  margin: 0;
+  color: #344054;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
 .commercial-planning-month-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
@@ -934,6 +1013,10 @@
   .commercial-planning-month-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .commercial-planning-budget-direction-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -961,11 +1044,13 @@
   }
 
   .commercial-planning-top-ranking-header,
+  .commercial-planning-budget-direction-header,
   .commercial-planning-funnel-header {
     display: grid;
   }
 
   .commercial-planning-top-ranking-header > span,
+  .commercial-planning-budget-direction-header > span,
   .commercial-planning-funnel-header > span {
     max-width: none;
     text-align: left;
@@ -999,6 +1084,7 @@
   }
 
   .commercial-planning-experiment-grid,
+  .commercial-planning-budget-direction-grid,
   .commercial-planning-experiment-metrics,
   .commercial-planning-ranking-metrics {
     grid-template-columns: 1fr;

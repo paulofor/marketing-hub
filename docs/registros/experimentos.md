@@ -1,3 +1,11 @@
+## 2026-07-30 — Experimento 76: analytics PDE deixa de cair por breakdown de UTM
+
+- causa-raiz confirmada no backend PDE: o resumo `/api/pde/access/analytics/metodo-musa-7-dias/summary` podia retornar erro 500 quando o breakdown de origem de tráfego exigia ordenação pesada no MySQL 5.7.
+- problema comercial: a tela do experimento 76 ficava com "Analytics PDE indisponível", impedindo cruzar Meta Ads, sessões PDE, UTMs/criativos e avanço real no funil.
+- foi feito: a consulta de origem de tráfego passou a agregar primeiro por sessão e depois por UTM/campanha/criativo, reduzindo `COUNT(DISTINCT)` sobre eventos brutos.
+- foi feito: o backend PDE passou a carregar breakdowns auxiliares de forma isolada, com log completo e retorno parcial, para que uma falha em origem, dispositivo, layout ou jornada recente não derrube os KPIs principais do resumo.
+- prevenção: criada migração idempotente para índice de leitura por produto, qualidade de tráfego, UTM e sessão; testes cobrem o índice e o resumo parcial quando breakdown auxiliar falha.
+
 ## 2026-07-30 — Clube MUSA: deploy limpa containers por slot
 
 - causa-raiz operacional confirmada no workflow de producao: o build e o push das imagens do PDE MUSA concluiam, mas a publicacao com `frontend_slot=all` falhava porque um container anterior do slot `v6` mantinha a porta `5177` ocupada.
@@ -6381,3 +6389,11 @@
 - ajuste preparado: o slot produtivo PDE passa a persistir `draft_experience_json`, `published_experience_json`, `published_by` e `published_at`; a tela de versões PDE ganhou editor/publicador de contrato por slot; o endpoint público aceita `slotCode`/`experienceVersion`; o backend do `pde-platform` consulta o Marketing Hub com o slot derivado do host, como `slotCode=v6`.
 - prevenção: se não houver contrato publicado no slot, o endpoint mantém fallback para o contrato geral do produto, preservando compatibilidade; quando houver publicação, a URL versionada passa a consumir a experiência específica daquele slot.
 - impacto comercial esperado: acelerar testes de copy/funil da v6, reduzir risco de contaminar v5/v7 e permitir aprendizado comercial por versão antes de escalar tráfego pago.
+
+## 2026-07-30 — Experimento 76: coerência das abas com PDE v6 e vídeo publicado
+
+- causa-raiz confirmada: o experimento 76 direciona tráfego para `https://v6.clubemusa.com.br`, mas o monitor pós-deploy consultava o endpoint PDE pelo base URL padrão de v5 quando precisava medir a versão ligada ao `sourceExperimentId=76` ou ao host do `followUpActionUrl`.
+- decisão comercial: a tela deve medir comportamento da v6 em produção e não atribuir custo/asset direto ao experimento 76 quando o vídeo veio de HLS publicado no slot PDE ou de histórico/manual.
+- ajuste preparado: o monitor pós-deploy passa a priorizar o slot PDE vinculado ao experimento ou ao destino do anúncio, consulta analytics pela URL pública correta, expõe métricas de vídeo parcial/completo por versão e UTM, e a aba Vídeo reconhece HLS publicado no contrato do slot mesmo sem asset direto do experimento.
+- prevenção: testes cobrem a seleção da v6 quando v5 também está ativa e o fallback de vídeo publicado no contrato PDE sem ativo persistido do experimento.
+- impacto comercial esperado: preservar métricas de acesso, consumo de página, consumo de vídeo e tempo de sessão da campanha ativa, evitando decisão de pausa/escala baseada em versão errada ou em ausência falsa de vídeo.

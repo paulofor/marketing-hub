@@ -99,6 +99,8 @@ export interface PostDeployPdeExperienceVersion {
   sessions: number;
   pdeEntries: number;
   firstInteractionClicks: number;
+  videoPartial: number;
+  videoComplete: number;
   loginStarted: number;
   paywallViewed: number;
   checkoutIntent: number;
@@ -114,6 +116,8 @@ export interface PostDeployPdeTrafficSource {
   sessions: number;
   pdeEntries: number;
   firstInteractionClicks: number;
+  videoPartial: number;
+  videoComplete: number;
   loginStarted: number;
   paywallViewed: number;
   checkoutStarted: number;

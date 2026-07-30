@@ -164,6 +164,21 @@ function progressPercentage(target?: number | null, actual?: number | null) {
   return Math.min(100, Math.round(((actual ?? 0) / target) * 100));
 }
 
+function sumExperimentValue(
+  weeks: CommercialPlanWeek[],
+  field: "totalCost" | "campaignCost" | "aiCost" | "videoCost",
+) {
+  return weeks.reduce(
+    (total, week) =>
+      total +
+      asArray(week.experiments).reduce(
+        (weekTotal, experiment) => weekTotal + (experiment[field] ?? 0),
+        0,
+      ),
+    0,
+  );
+}
+
 function aggregateFunnelStages(weeks: CommercialPlanWeek[]) {
   const byCode = new Map<string, CommercialPlanFunnelStage>();
   const costByCode = new Map<string, number>();
@@ -267,6 +282,113 @@ function fallbackMonthPlan(): CommercialPlan {
     milestones: [],
     simulations: [],
   };
+}
+
+type BudgetDirection = {
+  code: string;
+  label: string;
+  amount: number;
+  percentage: number;
+  recommendation: string;
+};
+
+function buildBudgetDirections(
+  plan: CommercialPlan,
+  weeks: CommercialPlanWeek[],
+): BudgetDirection[] {
+  const experimentTotal = sumExperimentValue(weeks, "totalCost");
+  const campaignCost = sumExperimentValue(weeks, "campaignCost");
+  const aiCost = sumExperimentValue(weeks, "aiCost");
+  const videoCost = sumExperimentValue(weeks, "videoCost");
+  const unknownCost = Math.max(
+    0,
+    experimentTotal - campaignCost - aiCost - videoCost,
+  );
+  const totalBudget = plan.actualTotalCost ?? experimentTotal;
+  const referenceTotal = totalBudget > 0 ? totalBudget : experimentTotal;
+
+  return [
+    {
+      code: "campaign",
+      label: "Mídia paga",
+      amount: campaignCost,
+      recommendation:
+        "Direcionar aumento só para anúncios com clique qualificado e avanço no funil.",
+    },
+    {
+      code: "ai",
+      label: "Produção com IA",
+      amount: aiCost,
+      recommendation:
+        "Usar para criar variações de oferta, copy e criativos ligados ao gargalo principal.",
+    },
+    {
+      code: "video",
+      label: "Vídeos e criativos",
+      amount: videoCost,
+      recommendation:
+        "Priorizar assets aprovados que possam virar prova visual ou criativo Meta.",
+    },
+    {
+      code: "other",
+      label: "Sem classificação",
+      amount: unknownCost,
+      recommendation:
+        "Classificar a origem do custo para decidir se a verba deve escalar, corrigir ou pausar.",
+    },
+  ]
+    .filter((item) => item.amount > 0)
+    .map((item) => ({
+      ...item,
+      percentage:
+        referenceTotal > 0 ? Math.round((item.amount / referenceTotal) * 100) : 0,
+    }));
+}
+
+function BudgetDirectionPanel({
+  plan,
+  weeks,
+}: {
+  plan: CommercialPlan;
+  weeks: CommercialPlanWeek[];
+}) {
+  const directions = useMemo(
+    () => buildBudgetDirections(plan, weeks),
+    [plan, weeks],
+  );
+
+  if (directions.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="commercial-planning-budget-direction">
+      <div className="commercial-planning-budget-direction-header">
+        <div>
+          <p className="commercial-planning-month-eyebrow mb-1">
+            Direcionamento de verbas
+          </p>
+          <h3>Detalhe abaixo do custo mensal</h3>
+        </div>
+        <span>Total do mês mantido no card acima</span>
+      </div>
+      <div className="commercial-planning-budget-direction-grid">
+        {directions.map((direction) => (
+          <article
+            className="commercial-planning-budget-direction-item"
+            key={direction.code}
+          >
+            <div>
+              <span>{direction.label}</span>
+              <strong>{formatExecutedCurrency(direction.amount)}</strong>
+            </div>
+            <b>{direction.percentage}% do custo</b>
+            <p>{direction.recommendation}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function MonthlyMetricCard({
@@ -849,6 +971,8 @@ export default function CommercialPlanningPage() {
               percentage={publishedExperimentsProgress}
             />
           </div>
+
+          <BudgetDirectionPanel plan={currentMonthPlan} weeks={weeks} />
         </div>
       </section>
 

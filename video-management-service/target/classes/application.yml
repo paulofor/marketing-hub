@@ -2,7 +2,7 @@ server:
   port: 8095
 
 video:
-  backend-base-url: http://191.252.181.168:8000
+  backend-base-url: http://191.252.181.168
   worker-id: vm-service-local
   auth-token: ""
   jobs:
@@ -31,11 +31,76 @@ video:
       poll-interval: PT10S
       max-poll-attempts: 120
       ffmpeg-path: ffmpeg
+      open-ai-reference-image-enabled: ${VIDEO_PROVIDERS_LUMA_OPENAI_REFERENCE_IMAGE_ENABLED:false}
+      open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      open-ai-api-key: ${OPENAI_API_KEY:}
+      open-ai-api-key-file: ${OPENAI_API_KEY_FILE:}
+      open-ai-image-model: ${OPENAI_IMAGE_MODEL:gpt-5.6}
+      open-ai-image-tool-model: ${OPENAI_IMAGE_TOOL_MODEL:gpt-image-2}
+    kling:
+      enabled: false
+      accepted-names:
+        - KLING_3_0
+        - KLING
+        - KLING_OMNI
+      base-url: https://api.klingai.com
+      api-key: ${KLING_API_KEY:${VIDEO_PROVIDERS_KLING_API_KEY:}}
+      api-key-file: ${KLING_API_KEY_FILE:}
+      model: ${VIDEO_PROVIDERS_KLING_MODEL:kling-v3-0}
+      create-path: /v1/videos/text2video
+      status-path-template: /v1/videos/text2video/{taskId}
+      image-create-path: /v1/videos/image2video
+      image-status-path-template: /v1/videos/image2video/{taskId}
+      aspect-ratio: "9:16"
+      mode: ${VIDEO_PROVIDERS_KLING_MODE:std}
+      duration: ${VIDEO_PROVIDERS_KLING_DURATION:5}
+      negative-prompt: "sensualized woman, seductive pose, body focus, exposed body, luxury ostentation, dark haze, blur, distorted hands, embedded text, logo"
+      poll-interval: PT10S
+      max-poll-attempts: 120
+    runway:
+      enabled: false
+      accepted-names:
+        - RUNWAY
+        - RUNWAY_GEN_4_5
+        - RUNAWAY
+      base-url: https://api.dev.runwayml.com
+      api-key: ${RUNWAY_API_KEY:${VIDEO_PROVIDERS_RUNWAY_API_KEY:}}
+      api-key-file: ${RUNWAY_API_KEY_FILE:}
+      api-version: ${VIDEO_PROVIDERS_RUNWAY_API_VERSION:2024-11-06}
+      model: ${VIDEO_PROVIDERS_RUNWAY_MODEL:gen4.5}
+      create-path: /v1/image_to_video
+      status-path-template: /v1/tasks/{taskId}
+      ratio: "720:1280"
+      duration-seconds: ${VIDEO_PROVIDERS_RUNWAY_DURATION_SECONDS:10}
+      poll-interval: PT10S
+      max-poll-attempts: 120
+    heygen:
+      enabled: false
+      accepted-names:
+        - HEYGEN
+        - HEYGEN_AVATAR
+      base-url: https://api.heygen.com
+      api-key: ${HEYGEN_API_KEY:${VIDEO_PROVIDERS_HEYGEN_API_KEY:}}
+      api-key-file: ${HEYGEN_API_KEY_FILE:}
+      create-path: /v3/videos
+      status-path-template: /v3/videos/{videoId}
+      avatar-id: ${VIDEO_PROVIDERS_HEYGEN_AVATAR_ID:}
+      voice-id: ${VIDEO_PROVIDERS_HEYGEN_VOICE_ID:}
+      aspect-ratio: "9:16"
+      output-format: mp4
+      engine-type: ${VIDEO_PROVIDERS_HEYGEN_ENGINE_TYPE:avatar_iv}
+      caption-enabled: ${VIDEO_PROVIDERS_HEYGEN_CAPTION_ENABLED:true}
+      caption-style: ${VIDEO_PROVIDERS_HEYGEN_CAPTION_STYLE:default}
+      background-value: ${VIDEO_PROVIDERS_HEYGEN_BACKGROUND_VALUE:#F8F0EA}
+      voice-speed: ${VIDEO_PROVIDERS_HEYGEN_VOICE_SPEED:1.0}
+      voice-pitch: ${VIDEO_PROVIDERS_HEYGEN_VOICE_PITCH:0.0}
+      voice-volume: ${VIDEO_PROVIDERS_HEYGEN_VOICE_VOLUME:1.0}
+      poll-interval: PT10S
+      max-poll-attempts: 120
     real:
       enabled: false
       accepted-names:
         - REAL
-        - HEYGEN
         - SYNTHESIA
         - VEO
       base-url: http://real-video-provider:8080
@@ -67,9 +132,18 @@ video:
         - MUSA_POST_PRODUCTION
         - POST_PRODUCTION
       ffmpeg-path: ffmpeg
+      ffprobe-path: ffprobe
       espeak-path: espeak-ng
       espeak-voice: pt-br
       font-file: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+      open-ai-tts-enabled: ${VIDEO_PROVIDERS_POST_PRODUCTION_OPENAI_TTS_ENABLED:false}
+      open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      open-ai-api-key: ${OPENAI_API_KEY:}
+      open-ai-api-key-file: ${OPENAI_API_KEY_FILE:}
+      open-ai-tts-model: ${OPENAI_TTS_MODEL:gpt-4o-mini-tts}
+      open-ai-tts-voice: ${OPENAI_TTS_VOICE:nova}
+      open-ai-tts-response-format: ${OPENAI_TTS_RESPONSE_FORMAT:mp3}
+      open-ai-tts-instructions: ${OPENAI_TTS_INSTRUCTIONS:Fale em português do Brasil com voz feminina natural, elegante, acolhedora e confiante. Ritmo de anúncio mobile, sem soar robótica, sem dramatização exagerada e com CTA claro.}
 
 management:
   endpoints:

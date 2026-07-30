@@ -264,11 +264,17 @@ public class PdeProductionSlotService {
   /** Monta o contrato de vídeos de uma versão PDE sem delegar regra comercial ao frontend. */
   private PdeProductionSlotVideoPanelDto toVideoPanelDto(
       PdeProductionSlot slot, List<PdeProductionSlot> allSlots, List<ExperimentVideoAsset> videos) {
-    List<PdeProductionSlotVideoAssetDto> resolvedVideos =
+    List<PdeProductionSlotVideoAssetDto> resolvedPersistedVideos =
         videos.stream()
             .filter(video -> belongsToSlot(slot, allSlots, video))
             .sorted(this::compareVideoPriority)
             .map(video -> toVideoAssetDto(slot, video))
+            .toList();
+    List<PdeProductionSlotVideoAssetDto> publishedContractVideos =
+        publishedContractHeroVideos(slot, resolvedPersistedVideos);
+    List<PdeProductionSlotVideoAssetDto> resolvedVideos =
+        java.util.stream.Stream.concat(
+                resolvedPersistedVideos.stream(), publishedContractVideos.stream())
             .toList();
     List<String> alerts =
         resolvedVideos.stream()
@@ -288,6 +294,107 @@ public class PdeProductionSlotService {
                         + ".")
             .toList();
     return new PdeProductionSlotVideoPanelDto(toProductionSlotDto(slot), resolvedVideos, alerts);
+  }
+
+  /** Lê vídeos HLS publicados no contrato PDE quando o ativo não existe no fluxo versionado. */
+  private List<PdeProductionSlotVideoAssetDto> publishedContractHeroVideos(
+      PdeProductionSlot slot, List<PdeProductionSlotVideoAssetDto> resolvedPersistedVideos) {
+    String publishedJson = slot.getPublishedExperienceJson();
+    if (!StringUtils.hasText(publishedJson)) {
+      return List.of();
+    }
+    try {
+      JsonNode root = objectMapper.readTree(publishedJson);
+      JsonNode heroVideos = root.get("heroVideos");
+      if (heroVideos == null || !heroVideos.isArray()) {
+        return List.of();
+      }
+      List<PdeProductionSlotVideoAssetDto> videos = new java.util.ArrayList<>();
+      for (JsonNode heroVideo : heroVideos) {
+        PdeProductionSlotVideoAssetDto video =
+            publishedContractHeroVideo(slot, heroVideo, resolvedPersistedVideos);
+        if (video != null) {
+          videos.add(video);
+        }
+      }
+      return videos;
+    } catch (IOException ex) {
+      log.warn(
+          "Falha ao ler vídeos do contrato PDE publicado; slotCode={}, productSlug={}",
+          slot.getSlotCode(),
+          slot.getProductSlug(),
+          ex);
+      return List.of();
+    }
+  }
+
+  /** Converte um item heroVideos publicado em vídeo de painel sem inventar custo de produção. */
+  private PdeProductionSlotVideoAssetDto publishedContractHeroVideo(
+      PdeProductionSlot slot,
+      JsonNode heroVideo,
+      List<PdeProductionSlotVideoAssetDto> resolvedPersistedVideos) {
+    String hlsPlaybackUrl = firstText(heroVideo, "hlsPlaybackUrl", "playbackUrl");
+    if (!StringUtils.hasText(hlsPlaybackUrl) || !hlsPlaybackUrl.contains(".m3u8")) {
+      return null;
+    }
+    Long experimentVideoAssetId = longValue(heroVideo, "experimentVideoAssetId");
+    if (experimentVideoAssetId != null
+        && resolvedPersistedVideos.stream()
+            .anyMatch(video -> experimentVideoAssetId.equals(video.id()))) {
+      return null;
+    }
+    if (!isApprovedReadyContractVideo(heroVideo)) {
+      return null;
+    }
+    return new PdeProductionSlotVideoAssetDto(
+        experimentVideoAssetId,
+        slot.getSourceExperimentId(),
+        "PUBLISHED_CONTRACT",
+        "Vídeo publicado no PDE",
+        "VIDEO_COMPLETE",
+        text(heroVideo, "source"),
+        null,
+        ExperimentVideoStatus.READY,
+        ExperimentVideoReviewStatus.APPROVED,
+        null,
+        hlsPlaybackUrl,
+        null,
+        integerValue(heroVideo, "durationSeconds"),
+        longValue(heroVideo, "salesVideoProfileId"),
+        longValue(heroVideo, "salesVideoJobId"),
+        longValue(heroVideo, "assetId"),
+        null);
+  }
+
+  /** Confirma status aprovado/pronto em contratos antigos que podem omitir alguns campos. */
+  private boolean isApprovedReadyContractVideo(JsonNode heroVideo) {
+    String status = text(heroVideo, "status");
+    String reviewStatus = text(heroVideo, "reviewStatus");
+    return (!StringUtils.hasText(status) || "READY".equalsIgnoreCase(status))
+        && (!StringUtils.hasText(reviewStatus) || "APPROVED".equalsIgnoreCase(reviewStatus));
+  }
+
+  /** Lê o primeiro campo textual preenchido de um nó JSON. */
+  private String firstText(JsonNode node, String... fields) {
+    for (String field : fields) {
+      String value = text(node, field);
+      if (StringUtils.hasText(value)) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  /** Lê um campo inteiro opcional do contrato publicado. */
+  private Integer integerValue(JsonNode node, String field) {
+    JsonNode value = node.get(field);
+    return value != null && value.canConvertToInt() ? value.asInt() : null;
+  }
+
+  /** Lê um campo long opcional do contrato publicado. */
+  private Long longValue(JsonNode node, String field) {
+    JsonNode value = node.get(field);
+    return value != null && value.canConvertToLong() ? value.asLong() : null;
   }
 
   /** Verifica se o ativo é um vídeo HLS de hero que pode aparecer no painel PDE. */

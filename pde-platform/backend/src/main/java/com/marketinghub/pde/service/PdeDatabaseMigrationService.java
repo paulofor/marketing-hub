@@ -27,6 +27,7 @@ public class PdeDatabaseMigrationService {
     private static final String TRAFFIC_QUALITY_REASON_COLUMN = "traffic_quality_reason";
     private static final String TRAFFIC_PROVIDER_COLUMN = "traffic_provider";
     private static final String TRAFFIC_QUALITY_INDEX = "idx_pde_funnel_product_quality_time";
+    private static final String TRAFFIC_SOURCE_INDEX = "idx_pde_funnel_product_quality_utm_session";
     private static final String AI_GUIDANCE_TABLE = "pde_ai_guidance_request";
     private static final String ACCESS_TOKEN_COLUMN = "access_token";
     private static final String AI_GUIDANCE_ACCESS_GRANT_FK = "fk_pde_ai_guidance_access_grant";
@@ -212,6 +213,20 @@ public class PdeDatabaseMigrationService {
                             + "ADD KEY idx_pde_funnel_product_quality_time "
                             + "(product_slug(100), traffic_quality(40), occurred_at)");
             log.info("Índice de qualidade de tráfego criado no funil PDE; index={}", TRAFFIC_QUALITY_INDEX);
+        }
+        if (!objectExists(
+                connection,
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+                FUNNEL_EVENT_TABLE,
+                TRAFFIC_SOURCE_INDEX)) {
+            executeSql(
+                    connection,
+                    "ALTER TABLE pde_funnel_event "
+                            + "ADD KEY idx_pde_funnel_product_quality_utm_session "
+                            + "(product_slug(80), traffic_quality(40), utm_source(60), utm_medium(60), "
+                            + "utm_campaign(80), utm_content(80), session_id(64), occurred_at)");
+            log.info("Índice de origem de tráfego criado no funil PDE; index={}", TRAFFIC_SOURCE_INDEX);
         }
     }
 

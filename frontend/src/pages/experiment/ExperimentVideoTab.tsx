@@ -11,6 +11,11 @@ import {
 } from "../../api/experiment/useExperimentVideoAssets";
 import { useUpdateExperimentVideoAssetReview } from "../../api/experiment/useUpdateExperimentVideoAssetReview";
 import { useExperimentVideoPerformanceDashboard } from "../../api/experiment/useExperimentVideoPerformanceDashboard";
+import { useProductPdeVersionVideos } from "../../api/product/usePdeVersionVideos";
+import type {
+  PdeVersionVideoAsset,
+  PdeVersionVideoPanel,
+} from "../../api/product/usePdeVersionVideos";
 import { useTenantContext } from "../../utils/tenantContext";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
@@ -20,6 +25,8 @@ interface ExperimentVideoTabProps {
   experiment: Experiment;
   alterationLocked?: boolean;
 }
+
+const MUSA_PRODUCT_ID = 4;
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -74,6 +81,30 @@ function resolveExperimentVideoPlaybackUrl(asset: ExperimentVideoAsset) {
   return asset.assetUrl ? resolveAssetUrl(asset.assetUrl) : "";
 }
 
+function resolvePdeVideoPlaybackUrl(
+  panel: PdeVersionVideoPanel,
+  asset: PdeVersionVideoAsset,
+) {
+  const hlsUrl = asset.hlsPlaybackUrl?.trim();
+  if (!hlsUrl) return "";
+  if (/^https?:\/\//i.test(hlsUrl)) return hlsUrl;
+
+  try {
+    return new URL(hlsUrl, panel.slot.publicUrl).toString();
+  } catch {
+    return hlsUrl;
+  }
+}
+
+function normalizeHost(value?: string | null) {
+  if (!value?.trim()) return "";
+  try {
+    return new URL(value.trim()).host.toLowerCase();
+  } catch {
+    return value.trim().replace(/^https?:\/\//i, "").split("/")[0].toLowerCase();
+  }
+}
+
 function isPdeHeroHlsReady(asset: ExperimentVideoAsset) {
   return asset.slot !== "LANDING_HERO" || Boolean(asset.hlsPlaybackUrl?.trim());
 }
@@ -124,6 +155,46 @@ function getCommercialVideoUse(asset: ExperimentVideoAsset) {
   return "Teste";
 }
 
+function findPublishedPdeVideoPanel(
+  panels: PdeVersionVideoPanel[] | undefined,
+  experiment: Experiment,
+) {
+  const experimentId = Number(experiment.id);
+  const destinationHost = normalizeHost(experiment.followUpActionUrl);
+  return panels?.find((panel) => {
+    const slotHost = normalizeHost(panel.slot.publicUrl);
+    return (
+      panel.slot.sourceExperimentId === experimentId ||
+      (Boolean(destinationHost) && destinationHost === slotHost)
+    );
+  });
+}
+
+function findPublishedPdeHeroVideo(panel?: PdeVersionVideoPanel) {
+  return panel?.videos.find(
+    (video) =>
+      video.status === "READY" &&
+      video.reviewStatus === "APPROVED" &&
+      Boolean(video.hlsPlaybackUrl?.trim()),
+  );
+}
+
+function pdeVideoIdentity(video: PdeVersionVideoAsset) {
+  if (video.id) {
+    return `asset #${video.id}`;
+  }
+  if (video.assetId) {
+    return `asset publicado #${video.assetId}`;
+  }
+  return "vídeo publicado no contrato PDE";
+}
+
+function pdeVideoCostLabel(video: PdeVersionVideoAsset) {
+  return video.assignmentSource === "PUBLISHED_CONTRACT"
+    ? "Custo não rastreável"
+    : "PDE publicado";
+}
+
 export default function ExperimentVideoTab({
   experiment,
   alterationLocked = false,
@@ -134,6 +205,11 @@ export default function ExperimentVideoTab({
   const geraSalesPagePublications = useGeraSalesPagePublications(experiment.id);
   const performanceDashboard = useExperimentVideoPerformanceDashboard(
     experiment.id,
+  );
+  const pdeVersionVideos = useProductPdeVersionVideos(
+    experiment.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
+      ? MUSA_PRODUCT_ID
+      : undefined,
   );
   const tenantContext = useTenantContext();
   const updateVideoReview = useUpdateExperimentVideoAssetReview();
@@ -194,6 +270,21 @@ export default function ExperimentVideoTab({
   const landingHeroVideoUrl = landingHeroAsset
     ? resolveExperimentVideoPlaybackUrl(landingHeroAsset)
     : "";
+  const publishedPdePanel = findPublishedPdeVideoPanel(
+    pdeVersionVideos.data,
+    experiment,
+  );
+  const publishedPdeHeroVideo = findPublishedPdeHeroVideo(publishedPdePanel);
+  const publishedPdeVideoUrl =
+    publishedPdePanel && publishedPdeHeroVideo
+      ? resolvePdeVideoPlaybackUrl(publishedPdePanel, publishedPdeHeroVideo)
+      : "";
+  const commercialPreviewUrl = landingHeroVideoUrl || publishedPdeVideoUrl;
+  const commercialPreviewSource = landingHeroVideoUrl
+    ? "EXPERIMENT_ASSET"
+    : publishedPdeVideoUrl
+      ? "PDE_PRODUCTION_SLOT"
+      : "NONE";
   const landingHeroPosterUrl = landingHeroAsset?.thumbnailUrl
     ? resolveAssetUrl(landingHeroAsset.thumbnailUrl)
     : "";
@@ -201,11 +292,17 @@ export default function ExperimentVideoTab({
     geraSalesPagePublications.data?.find((publication) =>
       Boolean(publication.salesPageUrl),
     ) ?? geraSalesPagePublications.data?.[0];
-  const salesPagePreviewUrl = buildExperimentTestUrl(
-    latestSalesPagePublication?.salesPageUrl,
-  );
+  const salesPagePreviewUrl =
+    buildExperimentTestUrl(latestSalesPagePublication?.salesPageUrl) ??
+    buildExperimentTestUrl(experiment.followUpActionUrl);
+  const salesPageLabel = latestSalesPagePublication?.publishedAt
+    ? formatDate(latestSalesPagePublication.publishedAt)
+    : experiment.followUpActionUrl
+      ? "PDE em produção pelo destino do experimento"
+      : "Sem publicação registrada";
   const productVideoUrl = "/products/4/sales-videos";
   const performance = performanceDashboard.data;
+  const publishedPdeVideosCount = publishedPdeHeroVideo ? 1 : 0;
 
   async function handleVideoReview(
     video: ExperimentVideoAsset,
@@ -253,6 +350,10 @@ export default function ExperimentVideoTab({
                 <MetricTile
                   label="Vídeos aprovados"
                   value={formatInteger(performance?.summary.approvedAssets)}
+                />
+                <MetricTile
+                  label="Vídeos PDE publicados"
+                  value={formatInteger(publishedPdeVideosCount)}
                 />
                 <MetricTile
                   label="Criativos Meta vídeo"
@@ -316,7 +417,9 @@ export default function ExperimentVideoTab({
                     ) : !performance || performance.assets.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="text-muted">
-                          Nenhum vídeo aprovado ou publicável para consolidar.
+                          {publishedPdeHeroVideo && publishedPdePanel
+                            ? `Vídeo publicado no PDE ${publishedPdePanel.slot.slotCode}: ${pdeVideoIdentity(publishedPdeHeroVideo)}, HLS aprovado, sem vínculo direto com criativo Meta vídeo.`
+                            : "Nenhum vídeo aprovado ou publicável para consolidar."}
                         </td>
                       </tr>
                     ) : (
@@ -378,9 +481,12 @@ export default function ExperimentVideoTab({
                 Revisão do vídeo principal e da página de venda publicada.
               </p>
             </div>
-            {landingHeroAsset ? (
+            {commercialPreviewSource !== "NONE" ? (
               <span className="badge text-bg-success">
-                {landingHeroAsset.slot} · {landingHeroAsset.status}
+                {commercialPreviewSource === "PDE_PRODUCTION_SLOT" &&
+                publishedPdePanel
+                  ? `PDE ${publishedPdePanel.slot.slotCode} · READY`
+                  : `${landingHeroAsset?.slot} · ${landingHeroAsset?.status}`}
               </span>
             ) : (
               <span className="badge text-bg-warning">Sem vídeo pronto</span>
@@ -390,10 +496,10 @@ export default function ExperimentVideoTab({
           <div className="row g-3">
             <div className="col-12 col-xl-5">
               <div className="experiment-video-preview-card__player-shell">
-                {landingHeroVideoUrl ? (
+                {commercialPreviewUrl ? (
                   <AdaptiveVideoPlayer
                     className="experiment-video-preview-card__player"
-                    src={landingHeroVideoUrl}
+                    src={commercialPreviewUrl}
                     fallbackSrc={
                       landingHeroAsset?.assetUrl
                         ? resolveAssetUrl(landingHeroAsset.assetUrl)
@@ -415,18 +521,31 @@ export default function ExperimentVideoTab({
                   </div>
                 )}
               </div>
-              {landingHeroAsset && (
+              {(landingHeroAsset || publishedPdeHeroVideo) && (
                 <div className="experiment-video-preview-card__meta mt-3">
-                  <span>{landingHeroAsset.reviewStatus}</span>
-                  <span>{formatUsd(landingHeroAsset.cost)}</span>
                   <span>
-                    {landingHeroAsset.durationSeconds
-                      ? `${landingHeroAsset.durationSeconds}s`
+                    {landingHeroAsset?.reviewStatus ??
+                      publishedPdeHeroVideo?.reviewStatus}
+                  </span>
+                  <span>
+                    {landingHeroAsset
+                      ? formatUsd(landingHeroAsset.cost)
+                      : publishedPdeHeroVideo
+                        ? pdeVideoCostLabel(publishedPdeHeroVideo)
+                        : "PDE publicado"}
+                  </span>
+                  <span>
+                    {(landingHeroAsset?.durationSeconds ??
+                    publishedPdeHeroVideo?.durationSeconds)
+                      ? `${landingHeroAsset?.durationSeconds ?? publishedPdeHeroVideo?.durationSeconds}s`
                       : "Duração não registrada"}
                   </span>
-                  {landingHeroVideoUrl && (
+                  {publishedPdePanel && (
+                    <span>{publishedPdePanel.slot.publicUrl}</span>
+                  )}
+                  {commercialPreviewUrl && (
                     <a
-                      href={landingHeroVideoUrl}
+                      href={commercialPreviewUrl}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -443,9 +562,7 @@ export default function ExperimentVideoTab({
                   <div>
                     <div className="fw-semibold">Página de venda</div>
                     <div className="text-muted small">
-                      {latestSalesPagePublication?.publishedAt
-                        ? formatDate(latestSalesPagePublication.publishedAt)
-                        : "Sem publicação registrada"}
+                      {salesPageLabel}
                     </div>
                   </div>
                   {salesPagePreviewUrl && (

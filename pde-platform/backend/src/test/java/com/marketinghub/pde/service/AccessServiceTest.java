@@ -416,6 +416,55 @@ class AccessServiceTest {
         assertThat(summary.events()).isEmpty();
     }
 
+    /** Confirma que falha em breakdown auxiliar não derruba os KPIs principais do analytics. */
+    @Test
+    void keepsMainAnalyticsSummaryWhenOptionalBreakdownFails() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_partial_analytics;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPartialPdeFunnelEventSchema(jdbcUrl);
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT INTO pde_funnel_event (
+                      event_id, product_slug, experience_version, event_type, traffic_quality,
+                      session_id, visitor_id, visible_ms, occurred_at
+                    )
+                    VALUES (
+                      'event-partial-1', 'metodo-musa-7-dias', 'musa-pde-entry-v7-espelho-antes-de-sair',
+                      'PAGE_VIEW', 'HUMAN', 'session-partial-1', 'visitor-partial-1', 3200,
+                      TIMESTAMP '2026-07-30 12:00:00'
+                    )
+                    """);
+        }
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isEqualTo(1);
+        assertThat(summary.sessions()).isEqualTo(1);
+        assertThat(summary.pageViews()).isEqualTo(1);
+        assertThat(summary.events()).singleElement().satisfies(event -> {
+            assertThat(event.eventType()).isEqualTo("PAGE_VIEW");
+            assertThat(event.total()).isEqualTo(1);
+        });
+        assertThat(summary.experienceVersions())
+                .singleElement()
+                .satisfies(version -> assertThat(version.experienceVersion())
+                        .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair"));
+        assertThat(summary.trafficSources()).isEmpty();
+        assertThat(summary.recentJourneys()).isEmpty();
+    }
+
     /** Confirma que o resumo analítico expõe dispositivo e resolução gravados pelos eventos do PDE. */
     @Test
     void summarizesDeviceAndScreenSizeAnalyticsFromJdbcEvents() throws SQLException {
@@ -962,6 +1011,52 @@ class AccessServiceTest {
                 "test",
                 null,
                 Map.of())));
+    }
+
+    /** Cria schema parcial para provar que breakdown auxiliar quebrado não impede o resumo principal. */
+    private static void createPartialPdeFunnelEventSchema(String jdbcUrl) throws SQLException {
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TABLE pde_access_grant (
+                      token VARCHAR(120) PRIMARY KEY,
+                      product_slug VARCHAR(120) NOT NULL,
+                      email VARCHAR(191) NOT NULL,
+                      source VARCHAR(80) NOT NULL,
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_access_mission_completion (
+                      access_token VARCHAR(120) NOT NULL,
+                      mission_id VARCHAR(120) NOT NULL,
+                      completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_access_mission_interaction_answer (
+                      access_token VARCHAR(120) NOT NULL,
+                      mission_id VARCHAR(120) NOT NULL,
+                      question_key VARCHAR(120) NOT NULL,
+                      answer_text TEXT,
+                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_funnel_event (
+                      id BIGINT AUTO_INCREMENT,
+                      event_id VARCHAR(64) PRIMARY KEY,
+                      product_slug VARCHAR(120) NOT NULL,
+                      experience_version VARCHAR(80),
+                      event_type VARCHAR(80) NOT NULL,
+                      traffic_quality VARCHAR(40),
+                      session_id VARCHAR(64),
+                      visitor_id VARCHAR(64),
+                      visible_ms BIGINT,
+                      occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+        }
     }
 
     /** Cria a tabela mínima de eventos PDE usada pelas consultas analíticas do serviço. */

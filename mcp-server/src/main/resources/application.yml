@@ -41,10 +41,10 @@ mcp:
   server-name: ${MCP_SERVER_NAME:marketing-hub-mcp}
   server-version: ${MCP_SERVER_VERSION:1.0.0}
   logs:
-    backend-path: ${MCP_LOG_BACKEND_PATH:http://191.252.120.96:4567/worker-observability/logfile}
-    ai-worker-path: ${MCP_LOG_AI_WORKER_PATH:http://191.252.120.96:4567/worker-observability/logfile}
+    backend-path: ${MCP_LOG_BACKEND_PATH:http://191.252.210.83:4567/worker-observability/logfile}
+    ai-worker-path: ${MCP_LOG_AI_WORKER_PATH:http://191.252.210.83:4567/worker-observability/logfile}
     lead-portal-path: ${MCP_LOG_LEAD_PORTAL_PATH:http://191.252.120.96:8082/public/runtime-logs/tail?lines=300}
-    facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:http://191.252.120.96:8082/public/runtime-logs/tail?lines=300}
+    facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:http://191.252.210.83:8082/public/runtime-logs/tail?lines=300}
     email-service-path: ${MCP_LOG_EMAIL_SERVICE_PATH:http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log}
     lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:http://163.245.200.7:8092/api/v1/logs/runtime?lines=200}
     mds-path: ${MCP_LOG_MDS_PATH:http://177.153.62.107:8091/actuator/logfile}

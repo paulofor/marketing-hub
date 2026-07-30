@@ -30,6 +30,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement trafficQualityReasonColumnStatement = existingObjectStatement(false);
         PreparedStatement trafficProviderColumnStatement = existingObjectStatement(false);
         PreparedStatement trafficQualityIndexStatement = existingObjectStatement(false);
+        PreparedStatement trafficSourceIndexStatement = existingObjectStatement(false);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(false);
         PreparedStatement operationalFailureTableStatement = existingObjectStatement(true);
         Statement ddlStatement = mock(Statement.class);
@@ -44,6 +45,7 @@ class PdeDatabaseMigrationServiceTest {
                         trafficQualityReasonColumnStatement,
                         trafficProviderColumnStatement,
                         trafficQualityIndexStatement,
+                        trafficSourceIndexStatement,
                         aiGuidanceTableStatement,
                         operationalFailureTableStatement);
         when(connection.createStatement()).thenReturn(ddlStatement);
@@ -73,6 +75,11 @@ class PdeDatabaseMigrationServiceTest {
                 "ALTER TABLE pde_funnel_event "
                         + "ADD KEY idx_pde_funnel_product_quality_time "
                         + "(product_slug(100), traffic_quality(40), occurred_at)");
+        ddlOrder.verify(ddlStatement).executeUpdate(
+                "ALTER TABLE pde_funnel_event "
+                        + "ADD KEY idx_pde_funnel_product_quality_utm_session "
+                        + "(product_slug(80), traffic_quality(40), utm_source(60), utm_medium(60), "
+                        + "utm_campaign(80), utm_content(80), session_id(64), occurred_at)");
     }
 
     /** Confirma que a migração não executa DDL quando o schema já está atualizado. */
@@ -88,6 +95,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement trafficQualityReasonColumnStatement = existingObjectStatement(true);
         PreparedStatement trafficProviderColumnStatement = existingObjectStatement(true);
         PreparedStatement trafficQualityIndexStatement = existingObjectStatement(true);
+        PreparedStatement trafficSourceIndexStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
@@ -103,6 +111,7 @@ class PdeDatabaseMigrationServiceTest {
                         trafficQualityReasonColumnStatement,
                         trafficProviderColumnStatement,
                         trafficQualityIndexStatement,
+                        trafficSourceIndexStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,
@@ -128,6 +137,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement trafficQualityReasonColumnStatement = existingObjectStatement(true);
         PreparedStatement trafficProviderColumnStatement = existingObjectStatement(true);
         PreparedStatement trafficQualityIndexStatement = existingObjectStatement(true);
+        PreparedStatement trafficSourceIndexStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(true);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(40);
@@ -144,6 +154,7 @@ class PdeDatabaseMigrationServiceTest {
                         trafficQualityReasonColumnStatement,
                         trafficProviderColumnStatement,
                         trafficQualityIndexStatement,
+                        trafficSourceIndexStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,
@@ -174,6 +185,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement trafficQualityReasonColumnStatement = existingObjectStatement(true);
         PreparedStatement trafficProviderColumnStatement = existingObjectStatement(true);
         PreparedStatement trafficQualityIndexStatement = existingObjectStatement(true);
+        PreparedStatement trafficSourceIndexStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(true);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(36);
@@ -190,6 +202,7 @@ class PdeDatabaseMigrationServiceTest {
                         trafficQualityReasonColumnStatement,
                         trafficProviderColumnStatement,
                         trafficQualityIndexStatement,
+                        trafficSourceIndexStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,
@@ -220,6 +233,7 @@ class PdeDatabaseMigrationServiceTest {
         PreparedStatement trafficQualityReasonColumnStatement = existingObjectStatement(true);
         PreparedStatement trafficProviderColumnStatement = existingObjectStatement(true);
         PreparedStatement trafficQualityIndexStatement = existingObjectStatement(true);
+        PreparedStatement trafficSourceIndexStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceTableStatement = existingObjectStatement(true);
         PreparedStatement aiGuidanceFkStatement = existingObjectStatement(false);
         PreparedStatement accessTokenLengthStatement = columnLengthStatement(120);
@@ -236,6 +250,7 @@ class PdeDatabaseMigrationServiceTest {
                         trafficQualityReasonColumnStatement,
                         trafficProviderColumnStatement,
                         trafficQualityIndexStatement,
+                        trafficSourceIndexStatement,
                         aiGuidanceTableStatement,
                         aiGuidanceFkStatement,
                         accessTokenLengthStatement,

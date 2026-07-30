@@ -25,6 +25,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -77,11 +78,18 @@ public class PostDeployMonitorService {
     PostDeployMetaAdsSummaryDto metaAds = toMetaAdsSummary(metric);
     List<PostDeployPdeProductionSlotDto> pdeProductionSlots =
         pdeProductionSlotService.listProductionSlotsForProduct(resolvedProductSlug);
+    PostDeployPdeProductionSlotDto monitoredSlot =
+        resolveMonitoredSlot(experiment, pdeProductionSlots);
     String monitoredExperienceVersion =
-        resolveMonitoredExperienceVersion(experimentId, pdeProductionSlots);
+        monitoredSlot != null ? monitoredSlot.experienceVersion() : null;
+    String monitoredPublicUrl = monitoredSlot != null ? monitoredSlot.publicUrl() : null;
     boolean campaignTrafficActive = hasCampaignTraffic(metaAds);
     PostDeployPdeSummaryDto pde =
-        fetchPdeSummary(resolvedProductSlug, monitoredExperienceVersion, campaignTrafficActive);
+        fetchPdeSummary(
+            resolvedProductSlug,
+            monitoredExperienceVersion,
+            monitoredPublicUrl,
+            campaignTrafficActive);
     PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
     List<String> alerts = buildAlerts(metaAds, pde, logs);
     PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
@@ -171,14 +179,18 @@ public class PostDeployMonitorService {
 
   /** Consulta o PDE e retorna um resumo indisponível quando houver falha técnica. */
   private PostDeployPdeSummaryDto fetchPdeSummary(
-      String productSlug, String monitoredExperienceVersion, boolean campaignTrafficActive) {
+      String productSlug,
+      String monitoredExperienceVersion,
+      String monitoredPublicUrl,
+      boolean campaignTrafficActive) {
     try {
-      PdeAnalyticsSummary summary = pdeAnalyticsClient.fetchSummary(productSlug);
+      PdeAnalyticsSummary summary = pdeAnalyticsClient.fetchSummary(productSlug, monitoredPublicUrl);
       return toPdeSummary(summary, monitoredExperienceVersion, campaignTrafficActive);
     } catch (Exception ex) {
       log.error(
-          "Falha ao consultar analytics PDE no monitor pós-deploy; productSlug={}",
+          "Falha ao consultar analytics PDE no monitor pós-deploy; productSlug={}, monitoredPublicUrl={}",
           productSlug,
+          monitoredPublicUrl,
           ex);
       return new PostDeployPdeSummaryDto(
           false,
@@ -222,18 +234,46 @@ public class PostDeployMonitorService {
     }
   }
 
-  /** Resolve a versão PDE que o experimento deve monitorar a partir do slot vinculado. */
-  private String resolveMonitoredExperienceVersion(
-      Long experimentId, List<PostDeployPdeProductionSlotDto> pdeProductionSlots) {
+  /** Resolve o slot PDE que o experimento deve monitorar a partir do vínculo e da URL de destino. */
+  private PostDeployPdeProductionSlotDto resolveMonitoredSlot(
+      Experiment experiment, List<PostDeployPdeProductionSlotDto> pdeProductionSlots) {
     if (pdeProductionSlots == null) {
       return null;
     }
+    Long experimentId = experiment.getId();
     return pdeProductionSlots.stream()
         .filter(slot -> experimentId.equals(slot.sourceExperimentId()))
-        .map(PostDeployPdeProductionSlotDto::experienceVersion)
-        .filter(StringUtils::hasText)
+        .findFirst()
+        .orElseGet(() -> resolveMonitoredSlotByDestination(experiment, pdeProductionSlots));
+  }
+
+  /** Resolve o slot PDE pelo host da URL de destino quando o vínculo de origem ainda não existe. */
+  private PostDeployPdeProductionSlotDto resolveMonitoredSlotByDestination(
+      Experiment experiment, List<PostDeployPdeProductionSlotDto> pdeProductionSlots) {
+    String destinationHost = normalizeHost(experiment.getFollowUpActionUrl());
+    if (!StringUtils.hasText(destinationHost)) {
+      return null;
+    }
+    return pdeProductionSlots.stream()
+        .filter(slot -> destinationHost.equals(normalizeHost(slot.publicUrl())))
         .findFirst()
         .orElse(null);
+  }
+
+  /** Normaliza host de URL produtiva para comparar destino do anúncio e slot PDE. */
+  private String normalizeHost(String value) {
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    try {
+      String host = URI.create(value.trim()).getHost();
+      if (StringUtils.hasText(host)) {
+        return host.toLowerCase(Locale.ROOT);
+      }
+    } catch (Exception ex) {
+      log.warn("Falha ao normalizar host de URL PDE; value={}", value, ex);
+    }
+    return value.trim().replaceFirst("(?i)^https?://", "").split("/")[0].toLowerCase(Locale.ROOT);
   }
 
   /** Converte o contrato do PDE em métricas comerciais específicas do painel. */
@@ -341,6 +381,8 @@ public class PostDeployMonitorService {
                     version.sessions(),
                     version.pdeEntries(),
                     version.presenceMapClicks() + version.diagnosticClicks(),
+                    version.videoPartial(),
+                    version.videoComplete(),
                     version.loginStarted(),
                     version.paywallViewed(),
                     version.subscriptionClicked() + version.checkoutStarted(),
@@ -365,6 +407,8 @@ public class PostDeployMonitorService {
                     source.sessions(),
                     source.pdeEntries(),
                     source.firstInteractionClicks(),
+                    source.videoPartial(),
+                    source.videoComplete(),
                     source.loginStarted(),
                     source.paywallViewed(),
                     source.checkoutStarted(),

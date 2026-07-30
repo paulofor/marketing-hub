@@ -181,6 +181,53 @@ class PdeProductionSlotServiceTest {
     assertThat(response.get(1).alerts()).hasSize(1);
   }
 
+  /** Deve listar vídeo HLS publicado no contrato PDE mesmo sem ativo persistido do experimento. */
+  @Test
+  void listsPublishedContractHeroVideoWithoutExperimentAsset() {
+    PdeProductionSlot v6 =
+        PdeProductionSlot.builder()
+            .id(4L)
+            .slotCode("v6")
+            .productSlug("metodo-musa-7-dias")
+            .domain("v6.clubemusa.com.br")
+            .publicUrl("https://v6.clubemusa.com.br")
+            .experienceVersion("musa-pde-entry-v6-video-motivacional")
+            .targetEnvironment("production-v6")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .sourceExperimentId(76L)
+            .publishedExperienceJson(
+                """
+                {
+                  "heroVideos": [{
+                    "source": "MARKETING_HUB_MANAGED_HLS",
+                    "status": "READY",
+                    "reviewStatus": "APPROVED",
+                    "assetId": 1935,
+                    "salesVideoJobId": 20462,
+                    "salesVideoProfileId": 35,
+                    "hlsPlaybackUrl": "/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8"
+                  }]
+                }
+                """)
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugOrderBySlotCodeAsc("metodo-musa-7-dias"))
+        .thenReturn(List.of(v6));
+    when(videoAssetRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of());
+
+    var response = service.listProductionSlotVideosForProduct("metodo-musa-7-dias");
+
+    assertThat(response).hasSize(1);
+    assertThat(response.getFirst().slot().slotCode()).isEqualTo("v6");
+    assertThat(response.getFirst().videos()).hasSize(1);
+    assertThat(response.getFirst().videos().getFirst().assignmentSource())
+        .isEqualTo("PUBLISHED_CONTRACT");
+    assertThat(response.getFirst().videos().getFirst().assetId()).isEqualTo(1935L);
+    assertThat(response.getFirst().videos().getFirst().experimentId()).isEqualTo(76L);
+  }
+
   /** Deve reprovar slot produtivo quando o health público não confirma a aplicação. */
   @Test
   void recordsFailedValidationWhenPublicHealthDoesNotRespondUp() throws Exception {

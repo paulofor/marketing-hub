@@ -18,13 +18,18 @@ type SlotDiagnostics = {
   knownPointedDomains?: { host?: string; observedAddress?: string; role?: string; experienceVersion?: string }[];
 };
 
+type PublicProductContract = {
+  publicFirstFold?: {
+    headline?: string;
+    videoCtaLabel?: string;
+  };
+};
+
 const defaultContract: Required<PublicHealthContract> = {
   slug: 'metodo-musa-7-dias',
   healthPath: '/',
   requiredTexts: [
-    'Você se arruma, mas ainda sente que falta presença?',
     'Seu primeiro ajuste MUSA',
-    'Ver meu primeiro ajuste MUSA',
   ],
   forbiddenTexts: [
     'Application error',
@@ -59,6 +64,38 @@ async function loadContract(request: APIRequestContext) {
   };
 }
 
+async function loadPublishedFirstFoldTexts(request: APIRequestContext, slug: string, diagnostics: SlotDiagnostics) {
+  const searchParams = new URLSearchParams();
+  if (diagnostics.slot) {
+    searchParams.set('slotCode', diagnostics.slot);
+  }
+  if (diagnostics.experienceVersion) {
+    searchParams.set('experienceVersion', diagnostics.experienceVersion);
+  }
+  const query = searchParams.toString();
+  const response = await request.get(`/api/pde/products/${slug}${query ? `?${query}` : ''}`);
+  if (!response.ok()) {
+    return [];
+  }
+
+  const product = (await response.json()) as PublicProductContract;
+  return [product.publicFirstFold?.headline, product.publicFirstFold?.videoCtaLabel]
+    .map((item) => item?.trim())
+    .filter((item): item is string => Boolean(item));
+}
+
+function removeMutableFallbackTexts(requiredTexts: string[], publishedFirstFoldTexts: string[]) {
+  if (publishedFirstFoldTexts.length === 0) {
+    return requiredTexts;
+  }
+
+  const mutableFallbackTexts = new Set([
+    'Você se arruma, mas ainda sente que falta presença?',
+    'Ver meu primeiro ajuste MUSA',
+  ]);
+  return requiredTexts.filter((text) => !mutableFallbackTexts.has(text));
+}
+
 test('health publico renderiza app, javascript e texto comercial', async ({ page, request }) => {
   const pageErrors: string[] = [];
   const contract = await loadContract(request);
@@ -82,12 +119,14 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
   expect(diagnostics.knownPointedDomains?.map((domain) => domain.host)).toEqual(
     expect.arrayContaining(['v5.clubemusa.com.br', 'v6.clubemusa.com.br', 'v7.clubemusa.com.br']),
   );
+  const publishedFirstFoldTexts = await loadPublishedFirstFoldTexts(request, contract.slug, diagnostics);
+  const staticRequiredTexts = removeMutableFallbackTexts(contract.requiredTexts, publishedFirstFoldTexts);
 
   const response = await page.goto(contract.healthPath, { waitUntil: 'networkidle' });
   expect(response?.ok()).toBeTruthy();
 
   await expect(page.locator('#root').locator(':scope > *').first()).toBeVisible();
-  for (const text of contract.requiredTexts) {
+  for (const text of [...publishedFirstFoldTexts, ...staticRequiredTexts]) {
     await expect(page.locator('body'), `Texto obrigatorio ausente no PDE ${contract.slug}: ${text}`).toContainText(text);
   }
   const publicBodyText = await page.locator('body').innerText();

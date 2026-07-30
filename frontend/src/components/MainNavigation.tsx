@@ -5,6 +5,7 @@ import {
   BarChart3,
   ClipboardCheck,
   BadgeCheck,
+  Clapperboard,
   Flag,
   Package,
   PanelLeftClose,
@@ -160,6 +161,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/creative-video-review",
         label: "Aprovar vídeos",
         icon: BadgeCheck,
+      },
+      {
+        to: "/pde-video-production",
+        label: "Produção de Vídeo PDE",
+        icon: Clapperboard,
       },
       {
         to: "/social-distribution",

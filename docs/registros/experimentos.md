@@ -6404,3 +6404,9 @@
 - ajuste preparado: o monitor pós-deploy passa a priorizar o slot PDE vinculado ao experimento ou ao destino do anúncio, consulta analytics pela URL pública correta, expõe métricas de vídeo parcial/completo por versão e UTM, e a aba Vídeo reconhece HLS publicado no contrato do slot mesmo sem asset direto do experimento.
 - prevenção: testes cobrem a seleção da v6 quando v5 também está ativa e o fallback de vídeo publicado no contrato PDE sem ativo persistido do experimento.
 - impacto comercial esperado: preservar métricas de acesso, consumo de página, consumo de vídeo e tempo de sessão da campanha ativa, evitando decisão de pausa/escala baseada em versão errada ou em ausência falsa de vídeo.
+# 2026-07-30 — Tela de Produção de Vídeo PDE
+
+- Criado no Marketing Hub o item de menu **Produção de Vídeo PDE** para organizar o processo comercial de vídeos interativos por capítulos.
+- A tela documenta o fluxo: briefing científico-comercial, roteiro por cena, storyboard/prompt, geração, controle de qualidade, aprovação humana, vinculação ao PDE versionado, métricas e aprendizado.
+- Direção comercial aplicada ao MUSA: começar com 5 capítulos curtos para transformar conceitos científicos em desejo, prova visual e avanço para diagnóstico/paywall antes de escalar produção premium.
+- Evolução aplicada: a tela passou a explicitar 3 gates de decisão para impedir avanço por gosto visual: hipótese antes de gerar, qualidade comercial antes de aprovar e performance depois de publicar.

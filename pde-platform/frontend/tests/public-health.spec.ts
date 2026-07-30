@@ -15,6 +15,7 @@ type SlotDiagnostics = {
   image?: string;
   imageTag?: string;
   commitSha?: string;
+  knownPointedDomains?: { host?: string; observedAddress?: string; role?: string; experienceVersion?: string }[];
 };
 
 const defaultContract: Required<PublicHealthContract> = {
@@ -76,11 +77,17 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
   expect(diagnostics.slot).toBeTruthy();
   expect(diagnostics.image).toBeTruthy();
   expect(diagnostics.commitSha).toBeTruthy();
+  expect(diagnostics.knownPointedDomains?.map((domain) => domain.host)).toEqual(
+    expect.arrayContaining(['v5.clubemusa.com.br', 'v6.clubemusa.com.br', 'v7.clubemusa.com.br']),
+  );
 
   const response = await page.goto(contract.healthPath, { waitUntil: 'networkidle' });
   expect(response?.ok()).toBeTruthy();
 
   await expect(page.locator('#root').locator(':scope > *').first()).toBeVisible();
+  await expect(page.getByLabel('Domínios publicados do Clube MUSA')).toContainText('v5.clubemusa.com.br');
+  await expect(page.getByLabel('Domínios publicados do Clube MUSA')).toContainText('v6.clubemusa.com.br');
+  await expect(page.getByLabel('Domínios publicados do Clube MUSA')).toContainText('v7.clubemusa.com.br');
   for (const text of contract.requiredTexts) {
     await expect(page.locator('body'), `Texto obrigatorio ausente no PDE ${contract.slug}: ${text}`).toContainText(text);
   }

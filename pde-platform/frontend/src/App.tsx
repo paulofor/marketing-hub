@@ -6,6 +6,7 @@ import {
   fallbackProduct,
   isMusaDesireRoadExperience,
   isMusaVideoExplainerExperience,
+  MUSA_POINTED_DOMAINS,
   type ProductExperience,
   resolveHeroVideoUrl,
   resolveMusaExperienceContract,
@@ -1717,6 +1718,28 @@ function App() {
             <h1>Descubra o detalhe que está tirando elegância do seu look, sem comprar roupa nova.</h1>
             <p>Assista à prévia MUSA, responda 4 escolhas rápidas sobre seu espelho e receba um primeiro ajuste de presença para testar hoje.</p>
           </div>
+
+          <section className="public-domain-strip" aria-label="Domínios publicados do Clube MUSA">
+            <div>
+              <p className="section-kicker">Domínios conhecidos apontados</p>
+              <strong>Slots versionados do Clube MUSA</strong>
+            </div>
+            <div className="public-domain-list">
+              {MUSA_POINTED_DOMAINS.map((domain) => (
+                <a
+                  key={domain.host}
+                  className={`${domain.role} ${window.location.hostname === domain.host ? 'current' : ''}`}
+                  href={domain.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`${domain.host} aponta para ${domain.observedAddress}`}
+                >
+                  <span>{domain.host}</span>
+                  <small>{window.location.hostname === domain.host ? 'Atual' : domain.label}</small>
+                </a>
+              ))}
+            </div>
+          </section>
 
           {showPublicDiagnosticVideoHero && (
             <section

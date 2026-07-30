@@ -280,6 +280,10 @@ jobs:
               *) echo 'Slot frontend PDE invalido: ${PDE_DEPLOY_FRONTEND_SLOT}' >&2; exit 1 ;; \
             esac \
             && docker compose -f docker-compose.deploy.yml pull pde-platform-backend pde-ai-worker \${FRONTEND_SERVICES} \
+            && cleanup_published_port() { port=\"\$1\"; containers=\"\$(docker ps --filter \"publish=\${port}\" --format '{{.Names}}' || true)\"; if [ -n \"\${containers}\" ]; then echo \"Removendo containers que publicam porta \${port}: \${containers}\"; docker rm -f \${containers} >/dev/null 2>&1 || true; fi; } \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V5_PORT}'; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V6_PORT}'; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V7_PORT}'; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend pde-platform-frontend-v5 >/dev/null 2>&1 || true; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend-v6 >/dev/null 2>&1 || true; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend-v7 >/dev/null 2>&1 || true; fi \

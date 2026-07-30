@@ -101,6 +101,15 @@ export type MusaExperienceContract = {
   videoPlacements: string[];
 };
 
+export type MusaPointedDomain = {
+  host: string;
+  url: string;
+  observedAddress: string;
+  label: string;
+  role: 'active' | 'legacy' | 'reserved';
+  experienceVersion: string;
+};
+
 export const MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION = 'musa-pde-entry-v5-video-explicativo';
 export const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION = 'musa-pde-entry-v6-video-motivacional';
 export const MUSA_V7_EXPERIENCE_VERSION = 'musa-pde-entry-v7-espelho-antes-de-sair';
@@ -248,6 +257,73 @@ MUSA_V7_RESERVED_HOSTS.forEach((host) => {
 MUSA_V5_LEGACY_HOSTS.forEach((host) => {
   MUSA_VERSIONED_HOSTS[host] = MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION;
 });
+
+export const MUSA_POINTED_DOMAINS: MusaPointedDomain[] = [
+  {
+    host: 'v1.clubemusa.com.br',
+    url: 'https://v1.clubemusa.com.br',
+    observedAddress: '163.245.200.7',
+    label: 'Legado v5',
+    role: 'legacy',
+    experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+  },
+  {
+    host: 'v2.clubemusa.com.br',
+    url: 'https://v2.clubemusa.com.br',
+    observedAddress: '163.245.200.7',
+    label: 'Legado v5',
+    role: 'legacy',
+    experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+  },
+  {
+    host: 'v5.clubemusa.com.br',
+    url: 'https://v5.clubemusa.com.br',
+    observedAddress: '163.245.200.7',
+    label: 'Campanha v5',
+    role: 'active',
+    experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
+  },
+  {
+    host: 'v6.clubemusa.com.br',
+    url: 'https://v6.clubemusa.com.br',
+    observedAddress: '163.245.200.7',
+    label: 'Campanha v6',
+    role: 'active',
+    experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
+  },
+  {
+    host: 'v7.clubemusa.com.br',
+    url: 'https://v7.clubemusa.com.br',
+    observedAddress: '163.245.200.7',
+    label: 'Campanha v7',
+    role: 'active',
+    experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
+  },
+  {
+    host: 'v8.clubemusa.com.br',
+    url: 'https://v8.clubemusa.com.br',
+    observedAddress: '163.245.200.7',
+    label: 'Reservado v7',
+    role: 'reserved',
+    experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
+  },
+  {
+    host: 'v9.clubemusa.com.br',
+    url: 'https://v9.clubemusa.com.br',
+    observedAddress: '163.245.200.7',
+    label: 'Reservado v7',
+    role: 'reserved',
+    experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
+  },
+  {
+    host: 'v10.clubemusa.com.br',
+    url: 'https://v10.clubemusa.com.br',
+    observedAddress: '163.245.200.7',
+    label: 'Reservado v7',
+    role: 'reserved',
+    experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
+  },
+];
 
 export const fallbackProduct: ProductExperience = {
   slug: 'metodo-musa-7-dias',

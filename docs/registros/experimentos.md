@@ -1,3 +1,10 @@
+## 2026-07-30 — Experimento 76: jornadas PDE protegidas contra ordenação pesada
+
+- causa-raiz complementar: mesmo com o resumo principal protegido, a consulta de jornadas recentes ainda podia exigir agrupamento/ordenação por sessão sem índice composto adequado no MySQL 5.7.
+- problema comercial: a tela poderia continuar perdendo o diagnóstico de abandono pós-clique, impedindo separar clique barato, sessão real, vídeo, primeira interação e checkout.
+- ajuste preparado: as jornadas recentes do analytics PDE passaram a considerar apenas tráfego humano elegível e o schema operacional ganhou índice idempotente por produto, qualidade, sessão e horário.
+- prevenção: testes do backend PDE validam o novo índice e impedem que robôs/crawlers voltem a aparecer nas jornadas comerciais usadas para decisão de campanha.
+
 ## 2026-07-30 — Experimento 76: analytics PDE deixa de cair por breakdown de UTM
 
 - causa-raiz confirmada no backend PDE: o resumo `/api/pde/access/analytics/metodo-musa-7-dias/summary` podia retornar erro 500 quando o breakdown de origem de tráfego exigia ordenação pesada no MySQL 5.7.

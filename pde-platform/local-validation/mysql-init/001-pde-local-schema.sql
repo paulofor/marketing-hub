@@ -67,6 +67,9 @@ CREATE TABLE IF NOT EXISTS pde_funnel_event (
     product_slug(80), traffic_quality(40), utm_source(60), utm_medium(60),
     utm_campaign(80), utm_content(80), session_id(64), occurred_at
   ),
+  KEY idx_pde_funnel_product_quality_session_time (
+    product_slug(80), traffic_quality(40), session_id(64), occurred_at
+  ),
   KEY idx_pde_funnel_product_event_time (product_slug, event_type, occurred_at),
   KEY idx_pde_funnel_session_time (session_id, occurred_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

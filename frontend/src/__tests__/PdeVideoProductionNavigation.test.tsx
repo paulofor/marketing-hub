@@ -44,25 +44,43 @@ describe("pde video production navigation", () => {
     expect(
       screen.getByRole("heading", { name: /produção de vídeo pde/i }),
     ).toBeTruthy();
-    expect(screen.getByText(/briefing científico-comercial/i)).toBeTruthy();
-    expect(screen.getByText(/roteiro por cena/i)).toBeTruthy();
-    expect(screen.getByText(/storyboard e prompt visual/i)).toBeTruthy();
-    expect(screen.getByText(/geração do vídeo/i)).toBeTruthy();
-    expect(screen.getByText(/controle de qualidade/i)).toBeTruthy();
-    expect(screen.getByText(/aprovação humana/i)).toBeTruthy();
-    expect(screen.getByText(/vinculação ao pde versionado/i)).toBeTruthy();
-    expect(screen.getByText(/métricas por etapa/i)).toBeTruthy();
-    expect(screen.getByText(/gate de hipótese/i)).toBeTruthy();
-    expect(screen.getByText(/gate de qualidade comercial/i)).toBeTruthy();
-    expect(screen.getByText(/gate de performance/i)).toBeTruthy();
-    expect(screen.getByText(/antes de gerar/i)).toBeTruthy();
-    expect(screen.getByText(/antes de aprovar/i)).toBeTruthy();
-    expect(screen.getByText(/depois de publicar/i)).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /aprendizado/i })).toBeTruthy();
+    expect(screen.getByText(/cockpit por produto/i)).toBeTruthy();
+    expect(screen.getByLabelText(/produto pde/i)).toBeTruthy();
     expect(
-      screen.getByRole("link", { name: /estúdio de áudio e vídeo/i }),
+      screen.getByRole("heading", { name: /cockpit do produto pde/i }),
     ).toBeTruthy();
-    expect(screen.getByText(/diagnóstico iniciado/i)).toBeTruthy();
-    expect(screen.getAllByText(/compra/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/^Abertura$/i)).toBeTruthy();
+    expect(screen.getByText(/^Prova$/i)).toBeTruthy();
+    expect(screen.getByText(/^Mecanismo$/i)).toBeTruthy();
+    expect(screen.getByText(/^Objecao$/i)).toBeTruthy();
+    expect(screen.getByText(/^CTA$/i)).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /briefing comercial/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /roteiro e cenas/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /storyboard e prompts/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /geracao e variacoes/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByRole("heading", { name: /qualidade comercial/i }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("heading", { name: /vinculo ao pde/i }),
+    ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /distribuicao/i })).toBeTruthy();
+    expect(
+      screen.getAllByRole("heading", { name: /aprendizado por metrica/i })
+        .length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /abrir estudio/i })).toBeTruthy();
+    expect(screen.getAllByText(/hls pronto para pde/i).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getAllByText(/compras/i).length).toBeGreaterThan(0);
   });
 });

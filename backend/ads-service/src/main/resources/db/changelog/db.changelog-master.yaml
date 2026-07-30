@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-30-pde-official-host-slug-correction.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-30-pde-official-host-163.yaml
       relativeToChangelogFile: true
   - include:

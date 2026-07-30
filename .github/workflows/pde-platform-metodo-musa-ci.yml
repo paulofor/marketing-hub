@@ -280,7 +280,9 @@ jobs:
               *) echo 'Slot frontend PDE invalido: ${PDE_DEPLOY_FRONTEND_SLOT}' >&2; exit 1 ;; \
             esac \
             && docker compose -f docker-compose.deploy.yml pull pde-platform-backend pde-ai-worker \${FRONTEND_SERVICES} \
-            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend pde-platform-frontend-v5 >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend-v6 >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend-v7 >/dev/null 2>&1 || true; fi \
             && (docker rm -f pde-platform-backend pde-ai-worker >/dev/null 2>&1 || true) \
             && (docker compose -f docker-compose.deploy.yml up -d pde-platform-backend pde-ai-worker \${FRONTEND_SERVICES} || ( \
               echo 'Falha ao publicar PDE Platform. Coletando diagnostico dos containers.' >&2; \

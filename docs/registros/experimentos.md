@@ -1,3 +1,10 @@
+## 2026-07-30 — Clube MUSA: deploy limpa containers por slot
+
+- causa-raiz operacional confirmada no workflow de producao: o build e o push das imagens do PDE MUSA concluiam, mas a publicacao com `frontend_slot=all` falhava porque um container anterior do slot `v6` mantinha a porta `5177` ocupada.
+- problema comercial: porta direta respondendo com instancia antiga cria falso positivo operacional, impede publicar a experiencia correta e pode contaminar a leitura de campanha por `experienceVersion`.
+- foi feito: o workflow `CI - PDE Platform Metodo MUSA` passou a remover explicitamente o container do slot selecionado (`v5`, `v6`, `v7` ou `all`) antes do `docker compose up`, preservando deploy parcial sem derrubar slot nao solicitado.
+- prevencao: a validacao pos-deploy continua conferindo `/slot-diagnostics.json` por porta e por HTTPS publico, garantindo commit, imagem e `experienceVersion` do slot antes de liberar trafego.
+
 ## 2026-07-29 — Experimento 76: anúncios passam a ser lidos como ativo do produto
 
 - causa-raiz confirmada no código: a aba Criativos do experimento consumia `/api/experiments/{id}/creatives`, reforçando o modelo antigo de criativo preso ao experimento, enquanto o produto PDE já possui biblioteca própria em `/api/products/{productId}/ads`.

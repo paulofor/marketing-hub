@@ -10,6 +10,7 @@ import com.marketinghub.mcpserver.service.ModuleLogService;
 import com.marketinghub.mcpserver.service.PdeDatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.ProductDiscoveryWorkerHealthService;
 import com.marketinghub.mcpserver.service.SensitiveDataSanitizer;
+import com.marketinghub.mcpserver.service.VpsHostInventoryService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class McpController {
     private final ModuleLogService moduleLogService;
     private final ChatContainerLogService chatContainerLogService;
     private final DockerOperationsService dockerOperationsService;
+    private final VpsHostInventoryService vpsHostInventoryService;
     private final ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService;
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
@@ -64,6 +66,7 @@ public class McpController {
                          ModuleLogService moduleLogService,
                          ChatContainerLogService chatContainerLogService,
                          DockerOperationsService dockerOperationsService,
+                         VpsHostInventoryService vpsHostInventoryService,
                          ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService,
                          MetaDiagnosticsService metaDiagnosticsService,
                          GithubActionsService githubActionsService,
@@ -74,6 +77,7 @@ public class McpController {
         this.moduleLogService = moduleLogService;
         this.chatContainerLogService = chatContainerLogService;
         this.dockerOperationsService = dockerOperationsService;
+        this.vpsHostInventoryService = vpsHostInventoryService;
         this.productDiscoveryWorkerHealthService = productDiscoveryWorkerHealthService;
         this.metaDiagnosticsService = metaDiagnosticsService;
         this.githubActionsService = githubActionsService;
@@ -262,6 +266,18 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "vps_host_inventory",
+                            "description", "Consulta CPU, memória, disco, portas e containers Docker de um VPS permitido via SSH restrito.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "host", Map.of("type", "string",
+                                                    "enum", vpsHostInventoryService.allowedHosts(),
+                                                    "description", "IP/host do VPS permitido para inventário.")),
+                                    "required", List.of("host"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "product_discovery_worker_health",
                             "description", "Consulta o health do Product Discovery Worker e retorna provider ativo, chave configurada, último polling, último erro e último ciclo processado.",
                             "inputSchema", Map.of(
@@ -384,6 +400,7 @@ public class McpController {
                 case "java_module_logs" -> callJavaModuleLogsTool(id, arguments);
                 case "chat_container_logs" -> callChatContainerLogsTool(id, arguments);
                 case "docker_ops" -> callDockerOpsTool(id, arguments);
+                case "vps_host_inventory" -> callVpsHostInventoryTool(id, arguments);
                 case "product_discovery_worker_health" -> callProductDiscoveryWorkerHealthTool(id);
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
                 case "meta_graph_get" -> callMetaGraphGetTool(id, arguments);
@@ -642,6 +659,40 @@ public class McpController {
                 .map(String::valueOf)
                 .collect(Collectors.joining("\n"));
         return header + "\n" + logLines;
+    }
+
+    /**
+     * Consulta o inventário físico e operacional de um VPS liberado para o MCP.
+     */
+    private Map<String, Object> callVpsHostInventoryTool(Object id, Map<String, Object> arguments) {
+        String host = stringArgument(arguments, "host");
+
+        try {
+            Map<String, Object> result = vpsHostInventoryService.inspect(host);
+            return successToolResult(id, result, buildVpsHostInventoryText(result));
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP vps_host_inventory inválido: requestId={} host={} motivo={}",
+                    id, host, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar vps_host_inventory: requestId={} host={}", id, host, ex);
+            return error(id, -32603, "Failed to inspect VPS host: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Formata a resposta textual do inventário de VPS.
+     */
+    private String buildVpsHostInventoryText(Map<String, Object> result) {
+        String header = "Read VPS host inventory from " + result.get("host");
+        Object rawLines = result.get("lines");
+        if (!(rawLines instanceof List<?> lines) || lines.isEmpty()) {
+            return header;
+        }
+        String output = lines.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining("\n"));
+        return header + "\n" + output;
     }
 
     /**

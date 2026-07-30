@@ -40,6 +40,8 @@ class MetaToolsServiceTest {
                 new McpProperties.Logs("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", 45, 3, 400, 500, 262144),
                 new McpProperties.ChatLogs(true, List.of("marketinghub-fashion-chat"), "docker", 500, 20),
                 new McpProperties.DockerOps(true, List.of("marketinghub-backend"), "docker", 500, 30, false),
+                new McpProperties.VpsHostInventory(false, List.of("191.252.210.83"), "ssh", "root",
+                        "/tmp/id_ed25519", "/tmp/known_hosts", 5),
                 new McpProperties.ProductDiscoveryWorker(true, "product-discovery-worker", "docker",
                         "http://127.0.0.1:8080/healthz", 10),
                 new McpProperties.Meta(

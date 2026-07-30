@@ -20,10 +20,16 @@ services:
       MCP_DOCKER_OPS_ENABLED: ${MCP_DOCKER_OPS_ENABLED:-true}
       MCP_DOCKER_OPS_ALLOWED_CONTAINERS: ${MCP_DOCKER_OPS_ALLOWED_CONTAINERS:-marketinghub-backend,marketinghub-fashion-chat,product-discovery-worker,mcp-server}
       MCP_DOCKER_OPS_RESTART_ENABLED: ${MCP_DOCKER_OPS_RESTART_ENABLED:-false}
+      MCP_VPS_HOST_INVENTORY_ENABLED: ${MCP_VPS_HOST_INVENTORY_ENABLED:-false}
+      MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS: ${MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS:-191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,177.153.62.107,163.245.200.7}
+      MCP_VPS_HOST_INVENTORY_USER: ${MCP_VPS_HOST_INVENTORY_USER:-root}
+      MCP_VPS_HOST_INVENTORY_IDENTITY_FILE: ${MCP_VPS_HOST_INVENTORY_IDENTITY_FILE:-/opt/marketinghub/mcp/ssh/id_ed25519}
+      MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE: ${MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE:-/opt/marketinghub/mcp/ssh/known_hosts}
       MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER: ${MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER:-product-discovery-worker}
       MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-http://127.0.0.1:8080/healthz}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/marketinghub/mcp/ssh:/opt/marketinghub/mcp/ssh:ro
     expose:
       - "8096"
     healthcheck:

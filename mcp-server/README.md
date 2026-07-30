@@ -31,6 +31,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `github_actions_get_run_logs`: baixa os logs compactados de uma execução e retorna um trecho em texto.
 - `chat_container_logs`: retorna logs Docker dos containers operacionais permitidos no host do MCP. Por padrão, `marketinghub-fashion-chat` e `product-discovery-worker`.
 - `docker_ops`: executa operações Docker restritas no host do MCP (`ps`, `logs`, `restart`) para containers permitidos.
+- `vps_host_inventory`: consulta CPU, memória, disco, sistema operacional, portas e containers Docker de VPS permitidos via SSH restrito, sem liberar shell genérico.
 - `product_discovery_worker_health`: consulta o health do `product-discovery-worker` e retorna provider ativo, status da chave Brave, último polling, último erro e último ciclo processado.
 
 ## Executar localmente
@@ -112,6 +113,38 @@ Configuração:
 - `MCP_DOCKER_OPS_RESTART_ENABLED` (default `false`).
 
 Para operação produtiva, mantenha a allowlist com nomes exatos dos containers que o MCP pode diagnosticar. Habilite `restart` apenas quando o compose/deploy do MCP montar o socket Docker com permissão compatível e quando o host aceitar que o MCP seja usado como ferramenta operacional de recuperação.
+
+## Inventário físico de VPS via SSH restrito
+
+O tool `vps_host_inventory` consulta inventário físico e operacional dos VPS permitidos sem expor execução de comandos arbitrários. A requisição informa apenas o `host`; o MCP monta um comando SSH fixo para coletar:
+
+- hostname e uptime;
+- CPU (`nproc` e trecho de `lscpu`);
+- memória (`free -m`);
+- disco raiz (`df -h /`);
+- sistema operacional (`/etc/os-release`);
+- portas em escuta (`ss -lntp` ou `netstat -lntp`);
+- containers Docker em execução (`docker ps --format`).
+
+Configuração:
+
+- `MCP_VPS_HOST_INVENTORY_ENABLED` (default `false`);
+- `MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS` (default `191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,177.153.62.107,163.245.200.7`);
+- `MCP_VPS_HOST_INVENTORY_SSH_COMMAND` (default `ssh`);
+- `MCP_VPS_HOST_INVENTORY_USER` (default `root`);
+- `MCP_VPS_HOST_INVENTORY_IDENTITY_FILE` (default `/opt/marketinghub/mcp/ssh/id_ed25519`);
+- `MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE` (default `/opt/marketinghub/mcp/ssh/known_hosts`);
+- `MCP_VPS_HOST_INVENTORY_TIMEOUT_SECONDS` (default `20`).
+
+Para ativar em produção:
+
+1. Gere uma chave dedicada para o MCP fora do repositório.
+2. Cadastre a chave pública em `/root/.ssh/authorized_keys` nos VPS permitidos.
+3. Coloque a chave privada no host do MCP em `/opt/marketinghub/mcp/ssh/id_ed25519` com permissão `600`.
+4. Ative `MCP_VPS_HOST_INVENTORY_ENABLED=true` no `.env` do host do MCP.
+5. Reinicie o container do MCP pelo fluxo versionado de deploy.
+
+Não versione a chave privada nem cole o conteúdo dela em logs, issues, PRs ou mensagens.
 
 ## Health do Product Discovery Worker
 

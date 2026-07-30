@@ -14,7 +14,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl docker.io \
+    && apt-get install -y --no-install-recommends curl docker.io openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /workspace/target/app-exec.jar /app/app.jar

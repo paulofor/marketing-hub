@@ -2,17 +2,28 @@ package com.marketinghub.microservice.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
+import com.marketinghub.microservice.VpsHostInventory;
 import com.marketinghub.microservice.dto.DeploymentWorkflowInventoryDto;
 import com.marketinghub.microservice.dto.DiscoveredMicroserviceDto;
+import com.marketinghub.microservice.dto.UpdateVpsHostInventoryRequest;
+import com.marketinghub.repository.jpa.microservice.VpsHostInventoryRepository;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /** Responsabilidade: validar a descoberta de microserviços e inventário de deploy. */
+@ExtendWith(MockitoExtension.class)
 class MicroserviceDiscoveryServiceTest {
+  @Mock private VpsHostInventoryRepository hostInventoryRepository;
 
   @Test
   void shouldDiscoverServicesFromComposeFile() throws IOException {
@@ -34,7 +45,7 @@ class MicroserviceDiscoveryServiceTest {
 
     MicroserviceDiscoveryService service =
         new MicroserviceDiscoveryService(
-            composeFile.toString(), "non-existent-workflows", "/healthz");
+            composeFile.toString(), "non-existent-workflows", "/healthz", hostInventoryRepository);
 
     List<DiscoveredMicroserviceDto> discovered = service.discoverFromCompose();
 
@@ -68,7 +79,10 @@ class MicroserviceDiscoveryServiceTest {
   void shouldReturnEmptyListWhenFileDoesNotExist() {
     MicroserviceDiscoveryService service =
         new MicroserviceDiscoveryService(
-            "non-existent-compose.yml", "non-existent-workflows", "/health");
+            "non-existent-compose.yml",
+            "non-existent-workflows",
+            "/health",
+            hostInventoryRepository);
 
     List<DiscoveredMicroserviceDto> discovered = service.discoverFromCompose();
 
@@ -104,7 +118,10 @@ class MicroserviceDiscoveryServiceTest {
 
     MicroserviceDiscoveryService service =
         new MicroserviceDiscoveryService(
-            "non-existent-compose.yml", workflowsPath.toString(), "/health");
+            "non-existent-compose.yml",
+            workflowsPath.toString(),
+            "/health",
+            hostInventoryRepository);
 
     List<DeploymentWorkflowInventoryDto> deployments = service.discoverDeploymentsFromWorkflows();
 
@@ -127,7 +144,10 @@ class MicroserviceDiscoveryServiceTest {
   void shouldUseFallbackDeploymentInventoryWhenWorkflowsAreUnavailable() {
     MicroserviceDiscoveryService service =
         new MicroserviceDiscoveryService(
-            "non-existent-compose.yml", "non-existent-workflows", "/health");
+            "non-existent-compose.yml",
+            "non-existent-workflows",
+            "/health",
+            hostInventoryRepository);
 
     List<DeploymentWorkflowInventoryDto> deployments = service.discoverDeploymentsFromWorkflows();
 
@@ -143,9 +163,13 @@ class MicroserviceDiscoveryServiceTest {
   /** Deve expor o cadastro físico e financeiro dos hosts VPS no inventário operacional. */
   @Test
   void shouldExposeFallbackVpsHostsInOperationalInventory() {
+    when(hostInventoryRepository.findAllByOrderByHostAsc()).thenReturn(List.of());
     MicroserviceDiscoveryService service =
         new MicroserviceDiscoveryService(
-            "non-existent-compose.yml", "non-existent-workflows", "/health");
+            "non-existent-compose.yml",
+            "non-existent-workflows",
+            "/health",
+            hostInventoryRepository);
 
     var inventory = service.discoverOperationalInventory();
 
@@ -163,5 +187,69 @@ class MicroserviceDiscoveryServiceTest {
                 host ->
                     host.host().equals("191.252.210.83")
                         && host.notes().contains("docker_ops confirmou")));
+  }
+
+  /** Deve priorizar dados editados no banco sem perder hosts do inventário versionado. */
+  @Test
+  void shouldMergeEditableVpsHostsWithFallbackInventory() {
+    VpsHostInventory edited = new VpsHostInventory();
+    edited.setHost("191.252.210.83");
+    edited.setProviderName("Provedor confirmado");
+    edited.setCpu("4 vCPU");
+    edited.setMemoryGb(8);
+    edited.setMonthlyCostBrl(new BigDecimal("149.90"));
+    when(hostInventoryRepository.findAllByOrderByHostAsc()).thenReturn(List.of(edited));
+    MicroserviceDiscoveryService service =
+        new MicroserviceDiscoveryService(
+            "non-existent-compose.yml",
+            "non-existent-workflows",
+            "/health",
+            hostInventoryRepository);
+
+    var inventory = service.discoverOperationalInventory();
+
+    assertEquals(6, inventory.hosts().size());
+    assertTrue(
+        inventory.hosts().stream()
+            .anyMatch(
+                host ->
+                    host.host().equals("191.252.210.83")
+                        && host.providerName().equals("Provedor confirmado")
+                        && host.memoryGb().equals(8)));
+  }
+
+  /** Deve criar cadastro editável usando o fallback como base quando o host ainda não existe. */
+  @Test
+  void shouldUpdateFallbackHostIntoEditableInventory() {
+    when(hostInventoryRepository.findByHost("191.252.102.54")).thenReturn(Optional.empty());
+    when(hostInventoryRepository.save(org.mockito.ArgumentMatchers.any(VpsHostInventory.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    MicroserviceDiscoveryService service =
+        new MicroserviceDiscoveryService(
+            "non-existent-compose.yml",
+            "non-existent-workflows",
+            "/health",
+            hostInventoryRepository);
+
+    var updated =
+        service.updateHostInventory(
+            "191.252.102.54",
+            new UpdateVpsHostInventoryRequest(
+                "Locaweb",
+                "Painel do provedor",
+                "2 vCPU",
+                4,
+                80,
+                "Ubuntu 24.04",
+                new BigDecimal("99.90"),
+                "mensal",
+                "Fatura julho",
+                "MCP vps_host_inventory",
+                "Host comercial"));
+
+    assertEquals("191.252.102.54", updated.host());
+    assertEquals("2 vCPU", updated.cpu());
+    assertEquals(4, updated.memoryGb());
+    assertEquals(new BigDecimal("99.90"), updated.monthlyCostBrl());
   }
 }

@@ -1,9 +1,12 @@
 package com.marketinghub.microservice.service;
 
+import com.marketinghub.microservice.VpsHostInventory;
 import com.marketinghub.microservice.dto.DeploymentWorkflowInventoryDto;
 import com.marketinghub.microservice.dto.DiscoveredMicroserviceDto;
 import com.marketinghub.microservice.dto.OperationalInventoryDto;
+import com.marketinghub.microservice.dto.UpdateVpsHostInventoryRequest;
 import com.marketinghub.microservice.dto.VpsHostInventoryDto;
+import com.marketinghub.repository.jpa.microservice.VpsHostInventoryRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -13,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +24,11 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -35,15 +43,18 @@ public class MicroserviceDiscoveryService {
   private final Path composePath;
   private final Path workflowsPath;
   private final String defaultHealthPath;
+  private final VpsHostInventoryRepository hostInventoryRepository;
 
   /** Inicializa o serviço com os caminhos versionados usados como fonte do inventário. */
   public MicroserviceDiscoveryService(
       @Value("${microservice.discovery.compose-path:docker-compose.yml}") String composePath,
       @Value("${microservice.discovery.workflows-path:.github/workflows}") String workflowsPath,
-      @Value("${microservice.discovery.health-path:/actuator/health}") String defaultHealthPath) {
+      @Value("${microservice.discovery.health-path:/actuator/health}") String defaultHealthPath,
+      VpsHostInventoryRepository hostInventoryRepository) {
     this.composePath = Paths.get(composePath);
     this.workflowsPath = Paths.get(workflowsPath);
     this.defaultHealthPath = defaultHealthPath;
+    this.hostInventoryRepository = hostInventoryRepository;
   }
 
   /** Descobre os serviços publicados no docker-compose configurado. */
@@ -79,11 +90,62 @@ public class MicroserviceDiscoveryService {
   }
 
   /** Consolida portas do compose e dados de deploy dos workflows em um único inventário. */
+  @Transactional(readOnly = true)
   public OperationalInventoryDto discoverOperationalInventory() {
     return new OperationalInventoryDto(
-        discoverFromCompose(),
-        discoverDeploymentsFromWorkflows(),
-        discoverHostsFromFallbackResource());
+        discoverFromCompose(), discoverDeploymentsFromWorkflows(), discoverEditableHosts());
+  }
+
+  /** Busca um host VPS editável usando banco como verdade e YAML como cadastro inicial. */
+  @Transactional(readOnly = true)
+  public VpsHostInventoryDto getHostInventory(String host) {
+    String normalizedHost = normalizeHost(host);
+    return hostInventoryRepository
+        .findByHost(normalizedHost)
+        .map(this::toHostDto)
+        .orElseGet(
+            () ->
+                fallbackHost(normalizedHost)
+                    .orElseThrow(
+                        () ->
+                            new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Host VPS não encontrado no inventário: " + normalizedHost)));
+  }
+
+  /** Atualiza ou cria o cadastro editável de um host VPS. */
+  @Transactional
+  public VpsHostInventoryDto updateHostInventory(
+      String host, UpdateVpsHostInventoryRequest request) {
+    String normalizedHost = normalizeHost(host);
+    VpsHostInventory entity =
+        hostInventoryRepository
+            .findByHost(normalizedHost)
+            .orElseGet(
+                () -> toHostEntity(fallbackHost(normalizedHost).orElse(null), normalizedHost));
+    applyHostRequest(entity, request);
+    return toHostDto(hostInventoryRepository.save(entity));
+  }
+
+  /** Junta hosts versionados com substituições persistidas pela tela administrativa. */
+  private List<VpsHostInventoryDto> discoverEditableHosts() {
+    Map<String, VpsHostInventoryDto> hostsByAddress = new LinkedHashMap<>();
+    for (VpsHostInventoryDto host : discoverHostsFromFallbackResource()) {
+      hostsByAddress.put(host.host(), host);
+    }
+    for (VpsHostInventory entity : hostInventoryRepository.findAllByOrderByHostAsc()) {
+      hostsByAddress.put(entity.getHost(), toHostDto(entity));
+    }
+    return hostsByAddress.values().stream()
+        .sorted(Comparator.comparing(VpsHostInventoryDto::host))
+        .toList();
+  }
+
+  /** Localiza um host no inventário embarcado. */
+  private java.util.Optional<VpsHostInventoryDto> fallbackHost(String host) {
+    return discoverHostsFromFallbackResource().stream()
+        .filter(candidate -> candidate.host().equals(host))
+        .findFirst();
   }
 
   /** Descobre os deploys declarados nos workflows versionados do repositório. */
@@ -500,6 +562,71 @@ public class MicroserviceDiscoveryService {
       return BigDecimal.valueOf(number.doubleValue());
     }
     return null;
+  }
+
+  /** Cria entidade editável a partir do fallback ou apenas do endereço informado. */
+  private VpsHostInventory toHostEntity(VpsHostInventoryDto fallback, String host) {
+    VpsHostInventory entity = new VpsHostInventory();
+    entity.setHost(host);
+    if (fallback != null) {
+      entity.setProviderName(fallback.providerName());
+      entity.setProviderEvidence(fallback.providerEvidence());
+      entity.setCpu(fallback.cpu());
+      entity.setMemoryGb(fallback.memoryGb());
+      entity.setDiskGb(fallback.diskGb());
+      entity.setOperatingSystem(fallback.operatingSystem());
+      entity.setMonthlyCostBrl(fallback.monthlyCostBrl());
+      entity.setBillingCycle(fallback.billingCycle());
+      entity.setCostEvidence(fallback.costEvidence());
+      entity.setPhysicalSpecsEvidence(fallback.physicalSpecsEvidence());
+      entity.setNotes(fallback.notes());
+    }
+    return entity;
+  }
+
+  /** Aplica campos editáveis normalizados no cadastro de VPS. */
+  private void applyHostRequest(VpsHostInventory entity, UpdateVpsHostInventoryRequest request) {
+    entity.setProviderName(normalizeOptional(request.providerName()));
+    entity.setProviderEvidence(normalizeOptional(request.providerEvidence()));
+    entity.setCpu(normalizeOptional(request.cpu()));
+    entity.setMemoryGb(request.memoryGb());
+    entity.setDiskGb(request.diskGb());
+    entity.setOperatingSystem(normalizeOptional(request.operatingSystem()));
+    entity.setMonthlyCostBrl(request.monthlyCostBrl());
+    entity.setBillingCycle(normalizeOptional(request.billingCycle()));
+    entity.setCostEvidence(normalizeOptional(request.costEvidence()));
+    entity.setPhysicalSpecsEvidence(normalizeOptional(request.physicalSpecsEvidence()));
+    entity.setNotes(normalizeOptional(request.notes()));
+  }
+
+  /** Converte entidade persistida para DTO de inventário operacional. */
+  private VpsHostInventoryDto toHostDto(VpsHostInventory entity) {
+    return new VpsHostInventoryDto(
+        entity.getHost(),
+        entity.getProviderName(),
+        entity.getProviderEvidence(),
+        entity.getCpu(),
+        entity.getMemoryGb(),
+        entity.getDiskGb(),
+        entity.getOperatingSystem(),
+        entity.getMonthlyCostBrl(),
+        entity.getBillingCycle(),
+        entity.getCostEvidence(),
+        entity.getPhysicalSpecsEvidence(),
+        entity.getNotes());
+  }
+
+  /** Normaliza e valida o endereço de host usado em rotas administrativas. */
+  private String normalizeHost(String host) {
+    if (!StringUtils.hasText(host)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Host VPS é obrigatório");
+    }
+    return host.trim();
+  }
+
+  /** Normaliza campos opcionais vazios para nulo antes de persistir. */
+  private String normalizeOptional(String value) {
+    return StringUtils.hasText(value) ? value.trim() : null;
   }
 
   /** Verifica se o texto tem conteúdo útil. */

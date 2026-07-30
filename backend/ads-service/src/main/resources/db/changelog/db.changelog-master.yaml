@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-30-vps-host-inventory-editable.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-30-ops-monitor-social-tiktok-workers.yaml
       relativeToChangelogFile: true
   - include:

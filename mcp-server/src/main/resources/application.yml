@@ -67,6 +67,13 @@ mcp:
     docker-command: ${MCP_CHAT_LOG_DOCKER_COMMAND:docker}
     max-lines: ${MCP_CHAT_LOG_MAX_LINES:500}
     timeout-seconds: ${MCP_CHAT_LOG_TIMEOUT_SECONDS:20}
+  docker-ops:
+    enabled: ${MCP_DOCKER_OPS_ENABLED:true}
+    allowed-containers: ${MCP_DOCKER_OPS_ALLOWED_CONTAINERS:marketinghub-backend,marketinghub-fashion-chat,product-discovery-worker,mcp-server}
+    docker-command: ${MCP_DOCKER_OPS_DOCKER_COMMAND:${MCP_CHAT_LOG_DOCKER_COMMAND:docker}}
+    max-lines: ${MCP_DOCKER_OPS_MAX_LINES:500}
+    timeout-seconds: ${MCP_DOCKER_OPS_TIMEOUT_SECONDS:30}
+    restart-enabled: ${MCP_DOCKER_OPS_RESTART_ENABLED:false}
   product-discovery-worker:
     enabled: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_ENABLED:true}
     container: ${MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER:product-discovery-worker}

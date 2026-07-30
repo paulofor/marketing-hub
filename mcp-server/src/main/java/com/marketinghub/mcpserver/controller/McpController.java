@@ -3,6 +3,7 @@ package com.marketinghub.mcpserver.controller;
 import com.marketinghub.mcpserver.config.McpProperties;
 import com.marketinghub.mcpserver.service.ChatContainerLogService;
 import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
+import com.marketinghub.mcpserver.service.DockerOperationsService;
 import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.GithubActionsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
@@ -48,6 +49,7 @@ public class McpController {
     private final PdeDatabaseDiagnosticsService pdeDatabaseDiagnosticsService;
     private final ModuleLogService moduleLogService;
     private final ChatContainerLogService chatContainerLogService;
+    private final DockerOperationsService dockerOperationsService;
     private final ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService;
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
@@ -61,6 +63,7 @@ public class McpController {
                          PdeDatabaseDiagnosticsService pdeDatabaseDiagnosticsService,
                          ModuleLogService moduleLogService,
                          ChatContainerLogService chatContainerLogService,
+                         DockerOperationsService dockerOperationsService,
                          ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService,
                          MetaDiagnosticsService metaDiagnosticsService,
                          GithubActionsService githubActionsService,
@@ -70,6 +73,7 @@ public class McpController {
         this.pdeDatabaseDiagnosticsService = pdeDatabaseDiagnosticsService;
         this.moduleLogService = moduleLogService;
         this.chatContainerLogService = chatContainerLogService;
+        this.dockerOperationsService = dockerOperationsService;
         this.productDiscoveryWorkerHealthService = productDiscoveryWorkerHealthService;
         this.metaDiagnosticsService = metaDiagnosticsService;
         this.githubActionsService = githubActionsService;
@@ -238,6 +242,26 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "docker_ops",
+                            "description", "Executa operações Docker restritas no host do MCP: ps, logs e restart para containers permitidos.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "action", Map.of("type", "string",
+                                                    "enum", dockerOperationsService.allowedActions(),
+                                                    "description", "Ação Docker permitida: ps, logs ou restart."),
+                                            "container", Map.of("type", "string",
+                                                    "enum", dockerOperationsService.allowedContainers(),
+                                                    "description", "Container permitido para logs ou restart."),
+                                            "lines", Map.of("type", "integer", "minimum", 1,
+                                                    "maximum", dockerOperationsService.maxLines(),
+                                                    "description", "Quantidade de linhas retornadas para action=logs. Padrão: 200."),
+                                            "contains", Map.of("type", "string",
+                                                    "description", "Filtra linhas de logs que contenham este texto literal.")),
+                                    "required", List.of("action"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "product_discovery_worker_health",
                             "description", "Consulta o health do Product Discovery Worker e retorna provider ativo, chave configurada, último polling, último erro e último ciclo processado.",
                             "inputSchema", Map.of(
@@ -359,6 +383,7 @@ public class McpController {
                 case "pde_db_query" -> callPdeQueryTool(id, arguments);
                 case "java_module_logs" -> callJavaModuleLogsTool(id, arguments);
                 case "chat_container_logs" -> callChatContainerLogsTool(id, arguments);
+                case "docker_ops" -> callDockerOpsTool(id, arguments);
                 case "product_discovery_worker_health" -> callProductDiscoveryWorkerHealthTool(id);
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
                 case "meta_graph_get" -> callMetaGraphGetTool(id, arguments);
@@ -561,6 +586,53 @@ public class McpController {
      */
     private String buildChatContainerLogsText(Map<String, Object> result) {
         String header = "Read " + result.get("returnedLines") + " Docker log lines from chat container "
+                + result.get("container");
+        Object rawLines = result.get("lines");
+        if (!(rawLines instanceof List<?> lines) || lines.isEmpty()) {
+            return header;
+        }
+        String logLines = lines.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining("\n"));
+        return header + "\n" + logLines;
+    }
+
+    /**
+     * Executa operações Docker restritas no host do MCP.
+     */
+    private Map<String, Object> callDockerOpsTool(Object id, Map<String, Object> arguments) {
+        String action = stringArgument(arguments, "action");
+        String container = stringArgument(arguments, "container");
+        Integer lines = intArgument(arguments, "lines");
+        String contains = stringArgument(arguments, "contains");
+
+        try {
+            Map<String, Object> result = dockerOperationsService.execute(action, container, lines, contains);
+            return successToolResult(id, result, buildDockerOpsText(result));
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP docker_ops inválido: requestId={} action={} container={} motivo={}",
+                    id, action, container, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar docker_ops: requestId={} action={} container={} lines={} contains={}",
+                    id, action, container, lines, contains, ex);
+            return error(id, -32603, "Failed to execute docker operation: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Formata a resposta textual da tool Docker operacional.
+     */
+    private String buildDockerOpsText(Map<String, Object> result) {
+        String action = String.valueOf(result.get("action"));
+        if ("ps".equals(action)) {
+            return "Docker ps returned " + result.get("returnedContainers") + " containers";
+        }
+        if ("restart".equals(action)) {
+            return "Docker restart executed for container " + result.get("container");
+        }
+
+        String header = "Read " + result.get("returnedLines") + " Docker log lines from container "
                 + result.get("container");
         Object rawLines = result.get("lines");
         if (!(rawLines instanceof List<?> lines) || lines.isEmpty()) {

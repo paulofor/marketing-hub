@@ -180,7 +180,16 @@ class ModuleLogServiceTest {
                 "http://127.0.0.1:8080/healthz",
                 10
         );
+        McpProperties.DockerOps dockerOps = new McpProperties.DockerOps(
+                true,
+                List.of("marketinghub-backend"),
+                "docker",
+                500,
+                30,
+                false
+        );
 
-        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, productDiscoveryWorker, meta, github);
+        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, dockerOps,
+                productDiscoveryWorker, meta, github);
     }
 }

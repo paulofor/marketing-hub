@@ -79,6 +79,13 @@ class McpControllerTest {
         registry.add("mcp.chat-logs.docker-command", () -> TEST_LOG_DIR.resolve("docker-fake.sh").toString());
         registry.add("mcp.chat-logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.timeout-seconds", () -> "5");
+        registry.add("mcp.docker-ops.enabled", () -> "true");
+        registry.add("mcp.docker-ops.allowed-containers",
+                () -> "marketinghub-backend,marketinghub-fashion-chat,product-discovery-worker");
+        registry.add("mcp.docker-ops.docker-command", () -> TEST_LOG_DIR.resolve("docker-fake.sh").toString());
+        registry.add("mcp.docker-ops.max-lines", () -> "500");
+        registry.add("mcp.docker-ops.timeout-seconds", () -> "5");
+        registry.add("mcp.docker-ops.restart-enabled", () -> "false");
         registry.add("mcp.product-discovery-worker.enabled", () -> "true");
         registry.add("mcp.product-discovery-worker.container", () -> "product-discovery-worker");
         registry.add("mcp.product-discovery-worker.docker-command", () -> TEST_LOG_DIR.resolve("docker-fake.sh").toString());
@@ -157,7 +164,17 @@ class McpControllerTest {
                         + "  echo '{\"service\":\"product-discovery-worker\",\"status\":\"UP\",\"activeSearchProvider\":\"brave\",\"braveSearch\":{\"keyStatus\":\"CONFIGURED\",\"keySource\":\"file\"},\"polling\":{\"lastPollStatus\":\"COMPLETED\",\"lastPollError\":null},\"lastCycleProcessed\":{\"cycleId\":77,\"status\":\"COMPLETED\"}}'\n"
                         + "  exit 0\n"
                         + "fi\n"
+                        + "if [ \"$1\" = \"ps\" ]; then\n"
+                        + "  echo 'marketinghub-backend|Up 2 minutes (healthy)|ghcr.io/acme/backend:sha'\n"
+                        + "  echo 'product-discovery-worker|Exited (1) 1 minute ago|ghcr.io/acme/product-discovery:sha'\n"
+                        + "  exit 0\n"
+                        + "fi\n"
+                        + "if [ \"$1\" = \"restart\" ]; then\n"
+                        + "  echo \"$2\"\n"
+                        + "  exit 0\n"
+                        + "fi\n"
                         + "echo \"2026-07-12T10:00:00Z Fashion chat service listening on port 8094\"\n"
+                        + "echo \"2026-07-12T10:00:00Z Started AdsServiceApplication\"\n"
                         + "echo \"2026-07-12T10:00:01Z health ok\"\n",
                 StandardCharsets.UTF_8);
         fakeDocker.toFile().setExecutable(true);
@@ -512,6 +529,57 @@ class McpControllerTest {
                         .value("container must be one of: marketinghub-fashion-chat, product-discovery-worker"));
     }
 
+    /**
+     * Garante que a tool docker_ops lista containers operacionais pelo Docker do host MCP.
+     */
+    @Test
+    void shouldListDockerContainersWithDockerOps() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":26,"method":"tools/call","params":{"name":"docker_ops","arguments":{"action":"ps"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.action").value("ps"))
+                .andExpect(jsonPath("$.result.structuredContent.returnedContainers").value(2))
+                .andExpect(jsonPath("$.result.structuredContent.containers[0].name").value("marketinghub-backend"))
+                .andExpect(jsonPath("$.result.structuredContent.containers[0].allowed").value(true));
+    }
+
+    /**
+     * Garante que a tool docker_ops lê logs do backend principal quando ele está na allowlist.
+     */
+    @Test
+    void shouldReadBackendLogsWithDockerOps() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":27,"method":"tools/call","params":{"name":"docker_ops","arguments":{"action":"logs","container":"marketinghub-backend","lines":3,"contains":"Started"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.action").value("logs"))
+                .andExpect(jsonPath("$.result.structuredContent.container").value("marketinghub-backend"))
+                .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value("2026-07-12T10:00:00Z Started AdsServiceApplication"));
+    }
+
+    /**
+     * Garante que a tool docker_ops não reinicia containers enquanto restart não estiver habilitado.
+     */
+    @Test
+    void shouldRejectDockerRestartWhenDisabled() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":28,"method":"tools/call","params":{"name":"docker_ops","arguments":{"action":"restart","container":"marketinghub-backend"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32602))
+                .andExpect(jsonPath("$.error.message")
+                        .value("docker restart is disabled (set mcp.docker-ops.restart-enabled=true)"));
+    }
+
 
 
     /**
@@ -595,6 +663,8 @@ class McpControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("product-discovery-worker")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("docker_ops")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("marketinghub-backend")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("product_discovery_worker_health")));
     }
 

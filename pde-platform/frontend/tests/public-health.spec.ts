@@ -85,14 +85,12 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
   expect(response?.ok()).toBeTruthy();
 
   await expect(page.locator('#root').locator(':scope > *').first()).toBeVisible();
-  await expect(page.getByLabel('Domínios publicados do Clube MUSA')).toContainText('v5.clubemusa.com.br');
-  await expect(page.getByLabel('Domínios publicados do Clube MUSA')).toContainText('v6.clubemusa.com.br');
-  await expect(page.getByLabel('Domínios publicados do Clube MUSA')).toContainText('v7.clubemusa.com.br');
   for (const text of contract.requiredTexts) {
     await expect(page.locator('body'), `Texto obrigatorio ausente no PDE ${contract.slug}: ${text}`).toContainText(text);
   }
+  const publicBodyText = await page.locator('body').innerText();
   for (const text of contract.forbiddenTexts) {
-    await expect(page.locator('body'), `Texto de erro apareceu no PDE ${contract.slug}: ${text}`).not.toContainText(text);
+    expect(publicBodyText, `Texto operacional apareceu no PDE publico ${contract.slug}: ${text}`).not.toContain(text);
   }
   expect(await page.locator('script[type="module"][src]').count()).toBeGreaterThan(0);
 

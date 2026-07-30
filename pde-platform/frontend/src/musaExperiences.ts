@@ -429,8 +429,10 @@ export const fallbackProduct: ProductExperience = {
 };
 
 export function resolveMusaVersionedHostConfig(hostname: string) {
-  const experienceVersion = MUSA_VERSIONED_HOSTS[hostname.toLowerCase()];
-  return experienceVersion ? { experienceVersion } : undefined;
+  const normalizedHost = hostname.toLowerCase();
+  const experienceVersion = MUSA_VERSIONED_HOSTS[normalizedHost];
+  const slotCode = normalizedHost.split('.', 1)[0];
+  return experienceVersion ? { experienceVersion, slotCode: /^v\d+$/.test(slotCode) ? slotCode : undefined } : undefined;
 }
 
 export function resolveMusaExperienceContract(experienceVersion: string, layoutKey = '') {

@@ -117,6 +117,11 @@ class ProductCatalogServiceTest {
                           "missions": [],
                           "supportMaterials": [],
                           "heroVideos": [],
+                          "publicFirstFold": {
+                            "headline": "Você se arruma, mas ainda sente que sua presença não acompanha a mulher que você quer ser?",
+                            "supportingText": "Quatro escolhas rápidas mostram o sinal que deixa seu look comum.",
+                            "videoCtaLabel": "Ver meu Mapa de Presença"
+                          },
                           "scientificEvidencePack": {
                             "version": "musa-evidence-pack-v1",
                             "principles": [],
@@ -134,6 +139,66 @@ class ProductCatalogServiceTest {
         assertThat(product.name()).isEqualTo("Método MUSA v6 editável");
         assertThat(product.experienceVersion()).isEqualTo("musa-v6-teste-publicado");
         assertThat(product.layoutKey()).isEqualTo("layout-custom-v6");
+        assertThat(product.publicFirstFold().headline())
+                .isEqualTo("Você se arruma, mas ainda sente que sua presença não acompanha a mulher que você quer ser?");
+        assertThat(product.publicFirstFold().videoCtaLabel()).isEqualTo("Ver meu Mapa de Presença");
+        server.verify();
+    }
+
+    /** Confirma que o slot enviado pelo frontend público sobrevive mesmo quando o proxy altera o Host. */
+    @Test
+    void requestsMarketingHubContractForExplicitSlotCodeWhenHostIsGeneric() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        ProductCatalogService service = new ProductCatalogService(builder, "http://marketing-hub", "");
+        server.expect(requestTo("http://marketing-hub/api/products/public/metodo-musa-7-dias/pde-experience?slotCode=v6"))
+                .andRespond(withSuccess("""
+                        {
+                          "slug": "metodo-musa-7-dias",
+                          "experienceVersion": "musa-pde-entry-v6-video-motivacional",
+                          "layoutKey": "video-motivacional",
+                          "name": "Método MUSA v6",
+                          "promise": "Promessa v6",
+                          "audience": "Mulheres urbanas",
+                          "priceLabel": "R$67",
+                          "theme": {
+                            "primary": "#7a2444",
+                            "accent": "#d6a75c",
+                            "background": "#fff8f3",
+                            "imageUrl": "/assets/musa-cover.png"
+                          },
+                          "diagnostic": {
+                            "title": "Mapa v6",
+                            "intro": "Entrada v6 publicada no Hub",
+                            "questions": ["Pergunta v6"]
+                          },
+                          "missions": [],
+                          "supportMaterials": [],
+                          "heroVideos": [],
+                          "publicFirstFold": {
+                            "headline": "Headline comercial publicada",
+                            "videoCtaLabel": "Ver meu Mapa de Presença"
+                          },
+                          "scientificEvidencePack": {
+                            "version": "musa-evidence-pack-v1",
+                            "principles": [],
+                            "practicalApplications": [],
+                            "allowedLanguage": [],
+                            "forbiddenClaims": [],
+                            "references": []
+                          },
+                          "completionOffer": "Continuidade"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        var product = service.getProductForRequest(
+                "metodo-musa-7-dias",
+                "pde-platform-backend:8096",
+                "v6",
+                "musa-pde-entry-v6-video-motivacional");
+
+        assertThat(product.layoutKey()).isEqualTo("video-motivacional");
+        assertThat(product.publicFirstFold().headline()).isEqualTo("Headline comercial publicada");
         server.verify();
     }
 

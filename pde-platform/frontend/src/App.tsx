@@ -411,7 +411,11 @@ function resolveHostExperienceVersionOverride() {
 
 function resolvePublicProductUrl() {
   const query = new URLSearchParams();
-  const hostExperienceVersion = resolveHostExperienceVersionOverride();
+  const hostConfig = resolveCurrentMusaVersionedHostConfig();
+  const hostExperienceVersion = hostConfig?.experienceVersion ?? '';
+  if (hostConfig?.slotCode) {
+    query.set('slotCode', hostConfig.slotCode);
+  }
   if (hostExperienceVersion) {
     query.set('experienceVersion', hostExperienceVersion);
   }

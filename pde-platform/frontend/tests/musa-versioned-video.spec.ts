@@ -9,7 +9,7 @@ test('v6 publica bloco de video nao-slide e segue direto para o diagnostico', as
 
   await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa', { waitUntil: 'domcontentloaded' });
 
-  await expect(page.getByRole('heading', { name: /imagem menos elegante/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /falta presença/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toHaveCount(1);
   await expect(page.locator('video.public-hero-video')).toHaveAttribute(
@@ -51,7 +51,7 @@ test('v6 bloqueia override global para HLS antigo de slides', async ({ page }) =
 
   await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa', { waitUntil: 'domcontentloaded' });
 
-  await expect(page.getByRole('heading', { name: /imagem menos elegante/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /falta presença/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toHaveAttribute(
     'src',
@@ -66,7 +66,7 @@ test('v7 usa contrato proprio sem alterar as perguntas publicas da v6', async ({
 
   await page.goto('http://v7.clubemusa.com.br:57180/?mh_preview=qa&musa_video_variant=control', { waitUntil: 'domcontentloaded' });
 
-  await expect(page.getByRole('heading', { name: /imagem menos elegante/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /falta presença/i })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Falta acabamento' })).toBeVisible();
   await expect(page.getByText('Quando você se olha pronta, o que mais faz o look parecer simples demais?')).toBeVisible();
   await expect(page.getByText('Quando você se olha pronta, o que mais te incomoda?')).toHaveCount(0);

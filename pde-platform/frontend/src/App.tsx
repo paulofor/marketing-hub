@@ -416,9 +416,11 @@ function applyExperienceOverrides(productExperience: ProductExperience, allowHos
   if (!selectedExperienceVersion) {
     return productExperience;
   }
+  const selectedExperienceContract = resolveMusaExperienceContract(selectedExperienceVersion);
   return {
     ...productExperience,
     experienceVersion: selectedExperienceVersion,
+    layoutKey: selectedExperienceContract.layoutKey,
   };
 }
 
@@ -538,9 +540,12 @@ function App() {
       return;
     }
     fetch('/api/pde/products/metodo-musa-7-dias')
-      .then((response) => (response.ok ? response.json() : fallbackProduct))
-      .then((data: ProductExperience) => {
-        const resolvedProduct = applyExperienceOverrides(data, false);
+      .then(async (response) => ({
+        productExperience: response.ok ? ((await response.json()) as ProductExperience) : fallbackProduct,
+        allowHostOverride: !response.ok,
+      }))
+      .then(({ productExperience, allowHostOverride }) => {
+        const resolvedProduct = applyExperienceOverrides(productExperience, allowHostOverride);
         setProduct(resolvedProduct);
         setActiveMissionId(resolvedProduct.missions[0]?.id ?? '');
       })
@@ -1714,8 +1719,8 @@ function App() {
       <main className="app-shell public-diagnostic-shell">
         <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
           <div className="public-diagnostic-intro">
-            <h1>Descubra o detalhe que deixa sua imagem menos elegante do que você realmente é.</h1>
-            <p>Em poucos minutos, o MUSA analisa suas respostas e mostra um primeiro ajuste de presença para você testar hoje, usando o que já tem, sem comprar roupa nova e sem mudar seu estilo.</p>
+            <h1>Você se arruma, mas ainda sente que falta presença?</h1>
+            <p>Em poucos minutos, o MUSA identifica o detalhe que está deixando sua imagem mais comum do que deveria e mostra um primeiro ajuste para testar hoje, usando o que você já tem.</p>
           </div>
 
           {showPublicDiagnosticVideoHero && (
@@ -1797,10 +1802,10 @@ function App() {
               </div>
               <div className="public-video-copy">
                 <p className="section-kicker">{showMotivationalTimelineVideo ? 'Prévia MUSA' : 'Vídeo inicial MUSA'}</p>
-                <h2>{showMotivationalTimelineVideo ? 'Antes de trocar roupa, descubra o que está criando ruído.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
-                <p>{showMotivationalTimelineVideo ? 'Às vezes o look não está errado. Ele só não está comunicando intenção. Um acabamento, uma cor, uma combinação ou uma postura podem mudar a percepção de presença com muito menos esforço do que você imagina.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
+                <h2>{showMotivationalTimelineVideo ? 'Antes de pensar em roupa nova, encontre o sinal que apaga sua presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
+                <p>{showMotivationalTimelineVideo ? 'Às vezes o look não está errado. Ele só está sem uma intenção visível. Um acabamento, uma cor, uma combinação ou uma postura podem deixar sua presença mais coerente com muito menos esforço do que você imagina.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
                 {showMotivationalTimelineVideo && (
-                  <p>O MUSA usa 4 escolhas simples sobre seu espelho, sua rotina e o sinal que você quer transmitir para identificar onde sua presença perde força e qual microação pode deixar sua imagem mais coerente hoje.</p>
+                  <p>O MUSA usa 4 escolhas simples sobre seu espelho, sua rotina e o sinal que você quer transmitir para apontar onde sua imagem perde força e qual microação pode deixar você mais pronta hoje.</p>
                 )}
                 <button
                   className="secondary-button public-video-cta"
@@ -1817,7 +1822,7 @@ function App() {
                     document.querySelector('.public-diagnostic-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
                 >
-                  Ver meu ajuste MUSA de hoje
+                  Ver meu primeiro ajuste MUSA
                   <ChevronRight size={17} />
                 </button>
               </div>
@@ -1880,7 +1885,7 @@ function App() {
                   <p className="section-kicker">Seu primeiro ajuste MUSA</p>
                   <span>{answeredPublicDiagnosticCount}/{publicDiagnosticQuestions.length} passos</span>
                 </div>
-                <h2>Em 4 respostas rápidas, você descobre o ponto que mais enfraquece sua presença e recebe uma ação simples para testar hoje.</h2>
+                <h2>Em 4 respostas rápidas, você descobre o detalhe que mais enfraquece sua presença e recebe uma ação simples para testar hoje.</h2>
                 <div className="public-road-steps" aria-label="Etapas do seu primeiro ajuste MUSA">
                   {publicDiagnosticQuestions.map((question, index) => (
                     <span key={question.key} className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}>

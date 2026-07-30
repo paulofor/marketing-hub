@@ -101,6 +101,7 @@ public class ProductCatalogService {
                 product.missions(),
                 product.supportMaterials(),
                 product.heroVideos(),
+                product.publicFirstFold(),
                 product.scientificEvidencePack(),
                 product.completionOffer());
     }
@@ -124,6 +125,7 @@ public class ProductCatalogService {
                 product.missions(),
                 product.supportMaterials(),
                 product.heroVideos(),
+                product.publicFirstFold(),
                 product.scientificEvidencePack(),
                 product.completionOffer());
     }
@@ -323,6 +325,7 @@ public class ProductCatalogService {
                                 20462L,
                                 "APPROVED",
                                 "READY")),
+                null,
                 createMusaScientificEvidencePack(),
                 "Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais de presença, estilo e autocuidado acessível.");
     }

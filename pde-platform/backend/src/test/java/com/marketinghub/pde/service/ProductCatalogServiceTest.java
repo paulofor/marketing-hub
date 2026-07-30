@@ -117,6 +117,11 @@ class ProductCatalogServiceTest {
                           "missions": [],
                           "supportMaterials": [],
                           "heroVideos": [],
+                          "publicFirstFold": {
+                            "headline": "Você se arruma, mas ainda sente que sua presença não acompanha a mulher que você quer ser?",
+                            "supportingText": "Quatro escolhas rápidas mostram o sinal que deixa seu look comum.",
+                            "videoCtaLabel": "Ver meu Mapa de Presença"
+                          },
                           "scientificEvidencePack": {
                             "version": "musa-evidence-pack-v1",
                             "principles": [],
@@ -134,6 +139,9 @@ class ProductCatalogServiceTest {
         assertThat(product.name()).isEqualTo("Método MUSA v6 editável");
         assertThat(product.experienceVersion()).isEqualTo("musa-v6-teste-publicado");
         assertThat(product.layoutKey()).isEqualTo("layout-custom-v6");
+        assertThat(product.publicFirstFold().headline())
+                .isEqualTo("Você se arruma, mas ainda sente que sua presença não acompanha a mulher que você quer ser?");
+        assertThat(product.publicFirstFold().videoCtaLabel()).isEqualTo("Ver meu Mapa de Presença");
         server.verify();
     }
 

@@ -17,6 +17,7 @@ public record ProductExperienceResponse(
         List<MissionDto> missions,
         List<SupportMaterialDto> supportMaterials,
         List<HeroVideoDto> heroVideos,
+        PublicFirstFoldDto publicFirstFold,
         ScientificEvidencePackDto scientificEvidencePack,
         String completionOffer
 ) {
@@ -60,6 +61,17 @@ public record ProductExperienceResponse(
             Long salesVideoJobId,
             String reviewStatus,
             String status
+    ) {}
+
+    /** Define a copy versionada da primeira dobra pública do produto. */
+    public record PublicFirstFoldDto(
+            String headline,
+            String supportingText,
+            String videoKicker,
+            String videoHeadline,
+            String videoSupportingText,
+            String videoExtraText,
+            String videoCtaLabel
     ) {}
 
     /** Define a base científica operacional usada pela IA sem expor artigo bruto à cliente. */

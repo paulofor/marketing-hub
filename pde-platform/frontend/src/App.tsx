@@ -6,7 +6,6 @@ import {
   fallbackProduct,
   isMusaDesireRoadExperience,
   isMusaVideoExplainerExperience,
-  MUSA_POINTED_DOMAINS,
   type ProductExperience,
   resolveHeroVideoUrl,
   resolveMusaExperienceContract,
@@ -1715,31 +1714,9 @@ function App() {
       <main className="app-shell public-diagnostic-shell">
         <section className="public-diagnostic-page" data-analytics-section="public_presence_diagnostic">
           <div className="public-diagnostic-intro">
-            <h1>Descubra o detalhe que está tirando elegância do seu look, sem comprar roupa nova.</h1>
-            <p>Assista à prévia MUSA, responda 4 escolhas rápidas sobre seu espelho e receba um primeiro ajuste de presença para testar hoje.</p>
+            <h1>Antes de sair, descubra o detalhe que faz seu look parecer comum mesmo quando você se arruma.</h1>
+            <p>Assista à prévia MUSA, responda 4 escolhas sobre sua rotina e receba um ajuste simples para comunicar mais presença hoje, usando o que você já tem.</p>
           </div>
-
-          <section className="public-domain-strip" aria-label="Domínios publicados do Clube MUSA">
-            <div>
-              <p className="section-kicker">Domínios conhecidos apontados</p>
-              <strong>Slots versionados do Clube MUSA</strong>
-            </div>
-            <div className="public-domain-list">
-              {MUSA_POINTED_DOMAINS.map((domain) => (
-                <a
-                  key={domain.host}
-                  className={`${domain.role} ${window.location.hostname === domain.host ? 'current' : ''}`}
-                  href={domain.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={`${domain.host} aponta para ${domain.observedAddress}`}
-                >
-                  <span>{domain.host}</span>
-                  <small>{window.location.hostname === domain.host ? 'Atual' : domain.label}</small>
-                </a>
-              ))}
-            </div>
-          </section>
 
           {showPublicDiagnosticVideoHero && (
             <section
@@ -1820,8 +1797,8 @@ function App() {
               </div>
               <div className="public-video-copy">
                 <p className="section-kicker">{showMotivationalTimelineVideo ? 'Prévia MUSA' : 'Vídeo inicial MUSA'}</p>
-                <h2>{showMotivationalTimelineVideo ? 'Veja como pequenos sinais de roupa, acabamento e postura mudam a percepção de presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
-                <p>{showMotivationalTimelineVideo ? 'Depois da prévia, o MUSA usa suas respostas para identificar o ruído visual mais provável e sugerir uma microação simples para hoje.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
+                <h2>{showMotivationalTimelineVideo ? 'Veja por que um pequeno ruído em roupa, acabamento ou postura pode apagar sua presença.' : 'Veja em poucos segundos por que sua imagem pode parecer comum mesmo quando você se arruma.'}</h2>
+                <p>{showMotivationalTimelineVideo ? 'Depois da prévia, o MUSA cruza o que te incomoda, a cena em que você quer aparecer melhor e o recurso que você já tem para sugerir uma microação prática.' : 'Depois do vídeo, escolha uma situação real e veja qual primeiro ajuste pode deixar sua presença mais intencional hoje.'}</p>
                 <button
                   className="secondary-button public-video-cta"
                   type="button"
@@ -1837,7 +1814,7 @@ function App() {
                     document.querySelector('.public-diagnostic-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
                 >
-                  Começar diagnóstico
+                  Ver meu primeiro ajuste
                   <ChevronRight size={17} />
                 </button>
               </div>
@@ -1900,7 +1877,7 @@ function App() {
                   <p className="section-kicker">Seu primeiro ajuste MUSA</p>
                   <span>{answeredPublicDiagnosticCount}/{publicDiagnosticQuestions.length} passos</span>
                 </div>
-                <h2>Em 4 escolhas, o MUSA identifica o ponto que mais enfraquece sua presença e transforma isso em uma ação simples, elegante e aplicável hoje.</h2>
+                <h2>Em 4 escolhas, o MUSA mostra qual ponto pode estar enfraquecendo sua presença e transforma isso em uma ação simples para testar hoje.</h2>
                 <div className="public-road-steps" aria-label="Etapas do seu primeiro ajuste MUSA">
                   {publicDiagnosticQuestions.map((question, index) => (
                     <span key={question.key} className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}>
@@ -1927,7 +1904,7 @@ function App() {
             {errorMessage && <p className="form-message">{errorMessage}</p>}
             <button className="primary-button public-submit-button" disabled={publicDiagnosticPending || !publicDiagnosticReady} onClick={submitPublicPresenceDiagnostic}>
               {publicDiagnosticPending ? <LoaderCircle className="button-spinner" size={18} /> : <Sparkles size={18} />}
-              {publicDiagnosticPending ? 'Montando seu plano...' : 'Ver meu ajuste MUSA'}
+              {publicDiagnosticPending ? 'Montando seu plano...' : 'Continuar a partir deste espelho'}
             </button>
           </section>
 
@@ -1980,7 +1957,7 @@ function App() {
                 <div className="public-locked-plan-header">
                   <div>
                     <p className="section-kicker">Seu plano de 7 dias</p>
-                    <h3>O caminho completo já está desenhado. Salve para liberar a execução guiada.</h3>
+                    <h3>O caminho completo continua a partir do ajuste que você acabou de receber.</h3>
                   </div>
                   <Lock size={22} />
                 </div>
@@ -1998,9 +1975,9 @@ function App() {
               {publicDiagnosticGuidance.caution && <small>{publicDiagnosticGuidance.caution}</small>}
               <div className="public-email-capture" data-analytics-section="public_diagnostic_email_capture">
                 <p className="section-kicker">Salvar e liberar</p>
-                <h3>Salve seu Plano MUSA para receber as 7 missões completas e continuar na Área MUSA.</h3>
+                <h3>Continue a partir deste resultado e libere suas 7 missões MUSA.</h3>
                 <p>
-                  O diagnóstico gratuito já mostrou o ponto de partida. Agora entre para manter o plano salvo, ver os exemplos visuais, receber os checklists e aplicar uma missão por vez.
+                  O diagnóstico gratuito mostrou o primeiro ponto de partida. Agora salve seu plano para ver exemplos visuais, receber os checklists e aplicar uma missão por vez, sem tentar mudar tudo de uma vez.
                 </p>
                 <label className="email-box public-email-box">
                   E-mail para salvar seu plano

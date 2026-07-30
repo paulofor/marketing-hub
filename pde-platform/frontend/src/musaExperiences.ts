@@ -126,8 +126,8 @@ const basePublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     question: 'O que mais te incomoda quando você se olha pronta?',
     options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
     imageUrl: '/assets/musa-diagnostic-slide-1.png',
-    visualTitle: 'Comece pelo sinal que mais rouba elegância da sua presença.',
-    visualText: 'Nomeie o que você sente ao se ver pronta. A partir disso, o MUSA aponta onde reduzir ruído visual e qual cuidado testar primeiro.',
+    visualTitle: 'Comece pelo incômodo que você reconhece no espelho.',
+    visualText: 'Nomeie o que acontece quando você se arruma e ainda sente que falta algo. A partir disso, o MUSA procura o primeiro ruído visual a reduzir.',
     journeyEventType: 'PROBLEM_RECOGNIZED',
   },
   {
@@ -136,8 +136,8 @@ const basePublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     question: 'Em qual situação você quer se sentir mais presente primeiro?',
     options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
     imageUrl: '/assets/musa-diagnostic-slide-2.png',
-    visualTitle: 'Escolha uma cena real, não uma mudança de vida inteira.',
-    visualText: 'Você só precisa apontar onde quer se sentir mais segura hoje. O primeiro ajuste vem a partir dessa cena.',
+    visualTitle: 'Escolha uma cena real em que sua imagem precisa trabalhar por você.',
+    visualText: 'A proposta não é mudar seu estilo inteiro. É encontrar um ajuste pequeno para a situação em que você quer se sentir mais segura primeiro.',
     journeyEventType: 'REAL_INPUT_SUBMITTED',
   },
   {
@@ -146,8 +146,8 @@ const basePublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     question: 'Qual sinal você quer comunicar com mais força nessa cena?',
     options: ['Elegância discreta', 'Segurança', 'Leveza feminina', 'Imagem mais marcante'],
     imageUrl: '/assets/musa-diagnostic-slide-3.png',
-    visualTitle: 'A Consultora MUSA conecta dor, situação e sinal desejado.',
-    visualText: 'A partir do que você escolhe, o MUSA mostra qual detalhe pode deixar sua imagem mais coerente e intencional.',
+    visualTitle: 'Agora o MUSA conecta incômodo, cena e intenção.',
+    visualText: 'Quando o sinal desejado fica claro, fica mais fácil escolher roupa, acabamento ou detalhe final sem depender de tentativa e erro.',
     journeyEventType: 'MECHANISM_VIEWED',
   },
   {
@@ -156,8 +156,8 @@ const basePublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     question: 'Com o que você prefere começar hoje, sem comprar nada novo?',
     options: ['Roupa que já tenho', 'Cabelo e pele', 'Acessório ou perfume', 'Postura e presença'],
     imageUrl: '/assets/musa-diagnostic-slide-4.png',
-    visualTitle: 'Escolha por onde você quer começar hoje.',
-    visualText: 'Você recebe uma sugestão simples para testar hoje e decide depois se quer continuar o plano completo.',
+    visualTitle: 'Escolha o recurso que você já tem à mão.',
+    visualText: 'Você recebe uma microação simples para testar hoje. Se fizer sentido, continua para o plano completo de 7 dias.',
     journeyEventType: 'CATEGORY_UNDERSTOOD',
   },
 ];

@@ -43,53 +43,52 @@ describe("ProductPdeVideosPage", () => {
           },
         });
       }
-      if (url === "/api/products/4/pde-production-slots") {
+      if (url === "/api/products/4/pde-videos") {
         return Promise.resolve({
           data: [
             {
-              id: 6,
-              slotCode: "v6",
-              productSlug: "metodo-musa-7-dias",
-              domain: "v6.clubemusa.com.br",
-              publicUrl: "https://v6.clubemusa.com.br",
-              experienceVersion: "musa-pde-entry-v6-video-motivacional",
-              targetEnvironment: "production",
-              status: "ACTIVE",
-              sourceExperimentId: 76,
-            },
-          ],
-        });
-      }
-      if (url === "/api/experiments/video-assets") {
-        return Promise.resolve({
-          data: [
-            {
-              id: 31,
-              experimentId: 76,
-              slot: "LANDING_HERO",
-              objective: "Testar promessa de elegância.",
-              primaryMetric: "DIAGNOSTIC_STARTED",
-              provider: "HEYGEN",
-              model: "avatar_iv",
-              status: "READY",
-              hlsPlaybackUrl: "/assets/hls/musa-v6-principal/index.m3u8",
-              durationSeconds: 42,
-              reviewStatus: "APPROVED",
-              requiredForRelease: true,
-            },
-            {
-              id: 30,
-              experimentId: 76,
-              slot: "LANDING_HERO",
-              objective: "Testar prova visual.",
-              primaryMetric: "DIAGNOSTIC_STARTED",
-              provider: "HEYGEN",
-              model: "avatar_iv",
-              status: "READY",
-              hlsPlaybackUrl: "/assets/hls/musa-v6-prova/index.m3u8",
-              durationSeconds: 28,
-              reviewStatus: "APPROVED",
-              requiredForRelease: false,
+              slot: {
+                id: 6,
+                slotCode: "v6",
+                productSlug: "metodo-musa-7-dias",
+                domain: "v6.clubemusa.com.br",
+                publicUrl: "https://v6.clubemusa.com.br",
+                experienceVersion: "musa-pde-entry-v6-video-motivacional",
+                targetEnvironment: "production",
+                status: "ACTIVE",
+                sourceExperimentId: 76,
+              },
+              videos: [
+                {
+                  id: 31,
+                  experimentId: 76,
+                  assignmentSource: "SOURCE_EXPERIMENT",
+                  objective: "Testar promessa de elegância.",
+                  primaryMetric: "DIAGNOSTIC_STARTED",
+                  provider: "HEYGEN",
+                  model: "avatar_iv",
+                  status: "READY",
+                  hlsPlaybackUrl: "/assets/hls/musa-v6-principal/index.m3u8",
+                  durationSeconds: 42,
+                  reviewStatus: "APPROVED",
+                },
+                {
+                  id: 30,
+                  experimentId: 68,
+                  assignmentSource: "VERSION_TOKEN",
+                  objective: "Testar prova visual.",
+                  primaryMetric: "DIAGNOSTIC_STARTED",
+                  provider: "HEYGEN",
+                  model: "avatar_iv",
+                  status: "READY",
+                  hlsPlaybackUrl: "/assets/hls/musa-v6-prova/index.m3u8",
+                  durationSeconds: 28,
+                  reviewStatus: "APPROVED",
+                },
+              ],
+              alerts: [
+                "Vídeo #30 pertence ao experimento 68, mas foi exibido nesta versão porque o HLS aponta para v6.",
+              ],
             },
           ],
         });
@@ -108,7 +107,10 @@ describe("ProductPdeVideosPage", () => {
     expect(await screen.findByText("v6")).toBeTruthy();
     expect(screen.getByText(/2 vídeos HLS vinculados/i)).toBeTruthy();
     expect(
-      screen.getByText(/A versão PDE aceita múltiplos vídeos/i),
+      screen.getByText(/O backend resolve a versão comercial/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Vídeo #30 pertence ao experimento 68/i),
     ).toBeTruthy();
     expect(screen.getByText("Abertura / hero")).toBeTruthy();
     expect(screen.getByText("Prova visual")).toBeTruthy();

@@ -1,9 +1,8 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Film, PlayCircle } from "lucide-react";
-import { useAllExperimentVideoAssets } from "../../api/experiment/useExperimentVideoAssets";
-import type { ExperimentVideoAsset } from "../../api/experiment/useExperimentVideoAssets";
-import { useProductPdeProductionSlots } from "../../api/product/usePdeProductionSlots";
+import { useProductPdeVersionVideos } from "../../api/product/usePdeVersionVideos";
+import type { PdeVersionVideoAsset } from "../../api/product/usePdeVersionVideos";
 import { useProduct } from "../../api/product/useProduct";
 import type { PostDeployPdeProductionSlot } from "../../api/experiment/usePostDeployMonitor";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
@@ -16,13 +15,9 @@ function formatDuration(value?: number | null) {
   return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
-function isHlsVideo(asset: ExperimentVideoAsset) {
-  return Boolean(asset.hlsPlaybackUrl?.trim().includes(".m3u8"));
-}
-
 function resolvePlaybackUrl(
   slot: PostDeployPdeProductionSlot,
-  asset: ExperimentVideoAsset,
+  asset: PdeVersionVideoAsset,
 ) {
   const rawUrl = asset.hlsPlaybackUrl?.trim();
   if (!rawUrl) return "";
@@ -46,51 +41,22 @@ function describeVideoFunction(index: number) {
   return videoFunctions[index] ?? "Função complementar";
 }
 
-function findSlotVideos(
-  slot: PostDeployPdeProductionSlot,
-  assets: ExperimentVideoAsset[],
-) {
-  if (!slot.sourceExperimentId) return [];
-  return assets
-    .filter(
-      (asset) =>
-        asset.experimentId === slot.sourceExperimentId &&
-        asset.slot === "LANDING_HERO" &&
-        isHlsVideo(asset),
-    )
-    .sort((current, next) => {
-      if (current.reviewStatus !== next.reviewStatus) {
-        return current.reviewStatus === "APPROVED" ? -1 : 1;
-      }
-      if (current.status !== next.status) {
-        return current.status === "READY" ? -1 : 1;
-      }
-      return next.id - current.id;
-    });
-}
-
 export default function ProductPdeVideosPage() {
   const { productId } = useParams();
   const productQuery = useProduct(productId);
-  const slotsQuery = useProductPdeProductionSlots(productId);
-  const videoAssetsQuery = useAllExperimentVideoAssets();
+  const versionVideosQuery = useProductPdeVersionVideos(productId);
   const product = productQuery.data;
-  const slots = useMemo(
+  const panels = useMemo(
     () =>
-      [...(slotsQuery.data ?? [])].sort((current, next) =>
-        current.slotCode.localeCompare(next.slotCode, "pt-BR", {
+      [...(versionVideosQuery.data ?? [])].sort((current, next) =>
+        current.slot.slotCode.localeCompare(next.slot.slotCode, "pt-BR", {
           numeric: true,
         }),
       ),
-    [slotsQuery.data],
+    [versionVideosQuery.data],
   );
-  const assets = videoAssetsQuery.data ?? [];
 
-  if (
-    productQuery.isLoading ||
-    slotsQuery.isLoading ||
-    videoAssetsQuery.isLoading
-  ) {
+  if (productQuery.isLoading || versionVideosQuery.isLoading) {
     return <p className="text-muted">Carregando vídeos HLS das versões PDE...</p>;
   }
 
@@ -121,14 +87,15 @@ export default function ProductPdeVideosPage() {
         </div>
       </div>
 
-      {slots.length === 0 ? (
+      {panels.length === 0 ? (
         <div className="alert alert-light border">
           Nenhuma versão PDE cadastrada para este produto.
         </div>
       ) : (
         <div className="row g-3">
-          {slots.map((slot) => {
-            const slotVideos = findSlotVideos(slot, assets);
+          {panels.map((panel) => {
+            const { slot, alerts } = panel;
+            const slotVideos = panel.videos;
             const primaryVideo = slotVideos[0];
             const playbackUrl = primaryVideo
               ? resolvePlaybackUrl(slot, primaryVideo)
@@ -156,14 +123,21 @@ export default function ProductPdeVideosPage() {
                       <span className="badge text-bg-light">{slot.status}</span>
                     </div>
 
+                    {alerts.length > 0 && (
+                      <div className="alert alert-warning py-2 mb-3">
+                        {alerts.map((alert) => (
+                          <div key={alert}>{alert}</div>
+                        ))}
+                      </div>
+                    )}
+
                     {primaryVideo && playbackUrl ? (
                       <>
                         <div className="alert alert-info py-2 mb-3">
                           A versão PDE aceita múltiplos vídeos com funções
                           diferentes, como abertura, prova, mecanismo, objeções
-                          e reforço de CTA. O player abaixo destaca o primeiro
-                          aprovado para prévia; a tabela preserva todos os HLS
-                          vinculados ao experimento origem.
+                          e reforço de CTA. O backend resolve a versão comercial
+                          de cada HLS antes de exibir este painel.
                         </div>
                         <div className="ratio ratio-16x9 bg-dark rounded overflow-hidden mb-3">
                           <AdaptiveVideoPlayer
@@ -218,7 +192,8 @@ export default function ProductPdeVideosPage() {
                           </table>
                         </div>
                         <div className="small text-muted mt-2">
-                          Experimento origem: {slot.sourceExperimentId}
+                          Experimento origem do slot:{" "}
+                          {slot.sourceExperimentId ?? "não informado"}
                         </div>
                       </>
                     ) : (

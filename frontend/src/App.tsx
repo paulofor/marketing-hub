@@ -107,8 +107,6 @@ import LeadPortalSimpleFormStylesPage from "./pages/leadPortal/LeadPortalSimpleF
 import LeadPortalImagePromptPage from "./pages/leadPortal/LeadPortalImagePromptPage";
 import LeadPortalFormResponsesPage from "./pages/leadPortal/LeadPortalFormResponsesPage";
 import LeadPortalEmailTemplatePage from "./pages/leadPortal/LeadPortalEmailTemplatePage";
-import PaymentsDashboardPage from "./pages/payments/PaymentsDashboardPage";
-import PaymentDetailPage from "./pages/payments/PaymentDetailPage";
 import PromptListPage from "./pages/promptTemplate/PromptListPage";
 import NewPromptPage from "./pages/promptTemplate/NewPromptPage";
 import EditPromptPage from "./pages/promptTemplate/EditPromptPage";
@@ -635,8 +633,6 @@ export default function App() {
                 path="/lead-portal/email-template"
                 element={<LeadPortalEmailTemplatePage />}
               />
-              <Route path="/payments" element={<PaymentsDashboardPage />} />
-              <Route path="/payments/:id" element={<PaymentDetailPage />} />
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
               <Route path="/prompt-entities" element={<PromptEntitiesPage />} />

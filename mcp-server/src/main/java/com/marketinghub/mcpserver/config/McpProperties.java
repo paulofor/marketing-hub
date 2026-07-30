@@ -20,6 +20,7 @@ public record McpProperties(
         @NotBlank String serverVersion,
         @NotNull @Valid Logs logs,
         @NotNull @Valid ChatLogs chatLogs,
+        @NotNull @Valid DockerOps dockerOps,
         @NotNull @Valid ProductDiscoveryWorker productDiscoveryWorker,
         @NotNull @Valid Meta meta,
         @NotNull @Valid Github github
@@ -60,6 +61,19 @@ public record McpProperties(
             @NotBlank String dockerCommand,
             @Positive int maxLines,
             @Positive int timeoutSeconds
+    ) {
+    }
+
+    /**
+     * Define as operações Docker permitidas para diagnóstico operacional no host do MCP.
+     */
+    public record DockerOps(
+            boolean enabled,
+            @NotEmpty List<@NotBlank String> allowedContainers,
+            @NotBlank String dockerCommand,
+            @Positive int maxLines,
+            @Positive int timeoutSeconds,
+            boolean restartEnabled
     ) {
     }
 

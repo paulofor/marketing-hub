@@ -17,10 +17,13 @@ services:
       MCP_SERVER_VERSION: ${MCP_SERVER_VERSION:-1.0.0}
       MCP_LOG_PDE_PLATFORM_BACKEND_PATH: ${MCP_LOG_PDE_PLATFORM_BACKEND_PATH:-http://163.245.200.7:8096/actuator/logfile}
       MCP_CHAT_LOG_ALLOWED_CONTAINERS: ${MCP_CHAT_LOG_ALLOWED_CONTAINERS:-marketinghub-fashion-chat,product-discovery-worker}
+      MCP_DOCKER_OPS_ENABLED: ${MCP_DOCKER_OPS_ENABLED:-true}
+      MCP_DOCKER_OPS_ALLOWED_CONTAINERS: ${MCP_DOCKER_OPS_ALLOWED_CONTAINERS:-marketinghub-backend,marketinghub-fashion-chat,product-discovery-worker,mcp-server}
+      MCP_DOCKER_OPS_RESTART_ENABLED: ${MCP_DOCKER_OPS_RESTART_ENABLED:-false}
       MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER: ${MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER:-product-discovery-worker}
       MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-http://127.0.0.1:8080/healthz}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     expose:
       - "8096"
     healthcheck:

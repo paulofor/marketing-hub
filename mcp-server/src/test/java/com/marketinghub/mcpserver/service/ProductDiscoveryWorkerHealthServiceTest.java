@@ -95,6 +95,14 @@ class ProductDiscoveryWorkerHealthServiceTest {
                 "http://127.0.0.1:8080/healthz",
                 5
         );
+        McpProperties.DockerOps dockerOps = new McpProperties.DockerOps(
+                true,
+                List.of("marketinghub-backend", "product-discovery-worker"),
+                dockerCommand,
+                500,
+                5,
+                false
+        );
         McpProperties.Meta meta = new McpProperties.Meta(
                 true,
                 "https://graph.facebook.com",
@@ -110,6 +118,7 @@ class ProductDiscoveryWorkerHealthServiceTest {
                 "repo",
                 ""
         );
-        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, productDiscoveryWorker, meta, github);
+        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, dockerOps,
+                productDiscoveryWorker, meta, github);
     }
 }

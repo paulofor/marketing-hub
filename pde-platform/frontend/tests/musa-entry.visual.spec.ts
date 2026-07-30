@@ -48,23 +48,25 @@ test('carrega a entrada visual do Clube MUSA', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: /tirando elegância/i,
+      name: /imagem menos elegante/i,
       level: 1,
     }),
   ).toBeVisible();
+  await expect(page.getByText(/Domínios conhecidos apontados/i)).toHaveCount(0);
+  await expect(page.getByText(/Slots versionados do Clube MUSA/i)).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Ver meu ajuste MUSA/i })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /Descobrir meu primeiro ajuste/i })).toBeDisabled();
   await page.getByRole('button', { name: 'Falta acabamento' }).click();
   await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Elegância discreta' }).click();
   await page.getByRole('button', { name: 'Cabelo e pele' }).click();
-  await expect(page.getByRole('button', { name: /Ver meu ajuste MUSA/i })).toBeEnabled();
-  await page.getByRole('button', { name: /Ver meu ajuste MUSA/i }).click();
+  await expect(page.getByRole('button', { name: /Descobrir meu primeiro ajuste/i })).toBeEnabled();
+  await page.getByRole('button', { name: /Descobrir meu primeiro ajuste/i }).click();
   await expect(page.getByRole('heading', { name: /Seu plano começa reduzindo ruído visual/i })).toBeVisible();
   await expect(page.getByText(/Resultado MUSA gratuito/i)).toBeVisible();
   await expect(page.getByText(/Seu sinal principal hoje/i)).toBeVisible();
   await expect(page.getByRole('region', { name: /Preview bloqueado do plano MUSA de 7 dias/i })).toBeVisible();
-  await expect(page.getByText(/Salve seu Plano MUSA/i)).toBeVisible();
+  await expect(page.getByText(/jornada guiada de 7 dias/i)).toBeVisible();
   await page.getByPlaceholder('seuemail@exemplo.com').fill('teste+diagnostico@sandbox.local');
   await page.getByRole('button', { name: /Salvar meu Plano MUSA de 7 dias/i }).click();
   await expect(page.getByText(/Enviei para seu e-mail/i)).toBeVisible();
@@ -126,7 +128,7 @@ test('continua aguardando diagnostico publico quando IA demora mais que 20 segun
   await page.getByRole('button', { name: 'Trabalho ou reunião' }).click();
   await page.getByRole('button', { name: 'Elegância discreta' }).click();
   await page.getByRole('button', { name: 'Roupa que já tenho' }).click();
-  await page.getByRole('button', { name: /Ver meu ajuste MUSA/i }).click();
+  await page.getByRole('button', { name: /Descobrir meu primeiro ajuste/i }).click();
 
   await expect(page.getByRole('button', { name: /Montando seu plano/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Seu plano chegou sem travar a tela/i })).toBeVisible();
@@ -144,7 +146,7 @@ test('modo Preview QA nao envia eventos comerciais', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: /tirando elegância/i,
+      name: /imagem menos elegante/i,
       level: 1,
     }),
   ).toBeVisible();
@@ -238,18 +240,18 @@ test('bloqueia video de slides na versao publicada e permite controle sem player
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
   await expect(page.locator('video.public-hero-video')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /imagem menos elegante/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=video');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
   await expect(page.locator('video.public-hero-video')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /imagem menos elegante/i })).toBeVisible();
 
   await page.goto('/?musa_video_variant=control');
 
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /imagem menos elegante/i })).toBeVisible();
 });
 
 test('exibe player na versao v6 motivacional com video real aprovado', async ({ page }) => {
@@ -267,7 +269,7 @@ test('exibe player na versao v6 motivacional com video real aprovado', async ({ 
 
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: /tirando elegância/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /imagem menos elegante/i })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('muted', false);
   await expect(page.locator('video.public-hero-video')).toHaveJSProperty('autoplay', false);

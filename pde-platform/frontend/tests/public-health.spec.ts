@@ -22,15 +22,17 @@ const defaultContract: Required<PublicHealthContract> = {
   slug: 'metodo-musa-7-dias',
   healthPath: '/',
   requiredTexts: [
-    'Descubra o detalhe que está tirando elegância do seu look, sem comprar roupa nova.',
-    'Estrada MUSA',
-    'Ver meu ajuste MUSA',
+    'Descubra o detalhe que deixa sua imagem menos elegante do que você realmente é.',
+    'Seu primeiro ajuste MUSA',
+    'Descobrir meu primeiro ajuste',
   ],
   forbiddenTexts: [
     'Application error',
     'Cannot find module',
     'Unexpected token',
     'Failed to fetch dynamically imported module',
+    'Domínios conhecidos apontados',
+    'Slots versionados do Clube MUSA',
   ],
 };
 

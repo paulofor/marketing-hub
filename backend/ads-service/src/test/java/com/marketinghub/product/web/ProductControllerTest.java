@@ -15,8 +15,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeProductionSlotService;
+import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoAssetDto;
+import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
@@ -689,6 +693,67 @@ class ProductControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].slotCode").value("v2"))
         .andExpect(jsonPath("$[0].experienceVersion").value("musa-pde-entry-v5-estrada-desejo"));
+  }
+
+  /** Deve listar vídeos HLS já resolvidos por versão PDE pelo backend. */
+  @Test
+  void listPdeVersionVideos() throws Exception {
+    Product product = Product.builder().id(1L).slug("metodo-musa-7-dias").build();
+    when(service.getProduct(1L)).thenReturn(product);
+    when(pdeProductionSlotService.listProductionSlotVideosForProduct("metodo-musa-7-dias"))
+        .thenReturn(
+            List.of(
+                new PdeProductionSlotVideoPanelDto(
+                    new PostDeployPdeProductionSlotDto(
+                        4L,
+                        "v6",
+                        "metodo-musa-7-dias",
+                        "v6.clubemusa.com.br",
+                        "https://v6.clubemusa.com.br",
+                        null,
+                        "musa-pde-entry-v6-video-motivacional",
+                        "production-v6",
+                        PdeProductionSlotStatus.ACTIVE,
+                        76L,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        Instant.parse("2026-07-24T10:00:00Z"),
+                        Instant.parse("2026-07-24T10:00:00Z")),
+                    List.of(
+                        new PdeProductionSlotVideoAssetDto(
+                            23L,
+                            68L,
+                            "VERSION_TOKEN",
+                            "Microexperiência visível",
+                            "DIAGNOSTIC_STARTED",
+                            "HEYGEN",
+                            "avatar",
+                            ExperimentVideoStatus.READY,
+                            ExperimentVideoReviewStatus.APPROVED,
+                            "https://cdn.example/video.mp4",
+                            "/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8",
+                            null,
+                            46,
+                            35L,
+                            20462L,
+                            null,
+                            null)),
+                    List.of("Vídeo #23 pertence ao experimento 68, mas foi exibido na v6."))));
+
+    mockMvc
+        .perform(get("/api/products/{id}/pde-videos", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].slot.slotCode").value("v6"))
+        .andExpect(jsonPath("$[0].videos[0].id").value(23))
+        .andExpect(jsonPath("$[0].videos[0].assignmentSource").value("VERSION_TOKEN"))
+        .andExpect(jsonPath("$[0].alerts[0]").value(containsString("experimento 68")));
   }
 
   /** Deve expor a jornada persuasiva PDE como contrato JSON público. */

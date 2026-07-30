@@ -4,8 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
+import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoSlot;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoAssetDto;
+import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.io.IOException;
 import java.net.URI;
@@ -14,9 +21,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -40,13 +49,18 @@ public class PdeProductionSlotService {
       Pattern.compile("<script[^>]+src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
 
   private final PdeProductionSlotRepository repository;
+  private final ExperimentVideoAssetRepository videoAssetRepository;
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
 
   /** Inicializa o serviço com o repositório canônico de slots PDE. */
   public PdeProductionSlotService(
-      PdeProductionSlotRepository repository, HttpClient httpClient, ObjectMapper objectMapper) {
+      PdeProductionSlotRepository repository,
+      ExperimentVideoAssetRepository videoAssetRepository,
+      HttpClient httpClient,
+      ObjectMapper objectMapper) {
     this.repository = repository;
+    this.videoAssetRepository = videoAssetRepository;
     this.httpClient = httpClient;
     this.objectMapper = objectMapper;
   }
@@ -61,6 +75,18 @@ public class PdeProductionSlotService {
     return repository.findByProductSlugOrderBySlotCodeAsc(resolveProductSlug(productSlug)).stream()
         .map(this::toProductionSlotDto)
         .toList();
+  }
+
+  /** Lista cada versão produtiva PDE com os vídeos HLS resolvidos pelo backend. */
+  public List<PdeProductionSlotVideoPanelDto> listProductionSlotVideosForProduct(
+      String productSlug) {
+    List<PdeProductionSlot> slots =
+        repository.findByProductSlugOrderBySlotCodeAsc(resolveProductSlug(productSlug));
+    List<ExperimentVideoAsset> videos =
+        videoAssetRepository.findAllByOrderByCreatedAtDesc().stream()
+            .filter(this::isPdeHeroHlsVideo)
+            .toList();
+    return slots.stream().map(slot -> toVideoPanelDto(slot, slots, videos)).toList();
   }
 
   /** Cria ou atualiza um slot produtivo versionado para manter hipóteses PDE em URLs paralelas. */
@@ -173,6 +199,124 @@ public class PdeProductionSlotService {
         slot.getValidationResolvedUrl(),
         slot.getCreatedAt(),
         slot.getUpdatedAt());
+  }
+
+  /** Monta o contrato de vídeos de uma versão PDE sem delegar regra comercial ao frontend. */
+  private PdeProductionSlotVideoPanelDto toVideoPanelDto(
+      PdeProductionSlot slot, List<PdeProductionSlot> allSlots, List<ExperimentVideoAsset> videos) {
+    List<PdeProductionSlotVideoAssetDto> resolvedVideos =
+        videos.stream()
+            .filter(video -> belongsToSlot(slot, allSlots, video))
+            .sorted(this::compareVideoPriority)
+            .map(video -> toVideoAssetDto(slot, video))
+            .toList();
+    List<String> alerts =
+        resolvedVideos.stream()
+            .filter(video -> "VERSION_TOKEN".equals(video.assignmentSource()))
+            .filter(
+                video ->
+                    slot.getSourceExperimentId() != null
+                        && !slot.getSourceExperimentId().equals(video.experimentId()))
+            .map(
+                video ->
+                    "Vídeo #"
+                        + video.id()
+                        + " pertence ao experimento "
+                        + video.experimentId()
+                        + ", mas foi exibido nesta versão porque o HLS aponta para "
+                        + slot.getSlotCode()
+                        + ".")
+            .toList();
+    return new PdeProductionSlotVideoPanelDto(toProductionSlotDto(slot), resolvedVideos, alerts);
+  }
+
+  /** Verifica se o ativo é um vídeo HLS de hero que pode aparecer no painel PDE. */
+  private boolean isPdeHeroHlsVideo(ExperimentVideoAsset video) {
+    return video.getSlot() == ExperimentVideoSlot.LANDING_HERO
+        && StringUtils.hasText(video.getHlsPlaybackUrl())
+        && video.getHlsPlaybackUrl().contains(".m3u8");
+  }
+
+  /**
+   * Resolve se um vídeo pertence ao slot por versão comercial ou, como fallback, por experimento.
+   */
+  private boolean belongsToSlot(
+      PdeProductionSlot slot, List<PdeProductionSlot> allSlots, ExperimentVideoAsset video) {
+    if (matchesVersionToken(slot, video)) {
+      return true;
+    }
+    if (slot.getSourceExperimentId() == null
+        || video.getExperiment() == null
+        || !slot.getSourceExperimentId().equals(video.getExperiment().getId())) {
+      return false;
+    }
+    return allSlots.stream()
+        .filter(candidate -> !Objects.equals(candidate.getId(), slot.getId()))
+        .noneMatch(candidate -> matchesVersionToken(candidate, video));
+  }
+
+  /** Informa se a URL HLS declara o token versionado do slot ou da experiência. */
+  private boolean matchesVersionToken(PdeProductionSlot slot, ExperimentVideoAsset video) {
+    String versionToken = versionToken(slot);
+    if (!StringUtils.hasText(versionToken)) {
+      return false;
+    }
+    String hls = video.getHlsPlaybackUrl().toLowerCase(Locale.ROOT);
+    Pattern tokenPattern =
+        Pattern.compile("(^|[^a-z0-9])" + Pattern.quote(versionToken) + "([^a-z0-9]|$)");
+    return tokenPattern.matcher(hls).find();
+  }
+
+  /** Extrai o token curto de versão usado nos ativos HLS do PDE. */
+  private String versionToken(PdeProductionSlot slot) {
+    String slotCode = slot.getSlotCode();
+    if (StringUtils.hasText(slotCode) && slotCode.matches("(?i)v\\d+")) {
+      return slotCode.toLowerCase(Locale.ROOT);
+    }
+    Matcher matcher =
+        Pattern.compile("(^|[^a-z0-9])(v\\d+)([^a-z0-9]|$)", Pattern.CASE_INSENSITIVE)
+            .matcher(slot.getExperienceVersion());
+    return matcher.find() ? matcher.group(2).toLowerCase(Locale.ROOT) : null;
+  }
+
+  /** Ordena vídeos aprovados e prontos primeiro, depois mantém os mais recentes. */
+  private int compareVideoPriority(ExperimentVideoAsset current, ExperimentVideoAsset next) {
+    Comparator<ExperimentVideoAsset> comparator =
+        Comparator.comparing(
+                (ExperimentVideoAsset video) ->
+                    video.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
+            .reversed()
+            .thenComparing(
+                video -> video.getStatus() == ExperimentVideoStatus.READY,
+                Comparator.reverseOrder())
+            .thenComparing(ExperimentVideoAsset::getId, Comparator.reverseOrder());
+    return comparator.compare(current, next);
+  }
+
+  /** Converte o ativo persistido em item de painel com a origem do vínculo. */
+  private PdeProductionSlotVideoAssetDto toVideoAssetDto(
+      PdeProductionSlot slot, ExperimentVideoAsset video) {
+    Long experimentId = video.getExperiment() != null ? video.getExperiment().getId() : null;
+    String assignmentSource =
+        matchesVersionToken(slot, video) ? "VERSION_TOKEN" : "SOURCE_EXPERIMENT";
+    return new PdeProductionSlotVideoAssetDto(
+        video.getId(),
+        experimentId,
+        assignmentSource,
+        video.getObjective(),
+        video.getPrimaryMetric(),
+        video.getProvider(),
+        video.getModel(),
+        video.getStatus(),
+        video.getReviewStatus(),
+        video.getAssetUrl(),
+        video.getHlsPlaybackUrl(),
+        video.getThumbnailUrl(),
+        video.getDurationSeconds(),
+        video.getSalesVideoProfile() != null ? video.getSalesVideoProfile().getId() : null,
+        video.getSalesVideoJob() != null ? video.getSalesVideoJob().getId() : null,
+        video.getAsset() != null ? video.getAsset().getId() : null,
+        video.getLandingVideoSlot() != null ? video.getLandingVideoSlot().getId() : null);
   }
 
   /** Executa as chamadas HTTP mínimas que provam a entrega pública do slot. */

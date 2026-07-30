@@ -123,11 +123,11 @@ const basePublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
   {
     key: 'mainObstacle',
     stageLabel: 'Espelho da dor',
-    question: 'O que mais te incomoda quando você se olha pronta?',
+    question: 'Quando você se olha pronta, o que mais te incomoda?',
     options: ['Pareço comum', 'Falta acabamento', 'Nada conversa entre si', 'Sinto que exagerei'],
     imageUrl: '/assets/musa-diagnostic-slide-1.png',
-    visualTitle: 'Comece pelo incômodo que você reconhece no espelho.',
-    visualText: 'Nomeie o que acontece quando você se arruma e ainda sente que falta algo. A partir disso, o MUSA procura o primeiro ruído visual a reduzir.',
+    visualTitle: 'Comece pelo que você sente quando se olha pronta.',
+    visualText: 'Você não precisa saber moda. Só precisa dizer o que percebe no espelho. O MUSA transforma isso em um ajuste prático de elegância acessível.',
     journeyEventType: 'PROBLEM_RECOGNIZED',
   },
   {

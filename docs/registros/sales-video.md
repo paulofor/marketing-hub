@@ -129,6 +129,14 @@
 - Correção preparada: a biblioteca global de videos passa a exibir e editar a `Playlist HLS do PDE` em cada ativo, gravando `hlsPlaybackUrl` pelo endpoint oficial do experimento.
 - Prevenção: video `LANDING_HERO` continua bloqueado para aprovacao quando nao possui `.m3u8`, e playlists HLS externas ao fluxo completo devem ser cadastradas no Hub antes de uso comercial em PDE.
 
+## 2026-07-30 — Painel de vídeos por versão PDE
+
+- Problema observado: o painel `/products/{productId}/pde-videos` podia mostrar vídeo da v6 em outra versão quando o agrupamento usava apenas o experimento de origem do slot.
+- Causa-raiz tratada: a tela cruzava localmente todos os assets por `sourceExperimentId`, mas a verdade comercial do vídeo de PDE é a versão publicada/playlist HLS, não apenas o experimento histórico em que o asset foi gravado.
+- Correção preparada: o backend passa a expor `/api/products/{id}/pde-videos`, retornando cada slot produtivo com seus vídeos HLS já resolvidos por versão; o frontend deixa de inferir vínculo no navegador e apenas apresenta o contrato do backend.
+- Prevenção: quando o HLS aponta para uma versão, mas o asset pertence a outro experimento, o painel exibe alerta operacional para revisão sem esconder o vídeo da versão correta.
+- Impacto comercial esperado: reduzir risco de aprovar, revisar ou pausar vídeo na versão errada antes de campanha paga do MUSA.
+
 ## 2026-07-21 — Vídeos de entrada do PDE pelo Marketing Hub
 
 - Problema observado: a nova área `Vídeos` existia como planejamento local no navegador, mas isso não criava artefato rastreável no Marketing Hub.

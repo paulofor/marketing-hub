@@ -30,6 +30,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `github_actions_get_run_summary`: verifica se uma execução terminou com sucesso e detalha jobs/steps com falha.
 - `github_actions_get_run_logs`: baixa os logs compactados de uma execução e retorna um trecho em texto.
 - `chat_container_logs`: retorna logs Docker dos containers operacionais permitidos no host do MCP. Por padrão, `marketinghub-fashion-chat` e `product-discovery-worker`.
+- `docker_ops`: executa operações Docker restritas no host do MCP (`ps`, `logs`, `restart`) para containers permitidos.
 - `product_discovery_worker_health`: consulta o health do `product-discovery-worker` e retorna provider ativo, status da chave Brave, último polling, último erro e último ciclo processado.
 
 ## Executar localmente
@@ -91,7 +92,26 @@ Configuração:
 - `MCP_CHAT_LOG_MAX_LINES` (default `500`);
 - `MCP_CHAT_LOG_TIMEOUT_SECONDS` (default `20`).
 
-No Docker Compose do MCP, o socket `/var/run/docker.sock` é montado como somente leitura para viabilizar a leitura de logs. Não exponha essa permissão para execução de comandos arbitrários.
+No Docker Compose do MCP, o socket `/var/run/docker.sock` é montado para viabilizar leitura de logs e, quando habilitado por configuração, restart de containers permitidos. Não exponha essa permissão para execução de comandos arbitrários.
+
+## Operações Docker restritas
+
+O tool `docker_ops` permite diagnosticar e recuperar containers operacionais do host do MCP sem liberar SSH nem shell genérico. Ele aceita apenas três ações explícitas:
+
+- `ps`: executa `docker ps --all` e retorna nome, status e imagem apenas dos containers presentes na allowlist operacional.
+- `logs`: executa `docker logs --tail <lines> --timestamps <container>` para container permitido.
+- `restart`: executa `docker restart <container>` somente quando a operação estiver explicitamente habilitada.
+
+Configuração:
+
+- `MCP_DOCKER_OPS_ENABLED` (default `true`);
+- `MCP_DOCKER_OPS_ALLOWED_CONTAINERS` (default `marketinghub-backend,marketinghub-fashion-chat,product-discovery-worker,mcp-server`);
+- `MCP_DOCKER_OPS_DOCKER_COMMAND` (default herda `MCP_CHAT_LOG_DOCKER_COMMAND` ou `docker`);
+- `MCP_DOCKER_OPS_MAX_LINES` (default `500`);
+- `MCP_DOCKER_OPS_TIMEOUT_SECONDS` (default `30`);
+- `MCP_DOCKER_OPS_RESTART_ENABLED` (default `false`).
+
+Para operação produtiva, mantenha a allowlist com nomes exatos dos containers que o MCP pode diagnosticar. Habilite `restart` apenas quando o compose/deploy do MCP montar o socket Docker com permissão compatível e quando o host aceitar que o MCP seja usado como ferramenta operacional de recuperação.
 
 ## Health do Product Discovery Worker
 

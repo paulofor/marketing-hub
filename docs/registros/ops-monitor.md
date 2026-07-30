@@ -124,3 +124,10 @@
 - Causa-raiz operacional tratada: execução local confirmou que o worker não deteriora o VPS por carga anormal, mas o scheduler de targeting repetia chamadas com `gpt-5.5` em limite de taxa; por isso o deploy passa a fixar `OPENAI_TARGETING_REQUEST_MODEL=gpt-5.2`.
 - Correção aplicada: workflow do `ai-worker` passa a publicar no host `191.252.210.83`, o Compose expõe a variável de modelo de targeting e o Ops Monitor passa a verificar `http://191.252.210.83:4567/worker-observability/health`.
 - Prevenção de recorrência: o override fica versionado no deploy, evitando retry infinito por configuração implícita quando o host for recriado.
+
+## 2026-07-30 — Inventário MCP e workers sociais no Ops Monitor
+
+- Problema observado: `social-media-worker` e `tiktok-ads-worker` não apareciam no Ops Monitor, e a tool MCP `vps_host_inventory` existia no contrato público mas estava desabilitada em produção.
+- Causa-raiz tratada: o cadastro canônico do monitor não incluía os workers sociais e o compose operacional do MCP mantinha `MCP_VPS_HOST_INVENTORY_ENABLED=false` por padrão.
+- Correção aplicada: o deploy do MCP passa a habilitar `vps_host_inventory` por padrão e um changelog cadastra `social-media-worker` (`v1-youtube`, porta pública `8099`) e `tiktok-ads-worker` (`v1`, porta pública `8097`) no Ops Monitor.
+- Prevenção de recorrência: o cadastro registra no campo `monitoring_url` o uso operacional do MCP para confirmar host/container, separando health HTTP da evidência de inventário do VPS.

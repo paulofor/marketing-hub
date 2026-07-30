@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
@@ -27,6 +28,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PdeProductionSlot {
+
+  private static final String DEFAULT_LAYOUT_KEY = "video-explicativo";
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -134,4 +137,12 @@ public class PdeProductionSlot {
   @UpdateTimestamp
   @Column(name = "updated_at", nullable = false)
   private Instant updatedAt;
+
+  /** Garante o layout público padrão antes de persistir slots criados fora do serviço canônico. */
+  @PrePersist
+  void ensureLayoutKey() {
+    if (layoutKey == null || layoutKey.isBlank()) {
+      layoutKey = DEFAULT_LAYOUT_KEY;
+    }
+  }
 }

@@ -7,6 +7,8 @@ public record PostDeployPdeExperienceVersionDto(
     long sessions,
     long pdeEntries,
     long firstInteractionClicks,
+    long videoPartial,
+    long videoComplete,
     long loginStarted,
     long paywallViewed,
     long checkoutIntent,

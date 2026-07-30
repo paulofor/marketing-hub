@@ -179,6 +179,22 @@ function findPublishedPdeHeroVideo(panel?: PdeVersionVideoPanel) {
   );
 }
 
+function pdeVideoIdentity(video: PdeVersionVideoAsset) {
+  if (video.id) {
+    return `asset #${video.id}`;
+  }
+  if (video.assetId) {
+    return `asset publicado #${video.assetId}`;
+  }
+  return "vídeo publicado no contrato PDE";
+}
+
+function pdeVideoCostLabel(video: PdeVersionVideoAsset) {
+  return video.assignmentSource === "PUBLISHED_CONTRACT"
+    ? "Custo não rastreável"
+    : "PDE publicado";
+}
+
 export default function ExperimentVideoTab({
   experiment,
   alterationLocked = false,
@@ -402,7 +418,7 @@ export default function ExperimentVideoTab({
                       <tr>
                         <td colSpan={8} className="text-muted">
                           {publishedPdeHeroVideo && publishedPdePanel
-                            ? `Vídeo publicado no PDE ${publishedPdePanel.slot.slotCode}: asset #${publishedPdeHeroVideo.id}, HLS aprovado, sem vínculo direto com criativo Meta vídeo.`
+                            ? `Vídeo publicado no PDE ${publishedPdePanel.slot.slotCode}: ${pdeVideoIdentity(publishedPdeHeroVideo)}, HLS aprovado, sem vínculo direto com criativo Meta vídeo.`
                             : "Nenhum vídeo aprovado ou publicável para consolidar."}
                         </td>
                       </tr>
@@ -514,7 +530,9 @@ export default function ExperimentVideoTab({
                   <span>
                     {landingHeroAsset
                       ? formatUsd(landingHeroAsset.cost)
-                      : "PDE publicado"}
+                      : publishedPdeHeroVideo
+                        ? pdeVideoCostLabel(publishedPdeHeroVideo)
+                        : "PDE publicado"}
                   </span>
                   <span>
                     {(landingHeroAsset?.durationSeconds ??

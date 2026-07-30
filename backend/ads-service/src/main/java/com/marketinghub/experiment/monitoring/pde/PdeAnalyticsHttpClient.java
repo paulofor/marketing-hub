@@ -13,16 +13,17 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
   private static final String DEFAULT_PDE_BASE_URL = "https://v5.clubemusa.com.br";
 
   private final RestClient restClient;
+  private final JdkClientHttpRequestFactory requestFactory;
 
   /** Inicializa o cliente HTTP com timeouts curtos para não travar o painel do Hub. */
   public PdeAnalyticsHttpClient(
       @Value("${integrations.pde-platform.base-url:" + DEFAULT_PDE_BASE_URL + "}") String baseUrl) {
-    JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
-    requestFactory.setReadTimeout(Duration.ofSeconds(4));
+    this.requestFactory = new JdkClientHttpRequestFactory();
+    this.requestFactory.setReadTimeout(Duration.ofSeconds(4));
     this.restClient =
         RestClient.builder()
             .baseUrl(trimTrailingSlash(baseUrl))
-            .requestFactory(requestFactory)
+            .requestFactory(this.requestFactory)
             .build();
   }
 
@@ -30,6 +31,22 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
   @Override
   public PdeAnalyticsSummary fetchSummary(String productSlug) {
     return restClient
+        .get()
+        .uri("/api/pde/access/analytics/{productSlug}/summary", productSlug)
+        .retrieve()
+        .body(PdeAnalyticsSummary.class);
+  }
+
+  /** Busca o resumo consolidado usando explicitamente a URL pública da versão PDE do experimento. */
+  @Override
+  public PdeAnalyticsSummary fetchSummary(String productSlug, String publicBaseUrl) {
+    if (publicBaseUrl == null || publicBaseUrl.isBlank()) {
+      return fetchSummary(productSlug);
+    }
+    return RestClient.builder()
+        .baseUrl(trimTrailingSlash(publicBaseUrl))
+        .requestFactory(requestFactory)
+        .build()
         .get()
         .uri("/api/pde/access/analytics/{productSlug}/summary", productSlug)
         .retrieve()

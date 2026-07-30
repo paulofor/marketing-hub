@@ -7,9 +7,12 @@ import type {
 import type { PostDeployPdeProductionSlot } from "../experiment/usePostDeployMonitor";
 
 export interface PdeVersionVideoAsset {
-  id: number;
+  id?: number | null;
   experimentId?: number | null;
-  assignmentSource: "VERSION_TOKEN" | "SOURCE_EXPERIMENT";
+  assignmentSource:
+    | "VERSION_TOKEN"
+    | "SOURCE_EXPERIMENT"
+    | "PUBLISHED_CONTRACT";
   objective: string;
   primaryMetric: string;
   provider: string;

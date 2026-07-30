@@ -68,6 +68,10 @@ function formatDuration(ms?: number | null) {
   return minutes > 0 ? `${minutes}min ${seconds}s` : `${seconds}s`;
 }
 
+function rate(numerator?: number | null, denominator?: number | null) {
+  return numerator != null && denominator ? (numerator / denominator) * 100 : 0;
+}
+
 function averageDuration(totalMs?: number | null, sessions?: number | null) {
   return totalMs && sessions ? totalMs / sessions : 0;
 }
@@ -136,6 +140,8 @@ export default function ExperimentPostDeployMonitorTab({
               "Clique Mapa/Diagnóstico",
               monitor.pde.presenceMapClicks + monitor.pde.diagnosticClicks,
             ],
+            ["Vídeo visto parcial", monitor.pde.events?.VIDEO_PARTIAL ?? 0],
+            ["Vídeo visto completo", monitor.pde.events?.VIDEO_COMPLETED ?? 0],
             ["E-mail preenchido", monitor.pde.fieldFilled],
             ["Login iniciado", monitor.pde.loginStarted],
             ["Paywall visto", monitor.pde.paywallViewed],
@@ -288,6 +294,25 @@ export default function ExperimentPostDeployMonitorTab({
                       monitor.pde.platformCrawlerSessions +
                       monitor.pde.internalQaSessions,
                   )}
+                />
+                <Metric
+                  label="% visão página"
+                  value={formatPercent(
+                    rate(monitor.pde.pdeEntries, monitor.metaAds.clicks),
+                  )}
+                />
+                <Metric
+                  label="% vídeo completo"
+                  value={formatPercent(
+                    rate(
+                      monitor.pde.events?.VIDEO_COMPLETED ?? 0,
+                      monitor.pde.humanSessions || monitor.pde.sessions,
+                    ),
+                  )}
+                />
+                <Metric
+                  label="Tempo médio"
+                  value={formatDuration(monitor.pde.averageVisibleMsPerSession)}
                 />
               </div>
               <div className="table-responsive">
@@ -477,6 +502,9 @@ export default function ExperimentPostDeployMonitorTab({
                     <th className="text-end">Sessões</th>
                     <th className="text-end">Entradas</th>
                     <th className="text-end">1ª ação</th>
+                    <th className="text-end">Vídeo parcial</th>
+                    <th className="text-end">Vídeo completo</th>
+                    <th className="text-end">% vídeo completo</th>
                     <th className="text-end">Login</th>
                     <th className="text-end">Paywall</th>
                     <th className="text-end">Checkout</th>
@@ -490,6 +518,11 @@ export default function ExperimentPostDeployMonitorTab({
                       <td className="text-end">{formatNumber(version.sessions)}</td>
                       <td className="text-end">{formatNumber(version.pdeEntries)}</td>
                       <td className="text-end">{formatNumber(version.firstInteractionClicks)}</td>
+                      <td className="text-end">{formatNumber(version.videoPartial)}</td>
+                      <td className="text-end">{formatNumber(version.videoComplete)}</td>
+                      <td className="text-end">
+                        {formatPercent(rate(version.videoComplete, version.sessions))}
+                      </td>
                       <td className="text-end">{formatNumber(version.loginStarted)}</td>
                       <td className="text-end">{formatNumber(version.paywallViewed)}</td>
                       <td className="text-end">{formatNumber(version.checkoutIntent)}</td>
@@ -525,6 +558,9 @@ export default function ExperimentPostDeployMonitorTab({
                     <th className="text-end">Sessões</th>
                     <th className="text-end">Entrada</th>
                     <th className="text-end">1ª ação</th>
+                    <th className="text-end">Vídeo parcial</th>
+                    <th className="text-end">Vídeo completo</th>
+                    <th className="text-end">% vídeo completo</th>
                     <th className="text-end">Paywall</th>
                     <th className="text-end">Checkout</th>
                     <th className="text-end">Compra</th>
@@ -549,6 +585,11 @@ export default function ExperimentPostDeployMonitorTab({
                       <td className="text-end">{formatNumber(source.pdeEntries)}</td>
                       <td className="text-end">
                         {formatPercent(source.firstInteractionRate)}
+                      </td>
+                      <td className="text-end">{formatNumber(source.videoPartial)}</td>
+                      <td className="text-end">{formatNumber(source.videoComplete)}</td>
+                      <td className="text-end">
+                        {formatPercent(rate(source.videoComplete, source.sessions))}
                       </td>
                       <td className="text-end">{formatPercent(source.paywallRate)}</td>
                       <td className="text-end">{formatPercent(source.checkoutRate)}</td>

@@ -1046,6 +1046,7 @@ function App() {
         viewportHeight: window.innerHeight,
         path: window.location.pathname,
         experienceVersion: resolveExperienceVersion(product),
+        layoutKey: product.layoutKey || 'sem-layout',
         funnelVersion: product.funnelVersion,
         experimentKey: 'musa_public_diagnostic_video_top_v1',
         publicDiagnosticVideoVariant,

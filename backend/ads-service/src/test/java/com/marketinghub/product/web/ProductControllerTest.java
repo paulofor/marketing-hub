@@ -685,6 +685,10 @@ class ProductControllerTest {
                     null,
                     null,
                     null,
+                    null,
+                    null,
+                    null,
+                    null,
                     Instant.parse("2026-07-24T10:00:00Z"),
                     Instant.parse("2026-07-24T10:00:00Z"))));
 
@@ -715,6 +719,10 @@ class ProductControllerTest {
                         "production-v6",
                         PdeProductionSlotStatus.ACTIVE,
                         76L,
+                        null,
+                        null,
+                        null,
+                        null,
                         null,
                         null,
                         null,

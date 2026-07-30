@@ -15,4 +15,6 @@ public record PostDeployPdeProductionSlotRequestDto(
     @Size(max = 64) String targetEnvironment,
     PdeProductionSlotStatus status,
     Long sourceExperimentId,
-    String notes) {}
+    String notes,
+    String draftExperienceJson,
+    String publishedBy) {}

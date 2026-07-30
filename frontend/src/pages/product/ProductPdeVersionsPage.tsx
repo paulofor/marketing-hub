@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import axios from "axios";
 import { Link, useParams } from "react-router-dom";
 import {
   useProductPdeProductionSlots,
+  usePublishProductPdeProductionSlot,
   useSaveProductPdeProductionSlot,
   useValidateProductPdeProductionSlot,
 } from "../../api/product/usePdeProductionSlots";
@@ -180,6 +181,7 @@ export default function ProductPdeVersionsPage() {
   const productQuery = useProduct(productId);
   const slotsQuery = useProductPdeProductionSlots(productId);
   const saveSlot = useSaveProductPdeProductionSlot(productId);
+  const publishSlot = usePublishProductPdeProductionSlot(productId);
   const validateSlot = useValidateProductPdeProductionSlot(productId);
   const product = productQuery.data;
   const slots = slotsQuery.data ?? [];
@@ -241,6 +243,55 @@ export default function ProductPdeVersionsPage() {
     status: "PLANNED" as PdeProductionSlotStatus,
     notes: "",
   });
+  const [selectedEditorSlotCode, setSelectedEditorSlotCode] = useState("");
+  const selectedEditorSlot = useMemo(
+    () => slots.find((slot) => slot.slotCode === selectedEditorSlotCode),
+    [selectedEditorSlotCode, slots],
+  );
+  const [contractDraft, setContractDraft] = useState("");
+  const [publishedBy, setPublishedBy] = useState("Marketing Hub");
+
+  useEffect(() => {
+    if (!selectedEditorSlotCode && slots.length > 0) {
+      setSelectedEditorSlotCode(slots[0].slotCode);
+    }
+  }, [selectedEditorSlotCode, slots]);
+
+  useEffect(() => {
+    if (!selectedEditorSlot) return;
+    setContractDraft(
+      selectedEditorSlot.draftExperienceJson ||
+        selectedEditorSlot.publishedExperienceJson ||
+        product?.pdeExperienceJson ||
+        "",
+    );
+  }, [product?.pdeExperienceJson, selectedEditorSlot]);
+
+  const saveEditorDraft = () => {
+    if (!selectedEditorSlot) return;
+    saveSlot.mutate({
+      productSlug: product?.slug || "",
+      slotCode: selectedEditorSlot.slotCode,
+      domain: selectedEditorSlot.domain,
+      publicUrl: selectedEditorSlot.publicUrl,
+      backendUrl: selectedEditorSlot.backendUrl || undefined,
+      experienceVersion: selectedEditorSlot.experienceVersion,
+      targetEnvironment: selectedEditorSlot.targetEnvironment,
+      sourceExperimentId: selectedEditorSlot.sourceExperimentId || undefined,
+      status: selectedEditorSlot.status,
+      notes: selectedEditorSlot.notes || undefined,
+      draftExperienceJson: contractDraft,
+    });
+  };
+
+  const publishEditorDraft = () => {
+    if (!selectedEditorSlot) return;
+    publishSlot.mutate({
+      slotCode: selectedEditorSlot.slotCode,
+      experienceJson: contractDraft,
+      publishedBy,
+    });
+  };
 
   if (productQuery.isLoading || slotsQuery.isLoading) {
     return <p className="text-muted">Carregando versões PDE...</p>;
@@ -465,6 +516,127 @@ export default function ProductPdeVersionsPage() {
                 isValidating={validateSlot.isPending}
               />
             </>
+          )}
+        </div>
+      </div>
+
+      <div className="card mt-3">
+        <div className="card-body">
+          <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+            <div>
+              <h2 className="h6 mb-1">Editor/publicador de contrato PDE</h2>
+              <p className="text-muted small mb-0">
+                Cada slot pode ter um contrato próprio publicado. Use isso para
+                testar promessa, perguntas, vídeos, CTA e oferta sem afetar as
+                outras URLs.
+              </p>
+            </div>
+            {selectedEditorSlot?.publishedAt && (
+              <span className="badge text-bg-success">
+                Publicado {formatDate(selectedEditorSlot.publishedAt)}
+              </span>
+            )}
+          </div>
+          {slots.length === 0 ? (
+            <div className="text-muted small">
+              Cadastre uma versão PDE antes de editar o contrato do slot.
+            </div>
+          ) : (
+            <div className="row g-3">
+              <div className="col-12 col-md-3">
+                <label
+                  className="form-label small fw-semibold"
+                  htmlFor="pde-editor-slot"
+                >
+                  Slot *
+                </label>
+                <select
+                  id="pde-editor-slot"
+                  className="form-select form-select-sm"
+                  value={selectedEditorSlotCode}
+                  onChange={(event) =>
+                    setSelectedEditorSlotCode(event.target.value)
+                  }
+                >
+                  {slots.map((slot) => (
+                    <option key={slot.id} value={slot.slotCode}>
+                      {slot.slotCode} · {slot.domain}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-12 col-md-3">
+                <label
+                  className="form-label small fw-semibold"
+                  htmlFor="pde-editor-published-by"
+                >
+                  Publicado por
+                </label>
+                <input
+                  id="pde-editor-published-by"
+                  className="form-control form-control-sm"
+                  value={publishedBy}
+                  onChange={(event) => setPublishedBy(event.target.value)}
+                />
+              </div>
+              <div className="col-12 col-md-6">
+                <div className="small text-muted">
+                  Contrato público:{" "}
+                  <a
+                    href={`/api/products/public/${product.slug}/pde-experience?slotCode=${selectedEditorSlotCode}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    abrir JSON publicado do slot
+                  </a>
+                </div>
+                <div className="small text-muted">
+                  Versão: {selectedEditorSlot?.experienceVersion || "—"}
+                </div>
+              </div>
+              <div className="col-12">
+                <label
+                  className="form-label small fw-semibold"
+                  htmlFor="pde-editor-json"
+                >
+                  Contrato JSON *
+                </label>
+                <textarea
+                  id="pde-editor-json"
+                  className="form-control font-monospace"
+                  rows={18}
+                  value={contractDraft}
+                  onChange={(event) => setContractDraft(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="col-12 d-flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary btn-sm"
+                  onClick={saveEditorDraft}
+                  disabled={saveSlot.isPending || !selectedEditorSlot}
+                >
+                  {saveSlot.isPending ? "Salvando..." : "Salvar rascunho"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={publishEditorDraft}
+                  disabled={publishSlot.isPending || !selectedEditorSlot}
+                >
+                  {publishSlot.isPending ? "Publicando..." : "Publicar no slot"}
+                </button>
+                <a
+                  className="btn btn-outline-secondary btn-sm"
+                  href={selectedEditorSlot?.publicUrl || "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Abrir URL pública
+                </a>
+              </div>
+            </div>
           )}
         </div>
       </div>

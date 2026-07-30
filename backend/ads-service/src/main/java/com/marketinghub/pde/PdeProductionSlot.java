@@ -73,6 +73,22 @@ public class PdeProductionSlot {
   @Column(name = "notes", columnDefinition = "LONGTEXT")
   private String notes;
 
+  /** Contrato PDE em rascunho editado pelo Marketing Hub para este slot. */
+  @Column(name = "draft_experience_json", columnDefinition = "LONGTEXT")
+  private String draftExperienceJson;
+
+  /** Contrato PDE publicado e consumido pela URL versionada deste slot. */
+  @Column(name = "published_experience_json", columnDefinition = "LONGTEXT")
+  private String publishedExperienceJson;
+
+  /** Usuário operacional que publicou o último contrato do slot. */
+  @Column(name = "published_by", length = 191)
+  private String publishedBy;
+
+  /** Data da última publicação de contrato comercial deste slot. */
+  @Column(name = "published_at")
+  private Instant publishedAt;
+
   /** Status da última validação real da URL pública do slot. */
   @Column(name = "validation_status", length = 32)
   private String validationStatus;

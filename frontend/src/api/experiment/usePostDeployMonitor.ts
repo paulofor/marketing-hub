@@ -173,6 +173,10 @@ export interface PostDeployPdeProductionSlot {
   status: PdeProductionSlotStatus;
   sourceExperimentId?: number | null;
   notes?: string | null;
+  draftExperienceJson?: string | null;
+  publishedExperienceJson?: string | null;
+  publishedBy?: string | null;
+  publishedAt?: string | null;
   validationStatus?: string | null;
   validationCheckedAt?: string | null;
   validationHttpStatus?: number | null;
@@ -196,6 +200,8 @@ export interface SavePdeProductionSlotRequest {
   status?: PdeProductionSlotStatus;
   sourceExperimentId?: number;
   notes?: string;
+  draftExperienceJson?: string;
+  publishedBy?: string;
 }
 
 export interface PostDeployFacebookLogSummary {

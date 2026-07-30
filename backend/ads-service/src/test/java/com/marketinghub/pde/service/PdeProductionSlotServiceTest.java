@@ -67,7 +67,9 @@ class PdeProductionSlotServiceTest {
                 null,
                 PdeProductionSlotStatus.PLANNED,
                 null,
-                "Hipotese 2"));
+                "Hipotese 2",
+                null,
+                null));
 
     assertThat(response.id()).isEqualTo(2L);
     assertThat(response.productSlug()).isEqualTo("metodo-musa-7-dias");

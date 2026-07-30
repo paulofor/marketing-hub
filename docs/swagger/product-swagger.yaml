@@ -75,6 +75,111 @@ paths:
                   $ref: "#/components/schemas/PdeProductionSlotVideoPanel"
         "404":
           description: Produto não encontrado.
+  /api/products/{id}/pde-production-slots:
+    get:
+      tags:
+        - Products
+      summary: Lista slots produtivos PDE do produto.
+      operationId: listProductPdeProductionSlots
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Slots produtivos PDE cadastrados para testes paralelos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostDeployPdeProductionSlot"
+    post:
+      tags:
+        - Products
+      summary: Cria ou atualiza um slot produtivo PDE e seu rascunho de contrato.
+      operationId: saveProductPdeProductionSlot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavePdeProductionSlotRequest"
+      responses:
+        "200":
+          description: Slot PDE salvo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDeployPdeProductionSlot"
+  /api/products/{id}/pde-production-slots/{slotCode}/publish:
+    post:
+      tags:
+        - Products
+      summary: Publica o contrato comercial independente de um slot PDE.
+      operationId: publishProductPdeProductionSlotContract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: slotCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: v6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishPdeProductionSlotContractRequest"
+      responses:
+        "200":
+          description: Contrato do slot publicado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDeployPdeProductionSlot"
+  /api/products/{id}/pde-production-slots/{slotCode}/validate:
+    post:
+      tags:
+        - Products
+      summary: Valida entrega pública real de um slot PDE.
+      operationId: validateProductPdeProductionSlot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: slotCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: v6
+      responses:
+        "200":
+          description: Resultado da validação operacional do slot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDeployPdeProductionSlot"
   /api/products/{id}/scientific-articles:
     get:
       tags:
@@ -651,6 +756,17 @@ components:
           format: int64
         notes:
           type: string
+        draftExperienceJson:
+          type: string
+          description: Contrato JSON salvo como rascunho para edição do slot.
+        publishedExperienceJson:
+          type: string
+          description: Contrato JSON publicado e consumido pela URL versionada.
+        publishedBy:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
         validationStatus:
           type: string
         validationCheckedAt:
@@ -674,6 +790,53 @@ components:
         updatedAt:
           type: string
           format: date-time
+    SavePdeProductionSlotRequest:
+      type: object
+      required:
+        - slotCode
+        - productSlug
+        - domain
+        - experienceVersion
+      properties:
+        slotCode:
+          type: string
+          example: v6
+        productSlug:
+          type: string
+          example: metodo-musa-7-dias
+        domain:
+          type: string
+          example: v6.clubemusa.com.br
+        publicUrl:
+          type: string
+          example: https://v6.clubemusa.com.br
+        backendUrl:
+          type: string
+        experienceVersion:
+          type: string
+          example: musa-pde-entry-v6-video-motivacional
+        targetEnvironment:
+          type: string
+          example: production-v6
+        status:
+          type: string
+        sourceExperimentId:
+          type: integer
+          format: int64
+        notes:
+          type: string
+        draftExperienceJson:
+          type: string
+    PublishPdeProductionSlotContractRequest:
+      type: object
+      required:
+        - experienceJson
+      properties:
+        experienceJson:
+          type: string
+          description: Contrato JSON do PDE que será publicado no slot.
+        publishedBy:
+          type: string
     UpdateProductVideoSeedImageRequest:
       type: object
       required:

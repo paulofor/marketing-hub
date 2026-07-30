@@ -61,3 +61,33 @@ export function useValidateProductPdeProductionSlot(productId?: string | number)
     },
   });
 }
+
+export function usePublishProductPdeProductionSlot(productId?: string | number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      slotCode,
+      experienceJson,
+      publishedBy,
+    }: {
+      slotCode: string;
+      experienceJson: string;
+      publishedBy?: string;
+    }) => {
+      const { data } = await axios.post<PostDeployPdeProductionSlot>(
+        `/api/products/${productId}/pde-production-slots/${slotCode}/publish`,
+        { experienceJson, publishedBy },
+      );
+      return data;
+    },
+    onSuccess: (slot) => {
+      toast.success(`Contrato PDE ${slot.slotCode} publicado.`);
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-production-slots"],
+      });
+    },
+    onError: () => {
+      toast.error("Não foi possível publicar o contrato PDE agora.");
+    },
+  });
+}

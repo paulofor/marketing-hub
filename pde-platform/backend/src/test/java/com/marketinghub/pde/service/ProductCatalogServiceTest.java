@@ -86,6 +86,54 @@ class ProductCatalogServiceTest {
         server.verify();
     }
 
+    /** Confirma que host versionado pede ao Marketing Hub o contrato publicado do slot. */
+    @Test
+    void requestsMarketingHubContractForVersionedSlotHost() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        ProductCatalogService service = new ProductCatalogService(builder, "http://marketing-hub", "");
+        server.expect(requestTo("http://marketing-hub/api/products/public/metodo-musa-7-dias/pde-experience?slotCode=v6"))
+                .andRespond(withSuccess("""
+                        {
+                          "slug": "metodo-musa-7-dias",
+                          "experienceVersion": "musa-v6-teste-publicado",
+                          "name": "Método MUSA v6 editável",
+                          "promise": "Promessa independente da v6",
+                          "audience": "Mulheres urbanas",
+                          "priceLabel": "R$67",
+                          "theme": {
+                            "primary": "#7a2444",
+                            "accent": "#d6a75c",
+                            "background": "#fff8f3",
+                            "imageUrl": "/assets/musa-cover.png"
+                          },
+                          "diagnostic": {
+                            "title": "Mapa v6",
+                            "intro": "Entrada v6 publicada no Hub",
+                            "questions": ["Pergunta v6"]
+                          },
+                          "missions": [],
+                          "supportMaterials": [],
+                          "heroVideos": [],
+                          "scientificEvidencePack": {
+                            "version": "musa-evidence-pack-v1",
+                            "principles": [],
+                            "practicalApplications": [],
+                            "allowedLanguage": [],
+                            "forbiddenClaims": [],
+                            "references": []
+                          },
+                          "completionOffer": "Continuidade"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        var product = service.getProductForHost("metodo-musa-7-dias", "v6.clubemusa.com.br");
+
+        assertThat(product.name()).isEqualTo("Método MUSA v6 editável");
+        assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v6-video-motivacional");
+        server.verify();
+    }
+
     /** Confirma que o deploy pode publicar uma versão de experiência sem trocar o contrato base. */
     @Test
     void appliesExperienceVersionOverrideWhenConfigured() {

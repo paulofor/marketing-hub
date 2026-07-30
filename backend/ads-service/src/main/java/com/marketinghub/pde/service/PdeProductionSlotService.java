@@ -10,6 +10,7 @@ import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoAssetDto;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
@@ -123,7 +124,54 @@ public class PdeProductionSlotService {
             ? request.sourceExperimentId()
             : defaultSourceExperimentId);
     slot.setNotes(StringUtils.hasText(request.notes()) ? request.notes().trim() : null);
+    slot.setDraftExperienceJson(normalizeOptionalJson(request.draftExperienceJson()));
     return toProductionSlotDto(repository.save(slot));
+  }
+
+  /** Publica o contrato comercial do slot para consumo da URL versionada do PDE. */
+  public PostDeployPdeProductionSlotDto publishProductionSlotContract(
+      String productSlug, String slotCode, PublishPdeProductionSlotContractRequest request) {
+    String resolvedProductSlug = resolveProductSlug(productSlug);
+    String normalizedSlotCode =
+        normalizeRequired(slotCode, "Código do slot PDE obrigatório").toLowerCase(Locale.ROOT);
+    PdeProductionSlot slot =
+        repository
+            .findByProductSlugAndSlotCode(resolvedProductSlug, normalizedSlotCode)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Slot PDE não encontrado"));
+    String contractJson =
+        StringUtils.hasText(request.experienceJson())
+            ? request.experienceJson()
+            : slot.getDraftExperienceJson();
+    String normalizedContract =
+        normalizeRequiredJson(contractJson, "Informe o contrato JSON do PDE para publicar");
+    slot.setDraftExperienceJson(normalizedContract);
+    slot.setPublishedExperienceJson(normalizedContract);
+    slot.setPublishedBy(
+        StringUtils.hasText(request.publishedBy()) ? request.publishedBy().trim() : null);
+    slot.setPublishedAt(Instant.now());
+    return toProductionSlotDto(repository.save(slot));
+  }
+
+  /** Retorna o contrato PDE publicado por slot ou versão, quando existir. */
+  public Optional<String> findPublishedExperienceJson(
+      String productSlug, String slotCode, String experienceVersion) {
+    String resolvedProductSlug = resolveProductSlug(productSlug);
+    Optional<PdeProductionSlot> slot = Optional.empty();
+    if (StringUtils.hasText(slotCode)) {
+      slot =
+          repository.findByProductSlugAndSlotCode(
+              resolvedProductSlug, slotCode.trim().toLowerCase(Locale.ROOT));
+    }
+    if (slot.isEmpty() && StringUtils.hasText(experienceVersion)) {
+      slot =
+          repository.findFirstByProductSlugAndExperienceVersionOrderByPublishedAtDesc(
+              resolvedProductSlug, experienceVersion.trim());
+    }
+    return slot
+        .map(PdeProductionSlot::getPublishedExperienceJson)
+        .filter(StringUtils::hasText)
+        .map(String::trim);
   }
 
   /** Valida por HTTP se a URL produtiva entrega o contrato público declarado para o PDE. */
@@ -189,6 +237,10 @@ public class PdeProductionSlotService {
         slot.getStatus(),
         slot.getSourceExperimentId(),
         slot.getNotes(),
+        slot.getDraftExperienceJson(),
+        slot.getPublishedExperienceJson(),
+        slot.getPublishedBy(),
+        slot.getPublishedAt(),
         slot.getValidationStatus(),
         slot.getValidationCheckedAt(),
         slot.getValidationHttpStatus(),
@@ -606,6 +658,31 @@ public class PdeProductionSlotService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
     return value.trim();
+  }
+
+  /** Normaliza JSON opcional de contrato PDE antes de persistir como rascunho. */
+  private String normalizeOptionalJson(String rawJson) {
+    if (!StringUtils.hasText(rawJson)) {
+      return null;
+    }
+    return normalizeRequiredJson(rawJson, "Contrato JSON da experiência PDE inválido");
+  }
+
+  /** Valida e formata o JSON obrigatório do contrato PDE. */
+  private String normalizeRequiredJson(String rawJson, String message) {
+    if (!StringUtils.hasText(rawJson)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+    try {
+      JsonNode parsed = objectMapper.readTree(rawJson);
+      if (!parsed.isObject()) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Contrato JSON da experiência PDE deve ser um objeto");
+      }
+      return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
+    } catch (IOException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message, ex);
+    }
   }
 
   /** Normaliza domínio removendo protocolo e barra final para evitar duplicidade operacional. */

@@ -1543,3 +1543,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-07-24-experiment-learned-lessons.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-31-experiment-type-fake-varchar.yaml
+      relativeToChangelogFile: true

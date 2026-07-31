@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-31-experiment-type-fake-varchar-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - columnExists:
+            tableName: experiment
+            columnName: experiment_type
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND table_name = 'experiment'
+                AND column_name = 'experiment_type'
+                AND data_type = 'varchar'
+                AND character_maximum_length >= 48
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                MODIFY COLUMN experiment_type VARCHAR(48) NOT NULL DEFAULT 'NICHE_TEST';

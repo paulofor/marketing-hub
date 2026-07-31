@@ -416,6 +416,36 @@ class AccessServiceTest {
         assertThat(summary.events()).isEmpty();
     }
 
+    /** Confirma que falha no consolidado principal preserva a causa técnica para stack trace. */
+    @Test
+    void preservesRootCauseWhenAnalyticsSummaryFails() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_broken_analytics;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPartialPdeFunnelEventSchema(jdbcUrl);
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            statement.execute("DROP TABLE pde_funnel_event");
+        }
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> accessService.summarizeFunnelAnalytics("metodo-musa-7-dias"));
+
+        assertThat(exception).hasMessage("Não foi possível consolidar analytics PDE");
+        assertThat(exception).hasCauseInstanceOf(SQLException.class);
+    }
+
     /** Confirma que falha em breakdown auxiliar não derruba os KPIs principais do analytics. */
     @Test
     void keepsMainAnalyticsSummaryWhenOptionalBreakdownFails() throws SQLException {

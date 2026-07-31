@@ -2,6 +2,7 @@ package com.marketinghub.experiment.funnel;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
@@ -49,7 +50,7 @@ public class ExperimentFunnelStandbyService {
     return true;
   }
 
-  /** Registra a solicitação de pausa para as campanhas Facebook ainda não finalizadas. */
+  /** Registra ou reabre a solicitação de pausa para campanhas Facebook ainda ativas. */
   public void requestFacebookCampaignStops(
       Long experimentId, FacebookCampaignStopReason stopReason, String businessReason) {
     List<FacebookAdsCampaign> campaigns = campaignRepository.findByExperimentId(experimentId);
@@ -61,12 +62,11 @@ public class ExperimentFunnelStandbyService {
     }
     Instant now = Instant.now();
     campaigns.stream()
-        .filter(campaign -> campaign.getStopCompletedAt() == null)
+        .filter(this::requiresStopRequest)
         .forEach(
             campaign -> {
-              if (campaign.getStopRequestedAt() == null) {
-                campaign.setStopRequestedAt(now);
-              }
+              campaign.setStopRequestedAt(now);
+              campaign.setStopCompletedAt(null);
               campaign.setStopReason(stopReason);
               campaign.setStopLastError(null);
               LOGGER.info(
@@ -77,5 +77,10 @@ public class ExperimentFunnelStandbyService {
                   businessReason);
             });
     campaignRepository.saveAll(campaigns);
+  }
+
+  /** Informa se a campanha ainda precisa de parada efetiva na Meta. */
+  private boolean requiresStopRequest(FacebookAdsCampaign campaign) {
+    return campaign.getStopCompletedAt() == null || campaign.getStatus() == FacebookAdStatus.ACTIVE;
   }
 }

@@ -500,8 +500,12 @@ public class AccessService {
                                             loadSessionJourneyDtos(analyticsConnection, analyticsProductSlug, 20)));
                 }
             }
-        } catch (SQLException ex) {
-            log.error("Falha ao consolidar analytics PDE; productSlug={}", productSlug, ex);
+        } catch (SQLException | RuntimeException ex) {
+            log.error(
+                    "Falha ao consolidar analytics PDE; productSlug={}, operation=summary, jdbcConfigured={}",
+                    productSlug,
+                    usesJdbcStorage(),
+                    ex);
             throw new IllegalStateException("Não foi possível consolidar analytics PDE", ex);
         }
         return emptyFunnelAnalytics(productSlug);
@@ -512,9 +516,9 @@ public class AccessService {
             Connection connection, String productSlug, String breakdownName, AnalyticsBreakdownLoader<T> loader) {
         try {
             return loader.load(connection, productSlug);
-        } catch (SQLException | IOException ex) {
+        } catch (SQLException | IOException | RuntimeException ex) {
             log.error(
-                    "Falha ao carregar breakdown do analytics PDE; productSlug={}, breakdown={}",
+                    "Falha ao carregar breakdown do analytics PDE; productSlug={}, breakdown={}, operation=summary-breakdown",
                     productSlug,
                     breakdownName,
                     ex);

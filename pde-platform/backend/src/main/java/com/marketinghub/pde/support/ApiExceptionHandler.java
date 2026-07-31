@@ -44,8 +44,30 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleUnexpected(Exception ex, HttpServletRequest request) {
         String endpoint = request == null ? "unknown" : request.getRequestURI();
-        log.error("Falha inesperada na API PDE; endpoint={}", endpoint, ex);
+        String method = request == null ? "unknown" : request.getMethod();
+        String queryString = request == null ? null : request.getQueryString();
+        String clientIp = request == null ? "unknown" : resolveClientIp(request);
+        log.error(
+                "Falha inesperada na API PDE; method={}, endpoint={}, queryString={}, clientIp={}",
+                method,
+                endpoint,
+                queryString,
+                clientIp,
+                ex);
         operationalHealthService.recordEndpointFailure(request, HttpStatus.INTERNAL_SERVER_ERROR.value(), ex);
         return Map.of("error", "Falha técnica na API PDE");
+    }
+
+    /** Resolve o IP de origem mais útil para diagnosticar falhas recebidas pelo proxy. */
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",", 2)[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

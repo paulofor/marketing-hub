@@ -1131,72 +1131,56 @@ public class AccessService {
             throws SQLException {
         String sql = """
                 SELECT
-                  COALESCE(NULLIF(utm_source, ''), 'sem-origem') AS resolved_utm_source,
-                  COALESCE(NULLIF(utm_medium, ''), 'sem-meio') AS resolved_utm_medium,
-                  COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha') AS resolved_utm_campaign,
-                  COALESCE(NULLIF(utm_content, ''), 'sem-criativo') AS resolved_utm_content,
-                  COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions,
-                  SUM(CASE WHEN event_type = 'PED_ENTRY' THEN 1 ELSE 0 END) AS pde_entries,
-                  SUM(CASE WHEN event_type IN ('PRESENCE_MAP_CHOICE_SELECTED', 'DIAGNOSTIC_CHOICE_SELECTED') THEN 1 ELSE 0 END)
-                    AS first_interaction_clicks,
-                  SUM(CASE WHEN event_type IN ('VIDEO_PROGRESS_25', 'VIDEO_PROGRESS_50', 'VIDEO_PROGRESS_75') THEN 1 ELSE 0 END)
-                    AS video_partial,
-                  SUM(CASE WHEN event_type = 'VIDEO_COMPLETED' THEN 1 ELSE 0 END) AS video_complete,
-                  SUM(CASE WHEN event_type = 'LOGIN_STARTED' THEN 1 ELSE 0 END) AS login_started,
-                  SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' THEN 1 ELSE 0 END) AS paywall_viewed,
-                  SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' THEN 1 ELSE 0 END) AS checkout_started,
-                  SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' THEN 1 ELSE 0 END) AS subscription_approved,
-                  COALESCE(SUM(visible_ms), 0) AS total_visible_ms,
-                  MAX(occurred_at) AS last_event_at
+                  event_id,
+                  event_type,
+                  session_id,
+                  utm_source,
+                  utm_medium,
+                  utm_campaign,
+                  utm_content,
+                  visible_ms,
+                  occurred_at
                 FROM pde_funnel_event
                 WHERE product_slug = ?
                   AND traffic_quality = 'HUMAN'
-                GROUP BY
-                  COALESCE(NULLIF(utm_source, ''), 'sem-origem'),
-                  COALESCE(NULLIF(utm_medium, ''), 'sem-meio'),
-                  COALESCE(NULLIF(utm_campaign, ''), 'sem-campanha'),
-                  COALESCE(NULLIF(utm_content, ''), 'sem-criativo')
-                ORDER BY sessions DESC, last_event_at DESC
-                LIMIT 20
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
             try (ResultSet resultSet = statement.executeQuery()) {
-                List<FunnelAnalyticsTrafficSourceMetricDto> metrics = new java.util.ArrayList<>();
+                Map<TrafficSourceKey, TrafficSourceMetricBuilder> builders = new LinkedHashMap<>();
                 while (resultSet.next()) {
-                    Timestamp lastEventAt = resultSet.getTimestamp("last_event_at");
-                    String utmSource = resultSet.getString("resolved_utm_source");
-                    String utmMedium = resultSet.getString("resolved_utm_medium");
-                    long sessions = resultSet.getLong("sessions");
-                    long firstInteractionClicks = resultSet.getLong("first_interaction_clicks");
-                    long paywallViewed = resultSet.getLong("paywall_viewed");
-                    long checkoutStarted = resultSet.getLong("checkout_started");
-                    long subscriptionApproved = resultSet.getLong("subscription_approved");
-                    metrics.add(new FunnelAnalyticsTrafficSourceMetricDto(
-                            resolveTrafficChannel(utmSource, utmMedium, resultSet.getString("resolved_utm_campaign")),
-                            utmSource,
-                            utmMedium,
-                            resultSet.getString("resolved_utm_campaign"),
-                            resultSet.getString("resolved_utm_content"),
-                            sessions,
-                            resultSet.getLong("pde_entries"),
-                            firstInteractionClicks,
-                            resultSet.getLong("video_partial"),
-                            resultSet.getLong("video_complete"),
-                            resultSet.getLong("login_started"),
-                            paywallViewed,
-                            checkoutStarted,
-                            subscriptionApproved,
-                            percentage(firstInteractionClicks, sessions),
-                            percentage(paywallViewed, sessions),
-                            percentage(checkoutStarted, sessions),
-                            percentage(subscriptionApproved, sessions),
-                            resultSet.getLong("total_visible_ms"),
-                            timestampAsOperationalText(lastEventAt)));
+                    TrafficSourceKey key = new TrafficSourceKey(
+                            resolvedTrafficValue(resultSet.getString("utm_source"), "sem-origem"),
+                            resolvedTrafficValue(resultSet.getString("utm_medium"), "sem-meio"),
+                            resolvedTrafficValue(resultSet.getString("utm_campaign"), "sem-campanha"),
+                            resolvedTrafficValue(resultSet.getString("utm_content"), "sem-criativo"));
+                    builders.computeIfAbsent(key, TrafficSourceMetricBuilder::new)
+                            .add(
+                                    resultSet.getString("event_type"),
+                                    resultSet.getString("session_id"),
+                                    resultSet.getString("event_id"),
+                                    resultSet.getLong("visible_ms"),
+                                    resultSet.getTimestamp("occurred_at"));
                 }
-                return metrics;
+                return builders.values().stream()
+                        .sorted(java.util.Comparator
+                                .comparingLong(TrafficSourceMetricBuilder::sessionCount)
+                                .reversed()
+                                .thenComparing(TrafficSourceMetricBuilder::lastEventAtOrEpoch,
+                                        java.util.Comparator.reverseOrder()))
+                        .limit(20)
+                        .map(TrafficSourceMetricBuilder::toDto)
+                        .toList();
             }
         }
+    }
+
+    /** Resolve UTM ausente com rótulos estáveis para o cockpit não depender de nulos. */
+    private String resolvedTrafficValue(String value, String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value;
     }
 
     /** Define o contrato dos carregadores auxiliares do resumo analítico. */
@@ -1847,6 +1831,92 @@ public class AccessService {
             Long maxScrollDepthPercent,
             String fieldName,
             String elementText) {}
+
+    /** Identifica uma origem comercial por UTM para consolidar mídia, campanha e criativo. */
+    private record TrafficSourceKey(String utmSource, String utmMedium, String utmCampaign, String utmContent) {}
+
+    /** Acumula eventos por origem de tráfego sem exigir GROUP BY pesado do MySQL. */
+    private class TrafficSourceMetricBuilder {
+        private final TrafficSourceKey key;
+        private final Set<String> sessions = new LinkedHashSet<>();
+        private long pdeEntries;
+        private long firstInteractionClicks;
+        private long videoPartial;
+        private long videoComplete;
+        private long loginStarted;
+        private long paywallViewed;
+        private long checkoutStarted;
+        private long subscriptionApproved;
+        private long totalVisibleMs;
+        private Timestamp lastEventAt;
+
+        /** Cria acumulador para uma combinação específica de origem, campanha e criativo. */
+        private TrafficSourceMetricBuilder(TrafficSourceKey key) {
+            this.key = key;
+        }
+
+        /** Adiciona um evento humano do funil ao acumulador da origem. */
+        private void add(String eventType, String sessionId, String eventId, long visibleMs, Timestamp occurredAt) {
+            sessions.add(sessionId == null || sessionId.isBlank() ? eventId : sessionId);
+            if ("PED_ENTRY".equals(eventType)) {
+                pdeEntries += 1;
+            } else if (Set.of("PRESENCE_MAP_CHOICE_SELECTED", "DIAGNOSTIC_CHOICE_SELECTED").contains(eventType)) {
+                firstInteractionClicks += 1;
+            } else if (Set.of("VIDEO_PROGRESS_25", "VIDEO_PROGRESS_50", "VIDEO_PROGRESS_75").contains(eventType)) {
+                videoPartial += 1;
+            } else if ("VIDEO_COMPLETED".equals(eventType)) {
+                videoComplete += 1;
+            } else if ("LOGIN_STARTED".equals(eventType)) {
+                loginStarted += 1;
+            } else if ("PAYWALL_VIEWED".equals(eventType)) {
+                paywallViewed += 1;
+            } else if ("CHECKOUT_STARTED".equals(eventType)) {
+                checkoutStarted += 1;
+            } else if ("SUBSCRIPTION_APPROVED".equals(eventType)) {
+                subscriptionApproved += 1;
+            }
+            totalVisibleMs += Math.max(0, visibleMs);
+            if (occurredAt != null && (lastEventAt == null || occurredAt.after(lastEventAt))) {
+                lastEventAt = occurredAt;
+            }
+        }
+
+        /** Retorna a quantidade de sessões únicas consolidadas para ordenar origens principais. */
+        private long sessionCount() {
+            return sessions.size();
+        }
+
+        /** Retorna a data do último evento, com fallback estável para ordenação. */
+        private Instant lastEventAtOrEpoch() {
+            return lastEventAt == null ? Instant.EPOCH : lastEventAt.toInstant();
+        }
+
+        /** Converte os acumuladores em DTO público usado pelo cockpit do PDE. */
+        private FunnelAnalyticsTrafficSourceMetricDto toDto() {
+            long sessionCount = sessionCount();
+            return new FunnelAnalyticsTrafficSourceMetricDto(
+                    resolveTrafficChannel(key.utmSource(), key.utmMedium(), key.utmCampaign()),
+                    key.utmSource(),
+                    key.utmMedium(),
+                    key.utmCampaign(),
+                    key.utmContent(),
+                    sessionCount,
+                    pdeEntries,
+                    firstInteractionClicks,
+                    videoPartial,
+                    videoComplete,
+                    loginStarted,
+                    paywallViewed,
+                    checkoutStarted,
+                    subscriptionApproved,
+                    percentage(firstInteractionClicks, sessionCount),
+                    percentage(paywallViewed, sessionCount),
+                    percentage(checkoutStarted, sessionCount),
+                    percentage(subscriptionApproved, sessionCount),
+                    totalVisibleMs,
+                    timestampAsOperationalText(lastEventAt));
+        }
+    }
 
     /** Acumula eventos por layout para comparar formatos visuais sem depender de função JSON do banco. */
     private static class LayoutMetricBuilder {

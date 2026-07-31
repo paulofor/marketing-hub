@@ -35,3 +35,14 @@ Quando precisar descobrir CPU, memória, disco, portas ou containers dos VPS, pr
 - Documentação operacional: seção "Inventário físico de VPS via SSH restrito" em `README.md`.
 
 Não criar shell genérico no MCP para esse caso. A consulta deve usar host em allowlist e comando remoto fixo. A chave privada SSH do MCP deve ficar somente no host do MCP, fora do Git, montada no container em `/opt/marketinghub/mcp/ssh/id_ed25519`.
+
+## RUNTIME_BUILD_INFO_MCP
+
+Quando precisar confirmar qual versão/commit de um módulo está rodando em produção, procure primeiro a tool MCP `runtime_build_info`.
+
+- Implementação: `src/main/java/com/marketinghub/mcpserver/service/RuntimeBuildInfoService.java`.
+- Contrato JSON-RPC: `src/main/java/com/marketinghub/mcpserver/controller/McpController.java`.
+- Configuração: bloco `mcp.build-info` em `src/main/resources/application.yml`.
+- Módulo inicial configurado: `pde-platform-backend`, apontando para `http://163.245.200.7:8096/actuator/info`.
+
+Não inferir commit produtivo apenas por container recente, tag `latest` ou horário de deploy. Se a tool retornar `buildIdentityPublished=false`, o MCP confirmou que o endpoint respondeu, mas o runtime ainda não publicou commit, branch, build time ou version rastreável.

@@ -26,13 +26,12 @@ class MusaV7PublicCopyChangelogTest {
         .containsSubsequence("file: " + CLEANUP_CHANGESET, "relativeToChangelogFile: true");
   }
 
-  /** Confirma que o contrato inicial da v7 não publica rótulo técnico na primeira dobra. */
+  /** Confirma que o contrato inicial da v7 preserva o seed histórico já aplicado. */
   @Test
-  void originalMusaV7ChangelogDoesNotPublishTechnicalVideoKicker() throws IOException {
+  void originalMusaV7ChangelogKeepsAppliedSeedChecksumStable() throws IOException {
     String changeset = Files.readString(CHANGELOG_ROOT.resolve(ORIGINAL_V7_CHANGESET));
 
-    assertThat(changeset).contains("\"videoKicker\": \"Método MUSA em 7 dias\"");
-    assertThat(changeset).doesNotContain("\"videoKicker\": \"PDE v7 científico\"");
+    assertThat(changeset).contains("\"videoKicker\": \"PDE v7 científico\"");
   }
 
   /** Confirma que o reparo corrige contratos já persistidos no Marketing Hub. */

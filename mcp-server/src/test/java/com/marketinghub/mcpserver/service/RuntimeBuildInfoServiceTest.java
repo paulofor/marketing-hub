@@ -67,6 +67,25 @@ class RuntimeBuildInfoServiceTest {
     }
 
     /**
+     * Garante que o backend principal do Marketing Hub pode ser consultado pela mesma tool.
+     */
+    @Test
+    void shouldReadMainBackendBuildIdentity() throws Exception {
+        RuntimeBuildInfoService service = new RuntimeBuildInfoService(buildProperties("""
+                {"git":{"branch":"main","commit":{"id":"123456789abc"}},"build":{"version":"2.0.0","time":"2026-07-31T12:00:00Z"}}
+                """));
+
+        Map<String, Object> result = service.readBuildInfo("backend");
+
+        assertEquals("backend", result.get("module"));
+        assertTrue((Boolean) result.get("buildIdentityPublished"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> summary = (Map<String, Object>) result.get("summary");
+        assertEquals("123456789abc", summary.get("commitId"));
+        assertEquals("main", summary.get("branch"));
+    }
+
+    /**
      * Monta propriedades MCP apontando o build info para um servidor HTTP local.
      */
     private McpProperties buildProperties(String actuatorBody) throws Exception {
@@ -120,8 +139,10 @@ class RuntimeBuildInfoServiceTest {
         );
         McpProperties.BuildInfo buildInfo = new McpProperties.BuildInfo(
                 true,
-                List.of("pde-platform-backend"),
-                Map.of("pde-platform-backend", infoUrl),
+                List.of("backend", "pde-platform-backend"),
+                Map.of(
+                        "backend", infoUrl,
+                        "pde-platform-backend", infoUrl),
                 5
         );
         McpProperties.VpsHostInventory vpsHostInventory = new McpProperties.VpsHostInventory(

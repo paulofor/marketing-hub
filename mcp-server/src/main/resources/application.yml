@@ -76,8 +76,9 @@ mcp:
     restart-enabled: ${MCP_DOCKER_OPS_RESTART_ENABLED:false}
   build-info:
     enabled: ${MCP_BUILD_INFO_ENABLED:true}
-    allowed-modules: ${MCP_BUILD_INFO_ALLOWED_MODULES:pde-platform-backend}
+    allowed-modules: ${MCP_BUILD_INFO_ALLOWED_MODULES:backend,pde-platform-backend}
     module-info-urls:
+      backend: ${MCP_BUILD_INFO_BACKEND_URL:http://191.252.181.168/actuator/info}
       pde-platform-backend: ${MCP_BUILD_INFO_PDE_PLATFORM_BACKEND_URL:http://163.245.200.7:8096/actuator/info}
     timeout-seconds: ${MCP_BUILD_INFO_TIMEOUT_SECONDS:10}
   vps-host-inventory:

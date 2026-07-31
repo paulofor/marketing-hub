@@ -565,6 +565,88 @@ class AccessServiceTest {
                 });
     }
 
+    /** Confirma que origem de tráfego consolida em Java sem duplicar sessão por múltiplos eventos. */
+    @Test
+    void summarizesTrafficSourcesWithoutDatabaseGrouping() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_traffic_source_java_summary;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        Map<String, Object> metaTrafficA = Map.of(
+                "visitorId", "visitor-a",
+                "sessionId", "session-a",
+                "utmSource", "ig",
+                "utmMedium", "paid",
+                "utmCampaign", "musa-v6",
+                "utmContent", "criativo-a",
+                "userAgent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1",
+                "deviceType", "mobile");
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "PED_ENTRY",
+                null,
+                null,
+                "TEST",
+                "test",
+                "https://v6.clubemusa.com.br/?utm_source=ig&utm_medium=paid&utm_campaign=musa-v6&utm_content=criativo-a",
+                metaTrafficA));
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "VIDEO_COMPLETED",
+                null,
+                null,
+                "TEST",
+                "test",
+                "https://v6.clubemusa.com.br/?utm_source=ig&utm_medium=paid&utm_campaign=musa-v6&utm_content=criativo-a",
+                metaTrafficA));
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "CHECKOUT_STARTED",
+                null,
+                null,
+                "TEST",
+                "test",
+                "https://v6.clubemusa.com.br/?utm_source=google&utm_medium=cpc&utm_campaign=musa-v6&utm_content=search",
+                Map.of(
+                        "visitorId", "visitor-b",
+                        "sessionId", "session-b",
+                        "utmSource", "google",
+                        "utmMedium", "cpc",
+                        "utmCampaign", "musa-v6",
+                        "utmContent", "search",
+                        "userAgent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1",
+                        "deviceType", "mobile")));
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.trafficSources()).hasSize(2);
+        assertThat(summary.trafficSources())
+                .anySatisfy(source -> {
+                    assertThat(source.trafficChannel()).isEqualTo("Meta");
+                    assertThat(source.utmSource()).isEqualTo("ig");
+                    assertThat(source.sessions()).isEqualTo(1);
+                    assertThat(source.pdeEntries()).isEqualTo(1);
+                    assertThat(source.videoComplete()).isEqualTo(1);
+                    assertThat(source.checkoutStarted()).isZero();
+                })
+                .anySatisfy(source -> {
+                    assertThat(source.trafficChannel()).isEqualTo("Google Search");
+                    assertThat(source.sessions()).isEqualTo(1);
+                    assertThat(source.checkoutStarted()).isEqualTo(1);
+                });
+    }
+
     /** Confirma que remarketing nao se mistura com Meta frio na leitura por UTM. */
     @Test
     void classifiesRemarketingBeforeMetaTrafficSource() throws SQLException {

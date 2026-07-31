@@ -439,8 +439,7 @@ export default function ExperimentListPage() {
                   <td className="text-end">
                     <div className="d-flex flex-column gap-1">
                       <span className="fw-semibold">
-                        Custo:{" "}
-                        {formatCurrencyPair(resolveExperimentCost(e))}
+                        Custo: {formatCurrencyPair(resolveExperimentCost(e))}
                       </span>
                       <span className="text-success fw-semibold">
                         Receita:{" "}
@@ -454,6 +453,12 @@ export default function ExperimentListPage() {
                       to={`/experiments/${e.id}`}
                     >
                       Visualizar
+                    </Link>
+                    <Link
+                      className="btn btn-sm btn-outline-success ms-1"
+                      to={`/experiments/${e.id}/cockpit`}
+                    >
+                      Cockpit
                     </Link>
                     {canStop && (
                       <button

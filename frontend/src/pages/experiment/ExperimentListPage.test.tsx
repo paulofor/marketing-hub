@@ -135,6 +135,11 @@ describe("ExperimentListPage", () => {
       within(row as HTMLTableRowElement).getByText("Nicho Principal"),
     ).toBeTruthy();
     expect(
+      within(row as HTMLTableRowElement).getByRole("link", {
+        name: "Cockpit",
+      }),
+    ).toHaveAttribute("href", "/experiments/1/cockpit");
+    expect(
       within(row as HTMLTableRowElement).getByText("Custo: R$ 1,00 / US$ 0,20"),
     ).toBeTruthy();
     expect(within(row as HTMLTableRowElement).getByText("1m 34s")).toBeTruthy();

@@ -1,0 +1,183 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub Experiment Cockpit API
+  version: 1.0.0
+paths:
+  /api/experiments/{id}/cockpit:
+    get:
+      summary: Retorna o cockpit comercial consolidado do experimento.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Cockpit comercial do experimento.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExperimentCockpit"
+components:
+  schemas:
+    ExperimentCockpit:
+      type: object
+      required:
+        - experimentId
+        - experimentName
+        - scoreboard
+        - question
+        - health
+        - funnel
+        - bottleneck
+        - learnings
+        - nextActions
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        experimentName:
+          type: string
+        status:
+          type: string
+        experimentType:
+          type: string
+        campaignObjective:
+          type: string
+        scoreboard:
+          $ref: "#/components/schemas/ExperimentCockpitScoreboard"
+        question:
+          $ref: "#/components/schemas/ExperimentCockpitQuestion"
+        health:
+          $ref: "#/components/schemas/ExperimentCockpitHealth"
+        funnel:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentCockpitFunnelStage"
+        bottleneck:
+          $ref: "#/components/schemas/ExperimentCockpitBottleneck"
+        learnings:
+          type: array
+          items:
+            type: string
+        nextActions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentCockpitAction"
+    ExperimentCockpitScoreboard:
+      type: object
+      properties:
+        spend:
+          type: number
+        revenue:
+          type: number
+        margin:
+          type: number
+        roas:
+          type: number
+        impressions:
+          type: integer
+          format: int64
+        clicks:
+          type: integer
+          format: int64
+        ctr:
+          type: number
+        cpc:
+          type: number
+        pageViews:
+          type: integer
+          format: int64
+        leads:
+          type: integer
+          format: int64
+        checkoutAccesses:
+          type: integer
+          format: int64
+        purchases:
+          type: integer
+          format: int64
+        costPerLead:
+          type: number
+        costPerCheckoutAccess:
+          type: number
+        costPerPurchase:
+          type: number
+    ExperimentCockpitQuestion:
+      type: object
+      properties:
+        pain:
+          type: string
+        promise:
+          type: string
+        mechanism:
+          type: string
+        offer:
+          type: string
+        primaryCta:
+          type: string
+        primaryVariable:
+          type: string
+        primaryMetric:
+          type: string
+    ExperimentCockpitHealth:
+      type: object
+      properties:
+        status:
+          type: string
+        headline:
+          type: string
+        description:
+          type: string
+        blockers:
+          type: array
+          items:
+            type: string
+    ExperimentCockpitFunnelStage:
+      type: object
+      properties:
+        stage:
+          type: string
+        label:
+          type: string
+        order:
+          type: integer
+        totalCount:
+          type: integer
+          format: int64
+        uniqueCount:
+          type: integer
+          format: int64
+        lastEventAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+    ExperimentCockpitBottleneck:
+      type: object
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        severity:
+          type: string
+        diagnosis:
+          type: string
+        commercialImpact:
+          type: string
+        recommendedFocus:
+          type: string
+    ExperimentCockpitAction:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        rationale:
+          type: string
+        targetRoute:
+          type: string

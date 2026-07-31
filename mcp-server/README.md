@@ -239,6 +239,8 @@ O PDE Platform Backend usa banco próprio para analytics e comportamento de lead
 - `MCP_PDE_DATASOURCE_USERNAME`;
 - `MCP_PDE_DATASOURCE_PASSWORD`.
 
+No compose versionado, essas variáveis herdam automaticamente `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` quando as variáveis específicas do MCP não forem definidas. Isso mantém MCP, backend PDE e cockpit analisando o mesmo schema efetivo.
+
 Com essas variáveis ativas, use as tools `pde_db_*` para análises de comportamento do PDE. As tools `db_*` continuam apontando para o banco principal.
 
 Antes de interpretar qualquer métrica PDE, execute `pde_db_health` e confira o bloco `datasourceTarget` retornado. Ele deve apontar para o mesmo host, porta e schema configurados no PDE Platform Backend produtivo que alimenta a URL pública analisada. Se o summary público de uma versão, como `https://v6.clubemusa.com.br`, mostrar eventos recentes e o `pde_db_health`/`pde_db_query` apontar para outro alvo ou dados antigos, trate a análise MCP como inválida até alinhar `MCP_PDE_DATASOURCE_URL`, `MCP_PDE_DATASOURCE_USERNAME` e `MCP_PDE_DATASOURCE_PASSWORD` no deploy do MCP.

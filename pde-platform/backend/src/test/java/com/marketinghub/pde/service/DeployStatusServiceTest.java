@@ -19,6 +19,7 @@ class DeployStatusServiceTest {
                 "0.0.1-SNAPSHOT",
                 "docker-compose.deploy.yml",
                 "abc123",
+                "main",
                 "pde-v6-abc123",
                 "musa-pde-entry-v6-video-motivacional",
                 "https://v6.clubemusa.com.br",
@@ -39,6 +40,7 @@ class DeployStatusServiceTest {
         var identity = service.buildIdentity();
 
         assertThat(identity.commitSha()).isEqualTo("abc123");
+        assertThat(identity.branch()).isEqualTo("main");
         assertThat(identity.backendImage()).isEqualTo("registry/pde-platform-backend:pde-v6-abc123");
         assertThat(identity.frontendUrl()).isEqualTo("https://v6.clubemusa.com.br");
         assertThat(identity.marketingHubBaseUrl()).contains("191.252.181.168");

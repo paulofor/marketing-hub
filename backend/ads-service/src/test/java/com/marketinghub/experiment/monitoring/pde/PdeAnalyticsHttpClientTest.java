@@ -74,6 +74,7 @@ class PdeAnalyticsHttpClientTest {
     PdeBuildIdentity identity = client.fetchBuildIdentity(baseUrl);
 
     assertThat(identity.commitSha()).isEqualTo("abc123");
+    assertThat(identity.branch()).isEqualTo("main");
     assertThat(identity.backendUrl()).isEqualTo("http://163.245.200.7:8096");
     assertThat(identity.marketingHubBaseUrl()).contains("191.252.181.168");
   }
@@ -138,6 +139,7 @@ class PdeAnalyticsHttpClientTest {
           "artifact": "pde-platform-backend",
           "buildVersion": "0.0.1-SNAPSHOT",
           "commitSha": "abc123",
+          "branch": "main",
           "imageTag": "pde-v6-abc123",
           "backendImage": "registry/pde-platform-backend:pde-v6-abc123",
           "environment": "production",

@@ -169,6 +169,9 @@ components:
         commitSha:
           type: string
           nullable: true
+        branch:
+          type: string
+          nullable: true
         imageTag:
           type: string
           nullable: true

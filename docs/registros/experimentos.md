@@ -6469,3 +6469,11 @@
 - ajuste preparado: a pausa de campanha agora reabre stop request quando a campanha voltou a `ACTIVE`, e o backend PDE passa a criar índice adicional para leitura recente do funil por produto, qualidade de tráfego, data e id.
 - prevenção: testes focados cobrem reabertura de stop request para campanha reativada e criação idempotente do índice de analytics PDE.
 - próximo passo comercial: após deploy, validar que a campanha Meta ficou pausada, confirmar que o endpoint de analytics v6 responde 200, executar entrada real mobile no PDE e só então criar novo experimento limpo da v6.
+
+## 2026-07-31 — Protocolo geral de publicação comercial de PDE
+
+- decisão operacional do usuário: o protocolo de publicação comercial deve valer para qualquer PDE, não apenas para o produto MUSA.
+- causa-raiz: versões PDE podiam chegar a tráfego ou leitura de cockpit com vazamento de linguagem interna, validação visual incompleta ou métrica misturada entre campanha, experimento, slot e `experienceVersion`.
+- ajuste preparado: criado `docs/canonical/protocolo-publicacao-comercial-pde-canon.v1.md` e o cânone da PDE Platform passou a exigir esse protocolo antes de publicação, tráfego pago, comparação de versões ou decisão de escala.
+- prevenção: o protocolo bloqueia `RUNNING` quando houver vazamento técnico, primeira dobra pública não validada, eventos ausentes ou métricas não segmentadas por produto, campanha, experimento, slot e `experienceVersion`.
+- impacto comercial esperado: reduzir desperdício de mídia/vídeo, evitar conclusões falsas no cockpit e proteger a percepção da cliente antes de escalar PDEs.

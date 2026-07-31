@@ -1,5 +1,6 @@
 package com.marketinghub.experiment.monitoring.pde;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -15,11 +16,14 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
   private final RestClient restClient;
   private final JdkClientHttpRequestFactory requestFactory;
 
-  /** Inicializa o cliente HTTP com timeouts curtos para não travar o painel do Hub. */
+  /** Inicializa o cliente HTTP com timeouts configuráveis para não zerar o cockpit por lentidão. */
   public PdeAnalyticsHttpClient(
-      @Value("${integrations.pde-platform.base-url:" + DEFAULT_PDE_BASE_URL + "}") String baseUrl) {
-    this.requestFactory = new JdkClientHttpRequestFactory();
-    this.requestFactory.setReadTimeout(Duration.ofSeconds(4));
+      @Value("${integrations.pde-platform.base-url:" + DEFAULT_PDE_BASE_URL + "}") String baseUrl,
+      @Value("${integrations.pde-platform.connect-timeout:PT3S}") Duration connectTimeout,
+      @Value("${integrations.pde-platform.read-timeout:PT15S}") Duration readTimeout) {
+    HttpClient httpClient = HttpClient.newBuilder().connectTimeout(connectTimeout).build();
+    this.requestFactory = new JdkClientHttpRequestFactory(httpClient);
+    this.requestFactory.setReadTimeout(readTimeout);
     this.restClient =
         RestClient.builder()
             .baseUrl(trimTrailingSlash(baseUrl))

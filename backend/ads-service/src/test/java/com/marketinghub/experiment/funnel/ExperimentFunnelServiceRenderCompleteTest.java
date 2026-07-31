@@ -1206,6 +1206,112 @@ class ExperimentFunnelServiceRenderCompleteTest {
         .fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");
   }
 
+  /**
+   * Valida que o funil PDE usa a versão do slot quando há código de campanha salvo, mas nenhum UTM
+   * do analytics corresponde ao experimento.
+   */
+  @Test
+  void summarizePdeMembershipFallsBackToVersionWhenAttributionDoesNotMatch() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(77L)
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .followUpActionUrl("https://v6.clubemusa.com.br")
+            .build();
+    when(experimentRepository.findById(77L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.aggregateManualByExperiment(77L, null)).thenReturn(List.of());
+    when(jdbcTemplate.queryForList(
+            any(String.class),
+            eq(String.class),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
+        .thenReturn(List.of("campanha-do-experimento-77"));
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br"))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v5-video-explicativo",
+                420,
+                35,
+                35,
+                35,
+                35,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                13375288,
+                "2026-07-30T21:51:38-03:00",
+                List.of(),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v6-video-motivacional",
+                        371,
+                        29,
+                        29,
+                        0,
+                        0,
+                        12,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                        "Meta",
+                        "ig",
+                        "paid",
+                        "120250665503920326",
+                        "120250665505440326",
+                        27,
+                        27,
+                        0,
+                        12,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        13311927,
+                        "2026-07-30T21:51:38-03:00")),
+                List.of(),
+                List.of(),
+                List.of()));
+
+    var summary = service.summarize(77L);
+
+    var pdeEntry =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VISUALIZACAO_FORM)
+            .findFirst()
+            .orElseThrow();
+    var videoComplete =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VIDEO_VISTO_COMPLETO)
+            .findFirst()
+            .orElseThrow();
+
+    assertEquals(29, pdeEntry.getTotalCount());
+    assertEquals(6, videoComplete.getTotalCount());
+    assertEquals(Instant.parse("2026-07-31T00:51:38Z"), pdeEntry.getLastEventAt());
+  }
+
   /** Valida que render-complete rejeita slug vazio. */
   @Test
   void registerFormRenderCompletedFailsWhenSlugIsMissing() {

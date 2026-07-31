@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1247,10 +1248,12 @@ public class ExperimentFunnelService {
     long checkoutIntent = 0;
     long subscriptionApproved = 0;
     Instant lastEventAt = null;
+    boolean matchedAttribution = false;
     for (PdeAnalyticsSummary.PdeTrafficSourceMetric source : summary.trafficSources()) {
       if (source == null || !matchesPdeAttribution(source, attributionCodes)) {
         continue;
       }
+      matchedAttribution = true;
       pdeEntries += source.pdeEntries();
       videoPartial += source.videoPartial();
       videoComplete += source.videoComplete();
@@ -1259,6 +1262,13 @@ public class ExperimentFunnelService {
       checkoutIntent += source.checkoutStarted();
       subscriptionApproved += source.subscriptionApproved();
       lastEventAt = max(lastEventAt, parsePdeInstant(source.lastEventAt()));
+    }
+    if (!matchedAttribution && findMatchingExperienceVersion(summary, followUpActionUrl).isPresent()) {
+      log.warn(
+          "Analytics PDE sem origem UTM correspondente; usando fallback pela versao do slot. followUpActionUrl={} attributionCodes={}",
+          followUpActionUrl,
+          attributionCodes);
+      return aggregatePdeMembershipMetricByExperienceVersion(summary, followUpActionUrl);
     }
     return new PdeMembershipMetric(
         pdeEntries,
@@ -1355,8 +1365,12 @@ public class ExperimentFunnelService {
     try {
       return Instant.parse(value.trim());
     } catch (DateTimeParseException ex) {
-      log.warn("Data de último evento PDE ignorada por formato inválido; value={}", value);
-      return null;
+      try {
+        return OffsetDateTime.parse(value.trim()).toInstant();
+      } catch (DateTimeParseException nestedEx) {
+        log.warn("Data de último evento PDE ignorada por formato inválido; value={}", value);
+        return null;
+      }
     }
   }
 

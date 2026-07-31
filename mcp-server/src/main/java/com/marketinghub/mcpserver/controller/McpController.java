@@ -9,6 +9,7 @@ import com.marketinghub.mcpserver.service.GithubActionsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
 import com.marketinghub.mcpserver.service.PdeDatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.ProductDiscoveryWorkerHealthService;
+import com.marketinghub.mcpserver.service.RuntimeBuildInfoService;
 import com.marketinghub.mcpserver.service.SensitiveDataSanitizer;
 import com.marketinghub.mcpserver.service.VpsHostInventoryService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +52,7 @@ public class McpController {
     private final ModuleLogService moduleLogService;
     private final ChatContainerLogService chatContainerLogService;
     private final DockerOperationsService dockerOperationsService;
+    private final RuntimeBuildInfoService runtimeBuildInfoService;
     private final VpsHostInventoryService vpsHostInventoryService;
     private final ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService;
     private final MetaDiagnosticsService metaDiagnosticsService;
@@ -66,6 +68,7 @@ public class McpController {
                          ModuleLogService moduleLogService,
                          ChatContainerLogService chatContainerLogService,
                          DockerOperationsService dockerOperationsService,
+                         RuntimeBuildInfoService runtimeBuildInfoService,
                          VpsHostInventoryService vpsHostInventoryService,
                          ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService,
                          MetaDiagnosticsService metaDiagnosticsService,
@@ -77,6 +80,7 @@ public class McpController {
         this.moduleLogService = moduleLogService;
         this.chatContainerLogService = chatContainerLogService;
         this.dockerOperationsService = dockerOperationsService;
+        this.runtimeBuildInfoService = runtimeBuildInfoService;
         this.vpsHostInventoryService = vpsHostInventoryService;
         this.productDiscoveryWorkerHealthService = productDiscoveryWorkerHealthService;
         this.metaDiagnosticsService = metaDiagnosticsService;
@@ -266,6 +270,18 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "runtime_build_info",
+                            "description", "Consulta a identidade de build publicada em runtime por módulos permitidos, incluindo version, commit, branch e build time quando o Actuator expõe esses campos.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "module", Map.of("type", "string",
+                                                    "enum", runtimeBuildInfoService.allowedModules(),
+                                                    "description", "Módulo permitido para consulta de build info.")),
+                                    "required", List.of("module"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "vps_host_inventory",
                             "description", "Consulta CPU, memória, disco, portas e containers Docker de um VPS permitido via SSH restrito.",
                             "inputSchema", Map.of(
@@ -400,6 +416,7 @@ public class McpController {
                 case "java_module_logs" -> callJavaModuleLogsTool(id, arguments);
                 case "chat_container_logs" -> callChatContainerLogsTool(id, arguments);
                 case "docker_ops" -> callDockerOpsTool(id, arguments);
+                case "runtime_build_info" -> callRuntimeBuildInfoTool(id, arguments);
                 case "vps_host_inventory" -> callVpsHostInventoryTool(id, arguments);
                 case "product_discovery_worker_health" -> callProductDiscoveryWorkerHealthTool(id);
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
@@ -659,6 +676,47 @@ public class McpController {
                 .map(String::valueOf)
                 .collect(Collectors.joining("\n"));
         return header + "\n" + logLines;
+    }
+
+    /**
+     * Consulta a identidade de build publicada pelo runtime de um módulo permitido.
+     */
+    private Map<String, Object> callRuntimeBuildInfoTool(Object id, Map<String, Object> arguments) {
+        String module = stringArgument(arguments, "module");
+
+        try {
+            Map<String, Object> result = runtimeBuildInfoService.readBuildInfo(module);
+            return successToolResult(id, result, buildRuntimeBuildInfoText(result));
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP runtime_build_info inválido: requestId={} module={} motivo={}",
+                    id, module, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar runtime_build_info: requestId={} module={}", id, module, ex);
+            return error(id, -32603, "Failed to read runtime build info: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Formata um resumo textual da identidade de build publicada pelo runtime.
+     */
+    @SuppressWarnings("unchecked")
+    private String buildRuntimeBuildInfoText(Map<String, Object> result) {
+        Object summaryObject = result.get("summary");
+        Map<String, Object> summary = summaryObject instanceof Map<?, ?> summaryMap
+                ? (Map<String, Object>) summaryMap
+                : Map.of();
+        if (summary.isEmpty()) {
+            return "Runtime build info fetched for module " + result.get("module")
+                    + ", but no build identity fields were published";
+        }
+        return "Runtime build info for module %s: version=%s commit=%s branch=%s buildTime=%s"
+                .formatted(
+                        result.get("module"),
+                        summary.getOrDefault("version", ""),
+                        summary.getOrDefault("commitId", summary.getOrDefault("commitAbbrev", "")),
+                        summary.getOrDefault("branch", ""),
+                        summary.getOrDefault("buildTime", ""));
     }
 
     /**

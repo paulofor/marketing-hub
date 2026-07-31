@@ -127,6 +127,12 @@ class VpsHostInventoryServiceTest {
                 5,
                 false
         );
+        McpProperties.BuildInfo buildInfo = new McpProperties.BuildInfo(
+                true,
+                List.of("pde-platform-backend"),
+                Map.of("pde-platform-backend", "http://127.0.0.1:8096/actuator/info"),
+                5
+        );
         McpProperties.VpsHostInventory vpsHostInventory = new McpProperties.VpsHostInventory(
                 enabled,
                 List.of("191.252.210.83", "191.252.120.96"),
@@ -159,6 +165,6 @@ class VpsHostInventoryServiceTest {
                 ""
         );
         return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, dockerOps,
-                vpsHostInventory, productDiscoveryWorker, meta, github);
+                buildInfo, vpsHostInventory, productDiscoveryWorker, meta, github);
     }
 }

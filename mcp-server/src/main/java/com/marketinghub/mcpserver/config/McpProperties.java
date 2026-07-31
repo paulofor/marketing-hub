@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Centraliza as propriedades de configuração usadas pelo servidor MCP.
@@ -21,6 +22,7 @@ public record McpProperties(
         @NotNull @Valid Logs logs,
         @NotNull @Valid ChatLogs chatLogs,
         @NotNull @Valid DockerOps dockerOps,
+        @NotNull @Valid BuildInfo buildInfo,
         @NotNull @Valid VpsHostInventory vpsHostInventory,
         @NotNull @Valid ProductDiscoveryWorker productDiscoveryWorker,
         @NotNull @Valid Meta meta,
@@ -75,6 +77,17 @@ public record McpProperties(
             @Positive int maxLines,
             @Positive int timeoutSeconds,
             boolean restartEnabled
+    ) {
+    }
+
+    /**
+     * Define os módulos e URLs permitidos para consulta de identidade de build em runtime.
+     */
+    public record BuildInfo(
+            boolean enabled,
+            @NotEmpty List<@NotBlank String> allowedModules,
+            @NotEmpty Map<@NotBlank String, @NotBlank String> moduleInfoUrls,
+            @Positive int timeoutSeconds
     ) {
     }
 

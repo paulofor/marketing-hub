@@ -31,6 +31,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `github_actions_get_run_logs`: baixa os logs compactados de uma execução e retorna um trecho em texto.
 - `chat_container_logs`: retorna logs Docker dos containers operacionais permitidos no host do MCP. Por padrão, `marketinghub-fashion-chat` e `product-discovery-worker`.
 - `docker_ops`: executa operações Docker restritas no host do MCP (`ps`, `logs`, `restart`) para containers permitidos.
+- `runtime_build_info`: consulta a identidade de build publicada em runtime por módulos permitidos, incluindo version, commit, branch e build time quando o Actuator expõe esses campos.
 - `vps_host_inventory`: consulta CPU, memória, disco, sistema operacional, portas e containers Docker de VPS permitidos via SSH restrito, sem liberar shell genérico.
 - `product_discovery_worker_health`: consulta o health do `product-discovery-worker` e retorna provider ativo, status da chave Brave, último polling, último erro e último ciclo processado.
 
@@ -113,6 +114,25 @@ Configuração:
 - `MCP_DOCKER_OPS_RESTART_ENABLED` (default `false`).
 
 Para operação produtiva, mantenha a allowlist com nomes exatos dos containers que o MCP pode diagnosticar. Habilite `restart` apenas quando o compose/deploy do MCP montar o socket Docker com permissão compatível e quando o host aceitar que o MCP seja usado como ferramenta operacional de recuperação.
+
+## Identidade de build/runtime dos módulos
+
+O tool `runtime_build_info` consulta endpoints permitidos de `GET /actuator/info` para confirmar se o runtime publicou identidade rastreável de build. O objetivo é evitar inferência fraca baseada em tag `latest`, horário de container ou comportamento observado.
+
+Configuração:
+
+- `MCP_BUILD_INFO_ENABLED` (default `true`);
+- `MCP_BUILD_INFO_ALLOWED_MODULES` (default `pde-platform-backend`);
+- `MCP_BUILD_INFO_PDE_PLATFORM_BACKEND_URL` (default `http://163.245.200.7:8096/actuator/info`);
+- `MCP_BUILD_INFO_TIMEOUT_SECONDS` (default `10`).
+
+Exemplo JSON-RPC:
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"runtime_build_info","arguments":{"module":"pde-platform-backend"}}}
+```
+
+Quando o serviço publica os campos, a resposta estruturada inclui `summary.version`, `summary.commitId`, `summary.branch` e `summary.buildTime`. Quando `buildIdentityPublished=false`, o endpoint respondeu, mas o módulo ainda não expõe commit/build rastreável; nesse caso, é necessário ajustar o próprio módulo para publicar `git.properties`/`build-info.properties` no Actuator.
 
 ## Inventário físico de VPS via SSH restrito
 

@@ -86,6 +86,11 @@ class McpControllerTest {
         registry.add("mcp.docker-ops.max-lines", () -> "500");
         registry.add("mcp.docker-ops.timeout-seconds", () -> "5");
         registry.add("mcp.docker-ops.restart-enabled", () -> "false");
+        registry.add("mcp.build-info.enabled", () -> "true");
+        registry.add("mcp.build-info.allowed-modules", () -> "pde-platform-backend");
+        registry.add("mcp.build-info.module-info-urls.pde-platform-backend",
+                () -> "http://127.0.0.1:1/actuator/info");
+        registry.add("mcp.build-info.timeout-seconds", () -> "1");
         registry.add("mcp.vps-host-inventory.enabled", () -> "true");
         registry.add("mcp.vps-host-inventory.allowed-hosts", () -> "191.252.210.83,191.252.120.96");
         registry.add("mcp.vps-host-inventory.ssh-command", () -> TEST_LOG_DIR.resolve("ssh-fake.sh").toString());
@@ -223,6 +228,21 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.endpoint").value("/mcp"))
                 .andExpect(jsonPath("$.protocol").value("json-rpc-2.0"));
+    }
+
+    /**
+     * Garante que a tool de identidade de build aparece no contrato MCP.
+     */
+    @Test
+    void shouldListRuntimeBuildInfoTool() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":31,"method":"tools/list","params":{}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.tools[?(@.name == 'runtime_build_info')].name")
+                        .value(org.hamcrest.Matchers.contains("runtime_build_info")));
     }
 
     /**

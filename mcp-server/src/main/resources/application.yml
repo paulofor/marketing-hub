@@ -74,6 +74,12 @@ mcp:
     max-lines: ${MCP_DOCKER_OPS_MAX_LINES:500}
     timeout-seconds: ${MCP_DOCKER_OPS_TIMEOUT_SECONDS:30}
     restart-enabled: ${MCP_DOCKER_OPS_RESTART_ENABLED:false}
+  build-info:
+    enabled: ${MCP_BUILD_INFO_ENABLED:true}
+    allowed-modules: ${MCP_BUILD_INFO_ALLOWED_MODULES:pde-platform-backend}
+    module-info-urls:
+      pde-platform-backend: ${MCP_BUILD_INFO_PDE_PLATFORM_BACKEND_URL:http://163.245.200.7:8096/actuator/info}
+    timeout-seconds: ${MCP_BUILD_INFO_TIMEOUT_SECONDS:10}
   vps-host-inventory:
     enabled: ${MCP_VPS_HOST_INVENTORY_ENABLED:false}
     allowed-hosts: ${MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS:191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,177.153.62.107,163.245.200.7}

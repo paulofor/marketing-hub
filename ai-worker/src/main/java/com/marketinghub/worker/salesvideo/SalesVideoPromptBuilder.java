@@ -1,10 +1,12 @@
 package com.marketinghub.worker.salesvideo;
 
 import com.marketinghub.product.dto.ProductDto;
+import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -18,8 +20,15 @@ import org.springframework.util.StreamUtils;
 public class SalesVideoPromptBuilder {
     private static final String TEMPLATE_PATH = "prompts/salesvideo/sales-video-script.md";
 
-    /** Monta o prompt final de roteiro a partir do template versionado e do contexto comercial. */
+    /** Monta o prompt final de roteiro sem playbooks cadastrados. */
     public String buildPrompt(SalesVideoProfileDto profile, ProductDto product) {
+        return buildPrompt(profile, product, List.of());
+    }
+
+    /** Monta o prompt final de roteiro a partir do template versionado e do contexto comercial. */
+    public String buildPrompt(SalesVideoProfileDto profile,
+                              ProductDto product,
+                              List<SalesVideoCommercialPlaybookDto> playbooks) {
         String language = profile != null && StringUtils.hasText(profile.getLanguage())
                 ? profile.getLanguage()
                 : "pt-BR";
@@ -36,6 +45,7 @@ public class SalesVideoPromptBuilder {
         return loadTemplate()
                 .replace("{{context}}", context.toString().trim())
                 .replace("{{commercial_context_section}}", commercialContextSection(product))
+                .replace("{{cinematic_brief_section}}", cinematicBriefSection(playbooks))
                 .replace("{{product_section}}", section("Resumo do produto", productFields(product)))
                 .replace("{{profile_section}}", section("Perfil do vídeo", profileFields(profile)));
     }
@@ -51,6 +61,52 @@ public class SalesVideoPromptBuilder {
         appendSection(sb, "Oferta, funil e conversão", offerFields(product));
         appendSection(sb, "Prova e experiência de valor", proofFields(product));
         return sb.toString().trim();
+    }
+
+    /** Monta a seção de briefs cinematográficos ativos cadastrados no playbook comercial. */
+    private String cinematicBriefSection(List<SalesVideoCommercialPlaybookDto> playbooks) {
+        if (playbooks == null || playbooks.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        int index = 1;
+        for (SalesVideoCommercialPlaybookDto playbook : playbooks) {
+            if (playbook == null || !playbook.isActive()) {
+                continue;
+            }
+            Map<String, String> fields = cinematicBriefFields(playbook);
+            if (fields.isEmpty()) {
+                continue;
+            }
+            if (!sb.isEmpty()) {
+                sb.append("\n\n");
+            }
+            sb.append(section("Brief Cinematico PDE " + index, fields));
+            index++;
+        }
+        return sb.toString().trim();
+    }
+
+    /** Extrai campos do Brief Cinematico PDE para orientar storyboard e prompts de video. */
+    private Map<String, String> cinematicBriefFields(SalesVideoCommercialPlaybookDto playbook) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        putIfNotBlank(fields, "Nicho", playbook.getNicheKey());
+        putIfNotBlank(fields, "Variacao", playbook.getVariantKey());
+        putIfNotBlank(fields, "Papel no funil", playbook.getFunnelRole());
+        putIfNotBlank(fields, "Promessa a tangibilizar", playbook.getPromiseToVisualize());
+        putIfNotBlank(fields, "Dor visual", playbook.getVisualPain());
+        putIfNotBlank(fields, "Cena principal", playbook.getMainScene());
+        putIfNotBlank(fields, "Sujeito/personagem/produto", playbook.getSubjectDescription());
+        putIfNotBlank(fields, "Movimento", playbook.getMotionDescription());
+        putIfNotBlank(fields, "Camera/enquadramento", playbook.getCameraFraming());
+        putIfNotBlank(fields, "Luz/estetica", playbook.getLightingStyle());
+        putIfNotBlank(fields, "Emocao esperada", playbook.getExpectedEmotion());
+        putIfNotBlank(fields, "CTA ou transicao", playbook.getTransitionOrCta());
+        putIfNotBlank(fields, "Restricoes de qualidade", playbook.getQualityConstraints());
+        putIfNotBlank(fields, "Prompt cinematografico final", playbook.getCinematicPrompt());
+        putIfNotBlank(fields, "Objecao comercial", playbook.getObjectionText());
+        putIfNotBlank(fields, "CTA comercial", playbook.getCtaText());
+        return fields;
     }
 
     /** Adiciona uma seção comercial quando houver campos preenchidos. */

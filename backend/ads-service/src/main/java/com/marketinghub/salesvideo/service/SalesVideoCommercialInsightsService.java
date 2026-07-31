@@ -45,6 +45,7 @@ public class SalesVideoCommercialInsightsService {
     this.experimentVideoAssetRepository = experimentVideoAssetRepository;
   }
 
+  /** Cria playbook comercial com objeção, CTA e Brief Cinemático PDE opcional. */
   @Transactional
   public SalesVideoCommercialPlaybookDto createPlaybook(
       Long profileId, CreateSalesVideoCommercialPlaybookRequest request) {
@@ -57,6 +58,18 @@ public class SalesVideoCommercialInsightsService {
             .variantKey(request.getVariantKey().trim())
             .objectionText(request.getObjectionText().trim())
             .ctaText(request.getCtaText().trim())
+            .funnelRole(normalizeBlank(request.getFunnelRole()))
+            .promiseToVisualize(normalizeBlank(request.getPromiseToVisualize()))
+            .visualPain(normalizeBlank(request.getVisualPain()))
+            .mainScene(normalizeBlank(request.getMainScene()))
+            .subjectDescription(normalizeBlank(request.getSubjectDescription()))
+            .motionDescription(normalizeBlank(request.getMotionDescription()))
+            .cameraFraming(normalizeBlank(request.getCameraFraming()))
+            .lightingStyle(normalizeBlank(request.getLightingStyle()))
+            .expectedEmotion(normalizeBlank(request.getExpectedEmotion()))
+            .transitionOrCta(normalizeBlank(request.getTransitionOrCta()))
+            .qualityConstraints(normalizeBlank(request.getQualityConstraints()))
+            .cinematicPrompt(normalizeBlank(request.getCinematicPrompt()))
             .active(request.getActive() == null || request.getActive())
             .createdBy(TenantContextHolder.resolveUserEmail(request.getCreatedBy()))
             .build();
@@ -348,6 +361,18 @@ public class SalesVideoCommercialInsightsService {
         .variantKey(playbook.getVariantKey())
         .objectionText(playbook.getObjectionText())
         .ctaText(playbook.getCtaText())
+        .funnelRole(playbook.getFunnelRole())
+        .promiseToVisualize(playbook.getPromiseToVisualize())
+        .visualPain(playbook.getVisualPain())
+        .mainScene(playbook.getMainScene())
+        .subjectDescription(playbook.getSubjectDescription())
+        .motionDescription(playbook.getMotionDescription())
+        .cameraFraming(playbook.getCameraFraming())
+        .lightingStyle(playbook.getLightingStyle())
+        .expectedEmotion(playbook.getExpectedEmotion())
+        .transitionOrCta(playbook.getTransitionOrCta())
+        .qualityConstraints(playbook.getQualityConstraints())
+        .cinematicPrompt(playbook.getCinematicPrompt())
         .active(playbook.isActive())
         .createdBy(playbook.getCreatedBy())
         .createdAt(playbook.getCreatedAt())

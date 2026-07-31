@@ -35,6 +35,27 @@ O objetivo do estudio e aumentar o valor percebido dos produtos digitais e campa
 
 Cada evolucao do estudio deve preservar a regra principal do sistema: gerar vendas de produtos digitais que entregam valor real com IA aplicada ao dia a dia.
 
+## Brief Cinematico de Video Comercial PDE
+
+Todo video comercial de PDE deve nascer de um **Brief Cinematico de Video Comercial PDE** antes da geracao de roteiro, storyboard, imagem-base, renderizacao ou publicacao.
+
+Esse brief deve ficar associado ao perfil/playbook comercial do video e conter, no minimo:
+
+- papel no funil: anuncio, landing, amostra, prova, onboarding, retencao ou outro papel comercial explicito;
+- promessa que o video precisa tangibilizar;
+- dor que precisa aparecer visualmente;
+- cena principal;
+- sujeito, personagem, produto ou interface principal;
+- movimento do sujeito, da interface ou do ambiente;
+- camera e enquadramento;
+- luz e estetica;
+- emocao esperada;
+- CTA ou transicao para a proxima etapa;
+- restricoes de qualidade, incluindo clareza, audio, aderencia a oferta, uso comercial aprovado e restricoes do provedor;
+- prompt cinematografico final quando houver geracao direta por modelo de video.
+
+O brief nao deve ser decorativo. Ele deve deixar claro qual transformacao o consumidor precisa enxergar e como essa cena reduz esforco mental, aumenta desejo, prova o mecanismo ou aproxima o proximo clique.
+
 ## Duracao minima obrigatoria
 
 O Estudio de Audio e Video deve ser usado somente para videos com **3 minutos ou mais** (`180` segundos ou mais).

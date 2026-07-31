@@ -7,6 +7,7 @@ import com.marketinghub.salesvideo.dto.JobClaimRequest;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
 import com.marketinghub.salesvideo.dto.JobProgressRequest;
+import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.worker.util.UrlUtils;
@@ -115,6 +116,31 @@ public class SalesVideoBackendClient {
     public ProductDto getProduct(Long productId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/products/" + productId);
         return get(url, ProductDto.class);
+    }
+
+    /** Busca playbooks comerciais para injetar briefs cinematográficos na geração de roteiro. */
+    public List<SalesVideoCommercialPlaybookDto> listCommercialPlaybooks(Long profileId) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
+                "/sales-videos/profiles/" + profileId + "/commercial-playbooks");
+        logBackendRequest("GET", url);
+        List<SalesVideoCommercialPlaybookDto> playbooks = webClient.get()
+                .uri(url)
+                .exchangeToFlux(response -> {
+                    HttpStatusCode code = response.statusCode();
+                    if (code.value() == HttpStatus.NOT_FOUND.value()) {
+                        return Flux.empty();
+                    }
+                    if (code.isError()) {
+                        return response.bodyToMono(String.class)
+                                .defaultIfEmpty("")
+                                .flatMapMany(body -> Mono.error(new SalesVideoBackendException(
+                                        errorMessage("GET", url, code, body))));
+                    }
+                    return response.bodyToFlux(SalesVideoCommercialPlaybookDto.class);
+                })
+                .collectList()
+                .block();
+        return playbooks == null ? List.of() : playbooks;
     }
 
     private <T> T postOpenAiJob(Long jobId, String suffix, Object body, Class<T> responseType) {

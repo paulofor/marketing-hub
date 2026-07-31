@@ -7,6 +7,8 @@ Contexto:
 
 {{commercial_context_section}}
 
+{{cinematic_brief_section}}
+
 {{product_section}}
 
 {{profile_section}}
@@ -20,6 +22,7 @@ Como usar o contexto:
 - Se houver mecanismo unico, explique em cadeia causal curta: entrada da pessoa -> criterio usado -> proximo passo -> ganho percebido.
 - Se houver CTA primario, use-o como proximo passo natural. Se nao houver, crie um CTA leve e proporcional.
 - Se houver evidencia, prova social ou risco reverso, use com precisao e sem exagero.
+- Se houver Brief Cinematico PDE, use-o como direcao principal do storyboard e das cenas: preserve papel no funil, promessa visual, dor visual, sujeito, movimento, camera, luz, emocao, CTA/transicao e restricoes de qualidade.
 
 Tarefas:
 1. Criar um hook forte, curto e alinhado ao avatar.
@@ -28,6 +31,7 @@ Tarefas:
 4. Escrever uma legenda curta com ate 2 hashtags estrategicas.
 5. Montar um storyboard com 3 a 6 cenas, cada uma com descricao visual, fala e duracao aproximada.
 6. Respeitar o tempo alvo informado para ritmo e quantidade de cenas.
+7. Quando houver Brief Cinematico PDE, transformar seus campos em cenas executaveis por modelo de video, sem contrariar o roteiro comercial.
 
 Estrada mental obrigatoria:
 - Comece por uma situacao reconhecivel da vida da pessoa, nunca pelo produto.
@@ -59,6 +63,7 @@ Instrucoes comerciais:
 - Foque em dor percebida, alivio de esforco, facilidade, prazer e ganho concreto.
 - Use promessa, prova social e mecanismo unico quando disponiveis.
 - Distribua o storyboard em abertura, desenvolvimento, prova ou objecoes e CTA.
+- O storyboard deve conter direcao cinematografica concreta: sujeito, acao/movimento, camera/enquadramento, luz/estetica e emocao percebida.
 - Evite frases genericas, exageros impossiveis, promessas sem lastro e termos vagos como "coerente", "autentico", "transformador", "potencializar" ou "elevar" sem exemplo concreto.
 - Se algum dado comercial estiver ausente, nao invente prova; use uma explicacao plausivel do mecanismo e uma microexperiencia segura.
 - O roteiro deve funcionar para qualquer produto digital. Nunca dependa de vocabulario especifico de um produto anterior quando ele nao estiver no contexto atual.

@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetProviderReviewProjection;
@@ -13,6 +14,7 @@ import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import com.marketinghub.salesvideo.*;
+import com.marketinghub.salesvideo.dto.CreateSalesVideoCommercialPlaybookRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
@@ -25,6 +27,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -52,6 +55,52 @@ class SalesVideoCommercialInsightsServiceTest {
             playbookRepository,
             conversionEventRepository,
             experimentVideoAssetRepository);
+  }
+
+  /** Deve persistir o Brief Cinematico PDE junto do playbook comercial do perfil. */
+  @Test
+  void shouldCreatePlaybookWithCinematicBriefFields() {
+    SalesVideoProfile profile = profile();
+    CreateSalesVideoCommercialPlaybookRequest request =
+        new CreateSalesVideoCommercialPlaybookRequest();
+    request.setNicheKey("moda");
+    request.setVariantKey("hero-pde");
+    request.setObjectionText("não tenho tempo");
+    request.setCtaText("começar diagnóstico");
+    request.setFunnelRole("landing");
+    request.setPromiseToVisualize("ver uma missão personalizada no celular");
+    request.setVisualPain("olhar o guarda-roupa e travar");
+    request.setMainScene("cliente abre o PDE antes de sair");
+    request.setSubjectDescription("mulher com celular e interface do produto");
+    request.setMotionDescription("toca na missão do dia e separa uma peça");
+    request.setCameraFraming("close no celular e plano médio da reação");
+    request.setLightingStyle("luz natural suave");
+    request.setExpectedEmotion("alívio");
+    request.setTransitionOrCta("ir para a primeira missão");
+    request.setQualityConstraints("sem texto pequeno ilegível");
+    request.setCinematicPrompt("mobile-first commercial PDE scene");
+
+    given(profileRepository.findById(7L)).willReturn(Optional.of(profile));
+    given(playbookRepository.save(any(SalesVideoCommercialPlaybook.class)))
+        .willAnswer(
+            invocation -> {
+              SalesVideoCommercialPlaybook playbook = invocation.getArgument(0);
+              playbook.setId(88L);
+              return playbook;
+            });
+
+    var response = service.createPlaybook(7L, request);
+
+    ArgumentCaptor<SalesVideoCommercialPlaybook> captor =
+        ArgumentCaptor.forClass(SalesVideoCommercialPlaybook.class);
+    verify(playbookRepository).save(captor.capture());
+    SalesVideoCommercialPlaybook saved = captor.getValue();
+    assertThat(response.getId()).isEqualTo(88L);
+    assertThat(response.getFunnelRole()).isEqualTo("landing");
+    assertThat(response.getPromiseToVisualize()).contains("missão personalizada");
+    assertThat(saved.getMainScene()).isEqualTo("cliente abre o PDE antes de sair");
+    assertThat(saved.getCameraFraming()).contains("close no celular");
+    assertThat(saved.getCinematicPrompt()).isEqualTo("mobile-first commercial PDE scene");
   }
 
   /** Deve consolidar conversão usando o script associado ao job informado. */

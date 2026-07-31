@@ -125,6 +125,19 @@ export default function SalesVideoProfileDetailPage() {
     variantKey: "default",
     objectionText: "",
     ctaText: "",
+    funnelRole: "landing",
+    promiseToVisualize: "",
+    visualPain: "",
+    mainScene: "",
+    subjectDescription: "",
+    motionDescription: "",
+    cameraFraming: "",
+    lightingStyle: "",
+    expectedEmotion: "",
+    transitionOrCta: "",
+    qualityConstraints:
+      "clareza visual, audio compreensivel, aderencia a oferta PDE, sem promessas exageradas, uso comercial aprovado",
+    cinematicPrompt: "",
   });
   const [conversionForm, setConversionForm] = useState({
     eventType: "VIEW" as SalesVideoConversionEventType,
@@ -339,6 +352,18 @@ export default function SalesVideoProfileDetailPage() {
       variantKey: playbookForm.variantKey,
       objectionText: playbookForm.objectionText,
       ctaText: playbookForm.ctaText,
+      funnelRole: playbookForm.funnelRole,
+      promiseToVisualize: playbookForm.promiseToVisualize,
+      visualPain: playbookForm.visualPain,
+      mainScene: playbookForm.mainScene,
+      subjectDescription: playbookForm.subjectDescription,
+      motionDescription: playbookForm.motionDescription,
+      cameraFraming: playbookForm.cameraFraming,
+      lightingStyle: playbookForm.lightingStyle,
+      expectedEmotion: playbookForm.expectedEmotion,
+      transitionOrCta: playbookForm.transitionOrCta,
+      qualityConstraints: playbookForm.qualityConstraints,
+      cinematicPrompt: playbookForm.cinematicPrompt,
       createdBy: tenantContext.userEmail,
     });
     toast.success("Playbook comercial criado");
@@ -532,6 +557,72 @@ export default function SalesVideoProfileDetailPage() {
                   <textarea className="form-control" required value={playbookForm.ctaText} onChange={(e) => setPlaybookForm((p) => ({ ...p, ctaText: e.target.value }))} />
                 </div>
                 <div className="col-12">
+                  <hr />
+                  <h4 className="h6 mb-1">Brief Cinemático de Vídeo Comercial PDE</h4>
+                  <p className="text-muted small mb-2">
+                    Direção visual usada para transformar o roteiro em cenas vendáveis de PDE.
+                  </p>
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Papel no funil</label>
+                  <select
+                    className="form-select"
+                    value={playbookForm.funnelRole}
+                    onChange={(e) => setPlaybookForm((p) => ({ ...p, funnelRole: e.target.value }))}
+                  >
+                    <option value="anuncio">Anúncio</option>
+                    <option value="landing">Landing</option>
+                    <option value="amostra">Amostra PDE</option>
+                    <option value="prova">Prova</option>
+                    <option value="onboarding">Onboarding</option>
+                    <option value="retencao">Retenção</option>
+                  </select>
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Emoção esperada</label>
+                  <input className="form-control" value={playbookForm.expectedEmotion} onChange={(e) => setPlaybookForm((p) => ({ ...p, expectedEmotion: e.target.value }))} placeholder="alívio, curiosidade, confiança..." />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Promessa a tangibilizar</label>
+                  <textarea className="form-control" rows={2} value={playbookForm.promiseToVisualize} onChange={(e) => setPlaybookForm((p) => ({ ...p, promiseToVisualize: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Dor visual</label>
+                  <textarea className="form-control" rows={2} value={playbookForm.visualPain} onChange={(e) => setPlaybookForm((p) => ({ ...p, visualPain: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Cena principal</label>
+                  <textarea className="form-control" rows={2} value={playbookForm.mainScene} onChange={(e) => setPlaybookForm((p) => ({ ...p, mainScene: e.target.value }))} />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Sujeito, personagem, produto ou interface</label>
+                  <textarea className="form-control" rows={3} value={playbookForm.subjectDescription} onChange={(e) => setPlaybookForm((p) => ({ ...p, subjectDescription: e.target.value }))} />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Movimento</label>
+                  <textarea className="form-control" rows={3} value={playbookForm.motionDescription} onChange={(e) => setPlaybookForm((p) => ({ ...p, motionDescription: e.target.value }))} />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Câmera e enquadramento</label>
+                  <textarea className="form-control" rows={3} value={playbookForm.cameraFraming} onChange={(e) => setPlaybookForm((p) => ({ ...p, cameraFraming: e.target.value }))} />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Luz e estética</label>
+                  <textarea className="form-control" rows={3} value={playbookForm.lightingStyle} onChange={(e) => setPlaybookForm((p) => ({ ...p, lightingStyle: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">CTA ou transição visual</label>
+                  <textarea className="form-control" rows={2} value={playbookForm.transitionOrCta} onChange={(e) => setPlaybookForm((p) => ({ ...p, transitionOrCta: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Restrições de qualidade</label>
+                  <textarea className="form-control" rows={2} value={playbookForm.qualityConstraints} onChange={(e) => setPlaybookForm((p) => ({ ...p, qualityConstraints: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Prompt cinematográfico final</label>
+                  <textarea className="form-control" rows={4} value={playbookForm.cinematicPrompt} onChange={(e) => setPlaybookForm((p) => ({ ...p, cinematicPrompt: e.target.value }))} />
+                </div>
+                <div className="col-12">
                   <button className="btn btn-primary" type="submit" disabled={createCommercialPlaybook.isPending}>
                     {createCommercialPlaybook.isPending && <span className="spinner-border spinner-border-sm me-2" />}
                     {createCommercialPlaybook.isPending ? "Salvando..." : "Salvar playbook"}
@@ -577,6 +668,36 @@ export default function SalesVideoProfileDetailPage() {
           <p className="mb-1">Views: {performanceSummary?.totalViews ?? 0} · Leads: {performanceSummary?.totalLeads ?? 0} · Compras: {performanceSummary?.totalPurchases ?? 0}</p>
           <p className="mb-2">Receita: {(performanceSummary?.totalRevenue ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
           <small className="text-muted">Playbooks cadastrados: {commercialPlaybooks?.length ?? 0}</small>
+          {(commercialPlaybooks?.length ?? 0) > 0 ? (
+            <div className="table-responsive mt-3">
+              <table className="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>Variação</th>
+                    <th>Papel</th>
+                    <th>Promessa visual</th>
+                    <th>Cena</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(commercialPlaybooks ?? []).map((playbook) => (
+                    <tr key={playbook.id}>
+                      <td>{playbook.variantKey}</td>
+                      <td>{playbook.funnelRole ?? "—"}</td>
+                      <td>{playbook.promiseToVisualize ?? "—"}</td>
+                      <td>{playbook.mainScene ?? "—"}</td>
+                      <td>
+                        <span className={`badge ${playbook.active ? "bg-success" : "bg-secondary"}`}>
+                          {playbook.active ? "Ativo" : "Inativo"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </div>
       </section>
 

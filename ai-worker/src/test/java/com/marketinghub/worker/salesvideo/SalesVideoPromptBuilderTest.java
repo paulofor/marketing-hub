@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.salesvideo.SalesVideoKind;
+import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SalesVideoPromptBuilderTest {
@@ -51,5 +53,42 @@ class SalesVideoPromptBuilderTest {
         assertThat(prompt).contains("qualquer produto digital");
         assertThat(prompt).doesNotContain("parar de sentir que falta algo no look");
         assertThat(prompt).contains("JSON valido");
+    }
+
+    /** Deve injetar o Brief Cinematico PDE ativo no prompt de roteiro e storyboard. */
+    @Test
+    void shouldIncludeActiveCinematicBriefInPrompt() {
+        SalesVideoProfileDto profile = new SalesVideoProfileDto();
+        profile.setId(42L);
+        profile.setTitle("Hero PDE");
+
+        SalesVideoCommercialPlaybookDto playbook = SalesVideoCommercialPlaybookDto.builder()
+                .nicheKey("personal stylist")
+                .variantKey("hero-pde")
+                .funnelRole("landing")
+                .promiseToVisualize("ver uma recomendação personalizada no celular")
+                .visualPain("abrir o guarda-roupa e sentir dúvida")
+                .mainScene("mulher usa o PDE no celular antes de sair")
+                .subjectDescription("cliente com celular exibindo a interface do produto")
+                .motionDescription("ela toca na missão do dia e separa uma peça")
+                .cameraFraming("close no celular e plano médio da reação")
+                .lightingStyle("luz natural suave")
+                .expectedEmotion("alívio")
+                .transitionOrCta("avançar para começar o diagnóstico")
+                .qualityConstraints("sem texto pequeno ilegível")
+                .cinematicPrompt("commercial mobile-first PDE video")
+                .objectionText("não precisa entender moda")
+                .ctaText("comece pelo diagnóstico")
+                .active(true)
+                .build();
+
+        String prompt = builder.buildPrompt(profile, null, List.of(playbook));
+
+        assertThat(prompt).contains("Brief Cinematico PDE 1");
+        assertThat(prompt).contains("Promessa a tangibilizar: ver uma recomendação personalizada");
+        assertThat(prompt).contains("Dor visual: abrir o guarda-roupa");
+        assertThat(prompt).contains("Camera/enquadramento: close no celular");
+        assertThat(prompt).contains("sem texto pequeno ilegível");
+        assertThat(prompt).contains("direcao principal do storyboard");
     }
 }

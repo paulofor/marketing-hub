@@ -7,9 +7,9 @@ import com.marketinghub.salesvideo.dto.JobClaimRequest;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
 import com.marketinghub.salesvideo.dto.JobProgressRequest;
-import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.worker.salesvideo.dto.SalesVideoCommercialPlaybookResponse;
 import com.marketinghub.worker.util.UrlUtils;
 import java.util.List;
 import org.slf4j.Logger;
@@ -119,11 +119,11 @@ public class SalesVideoBackendClient {
     }
 
     /** Busca playbooks comerciais para injetar briefs cinematográficos na geração de roteiro. */
-    public List<SalesVideoCommercialPlaybookDto> listCommercialPlaybooks(Long profileId) {
+    public List<SalesVideoCommercialPlaybookResponse> listCommercialPlaybooks(Long profileId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/sales-videos/profiles/" + profileId + "/commercial-playbooks");
         logBackendRequest("GET", url);
-        List<SalesVideoCommercialPlaybookDto> playbooks = webClient.get()
+        List<SalesVideoCommercialPlaybookResponse> playbooks = webClient.get()
                 .uri(url)
                 .exchangeToFlux(response -> {
                     HttpStatusCode code = response.statusCode();
@@ -136,7 +136,7 @@ public class SalesVideoBackendClient {
                                 .flatMapMany(body -> Mono.error(new SalesVideoBackendException(
                                         errorMessage("GET", url, code, body))));
                     }
-                    return response.bodyToFlux(SalesVideoCommercialPlaybookDto.class);
+                    return response.bodyToFlux(SalesVideoCommercialPlaybookResponse.class);
                 })
                 .collectList()
                 .block();

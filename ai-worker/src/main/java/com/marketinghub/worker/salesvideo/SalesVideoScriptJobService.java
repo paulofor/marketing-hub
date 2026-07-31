@@ -6,9 +6,9 @@ import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
-import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.worker.salesvideo.dto.SalesVideoCommercialPlaybookResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +79,7 @@ public class SalesVideoScriptJobService {
             ProductDto product = profile.getProductId() != null
                     ? backendClient.getProduct(profile.getProductId())
                     : null;
-            List<SalesVideoCommercialPlaybookDto> playbooks = backendClient.listCommercialPlaybooks(profile.getId());
+            List<SalesVideoCommercialPlaybookResponse> playbooks = backendClient.listCommercialPlaybooks(profile.getId());
             backendClient.reportProgress(jobId, 10, SalesVideoStatus.SCRIPT_PENDING,
                     "Contexto carregado", null);
             String prompt = promptBuilder.buildPrompt(profile, product, playbooks);

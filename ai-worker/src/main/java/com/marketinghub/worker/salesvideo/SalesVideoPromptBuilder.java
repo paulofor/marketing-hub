@@ -1,8 +1,8 @@
 package com.marketinghub.worker.salesvideo;
 
 import com.marketinghub.product.dto.ProductDto;
-import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.worker.salesvideo.dto.SalesVideoCommercialPlaybookResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -28,7 +28,7 @@ public class SalesVideoPromptBuilder {
     /** Monta o prompt final de roteiro a partir do template versionado e do contexto comercial. */
     public String buildPrompt(SalesVideoProfileDto profile,
                               ProductDto product,
-                              List<SalesVideoCommercialPlaybookDto> playbooks) {
+                              List<SalesVideoCommercialPlaybookResponse> playbooks) {
         String language = profile != null && StringUtils.hasText(profile.getLanguage())
                 ? profile.getLanguage()
                 : "pt-BR";
@@ -64,13 +64,13 @@ public class SalesVideoPromptBuilder {
     }
 
     /** Monta a seção de briefs cinematográficos ativos cadastrados no playbook comercial. */
-    private String cinematicBriefSection(List<SalesVideoCommercialPlaybookDto> playbooks) {
+    private String cinematicBriefSection(List<SalesVideoCommercialPlaybookResponse> playbooks) {
         if (playbooks == null || playbooks.isEmpty()) {
             return "";
         }
         StringBuilder sb = new StringBuilder();
         int index = 1;
-        for (SalesVideoCommercialPlaybookDto playbook : playbooks) {
+        for (SalesVideoCommercialPlaybookResponse playbook : playbooks) {
             if (playbook == null || !playbook.isActive()) {
                 continue;
             }
@@ -88,7 +88,7 @@ public class SalesVideoPromptBuilder {
     }
 
     /** Extrai campos do Brief Cinematico PDE para orientar storyboard e prompts de video. */
-    private Map<String, String> cinematicBriefFields(SalesVideoCommercialPlaybookDto playbook) {
+    private Map<String, String> cinematicBriefFields(SalesVideoCommercialPlaybookResponse playbook) {
         Map<String, String> fields = new LinkedHashMap<>();
         putIfNotBlank(fields, "Nicho", playbook.getNicheKey());
         putIfNotBlank(fields, "Variacao", playbook.getVariantKey());

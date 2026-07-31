@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.marketinghub.product.dto.ProductDto;
 import com.marketinghub.salesvideo.SalesVideoKind;
-import com.marketinghub.salesvideo.dto.SalesVideoCommercialPlaybookDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.worker.salesvideo.dto.SalesVideoCommercialPlaybookResponse;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -62,25 +62,24 @@ class SalesVideoPromptBuilderTest {
         profile.setId(42L);
         profile.setTitle("Hero PDE");
 
-        SalesVideoCommercialPlaybookDto playbook = SalesVideoCommercialPlaybookDto.builder()
-                .nicheKey("personal stylist")
-                .variantKey("hero-pde")
-                .funnelRole("landing")
-                .promiseToVisualize("ver uma recomendação personalizada no celular")
-                .visualPain("abrir o guarda-roupa e sentir dúvida")
-                .mainScene("mulher usa o PDE no celular antes de sair")
-                .subjectDescription("cliente com celular exibindo a interface do produto")
-                .motionDescription("ela toca na missão do dia e separa uma peça")
-                .cameraFraming("close no celular e plano médio da reação")
-                .lightingStyle("luz natural suave")
-                .expectedEmotion("alívio")
-                .transitionOrCta("avançar para começar o diagnóstico")
-                .qualityConstraints("sem texto pequeno ilegível")
-                .cinematicPrompt("commercial mobile-first PDE video")
-                .objectionText("não precisa entender moda")
-                .ctaText("comece pelo diagnóstico")
-                .active(true)
-                .build();
+        SalesVideoCommercialPlaybookResponse playbook = new SalesVideoCommercialPlaybookResponse();
+        playbook.setNicheKey("personal stylist");
+        playbook.setVariantKey("hero-pde");
+        playbook.setFunnelRole("landing");
+        playbook.setPromiseToVisualize("ver uma recomendação personalizada no celular");
+        playbook.setVisualPain("abrir o guarda-roupa e sentir dúvida");
+        playbook.setMainScene("mulher usa o PDE no celular antes de sair");
+        playbook.setSubjectDescription("cliente com celular exibindo a interface do produto");
+        playbook.setMotionDescription("ela toca na missão do dia e separa uma peça");
+        playbook.setCameraFraming("close no celular e plano médio da reação");
+        playbook.setLightingStyle("luz natural suave");
+        playbook.setExpectedEmotion("alívio");
+        playbook.setTransitionOrCta("avançar para começar o diagnóstico");
+        playbook.setQualityConstraints("sem texto pequeno ilegível");
+        playbook.setCinematicPrompt("commercial mobile-first PDE video");
+        playbook.setObjectionText("não precisa entender moda");
+        playbook.setCtaText("comece pelo diagnóstico");
+        playbook.setActive(true);
 
         String prompt = builder.buildPrompt(profile, null, List.of(playbook));
 

@@ -8,6 +8,7 @@ public record PdeBuildIdentity(
     String artifact,
     String buildVersion,
     String commitSha,
+    String branch,
     String imageTag,
     String backendImage,
     String environment,

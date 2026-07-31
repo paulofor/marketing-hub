@@ -56,7 +56,9 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
         .body(PdeBuildIdentity.class);
   }
 
-  /** Busca o resumo consolidado usando explicitamente a URL pública da versão PDE do experimento. */
+  /**
+   * Busca o resumo consolidado usando explicitamente a URL pública da versão PDE do experimento.
+   */
   @Override
   public PdeAnalyticsSummary fetchSummary(String productSlug, String publicBaseUrl) {
     if (publicBaseUrl == null || publicBaseUrl.isBlank()) {
@@ -68,6 +70,37 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
         .build()
         .get()
         .uri("/api/pde/access/analytics/{productSlug}/summary", productSlug)
+        .retrieve()
+        .body(PdeAnalyticsSummary.class);
+  }
+
+  /** Busca o resumo incluindo tráfego automatizado para validações operacionais fake. */
+  @Override
+  public PdeAnalyticsSummary fetchSummaryIncludingNonHumanTraffic(
+      String productSlug, String publicBaseUrl) {
+    if (publicBaseUrl == null || publicBaseUrl.isBlank()) {
+      return restClient
+          .get()
+          .uri(
+              uriBuilder ->
+                  uriBuilder
+                      .path("/api/pde/access/analytics/{productSlug}/summary")
+                      .queryParam("includeNonHumanTraffic", true)
+                      .build(productSlug))
+          .retrieve()
+          .body(PdeAnalyticsSummary.class);
+    }
+    return RestClient.builder()
+        .baseUrl(trimTrailingSlash(publicBaseUrl))
+        .requestFactory(requestFactory)
+        .build()
+        .get()
+        .uri(
+            uriBuilder ->
+                uriBuilder
+                    .path("/api/pde/access/analytics/{productSlug}/summary")
+                    .queryParam("includeNonHumanTraffic", true)
+                    .build(productSlug))
         .retrieve()
         .body(PdeAnalyticsSummary.class);
   }

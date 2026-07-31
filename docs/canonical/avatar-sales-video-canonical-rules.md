@@ -194,6 +194,7 @@ Um vídeo só pode ir para `PUBLISHED` se:
 - Todo render final deve registrar duração real auditada em `metadataJson.duration_seconds`.
 - Render com duração menor que o mínimo comercial do perfil não pode ficar como `VIDEO_READY`.
 - A experiência principal da usuária deve priorizar streaming adaptativo via `streamPlaybackUrl` HLS/DASH. MP4 bruto deve ser fallback, auditoria ou contingência.
+- Todo vídeo gerado pelo Marketing Hub deve ser armazenado no Cloudflare R2. É proibido persistir MP4, HLS, arquivos derivados de vídeo ou masters de vídeo no repositório Git, em diretório local do repositório, em `uploads/` local ou em fallback `LOCAL_FS`. Se o R2 não estiver configurado, o fluxo deve falhar de forma explícita antes de gravar o arquivo e registrar a causa operacional para correção.
 
 ---
 

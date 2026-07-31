@@ -54,7 +54,8 @@ class SalesVideoAssetServiceTest {
             file.getSize(),
             file.getContentType(),
             true);
-    given(storageService.store(eq(file), any(AssetUploadContext.class))).willReturn(storedObject);
+    given(storageService.storeInBucketOnly(eq(file), any(AssetUploadContext.class)))
+        .willReturn(storedObject);
     given(assetRepository.save(any(Asset.class)))
         .will(
             invocation -> {
@@ -71,6 +72,7 @@ class SalesVideoAssetServiceTest {
     assertThat(result.getUrl()).isEqualTo("https://cdn.local/demo.mp4");
     verify(assetRepository).save(assetCaptor.capture());
     assertThat(assetCaptor.getValue().getPayload()).contains("quality");
+    assertThat(assetCaptor.getValue().getPayload()).contains("\"storage_medium\":\"CLOUDFLARE_R2\"");
   }
 
   @Test
@@ -84,7 +86,8 @@ class SalesVideoAssetServiceTest {
             file.getSize(),
             file.getContentType(),
             true);
-    given(storageService.store(eq(file), any(AssetUploadContext.class))).willReturn(storedObject);
+    given(storageService.storeInBucketOnly(eq(file), any(AssetUploadContext.class)))
+        .willReturn(storedObject);
 
     assertThrows(
         VideoModuleException.class,

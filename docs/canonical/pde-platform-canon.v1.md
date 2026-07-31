@@ -38,12 +38,12 @@ Regra obrigatória:
 - rollback deve trocar somente a imagem/container da versão afetada;
 - o endpoint público de diagnóstico canônico é `GET /version-diagnostics.json`;
 - o diagnóstico deve expor `version`, `publicUrl`, `experienceVersion`, `image`, `imageVersionId`, `imageTag`, `commitSha` e `deployedAt`;
-- o backend PDE deve expor `GET /api/pde/build-identity` com identidade estável da build implantada, incluindo aplicação, artefato, versão, commit, tag/imagem, ambiente, URL do backend PDE, URL pública do frontend, backend administrativo do Marketing Hub configurado e data de deploy;
+- o backend PDE deve expor `GET /api/pde/build-identity` e `GET /actuator/info` com identidade estável da build implantada, incluindo aplicação, artefato, versão, commit, branch, tag/imagem, ambiente, URL do backend PDE, URL pública do frontend, backend administrativo do Marketing Hub configurado e data de deploy; o `/actuator/info` é o contrato usado pela tool MCP `runtime_build_info`;
 - o cockpit administrativo do Marketing Hub deve exibir a identidade retornada por `GET /api/pde/build-identity` a partir da mesma URL pública usada para consultar analytics, antes de interpretar métrica zerada como ausência de tráfego;
 - `GET /slot-diagnostics.json` pode existir somente como alias legado temporário, sem ser usado como contrato novo;
 - contratos, painéis e documentação nova devem usar “versão PDE” em vez de “slot PDE”, exceto quando estiverem preservando compatibilidade com campos legados como `slotCode`;
 - métricas comerciais devem ser segmentadas por produto, campanha, experimento, URL pública, versão PDE e `experienceVersion`, não por slot operacional genérico.
-- toda análise operacional de métricas PDE via MCP deve validar primeiro a tool `pde_db_health` e conferir `datasourceTarget.host`, `datasourceTarget.port` e `datasourceTarget.schema` contra o banco usado pelo PDE Platform Backend produtivo da URL analisada. Se o MCP consultar base diferente, réplica defasada ou alvo não comprovado, os dados do MCP não podem ser usados como prova comercial até o deploy do MCP ser realinhado.
+- toda análise operacional de métricas PDE via MCP deve validar primeiro a tool `pde_db_health` e conferir `datasourceTarget.host`, `datasourceTarget.port` e `datasourceTarget.schema` contra o banco usado pelo PDE Platform Backend produtivo da URL analisada. Se o MCP consultar base diferente, réplica defasada ou alvo não comprovado, os dados do MCP não podem ser usados como prova comercial até o deploy do MCP ser realinhado. O deploy versionado do MCP deve herdar o datasource canônico `PDE_ACCESS_JDBC_*` do PDE quando `MCP_PDE_DATASOURCE_*` não for informado explicitamente.
 
 Benefício comercial esperado: impedir que campanha com tráfego pago seja julgada por métricas de outra versão, reduzir risco de publicar criativo/oferta em URL errada e preservar aprendizado limpo para decisão de escala.
 

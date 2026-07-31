@@ -41,6 +41,18 @@ public class AssetStorageService {
 
   /** Armazena arquivo enviado pela aplicação em bucket ou filesystem local. */
   public StoredObject store(MultipartFile file, AssetUploadContext context) throws IOException {
+    return store(file, context, true);
+  }
+
+  /** Armazena arquivo enviado pela aplicação exclusivamente no bucket R2 configurado. */
+  public StoredObject storeInBucketOnly(MultipartFile file, AssetUploadContext context)
+      throws IOException {
+    return store(file, context, false);
+  }
+
+  /** Armazena arquivo enviado pela aplicação respeitando a política de fallback local. */
+  private StoredObject store(
+      MultipartFile file, AssetUploadContext context, boolean allowLocalFallback) throws IOException {
     if (file == null || file.isEmpty()) {
       throw new StorageException("File must not be empty");
     }
@@ -54,6 +66,11 @@ public class AssetStorageService {
       uploadToBucket(file, objectKey, contentType, sizeBytes);
       String publicUrl = buildPublicUrl(objectKey);
       return new StoredObject(objectKey, publicUrl, sizeBytes, contentType, true);
+    }
+
+    if (!allowLocalFallback) {
+      throw new StorageException(
+          "Cloudflare R2 must be configured before storing generated video assets");
     }
 
     Path localPath = storeLocally(file, objectKey);

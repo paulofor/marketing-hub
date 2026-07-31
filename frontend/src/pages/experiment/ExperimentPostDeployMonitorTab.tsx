@@ -409,6 +409,10 @@ export default function ExperimentPostDeployMonitorTab({
               value={pdeBuildIdentity?.commitSha ?? "—"}
             />
             <Metric
+              label="Branch"
+              value={pdeBuildIdentity?.branch ?? "—"}
+            />
+            <Metric
               label="Imagem"
               value={
                 pdeBuildIdentity?.backendImage ||

@@ -6484,3 +6484,10 @@
 - ajuste preparado: `pde_db_health` passa a retornar `datasourceTarget` com JDBC sanitizado, host, porta e schema, e a documentação do MCP/cânone PDE passou a exigir essa validação antes de usar dados MCP como prova comercial.
 - prevenção: quando o summary público de uma versão PDE mostrar eventos recentes e o MCP apontar para alvo diferente, réplica defasada ou alvo não comprovado, a leitura MCP deve ser considerada inválida até realinhar `MCP_PDE_DATASOURCE_URL` no deploy.
 - impacto comercial esperado: evitar decisão de pausa, escala ou julgamento de criativo/oferta do experimento 77 baseada em métricas zeradas por fonte de dados errada.
+
+## 2026-07-31 — Rastreabilidade MCP/PDE entre banco, API e cockpit
+
+- causa-raiz operacional confirmada: `runtime_build_info` retornava `buildIdentityPublished=false` porque o `/actuator/info` do backend PDE respondia `{}`, e a produção atual ainda não reconhecia `/api/pde/build-identity`; isso impedia provar qual commit alimentava as métricas vistas no cockpit.
+- ajuste preparado: o backend PDE passa a publicar a identidade de build também no `/actuator/info`, com `build`, `git` e bloco `pde`; o workflow PDE valida esse endpoint no pós-deploy; o compose do MCP passa a herdar o datasource `PDE_ACCESS_JDBC_*` do PDE quando `MCP_PDE_DATASOURCE_*` não for definido.
+- prevenção: antes de usar métricas PDE para pausar, escalar ou trocar criativo/oferta, validar `runtime_build_info(module=pde-platform-backend)` e `pde_db_health`, conectando commit, imagem, API pública e schema efetivo.
+- impacto comercial esperado: reduzir risco de decidir escala de tráfego pago com API antiga, banco errado ou cockpit lendo uma versão diferente da experiência pública.

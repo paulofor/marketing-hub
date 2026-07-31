@@ -310,6 +310,7 @@ class PostDeployMonitorServiceTest {
                 "pde-platform-backend",
                 "0.0.1-SNAPSHOT",
                 "abc123",
+                "main",
                 "pde-v6-abc123",
                 "registry/pde-platform-backend:pde-v6-abc123",
                 "production",
@@ -327,6 +328,7 @@ class PostDeployMonitorServiceTest {
     assertThat(response.pdeBuildIdentity().requestedBaseUrl())
         .isEqualTo("https://v6.clubemusa.com.br");
     assertThat(response.pdeBuildIdentity().commitSha()).isEqualTo("abc123");
+    assertThat(response.pdeBuildIdentity().branch()).isEqualTo("main");
     assertThat(response.pdeBuildIdentity().backendUrl()).isEqualTo("http://163.245.200.7:8096");
     verify(pdeAnalyticsClient)
         .fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");

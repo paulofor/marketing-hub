@@ -78,6 +78,7 @@ export interface PostDeployPdeBuildIdentity {
   artifact?: string | null;
   buildVersion?: string | null;
   commitSha?: string | null;
+  branch?: string | null;
   imageTag?: string | null;
   backendImage?: string | null;
   environment?: string | null;

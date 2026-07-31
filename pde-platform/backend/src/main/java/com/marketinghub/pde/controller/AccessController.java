@@ -134,8 +134,10 @@ public class AccessController {
 
     /** Retorna métricas consolidadas do funil e analytics do produto PDE. */
     @GetMapping("/analytics/{productSlug}/summary")
-    public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(@PathVariable("productSlug") String productSlug) {
-        return accessService.summarizeFunnelAnalytics(productSlug);
+    public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(
+            @PathVariable("productSlug") String productSlug,
+            @RequestParam(name = "includeNonHumanTraffic", defaultValue = "false") boolean includeNonHumanTraffic) {
+        return accessService.summarizeFunnelAnalytics(productSlug, includeNonHumanTraffic);
     }
 
     /** Retorna jornadas individuais por sessão para localizar abandono antes do primeiro acesso. */

@@ -40,6 +40,7 @@ public class SalesVideoAssetService {
     this.objectMapper = objectMapper;
   }
 
+  /** Armazena asset de vídeo usando R2 obrigatório e registra o metadado comercial do asset. */
   public Asset store(
       MultipartFile file, AssetType assetType, MediaProvider provider, String metadataJson)
       throws IOException {
@@ -49,7 +50,7 @@ public class SalesVideoAssetService {
     }
     AssetUploadContext context =
         new AssetUploadContext(AssetUploadCategory.SALES_VIDEO, null, null, null);
-    AssetStorageService.StoredObject storedObject = storageService.store(file, context);
+    AssetStorageService.StoredObject storedObject = storageService.storeInBucketOnly(file, context);
     Asset asset =
         Asset.builder()
             .type(assetType != null ? assetType : AssetType.VIDEO)
@@ -62,6 +63,7 @@ public class SalesVideoAssetService {
     return assetRepository.save(asset);
   }
 
+  /** Monta o payload auditável do asset gravado no R2. */
   private String buildPayload(AssetStorageService.StoredObject storedObject, String metadataJson) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("category", AssetUploadCategory.SALES_VIDEO.name());
@@ -84,6 +86,7 @@ public class SalesVideoAssetService {
     }
   }
 
+  /** Converte metadata JSON recebido do módulo de vídeo em mapa estruturado. */
   private Map<String, Object> parseMetadata(String metadataJson) {
     try {
       return objectMapper.readValue(metadataJson, MAP_TYPE);

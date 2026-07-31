@@ -79,6 +79,8 @@ Secrets esperados no GitHub Actions:
 
 O script ainda aceita o fluxo antigo com `MCP_TAR=/tmp/mcp-server-image.tar`, mas esse caminho deve ficar apenas como fallback operacional. Para produção normal, use a imagem do registry.
 
+Para auditoria de métricas PDE, o MCP deve consultar o mesmo datasource do PDE Platform Backend produtivo. No compose operacional, `MCP_PDE_DATASOURCE_URL`, `MCP_PDE_DATASOURCE_USERNAME` e `MCP_PDE_DATASOURCE_PASSWORD` herdam `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` quando as variáveis específicas do MCP não forem informadas. Mantenha esses valores alinhados no `.env` remoto e valide com `pde_db_health` antes de usar métricas PDE no cockpit.
+
 Esse fluxo (`apply.sh`) permanece para atualizar somente backend/frontend no host principal.
 
 ## Deploy seguro do backend com Liquibase

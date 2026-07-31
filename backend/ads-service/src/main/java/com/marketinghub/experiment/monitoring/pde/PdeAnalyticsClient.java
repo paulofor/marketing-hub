@@ -11,6 +11,12 @@ public interface PdeAnalyticsClient {
     return fetchSummary(productSlug);
   }
 
+  /** Busca o resumo incluindo tráfego técnico para experimentos fake de diagnóstico. */
+  default PdeAnalyticsSummary fetchSummaryIncludingNonHumanTraffic(
+      String productSlug, String publicBaseUrl) {
+    return fetchSummary(productSlug, publicBaseUrl);
+  }
+
   /** Busca a identidade de build usando a URL pública do PDE monitorado. */
   default PdeBuildIdentity fetchBuildIdentity(String publicBaseUrl) {
     return null;

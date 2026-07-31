@@ -730,15 +730,19 @@ class AccessServiceTest {
                 null,
                 "TEST",
                 "test",
-                "https://clubemusa.com.br/",
+                "https://clubemusa.com.br/?utm_source=codex&utm_medium=fake&utm_campaign=mh_fake_exp_78",
                 "163.245.203.201",
                 "Mozilla/5.0 (compatible; HeadlessChrome crawler)",
                 Map.of(
                         "visitorId", "visitor-bot",
                         "sessionId", "session-bot",
+                        "utmSource", "codex",
+                        "utmMedium", "fake",
+                        "utmCampaign", "mh_fake_exp_78",
                         "deviceType", "desktop")));
 
         var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+        var diagnosticSummary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias", true);
 
         assertThat(summary.totalEvents()).isEqualTo(1);
         assertThat(summary.rawTotalEvents()).isEqualTo(2);
@@ -749,6 +753,13 @@ class AccessServiceTest {
         assertThat(summary.trafficSources())
                 .singleElement()
                 .satisfies(source -> assertThat(source.utmSource()).isEqualTo("ig"));
+        assertThat(diagnosticSummary.totalEvents()).isEqualTo(1);
+        assertThat(diagnosticSummary.trafficSources())
+                .anySatisfy(source -> {
+                    assertThat(source.utmSource()).isEqualTo("codex");
+                    assertThat(source.utmCampaign()).isEqualTo("mh_fake_exp_78");
+                    assertThat(source.sessions()).isEqualTo(1);
+                });
         assertThat(summary.trafficQualityBreakdown())
                 .extracting("trafficQuality")
                 .contains("HUMAN", "BOT_SUSPECTED");

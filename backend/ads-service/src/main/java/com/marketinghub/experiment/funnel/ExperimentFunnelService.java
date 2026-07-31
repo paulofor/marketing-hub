@@ -141,7 +141,7 @@ public class ExperimentFunnelService {
 
     PdeAnalyticsSummary summary;
     try {
-      summary = pdeAnalyticsClient.fetchSummary(DEFAULT_PDE_PRODUCT_SLUG, followUpActionUrl);
+      summary = fetchPdeSummaryForExperiment(experiment);
     } catch (Exception ex) {
       log.error(
           "Falha ao diagnosticar analytics PDE do cockpit; experimentId={} productSlug={} followUpActionUrl={}",
@@ -172,7 +172,7 @@ public class ExperimentFunnelService {
           ex.getClass().getSimpleName(),
           ex.getMessage());
     }
-    List<String> attributionCodes = fetchExperimentAttributionCodes(experimentId);
+    List<String> attributionCodes = fetchExperimentAttributionCodes(experiment);
     return buildPdeCockpitDiagnostics(
         experimentId,
         followUpActionUrl,
@@ -1180,9 +1180,7 @@ public class ExperimentFunnelService {
     }
     PdeAnalyticsSummary summary;
     try {
-      summary =
-          pdeAnalyticsClient.fetchSummary(
-              DEFAULT_PDE_PRODUCT_SLUG, experiment.getFollowUpActionUrl());
+      summary = fetchPdeSummaryForExperiment(experiment);
     } catch (Exception ex) {
       log.error(
           "Falha ao consultar analytics PDE para consolidar funil do experimento; experimentId={} productSlug={}",
@@ -1195,9 +1193,13 @@ public class ExperimentFunnelService {
       return;
     }
 
-    List<String> attributionCodes = fetchExperimentAttributionCodes(experiment.getId());
+    List<String> attributionCodes = fetchExperimentAttributionCodes(experiment);
     PdeMembershipMetric metric =
-        aggregatePdeMembershipMetric(summary, attributionCodes, experiment.getFollowUpActionUrl());
+        aggregatePdeMembershipMetric(
+            summary,
+            attributionCodes,
+            experiment.getFollowUpActionUrl(),
+            !isFakeExperiment(experiment));
     mergeMetric(
         stages,
         ExperimentFunnelStage.VISUALIZACAO_FORM,
@@ -1245,12 +1247,24 @@ public class ExperimentFunnelService {
         "Primeiro uso registrado no analytics PDE/MUSA");
   }
 
+  /** Busca o resumo PDE correto para experimento real ou fake de diagnóstico técnico. */
+  private PdeAnalyticsSummary fetchPdeSummaryForExperiment(Experiment experiment) {
+    if (isFakeExperiment(experiment)) {
+      return pdeAnalyticsClient.fetchSummaryIncludingNonHumanTraffic(
+          DEFAULT_PDE_PRODUCT_SLUG, experiment.getFollowUpActionUrl());
+    }
+    return pdeAnalyticsClient.fetchSummary(
+        DEFAULT_PDE_PRODUCT_SLUG, experiment.getFollowUpActionUrl());
+  }
+
   /**
    * Busca os códigos Meta e UTMs persistidos para atribuir o analytics PDE ao experimento correto.
    */
-  private List<String> fetchExperimentAttributionCodes(Long experimentId) {
-    return jdbcTemplate.queryForList(
-        """
+  private List<String> fetchExperimentAttributionCodes(Experiment experiment) {
+    Long experimentId = experiment.getId();
+    List<String> persistedCodes =
+        jdbcTemplate.queryForList(
+            """
                 SELECT DISTINCT code
                 FROM (
                     SELECT fac.id AS code
@@ -1300,15 +1314,27 @@ public class ExperimentFunnelService {
                 WHERE code IS NOT NULL
                   AND TRIM(code) <> ''
                 """,
-        String.class,
-        experimentId,
-        experimentId,
-        experimentId,
-        experimentId,
-        experimentId,
-        experimentId,
-        experimentId,
-        experimentId);
+            String.class,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId);
+    if (!isFakeExperiment(experiment)) {
+      return persistedCodes;
+    }
+    List<String> fakeCodes = new ArrayList<>(persistedCodes);
+    fakeCodes.add("mh_fake_exp_" + experimentId);
+    fakeCodes.add("fake_exp_" + experimentId);
+    fakeCodes.add("fake-" + experimentId);
+    fakeCodes.add("exp-" + experimentId);
+    fakeCodes.add("exp_" + experimentId);
+    fakeCodes.add("experiment-" + experimentId);
+    fakeCodes.add("experiment_" + experimentId);
+    return fakeCodes.stream().distinct().toList();
   }
 
   /**
@@ -1316,10 +1342,16 @@ public class ExperimentFunnelService {
    * existem; antes da campanha existir, usa a versão do slot publicado no destino do experimento.
    */
   private PdeMembershipMetric aggregatePdeMembershipMetric(
-      PdeAnalyticsSummary summary, List<String> attributionCodes, String followUpActionUrl) {
+      PdeAnalyticsSummary summary,
+      List<String> attributionCodes,
+      String followUpActionUrl,
+      boolean allowVersionFallback) {
     if (attributionCodes == null
         || attributionCodes.isEmpty()
         || summary.trafficSources() == null) {
+      if (!allowVersionFallback) {
+        return PdeMembershipMetric.empty();
+      }
       return aggregatePdeMembershipMetricByExperienceVersion(summary, followUpActionUrl);
     }
     long pdeEntries = 0;
@@ -1345,7 +1377,9 @@ public class ExperimentFunnelService {
       subscriptionApproved += source.subscriptionApproved();
       lastEventAt = max(lastEventAt, parsePdeInstant(source.lastEventAt()));
     }
-    if (!matchedAttribution && findMatchingExperienceVersion(summary, followUpActionUrl).isPresent()) {
+    if (!matchedAttribution
+        && allowVersionFallback
+        && findMatchingExperienceVersion(summary, followUpActionUrl).isPresent()) {
       log.warn(
           "Analytics PDE sem origem UTM correspondente; usando fallback pela versao do slot. followUpActionUrl={} attributionCodes={}",
           followUpActionUrl,
@@ -1418,7 +1452,8 @@ public class ExperimentFunnelService {
     List<PdeAnalyticsSummary.PdeTrafficSourceMetric> matchingTrafficSources =
         attributionFilterApplied
             ? summary.trafficSources().stream()
-                .filter(source -> source != null && matchesPdeAttribution(source, safeAttributionCodes))
+                .filter(
+                    source -> source != null && matchesPdeAttribution(source, safeAttributionCodes))
                 .toList()
             : List.of();
     boolean fallbackUsed =
@@ -1514,7 +1549,8 @@ public class ExperimentFunnelService {
     if (summary.experienceVersions() == null || followUpActionUrl == null) {
       return Optional.empty();
     }
-    Optional<String> expectedExperienceVersion = resolveExpectedPdeExperienceVersion(followUpActionUrl);
+    Optional<String> expectedExperienceVersion =
+        resolveExpectedPdeExperienceVersion(followUpActionUrl);
     if (expectedExperienceVersion.isPresent()) {
       return summary.experienceVersions().stream()
           .filter(metric -> metric != null && metric.experienceVersion() != null)
@@ -1801,12 +1837,24 @@ public class ExperimentFunnelService {
   /** Identifica se o experimento mede assinatura e ativação de um produto PDE. */
   private boolean isPdeMembershipSubscriptionFunnel(Experiment experiment) {
     return experiment != null
-        && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL;
+        && (experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+            || isFakePdeExperiment(experiment));
   }
 
   /** Identifica funis em que clique de checkout é evento comercial central. */
   private boolean isPurchaseIntentFunnel(Experiment experiment) {
     return isLowTicketProduct(experiment) || isPdeMembershipSubscriptionFunnel(experiment);
+  }
+
+  /** Identifica experimento fake usado para testar uma versão publicada do PDE/MUSA. */
+  private boolean isFakePdeExperiment(Experiment experiment) {
+    return isFakeExperiment(experiment)
+        && resolveVersionTokenFromUrl(experiment.getFollowUpActionUrl()).isPresent();
+  }
+
+  /** Identifica se o experimento é operacional e não deve receber fallback comercial global. */
+  private boolean isFakeExperiment(Experiment experiment) {
+    return experiment != null && experiment.getExperimentType() == ExperimentType.FAKE_EXPERIMENT;
   }
 
   /** Executa consulta agregada única e converte o resultado para métrica interna. */
@@ -2556,5 +2604,10 @@ public class ExperimentFunnelService {
       long subscriptionApproved,
       long accessReleased,
       long firstUse,
-      Instant lastEventAt) {}
+      Instant lastEventAt) {
+    /** Cria métrica zerada quando o fake ainda não recebeu tráfego atribuído ao experimento. */
+    private static PdeMembershipMetric empty() {
+      return new PdeMembershipMetric(0, 0, 0, 0, 0, 0, 0, 0, 0, null);
+    }
+  }
 }

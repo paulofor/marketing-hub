@@ -295,6 +295,7 @@ jobs:
             && export PDE_DEPLOY_ENVIRONMENT=production \
             && export PDE_DEPLOY_COMPOSE_FILE=docker-compose.deploy.yml \
             && export PDE_DEPLOY_COMMIT_SHA='${GITHUB_SHA}' \
+            && export PDE_DEPLOY_GIT_BRANCH='${GITHUB_REF_NAME}' \
             && export PDE_DEPLOY_IMAGE_TAG='${IMAGE_TAG}' \
             && export PDE_DEPLOY_FRONTEND_URL=https://v5.clubemusa.com.br \
             && export PDE_DEPLOY_BACKEND_URL=\"http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}\" \
@@ -407,6 +408,10 @@ jobs:
             docker compose -f docker-compose.deploy.yml logs --tail=200 pde-platform-backend >&2 || true; \
             exit 1"
           curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}/actuator/health"
+          curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}/actuator/info" | tee /tmp/pde-backend-actuator-info.json
+          grep -q '"git"' /tmp/pde-backend-actuator-info.json
+          grep -q '"commit"' /tmp/pde-backend-actuator-info.json
+          grep -q '"pde"' /tmp/pde-backend-actuator-info.json
       - name: Validate production public HTTPS routes
         run: |
           validate_dns_points_to_deploy_host() {

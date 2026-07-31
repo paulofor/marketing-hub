@@ -22,6 +22,7 @@ public class DeployStatusService {
     private final String buildVersion;
     private final String composeFile;
     private final String commitSha;
+    private final String branch;
     private final String imageTag;
     private final String experienceVersion;
     private final String frontendUrl;
@@ -47,6 +48,7 @@ public class DeployStatusService {
             @Value("${pde.deploy.build-version:0.0.1-SNAPSHOT}") String buildVersion,
             @Value("${pde.deploy.compose-file:docker-compose.yml}") String composeFile,
             @Value("${pde.deploy.commit-sha:unknown}") String commitSha,
+            @Value("${pde.deploy.branch:unknown}") String branch,
             @Value("${pde.deploy.image-tag:unknown}") String imageTag,
             @Value("${pde.catalog.experience-version-override:}") String experienceVersion,
             @Value("${pde.deploy.frontend-url:http://localhost:5176}") String frontendUrl,
@@ -69,6 +71,7 @@ public class DeployStatusService {
         this.buildVersion = buildVersion;
         this.composeFile = composeFile;
         this.commitSha = commitSha;
+        this.branch = branch;
         this.imageTag = imageTag;
         this.experienceVersion = experienceVersion;
         this.frontendUrl = frontendUrl;
@@ -111,6 +114,7 @@ public class DeployStatusService {
                 buildArtifact,
                 buildVersion,
                 commitSha,
+                branch,
                 imageTag,
                 backendImage,
                 environment,

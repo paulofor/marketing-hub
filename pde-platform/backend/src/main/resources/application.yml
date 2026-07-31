@@ -45,6 +45,7 @@ pde:
     build-version: ${PDE_DEPLOY_BUILD_VERSION:0.0.1-SNAPSHOT}
     compose-file: ${PDE_DEPLOY_COMPOSE_FILE:docker-compose.yml}
     commit-sha: ${PDE_DEPLOY_COMMIT_SHA:unknown}
+    branch: ${PDE_DEPLOY_GIT_BRANCH:unknown}
     image-tag: ${PDE_DEPLOY_IMAGE_TAG:unknown}
     frontend-url: ${PDE_DEPLOY_FRONTEND_URL:http://localhost:5176}
     backend-url: ${PDE_DEPLOY_BACKEND_URL:http://localhost:8096}

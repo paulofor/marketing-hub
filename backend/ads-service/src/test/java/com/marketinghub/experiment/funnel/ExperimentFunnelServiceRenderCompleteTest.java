@@ -72,7 +72,9 @@ class ExperimentFunnelServiceRenderCompleteTest {
         .when(landingAnalyticsEventRepository.aggregateVisitorsByExperiment(any(), any()))
         .thenReturn(List.of());
     lenient().when(internalAnalyticsTrafficFilter.isInternal(any())).thenReturn(false);
-    lenient().when(pdeProductionSlotRepository.findFirstByDomain(any())).thenReturn(Optional.empty());
+    lenient()
+        .when(pdeProductionSlotRepository.findFirstByDomain(any()))
+        .thenReturn(Optional.empty());
   }
 
   /** Valida que o render-complete grava visualização do formulário com visitante e campanha. */
@@ -1207,8 +1209,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals(70, pdeEntry.getTotalCount());
     assertEquals(34, videoPartial.getTotalCount());
     assertEquals(12, videoComplete.getTotalCount());
-    verify(pdeAnalyticsClient)
-        .fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");
+    verify(pdeAnalyticsClient).fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");
   }
 
   /**
@@ -1322,6 +1323,222 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
     assertEquals(29, pdeEntry.getTotalCount());
     assertEquals(6, videoComplete.getTotalCount());
+    assertEquals(Instant.parse("2026-07-31T00:51:38Z"), pdeEntry.getLastEventAt());
+  }
+
+  /**
+   * Valida que experimento fake não usa fallback global da versão PDE quando a UTM não pertence ao
+   * experimento.
+   */
+  @Test
+  void summarizeFakePdeDoesNotFallBackToGlobalVersionWhenAttributionDoesNotMatch() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(78L)
+            .experimentType(ExperimentType.FAKE_EXPERIMENT)
+            .followUpActionUrl("https://v6.clubemusa.com.br")
+            .build();
+    when(experimentRepository.findById(78L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.aggregateManualByExperiment(78L, null)).thenReturn(List.of());
+    when(jdbcTemplate.queryForList(
+            any(String.class),
+            eq(String.class),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
+        .thenReturn(List.of());
+    when(pdeAnalyticsClient.fetchSummaryIncludingNonHumanTraffic(
+            "metodo-musa-7-dias", "https://v6.clubemusa.com.br"))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v6-video-motivacional",
+                420,
+                35,
+                35,
+                35,
+                35,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                13375288,
+                "2026-07-30T21:51:38-03:00",
+                List.of(),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v6-video-motivacional",
+                        371,
+                        29,
+                        29,
+                        0,
+                        0,
+                        12,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                        "Outros",
+                        "codex",
+                        "fake",
+                        "mh_fake_exp_79",
+                        "browser-test-79",
+                        8,
+                        8,
+                        0,
+                        4,
+                        2,
+                        0,
+                        0,
+                        1,
+                        0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        50000,
+                        "2026-07-31T00:51:38Z")),
+                List.of(),
+                List.of(),
+                List.of()));
+
+    var summary = service.summarize(78L);
+
+    var pdeEntry =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VISUALIZACAO_FORM)
+            .findFirst()
+            .orElseThrow();
+    var videoComplete =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VIDEO_VISTO_COMPLETO)
+            .findFirst()
+            .orElseThrow();
+
+    assertEquals(0, pdeEntry.getTotalCount());
+    assertEquals(0, videoComplete.getTotalCount());
+  }
+
+  /** Valida que experimento fake conta apenas tráfego PDE com UTM canônica do próprio ID. */
+  @Test
+  void summarizeFakePdeCountsOnlyMatchingSyntheticAttribution() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(79L)
+            .experimentType(ExperimentType.FAKE_EXPERIMENT)
+            .followUpActionUrl("https://v6.clubemusa.com.br")
+            .build();
+    when(experimentRepository.findById(79L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.aggregateManualByExperiment(79L, null)).thenReturn(List.of());
+    when(jdbcTemplate.queryForList(
+            any(String.class),
+            eq(String.class),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
+        .thenReturn(List.of());
+    when(pdeAnalyticsClient.fetchSummaryIncludingNonHumanTraffic(
+            "metodo-musa-7-dias", "https://v6.clubemusa.com.br"))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v6-video-motivacional",
+                420,
+                35,
+                35,
+                35,
+                35,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                13375288,
+                "2026-07-30T21:51:38-03:00",
+                List.of(),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v6-video-motivacional",
+                        371,
+                        29,
+                        29,
+                        0,
+                        0,
+                        12,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                        "Outros",
+                        "codex",
+                        "fake",
+                        "mh_fake_exp_79",
+                        "browser-test-79",
+                        8,
+                        8,
+                        0,
+                        4,
+                        2,
+                        0,
+                        0,
+                        1,
+                        0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        50000,
+                        "2026-07-31T00:51:38Z")),
+                List.of(),
+                List.of(),
+                List.of()));
+
+    var summary = service.summarize(79L);
+
+    var pdeEntry =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VISUALIZACAO_FORM)
+            .findFirst()
+            .orElseThrow();
+    var videoPartial =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VIDEO_VISTO_PARCIAL)
+            .findFirst()
+            .orElseThrow();
+    var checkout =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.ACESSO_CHECKOUT)
+            .findFirst()
+            .orElseThrow();
+
+    assertEquals(8, pdeEntry.getTotalCount());
+    assertEquals(4, videoPartial.getTotalCount());
+    assertEquals(1, checkout.getTotalCount());
     assertEquals(Instant.parse("2026-07-31T00:51:38Z"), pdeEntry.getLastEventAt());
   }
 

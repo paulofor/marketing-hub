@@ -401,6 +401,11 @@ public class AccessService {
 
     /** Consolida métricas comerciais de humanos e preserva auditoria de tráfego não elegível. */
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(String productSlug) {
+        return summarizeFunnelAnalytics(productSlug, false);
+    }
+
+    /** Consolida métricas comerciais e permite incluir tráfego técnico em quebras de diagnóstico. */
+    public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(String productSlug, boolean includeNonHumanTraffic) {
         ProductExperienceResponse product = productCatalogService.getProduct(productSlug);
         if (!usesJdbcStorage()) {
             return emptyFunnelAnalytics(productSlug);
@@ -487,7 +492,14 @@ public class AccessService {
                             loadOptionalAnalyticsBreakdown(
                                     connection, productSlug, "layouts", this::loadLayoutMetrics),
                             loadOptionalAnalyticsBreakdown(
-                                    connection, productSlug, "trafficSources", this::loadTrafficSourceMetrics),
+                                    connection,
+                                    productSlug,
+                                    "trafficSources",
+                                    (analyticsConnection, analyticsProductSlug) ->
+                                            loadTrafficSourceMetrics(
+                                                    analyticsConnection,
+                                                    analyticsProductSlug,
+                                                    includeNonHumanTraffic)),
                             loadOptionalAnalyticsBreakdown(
                                     connection, productSlug, "trafficQuality", this::loadTrafficQualityMetrics),
                             loadOptionalAnalyticsBreakdown(
@@ -1129,6 +1141,13 @@ public class AccessService {
     /** Lê desempenho por origem, campanha e criativo para cruzar mídia com comportamento real no PDE. */
     private List<FunnelAnalyticsTrafficSourceMetricDto> loadTrafficSourceMetrics(Connection connection, String productSlug)
             throws SQLException {
+        return loadTrafficSourceMetrics(connection, productSlug, false);
+    }
+
+    /** Lê desempenho por origem permitindo tráfego técnico somente em diagnóstico fake explícito. */
+    private List<FunnelAnalyticsTrafficSourceMetricDto> loadTrafficSourceMetrics(
+            Connection connection, String productSlug, boolean includeNonHumanTraffic)
+            throws SQLException {
         String sql = """
                 SELECT
                   event_id,
@@ -1142,10 +1161,11 @@ public class AccessService {
                   occurred_at
                 FROM pde_funnel_event
                 WHERE product_slug = ?
-                  AND traffic_quality = 'HUMAN'
+                  AND (? OR traffic_quality = 'HUMAN')
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setBoolean(2, includeNonHumanTraffic);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<TrafficSourceKey, TrafficSourceMetricBuilder> builders = new LinkedHashMap<>();
                 while (resultSet.next()) {

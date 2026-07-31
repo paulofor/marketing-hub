@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -38,9 +39,9 @@ class ExperimentCockpitServiceTest {
 
   @InjectMocks private ExperimentCockpitService service;
 
-  /** Garante que experimento fake retorna massa simulada sem consultar métricas reais. */
+  /** Garante que experimento fake usa métricas reais atribuídas ao teste em vez de massa fixa. */
   @Test
-  void getCockpitReturnsSimulatedDataForFakeExperiment() {
+  void getCockpitReturnsMeasuredDataForFakeExperiment() {
     Experiment experiment =
         Experiment.builder()
             .id(88L)
@@ -48,16 +49,30 @@ class ExperimentCockpitServiceTest {
             .experimentType(ExperimentType.FAKE_EXPERIMENT)
             .build();
     when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+    when(funnelService.summarizeLandingAnalytics(88L))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                7, 3, 7, 0, 0, 0, null, List.of(), List.of(), List.of(), null, null, List.of()));
+    when(funnelService.summarize(88L))
+        .thenReturn(
+            List.of(
+                stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 7),
+                stage(ExperimentFunnelStage.VIDEO_VISTO_PARCIAL, 4),
+                stage(ExperimentFunnelStage.VIDEO_VISTO_COMPLETO, 2),
+                stage(ExperimentFunnelStage.ACESSO_CHECKOUT, 1),
+                stage(ExperimentFunnelStage.COMPRA, 0)));
 
     var cockpit = service.getCockpit(88L);
 
     assertEquals("FAKE_EXPERIMENT", cockpit.experimentType());
     assertEquals("SIMULATED", cockpit.health().status());
-    assertEquals("SIMULACAO_PDE_VIDEO_METRICAS", cockpit.bottleneck().code());
-    assertEquals(118L, cockpit.scoreboard().pageViews());
-    assertEquals(8, cockpit.funnel().size());
-    verifyNoInteractions(
-        readinessService, diagnosticsService, funnelService, funnelDiagnosticService);
+    assertEquals("FAKE_PDE_VIDEO_METRICAS", cockpit.bottleneck().code());
+    assertEquals(7L, cockpit.scoreboard().pageViews());
+    assertEquals(1L, cockpit.scoreboard().checkoutAccesses());
+    assertEquals(5, cockpit.funnel().size());
+    verify(funnelService).summarizeLandingAnalytics(88L);
+    verify(funnelService).summarize(88L);
+    verifyNoInteractions(readinessService, diagnosticsService, funnelDiagnosticService);
   }
 
   /**

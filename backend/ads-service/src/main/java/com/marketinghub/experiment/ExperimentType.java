@@ -4,5 +4,6 @@ package com.marketinghub.experiment;
 public enum ExperimentType {
   NICHE_TEST,
   LOW_TICKET_PRODUCT,
-  PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+  PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL,
+  FAKE_EXPERIMENT
 }

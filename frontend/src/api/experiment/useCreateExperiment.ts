@@ -42,7 +42,7 @@ export interface CreateExperiment {
   journeyTemplateId?: number;
   facebookPageId?: number;
   facebookInstantFormId?: number;
-  instagramAccountId: number;
+  instagramAccountId?: number;
   imageModelId?: number;
   imageModelQualityId?: number;
   schemaFirstLeadPortalEnabled?: boolean;

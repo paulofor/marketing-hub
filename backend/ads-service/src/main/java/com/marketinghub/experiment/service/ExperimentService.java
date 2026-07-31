@@ -356,7 +356,11 @@ public class ExperimentService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "hypothesis and experiment niche mismatch");
     }
-    var resolvedProductAiSubtype = resolveProductAiSubtype(request.getProductAiSubtype(), hyp);
+    ExperimentType resolvedExperimentType = resolveExperimentType(request.getExperimentType());
+    var resolvedProductAiSubtype =
+        resolvedExperimentType == ExperimentType.FAKE_EXPERIMENT
+            ? null
+            : resolveProductAiSubtype(request.getProductAiSubtype(), hyp);
     validateProductAiPreparation(request.getHypothesisId(), resolvedProductAiSubtype);
     if (request.getStartDate() != null
         && request.getEndDate() != null
@@ -426,13 +430,13 @@ public class ExperimentService {
             .freeReward(normalizeExperimentPromiseField(request.getFreeReward()))
             .funnelPromise(normalizeExperimentPromiseField(request.getFunnelPromise()))
             .primaryCta(normalizeExperimentPromiseField(request.getPrimaryCta()))
-            .experimentType(resolveExperimentType(request.getExperimentType()))
+            .experimentType(resolvedExperimentType)
             .productAiSubtype(resolvedProductAiSubtype)
             .campaignObjective(
                 resolveCampaignObjective(
                     request.getCampaignObjective(),
                     request.getFreeReward(),
-                    request.getExperimentType()))
+                    resolvedExperimentType))
             .hypothesisRef(hyp)
             .kpiTargetCpl(request.getKpiTargetCpl())
             .metricPreset(preset)
@@ -549,6 +553,7 @@ public class ExperimentService {
         .findReadyForCampaign(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK)
         .stream()
         .filter(exp -> exp.getFacebookReleaseRequestedAt() != null)
+        .filter(exp -> exp.getExperimentType() != ExperimentType.FAKE_EXPERIMENT)
         .toList();
   }
 
@@ -698,6 +703,9 @@ public class ExperimentService {
 
   /** Valida as evidências mínimas antes de aceitar experimento como em execução. */
   private void validateRunningStatusTransition(Experiment exp) {
+    if (exp.getExperimentType() == ExperimentType.FAKE_EXPERIMENT) {
+      return;
+    }
     if (exp.getKpiTargetCpl() == null
         || exp.getStopLossCpl() == null
         || exp.getSampleSize() == null) {
@@ -837,10 +845,15 @@ public class ExperimentService {
     }
     if (request.isExperimentTypePresent()) {
       exp.setExperimentType(resolveExperimentType(request.getExperimentType()));
+      if (exp.getExperimentType() == ExperimentType.FAKE_EXPERIMENT) {
+        exp.setProductAiSubtype(null);
+      }
     }
     if (request.isProductAiSubtypePresent()) {
       exp.setProductAiSubtype(
-          resolveProductAiSubtype(request.getProductAiSubtype(), exp.getHypothesisRef()));
+          exp.getExperimentType() == ExperimentType.FAKE_EXPERIMENT
+              ? null
+              : resolveProductAiSubtype(request.getProductAiSubtype(), exp.getHypothesisRef()));
     }
     if (request.isCampaignObjectivePresent()) {
       exp.setCampaignObjective(
@@ -1124,6 +1137,11 @@ public class ExperimentService {
   @Transactional
   public Experiment releaseForFacebook(Long id) {
     Experiment experiment = repository.findById(id).orElseThrow();
+    if (experiment.getExperimentType() == ExperimentType.FAKE_EXPERIMENT) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Experimento fake é somente simulação para testar telas, PDE, vídeo e métricas; não pode ser liberado para campanha real.");
+    }
     if (experiment.getPlatform() != ExperimentPlatform.FACEBOOK) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Experiment platform must be Facebook");
@@ -1420,10 +1438,12 @@ public class ExperimentService {
     ExperimentCampaignObjective objective =
         requestedObjective != null
             ? requestedObjective
-            : resolvedType == ExperimentType.LOW_TICKET_PRODUCT
-                    || resolvedType == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
-                ? ExperimentCampaignObjective.SALES
-                : ExperimentCampaignObjective.LEADS;
+            : resolvedType == ExperimentType.FAKE_EXPERIMENT
+                ? ExperimentCampaignObjective.TRAFFIC
+                : resolvedType == ExperimentType.LOW_TICKET_PRODUCT
+                        || resolvedType == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+                    ? ExperimentCampaignObjective.SALES
+                    : ExperimentCampaignObjective.LEADS;
     if (resolvedType == ExperimentType.NICHE_TEST
         && StringUtils.hasText(freeReward)
         && objective != ExperimentCampaignObjective.LEADS) {

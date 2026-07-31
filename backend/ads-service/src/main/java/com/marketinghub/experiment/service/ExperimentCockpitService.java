@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.funnel.ExperimentFunnelDiagnosticService;
@@ -22,6 +23,7 @@ import com.marketinghub.experiment.service.cockpit.ExperimentCockpitScoreboardDt
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -58,6 +60,9 @@ public class ExperimentCockpitService {
   /** Monta a visão consolidada do cockpit para um experimento. */
   public ExperimentCockpitDto getCockpit(Long experimentId) {
     Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    if (experiment.getExperimentType() == ExperimentType.FAKE_EXPERIMENT) {
+      return buildFakeCockpit(experiment);
+    }
     ExperimentReadinessSummaryDto readiness = readinessService.summarize(experimentId);
     ExperimentLandingAnalyticsDto analytics = funnelService.summarizeLandingAnalytics(experimentId);
     List<ExperimentFunnelStageDto> funnelStages = funnelService.summarize(experimentId);
@@ -87,6 +92,81 @@ public class ExperimentCockpitService {
         buildNextActions(experiment.getId(), bottleneck));
   }
 
+  /** Monta uma leitura simulada para validar cockpit, PDE, vídeo e métricas sem campanha real. */
+  private ExperimentCockpitDto buildFakeCockpit(Experiment experiment) {
+    ExperimentCockpitScoreboardDto scoreboard =
+        new ExperimentCockpitScoreboardDto(
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            null,
+            1800L,
+            144L,
+            new BigDecimal("8.0000"),
+            BigDecimal.ZERO,
+            118L,
+            64L,
+            19L,
+            0L,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            null);
+    ExperimentCockpitBottleneckDto bottleneck =
+        bottleneck(
+            "SIMULACAO_PDE_VIDEO_METRICAS",
+            "Simulação ativa para validar PDE, vídeo e métricas",
+            "info",
+            "Este experimento não representa resposta real de mercado; os números são massa controlada para testar telas e instrumentação.",
+            "Permite ajustar acesso ao PDE, execução de vídeo e leitura do cockpit sem gastar mídia nem matar uma oferta por falha técnica.",
+            "Validar navegação mobile, eventos de vídeo, avanço até checkout simulado e consistência das métricas exibidas.");
+    return new ExperimentCockpitDto(
+        experiment.getId(),
+        experiment.getName(),
+        valueOf(experiment.getStatus()),
+        valueOf(experiment.getExperimentType()),
+        valueOf(experiment.getCampaignObjective()),
+        scoreboard,
+        buildQuestion(experiment),
+        new ExperimentCockpitHealthDto(
+            "SIMULATED",
+            "Experimento fake: leitura comercial bloqueada",
+            "Use este cockpit apenas para validar acesso, vídeo e métricas; não interprete como venda, rejeição ou aprovação de oferta.",
+            List.of("Campanha real desabilitada para este tipo de experimento.")),
+        fakeFunnelStages(),
+        bottleneck,
+        List.of(
+            "Massa simulada para testar visualização de anúncio, acesso PDE, play de vídeo e intenção de checkout.",
+            "Nenhuma métrica deste experimento deve alimentar decisão de escala, pausa ou descarte comercial."),
+        buildNextActions(experiment.getId(), bottleneck));
+  }
+
+  /** Cria etapas sintéticas para exercitar o funil do cockpit sem depender de tráfego real. */
+  private List<ExperimentCockpitFunnelStageDto> fakeFunnelStages() {
+    Instant lastEventAt = Instant.now();
+    return List.of(
+        fakeStage(ExperimentFunnelStage.VISUALIZACAO_ANUNCIO, 1800, 1500L, lastEventAt),
+        fakeStage(ExperimentFunnelStage.ACESSO_FORM_LEAD, 144, 132L, lastEventAt),
+        fakeStage(ExperimentFunnelStage.VISUALIZACAO_FORM, 118, 109L, lastEventAt),
+        fakeStage(ExperimentFunnelStage.VIDEO_VISTO_PARCIAL, 82, 78L, lastEventAt),
+        fakeStage(ExperimentFunnelStage.VIDEO_VISTO_COMPLETO, 46, 44L, lastEventAt),
+        fakeStage(ExperimentFunnelStage.ENVIO_FORM, 64, 61L, lastEventAt),
+        fakeStage(ExperimentFunnelStage.ACESSO_CHECKOUT, 19, 18L, lastEventAt),
+        fakeStage(ExperimentFunnelStage.COMPRA, 0, 0L, lastEventAt));
+  }
+
+  /** Formata uma etapa sintética com fonte explícita de simulação. */
+  private ExperimentCockpitFunnelStageDto fakeStage(
+      ExperimentFunnelStage stage, long totalCount, Long uniqueCount, Instant lastEventAt) {
+    return new ExperimentCockpitFunnelStageDto(
+        stage.name(),
+        stage.getLabel(),
+        stage.getOrder(),
+        totalCount,
+        uniqueCount,
+        lastEventAt,
+        "simulado");
+  }
+
   /** Calcula o placar financeiro e de conversão a partir de métricas persistidas. */
   private ExperimentCockpitScoreboardDto buildScoreboard(
       Experiment experiment,
@@ -102,7 +182,9 @@ public class ExperimentCockpitService {
       spend = experiment.getTotalCost();
     }
     long measuredPageViews =
-        Math.max(analytics.pageViews(), stageTotal(funnelStages, ExperimentFunnelStage.VISUALIZACAO_FORM));
+        Math.max(
+            analytics.pageViews(),
+            stageTotal(funnelStages, ExperimentFunnelStage.VISUALIZACAO_FORM));
     long leads = stageTotal(funnelStages, ExperimentFunnelStage.ENVIO_FORM);
     long checkoutAccesses = stageTotal(funnelStages, ExperimentFunnelStage.ACESSO_CHECKOUT);
     long purchases = stageTotal(funnelStages, ExperimentFunnelStage.COMPRA);

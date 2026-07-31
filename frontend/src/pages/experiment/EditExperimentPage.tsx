@@ -189,6 +189,7 @@ export default function EditExperimentPage() {
   const isLowTicketProduct = experimentTypeValue === "LOW_TICKET_PRODUCT";
   const isPdeMembershipSubscriptionFunnel =
     experimentTypeValue === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const isFakeExperiment = experimentTypeValue === "FAKE_EXPERIMENT";
   const isSalesObjectiveExperiment =
     isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
   const stageEntries = playbook ?? [];
@@ -523,7 +524,11 @@ export default function EditExperimentPage() {
         productAiSubtype: isLowTicketProduct
           ? values.productAiSubtype || "AI_PERSONALIZED_SAMPLE"
           : null,
-        campaignObjective: isSalesObjectiveExperiment ? "SALES" : "LEADS",
+        campaignObjective: isFakeExperiment
+          ? "TRAFFIC"
+          : isSalesObjectiveExperiment
+            ? "SALES"
+            : "LEADS",
         kpiTarget: Number(values.kpiTarget),
         dailyBudget: parsedDailyBudget,
         unitPrice: parsedUnitPrice,
@@ -653,15 +658,18 @@ export default function EditExperimentPage() {
                       <option value="PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL">
                         PDE / assinatura MUSA
                       </option>
+                      <option value="FAKE_EXPERIMENT">Experimento fake</option>
                       <option value="NICHE_TEST">Teste de nicho / lead</option>
                     </select>
                     <div className="form-text">
-                      {experimentTypeValue ===
-                      "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
-                        ? "Prioriza assinatura: tela inicial do PED, login, checkout, acesso liberado e ativação."
-                        : isLowTicketProduct
-                          ? "Prioriza venda direta: página curta, checkout e entrega."
-                          : "Prioriza captura de lead: isca/amostra antes da venda."}
+                      {isFakeExperiment
+                        ? "Simula acesso ao PDE, execução de vídeo e métricas sem liberar campanha real."
+                        : experimentTypeValue ===
+                            "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
+                          ? "Prioriza assinatura: tela inicial do PED, login, checkout, acesso liberado e ativação."
+                          : isLowTicketProduct
+                            ? "Prioriza venda direta: página curta, checkout e entrega."
+                            : "Prioriza captura de lead: isca/amostra antes da venda."}
                     </div>
                   </div>
                   {isLowTicketProduct && (

@@ -1342,6 +1342,59 @@ class ExperimentServiceTest {
     assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
   }
 
+  /** Garante que experimento fake nunca entra na fila de publicação real do Facebook Ads. */
+  @Test
+  void releaseForFacebookRejectsFakeExperiment() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Fake").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AFK").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HFK")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .productAiSubtype(com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+    metricPresetRepository.save(
+        MetricPreset.builder()
+            .id("LEAN_150_FAKE")
+            .name("Lean-Startup 150 Fake")
+            .sampleSize(150)
+            .stopLossFactor(new BigDecimal("2"))
+            .defaultMdePp(new BigDecimal("12"))
+            .build());
+    CreateExperimentRequest req = new CreateExperimentRequest();
+    applyStageDefaults(req);
+    req.setMarketNicheId(niche.getId());
+    req.setHypothesisId(hyp.getId());
+    req.setHypothesis("Simulação");
+    req.setExperimentType(ExperimentType.FAKE_EXPERIMENT);
+    req.setCampaignObjective(ExperimentCampaignObjective.TRAFFIC);
+    req.setSinglePain("Validar acesso ao PDE sem mídia real");
+    req.setFreeReward("Experiência fake controlada");
+    req.setFunnelPromise("Simular jornada PDE com vídeo e métricas");
+    req.setPrimaryCta("Testar experiência fake");
+    req.setKpiTargetCpl(new BigDecimal("45"));
+    req.setMetricPresetId("LEAN_150_FAKE");
+    req.setJourneyTemplateId(createJourneyTemplate().getId());
+    req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    Experiment experiment = service.create(req);
+
+    assertThat(experiment.getProductAiSubtype()).isNull();
+    assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("não pode ser liberado para campanha real");
+    assertThat(service.listReadyForCampaign())
+        .extracting(Experiment::getId)
+        .doesNotContain(experiment.getId());
+  }
+
   /** Garante que experimento PDE só libera campanha com slot produtivo aprovado no Hub. */
   @Test
   void releaseForFacebookRejectsPdeWithoutApprovedProductionSlot() {

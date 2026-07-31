@@ -15,13 +15,16 @@ import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoJobType;
+import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
+import com.marketinghub.salesvideo.SalesVideoRetryReason;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoMontageRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
+import com.marketinghub.salesvideo.dto.RetrySalesVideoJobRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.tenant.TenantContext;
@@ -186,6 +189,41 @@ class SalesVideoJobServiceTest {
     given(profileRepository.findById(missingId)).willReturn(Optional.empty());
 
     assertThrows(VideoModuleException.class, () -> service.listJobsByProfile(missingId));
+  }
+
+  /** Preserva metadata operacional ao reprocessar render com avatar e voz do provider. */
+  @Test
+  void shouldPreserveMetadataWhenRetryingVideoJob() {
+    SalesVideoProfile profile = SalesVideoProfile.builder().id(52L).tenantId("default").build();
+    com.marketinghub.salesvideo.SalesVideoScript script =
+        com.marketinghub.salesvideo.SalesVideoScript.builder().id(554L).build();
+    SalesVideoJob failedJob =
+        SalesVideoJob.builder()
+            .id(20486L)
+            .profile(profile)
+            .script(script)
+            .jobType(SalesVideoJobType.RENDER)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("HEYGEN")
+            .executionMode(SalesVideoExecutionMode.TEST)
+            .status(SalesVideoStatus.VIDEO_FAILED)
+            .retryAttempt(1)
+            .metadataJson("{\"heygen_avatar_id\":\"avatar\",\"heygen_voice_id\":\"voice\"}")
+            .build();
+    RetrySalesVideoJobRequest request = new RetrySalesVideoJobRequest();
+    request.setRequestedBy("operator@example.com");
+    request.setReason(SalesVideoRetryReason.QUALITY_ASSURANCE);
+    request.setNotes("Reprocessar com contrato preservado.");
+    given(jobRepository.findById(20486L)).willReturn(Optional.of(failedJob));
+    given(scriptRepository.findById(554L)).willReturn(Optional.of(script));
+    given(jobRepository.save(any(SalesVideoJob.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+
+    SalesVideoJobDto result = service.retry(20486L, request);
+
+    assertThat(result.getMetadataJson()).contains("heygen_avatar_id").contains("heygen_voice_id");
+    assertThat(result.getRetryOfJobId()).isEqualTo(20486L);
+    assertThat(result.getRetryAttempt()).isEqualTo(2);
   }
 
   /** Bloqueia render que terminou tecnicamente, mas ficou curto demais para o perfil comercial. */

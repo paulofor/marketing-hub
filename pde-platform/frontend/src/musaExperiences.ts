@@ -77,6 +77,7 @@ export type ProductExperience = {
   missions: Mission[];
   supportMaterials: SupportMaterial[];
   heroVideos?: HeroVideo[];
+  publicDiagnosticQuestions?: PublicDiagnosticQuestion[];
   publicFirstFold?: PublicFirstFold;
   scientificEvidencePack?: ScientificEvidencePack;
   completionOffer: string;

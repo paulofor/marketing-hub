@@ -1,3 +1,11 @@
+## 2026-07-31 — PDE MUSA v7: copy corrigida pelo cockpit e diagnóstico editável
+
+- causa-raiz confirmada: o slot v7 já tinha editor/publicador de contrato no Marketing Hub para copy do PDE, mas parte do diagnóstico público ainda vinha do bundle do frontend, mantendo risco de vazamento de rótulos internos como `A v7`.
+- ação operacional aplicada: o contrato publicado do slot `v7` foi atualizado pelo endpoint oficial do cockpit, removendo `PDE v7 científico` e trocando a primeira dobra por linguagem de cliente: `Método MUSA em 7 dias` e `Ver meu primeiro ajuste MUSA`.
+- melhoria preparada: o backend/frontend do PDE passam a aceitar `publicDiagnosticQuestions` no contrato publicado, permitindo que os passos do diagnóstico também sejam controlados pelo cockpit quando o campo existir.
+- prevenção: teste Playwright cobre que perguntas enviadas pelo contrato do Marketing Hub substituem o fallback local e que a v7 não exibe `A v7` nem `PDE v7 científico`.
+- impacto comercial esperado: reduzir dependência de PR para ajustes rápidos de copy do PDE e impedir que linguagem técnica contamine a percepção de confiança da cliente antes do diagnóstico.
+
 ## 2026-07-31 — Experimento 77: timeout do analytics PDE v6 no cockpit
 
 - causa-raiz confirmada em producao: o endpoint publico do PDE v6 respondia HTTP 200 em aproximadamente 5 a 7 segundos, mas o client HTTP do backend principal tinha timeout fixo de leitura de 4 segundos; por isso o diagnostico do cockpit retornava `PDE_SUMMARY_ERROR` e o funil do experimento 77 seguia zerado.

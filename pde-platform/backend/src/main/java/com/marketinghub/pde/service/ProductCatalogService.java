@@ -125,6 +125,7 @@ public class ProductCatalogService {
                 product.missions(),
                 product.supportMaterials(),
                 product.heroVideos(),
+                product.publicDiagnosticQuestions(),
                 product.publicFirstFold(),
                 product.scientificEvidencePack(),
                 product.completionOffer());
@@ -149,6 +150,7 @@ public class ProductCatalogService {
                 product.missions(),
                 product.supportMaterials(),
                 product.heroVideos(),
+                product.publicDiagnosticQuestions(),
                 product.publicFirstFold(),
                 product.scientificEvidencePack(),
                 product.completionOffer());
@@ -357,6 +359,7 @@ public class ProductCatalogService {
                                 "APPROVED",
                                 "READY")),
                 null,
+                null,
                 createMusaScientificEvidencePack(),
                 "Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais de presença, estilo e autocuidado acessível.");
     }
@@ -459,6 +462,7 @@ public class ProductCatalogService {
                                 "Resumo visual do método: coerência, redução de ruído e assinatura pessoal.",
                                 "/materials/mapa-visual-musa.png")),
                 List.of(),
+                null,
                 new ProductExperienceResponse.PublicFirstFoldDto(
                         "Sua roupa fala antes de você. Ela está falando com roteiro?",
                         "A nova Semana dos 7 Sinais transforma artigos científicos sobre roupa, percepção e autopercepção em microações simples para sua presença elegante.",

@@ -50,6 +50,18 @@ const v6ProductContract = {
       reviewStatus: 'APPROVED',
     },
   ],
+  publicDiagnosticQuestions: [
+    {
+      key: 'publishedObstacle',
+      stageLabel: 'Copy publicada',
+      question: 'Qual texto do cockpit aparece na experiência?',
+      options: ['Texto do cockpit', 'Fallback local', 'Versão antiga', 'Sem texto'],
+      imageUrl: '/assets/musa-diagnostic-slide-1.png',
+      visualTitle: 'Pergunta publicada pelo cockpit.',
+      visualText: 'O diagnóstico público usa o contrato editável quando ele declara as perguntas.',
+      journeyEventType: 'PROBLEM_RECOGNIZED',
+    },
+  ],
   publicFirstFold: {
     headline: 'Você se arruma, mas ainda sente que sua presença não acompanha a mulher que você quer ser?',
     supportingText: 'Em poucos minutos, o MUSA lê 4 escolhas sobre seu espelho e mostra o primeiro ruído visual.',
@@ -100,7 +112,9 @@ test('v6 publica bloco de video nao-slide e segue direto para o diagnostico', as
   await expect(page.locator('.public-video-play-badge')).toHaveCount(0);
   await expect(page.locator('.public-video-watch-status')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Diagnóstico de Presença' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Falta acabamento' })).toBeVisible();
+  await expect(page.getByText('Pergunta publicada pelo cockpit.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Texto do cockpit' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Falta acabamento' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Ver meu Mapa de Presença/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /Descobrir meu primeiro ajuste/i })).toBeDisabled();
   await expect(page.getByText(/Domínios conhecidos apontados/i)).toHaveCount(0);

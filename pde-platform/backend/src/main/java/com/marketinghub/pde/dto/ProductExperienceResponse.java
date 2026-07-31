@@ -17,6 +17,7 @@ public record ProductExperienceResponse(
         List<MissionDto> missions,
         List<SupportMaterialDto> supportMaterials,
         List<HeroVideoDto> heroVideos,
+        List<PublicDiagnosticQuestionDto> publicDiagnosticQuestions,
         PublicFirstFoldDto publicFirstFold,
         ScientificEvidencePackDto scientificEvidencePack,
         String completionOffer
@@ -41,6 +42,18 @@ public record ProductExperienceResponse(
 
     /** Define um material de apoio disponível na biblioteca do produto. */
     public record SupportMaterialDto(String title, String type, String description, String url) {}
+
+    /** Define uma pergunta editável do diagnóstico público renderizado na primeira experiência. */
+    public record PublicDiagnosticQuestionDto(
+            String key,
+            String stageLabel,
+            String question,
+            List<String> options,
+            String imageUrl,
+            String visualTitle,
+            String visualText,
+            String journeyEventType
+    ) {}
 
     /** Define um vídeo hero aprovado para uma versão pública específica do PDE. */
     public record HeroVideoDto(

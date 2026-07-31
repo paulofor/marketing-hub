@@ -462,7 +462,7 @@ public class ProductCatalogService {
                 new ProductExperienceResponse.PublicFirstFoldDto(
                         "Sua roupa fala antes de você. Ela está falando com roteiro?",
                         "A nova Semana dos 7 Sinais transforma artigos científicos sobre roupa, percepção e autopercepção em microações simples para sua presença elegante.",
-                        "PDE v7 científico",
+                        "Método MUSA em 7 dias",
                         "Veja como cada dia usa uma ideia dos artigos do MUSA para organizar sua imagem sem comprar um guarda-roupa novo.",
                         "Mensagem visual, peça-sinal, formalidade leve, primeira impressão, cor, assinatura pessoal e fórmula MUSA viram uma jornada prática de 7 dias.",
                         "Depois do vídeo, responda 4 escolhas rápidas para receber o primeiro sinal que pode estar apagando sua presença hoje.",

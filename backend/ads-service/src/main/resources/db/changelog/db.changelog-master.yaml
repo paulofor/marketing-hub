@@ -1514,6 +1514,10 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-07-31-musa-v7-public-copy-cleanup.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-07-26-musa-v5-production-slot.yaml
       relativeToChangelogFile: true
 

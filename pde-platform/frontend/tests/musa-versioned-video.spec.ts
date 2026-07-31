@@ -142,6 +142,7 @@ test('v7 usa contrato proprio sem alterar as perguntas publicas da v6', async ({
   await expect(page.getByRole('heading', { name: /roupa fala antes de você/i })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Falta presença' })).toBeVisible();
   await expect(page.getByText('Se sua imagem falasse antes de você hoje, qual mensagem ela passaria sem intenção?')).toBeVisible();
+  await expect(page.getByText(/A v7|PDE v7 científico/i)).toHaveCount(0);
   await expect(page.getByText('Quando você se olha pronta, o que mais te incomoda?')).toHaveCount(0);
 
   await page.goto('http://v6.clubemusa.com.br:57180/?mh_preview=qa&musa_video_variant=control', { waitUntil: 'domcontentloaded' });

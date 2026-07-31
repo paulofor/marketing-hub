@@ -257,6 +257,8 @@ class ProductCatalogServiceTest {
         assertThat(product.layoutKey()).isEqualTo("espelho-antes-de-sair");
         assertThat(product.name()).contains("7 Sinais");
         assertThat(product.publicFirstFold().headline()).contains("Sua roupa fala antes de você");
+        assertThat(product.publicFirstFold().videoKicker()).isEqualTo("Método MUSA em 7 dias");
+        assertThat(product.publicFirstFold().videoKicker()).doesNotContain("v7");
         assertThat(product.missions()).hasSize(7);
         assertThat(product.missions()).extracting(ProductExperienceResponse.MissionDto::id)
                 .containsExactly(

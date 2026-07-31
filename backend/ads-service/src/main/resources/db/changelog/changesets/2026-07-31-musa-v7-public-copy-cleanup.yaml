@@ -1,0 +1,61 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-31-musa-v7-public-copy-cleanup.yaml
+  - changeSet:
+      id: 2026-07-31-musa-v7-public-copy-cleanup-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: draft_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pde_production_slot
+              SET
+                draft_experience_json = REPLACE(
+                  REPLACE(
+                    REPLACE(
+                      REPLACE(
+                        draft_experience_json,
+                        'A v7 começa pelo idioma silencioso da roupa.',
+                        'A jornada começa pelo idioma silencioso da roupa.'
+                      ),
+                      'Cada dia da v7 trabalha um sinal de presença.',
+                      'Cada dia trabalha um sinal de presença.'
+                    ),
+                    'A promessa da v7 é ciência traduzida em microação.',
+                    'A promessa é ciência traduzida em microação.'
+                  ),
+                  'PDE v7 científico',
+                  'Método MUSA em 7 dias'
+                ),
+                published_experience_json = REPLACE(
+                  REPLACE(
+                    REPLACE(
+                      REPLACE(
+                        published_experience_json,
+                        'A v7 começa pelo idioma silencioso da roupa.',
+                        'A jornada começa pelo idioma silencioso da roupa.'
+                      ),
+                      'Cada dia da v7 trabalha um sinal de presença.',
+                      'Cada dia trabalha um sinal de presença.'
+                    ),
+                    'A promessa da v7 é ciência traduzida em microação.',
+                    'A promessa é ciência traduzida em microação.'
+                  ),
+                  'PDE v7 científico',
+                  'Método MUSA em 7 dias'
+                )
+              WHERE slot_code = 'v7'
+                AND product_slug = 'metodo-musa-7-dias';

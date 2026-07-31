@@ -41,6 +41,8 @@ pde:
     password: ${PDE_SMTP_PASSWORD:}
   deploy:
     environment: ${PDE_DEPLOY_ENVIRONMENT:local}
+    build-artifact: ${PDE_DEPLOY_BUILD_ARTIFACT:pde-platform-backend}
+    build-version: ${PDE_DEPLOY_BUILD_VERSION:0.0.1-SNAPSHOT}
     compose-file: ${PDE_DEPLOY_COMPOSE_FILE:docker-compose.yml}
     commit-sha: ${PDE_DEPLOY_COMMIT_SHA:unknown}
     image-tag: ${PDE_DEPLOY_IMAGE_TAG:unknown}

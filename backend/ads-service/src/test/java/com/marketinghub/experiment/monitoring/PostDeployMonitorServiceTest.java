@@ -13,6 +13,7 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
+import com.marketinghub.experiment.monitoring.pde.PdeBuildIdentity;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
@@ -302,12 +303,31 @@ class PostDeployMonitorServiceTest {
                 List.of(),
                 List.of(),
                 List.of()));
+    when(pdeAnalyticsClient.fetchBuildIdentity("https://v6.clubemusa.com.br"))
+        .thenReturn(
+            new PdeBuildIdentity(
+                "pde-platform-backend",
+                "pde-platform-backend",
+                "0.0.1-SNAPSHOT",
+                "abc123",
+                "pde-v6-abc123",
+                "registry/pde-platform-backend:pde-v6-abc123",
+                "production",
+                "http://163.245.200.7:8096",
+                "https://v6.clubemusa.com.br",
+                "http://191.252.181.168:8000,http://191.252.181.168",
+                Instant.parse("2026-07-31T10:00:00Z")));
 
     var response = service.summarize(76L, "metodo-musa-7-dias");
 
     assertThat(response.pde().currentExperienceVersion())
         .isEqualTo("musa-pde-entry-v6-video-motivacional");
     assertThat(response.pdeProductionSlots()).extracting("sourceExperimentId").contains(76L);
+    assertThat(response.pdeBuildIdentity().available()).isTrue();
+    assertThat(response.pdeBuildIdentity().requestedBaseUrl())
+        .isEqualTo("https://v6.clubemusa.com.br");
+    assertThat(response.pdeBuildIdentity().commitSha()).isEqualTo("abc123");
+    assertThat(response.pdeBuildIdentity().backendUrl()).isEqualTo("http://163.245.200.7:8096");
     verify(pdeAnalyticsClient)
         .fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");
   }

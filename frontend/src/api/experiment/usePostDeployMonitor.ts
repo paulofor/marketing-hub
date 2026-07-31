@@ -69,6 +69,24 @@ export interface PostDeployPdeSummary {
   recentJourneys: PostDeployPdeSessionJourney[];
 }
 
+export interface PostDeployPdeBuildIdentity {
+  available: boolean;
+  status: string;
+  errorMessage?: string | null;
+  requestedBaseUrl?: string | null;
+  applicationName?: string | null;
+  artifact?: string | null;
+  buildVersion?: string | null;
+  commitSha?: string | null;
+  imageTag?: string | null;
+  backendImage?: string | null;
+  environment?: string | null;
+  backendUrl?: string | null;
+  frontendUrl?: string | null;
+  marketingHubBaseUrl?: string | null;
+  deployedAt?: string | null;
+}
+
 export interface PostDeployPdeTrafficQuality {
   trafficQuality: string;
   label: string;
@@ -226,6 +244,7 @@ export interface PostDeployMonitorResponse {
   recommendation: string;
   metaAds: PostDeployMetaAdsSummary;
   pde: PostDeployPdeSummary;
+  pdeBuildIdentity?: PostDeployPdeBuildIdentity | null;
   pdeProductionSlots: PostDeployPdeProductionSlot[];
   logs: PostDeployFacebookLogSummary;
   alerts: string[];

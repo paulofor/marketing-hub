@@ -1,5 +1,6 @@
 package com.marketinghub.pde.service;
 
+import com.marketinghub.pde.dto.BuildIdentityResponse;
 import com.marketinghub.pde.dto.DeployServiceStatusResponse;
 import com.marketinghub.pde.dto.DeployStatusResponse;
 import java.time.Instant;
@@ -16,12 +17,16 @@ public class DeployStatusService {
     private static final Logger log = LoggerFactory.getLogger(DeployStatusService.class);
 
     private final String environment;
+    private final String applicationName;
+    private final String buildArtifact;
+    private final String buildVersion;
     private final String composeFile;
     private final String commitSha;
     private final String imageTag;
     private final String experienceVersion;
     private final String frontendUrl;
     private final String backendUrl;
+    private final String marketingHubBaseUrl;
     private final Instant deployedAt;
     private final String backendImage;
     private final String frontendV5Image;
@@ -37,12 +42,16 @@ public class DeployStatusService {
     /** Recebe os metadados de deploy publicados como variáveis de ambiente. */
     public DeployStatusService(
             @Value("${pde.deploy.environment:local}") String environment,
+            @Value("${spring.application.name:pde-platform-backend}") String applicationName,
+            @Value("${pde.deploy.build-artifact:pde-platform-backend}") String buildArtifact,
+            @Value("${pde.deploy.build-version:0.0.1-SNAPSHOT}") String buildVersion,
             @Value("${pde.deploy.compose-file:docker-compose.yml}") String composeFile,
             @Value("${pde.deploy.commit-sha:unknown}") String commitSha,
             @Value("${pde.deploy.image-tag:unknown}") String imageTag,
             @Value("${pde.catalog.experience-version-override:}") String experienceVersion,
             @Value("${pde.deploy.frontend-url:http://localhost:5176}") String frontendUrl,
             @Value("${pde.deploy.backend-url:http://localhost:8096}") String backendUrl,
+            @Value("${pde.catalog.marketing-hub-base-url:}") String marketingHubBaseUrl,
             @Value("${pde.deploy.deployed-at:}") String deployedAt,
             @Value("${pde.deploy.backend-image:}") String backendImage,
             @Value("${pde.deploy.frontend-v5-image:}") String frontendV5Image,
@@ -55,12 +64,16 @@ public class DeployStatusService {
             @Value("${pde.deploy.frontend-v7-public-port:5178}") int frontendV7PublicPort,
             PdeOperationalHealthService operationalHealthService) {
         this.environment = environment;
+        this.applicationName = applicationName;
+        this.buildArtifact = buildArtifact;
+        this.buildVersion = buildVersion;
         this.composeFile = composeFile;
         this.commitSha = commitSha;
         this.imageTag = imageTag;
         this.experienceVersion = experienceVersion;
         this.frontendUrl = frontendUrl;
         this.backendUrl = backendUrl;
+        this.marketingHubBaseUrl = marketingHubBaseUrl;
         this.deployedAt = parseInstant(deployedAt);
         this.backendImage = backendImage;
         this.frontendV5Image = frontendV5Image;
@@ -77,6 +90,7 @@ public class DeployStatusService {
     /** Retorna o manifesto de ambiente e serviços para o painel do Marketing Hub. */
     public DeployStatusResponse currentStatus() {
         return new DeployStatusResponse(
+                buildIdentity(),
                 environment,
                 composeFile,
                 commitSha,
@@ -88,6 +102,22 @@ public class DeployStatusService {
                 services(),
                 operationalHealthService.schemaStatus(),
                 operationalHealthService.operationalAlerts());
+    }
+
+    /** Retorna a identidade mínima da build para auditoria de versão implantada. */
+    public BuildIdentityResponse buildIdentity() {
+        return new BuildIdentityResponse(
+                applicationName,
+                buildArtifact,
+                buildVersion,
+                commitSha,
+                imageTag,
+                backendImage,
+                environment,
+                backendUrl,
+                frontendUrl,
+                marketingHubBaseUrl,
+                deployedAt);
     }
 
     /** Lista os containers esperados pela stack publicada do PDE. */

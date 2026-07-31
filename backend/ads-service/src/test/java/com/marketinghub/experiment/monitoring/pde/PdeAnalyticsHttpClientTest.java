@@ -58,6 +58,26 @@ class PdeAnalyticsHttpClientTest {
     assertThat(summary.pedEntries()).isEqualTo(29);
   }
 
+  /** Garante que o client consulta a identidade de build na mesma origem PDE monitorada. */
+  @Test
+  void fetchBuildIdentityUsesMonitoredPdeBaseUrl() throws Exception {
+    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext("/api/pde/build-identity", this::respondBuildIdentity);
+    executor = Executors.newSingleThreadExecutor();
+    server.setExecutor(executor);
+    server.start();
+
+    String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
+    PdeAnalyticsHttpClient client =
+        new PdeAnalyticsHttpClient("https://v5.clubemusa.com.br", Duration.ofSeconds(1), Duration.ofSeconds(7));
+
+    PdeBuildIdentity identity = client.fetchBuildIdentity(baseUrl);
+
+    assertThat(identity.commitSha()).isEqualTo("abc123");
+    assertThat(identity.backendUrl()).isEqualTo("http://163.245.200.7:8096");
+    assertThat(identity.marketingHubBaseUrl()).contains("191.252.181.168");
+  }
+
   /** Responde um summary mínimo após atraso compatível com a produção do PDE v6. */
   private void respondSlowSummary(HttpExchange exchange) throws IOException {
     try {
@@ -100,6 +120,31 @@ class PdeAnalyticsHttpClientTest {
           "deviceBreakdown": [],
           "screenSizeBreakdown": [],
           "recentJourneys": []
+        }
+        """
+            .getBytes(StandardCharsets.UTF_8);
+    exchange.getResponseHeaders().add("Content-Type", "application/json");
+    exchange.sendResponseHeaders(200, body.length);
+    exchange.getResponseBody().write(body);
+    exchange.close();
+  }
+
+  /** Responde uma identidade mínima da build PDE para auditoria do cockpit. */
+  private void respondBuildIdentity(HttpExchange exchange) throws IOException {
+    byte[] body =
+        """
+        {
+          "applicationName": "pde-platform-backend",
+          "artifact": "pde-platform-backend",
+          "buildVersion": "0.0.1-SNAPSHOT",
+          "commitSha": "abc123",
+          "imageTag": "pde-v6-abc123",
+          "backendImage": "registry/pde-platform-backend:pde-v6-abc123",
+          "environment": "production",
+          "backendUrl": "http://163.245.200.7:8096",
+          "frontendUrl": "https://v6.clubemusa.com.br",
+          "marketingHubBaseUrl": "http://191.252.181.168:8000,http://191.252.181.168",
+          "deployedAt": "2026-07-31T10:00:00Z"
         }
         """
             .getBytes(StandardCharsets.UTF_8);

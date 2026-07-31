@@ -10,4 +10,9 @@ public interface PdeAnalyticsClient {
   default PdeAnalyticsSummary fetchSummary(String productSlug, String publicBaseUrl) {
     return fetchSummary(productSlug);
   }
+
+  /** Busca a identidade de build usando a URL pública do PDE monitorado. */
+  default PdeBuildIdentity fetchBuildIdentity(String publicBaseUrl) {
+    return null;
+  }
 }

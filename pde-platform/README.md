@@ -45,6 +45,13 @@ esta rodando a imagem e a versao comercial esperadas antes de liberar trafego de
 campanha. `GET /slot-diagnostics.json` existe apenas como alias legado
 temporario.
 
+O backend PDE tambem deve expor `GET /api/pde/build-identity`, com a identidade
+da build atualmente implantada: aplicacao, artefato, versao, commit, tag/imagem,
+ambiente, URL do backend PDE, URL publica do frontend, backend administrativo do
+Marketing Hub configurado e horario de deploy. O cockpit administrativo usa esse
+endpoint pela mesma URL publica consultada para analytics, evitando que métrica
+zerada seja interpretada sem confirmar qual build/backend esta respondendo.
+
 Todo PDE produzido para campanha deve publicar seu proprio
 `pde-health-contract.json` com:
 

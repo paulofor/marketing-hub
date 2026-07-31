@@ -6,6 +6,7 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployFacebookLogSummaryDt
 import com.marketinghub.experiment.monitoring.dto.PostDeployMetaAdsSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorResponseDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeBuildIdentityDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeDeviceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeExperienceVersionDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
@@ -17,6 +18,7 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficQualityDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
+import com.marketinghub.experiment.monitoring.pde.PdeBuildIdentity;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import com.marketinghub.pde.service.PdeProductionSlotService;
@@ -96,6 +98,7 @@ public class PostDeployMonitorService {
             monitoredPublicUrl,
             campaignTrafficActive,
             attributionCodes);
+    PostDeployPdeBuildIdentityDto pdeBuildIdentity = fetchPdeBuildIdentity(monitoredPublicUrl);
     PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
     List<String> alerts = buildAlerts(metaAds, pde, logs);
     PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
@@ -108,9 +111,63 @@ public class PostDeployMonitorService {
         recommendation(decision, pde),
         metaAds,
         pde,
+        pdeBuildIdentity,
         pdeProductionSlots,
         logs,
         alerts);
+  }
+
+  /** Consulta a identidade da build PDE pela mesma URL pública usada pelo cockpit. */
+  private PostDeployPdeBuildIdentityDto fetchPdeBuildIdentity(String monitoredPublicUrl) {
+    try {
+      PdeBuildIdentity identity = pdeAnalyticsClient.fetchBuildIdentity(monitoredPublicUrl);
+      if (identity == null) {
+        return unavailableBuildIdentity(monitoredPublicUrl, "EMPTY_RESPONSE", null);
+      }
+      return new PostDeployPdeBuildIdentityDto(
+          true,
+          "AVAILABLE",
+          null,
+          monitoredPublicUrl,
+          identity.applicationName(),
+          identity.artifact(),
+          identity.buildVersion(),
+          identity.commitSha(),
+          identity.imageTag(),
+          identity.backendImage(),
+          identity.environment(),
+          identity.backendUrl(),
+          identity.frontendUrl(),
+          identity.marketingHubBaseUrl(),
+          identity.deployedAt());
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao consultar identidade da build PDE; monitoredPublicUrl={}",
+          monitoredPublicUrl,
+          ex);
+      return unavailableBuildIdentity(monitoredPublicUrl, ex.getClass().getSimpleName(), ex.getMessage());
+    }
+  }
+
+  /** Monta resposta de identidade indisponível preservando a URL usada na consulta. */
+  private PostDeployPdeBuildIdentityDto unavailableBuildIdentity(
+      String monitoredPublicUrl, String status, String errorMessage) {
+    return new PostDeployPdeBuildIdentityDto(
+        false,
+        status,
+        errorMessage,
+        monitoredPublicUrl,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
   }
 
   /** Lista os slots produtivos do produto PDE após validar o experimento de origem. */

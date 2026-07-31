@@ -38,6 +38,8 @@ Regra obrigatória:
 - rollback deve trocar somente a imagem/container da versão afetada;
 - o endpoint público de diagnóstico canônico é `GET /version-diagnostics.json`;
 - o diagnóstico deve expor `version`, `publicUrl`, `experienceVersion`, `image`, `imageVersionId`, `imageTag`, `commitSha` e `deployedAt`;
+- o backend PDE deve expor `GET /api/pde/build-identity` com identidade estável da build implantada, incluindo aplicação, artefato, versão, commit, tag/imagem, ambiente, URL do backend PDE, URL pública do frontend, backend administrativo do Marketing Hub configurado e data de deploy;
+- o cockpit administrativo do Marketing Hub deve exibir a identidade retornada por `GET /api/pde/build-identity` a partir da mesma URL pública usada para consultar analytics, antes de interpretar métrica zerada como ausência de tráfego;
 - `GET /slot-diagnostics.json` pode existir somente como alias legado temporário, sem ser usado como contrato novo;
 - contratos, painéis e documentação nova devem usar “versão PDE” em vez de “slot PDE”, exceto quando estiverem preservando compatibilidade com campos legados como `slotCode`;
 - métricas comerciais devem ser segmentadas por produto, campanha, experimento, URL pública, versão PDE e `experienceVersion`, não por slot operacional genérico.

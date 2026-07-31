@@ -1,5 +1,6 @@
 package com.marketinghub.pde.controller;
 
+import com.marketinghub.pde.dto.BuildIdentityResponse;
 import com.marketinghub.pde.dto.DeployStatusResponse;
 import com.marketinghub.pde.service.DeployStatusService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,5 +21,11 @@ public class DeployStatusController {
     @GetMapping("/api/pde/deploy/status")
     public DeployStatusResponse status() {
         return deployStatusService.currentStatus();
+    }
+
+    /** Retorna a identidade da build PDE para confirmar commit, imagem e backend usado. */
+    @GetMapping("/api/pde/build-identity")
+    public BuildIdentityResponse buildIdentity() {
+        return deployStatusService.buildIdentity();
     }
 }

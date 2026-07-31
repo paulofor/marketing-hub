@@ -1,3 +1,11 @@
+## 2026-07-31 — Experimento 77: timeout do analytics PDE v6 no cockpit
+
+- causa-raiz confirmada em producao: o endpoint publico do PDE v6 respondia HTTP 200 em aproximadamente 5 a 7 segundos, mas o client HTTP do backend principal tinha timeout fixo de leitura de 4 segundos; por isso o diagnostico do cockpit retornava `PDE_SUMMARY_ERROR` e o funil do experimento 77 seguia zerado.
+- problema comercial: o cockpit podia transformar lentidao operacional saudavel do summary em falsa ausencia de entrada/video, bloqueando leitura de oferta e decisao de trafego.
+- ajuste preparado: `PdeAnalyticsHttpClient` passa a usar timeouts configuraveis (`integrations.pde-platform.connect-timeout` e `integrations.pde-platform.read-timeout`) com leitura padrao de 15 segundos, suficiente para o summary administrativo atual.
+- prevencao: teste HTTP local simula um summary lento, acima de quatro segundos, e garante que o client espera a resposta valida em vez de quebrar antes do fallback por versao do slot.
+- impacto comercial esperado: permitir que o cockpit 77 reflita as sessoes, entradas e consumo de video da v6 quando o PDE esta saudavel, evitando zero falso antes de liberar ou bloquear trafego pago.
+
 ## 2026-07-31 — Experimento 77: seleção explícita da experiência PDE v6 no cockpit
 
 - causa-raiz confirmada no backend principal: quando o summary do PDE retornava `currentExperienceVersion` como v5 e a v6 apenas dentro de `experienceVersions`, o funil do experimento 77 podia depender de fallback por token da URL em vez do slot produtivo cadastrado no Marketing Hub.

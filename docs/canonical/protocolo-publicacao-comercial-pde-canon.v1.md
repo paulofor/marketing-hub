@@ -18,7 +18,7 @@ Exemplos de traducao obrigatoria:
 
 | Linguagem interna | Linguagem publica preferencial |
 |---|---|
-| `PDE v7`, `slot v7`, `versao cientifica` | nome comercial do metodo ou jornada |
+| `PDE v7`, `versao cientifica`, nome de container ou imagem | nome comercial do metodo ou jornada |
 | `experimento`, `campanha`, `teste` | experiencia, diagnostico, plano, jornada |
 | `pipeline`, `contrato`, `schema`, `evento` | etapa, resposta, progresso, orientacao |
 | `score`, `metrica`, `validacao` | sinal, clareza, ajuste, resultado percebido |
@@ -37,8 +37,9 @@ Antes de colocar qualquer PDE como pronto para trafego, o Marketing Hub deve val
 8. Mensagens de erro e estados vazios.
 9. Videos, imagens e ativos publicos.
 10. Eventos e metricas do funil.
-11. Separacao correta por produto, slot, campanha, experimento e `experienceVersion`.
-12. Ausencia de termos tecnicos internos na experiencia publica.
+11. Separacao correta por produto, URL publica, versao PDE, campanha, experimento e `experienceVersion`.
+12. Imagem e container Docker próprios para a versao publica que recebera trafego.
+13. Ausencia de termos tecnicos internos na experiencia publica.
 
 Se qualquer item falhar, o PDE deve permanecer em rascunho, correcao ou validacao tecnica. Nao deve entrar em `RUNNING` nem receber aumento de investimento.
 
@@ -89,15 +90,16 @@ Forma proibida:
 
 ## Regra de metricas limpas
 
-O cockpit nao deve misturar metricas de PDE de produtos, campanhas, experimentos, slots ou `experienceVersion` diferentes em uma mesma leitura comercial.
+O cockpit nao deve misturar metricas de PDE de produtos, campanhas, experimentos, URLs publicas, versoes PDE, imagens/containers ou `experienceVersion` diferentes em uma mesma leitura comercial.
 
 Para decisao de campanha ou experimento, o resumo deve separar obrigatoriamente:
 
 - produto;
 - experimento;
 - campanha;
-- slot publico;
 - URL publica;
+- versao PDE publica;
+- imagem/container Docker publicado;
 - `experienceVersion`;
 - origem/UTM;
 - qualidade de trafego (`HUMAN`, `BOT_SUSPECTED`, `PLATFORM_CRAWLER`, `INTERNAL_QA` ou `UNKNOWN`);
@@ -120,7 +122,9 @@ O painel deve diferenciar claramente:
 Um PDE so pode liberar experimento/campanha para `RUNNING` quando todos os pontos abaixo estiverem verdadeiros:
 
 - a URL publica final responde no dominio que recebera trafego;
-- o slot publicado entrega a `experienceVersion` esperada;
+- a versao publicada entrega a `experienceVersion` esperada;
+- a versao possui imagem e container Docker próprios, sem reaproveitar imagem genérica de outra versão pública;
+- `GET /version-diagnostics.json` confirma `version`, `imageVersionId`, `image`, `commitSha` e `experienceVersion`;
 - a primeira dobra esta comercialmente limpa em mobile e desktop;
 - a microexperiencia inicial funciona sem erro visivel;
 - o CTA principal esta claro e coerente com a promessa;
@@ -138,8 +142,9 @@ Cada publicacao comercial de PDE deve deixar evidencia operacional no Marketing 
 
 - data/hora da publicacao;
 - produto;
-- slot;
 - URL;
+- versao PDE publica;
+- imagem/container Docker publicado;
 - `experienceVersion`;
 - experimento/campanha vinculados;
 - checklist executada;

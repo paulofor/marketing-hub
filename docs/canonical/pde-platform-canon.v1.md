@@ -16,13 +16,33 @@ O padrão obrigatório é:
 - **frontend React/Vite independente**;
 - **backend Java 21 + Spring Boot 3 + Maven independente**;
 - **Docker próprio** para execução isolada;
+- **imagem e container próprios para cada versão pública de PDE** usada em tráfego, experimento ou campanha;
 - **conteúdo por produto em configuração/contrato**, não em front/back exclusivo;
 - **checkout externo automatizável**, começando por Pepper como caminho preferencial;
 - **Marketing Hub/FEO fabrica o pacote PDE**;
 - **PDE Platform entrega experiência, acesso, progresso e materiais**.
 - **Marketing Hub é a fonte de verdade para mudanças comerciais do PDE** quando a experiência estiver em campanha ou experimento ativo.
 
-Não criar um front/back novo para cada produto, salvo exceção explícita e registrada.
+Não criar um front/back novo para cada produto, salvo exceção explícita e registrada. Essa regra não autoriza reaproveitar a mesma imagem pública para versões comerciais diferentes: o motor continua reutilizável, mas cada versão PDE publicada em domínio próprio deve ser empacotada e executada como imagem/container próprios.
+
+### Isolamento obrigatório por versão pública
+
+Decisão canônica de 2026-07-31: o modelo operacional de “slot” compartilhado para PDE público fica substituído por **versão pública isolada por imagem e container Docker**.
+
+Regra obrigatória:
+
+- cada versão pública de PDE que receba campanha, experimento, QA comercial ou tráfego real deve ter imagem Docker própria;
+- cada versão pública deve rodar em container próprio, com nome, porta, URL pública e `experienceVersion` explícitos;
+- `v5.clubemusa.com.br`, `v6.clubemusa.com.br`, `v7.clubemusa.com.br` ou equivalente não podem apontar para a mesma imagem genérica de frontend;
+- o deploy deve permitir publicar uma versão sem recriar as demais versões ativas;
+- rollback deve trocar somente a imagem/container da versão afetada;
+- o endpoint público de diagnóstico canônico é `GET /version-diagnostics.json`;
+- o diagnóstico deve expor `version`, `publicUrl`, `experienceVersion`, `image`, `imageVersionId`, `imageTag`, `commitSha` e `deployedAt`;
+- `GET /slot-diagnostics.json` pode existir somente como alias legado temporário, sem ser usado como contrato novo;
+- contratos, painéis e documentação nova devem usar “versão PDE” em vez de “slot PDE”, exceto quando estiverem preservando compatibilidade com campos legados como `slotCode`;
+- métricas comerciais devem ser segmentadas por produto, campanha, experimento, URL pública, versão PDE e `experienceVersion`, não por slot operacional genérico.
+
+Benefício comercial esperado: impedir que campanha com tráfego pago seja julgada por métricas de outra versão, reduzir risco de publicar criativo/oferta em URL errada e preservar aprendizado limpo para decisão de escala.
 
 ## Responsabilidades
 
@@ -75,7 +95,7 @@ Quando uma alteração de PDE for publicada, o relatório/painel deve separar pe
 
 Se a versão da experiência não estiver disponível nos eventos, a comparação deve ser considerada incompleta: pode indicar tendência por janela de tempo, mas não deve ser usada como prova limpa de melhora ou piora entre formatos.
 
-Antes de publicar uma mudanca comercial de PDE ou colocar o experimento vinculado em `RUNNING`, o Marketing Hub deve executar o protocolo canônico de publicação comercial de PDE. A versao so pode receber trafego quando o protocolo confirmar ausencia de vazamento tecnico, experiencia publica coerente, mobile/desktop validos e metricas segmentadas por produto, campanha, experimento, slot e `experienceVersion`.
+Antes de publicar uma mudanca comercial de PDE ou colocar o experimento vinculado em `RUNNING`, o Marketing Hub deve executar o protocolo canônico de publicação comercial de PDE. A versao so pode receber trafego quando o protocolo confirmar ausencia de vazamento tecnico, experiencia publica coerente, mobile/desktop validos, imagem/container próprios e metricas segmentadas por produto, campanha, experimento, URL pública, versão PDE e `experienceVersion`.
 
 ### Checkout externo
 
@@ -326,13 +346,15 @@ Para o Clube MUSA, a regra operacional atual é:
 
 Quando houver hipóteses, criativos ou primeiras dobras concorrentes, a operação deve criar slots produtivos paralelos em vez de depender de ambiente intermediário. A tela de experimento apenas escolhe a versão medida; criação, manutenção e publicação das URLs ficam no fluxo do produto e no pipeline versionado do repositório.
 
-O repositório de anúncios deve permanecer neutro em relação à escolha de versão: ele pode receber a URL pública aprovada para montar ou publicar o anúncio, mas não pode conter regra própria do tipo "enviar para v5", "enviar para v6" ou qualquer fallback de versão. Se a versão do destino precisar mudar, a alteração deve ocorrer no experimento/slot produtivo e só depois ser consumida pelo fluxo de anúncios.
+O repositório de anúncios deve permanecer neutro em relação à escolha de versão: ele pode receber a URL pública aprovada para montar ou publicar o anúncio, mas não pode conter regra própria do tipo "enviar para v5", "enviar para v6" ou qualquer fallback de versão. Se a versão do destino precisar mudar, a alteração deve ocorrer no experimento/versão produtiva e só depois ser consumida pelo fluxo de anúncios.
 
-### Slots produtivos versionados do PDE
+### Versões produtivas isoladas do PDE
 
-O Marketing Hub deve permitir múltiplas URLs produtivas de PDE para o mesmo produto quando houver hipóteses, criativos ou primeiras dobras concorrentes em tráfego pago.
+O Marketing Hub deve permitir múltiplas versões produtivas de PDE para o mesmo produto quando houver hipóteses, criativos ou primeiras dobras concorrentes em tráfego pago.
 
-O modelo canônico é um **slot produtivo PDE** persistido no backend principal com:
+O modelo canônico é uma **versão produtiva PDE** persistida no backend principal. Enquanto o contrato legado ainda existir, o campo técnico `slotCode` pode continuar sendo usado como identificador interno da versão, mas telas, documentos e fluxos novos devem tratar o conceito como versão pública isolada.
+
+Campos mínimos:
 
 - `slotCode`, como `v1`, `v2` ou código comercial equivalente;
 - `productSlug`;
@@ -343,21 +365,21 @@ O modelo canônico é um **slot produtivo PDE** persistido no backend principal 
 - `status` operacional;
 - experimento de origem quando existir.
 
-Slots produtivos existem para separar aprendizado comercial e reduzir risco operacional. Um teste novo não deve obrigar a troca global de `clubemusa.com.br` quando for possível publicar uma variação em subdomínio próprio, mantendo eventos por `experienceVersion`, URL de anúncio explícita e histórico de campanha rastreável.
+Versões produtivas existem para separar aprendizado comercial e reduzir risco operacional. Um teste novo não deve obrigar a troca global de `clubemusa.com.br` quando for possível publicar uma variação em subdomínio próprio, mantendo eventos por `experienceVersion`, URL de anúncio explícita e histórico de campanha rastreável.
 
-A URL pública primária do slot é parte da identidade comercial da versão. Portanto, não pode existir mais de um slot ativo ou pronto para tráfego com a mesma `publicUrl` apontando para `experienceVersion` diferente. Quando houver reaproveitamento temporário de domínio para rollback ou correção operacional, o Marketing Hub deve preservar a mesma versão comercial ou encerrar o slot anterior antes de ativar outro, registrando a data de troca para não contaminar métricas.
+A URL pública primária é parte da identidade comercial da versão. Portanto, não pode existir mais de uma versão ativa ou pronta para tráfego com a mesma `publicUrl` apontando para `experienceVersion` diferente. Quando houver reaproveitamento temporário de domínio para rollback ou correção operacional, o Marketing Hub deve preservar a mesma versão comercial ou encerrar a versão anterior antes de ativar outra, registrando a data de troca para não contaminar métricas.
 
-Quando a versão comercial for numerada, o slot produtivo deve usar o subdomínio correspondente à versão, como `v5.clubemusa.com.br` para a versão 5. O domínio raiz pode existir como entrada institucional, legado ou redirecionamento, mas não deve ser a URL primária de uma campanha que mede uma versão específica.
+Quando a versão comercial for numerada, a versão produtiva deve usar o subdomínio correspondente, como `v5.clubemusa.com.br` para a versão 5. O domínio raiz pode existir como entrada institucional, legado ou redirecionamento, mas não deve ser a URL primária de uma campanha que mede uma versão específica.
 
-O Marketing Hub pode cadastrar e acompanhar slots antes da automação completa de infraestrutura. A publicação real continua proibida por SSH manual: o deploy deve ser feito por workflow, Compose, Dockerfile ou pipeline versionados do repositório.
+O Marketing Hub pode cadastrar e acompanhar versões antes da automação completa de infraestrutura. A publicação real continua proibida por SSH manual: o deploy deve ser feito por workflow, Compose, Dockerfile ou pipeline versionados do repositório.
 
-Quando uma mesma imagem do frontend PDE for reutilizada por mais de um subdomínio versionado, o deploy não deve recriar todos os subdomínios automaticamente. Cada slot público deve rodar em serviço próprio, com override fixo da `experienceVersion` esperada e proxy dedicado. O hostname público continua sendo a fonte decisiva da versão comercial exibida, mas isolamento operacional de container/porta é obrigatório para impedir que uma publicação da v6 reinicie ou atualize a v5.
+Cada versão pública deve rodar em imagem e container próprios, com `experienceVersion` esperada, porta e proxy dedicado. O hostname público continua sendo fonte decisiva da versão comercial exibida, mas o isolamento operacional de imagem/container/porta é obrigatório para impedir que uma publicação da v6 reinicie, atualize ou contamine a v5.
 
-O workflow oficial de publicação do `pde-platform` deve validar cada slot produtivo versionado ativo ou pronto, no mínimo `https://v5.clubemusa.com.br` e `https://v6.clubemusa.com.br` enquanto ambos existirem. A validação pós-deploy precisa provar health público, renderização da entrada, contrato público e jornada diagnóstica em cada subdomínio, porque um único smoke test no domínio raiz não comprova teste simultâneo de versões.
+O workflow oficial de publicação do `pde-platform` deve validar cada versão produtiva ativa ou pronta, no mínimo `https://v5.clubemusa.com.br` e `https://v6.clubemusa.com.br` enquanto ambas existirem. A validação pós-deploy precisa provar health público, renderização da entrada, contrato público, jornada diagnóstica e `version-diagnostics.json` em cada subdomínio, porque um único smoke test no domínio raiz não comprova teste simultâneo de versões.
 
 Como os subdomínios versionados do Clube MUSA são superfície direta de campanha, o workflow oficial do `pde-platform` também deve garantir que o proxy HTTPS público esteja ativo antes de aprovar a publicação. Se o proxy do `lead-portal-payments-service` estiver disponível no host, o workflow deve recriá-lo/recarregá-lo pelo Compose versionado e reconectá-lo à network pública usada pelo PDE. Se nenhum container publicar a porta 443 ou nenhum proxy puder ser encontrado, a publicação deve falhar com diagnóstico operacional claro; nunca considerar a v5/v6 pronta apenas porque as portas diretas `5176`/`5177` respondem.
 
-O DNS público dos subdomínios versionados do Clube MUSA deve apontar para o mesmo host oficial usado pelo workflow de deploy do PDE e pelo proxy HTTPS do `lead-portal-payments-service`. A validação produtiva deve falhar explicitamente quando `v5.clubemusa.com.br`, `v6.clubemusa.com.br`, `v7.clubemusa.com.br` ou slot futuro resolverem para IP diferente do host de deploy, porque isso envia tráfego pago para infraestrutura fora do caminho publicado e contamina a leitura comercial do experimento.
+O DNS público dos subdomínios versionados do Clube MUSA deve apontar para o mesmo host oficial usado pelo workflow de deploy do PDE e pelo proxy HTTPS do `lead-portal-payments-service`. A validação produtiva deve falhar explicitamente quando `v5.clubemusa.com.br`, `v6.clubemusa.com.br`, `v7.clubemusa.com.br` ou versão futura resolverem para IP diferente do host de deploy, porque isso envia tráfego pago para infraestrutura fora do caminho publicado e contamina a leitura comercial do experimento.
 
 Para evitar ambiguidade operacional, o host oficial citado nesta regra é `163.245.200.7`. Qualquer referência operacional de PDE a outro host deve ser tratada como divergência a corrigir antes de publicar ou reativar campanha.
 
@@ -437,7 +459,7 @@ Um produto PDE só pode ser considerado pronto para tráfego quando:
 4. experiência guiada estiver carregando;
 5. materiais de apoio estiverem disponíveis;
 6. progresso estiver persistindo ou registrado de forma auditável;
-7. o anúncio apontar para a entrada/login do PDE no slot produtivo versionado aprovado pelo experimento, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
+7. o anúncio apontar para a entrada/login da versão PDE produtiva aprovada pelo experimento, com imagem/container próprios, e o checkout existir somente no paywall interno ou na continuidade bloqueada;
 8. produto da cliente não expuser termos técnicos internos.
 9. funil e analytics do PED estiverem registrando eventos próprios de entrada, sessão, UTM, paywall, checkout, compra, liberação e ativação.
 10. health check público comercial estiver publicado e passando com os textos críticos do PDE.

@@ -6418,3 +6418,13 @@
 - ajuste preparado: o backend PDE agora seleciona primeiro sessões humanas recentes com leitura limitada e depois carrega os passos dessas sessões, mantendo KPIs principais, UTMs e jornadas sem exigir ordenação pesada.
 - prevenção: teste de contrato cobre 35 sessões e 105 eventos, garantindo que o resumo continue entregando métricas comerciais e limite as 20 jornadas recentes sem derrubar o analytics.
 - impacto comercial esperado: recuperar a leitura clique -> entrada PDE -> vídeo/diagnóstico/paywall/checkout, evitando pausar ou escalar campanha com base em zeros falsos.
+
+## 2026-07-31 — Experimento 76: pausa do teste contaminado e correção de medição v6
+
+- decisão operacional executada: o experimento 76 foi pausado pelo endpoint canônico do backend em `2026-07-31T00:23:09Z`, preservando a v6 como hipótese comercial ainda não julgada.
+- evidência comercial: o monitor pós-deploy registrou 803 impressões, 66 cliques, CTR de 8,22%, CPC de R$ 0,16 e gasto de R$ 10,65, sinalizando aquisição barata antes da falha de medição.
+- causa-raiz confirmada via MCP/logs: o analytics da v6 retornava HTTP 500 por `Out of sort memory` no MySQL ao consolidar o resumo do funil PDE.
+- risco operacional encontrado: a campanha Meta `120250665503920326` ainda aparecia `ACTIVE` na Meta mesmo após pausa do experimento, porque havia `stop_completed_at` antigo e nenhum novo stop request pendente.
+- ajuste preparado: a pausa de campanha agora reabre stop request quando a campanha voltou a `ACTIVE`, e o backend PDE passa a criar índice adicional para leitura recente do funil por produto, qualidade de tráfego, data e id.
+- prevenção: testes focados cobrem reabertura de stop request para campanha reativada e criação idempotente do índice de analytics PDE.
+- próximo passo comercial: após deploy, validar que a campanha Meta ficou pausada, confirmar que o endpoint de analytics v6 responde 200, executar entrada real mobile no PDE e só então criar novo experimento limpo da v6.

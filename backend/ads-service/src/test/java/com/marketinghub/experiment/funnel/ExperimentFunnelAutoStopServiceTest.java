@@ -10,6 +10,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsRespons
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
+import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
@@ -166,6 +167,25 @@ class ExperimentFunnelAutoStopServiceTest {
     assertThat(campaign.getStopReason())
         .isEqualTo(FacebookCampaignStopReason.FIRST_FORM_SUBMISSION_STANDBY);
     assertThat(campaign.getStopRequestedAt()).isNotNull();
+    assertThat(campaign.getStopLastError()).isNull();
+  }
+
+  /** Reabre pedido de parada quando a campanha voltou a ficar ativa após uma pausa antiga. */
+  @Test
+  void reopensStopRequestWhenCampaignIsActiveAfterCompletedStop() {
+    FacebookAdsCampaign campaign = campaign("camp-reactivated-after-stop");
+    Instant previousStopCompletedAt = Instant.now().minus(1, ChronoUnit.DAYS);
+    campaign.setStatus(FacebookAdStatus.ACTIVE);
+    campaign.setStopRequestedAt(previousStopCompletedAt.minus(1, ChronoUnit.MINUTES));
+    campaign.setStopCompletedAt(previousStopCompletedAt);
+    when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+    service.standbyOnFirstValidFormSubmission(experiment);
+
+    assertThat(campaign.getStopReason())
+        .isEqualTo(FacebookCampaignStopReason.FIRST_FORM_SUBMISSION_STANDBY);
+    assertThat(campaign.getStopRequestedAt()).isAfter(previousStopCompletedAt);
+    assertThat(campaign.getStopCompletedAt()).isNull();
     assertThat(campaign.getStopLastError()).isNull();
   }
 

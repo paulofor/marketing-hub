@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useWhatsAppAccounts } from "../../api/whatsapp/useWhatsAppAccounts";
 import { useSaveWhatsAppAccount } from "../../api/whatsapp/useSaveWhatsAppAccount";
 import { useSendWhatsAppMessage } from "../../api/whatsapp/useSendWhatsAppMessage";
+import { useWhatsAppConversations } from "../../api/whatsapp/useWhatsAppConversations";
 import { useWhatsAppMessages } from "../../api/whatsapp/useWhatsAppMessages";
 import type {
   SaveWhatsAppAccountInput,
   SendWhatsAppMessageInput,
+  WhatsAppConversation,
   WhatsAppMessage,
   WhatsAppMessageDirection,
   WhatsAppMessageType,
@@ -72,13 +74,13 @@ function renderJsonSnippet(payload?: string | null) {
 }
 
 export default function WhatsAppConsolePage() {
-  const { data: accountsData, isLoading: accountsLoading } = useWhatsAppAccounts();
+  const { data: accountsData, isLoading: accountsLoading } =
+    useWhatsAppAccounts();
   const saveAccount = useSaveWhatsAppAccount();
   const sendMessage = useSendWhatsAppMessage();
 
-  const [accountForm, setAccountForm] = useState<AccountFormState>(
-    DEFAULT_ACCOUNT_FORM,
-  );
+  const [accountForm, setAccountForm] =
+    useState<AccountFormState>(DEFAULT_ACCOUNT_FORM);
   const [messageForm, setMessageForm] = useState<SendWhatsAppMessageInput>({
     to: "",
     type: "TEXT",
@@ -89,14 +91,26 @@ export default function WhatsAppConsolePage() {
   const [directionFilter, setDirectionFilter] = useState<
     WhatsAppMessageDirection | "ALL"
   >("ALL");
+  const [selectedContactNumber, setSelectedContactNumber] = useState<
+    string | null
+  >(null);
   const [page, setPage] = useState(0);
+
+  const { data: conversationPage, isLoading: conversationsLoading } =
+    useWhatsAppConversations({ page: 0, size: 25 });
 
   const {
     data: messagePage,
     isLoading: messagesLoading,
     isFetching: messagesFetching,
-  } = useWhatsAppMessages({ page, size: 25, direction: directionFilter });
+  } = useWhatsAppMessages({
+    page,
+    size: 25,
+    direction: directionFilter,
+    contactNumber: selectedContactNumber ?? undefined,
+  });
 
+  const conversations: WhatsAppConversation[] = conversationPage?.content ?? [];
   const messages: WhatsAppMessage[] = messagePage?.content ?? [];
   const totalPages = messagePage?.totalPages ?? 0;
 
@@ -157,7 +171,9 @@ export default function WhatsAppConsolePage() {
   };
 
   const handleMessageInputChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = event.target;
     setMessageForm((current) => ({
@@ -191,6 +207,20 @@ export default function WhatsAppConsolePage() {
     event: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setDirectionFilter(event.target.value as WhatsAppMessageDirection | "ALL");
+    setPage(0);
+  };
+
+  const handleSelectConversation = (conversation: WhatsAppConversation) => {
+    setSelectedContactNumber(conversation.contactNumber);
+    setMessageForm((current) => ({
+      ...current,
+      to: conversation.contactNumber,
+    }));
+    setPage(0);
+  };
+
+  const handleClearConversation = () => {
+    setSelectedContactNumber(null);
     setPage(0);
   };
 
@@ -319,7 +349,10 @@ export default function WhatsAppConsolePage() {
                   onChange={handleAccountInputChange}
                   disabled={saveAccount.isPending}
                 />
-                <label className="form-check-label" htmlFor="whatsapp-account-active">
+                <label
+                  className="form-check-label"
+                  htmlFor="whatsapp-account-active"
+                >
                   Conta ativa
                 </label>
               </div>
@@ -329,7 +362,10 @@ export default function WhatsAppConsolePage() {
                 disabled={saveAccount.isPending}
               >
                 {saveAccount.isPending && (
-                  <span className="spinner-border spinner-border-sm me-2" role="status" />
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                  />
                 )}
                 Salvar conta
               </button>
@@ -417,7 +453,10 @@ export default function WhatsAppConsolePage() {
                 disabled={sendMessage.isPending}
               >
                 {sendMessage.isPending && (
-                  <span className="spinner-border spinner-border-sm me-2" role="status" />
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                  />
                 )}
                 Enviar mensagem
               </button>
@@ -426,16 +465,100 @@ export default function WhatsAppConsolePage() {
         </div>
 
         <div className="col-lg-7">
+          <div className="card mb-4">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <div>
+                <h2 className="h5 mb-0">Conversas</h2>
+                <p className="text-muted mb-0">
+                  Clientes agrupados por telefone para manter o diálogo.
+                </p>
+              </div>
+              {selectedContactNumber && (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={handleClearConversation}
+                >
+                  Ver todas
+                </button>
+              )}
+            </div>
+            <div className="list-group list-group-flush">
+              {conversationsLoading ? (
+                <div className="p-4 text-center">
+                  <div className="spinner-border" role="status" />
+                </div>
+              ) : conversations.length === 0 ? (
+                <div className="p-4 text-center text-muted">
+                  Nenhuma conversa registrada até o momento.
+                </div>
+              ) : (
+                conversations.map((conversation) => {
+                  const selected =
+                    selectedContactNumber === conversation.contactNumber;
+                  return (
+                    <button
+                      key={`${conversation.accountId}-${conversation.contactNumber}`}
+                      type="button"
+                      className={`list-group-item list-group-item-action ${
+                        selected ? "active" : ""
+                      }`}
+                      onClick={() => handleSelectConversation(conversation)}
+                    >
+                      <div className="d-flex justify-content-between gap-3">
+                        <div>
+                          <strong>{conversation.contactNumber}</strong>
+                          <div
+                            className={
+                              selected ? "text-white-50" : "text-muted"
+                            }
+                          >
+                            {conversation.accountDisplayName} · última interação{" "}
+                            {formatDate(conversation.lastMessageAt)}
+                          </div>
+                        </div>
+                        <div className="text-end">
+                          {conversation.pendingInboundCount > 0 && (
+                            <span className="badge bg-warning text-dark">
+                              {conversation.pendingInboundCount} sem resposta
+                            </span>
+                          )}
+                          <div
+                            className={
+                              selected ? "text-white-50" : "text-muted"
+                            }
+                          >
+                            {conversation.inboundCount} entrada ·{" "}
+                            {conversation.outboundCount} saída
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
           <div className="card h-100">
             <div className="card-header d-flex flex-wrap gap-3 justify-content-between align-items-center">
               <div>
-                <h2 className="h5 mb-0">Mensagens</h2>
+                <h2 className="h5 mb-0">
+                  {selectedContactNumber
+                    ? `Diálogo com ${selectedContactNumber}`
+                    : "Mensagens"}
+                </h2>
                 <p className="text-muted mb-0">
-                  Histórico de recebimento e envio pelo WhatsApp Cloud API.
+                  {selectedContactNumber
+                    ? "Histórico filtrado para responder o cliente sem misturar conversas."
+                    : "Histórico de recebimento e envio pelo WhatsApp Cloud API."}
                 </p>
               </div>
               <div className="d-flex align-items-center gap-2">
-                <label className="form-label mb-0" htmlFor="whatsapp-direction-filter">
+                <label
+                  className="form-label mb-0"
+                  htmlFor="whatsapp-direction-filter"
+                >
                   Direção
                 </label>
                 <select
@@ -516,11 +639,16 @@ interface MessageRowProps {
 
 function MessageRow({ message }: MessageRowProps) {
   const timestamp = formatDate(
-    message.messageTimestamp ?? message.sentAt ?? message.receivedAt ?? message.createdAt,
+    message.messageTimestamp ??
+      message.sentAt ??
+      message.receivedAt ??
+      message.createdAt,
   );
   const directionLabel = message.direction === "OUTBOUND" ? "Saída" : "Entrada";
-  const badgeClass = message.direction === "OUTBOUND" ? "bg-success" : "bg-info";
-  const contact = message.direction === "OUTBOUND" ? message.toNumber : message.fromNumber;
+  const badgeClass =
+    message.direction === "OUTBOUND" ? "bg-success" : "bg-info";
+  const contact =
+    message.direction === "OUTBOUND" ? message.toNumber : message.fromNumber;
   const status = message.status ?? "-";
   const payloadSnippet = renderJsonSnippet(
     message.statusPayloadJson ?? message.payloadJson ?? message.contextJson,
@@ -553,7 +681,7 @@ function MessageRow({ message }: MessageRowProps) {
             )}
           </div>
         ) : (
-          message.textBody ?? "-"
+          (message.textBody ?? "-")
         )}
         {payloadSnippet && (
           <details className="mt-2">

@@ -1,11 +1,7 @@
 export type WhatsAppMessageDirection = "INBOUND" | "OUTBOUND";
 
 export type WhatsAppMessageType =
-  | "TEXT"
-  | "IMAGE"
-  | "TEMPLATE"
-  | "DOCUMENT"
-  | "UNKNOWN";
+  "TEXT" | "IMAGE" | "TEMPLATE" | "DOCUMENT" | "UNKNOWN";
 
 export interface WhatsAppAccount {
   id: number;
@@ -46,6 +42,17 @@ export interface WhatsAppMessage {
   receivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WhatsAppConversation {
+  id: number;
+  accountId: number;
+  accountDisplayName: string;
+  contactNumber: string;
+  lastMessageAt: string | null;
+  inboundCount: number;
+  outboundCount: number;
+  pendingInboundCount: number;
 }
 
 export interface SaveWhatsAppAccountInput {

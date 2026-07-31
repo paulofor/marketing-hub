@@ -302,6 +302,7 @@ public class SalesVideoJobService {
     return toDto(job);
   }
 
+  /** Cria novo job de reprocessamento preservando o contrato operacional do job original. */
   @Transactional
   public SalesVideoJobDto retry(Long jobId, RetrySalesVideoJobRequest request) {
     SalesVideoJob job = loadJob(jobId);
@@ -324,6 +325,7 @@ public class SalesVideoJobService {
     newJob.setRetryAttempt(job.getRetryAttempt() + 1);
     newJob.setRetryReason(request.getReason());
     newJob.setRetryNotes(request.getNotes());
+    newJob.setMetadataJson(job.getMetadataJson());
     jobRepository.save(newJob);
     registerEvent(
         job,

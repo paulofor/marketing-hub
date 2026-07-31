@@ -516,7 +516,10 @@ function App() {
   const currentProduct = workspace?.product ?? product;
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
   const currentMusaExperience = resolveMusaExperienceContract(currentExperienceVersion, currentProduct.layoutKey);
-  const publicDiagnosticQuestions = currentMusaExperience.publicDiagnosticQuestions;
+  const publicDiagnosticQuestions =
+    currentProduct.publicDiagnosticQuestions?.length
+      ? currentProduct.publicDiagnosticQuestions
+      : currentMusaExperience.publicDiagnosticQuestions;
   const googleClientId = readRuntimeConfigValue('VITE_GOOGLE_CLIENT_ID', (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '');
   const checkoutUrl = readRuntimeConfigValue('VITE_MUSA_CHECKOUT_URL', (import.meta.env.VITE_MUSA_CHECKOUT_URL as string | undefined) ?? '');
   const heroStreamOverride = readRuntimeConfigValue('VITE_MUSA_HERO_STREAM_URL', (import.meta.env.VITE_MUSA_HERO_STREAM_URL as string | undefined) ?? '');

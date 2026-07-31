@@ -20,7 +20,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
-/** Encapsulates low-level interactions with the Meta WhatsApp Cloud API. */
+/** Serviço que envia, recebe e audita mensagens pela Meta WhatsApp Cloud API. */
 @Service
 @Slf4j
 public class WhatsAppMessagingService {
@@ -30,6 +30,7 @@ public class WhatsAppMessagingService {
   private final ObjectMapper objectMapper;
   private final WhatsAppProperties properties;
 
+  /** Cria o serviço usando dependências configuradas pelo Spring. */
   @Autowired
   public WhatsAppMessagingService(
       RestTemplateBuilder restTemplateBuilder,
@@ -40,6 +41,7 @@ public class WhatsAppMessagingService {
     this(restTemplateBuilder.build(), accountService, messageRepository, objectMapper, properties);
   }
 
+  /** Cria o serviço com cliente HTTP explícito para uso em testes. */
   WhatsAppMessagingService(
       RestTemplate restTemplate,
       WhatsAppAccountService accountService,
@@ -53,19 +55,23 @@ public class WhatsAppMessagingService {
     this.properties = properties;
   }
 
+  /** Indica se a integração está habilitada e possui conta ativa. */
   public boolean isEnabled() {
     return properties.isEnabled() && accountService.findActiveAccount().isPresent();
   }
 
+  /** Busca a conta ativa configurada para disparos pelo WhatsApp. */
   public Optional<WhatsAppAccount> findActiveAccount() {
     return accountService.findActiveAccount();
   }
 
+  /** Envia mensagem de texto usando a conta ativa. */
   public WhatsAppMessage sendTextMessage(String to, String body, Map<String, Object> metadata) {
     WhatsAppAccount account = accountService.requireActiveAccount();
     return sendTextMessage(account, to, body, metadata);
   }
 
+  /** Envia mensagem de texto usando uma conta específica. */
   public WhatsAppMessage sendTextMessage(
       WhatsAppAccount account, String to, String body, Map<String, Object> metadata) {
     Map<String, Object> payload = basePayload(to);
@@ -77,6 +83,7 @@ public class WhatsAppMessagingService {
     return sendPayload(account, payload, WhatsAppMessageType.TEXT, to, body, null, null, metadata);
   }
 
+  /** Envia mensagem baseada em template aprovado da Meta. */
   public WhatsAppMessage sendTemplateMessage(
       WhatsAppAccount account,
       String to,
@@ -99,12 +106,14 @@ public class WhatsAppMessagingService {
         account, payload, WhatsAppMessageType.TEMPLATE, to, null, null, null, metadata);
   }
 
+  /** Envia imagem usando a conta ativa. */
   public WhatsAppMessage sendImageMessage(
       String to, String imageUrl, String caption, Map<String, Object> metadata) {
     WhatsAppAccount account = accountService.requireActiveAccount();
     return sendImageMessage(account, to, imageUrl, caption, metadata);
   }
 
+  /** Envia imagem usando uma conta específica. */
   public WhatsAppMessage sendImageMessage(
       WhatsAppAccount account,
       String to,
@@ -123,6 +132,7 @@ public class WhatsAppMessagingService {
         account, payload, WhatsAppMessageType.IMAGE, to, null, imageUrl, caption, metadata);
   }
 
+  /** Processa o payload bruto recebido no webhook oficial da Meta. */
   @Transactional
   public void handleWebhook(JsonNode payload) {
     if (payload == null || !payload.has("entry")) {
@@ -152,6 +162,7 @@ public class WhatsAppMessagingService {
     }
   }
 
+  /** Registra uma mensagem recebida no histórico do contato. */
   private void recordInboundMessage(WhatsAppAccount account, JsonNode messageNode, JsonNode value) {
     String messageId = messageNode.path("id").asText(null);
     if (StringUtils.hasText(messageId)
@@ -182,6 +193,7 @@ public class WhatsAppMessagingService {
     messageRepository.save(message);
   }
 
+  /** Atualiza o status de uma mensagem enviada quando a Meta retorna eventos de entrega. */
   private void updateMessageStatus(WhatsAppAccount account, JsonNode statusNode) {
     String messageId = statusNode.path("id").asText(null);
     if (!StringUtils.hasText(messageId)) {
@@ -208,6 +220,7 @@ public class WhatsAppMessagingService {
             });
   }
 
+  /** Converte o tipo textual da Meta para o enum interno do Marketing Hub. */
   private WhatsAppMessageType resolveType(String type) {
     if (!StringUtils.hasText(type)) {
       return WhatsAppMessageType.UNKNOWN;
@@ -221,6 +234,7 @@ public class WhatsAppMessagingService {
     };
   }
 
+  /** Monta a base comum do payload aceito pela Meta. */
   private Map<String, Object> basePayload(String to) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("messaging_product", "whatsapp");
@@ -228,6 +242,7 @@ public class WhatsAppMessagingService {
     return payload;
   }
 
+  /** Envia o payload para a Meta e persiste o resultado da tentativa. */
   private WhatsAppMessage sendPayload(
       WhatsAppAccount account,
       Map<String, Object> payload,
@@ -286,6 +301,13 @@ public class WhatsAppMessagingService {
       message.setMessageTimestamp(message.getSentAt());
       return messageRepository.save(message);
     } catch (HttpStatusCodeException ex) {
+      log.warn(
+          "Falha HTTP ao enviar WhatsApp. operacao=sendPayload accountId={} phoneNumberId={} to={} status={}",
+          account.getId(),
+          account.getPhoneNumberId(),
+          to,
+          ex.getStatusCode(),
+          ex);
       updateMessageWithError(
           message,
           "HTTP_" + ex.getStatusCode().value(),
@@ -293,11 +315,18 @@ public class WhatsAppMessagingService {
           ex.getResponseBodyAsString());
       throw ex;
     } catch (ResourceAccessException ex) {
+      log.warn(
+          "Falha de rede ao enviar WhatsApp. operacao=sendPayload accountId={} phoneNumberId={} to={}",
+          account.getId(),
+          account.getPhoneNumberId(),
+          to,
+          ex);
       updateMessageWithError(message, "NETWORK_ERROR", null, ex.getMessage());
       throw ex;
     }
   }
 
+  /** Persiste erro de envio na mensagem auditável. */
   private void updateMessageWithError(
       WhatsAppMessage message, String status, String errorCode, String errorMessage) {
     message.setStatus(status);
@@ -306,6 +335,7 @@ public class WhatsAppMessagingService {
     messageRepository.save(message);
   }
 
+  /** Serializa objetos de contexto ou payload para auditoria. */
   private String writeJson(Object value) {
     if (value == null) {
       return null;
@@ -318,6 +348,7 @@ public class WhatsAppMessagingService {
     }
   }
 
+  /** Extrai metadados comerciais e contatos do payload do webhook. */
   private String extractMetadataJson(JsonNode value) {
     ObjectNode node = objectMapper.createObjectNode();
     if (value.has("metadata")) {
@@ -329,6 +360,7 @@ public class WhatsAppMessagingService {
     return node.isEmpty() ? null : node.toString();
   }
 
+  /** Converte timestamps da Meta para Instant. */
   private Instant parseTimestamp(String timestamp) {
     if (!StringUtils.hasText(timestamp)) {
       return null;
@@ -339,7 +371,11 @@ public class WhatsAppMessagingService {
     } catch (NumberFormatException ex) {
       try {
         return Instant.parse(timestamp);
-      } catch (Exception ignored) {
+      } catch (Exception parseException) {
+        log.warn(
+            "Falha ao interpretar timestamp do WhatsApp. operacao=parseTimestamp timestamp={}",
+            timestamp,
+            parseException);
         return null;
       }
     }

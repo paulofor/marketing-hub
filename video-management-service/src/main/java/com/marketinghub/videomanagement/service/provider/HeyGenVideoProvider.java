@@ -258,7 +258,7 @@ public class HeyGenVideoProvider implements VideoProvider {
             throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Download vazio do vídeo HeyGen");
         }
         MediaType contentType = response.getHeaders().getContentType();
-        if (contentType == null || !VIDEO_MP4.isCompatibleWith(contentType) || !looksLikeMp4(content)) {
+        if (!isAcceptableMp4Download(contentType, content)) {
             throw new VideoProviderException("PROVIDER_RENDER_FAILED",
                     "Download da HeyGen não retornou MP4 válido; contentType=%s bytes=%d"
                             .formatted(contentType, content.length));
@@ -406,6 +406,18 @@ public class HeyGenVideoProvider implements VideoProvider {
                 && content[5] == 't'
                 && content[6] == 'y'
                 && content[7] == 'p';
+    }
+
+    /** Aceita MP4 mesmo quando CDN/provider entrega o arquivo como octet-stream. */
+    private boolean isAcceptableMp4Download(MediaType contentType, byte[] content) {
+        if (!looksLikeMp4(content)) {
+            return false;
+        }
+        if (contentType == null || VIDEO_MP4.isCompatibleWith(contentType)) {
+            return true;
+        }
+        String normalized = contentType.toString().toLowerCase(Locale.ROOT);
+        return normalized.contains("octet-stream");
     }
 
     /** Normaliza textos de provider e status. */

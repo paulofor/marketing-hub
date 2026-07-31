@@ -26,6 +26,7 @@ import okio.Buffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: validar o adapter direto da HeyGen no módulo de vídeo. */
@@ -94,6 +95,24 @@ class HeyGenVideoProviderTest {
                 .doesNotContain("\"motion_prompt\"");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v3/videos/heygen-video-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/heygen-video-123.mp4");
+    }
+
+    /** Deve aceitar MP4 real quando a CDN HeyGen responder com content-type generico. */
+    @Test
+    void shouldAcceptHeyGenMp4ReturnedAsOctetStream() throws Exception {
+        server.enqueue(json("""
+                {"data":{"video_id":"heygen-video-123","status":"pending","output_format":"mp4"}}
+                """));
+        server.enqueue(json("""
+                {"data":{"id":"heygen-video-123","video_url":"%s/download/heygen-video-123.mp4","duration":30.5}}
+                """.formatted(baseUrl())));
+        server.enqueue(mp4Response("binary/octet-stream"));
+        HeyGenVideoProvider provider = new HeyGenVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(job(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.videoFile().mediaType()).isEqualTo(MediaType.valueOf("video/mp4"));
+        assertThat(artifacts.videoFile().content()).hasSize(16);
     }
 
     /** Deve enviar motion_prompt quando o engine configurado suporta Avatar V. */
@@ -175,9 +194,14 @@ class HeyGenVideoProviderTest {
 
     /** Cria uma resposta MP4 mínima com assinatura ftyp. */
     private MockResponse mp4Response() {
+        return mp4Response("video/mp4");
+    }
+
+    /** Cria uma resposta MP4 mínima com content-type configurável. */
+    private MockResponse mp4Response(String contentType) {
         return new MockResponse()
                 .setResponseCode(200)
-                .setHeader("Content-Type", "video/mp4")
+                .setHeader("Content-Type", contentType)
                 .setBody(new Buffer().write(new byte[] {
                         0, 0, 0, 32, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm', 0, 0, 2, 0
                 }));

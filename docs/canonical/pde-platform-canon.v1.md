@@ -6,6 +6,8 @@ A PDE Platform é o motor reutilizável de **Produto Digital Experiencial** do M
 
 Ela deve entregar produtos digitais como experiência guiada, não como pacote de arquivos soltos. O objetivo comercial é aumentar valor percebido, reduzir esforço do consumidor e transformar princípios científicos do MDS/research em aplicação prática, simples e vendável.
 
+Toda publicação comercial de PDE deve seguir tambem o protocolo canônico geral em `docs/canonical/protocolo-publicacao-comercial-pde-canon.v1.md`. Esse protocolo vale para qualquer produto PDE, nao apenas para o Metodo MUSA, e define os gates de linguagem publica, validacao mobile/desktop, eventos, metricas limpas e bloqueio antes de trafego ou `RUNNING`.
+
 ## Decisão arquitetural
 
 O padrão obrigatório é:
@@ -72,6 +74,8 @@ Quando uma alteração de PDE for publicada, o relatório/painel deve separar pe
 - decisão comercial tomada para aquela versão.
 
 Se a versão da experiência não estiver disponível nos eventos, a comparação deve ser considerada incompleta: pode indicar tendência por janela de tempo, mas não deve ser usada como prova limpa de melhora ou piora entre formatos.
+
+Antes de publicar uma mudanca comercial de PDE ou colocar o experimento vinculado em `RUNNING`, o Marketing Hub deve executar o protocolo canônico de publicação comercial de PDE. A versao so pode receber trafego quando o protocolo confirmar ausencia de vazamento tecnico, experiencia publica coerente, mobile/desktop validos e metricas segmentadas por produto, campanha, experimento, slot e `experienceVersion`.
 
 ### Checkout externo
 
@@ -410,6 +414,8 @@ Os princípios científicos devem aparecer como:
 - campo preenchível;
 - evidência de progresso;
 - redução de esforço.
+
+Esta regra de qualidade comercial e detalhada e operacionalizada pelo protocolo geral `docs/canonical/protocolo-publicacao-comercial-pde-canon.v1.md`, que deve ser aplicado a qualquer PDE antes de publicacao, trafego pago, comparacao de versoes ou decisao de escala.
 
 ## Experimento 66
 

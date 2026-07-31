@@ -17,6 +17,18 @@ A console de WhatsApp centraliza o cadastro da conta Meta Cloud, o envio de mens
 4. Marque a conta como **ativa** para habilitar o disparo via jornadas e via console. Apenas uma conta pode permanecer ativa; ao ativar uma nova, as demais são desativadas automaticamente.
 5. Salve as alterações. O backend persiste os dados em `whatsapp_account`, reutilizando-os em todas as integrações.【F:backend/ads-service/src/main/java/com/marketinghub/whatsapp/service/WhatsAppAccountService.java†L18-L76】【F:backend/ads-service/src/main/resources/db/changelog/V2028_02_01__create_whatsapp_tables.sql†L1-L40】
 
+## O que precisa estar cadastrado para vender por WhatsApp
+
+Para um PDE com interface no WhatsApp operar de ponta a ponta, o Marketing Hub precisa ter:
+
+- **Conta WhatsApp ativa** com nome de exibição, telefone comercial, `phoneNumberId`, `businessAccountId`, `accessToken`, `verifyToken` e `baseUrl` quando houver versão customizada da Graph API.
+- **Webhook verificado na Meta** apontando para `/api/whatsapp/webhook`, usando o `verifyToken` cadastrado na conta.
+- **Consentimento do cliente** capturado na origem do lead ou da experiência, principalmente quando o fluxo iniciar por formulário, checkout, lead ads ou página pública.
+- **Roteiro de conversa do PDE** definido em jornadas ou no cockpit: promessa inicial, perguntas de diagnóstico, entrega de microvalor, objeções esperadas e chamada para compra.
+- **Identificador comercial de origem** no contexto da mensagem quando possível: produto, PDE, experimento, campanha, criativo, landing, lead ou jornada.
+
+Sem esses dados, o sistema até consegue enviar mensagens manuais, mas não consegue sustentar aprendizado comercial confiável por produto, campanha e etapa do funil.
+
 ## Webhook Meta Cloud
 
 - Endpoint de verificação e recepção: `POST`/`GET /api/whatsapp/webhook`.
@@ -38,7 +50,9 @@ A console de WhatsApp centraliza o cadastro da conta Meta Cloud, o envio de mens
 
 ## Painel de mensagens
 
-- O painel lista o histórico paginado (25 itens por página) com filtros de direção (entrada/saída).
+- O painel lista conversas agrupadas por conta e telefone do cliente, com última interação, total de entradas, total de saídas e quantidade de mensagens recebidas ainda sem resposta.
+- Ao selecionar uma conversa, o cockpit filtra o histórico daquele contato e preenche o destino do envio, reduzindo risco de misturar clientes durante o atendimento.
+- O histórico paginado (25 itens por página) mantém filtros de direção (entrada/saída).
 - Cada registro exibe horário, canal, contato, status, payload e pré-visualização de anexos quando aplicável.【F:frontend/src/pages/whatsapp/WhatsAppConsolePage.tsx†L289-L409】
 - O front-end consome `/api/whatsapp/messages` e `/api/whatsapp/messages/send`, invalidando o cache a cada envio ou atualização de conta.【F:frontend/src/api/whatsapp/useWhatsAppMessages.ts†L1-L26】【F:frontend/src/api/whatsapp/useSendWhatsAppMessage.ts†L1-L18】
 

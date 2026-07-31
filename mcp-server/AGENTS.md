@@ -43,6 +43,8 @@ Quando precisar confirmar qual versão/commit de um módulo está rodando em pro
 - Implementação: `src/main/java/com/marketinghub/mcpserver/service/RuntimeBuildInfoService.java`.
 - Contrato JSON-RPC: `src/main/java/com/marketinghub/mcpserver/controller/McpController.java`.
 - Configuração: bloco `mcp.build-info` em `src/main/resources/application.yml`.
-- Módulo inicial configurado: `pde-platform-backend`, apontando para `http://163.245.200.7:8096/actuator/info`.
+- Módulos configurados por padrão:
+  - `backend`, apontando para `http://191.252.181.168/actuator/info`.
+  - `pde-platform-backend`, apontando para `http://163.245.200.7:8096/actuator/info`.
 
 Não inferir commit produtivo apenas por container recente, tag `latest` ou horário de deploy. Se a tool retornar `buildIdentityPublished=false`, o MCP confirmou que o endpoint respondeu, mas o runtime ainda não publicou commit, branch, build time ou version rastreável.

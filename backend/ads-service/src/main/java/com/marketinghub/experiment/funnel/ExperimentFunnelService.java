@@ -1097,7 +1097,9 @@ public class ExperimentFunnelService {
     }
     PdeAnalyticsSummary summary;
     try {
-      summary = pdeAnalyticsClient.fetchSummary(DEFAULT_PDE_PRODUCT_SLUG);
+      summary =
+          pdeAnalyticsClient.fetchSummary(
+              DEFAULT_PDE_PRODUCT_SLUG, experiment.getFollowUpActionUrl());
     } catch (Exception ex) {
       log.error(
           "Falha ao consultar analytics PDE para consolidar funil do experimento; experimentId={} productSlug={}",

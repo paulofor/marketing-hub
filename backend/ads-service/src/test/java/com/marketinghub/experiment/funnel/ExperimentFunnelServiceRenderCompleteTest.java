@@ -938,7 +938,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
             any(),
             any()))
         .thenReturn(List.of("120250506594240326"));
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias"))
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", null))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -1041,7 +1041,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
             any(),
             any()))
         .thenReturn(List.of("120250506596000326"));
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias"))
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", null))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -1126,7 +1126,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
             any(),
             any()))
         .thenReturn(List.of());
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias"))
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br"))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -1202,6 +1202,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals(70, pdeEntry.getTotalCount());
     assertEquals(34, videoPartial.getTotalCount());
     assertEquals(12, videoComplete.getTotalCount());
+    verify(pdeAnalyticsClient)
+        .fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");
   }
 
   /** Valida que render-complete rejeita slug vazio. */

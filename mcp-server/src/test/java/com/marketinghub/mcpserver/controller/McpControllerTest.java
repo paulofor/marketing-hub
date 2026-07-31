@@ -87,7 +87,9 @@ class McpControllerTest {
         registry.add("mcp.docker-ops.timeout-seconds", () -> "5");
         registry.add("mcp.docker-ops.restart-enabled", () -> "false");
         registry.add("mcp.build-info.enabled", () -> "true");
-        registry.add("mcp.build-info.allowed-modules", () -> "pde-platform-backend");
+        registry.add("mcp.build-info.allowed-modules", () -> "backend,pde-platform-backend");
+        registry.add("mcp.build-info.module-info-urls.backend",
+                () -> "http://127.0.0.1:1/actuator/info");
         registry.add("mcp.build-info.module-info-urls.pde-platform-backend",
                 () -> "http://127.0.0.1:1/actuator/info");
         registry.add("mcp.build-info.timeout-seconds", () -> "1");

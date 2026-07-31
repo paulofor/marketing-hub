@@ -122,7 +122,8 @@ O tool `runtime_build_info` consulta endpoints permitidos de `GET /actuator/info
 Configuração:
 
 - `MCP_BUILD_INFO_ENABLED` (default `true`);
-- `MCP_BUILD_INFO_ALLOWED_MODULES` (default `pde-platform-backend`);
+- `MCP_BUILD_INFO_ALLOWED_MODULES` (default `backend,pde-platform-backend`);
+- `MCP_BUILD_INFO_BACKEND_URL` (default `http://191.252.181.168/actuator/info`);
 - `MCP_BUILD_INFO_PDE_PLATFORM_BACKEND_URL` (default `http://163.245.200.7:8096/actuator/info`);
 - `MCP_BUILD_INFO_TIMEOUT_SECONDS` (default `10`).
 
@@ -130,6 +131,10 @@ Exemplo JSON-RPC:
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"runtime_build_info","arguments":{"module":"pde-platform-backend"}}}
+```
+
+```json
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"runtime_build_info","arguments":{"module":"backend"}}}
 ```
 
 Quando o serviço publica os campos, a resposta estruturada inclui `summary.version`, `summary.commitId`, `summary.branch` e `summary.buildTime`. Quando `buildIdentityPublished=false`, o endpoint respondeu, mas o módulo ainda não expõe commit/build rastreável; nesse caso, é necessário ajustar o próprio módulo para publicar `git.properties`/`build-info.properties` no Actuator.

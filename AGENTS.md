@@ -201,7 +201,9 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
   - Use esta tool antes de concluir, por inferência de log ou comportamento, qual commit/build está rodando em produção.
   - Parâmetro disponível:
     1. `module` (**obrigatório**): módulo permitido para consulta de identidade de build.
-  - Módulo inicial aceito: `pde-platform-backend`.
+  - Módulos aceitos por padrão: `backend` e `pde-platform-backend`.
+  - Use `module=backend` para confirmar a identidade do backend principal do Marketing Hub que alimenta cockpit/funil.
+  - Use `module=pde-platform-backend` para confirmar a identidade do backend PDE.
   - A tool consulta o `/actuator/info` configurado para o módulo e retorna `version`, `commitId`, `branch` e `buildTime` quando o serviço publica esses campos.
   - Se `buildIdentityPublished=false`, o MCP confirmou que o endpoint respondeu, mas o runtime ainda não publicou identidade rastreável; nesse caso, não trate container recente ou tag `latest` como prova de commit em execução.
 

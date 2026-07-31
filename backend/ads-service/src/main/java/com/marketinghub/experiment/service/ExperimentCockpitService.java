@@ -101,6 +101,8 @@ public class ExperimentCockpitService {
     if (BigDecimal.ZERO.compareTo(spend) == 0 && experiment.getTotalCost() != null) {
       spend = experiment.getTotalCost();
     }
+    long measuredPageViews =
+        Math.max(analytics.pageViews(), stageTotal(funnelStages, ExperimentFunnelStage.VISUALIZACAO_FORM));
     long leads = stageTotal(funnelStages, ExperimentFunnelStage.ENVIO_FORM);
     long checkoutAccesses = stageTotal(funnelStages, ExperimentFunnelStage.ACESSO_CHECKOUT);
     long purchases = stageTotal(funnelStages, ExperimentFunnelStage.COMPRA);
@@ -115,7 +117,7 @@ public class ExperimentCockpitService {
         clicks,
         percentage(clicks, impressions),
         metric != null ? metric.getCpc() : null,
-        analytics.pageViews(),
+        measuredPageViews,
         leads,
         checkoutAccesses,
         purchases,

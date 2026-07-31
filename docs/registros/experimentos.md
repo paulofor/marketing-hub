@@ -1,3 +1,11 @@
+## 2026-07-31 — Experimento 77: cockpit passa a ler analytics PDE v6 pelo destino do experimento
+
+- causa-raiz confirmada no código do backend principal: o funil de experimentos PDE consultava o analytics MUSA pelo cliente padrão, sem passar o `followUpActionUrl` versionado do experimento; com isso, a leitura podia cair no host padrão e não no slot v6 usado pelo experimento 77.
+- problema comercial: o PDE v6 já media sessões, entradas e vídeo, mas o cockpit podia mostrar funil zerado e sugerir gargalo falso de pós-clique, contaminando a decisão de liberar, pausar ou ajustar tráfego.
+- ajuste preparado: `ExperimentFunnelService` passa a consultar `/summary` usando a URL pública versionada do experimento, e `ExperimentCockpitService` considera a etapa real `VISUALIZACAO_FORM` como visualização medida quando a origem é PDE, evitando diagnosticar "clique sem página" quando houve entrada no MUSA.
+- prevenção: testes focados garantem que a v6 usa `https://v6.clubemusa.com.br` na chamada do analytics e que o cockpit classifica entrada PDE como página medida antes de decidir o gargalo comercial.
+- impacto comercial esperado: recuperar a leitura clique -> entrada PDE -> vídeo -> login/paywall/checkout do experimento 77, permitindo decidir sobre criativos, segmentação e oferta sem zeros falsos.
+
 ## 2026-07-30 — Experimento 76: jornadas PDE protegidas contra ordenação pesada
 
 - causa-raiz complementar: mesmo com o resumo principal protegido, a consulta de jornadas recentes ainda podia exigir agrupamento/ordenação por sessão sem índice composto adequado no MySQL 5.7.

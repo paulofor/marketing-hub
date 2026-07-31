@@ -18,12 +18,14 @@ import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAna
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
+import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.LandingAnalyticsEventProjection;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository.VisitorRecurrenceProjection;
+import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +58,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
   @Mock private InternalAnalyticsTrafficFilter internalAnalyticsTrafficFilter;
 
+  @Mock private PdeProductionSlotRepository pdeProductionSlotRepository;
+
   @InjectMocks private ExperimentFunnelService service;
 
   /** Configura stubs comuns para permitir criação de eventos normalizados novos. */
@@ -68,6 +72,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
         .when(landingAnalyticsEventRepository.aggregateVisitorsByExperiment(any(), any()))
         .thenReturn(List.of());
     lenient().when(internalAnalyticsTrafficFilter.isInternal(any())).thenReturn(false);
+    lenient().when(pdeProductionSlotRepository.findFirstByDomain(any())).thenReturn(Optional.empty());
   }
 
   /** Valida que o render-complete grava visualização do formulário com visitante e campanha. */
@@ -1293,6 +1298,14 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 List.of(),
                 List.of(),
                 List.of()));
+    when(pdeProductionSlotRepository.findFirstByDomain("v6.clubemusa.com.br"))
+        .thenReturn(
+            Optional.of(
+                PdeProductionSlot.builder()
+                    .domain("v6.clubemusa.com.br")
+                    .publicUrl("https://v6.clubemusa.com.br")
+                    .experienceVersion("musa-pde-entry-v6-video-motivacional")
+                    .build()));
 
     var summary = service.summarize(77L);
 

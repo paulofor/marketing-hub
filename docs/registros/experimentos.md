@@ -1,3 +1,11 @@
+## 2026-07-31 — Experimento 77: seleção explícita da experiência PDE v6 no cockpit
+
+- causa-raiz confirmada no backend principal: quando o summary do PDE retornava `currentExperienceVersion` como v5 e a v6 apenas dentro de `experienceVersions`, o funil do experimento 77 podia depender de fallback por token da URL em vez do slot produtivo cadastrado no Marketing Hub.
+- problema comercial: o cockpit podia seguir mostrando funil zerado para o experimento 77 mesmo com eventos reais da v6, impedindo leitura confiável antes de liberar tráfego pago.
+- ajuste preparado: `ExperimentFunnelService` passa a resolver a `experienceVersion` esperada pelo domínio do destino (`v6.clubemusa.com.br`) no cadastro de `pde_production_slot` e seleciona exatamente `musa-pde-entry-v6-video-motivacional` dentro de `experienceVersions`; o fallback por token `-v6-` fica apenas para ausência de slot.
+- prevenção: teste focado cobre o caso real do experimento 77 com summary principal em v5, métrica v6 existente e UTM divergente, garantindo que o cockpit use a linha correta da v6.
+- impacto comercial esperado: liberar decisão do cockpit por entrada PDE, vídeo, diagnóstico, paywall, checkout e compra sem misturar v5/v6 nem interpretar zero falso como rejeição da oferta.
+
 ## 2026-07-31 — PDE MUSA v7: jornada científica dos 7 sinais
 
 - decisão comercial: a nova organização dos 7 dias deve entrar como v7 científica, preservando a v6 como controle de leitura no cockpit.

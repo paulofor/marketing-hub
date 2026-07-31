@@ -24,6 +24,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.StageAggregation;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
+import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -63,6 +64,7 @@ public class ExperimentFunnelService {
   private final ExperimentFunnelStandbyService standbyService;
   private final PdeAnalyticsClient pdeAnalyticsClient;
   private final InternalAnalyticsTrafficFilter internalAnalyticsTrafficFilter;
+  private final PdeProductionSlotRepository pdeProductionSlotRepository;
 
   static final String FLOW_SCOPE_CONDITION =
       """
@@ -1324,15 +1326,69 @@ public class ExperimentFunnelService {
     if (summary.experienceVersions() == null || followUpActionUrl == null) {
       return Optional.empty();
     }
+    Optional<String> expectedExperienceVersion = resolveExpectedPdeExperienceVersion(followUpActionUrl);
+    if (expectedExperienceVersion.isPresent()) {
+      return summary.experienceVersions().stream()
+          .filter(metric -> metric != null && metric.experienceVersion() != null)
+          .filter(metric -> metric.experienceVersion().equals(expectedExperienceVersion.get()))
+          .findFirst();
+    }
+    Optional<String> versionToken = resolveVersionTokenFromUrl(followUpActionUrl);
+    if (versionToken.isEmpty()) {
+      return Optional.empty();
+    }
+    return summary.experienceVersions().stream()
+        .filter(metric -> metric != null && metric.experienceVersion() != null)
+        .filter(metric -> metric.experienceVersion().contains(versionToken.get()))
+        .findFirst();
+  }
+
+  /**
+   * Resolve a versão comercial esperada pelo cadastro operacional do slot publicado no Marketing
+   * Hub.
+   */
+  private Optional<String> resolveExpectedPdeExperienceVersion(String followUpActionUrl) {
+    return normalizeDomainFromUrl(followUpActionUrl)
+        .flatMap(pdeProductionSlotRepository::findFirstByDomain)
+        .map(slot -> slot.getExperienceVersion())
+        .filter(version -> version != null && !version.isBlank());
+  }
+
+  /** Extrai o token de versão da URL pública quando o slot ainda não existe no cadastro. */
+  private Optional<String> resolveVersionTokenFromUrl(String followUpActionUrl) {
     Matcher matcher = MUSA_VERSIONED_HOST_PATTERN.matcher(followUpActionUrl.trim());
     if (!matcher.matches()) {
       return Optional.empty();
     }
-    String versionToken = "-v" + matcher.group(1) + "-";
-    return summary.experienceVersions().stream()
-        .filter(metric -> metric != null && metric.experienceVersion() != null)
-        .filter(metric -> metric.experienceVersion().contains(versionToken))
-        .findFirst();
+    return Optional.of("-v" + matcher.group(1) + "-");
+  }
+
+  /** Normaliza o domínio de uma URL para consulta do slot produtivo PDE. */
+  private Optional<String> normalizeDomainFromUrl(String url) {
+    if (url == null || url.isBlank()) {
+      return Optional.empty();
+    }
+    String normalized = url.trim().replaceFirst("^https?://", "").replaceFirst("^//", "");
+    int pathStart = normalized.indexOf('/');
+    if (pathStart >= 0) {
+      normalized = normalized.substring(0, pathStart);
+    }
+    int queryStart = normalized.indexOf('?');
+    if (queryStart >= 0) {
+      normalized = normalized.substring(0, queryStart);
+    }
+    int hashStart = normalized.indexOf('#');
+    if (hashStart >= 0) {
+      normalized = normalized.substring(0, hashStart);
+    }
+    int portStart = normalized.indexOf(':');
+    if (portStart >= 0) {
+      normalized = normalized.substring(0, portStart);
+    }
+    if (normalized.isBlank() || !normalized.contains(".")) {
+      return Optional.empty();
+    }
+    return Optional.of(normalized.toLowerCase());
   }
 
   /** Soma eventos PDE globais preservando compatibilidade com contratos antigos do backend PDE. */

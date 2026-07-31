@@ -16,6 +16,7 @@ export function useSendWhatsAppMessage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["whatsappMessages"] });
+      queryClient.invalidateQueries({ queryKey: ["whatsappConversations"] });
       toast.success("Mensagem enviada com sucesso.");
     },
     onError: (error: AxiosError<{ message?: string }>) => {

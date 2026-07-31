@@ -18,7 +18,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-/** REST controller exposing WhatsApp message logs and manual sending. */
+/** Controller REST que expõe mensagens do WhatsApp e envio manual pelo cockpit. */
 @RestController
 @RequestMapping("/api/whatsapp/messages")
 public class WhatsAppMessageController {
@@ -26,6 +26,7 @@ public class WhatsAppMessageController {
   private final WhatsAppMessageMapper messageMapper;
   private final WhatsAppMessagingService messagingService;
 
+  /** Cria o controller com repositório, mapper e serviço de envio do WhatsApp. */
   public WhatsAppMessageController(
       WhatsAppMessageRepository messageRepository,
       WhatsAppMessageMapper messageMapper,
@@ -35,19 +36,24 @@ public class WhatsAppMessageController {
     this.messagingService = messagingService;
   }
 
+  /** Lista mensagens gerais ou filtradas por contato e direção. */
   @GetMapping
   public Page<WhatsAppMessageDto> listMessages(
       @RequestParam(name = "page", defaultValue = "0") int page,
       @RequestParam(name = "size", defaultValue = "25") int size,
-      @RequestParam(name = "direction", required = false) WhatsAppMessageDirection direction) {
+      @RequestParam(name = "direction", required = false) WhatsAppMessageDirection direction,
+      @RequestParam(name = "contactNumber", required = false) String contactNumber) {
     Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
     Page<WhatsAppMessage> result =
-        direction == null
+        StringUtils.hasText(contactNumber)
+            ? messageRepository.findByContactNumberAndDirection(contactNumber, direction, pageable)
+            : direction == null
             ? messageRepository.findAllByOrderByCreatedAtDesc(pageable)
             : messageRepository.findByDirectionOrderByCreatedAtDesc(direction, pageable);
     return result.map(messageMapper::toDto);
   }
 
+  /** Envia uma mensagem manual usando a conta ativa do WhatsApp. */
   @PostMapping("/send")
   public WhatsAppMessageDto sendMessage(@RequestBody WhatsAppSendMessageRequest request) {
     if (!StringUtils.hasText(request.getTo())) {

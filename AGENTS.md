@@ -205,7 +205,9 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
   - Use `module=backend` para confirmar a identidade do backend principal do Marketing Hub que alimenta cockpit/funil.
   - Use `module=pde-platform-backend` para confirmar a identidade do backend PDE.
   - A tool consulta o `/actuator/info` configurado para o módulo e retorna `version`, `commitId`, `branch` e `buildTime` quando o serviço publica esses campos.
+  - O backend principal deve manter uma rota compatível em `/actuator/info` para uso direto da tool, mesmo quando os demais endpoints do Actuator usarem base path operacional próprio.
   - Se `buildIdentityPublished=false`, o MCP confirmou que o endpoint respondeu, mas o runtime ainda não publicou identidade rastreável; nesse caso, não trate container recente ou tag `latest` como prova de commit em execução.
+  - Se a consulta retornar HTTP 500, trate como falha do módulo consultado em publicar identidade de build; investigue logs pelo `java_module_logs` e corrija o Actuator/rota de runtime no próprio módulo antes de inferir commit por outros sinais.
 
 - **Erro 400 (Bad Request) em APIs**: em validações de contrato/payload, o backend pode responder `400 Bad Request` sem registrar detalhes úteis no log de aplicação. Nesses casos, **não basta procurar logs**; é obrigatório inspecionar a requisição enviada (URL, método, headers, body) e comparar com DTO/contrato esperado para identificar campo, estrutura ou tipo inválido.
 

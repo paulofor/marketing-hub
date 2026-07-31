@@ -5,6 +5,10 @@
 # ─────────────────────────────────────────
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
+ARG BACKEND_BUILD_COMMIT=unknown
+ARG BACKEND_BUILD_BRANCH=unknown
+ENV GITHUB_SHA=${BACKEND_BUILD_COMMIT}
+ENV GITHUB_REF_NAME=${BACKEND_BUILD_BRANCH}
 
 # Copy files required to cache Maven dependencies first
 COPY backend/settings.xml backend/settings.xml
@@ -21,6 +25,10 @@ RUN mvn -B -s backend/settings.xml -f backend/ads-service/pom.xml package -Dskip
 # ─────────────────────────────────────────
 FROM eclipse-temurin:21-jre
 ENV JAVA_OPTS ""
+ARG BACKEND_BUILD_COMMIT=unknown
+ARG BACKEND_BUILD_BRANCH=unknown
+ENV BACKEND_BUILD_COMMIT=${BACKEND_BUILD_COMMIT}
+ENV BACKEND_BUILD_BRANCH=${BACKEND_BUILD_BRANCH}
 WORKDIR /app
 
 # Install curl for healthcheck probes and socat to forward 80 -> 8000 inside the container

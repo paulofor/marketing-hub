@@ -92,10 +92,28 @@ const slots = {
   v7: {
     experienceVersion: v7ExperienceVersion,
     layoutKey: 'espelho-antes-de-sair',
+    name: 'Método MUSA - Semana dos 7 Sinais de Presença',
+    promise: 'Descubra o idioma silencioso da sua imagem e organize em 7 dias os sinais que fazem sua presença parecer mais elegante.',
+    diagnostic: {
+      title: 'Mapa Científico de Presença MUSA',
+      intro: 'Entrada científica publicada pelo Marketing Hub.',
+      questions: ['Que mensagem sua imagem comunica sem intenção?'],
+    },
+    missions: [
+      {
+        id: 'dia-1-ruido-visual',
+        day: 1,
+        title: 'O espelho não vê roupa, vê mensagem',
+        principle: 'A vestimenta participa da percepção de pessoa.',
+        action: 'Escreva a mensagem que sua imagem parece transmitir hoje.',
+        evidence: 'Mensagem visual registrada.',
+        visualCue: 'Observe roupa, cabelo, pele e detalhe final como sinais.',
+      },
+    ],
     publicFirstFold: {
-      headline: 'Antes de sair, veja por que seu look ainda parece simples demais.',
-      supportingText: 'Ajuste o sinal que mais derruba sua presença hoje.',
-      videoCtaLabel: 'Revelar meu ajuste antes de sair',
+      headline: 'Sua roupa fala antes de você. Ela está falando com roteiro?',
+      supportingText: 'A nova Semana dos 7 Sinais transforma artigos científicos em microações simples.',
+      videoCtaLabel: 'Ver meu plano científico MUSA de 7 dias',
     },
   },
 };

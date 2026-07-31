@@ -206,6 +206,9 @@ jobs:
           context: .
           file: backend/ads-service/Dockerfile
           tags: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          build-args: |
+            BACKEND_BUILD_COMMIT=${{ github.sha }}
+            BACKEND_BUILD_BRANCH=${{ github.ref_name }}
           load: true
           cache-from: type=gha,scope=backend-image
           cache-to: type=gha,mode=max,scope=backend-image

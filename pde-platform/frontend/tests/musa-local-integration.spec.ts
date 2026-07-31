@@ -50,7 +50,7 @@ test('v5, v6 e v7 usam backend PDE local real sem misturar contratos versionados
   await request.post(`http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/reset-campaign-start`);
 
   await page.goto('http://v7.clubemusa.com.br:57180/?utm_source=local&utm_campaign=v7_local_validation&musa_video_variant=control');
-  await expect(page.getByText('Quando você se olha pronta, o que mais faz o look parecer simples demais?')).toBeVisible();
+  await expect(page.getByText('Se sua imagem falasse antes de você hoje, qual mensagem ela passaria sem intenção?')).toBeVisible();
   await expect(page.getByText('Quando você se olha pronta, o que mais te incomoda?')).toHaveCount(0);
 
   await expect.poll(async () => {

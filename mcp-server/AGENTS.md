@@ -47,4 +47,4 @@ Quando precisar confirmar qual versão/commit de um módulo está rodando em pro
   - `backend`, apontando para `http://191.252.181.168/actuator/info`.
   - `pde-platform-backend`, apontando para `http://163.245.200.7:8096/actuator/info`.
 
-Não inferir commit produtivo apenas por container recente, tag `latest` ou horário de deploy. Se a tool retornar `buildIdentityPublished=false`, o MCP confirmou que o endpoint respondeu, mas o runtime ainda não publicou commit, branch, build time ou version rastreável.
+O backend principal deve manter uma rota compatível em `/actuator/info` para essa consulta, mesmo quando seus demais endpoints do Actuator usarem base path operacional próprio. Não inferir commit produtivo apenas por container recente, tag `latest` ou horário de deploy. Se a tool retornar `buildIdentityPublished=false`, o MCP confirmou que o endpoint respondeu, mas o runtime ainda não publicou commit, branch, build time ou version rastreável. Se a tool retornar HTTP 500, trate como falha do módulo consultado em publicar identidade de build e corrija o Actuator/rota de runtime no próprio módulo antes de usar inferências alternativas.

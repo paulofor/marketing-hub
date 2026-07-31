@@ -1,0 +1,312 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-07-31-musa-v7-scientific-seven-signals.yaml
+  - changeSet:
+      id: 2026-07-31-musa-v7-scientific-seven-signals-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: layout_key
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: draft_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_at
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pde_production_slot (
+                slot_code,
+                product_slug,
+                domain,
+                public_url,
+                backend_url,
+                experience_version,
+                layout_key,
+                target_environment,
+                status,
+                source_experiment_id,
+                notes,
+                draft_experience_json,
+                published_experience_json,
+                published_by,
+                published_at
+              ) VALUES (
+                'v7',
+                'metodo-musa-7-dias',
+                'v7.clubemusa.com.br',
+                'https://v7.clubemusa.com.br',
+                NULL,
+                'musa-pde-entry-v7-espelho-antes-de-sair',
+                'espelho-antes-de-sair',
+                'production-v7',
+                'PLANNED',
+                NULL,
+                'V7 cientifica: Semana dos 7 Sinais de Presenca. Testar contra v6 mantendo metricas separadas por experienceVersion: entrada PDE, video, diagnostico, paywall, checkout e compra.',
+                '{
+                  "slug": "metodo-musa-7-dias",
+                  "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+                  "layoutKey": "espelho-antes-de-sair",
+                  "funnelVersion": "musa-membership-funnel-v1",
+                  "name": "Método MUSA - Semana dos 7 Sinais de Presença",
+                  "promise": "Descubra o idioma silencioso da sua imagem e organize em 7 dias os sinais que fazem sua presença parecer mais elegante, intencional e coerente usando o que você já tem.",
+                  "audience": "Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com ciência traduzida em microações acessíveis.",
+                  "priceLabel": "",
+                  "theme": {
+                    "primary": "#7a2444",
+                    "accent": "#d6a75c",
+                    "background": "#fff8f3",
+                    "imageUrl": "/assets/musa-cover.png"
+                  },
+                  "diagnostic": {
+                    "title": "Mapa Científico de Presença MUSA",
+                    "intro": "Responda 4 escolhas rápidas. O MUSA identifica qual sinal visual pode estar enfraquecendo sua presença e mostra como a semana de 7 dias organiza isso com base nos artigos do produto.",
+                    "questions": [
+                      "Que mensagem sua imagem comunica sem intenção?",
+                      "Em qual cena sua primeira impressão importa mais agora?",
+                      "Qual sinal de presença você quer reforçar nesta semana?"
+                    ]
+                  },
+                  "missions": [
+                    {
+                      "id": "dia-1-ruido-visual",
+                      "day": 1,
+                      "title": "O espelho não vê roupa, vê mensagem",
+                      "principle": "A vestimenta participa da percepção de pessoa: antes de explicar quem você é, sua imagem já envia sinais.",
+                      "action": "Vista uma combinação real e escreva a mensagem que ela parece transmitir hoje. Depois escolha um ajuste pequeno para aproximar essa mensagem da mulher que você quer comunicar.",
+                      "evidence": "Frase preenchida: hoje minha imagem parece dizer...",
+                      "visualCue": "Observe roupa, cabelo, pele e detalhe final como um conjunto de sinais, não como peças soltas."
+                    },
+                    {
+                      "id": "dia-2-assinatura",
+                      "day": 2,
+                      "title": "A peça que muda seu estado interno",
+                      "principle": "A cognição vestida sugere que uma peça ganha força quando carrega significado para a pessoa e para a situação.",
+                      "action": "Escolha uma peça-sinal que represente presença, cuidado ou elegância para você. Use essa peça em uma cena simples do dia e registre como ela muda sua postura diante do espelho.",
+                      "evidence": "Peça-sinal escolhida com o significado que ela carrega.",
+                      "visualCue": "Priorize significado e intenção, não preço ou marca."
+                    },
+                    {
+                      "id": "dia-3-base-acessivel",
+                      "day": 3,
+                      "title": "Formalidade sem rigidez",
+                      "principle": "Sinais de estrutura e formalidade podem alterar a leitura de prontidão, presença e adequação ao contexto.",
+                      "action": "Eleve uma combinação comum com um sinal de estrutura: terceira peça, tecido mais firme, sapato, cabelo alinhado ou acabamento melhor definido.",
+                      "evidence": "Antes/depois registrado com o detalhe que deixou o look mais intencional.",
+                      "visualCue": "Procure o ponto em que o visual fica mais pronto sem parecer duro."
+                    },
+                    {
+                      "id": "dia-4-checklist-12-minutos",
+                      "day": 4,
+                      "title": "Primeiras impressões são leituras rápidas",
+                      "principle": "Roupa e acabamento participam dos primeiros julgamentos sociais e profissionais, especialmente quando a pessoa ainda falou pouco.",
+                      "action": "Escolha uma situação real dos próximos dias e monte o primeiro sinal que você quer transmitir ao entrar: calma, cuidado, presença, feminilidade ou segurança.",
+                      "evidence": "Cena escolhida com o primeiro sinal planejado.",
+                      "visualCue": "Imagine a primeira leitura do ambiente antes de escolher o detalhe final."
+                    },
+                    {
+                      "id": "dia-5-compra-inteligente",
+                      "day": 5,
+                      "title": "Cor como direção, não decoração",
+                      "principle": "Cores carregam significado contextual e podem orientar percepção, sensação e coerência visual.",
+                      "action": "Escolha uma cor-base e uma cor-sinal para comunicar calma, presença, suavidade ou força sem exagerar.",
+                      "evidence": "Paleta de 2 cores registrada para uma ocasião real.",
+                      "visualCue": "Use a cor como guia de intenção, não como enfeite isolado."
+                    },
+                    {
+                      "id": "dia-6-situacao-chave",
+                      "day": 6,
+                      "title": "Assinatura pessoal: ser reconhecida sem esforço",
+                      "principle": "Moda e escolhas repetidas ajudam a organizar autoconceito, autoapresentação e identidade social.",
+                      "action": "Defina 3 sinais repetíveis da sua presença: cabelo, cor, acessório, perfume, textura, maquiagem leve ou acabamento.",
+                      "evidence": "Três sinais de assinatura MUSA definidos.",
+                      "visualCue": "Elegância fica mais fácil quando vira repetição inteligente."
+                    },
+                    {
+                      "id": "dia-7-plano-pessoal",
+                      "day": 7,
+                      "title": "Seu algoritmo de presença elegante",
+                      "principle": "Como escolhas de roupa dependem de pessoa, contexto e preferência, a orientação precisa ser personalizada e aplicável à rotina real.",
+                      "action": "Transforme suas respostas da semana em uma fórmula pessoal: sinais, ocasiões, regra anti-compra impulsiva e checklist antes de sair.",
+                      "evidence": "Fórmula MUSA pessoal preenchida para repetir por 30 dias.",
+                      "visualCue": "Feche a semana com um jeito seu de se arrumar com menos dúvida."
+                    }
+                  ],
+                  "supportMaterials": [
+                    {
+                      "title": "Mapa dos 7 Sinais MUSA",
+                      "type": "HTML",
+                      "description": "Resumo da semana científica com conceito, missão e aplicação prática de cada dia.",
+                      "url": "/materials/experiencia-guiada-musa.html"
+                    },
+                    {
+                      "title": "Checklist Antes de Sair",
+                      "type": "PDF",
+                      "description": "Checklist para revisar mensagem visual, peça-sinal, estrutura, cor, acabamento e assinatura pessoal.",
+                      "url": "/materials/metodo-musa-ebook.pdf"
+                    },
+                    {
+                      "title": "Fórmula MUSA Pessoal",
+                      "type": "CSV",
+                      "description": "Template para registrar sinais repetíveis, ocasiões e regra anti-compra impulsiva.",
+                      "url": "/materials/plano-checklists-e-templates.csv"
+                    },
+                    {
+                      "title": "Mapa Visual MUSA",
+                      "type": "Infográfico",
+                      "description": "Resumo visual do método: coerência, redução de ruído e assinatura pessoal.",
+                      "url": "/materials/mapa-visual-musa.png"
+                    }
+                  ],
+                  "heroVideos": [],
+                  "publicFirstFold": {
+                    "headline": "Sua roupa fala antes de você. Ela está falando com roteiro?",
+                    "supportingText": "A nova Semana dos 7 Sinais transforma artigos científicos sobre roupa, percepção e autopercepção em microações simples para sua presença elegante.",
+                    "videoKicker": "PDE v7 científico",
+                    "videoHeadline": "Veja como cada dia usa uma ideia dos artigos do MUSA para organizar sua imagem sem comprar um guarda-roupa novo.",
+                    "videoSupportingText": "Mensagem visual, peça-sinal, formalidade leve, primeira impressão, cor, assinatura pessoal e fórmula MUSA viram uma jornada prática de 7 dias.",
+                    "videoExtraText": "Depois do vídeo, responda 4 escolhas rápidas para receber o primeiro sinal que pode estar apagando sua presença hoje.",
+                    "videoCtaLabel": "Ver meu plano científico MUSA de 7 dias"
+                  },
+                  "scientificEvidencePack": {
+                    "version": "musa-evidence-pack-v1",
+                    "principles": [
+                      "A roupa pode influenciar a forma como a pessoa se percebe e se comporta em uma situação.",
+                      "Escolhas de vestimenta, formalidade e acabamento participam da percepção social e dos primeiros julgamentos.",
+                      "Coerência visual, intenção e repetição de sinais podem reduzir ruído percebido e facilitar reconhecimento pessoal."
+                    ],
+                    "practicalApplications": [
+                      "Transformar princípios de cognição vestida e percepção social em microdecisões simples de roupa, cor, acabamento, postura e detalhe final.",
+                      "Orientar a cliente a usar o que já possui antes de comprar novas peças.",
+                      "Reforçar presença elegante como percepção e coerência, não como garantia universal de aprovação externa."
+                    ],
+                    "allowedLanguage": [
+                      "isso ajuda você a comunicar mais intenção",
+                      "pode reduzir ruído visual",
+                      "favorece uma presença mais coerente",
+                      "ajuda você a se sentir mais alinhada com a imagem que quer transmitir"
+                    ],
+                    "forbiddenClaims": [
+                      "garante elegância",
+                      "muda como todos vão te ver",
+                      "transforma sua personalidade",
+                      "efeito comprovado em qualquer pessoa",
+                      "substitui autoestima, terapia ou consultoria individual"
+                    ],
+                    "references": [
+                      {
+                        "authors": "Adam e Galinsky",
+                        "year": "2012",
+                        "title": "Enclothed cognition",
+                        "source": "Journal of Experimental Social Psychology",
+                        "doi": "10.1016/j.jesp.2012.02.008"
+                      },
+                      {
+                        "authors": "Slepian, Ferber, Gold e Rutchick",
+                        "year": "2015",
+                        "title": "The Cognitive Consequences of Formal Clothing",
+                        "source": "Social Psychological and Personality Science",
+                        "doi": "10.1177/1948550615579462"
+                      },
+                      {
+                        "authors": "Howlett, Pine, Orakcioglu e Fletcher",
+                        "year": "2013",
+                        "title": "The influence of clothing on first impressions",
+                        "source": "Journal of Fashion Marketing and Management",
+                        "doi": "10.1108/13612021311305128"
+                      },
+                      {
+                        "authors": "Hester e Hehman",
+                        "year": "2023",
+                        "title": "Dress is a Fundamental Component of Person Perception",
+                        "source": "Personality and Social Psychology Review",
+                        "doi": "10.1177/10888683231157961"
+                      }
+                    ]
+                  },
+                  "completionOffer": "Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais de presença, estilo e autocuidado acessível."
+                }',
+                '{
+                  "slug": "metodo-musa-7-dias",
+                  "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+                  "layoutKey": "espelho-antes-de-sair",
+                  "funnelVersion": "musa-membership-funnel-v1",
+                  "name": "Método MUSA - Semana dos 7 Sinais de Presença",
+                  "promise": "Descubra o idioma silencioso da sua imagem e organize em 7 dias os sinais que fazem sua presença parecer mais elegante, intencional e coerente usando o que você já tem.",
+                  "audience": "Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com ciência traduzida em microações acessíveis.",
+                  "priceLabel": "",
+                  "theme": {"primary": "#7a2444", "accent": "#d6a75c", "background": "#fff8f3", "imageUrl": "/assets/musa-cover.png"},
+                  "diagnostic": {
+                    "title": "Mapa Científico de Presença MUSA",
+                    "intro": "Responda 4 escolhas rápidas. O MUSA identifica qual sinal visual pode estar enfraquecendo sua presença e mostra como a semana de 7 dias organiza isso com base nos artigos do produto.",
+                    "questions": ["Que mensagem sua imagem comunica sem intenção?", "Em qual cena sua primeira impressão importa mais agora?", "Qual sinal de presença você quer reforçar nesta semana?"]
+                  },
+                  "missions": [
+                    {"id": "dia-1-ruido-visual", "day": 1, "title": "O espelho não vê roupa, vê mensagem", "principle": "A vestimenta participa da percepção de pessoa: antes de explicar quem você é, sua imagem já envia sinais.", "action": "Vista uma combinação real e escreva a mensagem que ela parece transmitir hoje. Depois escolha um ajuste pequeno para aproximar essa mensagem da mulher que você quer comunicar.", "evidence": "Frase preenchida: hoje minha imagem parece dizer...", "visualCue": "Observe roupa, cabelo, pele e detalhe final como um conjunto de sinais, não como peças soltas."},
+                    {"id": "dia-2-assinatura", "day": 2, "title": "A peça que muda seu estado interno", "principle": "A cognição vestida sugere que uma peça ganha força quando carrega significado para a pessoa e para a situação.", "action": "Escolha uma peça-sinal que represente presença, cuidado ou elegância para você. Use essa peça em uma cena simples do dia e registre como ela muda sua postura diante do espelho.", "evidence": "Peça-sinal escolhida com o significado que ela carrega.", "visualCue": "Priorize significado e intenção, não preço ou marca."},
+                    {"id": "dia-3-base-acessivel", "day": 3, "title": "Formalidade sem rigidez", "principle": "Sinais de estrutura e formalidade podem alterar a leitura de prontidão, presença e adequação ao contexto.", "action": "Eleve uma combinação comum com um sinal de estrutura: terceira peça, tecido mais firme, sapato, cabelo alinhado ou acabamento melhor definido.", "evidence": "Antes/depois registrado com o detalhe que deixou o look mais intencional.", "visualCue": "Procure o ponto em que o visual fica mais pronto sem parecer duro."},
+                    {"id": "dia-4-checklist-12-minutos", "day": 4, "title": "Primeiras impressões são leituras rápidas", "principle": "Roupa e acabamento participam dos primeiros julgamentos sociais e profissionais, especialmente quando a pessoa ainda falou pouco.", "action": "Escolha uma situação real dos próximos dias e monte o primeiro sinal que você quer transmitir ao entrar: calma, cuidado, presença, feminilidade ou segurança.", "evidence": "Cena escolhida com o primeiro sinal planejado.", "visualCue": "Imagine a primeira leitura do ambiente antes de escolher o detalhe final."},
+                    {"id": "dia-5-compra-inteligente", "day": 5, "title": "Cor como direção, não decoração", "principle": "Cores carregam significado contextual e podem orientar percepção, sensação e coerência visual.", "action": "Escolha uma cor-base e uma cor-sinal para comunicar calma, presença, suavidade ou força sem exagerar.", "evidence": "Paleta de 2 cores registrada para uma ocasião real.", "visualCue": "Use a cor como guia de intenção, não como enfeite isolado."},
+                    {"id": "dia-6-situacao-chave", "day": 6, "title": "Assinatura pessoal: ser reconhecida sem esforço", "principle": "Moda e escolhas repetidas ajudam a organizar autoconceito, autoapresentação e identidade social.", "action": "Defina 3 sinais repetíveis da sua presença: cabelo, cor, acessório, perfume, textura, maquiagem leve ou acabamento.", "evidence": "Três sinais de assinatura MUSA definidos.", "visualCue": "Elegância fica mais fácil quando vira repetição inteligente."},
+                    {"id": "dia-7-plano-pessoal", "day": 7, "title": "Seu algoritmo de presença elegante", "principle": "Como escolhas de roupa dependem de pessoa, contexto e preferência, a orientação precisa ser personalizada e aplicável à rotina real.", "action": "Transforme suas respostas da semana em uma fórmula pessoal: sinais, ocasiões, regra anti-compra impulsiva e checklist antes de sair.", "evidence": "Fórmula MUSA pessoal preenchida para repetir por 30 dias.", "visualCue": "Feche a semana com um jeito seu de se arrumar com menos dúvida."}
+                  ],
+                  "supportMaterials": [
+                    {"title": "Mapa dos 7 Sinais MUSA", "type": "HTML", "description": "Resumo da semana científica com conceito, missão e aplicação prática de cada dia.", "url": "/materials/experiencia-guiada-musa.html"},
+                    {"title": "Checklist Antes de Sair", "type": "PDF", "description": "Checklist para revisar mensagem visual, peça-sinal, estrutura, cor, acabamento e assinatura pessoal.", "url": "/materials/metodo-musa-ebook.pdf"},
+                    {"title": "Fórmula MUSA Pessoal", "type": "CSV", "description": "Template para registrar sinais repetíveis, ocasiões e regra anti-compra impulsiva.", "url": "/materials/plano-checklists-e-templates.csv"},
+                    {"title": "Mapa Visual MUSA", "type": "Infográfico", "description": "Resumo visual do método: coerência, redução de ruído e assinatura pessoal.", "url": "/materials/mapa-visual-musa.png"}
+                  ],
+                  "heroVideos": [],
+                  "publicFirstFold": {
+                    "headline": "Sua roupa fala antes de você. Ela está falando com roteiro?",
+                    "supportingText": "A nova Semana dos 7 Sinais transforma artigos científicos sobre roupa, percepção e autopercepção em microações simples para sua presença elegante.",
+                    "videoKicker": "PDE v7 científico",
+                    "videoHeadline": "Veja como cada dia usa uma ideia dos artigos do MUSA para organizar sua imagem sem comprar um guarda-roupa novo.",
+                    "videoSupportingText": "Mensagem visual, peça-sinal, formalidade leve, primeira impressão, cor, assinatura pessoal e fórmula MUSA viram uma jornada prática de 7 dias.",
+                    "videoExtraText": "Depois do vídeo, responda 4 escolhas rápidas para receber o primeiro sinal que pode estar apagando sua presença hoje.",
+                    "videoCtaLabel": "Ver meu plano científico MUSA de 7 dias"
+                  },
+                  "scientificEvidencePack": {
+                    "version": "musa-evidence-pack-v1",
+                    "principles": ["A roupa pode influenciar a forma como a pessoa se percebe e se comporta em uma situação.", "Escolhas de vestimenta, formalidade e acabamento participam da percepção social e dos primeiros julgamentos.", "Coerência visual, intenção e repetição de sinais podem reduzir ruído percebido e facilitar reconhecimento pessoal."],
+                    "practicalApplications": ["Transformar princípios de cognição vestida e percepção social em microdecisões simples de roupa, cor, acabamento, postura e detalhe final.", "Orientar a cliente a usar o que já possui antes de comprar novas peças.", "Reforçar presença elegante como percepção e coerência, não como garantia universal de aprovação externa."],
+                    "allowedLanguage": ["isso ajuda você a comunicar mais intenção", "pode reduzir ruído visual", "favorece uma presença mais coerente", "ajuda você a se sentir mais alinhada com a imagem que quer transmitir"],
+                    "forbiddenClaims": ["garante elegância", "muda como todos vão te ver", "transforma sua personalidade", "efeito comprovado em qualquer pessoa", "substitui autoestima, terapia ou consultoria individual"],
+                    "references": [
+                      {"authors": "Adam e Galinsky", "year": "2012", "title": "Enclothed cognition", "source": "Journal of Experimental Social Psychology", "doi": "10.1016/j.jesp.2012.02.008"},
+                      {"authors": "Slepian, Ferber, Gold e Rutchick", "year": "2015", "title": "The Cognitive Consequences of Formal Clothing", "source": "Social Psychological and Personality Science", "doi": "10.1177/1948550615579462"},
+                      {"authors": "Howlett, Pine, Orakcioglu e Fletcher", "year": "2013", "title": "The influence of clothing on first impressions", "source": "Journal of Fashion Marketing and Management", "doi": "10.1108/13612021311305128"},
+                      {"authors": "Hester e Hehman", "year": "2023", "title": "Dress is a Fundamental Component of Person Perception", "source": "Personality and Social Psychology Review", "doi": "10.1177/10888683231157961"}
+                    ]
+                  },
+                  "completionOffer": "Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais de presença, estilo e autocuidado acessível."
+                }',
+                'codex',
+                CURRENT_TIMESTAMP
+              )
+              ON DUPLICATE KEY UPDATE
+                domain = VALUES(domain),
+                public_url = VALUES(public_url),
+                backend_url = VALUES(backend_url),
+                experience_version = VALUES(experience_version),
+                layout_key = VALUES(layout_key),
+                target_environment = VALUES(target_environment),
+                status = VALUES(status),
+                notes = VALUES(notes),
+                draft_experience_json = VALUES(draft_experience_json),
+                published_experience_json = VALUES(published_experience_json),
+                published_by = VALUES(published_by),
+                published_at = VALUES(published_at),
+                updated_at = CURRENT_TIMESTAMP;

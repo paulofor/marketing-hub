@@ -6,6 +6,7 @@ import {
   fallbackProduct,
   type ProductExperience,
   resolveHeroVideoUrl,
+  resolveMusaFallbackProduct,
   resolveMusaExperienceContract,
   resolveMusaVersionedHostConfig,
   selectApprovedHeroVideo,
@@ -438,6 +439,12 @@ function applyExperienceOverrides(productExperience: ProductExperience, allowHos
   };
 }
 
+function resolveFallbackProductForCurrentContext() {
+  const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
+  const selectedExperienceVersion = resolveHostExperienceVersionOverride() || experienceVersionOverride;
+  return resolveMusaFallbackProduct(selectedExperienceVersion);
+}
+
 const presenceBlockers: DiagnosticOption[] = [
   {
     key: 'descobrir_imagem_comunica_hoje',
@@ -555,7 +562,7 @@ function App() {
     }
     fetch(resolvePublicProductUrl())
       .then(async (response) => ({
-        productExperience: response.ok ? ((await response.json()) as ProductExperience) : fallbackProduct,
+        productExperience: response.ok ? ((await response.json()) as ProductExperience) : resolveFallbackProductForCurrentContext(),
         allowHostOverride: true,
       }))
       .then(({ productExperience, allowHostOverride }) => {
@@ -564,7 +571,7 @@ function App() {
         setActiveMissionId(resolvedProduct.missions[0]?.id ?? '');
       })
       .catch(() => {
-        const resolvedProduct = applyExperienceOverrides(fallbackProduct);
+        const resolvedProduct = applyExperienceOverrides(resolveFallbackProductForCurrentContext());
         setProduct(resolvedProduct);
         setActiveMissionId(resolvedProduct.missions[0]?.id ?? '');
       });

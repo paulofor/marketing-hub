@@ -246,6 +246,29 @@ class ProductCatalogServiceTest {
                 .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
     }
 
+    /** Confirma que a v7 local preserva a proposta científica dos 7 sinais quando o Hub falha. */
+    @Test
+    void appliesScientificSevenSignalsFallbackForV7Host() {
+        ProductCatalogService service = new ProductCatalogService();
+
+        var product = service.getProductForHost("metodo-musa-7-dias", "v7.clubemusa.com.br");
+
+        assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+        assertThat(product.layoutKey()).isEqualTo("espelho-antes-de-sair");
+        assertThat(product.name()).contains("7 Sinais");
+        assertThat(product.publicFirstFold().headline()).contains("Sua roupa fala antes de você");
+        assertThat(product.missions()).hasSize(7);
+        assertThat(product.missions()).extracting(ProductExperienceResponse.MissionDto::id)
+                .containsExactly(
+                        "dia-1-ruido-visual",
+                        "dia-2-assinatura",
+                        "dia-3-base-acessivel",
+                        "dia-4-checklist-12-minutos",
+                        "dia-5-compra-inteligente",
+                        "dia-6-situacao-chave",
+                        "dia-7-plano-pessoal");
+    }
+
     /** Confirma que slots legados continuam funcionais na experiência estável de entrada. */
     @Test
     void appliesStableEntryExperienceForLegacyHosts() {

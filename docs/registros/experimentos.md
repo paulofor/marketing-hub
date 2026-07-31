@@ -1,3 +1,12 @@
+## 2026-07-31 — PDE MUSA v7: jornada científica dos 7 sinais
+
+- decisão comercial: a nova organização dos 7 dias deve entrar como v7 científica, preservando a v6 como controle de leitura no cockpit.
+- foi feito: o slot `v7.clubemusa.com.br` recebeu contrato publicado com a "Semana dos 7 Sinais de Presença", extraindo 7 conceitos práticos dos artigos do produto: mensagem visual, peça-sinal, formalidade leve, primeira impressão, cor, assinatura pessoal e fórmula MUSA.
+- prevenção: fallback local da PDE Platform também passa a entregar a v7 científica quando o Marketing Hub estiver indisponível, evitando que o subdomínio v7 caia em uma jornada antiga.
+- regra comercial: o vídeo inicial da v7 deve explicar os 7 dias e usar os artigos como prova de plausibilidade, mas só pode entrar em produção quando existir asset HLS aprovado pelo fluxo versionado do Marketing Hub.
+- métrica de teste: comparar v7 contra v6 por `experienceVersion`, acompanhando entrada PDE, vídeo inicial quando houver asset aprovado, diagnóstico iniciado/concluído, paywall visto, checkout iniciado e compra.
+- impacto comercial esperado: aumentar desejo e confiança antes do paywall ao transformar ciência em microexperiência simples, sem parecer aula nem prometer resultado universal.
+
 ## 2026-07-31 — Experimento 77: cockpit passa a ler analytics PDE v6 pelo destino do experimento
 
 - causa-raiz confirmada no código do backend principal: o funil de experimentos PDE consultava o analytics MUSA pelo cliente padrão, sem passar o `followUpActionUrl` versionado do experimento; com isso, a leitura podia cair no host padrão e não no slot v6 usado pelo experimento 77.

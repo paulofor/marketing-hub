@@ -166,7 +166,7 @@ public class McpController {
                     ),
                     Map.of(
                             "name", "pde_db_health",
-                            "description", "Valida conectividade com o schema efetivo do PDE em produção.",
+                            "description", "Valida conectividade com o schema efetivo do PDE em produção e retorna o alvo JDBC sanitizado para auditoria de host/schema.",
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(),

@@ -41,6 +41,7 @@ Regra obrigatória:
 - `GET /slot-diagnostics.json` pode existir somente como alias legado temporário, sem ser usado como contrato novo;
 - contratos, painéis e documentação nova devem usar “versão PDE” em vez de “slot PDE”, exceto quando estiverem preservando compatibilidade com campos legados como `slotCode`;
 - métricas comerciais devem ser segmentadas por produto, campanha, experimento, URL pública, versão PDE e `experienceVersion`, não por slot operacional genérico.
+- toda análise operacional de métricas PDE via MCP deve validar primeiro a tool `pde_db_health` e conferir `datasourceTarget.host`, `datasourceTarget.port` e `datasourceTarget.schema` contra o banco usado pelo PDE Platform Backend produtivo da URL analisada. Se o MCP consultar base diferente, réplica defasada ou alvo não comprovado, os dados do MCP não podem ser usados como prova comercial até o deploy do MCP ser realinhado.
 
 Benefício comercial esperado: impedir que campanha com tráfego pago seja julgada por métricas de outra versão, reduzir risco de publicar criativo/oferta em URL errada e preservar aprendizado limpo para decisão de escala.
 

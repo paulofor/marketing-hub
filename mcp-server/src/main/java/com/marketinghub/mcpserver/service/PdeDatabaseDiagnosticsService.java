@@ -1,8 +1,11 @@
 package com.marketinghub.mcpserver.service;
 
+import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -15,13 +18,17 @@ public class PdeDatabaseDiagnosticsService extends DatabaseDiagnosticsService {
     private static final String NOT_CONFIGURED_MESSAGE = "PDE datasource is not configured";
 
     private final boolean configured;
+    private final String datasourceUrl;
 
     /**
      * Inicializa o serviço usando o JdbcTemplate dedicado do PDE quando estiver disponível.
      */
-    public PdeDatabaseDiagnosticsService(@Qualifier("pdeJdbcTemplate") ObjectProvider<JdbcTemplate> pdeJdbcTemplate) {
+    public PdeDatabaseDiagnosticsService(
+            @Qualifier("pdeJdbcTemplate") ObjectProvider<JdbcTemplate> pdeJdbcTemplate,
+            Environment environment) {
         super(resolveJdbcTemplate(pdeJdbcTemplate));
         this.configured = pdeJdbcTemplate.getIfAvailable() != null;
+        this.datasourceUrl = environment.getProperty("mcp.pde.datasource.url", "");
     }
 
     /**
@@ -37,7 +44,9 @@ public class PdeDatabaseDiagnosticsService extends DatabaseDiagnosticsService {
     @Override
     public Map<String, Object> checkConnection() {
         ensureConfigured();
-        return super.checkConnection();
+        Map<String, Object> response = new LinkedHashMap<>(super.checkConnection());
+        response.put("datasourceTarget", describeDatasourceTarget(datasourceUrl));
+        return response;
     }
 
     /**
@@ -90,5 +99,46 @@ public class PdeDatabaseDiagnosticsService extends DatabaseDiagnosticsService {
                 throw new IllegalStateException(NOT_CONFIGURED_MESSAGE);
             }
         };
+    }
+
+    /**
+     * Descreve o alvo JDBC sem expor credenciais, para validar se o MCP consulta o banco produtivo certo.
+     */
+    private Map<String, Object> describeDatasourceTarget(String jdbcUrl) {
+        Map<String, Object> target = new LinkedHashMap<>();
+        String sanitizedUrl = sanitizeJdbcUrl(jdbcUrl);
+        target.put("jdbcUrl", sanitizedUrl);
+        try {
+            URI uri = URI.create(jdbcUrl.replaceFirst("^jdbc:", ""));
+            target.put("host", uri.getHost() == null ? "unknown" : uri.getHost());
+            target.put("port", uri.getPort() == -1 ? 3306 : uri.getPort());
+            target.put("schema", extractSchema(uri));
+        } catch (RuntimeException ex) {
+            target.put("host", "unknown");
+            target.put("port", "unknown");
+            target.put("schema", "unknown");
+        }
+        return target;
+    }
+
+    /**
+     * Remove credenciais embutidas da URL JDBC antes de retornar a resposta MCP.
+     */
+    private String sanitizeJdbcUrl(String jdbcUrl) {
+        if (jdbcUrl == null || jdbcUrl.isBlank()) {
+            return "unknown";
+        }
+        return jdbcUrl.replaceAll("(?i)(jdbc:[^:]+://)([^:@/]+):([^@/]+)@", "$1$2:***@");
+    }
+
+    /**
+     * Extrai o schema informado no path da URL JDBC.
+     */
+    private String extractSchema(URI uri) {
+        String path = uri.getPath();
+        if (path == null || path.isBlank() || "/".equals(path)) {
+            return "unknown";
+        }
+        return path.substring(1);
     }
 }

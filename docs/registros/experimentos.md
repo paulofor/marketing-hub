@@ -6477,3 +6477,10 @@
 - ajuste preparado: criado `docs/canonical/protocolo-publicacao-comercial-pde-canon.v1.md` e o cânone da PDE Platform passou a exigir esse protocolo antes de publicação, tráfego pago, comparação de versões ou decisão de escala.
 - prevenção: o protocolo bloqueia `RUNNING` quando houver vazamento técnico, primeira dobra pública não validada, eventos ausentes ou métricas não segmentadas por produto, campanha, experimento, slot e `experienceVersion`.
 - impacto comercial esperado: reduzir desperdício de mídia/vídeo, evitar conclusões falsas no cockpit e proteger a percepção da cliente antes de escalar PDEs.
+
+## 2026-07-31 — Experimento 77: auditoria do datasource PDE no MCP
+
+- causa-raiz operacional: a tool `pde_db_health` confirmava apenas o schema `aihubdb`, mas não expunha host/porta/URL sanitizada do datasource PDE; isso permitia interpretar métricas do MCP sem provar que a consulta usava a mesma base do summary público da v6.
+- ajuste preparado: `pde_db_health` passa a retornar `datasourceTarget` com JDBC sanitizado, host, porta e schema, e a documentação do MCP/cânone PDE passou a exigir essa validação antes de usar dados MCP como prova comercial.
+- prevenção: quando o summary público de uma versão PDE mostrar eventos recentes e o MCP apontar para alvo diferente, réplica defasada ou alvo não comprovado, a leitura MCP deve ser considerada inválida até realinhar `MCP_PDE_DATASOURCE_URL` no deploy.
+- impacto comercial esperado: evitar decisão de pausa, escala ou julgamento de criativo/oferta do experimento 77 baseada em métricas zeradas por fonte de dados errada.

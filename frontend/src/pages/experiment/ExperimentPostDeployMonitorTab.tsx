@@ -129,6 +129,7 @@ export default function ExperimentPostDeployMonitorTab({
   const trafficSources = monitor?.pde.trafficSources ?? [];
   const trafficQualityBreakdown = monitor?.pde.trafficQualityBreakdown ?? [];
   const recentJourneys = monitor?.pde.recentJourneys ?? [];
+  const pdeBuildIdentity = monitor?.pdeBuildIdentity;
 
   const pdeRows = useMemo(
     () =>
@@ -367,6 +368,68 @@ export default function ExperimentPostDeployMonitorTab({
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+            <div>
+              <h6 className="card-title mb-1">Identidade da build PDE</h6>
+              <p className="text-muted small mb-0">
+                Origem técnica que o cockpit consultou para ler analytics e
+                confirmar a versão implantada.
+              </p>
+            </div>
+            <span
+              className={`badge ${pdeBuildIdentity?.available ? "text-bg-success" : "text-bg-danger"}`}
+            >
+              {pdeBuildIdentity?.available ? "Identificada" : "Sem identidade"}
+            </span>
+          </div>
+          <div className="row g-2">
+            <Metric
+              label="URL consultada"
+              value={pdeBuildIdentity?.requestedBaseUrl ?? "—"}
+            />
+            <Metric
+              label="Backend PDE"
+              value={pdeBuildIdentity?.backendUrl ?? "—"}
+            />
+            <Metric
+              label="Frontend PDE"
+              value={pdeBuildIdentity?.frontendUrl ?? "—"}
+            />
+            <Metric
+              label="Hub admin"
+              value={pdeBuildIdentity?.marketingHubBaseUrl ?? "—"}
+            />
+            <Metric
+              label="Commit"
+              value={pdeBuildIdentity?.commitSha ?? "—"}
+            />
+            <Metric
+              label="Imagem"
+              value={
+                pdeBuildIdentity?.backendImage ||
+                pdeBuildIdentity?.imageTag ||
+                "—"
+              }
+            />
+            <Metric
+              label="Ambiente"
+              value={pdeBuildIdentity?.environment ?? "—"}
+            />
+            <Metric
+              label="Deploy"
+              value={formatDate(pdeBuildIdentity?.deployedAt)}
+            />
+          </div>
+          {pdeBuildIdentity?.errorMessage ? (
+            <div className="alert alert-warning small mt-3 mb-0">
+              {pdeBuildIdentity.errorMessage}
+            </div>
+          ) : null}
         </div>
       </div>
 

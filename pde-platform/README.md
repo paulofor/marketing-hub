@@ -37,11 +37,20 @@ HTTP simples do container. Para validar o que evita tela branca comercial, use
 publicada, exige JavaScript carregado e confere os textos comerciais obrigatorios
 do contrato publico em `GET /pde-health-contract.json`.
 
-Cada slot publico tambem deve expor `GET /slot-diagnostics.json`, com `slot`,
-`publicUrl`, `experienceVersion`, `image`, `imageTag`, `commitSha` e
-`deployedAt`. Esse endpoint e gerado no start do container de frontend e serve
-para confirmar rapidamente se `v5`, `v6` ou `v7` esta rodando a imagem e a
-versao comercial esperadas antes de liberar trafego de campanha.
+Cada versao publica tambem deve expor `GET /version-diagnostics.json`, com
+`version`, `publicUrl`, `experienceVersion`, `image`, `imageVersionId`,
+`imageTag`, `commitSha` e `deployedAt`. Esse endpoint e gerado no start do
+container de frontend e serve para confirmar rapidamente se `v5`, `v6` ou `v7`
+esta rodando a imagem e a versao comercial esperadas antes de liberar trafego de
+campanha. `GET /slot-diagnostics.json` existe apenas como alias legado
+temporario.
+
+O backend PDE tambem deve expor `GET /api/pde/build-identity`, com a identidade
+da build atualmente implantada: aplicacao, artefato, versao, commit, tag/imagem,
+ambiente, URL do backend PDE, URL publica do frontend, backend administrativo do
+Marketing Hub configurado e horario de deploy. O cockpit administrativo usa esse
+endpoint pela mesma URL publica consultada para analytics, evitando que métrica
+zerada seja interpretada sem confirmar qual build/backend esta respondendo.
 
 Todo PDE produzido para campanha deve publicar seu proprio
 `pde-health-contract.json` com:
@@ -81,19 +90,20 @@ O deploy produtivo do Método MUSA também valida os subdomínios versionados. E
 `main`, o workflow publica backend/worker da plataforma e executa smoke tests
 para `v5`, `v6` e futuras versões ativas, incluindo health público,
 renderização, diagnóstico público, `experienceVersion` esperada e stream HLS
-real. O frontend público de cada versão é publicado por slot explícito no
-`workflow_dispatch`, para impedir que uma alteração da v6 atualize/reinicie a v5
-enquanto existir cliente ou campanha usando a versão anterior.
+real. O frontend público de cada versão é publicado por `frontend_version`
+explícita no `workflow_dispatch`, usando imagem e container próprios para cada
+versão, para impedir que uma alteração da v6 atualize/reinicie a v5 enquanto
+existir cliente ou campanha usando a versão anterior.
 
 Deploy de produção:
 
 - Defina `PDE_ACCESS_JDBC_URL`, `PDE_ACCESS_JDBC_USERNAME` e `PDE_ACCESS_JDBC_PASSWORD` apontando para o MySQL do Marketing Hub antes de subir o backend PDE.
-- Para rollback ou novo experimento, publique somente o slot afetado (`v5`, `v6`, `v7` ou futura versão) e mantenha o proxy do domínio apontando para o container/porta daquela versão.
+- Para rollback ou novo experimento, publique somente a versão afetada (`v5`, `v6`, `v7` ou futura versão) e mantenha o proxy do domínio apontando para o container/porta daquela versão.
 - `v5.clubemusa.com.br` deve apontar para o frontend `pde-platform-frontend-v5`, por padrão na porta `5176`.
 - `v6.clubemusa.com.br` deve apontar para o frontend `pde-platform-frontend-v6`, por padrão na porta `5177`.
 - `v7.clubemusa.com.br` deve apontar para o frontend `pde-platform-frontend-v7`, por padrão na porta `5178`.
-- Use `workflow_dispatch` com `frontend_slot=v6` para publicar somente a v6, `frontend_slot=v5` para publicar somente a v5, `frontend_slot=v7` para publicar somente a v7, `frontend_slot=all` apenas quando a mudança for comprovadamente comum e aprovada para todas, e `frontend_slot=none` quando quiser publicar só backend/worker.
-- O container legado `pde-platform-frontend` não deve ser usado como destino público de versão. Ele é removido automaticamente quando o deploy incluir `frontend_slot=v5` ou `frontend_slot=all`, para liberar a porta histórica `5176` para `pde-platform-frontend-v5`.
+- Use `workflow_dispatch` com `frontend_version=v6` para publicar somente a v6, `frontend_version=v5` para publicar somente a v5, `frontend_version=v7` para publicar somente a v7, `frontend_version=all` apenas quando a mudança for comprovadamente comum e aprovada para todas, e `frontend_version=none` quando quiser publicar só backend/worker.
+- O container legado `pde-platform-frontend` não deve ser usado como destino público de versão. Ele é removido automaticamente quando o deploy incluir `frontend_version=v5` ou `frontend_version=all`, para liberar a porta histórica `5176` para `pde-platform-frontend-v5`.
 - Para ambientes de preview ou rollback, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE`, `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE`, `PDE_DEPLOY_FRONTEND_URL` e `PDE_APP_BASE_URL` apenas fora dos subdomínios versionados produtivos.
 - Defina `PDE_PEPPER_API_TOKEN` em produção para reconciliar compras pagas quando o postback da Pepper não for entregue.
 - Mantenha `PDE_PEPPER_OFFER_HASHES=owm6x,c8mnn` durante a transição: `owm6x` é a oferta atual e `c8mnn` cobre compras reais antigas.
@@ -128,13 +138,13 @@ coerente com o histórico da jornada.
 
 - A versao 5 do Clube MUSA deve responder em `https://v5.clubemusa.com.br`.
 - O dominio raiz `https://clubemusa.com.br` nao deve ser usado como URL primaria de campanha quando existir subdominio versionado para a experiencia medida.
-- Cada nova versao de PDE deve publicar e validar seu proprio subdominio, mantendo metricas, UTMs e criativos separados por `experienceVersion`.
+- Cada nova versao de PDE deve publicar e validar seu proprio subdominio, imagem Docker, container, porta e `experienceVersion`, mantendo metricas, UTMs e criativos separados por versão.
 - Duas versoes comerciais diferentes de PDE nunca podem compartilhar a mesma URL publica primaria. Se a URL for a mesma, a experiencia deve ser tratada como a mesma versao para campanha, analytics e decisao de escala.
 - A v5 usa `musa-pde-entry-v5-video-explicativo`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
 - A v6 usa `musa-pde-entry-v6-video-motivacional`, mas nao pode usar video gerado a partir de slides do diagnostico como asset comercial.
 - A v7 usa `musa-pde-entry-v7-espelho-antes-de-sair` e deve nascer com contrato proprio de perguntas, copy da microexperiencia e videos funcionais, sem editar diretamente o contrato da v6.
 - Em subdominio versionado conhecido, o hostname tem prioridade sobre overrides globais de runtime. Assim, o mesmo deploy pode servir `v5.clubemusa.com.br` e `v6.clubemusa.com.br` simultaneamente sem misturar experiencia, video ou analytics por `experienceVersion`.
-- O deploy produtivo não deve recriar todos os frontends públicos por padrão. Versões com cliente, campanha ou aprendizado ativo devem ficar em containers separados por slot, permitindo publicar v6 sem trocar a imagem em execução da v5.
+- O deploy produtivo não deve recriar todos os frontends públicos por padrão. Versões com cliente, campanha ou aprendizado ativo devem ficar em imagens e containers próprios, permitindo publicar v6 sem trocar a imagem em execução da v5.
 - O frontend do MUSA concentra a resolucao comercial de versoes em `src/musaExperiences.ts`. Mudancas de copy, perguntas publicas, videos e comportamento de primeira dobra devem entrar no contrato da versao alvo, nao em condicionais soltas no `App.tsx`.
 - Versao ativa em campanha nao deve receber mudanca funcional junto com versao nova. Se a mudanca for necessaria para a v7, crie ou altere o contrato da v7 e mantenha teste provando que a v6 continua com o mesmo texto, pergunta, video e `experienceVersion`.
 - Videos comerciais do MUSA devem nascer da estrutura versionada de producao de videos do Marketing Hub, com roteiro, job, asset e URL de reproducao auditaveis. O build bloqueia MP4/HLS antigos derivados de `musa-diagnostic-slide-*`.

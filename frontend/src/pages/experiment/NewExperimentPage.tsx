@@ -145,9 +145,11 @@ export default function NewExperimentPage() {
   const isLowTicketProduct = form.experimentType === "LOW_TICKET_PRODUCT";
   const isPdeMembershipSubscriptionFunnel =
     form.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const isFakeExperiment = form.experimentType === "FAKE_EXPERIMENT";
   const isSalesObjectiveExperiment =
     isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
-  const isProductAiExperiment = isLowTicketProduct && Boolean(form.productAiSubtype);
+  const isProductAiExperiment =
+    isLowTicketProduct && Boolean(form.productAiSubtype);
   const selectedProductAiSubtype =
     form.productAiSubtype || "AI_PERSONALIZED_SAMPLE";
   const productAiPreparation = useProductAiExperimentPreparation(
@@ -158,13 +160,15 @@ export default function NewExperimentPage() {
     !isProductAiExperiment ||
     Boolean(
       productAiPreparationData?.ready &&
-        productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
+      productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
     );
   const experimentTypeLabel = isPdeMembershipSubscriptionFunnel
     ? "PDE / assinatura MUSA"
-    : isLowTicketProduct
-      ? "Produto low-ticket"
-      : "Teste de nicho";
+    : isFakeExperiment
+      ? "Experimento fake"
+      : isLowTicketProduct
+        ? "Produto low-ticket"
+        : "Teste de nicho";
   const freeRewardLabel = isSalesObjectiveExperiment
     ? "Prova/preview da oferta"
     : "Isca digital única";
@@ -173,7 +177,11 @@ export default function NewExperimentPage() {
     : isLowTicketProduct
       ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
       : "Ex.: 3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão";
-  const campaignObjective = isSalesObjectiveExperiment ? "SALES" : "LEADS";
+  const campaignObjective = isFakeExperiment
+    ? "TRAFFIC"
+    : isSalesObjectiveExperiment
+      ? "SALES"
+      : "LEADS";
 
   useEffect(() => {
     const draft = latestPromiseOptionsDraft.data;
@@ -337,13 +345,13 @@ export default function NewExperimentPage() {
 
   const submit = async () => {
     try {
-      if (noInstagramAccounts) {
+      if (!isFakeExperiment && noInstagramAccounts) {
         alert(
           "Cadastre uma conta do Instagram em Contas do Instagram antes de criar o experimento.",
         );
         return;
       }
-      if (!form.instagramAccountId) {
+      if (!isFakeExperiment && !form.instagramAccountId) {
         alert("Selecione uma conta do Instagram");
         return;
       }
@@ -356,7 +364,9 @@ export default function NewExperimentPage() {
       if (isProductAiExperiment && !productAiReady) {
         const prepared = await prepareSelectedProductAiSubtype();
         if (!prepared?.experimentPreparation.ready) {
-          alert("Complete o preparo do Produto IA antes de criar o experimento.");
+          alert(
+            "Complete o preparo do Produto IA antes de criar o experimento.",
+          );
           return;
         }
         hypothesisIdForSubmit = prepared.hypothesisId;
@@ -442,7 +452,9 @@ export default function NewExperimentPage() {
         facebookPageId: form.facebookPageId
           ? Number(form.facebookPageId)
           : undefined,
-        instagramAccountId: Number(form.instagramAccountId),
+        instagramAccountId: form.instagramAccountId
+          ? Number(form.instagramAccountId)
+          : undefined,
         imageModelId: form.imageModelId ? Number(form.imageModelId) : undefined,
         imageModelQualityId: undefined,
         promiseGenerationRequestIds: promiseRequestIds,
@@ -523,7 +535,17 @@ export default function NewExperimentPage() {
             primaryCta:
               e.target.value === "LOW_TICKET_PRODUCT"
                 ? "Comprar agora"
-                : prev.primaryCta,
+                : e.target.value === "FAKE_EXPERIMENT"
+                  ? "Testar experiência fake"
+                  : prev.primaryCta,
+            primaryVariable:
+              e.target.value === "FAKE_EXPERIMENT"
+                ? "Acesso PDE, vídeo e métricas"
+                : prev.primaryVariable,
+            primaryMetric:
+              e.target.value === "FAKE_EXPERIMENT"
+                ? "Consistência dos eventos simulados"
+                : prev.primaryMetric,
           }))
         }
       >
@@ -531,14 +553,17 @@ export default function NewExperimentPage() {
         <option value="PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL">
           PDE / assinatura MUSA
         </option>
+        <option value="FAKE_EXPERIMENT">Experimento fake</option>
         <option value="NICHE_TEST">Teste de nicho / lead</option>
       </select>
       <div className="form-text mb-3">
-        {form.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
-          ? "Fluxo principal: anúncio, tela inicial do PED, login, assinatura, acesso liberado e ativação pós-compra."
-          : isLowTicketProduct
-          ? "Fluxo principal: anúncio, página curta, checkout e entrega. Métrica central: compra ou clique no checkout."
-          : "Fluxo principal: anúncio, captura de lead e entrega de isca/amostra."}
+        {isFakeExperiment
+          ? "Fluxo simulado: testa acesso ao PDE, execução de vídeo e métricas nas telas sem campanha real."
+          : form.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
+            ? "Fluxo principal: anúncio, tela inicial do PED, login, assinatura, acesso liberado e ativação pós-compra."
+            : isLowTicketProduct
+              ? "Fluxo principal: anúncio, página curta, checkout e entrega. Métrica central: compra ou clique no checkout."
+              : "Fluxo principal: anúncio, captura de lead e entrega de isca/amostra."}
       </div>
       {isLowTicketProduct && (
         <>
@@ -820,8 +845,8 @@ export default function NewExperimentPage() {
               {isPdeMembershipSubscriptionFunnel
                 ? "Solicite as opções por IA e escolha uma delas para fixar a dor, a assinatura PDE, a promessa, a prova de valor e o CTA do experimento."
                 : isLowTicketProduct
-                ? "Solicite as opções por IA e escolha uma delas para fixar a dor, o produto low-ticket, a promessa e o CTA de checkout do experimento."
-                : "Solicite as opções por IA e escolha uma delas para fixar a dor, a isca digital, o produto de entrada, a promessa e o CTA do experimento."}
+                  ? "Solicite as opções por IA e escolha uma delas para fixar a dor, o produto low-ticket, a promessa e o CTA de checkout do experimento."
+                  : "Solicite as opções por IA e escolha uma delas para fixar a dor, a isca digital, o produto de entrada, a promessa e o CTA do experimento."}
             </div>
           )}
           <div className="alert alert-info py-2 mb-0">
@@ -831,7 +856,7 @@ export default function NewExperimentPage() {
               ? "Otimize para assinatura e acompanhe ativação dentro do PED/MUSA."
               : isLowTicketProduct
                 ? "Não coloque formulário antes do checkout neste fluxo."
-              : "Não use Tráfego nem otimização para cliques neste fluxo."}
+                : "Não use Tráfego nem otimização para cliques neste fluxo."}
           </div>
         </div>
       </div>
@@ -893,7 +918,7 @@ export default function NewExperimentPage() {
           ? "Use o preço do plano que será anunciado para medir assinatura aprovada e ativação."
           : isLowTicketProduct
             ? "Use a faixa recomendada nos planos: R$ 19 a R$ 47 para a primeira venda."
-          : "Usado para gerar o link de pagamento no Mercado Pago."}
+            : "Usado para gerar o link de pagamento no Mercado Pago."}
       </div>
       <label className="form-label" htmlFor="imageModel">
         Modelo de geração de imagem

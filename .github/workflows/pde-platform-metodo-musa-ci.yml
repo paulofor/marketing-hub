@@ -19,8 +19,8 @@ on:
         type: choice
         options:
           - production
-      frontend_slot:
-        description: "Slot frontend PDE MUSA a publicar"
+      frontend_version:
+        description: "Versao frontend PDE MUSA a publicar"
         required: true
         default: "none"
         type: choice
@@ -35,7 +35,9 @@ env:
   IMAGE_REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
   BACKEND_IMAGE_NAME: pde-platform-backend
-  FRONTEND_IMAGE_NAME: pde-platform-frontend
+  FRONTEND_V5_IMAGE_NAME: pde-platform-frontend-v5
+  FRONTEND_V6_IMAGE_NAME: pde-platform-frontend-v6
+  FRONTEND_V7_IMAGE_NAME: pde-platform-frontend-v7
   AI_WORKER_IMAGE_NAME: pde-ai-worker
 
 jobs:
@@ -109,9 +111,17 @@ jobs:
             echo "${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:latest"
             echo "${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:${GITHUB_SHA}"
             echo "EOF"
-            echo "frontend_tags<<EOF"
-            echo "${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:latest"
-            echo "${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "frontend_v5_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V5_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V5_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "EOF"
+            echo "frontend_v6_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V6_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V6_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "EOF"
+            echo "frontend_v7_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${GITHUB_SHA}"
             echo "EOF"
             echo "ai_worker_tags<<EOF"
             echo "${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:latest"
@@ -132,16 +142,42 @@ jobs:
           labels: ${{ steps.image_metadata.outputs.labels }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache,mode=max
-      - name: Build and push frontend image
+      - name: Build and push frontend v5 image
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/frontend
           file: pde-platform/frontend/Dockerfile
           push: true
-          tags: ${{ steps.image_metadata.outputs.frontend_tags }}
+          tags: ${{ steps.image_metadata.outputs.frontend_v5_tags }}
           labels: ${{ steps.image_metadata.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            PDE_FRONTEND_VERSION_ID=v5
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V5_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V5_IMAGE_NAME }}:buildcache,mode=max
+      - name: Build and push frontend v6 image
+        uses: docker/build-push-action@v6
+        with:
+          context: pde-platform/frontend
+          file: pde-platform/frontend/Dockerfile
+          push: true
+          tags: ${{ steps.image_metadata.outputs.frontend_v6_tags }}
+          labels: ${{ steps.image_metadata.outputs.labels }}
+          build-args: |
+            PDE_FRONTEND_VERSION_ID=v6
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V6_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V6_IMAGE_NAME }}:buildcache,mode=max
+      - name: Build and push frontend v7 image
+        uses: docker/build-push-action@v6
+        with:
+          context: pde-platform/frontend
+          file: pde-platform/frontend/Dockerfile
+          push: true
+          tags: ${{ steps.image_metadata.outputs.frontend_v7_tags }}
+          labels: ${{ steps.image_metadata.outputs.labels }}
+          build-args: |
+            PDE_FRONTEND_VERSION_ID=v7
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V7_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V7_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push PDE AI worker image
         uses: docker/build-push-action@v6
         with:
@@ -175,7 +211,7 @@ jobs:
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
       PDE_PLATFORM_NETWORK: ${{ secrets.PDE_PLATFORM_NETWORK != '' && secrets.PDE_PLATFORM_NETWORK || 'public-net' }}
-      PDE_DEPLOY_FRONTEND_SLOT: ${{ github.event_name == 'workflow_dispatch' && inputs.frontend_slot || 'none' }}
+      PDE_DEPLOY_FRONTEND_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.frontend_version || 'none' }}
       PDE_PLATFORM_FRONTEND_V5_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V5_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V5_PORT || secrets.PDE_PLATFORM_FRONTEND_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_PORT || '5176' }}
       PDE_PLATFORM_FRONTEND_V6_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V6_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V6_PORT || '5177' }}
       PDE_PLATFORM_FRONTEND_V7_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V7_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V7_PORT || '5178' }}
@@ -247,10 +283,9 @@ jobs:
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
             && (docker network inspect ${PDE_PLATFORM_NETWORK} >/dev/null 2>&1 || docker network create ${PDE_PLATFORM_NETWORK}) \
             && export PDE_PLATFORM_BACKEND_IMAGE='${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:${IMAGE_TAG}' \
-            && export PDE_PLATFORM_FRONTEND_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}' \
-            && export PDE_PLATFORM_FRONTEND_V5_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}' \
-            && export PDE_PLATFORM_FRONTEND_V6_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}' \
-            && export PDE_PLATFORM_FRONTEND_V7_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_FRONTEND_V5_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V5_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_FRONTEND_V6_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V6_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_FRONTEND_V7_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_AI_WORKER_IMAGE='${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_NETWORK='${PDE_PLATFORM_NETWORK}' \
             && export PDE_PLATFORM_FRONTEND_V5_PORT='${PDE_PLATFORM_FRONTEND_V5_PORT}' \
@@ -279,22 +314,22 @@ jobs:
             && test -s \"${OPENAI_API_KEY_HOST_FILE}\" \
             && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
             && FRONTEND_SERVICES='' \
-            && case '${PDE_DEPLOY_FRONTEND_SLOT}' in \
+            && case '${PDE_DEPLOY_FRONTEND_VERSION}' in \
               v5) FRONTEND_SERVICES='pde-platform-frontend-v5' ;; \
               v6) FRONTEND_SERVICES='pde-platform-frontend-v6' ;; \
               v7) FRONTEND_SERVICES='pde-platform-frontend-v7' ;; \
               all) FRONTEND_SERVICES='pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-frontend-v7' ;; \
               none) FRONTEND_SERVICES='' ;; \
-              *) echo 'Slot frontend PDE invalido: ${PDE_DEPLOY_FRONTEND_SLOT}' >&2; exit 1 ;; \
+              *) echo 'Versao frontend PDE invalida: ${PDE_DEPLOY_FRONTEND_VERSION}' >&2; exit 1 ;; \
             esac \
             && docker compose -f docker-compose.deploy.yml pull pde-platform-backend pde-ai-worker \${FRONTEND_SERVICES} \
             && cleanup_published_port() { port=\"\$1\"; containers=\"\$(docker ps --filter \"publish=\${port}\" --format '{{.Names}}' || true)\"; if [ -n \"\${containers}\" ]; then echo \"Removendo containers que publicam porta \${port}: \${containers}\"; docker rm -f \${containers} >/dev/null 2>&1 || true; fi; } \
-            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V5_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V6_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V7_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend pde-platform-frontend-v5 >/dev/null 2>&1 || true; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend-v6 >/dev/null 2>&1 || true; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_SLOT}' = 'all' ]; then docker rm -f pde-platform-frontend-v7 >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V5_PORT}'; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V6_PORT}'; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V7_PORT}'; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend pde-platform-frontend-v5 >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-v6 >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-v7 >/dev/null 2>&1 || true; fi \
             && (docker rm -f pde-platform-backend pde-ai-worker >/dev/null 2>&1 || true) \
             && (docker compose -f docker-compose.deploy.yml up -d pde-platform-backend pde-ai-worker \${FRONTEND_SERVICES} || ( \
               echo 'Falha ao publicar PDE Platform. Coletando diagnostico dos containers.' >&2; \
@@ -342,20 +377,23 @@ jobs:
             fi"
       - name: Validate production public container ports
         run: |
-          if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v5" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v5" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/healthz"
-            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/slot-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v5-video-explicativo"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v5"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v5-video-explicativo"'
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v6" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v6" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/healthz"
-            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/slot-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v6-video-motivacional"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v6"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v6-video-motivacional"'
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/healthz"
-            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/slot-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v7"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"'
           fi
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
@@ -380,22 +418,24 @@ jobs:
             fi
           }
 
-          validate_public_slot() {
-            local slot="$1"
-            local url="https://${slot}.clubemusa.com.br"
-            validate_dns_points_to_deploy_host "${slot}.clubemusa.com.br"
-            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "${url}/healthz" | tee "/tmp/pde-${slot}-healthz.json"
-            grep -q '"status":"UP"' "/tmp/pde-${slot}-healthz.json"
-            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "${url}/slot-diagnostics.json" | tee "/tmp/pde-${slot}-slot-diagnostics.json"
-            grep -q '"experienceVersion"' "/tmp/pde-${slot}-slot-diagnostics.json"
-            grep -q '"commitSha"' "/tmp/pde-${slot}-slot-diagnostics.json"
-            grep -q '"image"' "/tmp/pde-${slot}-slot-diagnostics.json"
+          validate_public_version() {
+            local version="$1"
+            local url="https://${version}.clubemusa.com.br"
+            validate_dns_points_to_deploy_host "${version}.clubemusa.com.br"
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "${url}/healthz" | tee "/tmp/pde-${version}-healthz.json"
+            grep -q '"status":"UP"' "/tmp/pde-${version}-healthz.json"
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "${url}/version-diagnostics.json" | tee "/tmp/pde-${version}-version-diagnostics.json"
+            grep -q "\"version\": \"${version}\"" "/tmp/pde-${version}-version-diagnostics.json"
+            grep -q "\"imageVersionId\": \"${version}\"" "/tmp/pde-${version}-version-diagnostics.json"
+            grep -q '"experienceVersion"' "/tmp/pde-${version}-version-diagnostics.json"
+            grep -q '"commitSha"' "/tmp/pde-${version}-version-diagnostics.json"
+            grep -q '"image"' "/tmp/pde-${version}-version-diagnostics.json"
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null "${url}/"
           }
-          validate_public_slot v5
-          validate_public_slot v6
-          if [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_SLOT}" = "all" ]; then
-            validate_public_slot v7
+          validate_public_version v5
+          validate_public_version v6
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+            validate_public_version v7
           fi
       - name: Set up Node for production rendering smoke
         uses: actions/setup-node@v4

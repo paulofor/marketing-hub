@@ -130,10 +130,68 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PostDeployPdeProductionSlot"
+        pdeBuildIdentity:
+          $ref: "#/components/schemas/PostDeployPdeBuildIdentity"
         alerts:
           type: array
           items:
             type: string
+    PostDeployPdeBuildIdentity:
+      type: object
+      required:
+        - available
+        - status
+      properties:
+        available:
+          type: boolean
+        status:
+          type: string
+          example: AVAILABLE
+        errorMessage:
+          type: string
+          nullable: true
+        requestedBaseUrl:
+          type: string
+          nullable: true
+          example: https://v6.clubemusa.com.br
+        applicationName:
+          type: string
+          nullable: true
+          example: pde-platform-backend
+        artifact:
+          type: string
+          nullable: true
+          example: pde-platform-backend
+        buildVersion:
+          type: string
+          nullable: true
+          example: 0.0.1-SNAPSHOT
+        commitSha:
+          type: string
+          nullable: true
+        imageTag:
+          type: string
+          nullable: true
+        backendImage:
+          type: string
+          nullable: true
+        environment:
+          type: string
+          nullable: true
+          example: production
+        backendUrl:
+          type: string
+          nullable: true
+        frontendUrl:
+          type: string
+          nullable: true
+        marketingHubBaseUrl:
+          type: string
+          nullable: true
+        deployedAt:
+          type: string
+          format: date-time
+          nullable: true
     PostDeployPdeProductionSlot:
       type: object
       required:

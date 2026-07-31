@@ -8,6 +8,7 @@ import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
+import com.marketinghub.worker.salesvideo.dto.SalesVideoCommercialPlaybookResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,7 @@ public class SalesVideoScriptJobService {
         this.workerId = workerId;
     }
 
+    /** Processa os jobs pendentes de script quando a integração OpenAI está habilitada. */
     public void processPendingScriptJobs() {
         if (!openAiClient.isEnabled()) {
             if (!warnedMissingKey.getAndSet(true)) {
@@ -64,6 +66,7 @@ public class SalesVideoScriptJobService {
         }
     }
 
+    /** Executa um job de script, incluindo contexto comercial e brief cinematográfico ativo. */
     private void handleJob(SalesVideoJobDto job) {
         Long jobId = job.getId();
         try {
@@ -76,9 +79,10 @@ public class SalesVideoScriptJobService {
             ProductDto product = profile.getProductId() != null
                     ? backendClient.getProduct(profile.getProductId())
                     : null;
+            List<SalesVideoCommercialPlaybookResponse> playbooks = backendClient.listCommercialPlaybooks(profile.getId());
             backendClient.reportProgress(jobId, 10, SalesVideoStatus.SCRIPT_PENDING,
                     "Contexto carregado", null);
-            String prompt = promptBuilder.buildPrompt(profile, product);
+            String prompt = promptBuilder.buildPrompt(profile, product, playbooks);
             backendClient.reportProgress(jobId, 45, SalesVideoStatus.SCRIPT_PENDING,
                     "Prompt enviado à OpenAI", null);
             SalesVideoOpenAiClient.GeneratedScriptResult result = openAiClient.generateScript(jobId, prompt);

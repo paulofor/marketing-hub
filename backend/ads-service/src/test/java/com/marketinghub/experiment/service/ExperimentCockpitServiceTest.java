@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
@@ -37,6 +38,28 @@ class ExperimentCockpitServiceTest {
 
   @InjectMocks private ExperimentCockpitService service;
 
+  /** Garante que experimento fake retorna massa simulada sem consultar métricas reais. */
+  @Test
+  void getCockpitReturnsSimulatedDataForFakeExperiment() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(88L)
+            .name("Simulação PDE")
+            .experimentType(ExperimentType.FAKE_EXPERIMENT)
+            .build();
+    when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+
+    var cockpit = service.getCockpit(88L);
+
+    assertEquals("FAKE_EXPERIMENT", cockpit.experimentType());
+    assertEquals("SIMULATED", cockpit.health().status());
+    assertEquals("SIMULACAO_PDE_VIDEO_METRICAS", cockpit.bottleneck().code());
+    assertEquals(118L, cockpit.scoreboard().pageViews());
+    assertEquals(8, cockpit.funnel().size());
+    verifyNoInteractions(
+        readinessService, diagnosticsService, funnelService, funnelDiagnosticService);
+  }
+
   /**
    * Garante que entradas medidas no PDE contam como página carregada antes do diagnóstico de
    * conversão.
@@ -54,7 +77,9 @@ class ExperimentCockpitServiceTest {
             .build();
     when(experimentRepository.findById(77L)).thenReturn(Optional.of(experiment));
     when(readinessService.summarize(77L))
-        .thenReturn(new ExperimentReadinessSummaryDto(false, 0, false, 0, false, false, 0, 0, List.of(), List.of()));
+        .thenReturn(
+            new ExperimentReadinessSummaryDto(
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of()));
     when(diagnosticsService.diagnose(77L))
         .thenReturn(
             new ExperimentDiagnosticsDto(
@@ -65,7 +90,9 @@ class ExperimentCockpitServiceTest {
                 List.of(),
                 null));
     when(funnelService.summarizeLandingAnalytics(77L))
-        .thenReturn(new ExperimentLandingAnalyticsDto(0, 0, 0, 0, 0, 0, null, List.of(), List.of(), List.of(), null, null, List.of()));
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                0, 0, 0, 0, 0, 0, null, List.of(), List.of(), List.of(), null, null, List.of()));
     when(funnelService.summarize(77L))
         .thenReturn(
             List.of(

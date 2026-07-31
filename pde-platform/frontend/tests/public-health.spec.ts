@@ -7,12 +7,14 @@ type PublicHealthContract = {
   forbiddenTexts?: string[];
 };
 
-type SlotDiagnostics = {
+type VersionDiagnostics = {
   status?: string;
-  slot?: string;
+  version?: string;
+  legacySlot?: string;
   publicUrl?: string;
   experienceVersion?: string;
   image?: string;
+  imageVersionId?: string;
   imageTag?: string;
   commitSha?: string;
   knownPointedDomains?: { host?: string; observedAddress?: string; role?: string; experienceVersion?: string }[];
@@ -64,10 +66,10 @@ async function loadContract(request: APIRequestContext) {
   };
 }
 
-async function loadPublishedFirstFoldTexts(request: APIRequestContext, slug: string, diagnostics: SlotDiagnostics) {
+async function loadPublishedFirstFoldTexts(request: APIRequestContext, slug: string, diagnostics: VersionDiagnostics) {
   const searchParams = new URLSearchParams();
-  if (diagnostics.slot) {
-    searchParams.set('slotCode', diagnostics.slot);
+  if (diagnostics.version || diagnostics.legacySlot) {
+    searchParams.set('slotCode', diagnostics.version || diagnostics.legacySlot || '');
   }
   if (diagnostics.experienceVersion) {
     searchParams.set('experienceVersion', diagnostics.experienceVersion);
@@ -108,13 +110,14 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
   expect(staticHealth.ok()).toBeTruthy();
   expect(await staticHealth.text()).toContain('"status":"UP"');
 
-  const slotDiagnostics = await request.get('/slot-diagnostics.json');
-  expect(slotDiagnostics.ok()).toBeTruthy();
-  const diagnostics = (await slotDiagnostics.json()) as SlotDiagnostics;
+  const versionDiagnostics = await request.get('/version-diagnostics.json');
+  expect(versionDiagnostics.ok()).toBeTruthy();
+  const diagnostics = (await versionDiagnostics.json()) as VersionDiagnostics;
   expect(diagnostics.status).toBe('UP');
   expect(diagnostics.experienceVersion).toBeTruthy();
-  expect(diagnostics.slot).toBeTruthy();
+  expect(diagnostics.version).toBeTruthy();
   expect(diagnostics.image).toBeTruthy();
+  expect(diagnostics.imageVersionId).toBeTruthy();
   expect(diagnostics.commitSha).toBeTruthy();
   expect(diagnostics.knownPointedDomains?.map((domain) => domain.host)).toEqual(
     expect.arrayContaining(['v5.clubemusa.com.br', 'v6.clubemusa.com.br', 'v7.clubemusa.com.br']),

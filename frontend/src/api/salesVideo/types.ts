@@ -258,6 +258,18 @@ export interface SalesVideoCommercialPlaybook {
   variantKey: string;
   objectionText: string;
   ctaText: string;
+  funnelRole?: string | null;
+  promiseToVisualize?: string | null;
+  visualPain?: string | null;
+  mainScene?: string | null;
+  subjectDescription?: string | null;
+  motionDescription?: string | null;
+  cameraFraming?: string | null;
+  lightingStyle?: string | null;
+  expectedEmotion?: string | null;
+  transitionOrCta?: string | null;
+  qualityConstraints?: string | null;
+  cinematicPrompt?: string | null;
   active: boolean;
   createdBy?: string | null;
   createdAt?: string | null;
@@ -269,6 +281,18 @@ export interface CreateSalesVideoCommercialPlaybookPayload {
   variantKey: string;
   objectionText: string;
   ctaText: string;
+  funnelRole?: string;
+  promiseToVisualize?: string;
+  visualPain?: string;
+  mainScene?: string;
+  subjectDescription?: string;
+  motionDescription?: string;
+  cameraFraming?: string;
+  lightingStyle?: string;
+  expectedEmotion?: string;
+  transitionOrCta?: string;
+  qualityConstraints?: string;
+  cinematicPrompt?: string;
   active?: boolean;
   createdBy: string;
 }

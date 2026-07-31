@@ -287,7 +287,9 @@ class McpControllerTest {
                                 {"jsonrpc":"2.0","id":51,"method":"tools/call","params":{"name":"pde_db_health","arguments":{}}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.structuredContent.status").value("ok"));
+                .andExpect(jsonPath("$.result.structuredContent.status").value("ok"))
+                .andExpect(jsonPath("$.result.structuredContent.datasourceTarget.jdbcUrl")
+                        .value("jdbc:h2:mem:pde_mcpdb;MODE=MySQL;DB_CLOSE_DELAY=-1"));
 
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)

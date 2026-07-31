@@ -2,15 +2,17 @@
 set -eu
 
 CONFIG_FILE="${MUSA_RUNTIME_CONFIG_FILE:-/usr/share/nginx/html/runtime-config.js}"
-DIAGNOSTICS_FILE="${MUSA_SLOT_DIAGNOSTICS_FILE:-/usr/share/nginx/html/slot-diagnostics.json}"
+DIAGNOSTICS_FILE="${MUSA_VERSION_DIAGNOSTICS_FILE:-/usr/share/nginx/html/version-diagnostics.json}"
+LEGACY_DIAGNOSTICS_FILE="${MUSA_SLOT_DIAGNOSTICS_FILE:-/usr/share/nginx/html/slot-diagnostics.json}"
 CHECKOUT_URL="${VITE_MUSA_CHECKOUT_URL:-}"
 GOOGLE_CLIENT_ID="${VITE_GOOGLE_CLIENT_ID:-}"
 EXPERIENCE_VERSION_OVERRIDE="${VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE:-}"
 HERO_VIDEO_URL="${VITE_MUSA_HERO_VIDEO_URL:-}"
 HERO_STREAM_URL="${VITE_MUSA_HERO_STREAM_URL:-}"
-FRONTEND_SLOT="${PDE_FRONTEND_SLOT:-unknown}"
+FRONTEND_VERSION="${PDE_FRONTEND_VERSION:-unknown}"
 FRONTEND_PUBLIC_URL="${PDE_FRONTEND_PUBLIC_URL:-}"
-FRONTEND_IMAGE="${PDE_FRONTEND_IMAGE:-${PDE_PLATFORM_FRONTEND_IMAGE:-unknown}}"
+FRONTEND_IMAGE="${PDE_FRONTEND_IMAGE:-unknown}"
+FRONTEND_IMAGE_VERSION_ID="${PDE_FRONTEND_VERSION_ID:-unknown}"
 DEPLOY_COMMIT_SHA="${PDE_DEPLOY_COMMIT_SHA:-unknown}"
 DEPLOY_IMAGE_TAG="${PDE_DEPLOY_IMAGE_TAG:-unknown}"
 DEPLOYED_AT="${PDE_DEPLOY_DEPLOYED_AT:-}"
@@ -34,10 +36,12 @@ cat > "$DIAGNOSTICS_FILE" <<EOF
 {
   "status": "UP",
   "surface": "pde-platform-frontend",
-  "slot": "$(json_escape "$FRONTEND_SLOT")",
+  "version": "$(json_escape "$FRONTEND_VERSION")",
+  "legacySlot": "$(json_escape "$FRONTEND_VERSION")",
   "publicUrl": "$(json_escape "$FRONTEND_PUBLIC_URL")",
   "experienceVersion": "$(json_escape "$EXPERIENCE_VERSION_OVERRIDE")",
   "image": "$(json_escape "$FRONTEND_IMAGE")",
+  "imageVersionId": "$(json_escape "$FRONTEND_IMAGE_VERSION_ID")",
   "imageTag": "$(json_escape "$DEPLOY_IMAGE_TAG")",
   "commitSha": "$(json_escape "$DEPLOY_COMMIT_SHA")",
   "deployedAt": "$(json_escape "$DEPLOYED_AT")",
@@ -54,3 +58,5 @@ cat > "$DIAGNOSTICS_FILE" <<EOF
   ]
 }
 EOF
+
+cp "$DIAGNOSTICS_FILE" "$LEGACY_DIAGNOSTICS_FILE"

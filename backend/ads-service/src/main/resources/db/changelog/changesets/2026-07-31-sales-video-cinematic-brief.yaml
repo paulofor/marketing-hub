@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: sales-video-cinematic-brief-001
+      author: marketinghub-ai
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: sales_video_commercial_playbook
+                columnName: funnel_role
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_commercial_playbook
+                  ADD COLUMN funnel_role VARCHAR(80) NULL AFTER cta_text,
+                  ADD COLUMN promise_to_visualize LONGTEXT NULL AFTER funnel_role,
+                  ADD COLUMN visual_pain LONGTEXT NULL AFTER promise_to_visualize,
+                  ADD COLUMN main_scene LONGTEXT NULL AFTER visual_pain,
+                  ADD COLUMN subject_description LONGTEXT NULL AFTER main_scene,
+                  ADD COLUMN motion_description LONGTEXT NULL AFTER subject_description,
+                  ADD COLUMN camera_framing LONGTEXT NULL AFTER motion_description,
+                  ADD COLUMN lighting_style LONGTEXT NULL AFTER camera_framing,
+                  ADD COLUMN expected_emotion VARCHAR(120) NULL AFTER lighting_style,
+                  ADD COLUMN transition_or_cta LONGTEXT NULL AFTER expected_emotion,
+                  ADD COLUMN quality_constraints LONGTEXT NULL AFTER transition_or_cta,
+                  ADD COLUMN cinematic_prompt LONGTEXT NULL AFTER quality_constraints;

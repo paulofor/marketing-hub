@@ -41,6 +41,8 @@ pde:
     password: ${PDE_SMTP_PASSWORD:}
   deploy:
     environment: ${PDE_DEPLOY_ENVIRONMENT:local}
+    build-artifact: ${PDE_DEPLOY_BUILD_ARTIFACT:pde-platform-backend}
+    build-version: ${PDE_DEPLOY_BUILD_VERSION:0.0.1-SNAPSHOT}
     compose-file: ${PDE_DEPLOY_COMPOSE_FILE:docker-compose.yml}
     commit-sha: ${PDE_DEPLOY_COMMIT_SHA:unknown}
     image-tag: ${PDE_DEPLOY_IMAGE_TAG:unknown}
@@ -48,10 +50,14 @@ pde:
     backend-url: ${PDE_DEPLOY_BACKEND_URL:http://localhost:8096}
     deployed-at: ${PDE_DEPLOY_DEPLOYED_AT:}
     backend-image: ${PDE_PLATFORM_BACKEND_IMAGE:}
-    frontend-image: ${PDE_PLATFORM_FRONTEND_IMAGE:}
+    frontend-v5-image: ${PDE_PLATFORM_FRONTEND_V5_IMAGE:}
+    frontend-v6-image: ${PDE_PLATFORM_FRONTEND_V6_IMAGE:}
+    frontend-v7-image: ${PDE_PLATFORM_FRONTEND_V7_IMAGE:}
     ai-worker-image: ${PDE_AI_WORKER_IMAGE:}
     backend-public-port: ${PDE_DEPLOY_BACKEND_PUBLIC_PORT:8096}
-    frontend-public-port: ${PDE_DEPLOY_FRONTEND_PUBLIC_PORT:5176}
+    frontend-v5-public-port: ${PDE_PLATFORM_FRONTEND_V5_PORT:${PDE_DEPLOY_FRONTEND_PUBLIC_PORT:5176}}
+    frontend-v6-public-port: ${PDE_PLATFORM_FRONTEND_V6_PORT:5177}
+    frontend-v7-public-port: ${PDE_PLATFORM_FRONTEND_V7_PORT:5178}
 
 management:
   endpoint:

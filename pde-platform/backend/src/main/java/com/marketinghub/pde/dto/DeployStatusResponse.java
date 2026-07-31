@@ -5,6 +5,7 @@ import java.util.List;
 
 /** Retorna o manifesto operacional do deploy PDE carregado pelo ambiente publicado. */
 public record DeployStatusResponse(
+        BuildIdentityResponse buildIdentity,
         String environment,
         String composeFile,
         String commitSha,

@@ -17,7 +17,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 /** Representa um experimento comercial com contexto, ativos, métricas e regras de publicação. */
 @Entity
@@ -66,6 +68,7 @@ public class Experiment {
   /** Tipo comercial do experimento para orientar funil, objetivo e métricas. */
   @Builder.Default
   @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
   @Column(name = "experiment_type", length = 48, nullable = false)
   private ExperimentType experimentType = ExperimentType.NICHE_TEST;
 

@@ -77,7 +77,7 @@ const slots = {
     experienceVersion: v6ExperienceVersion,
     layoutKey: 'video-motivacional',
     publicFirstFold: {
-      headline: 'Se o look está certo, por que você ainda sente que falta presença?',
+      headline: 'Se o look parece certo, por que você ainda sente que falta presença?',
       supportingText:
         'Em poucos minutos, o MUSA identifica o ruído que enfraquece sua imagem hoje e entrega um ajuste simples para você começar.',
       videoKicker: 'Comece pelo espelho',

@@ -27,7 +27,7 @@ test('v5, v6 e v7 usam backend PDE local real sem misturar contratos versionados
 
   await page.goto('http://v6.clubemusa.com.br:57180/?utm_source=local&utm_campaign=v6_local_validation');
   await expect(
-    page.getByRole('heading', { name: 'Se o look está certo, por que você ainda sente que falta presença?' }),
+    page.getByRole('heading', { name: 'Se o look parece certo, por que você ainda sente que falta presença?' }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Revelar meu ajuste MUSA de hoje' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vídeo curto Método MUSA' })).toBeVisible();

@@ -425,5 +425,5 @@ jobs:
           PRODUCT_SLUG=metodo-musa-7-dias \
           PDE_PUBLIC_BASE_URL=https://v6.clubemusa.com.br \
           EXPECTED_EXPERIENCE_VERSION=musa-pde-entry-v6-video-motivacional \
-          EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE="Se o look está certo, por que você ainda sente que falta presença?" \
+          EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE="Se o look parece certo, por que você ainda sente que falta presença?" \
           bash scripts/check-musa-pde-public-consistency.sh

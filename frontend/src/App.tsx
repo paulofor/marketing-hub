@@ -55,6 +55,7 @@ import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ManualExperimentWizardPage from "./pages/experiment/ManualExperimentWizardPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
+import ExperimentCockpitPage from "./pages/experiment/ExperimentCockpitPage";
 import EditExperimentPage from "./pages/experiment/EditExperimentPage";
 import InstantFormDetailPage from "./pages/experiment/InstantFormDetailPage";
 import ExperimentEmailDetailPage from "./pages/experiment/ExperimentEmailDetailPage";
@@ -257,7 +258,10 @@ export default function App() {
                 path="/products/:productId/pde-videos"
                 element={<ProductPdeVideosPage />}
               />
-              <Route path="/pde-copy" element={<PdeFirstFoldCopyEditorPage />} />
+              <Route
+                path="/pde-copy"
+                element={<PdeFirstFoldCopyEditorPage />}
+              />
               <Route
                 path="/products/:productId/organic-videos"
                 element={<ProductOrganicVideoPlanPage />}
@@ -325,6 +329,7 @@ export default function App() {
               />
               <Route path="/experiments/:id" element={<AppLayout />}>
                 <Route index element={<ExperimentDetailPage />} />
+                <Route path="cockpit" element={<ExperimentCockpitPage />} />
                 <Route path="edit" element={<EditExperimentPage />} />
                 <Route
                   path="instant-forms/:instantFormId"

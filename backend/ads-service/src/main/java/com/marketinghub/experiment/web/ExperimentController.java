@@ -16,6 +16,7 @@ import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAna
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
+import com.marketinghub.experiment.service.ExperimentCockpitService;
 import com.marketinghub.experiment.service.ExperimentConstructionService;
 import com.marketinghub.experiment.service.ExperimentCostReconciliationService;
 import com.marketinghub.experiment.service.ExperimentDeliverablesZipService;
@@ -23,6 +24,7 @@ import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentPromiseGenerationService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.service.cockpit.ExperimentCockpitDto;
 import com.marketinghub.experiment.service.construction.ExperimentConstructionDto;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
@@ -54,6 +56,7 @@ public class ExperimentController {
   private final ExperimentDeliverablesZipService deliverablesZipService;
   private final ExperimentConstructionService constructionService;
   private final ExperimentCostReconciliationService costReconciliationService;
+  private final ExperimentCockpitService cockpitService;
 
   /**
    * Inicializa o controller com serviços de experimento, diagnóstico, prontidão e geração de
@@ -70,7 +73,8 @@ public class ExperimentController {
       ExperimentSalesPageAbTestService salesPageAbTestService,
       ExperimentDeliverablesZipService deliverablesZipService,
       ExperimentConstructionService constructionService,
-      ExperimentCostReconciliationService costReconciliationService) {
+      ExperimentCostReconciliationService costReconciliationService,
+      ExperimentCockpitService cockpitService) {
     this.service = service;
     this.mapper = mapper;
     this.diagnosticsService = diagnosticsService;
@@ -82,6 +86,7 @@ public class ExperimentController {
     this.deliverablesZipService = deliverablesZipService;
     this.constructionService = constructionService;
     this.costReconciliationService = costReconciliationService;
+    this.cockpitService = cockpitService;
   }
 
   /** Cria um novo experimento com os dados comerciais informados na tela. */
@@ -107,6 +112,12 @@ public class ExperimentController {
   @GetMapping("/{id}/construction")
   public ExperimentConstructionDto construction(@PathVariable Long id) {
     return constructionService.getConstruction(id);
+  }
+
+  /** Retorna o cockpit comercial consolidado para criação de decisão de venda do experimento. */
+  @GetMapping("/{id}/cockpit")
+  public ExperimentCockpitDto cockpit(@PathVariable Long id) {
+    return cockpitService.getCockpit(id);
   }
 
   /** Retorna diagnósticos operacionais e comerciais do experimento. */
@@ -304,27 +315,33 @@ public class ExperimentController {
     if (missing.contains("commercialContract")) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
-          "Experimento com intenção de compra exige contrato comercial completo da etapa Oferta antes da página e da campanha.");
+          "Experimento com intenção de compra exige contrato comercial completo da etapa Oferta"
+              + " antes da página e da campanha.");
     }
     if (missing.contains("geraSalesPagePipeline")) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
-          "Experimento com intenção de compra exige página de venda criada pelo GeraSalesPage v1 antes da campanha.");
+          "Experimento com intenção de compra exige página de venda criada pelo GeraSalesPage v1"
+              + " antes da campanha.");
     }
     if (missing.contains("salesPageAdDestination")) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
-          "Experimento com intenção de compra exige que o link do anúncio aponte para a página de venda publicada, não para o checkout direto.");
+          "Experimento com intenção de compra exige que o link do anúncio aponte para a página de"
+              + " venda publicada, não para o checkout direto.");
     }
     if (missing.contains("salesPageAnalyticsCollectors")) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
-          "Experimento com intenção de compra exige página de venda com coletores page_view, page_load_metric, section_view_time e checkout_click antes da campanha.");
+          "Experimento com intenção de compra exige página de venda com coletores page_view,"
+              + " page_load_metric, section_view_time e checkout_click antes da campanha.");
     }
     if (missing.contains("pdeMembershipDestination")) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
-          "Experimento PDE MUSA exige que o link do anúncio aponte para um slot produtivo versionado aprovado, como https://v5.clubemusa.com.br, com login gratuito e paywall interno.");
+          "Experimento PDE MUSA exige que o link do anúncio aponte para um slot produtivo"
+              + " versionado aprovado, como https://v5.clubemusa.com.br, com login gratuito e"
+              + " paywall interno.");
     }
   }
 

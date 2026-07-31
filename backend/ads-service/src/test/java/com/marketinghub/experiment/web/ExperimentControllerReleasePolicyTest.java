@@ -11,6 +11,7 @@ import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
+import com.marketinghub.experiment.service.ExperimentCockpitService;
 import com.marketinghub.experiment.service.ExperimentConstructionService;
 import com.marketinghub.experiment.service.ExperimentCostReconciliationService;
 import com.marketinghub.experiment.service.ExperimentDeliverablesZipService;
@@ -45,7 +46,8 @@ class ExperimentControllerReleasePolicyTest {
             mock(ExperimentSalesPageAbTestService.class),
             mock(ExperimentDeliverablesZipService.class),
             mock(ExperimentConstructionService.class),
-            mock(ExperimentCostReconciliationService.class));
+            mock(ExperimentCostReconciliationService.class),
+            mock(ExperimentCockpitService.class));
 
     assertThatThrownBy(() -> controller.releaseForFacebook(60L))
         .isInstanceOf(ResponseStatusException.class)

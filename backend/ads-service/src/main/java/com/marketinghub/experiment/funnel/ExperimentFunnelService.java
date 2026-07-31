@@ -3,6 +3,8 @@ package com.marketinghub.experiment.funnel;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
+import com.marketinghub.experiment.funnel.dto.ExperimentPdeCockpitDiagnosticsDto;
+import com.marketinghub.experiment.funnel.dto.PdeExperienceVersionDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
@@ -19,6 +21,7 @@ import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
 import com.marketinghub.model.Lead;
+import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
@@ -101,6 +104,83 @@ public class ExperimentFunnelService {
         .filter(stage -> shouldExposeStage(experiment, stage.getStage()))
         .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
         .toList();
+  }
+
+  /** Diagnostica a integração PDE usada pelo cockpit para explicar filtros, versão e fallback. */
+  public ExperimentPdeCockpitDiagnosticsDto diagnosePdeCockpitIntegration(Long experimentId) {
+    Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    String followUpActionUrl = experiment.getFollowUpActionUrl();
+    Optional<String> normalizedDomain = normalizeDomainFromUrl(followUpActionUrl);
+    Optional<String> versionToken = resolveVersionTokenFromUrl(followUpActionUrl);
+    ExpectedPdeExperienceVersion expectedVersion =
+        resolveExpectedPdeExperienceVersionDiagnostic(followUpActionUrl);
+    if (!isPdeMembershipSubscriptionFunnel(experiment)) {
+      return new ExperimentPdeCockpitDiagnosticsDto(
+          experimentId,
+          false,
+          followUpActionUrl,
+          normalizedDomain.orElse(null),
+          followUpActionUrl,
+          DEFAULT_PDE_PRODUCT_SLUG,
+          false,
+          null,
+          expectedVersion.value().orElse(null),
+          expectedVersion.source(),
+          versionToken.orElse(null),
+          null,
+          false,
+          List.of(),
+          0,
+          0,
+          false,
+          "NOT_PDE_MEMBERSHIP_FUNNEL",
+          List.of(),
+          null,
+          null);
+    }
+
+    PdeAnalyticsSummary summary;
+    try {
+      summary = pdeAnalyticsClient.fetchSummary(DEFAULT_PDE_PRODUCT_SLUG, followUpActionUrl);
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao diagnosticar analytics PDE do cockpit; experimentId={} productSlug={} followUpActionUrl={}",
+          experimentId,
+          DEFAULT_PDE_PRODUCT_SLUG,
+          followUpActionUrl,
+          ex);
+      return new ExperimentPdeCockpitDiagnosticsDto(
+          experimentId,
+          true,
+          followUpActionUrl,
+          normalizedDomain.orElse(null),
+          followUpActionUrl,
+          DEFAULT_PDE_PRODUCT_SLUG,
+          false,
+          null,
+          expectedVersion.value().orElse(null),
+          expectedVersion.source(),
+          versionToken.orElse(null),
+          null,
+          false,
+          List.of(),
+          0,
+          0,
+          false,
+          "PDE_SUMMARY_ERROR",
+          List.of(),
+          ex.getClass().getSimpleName(),
+          ex.getMessage());
+    }
+    List<String> attributionCodes = fetchExperimentAttributionCodes(experimentId);
+    return buildPdeCockpitDiagnostics(
+        experimentId,
+        followUpActionUrl,
+        normalizedDomain.orElse(null),
+        versionToken.orElse(null),
+        expectedVersion,
+        summary,
+        attributionCodes);
   }
 
   /** Soma a receita aprovada atribuida ao experimento dentro do escopo canônico do funil. */
@@ -1320,6 +1400,114 @@ public class ExperimentFunnelService {
         parsePdeInstant(summary.lastEventAt()));
   }
 
+  /** Monta o diagnóstico com a mesma decisão de atribuição e fallback usada no funil PDE. */
+  private ExperimentPdeCockpitDiagnosticsDto buildPdeCockpitDiagnostics(
+      Long experimentId,
+      String followUpActionUrl,
+      String normalizedDomain,
+      String versionToken,
+      ExpectedPdeExperienceVersion expectedVersion,
+      PdeAnalyticsSummary summary,
+      List<String> attributionCodes) {
+    List<String> safeAttributionCodes =
+        attributionCodes == null ? List.of() : attributionCodes.stream().distinct().toList();
+    Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> matchingVersion =
+        findMatchingExperienceVersion(summary, followUpActionUrl);
+    boolean attributionFilterApplied =
+        !safeAttributionCodes.isEmpty() && summary.trafficSources() != null;
+    List<PdeAnalyticsSummary.PdeTrafficSourceMetric> matchingTrafficSources =
+        attributionFilterApplied
+            ? summary.trafficSources().stream()
+                .filter(source -> source != null && matchesPdeAttribution(source, safeAttributionCodes))
+                .toList()
+            : List.of();
+    boolean fallbackUsed =
+        shouldUsePdeDiagnosticFallback(
+            attributionFilterApplied, matchingTrafficSources, matchingVersion);
+    return new ExperimentPdeCockpitDiagnosticsDto(
+        experimentId,
+        true,
+        followUpActionUrl,
+        normalizedDomain,
+        followUpActionUrl,
+        DEFAULT_PDE_PRODUCT_SLUG,
+        true,
+        summary.currentExperienceVersion(),
+        expectedVersion.value().orElse(null),
+        expectedVersion.source(),
+        versionToken,
+        matchingVersion
+            .map(PdeAnalyticsSummary.PdeExperienceVersionMetric::experienceVersion)
+            .orElse(null),
+        attributionFilterApplied,
+        safeAttributionCodes,
+        matchingTrafficSources.size(),
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::sessions)
+            .sum(),
+        fallbackUsed,
+        resolvePdeDiagnosticFallbackReason(
+            attributionFilterApplied, matchingTrafficSources, matchingVersion),
+        toPdeExperienceVersionDiagnostics(summary),
+        null,
+        null);
+  }
+
+  /** Indica se o diagnóstico deve marcar que o cockpit precisou fugir do filtro por UTM. */
+  private boolean shouldUsePdeDiagnosticFallback(
+      boolean attributionFilterApplied,
+      List<PdeAnalyticsSummary.PdeTrafficSourceMetric> matchingTrafficSources,
+      Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> matchingVersion) {
+    if (!attributionFilterApplied) {
+      return true;
+    }
+    return matchingTrafficSources.isEmpty() && matchingVersion.isPresent();
+  }
+
+  /** Explica o motivo do fallback para facilitar investigação do cockpit zerado. */
+  private String resolvePdeDiagnosticFallbackReason(
+      boolean attributionFilterApplied,
+      List<PdeAnalyticsSummary.PdeTrafficSourceMetric> matchingTrafficSources,
+      Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> matchingVersion) {
+    if (!attributionFilterApplied && matchingVersion.isPresent()) {
+      return "NO_ATTRIBUTION_CODES_VERSION_MATCH";
+    }
+    if (!attributionFilterApplied) {
+      return "NO_ATTRIBUTION_CODES_GLOBAL_SUMMARY";
+    }
+    if (matchingTrafficSources.isEmpty() && matchingVersion.isPresent()) {
+      return "ATTRIBUTION_NOT_MATCHING_VERSION_AVAILABLE";
+    }
+    if (matchingTrafficSources.isEmpty()) {
+      return "ATTRIBUTION_NOT_MATCHING_NO_VERSION";
+    }
+    return "ATTRIBUTION_MATCHED";
+  }
+
+  /** Lista as versões PDE retornadas pelo summary para comparar com a versão esperada. */
+  private List<PdeExperienceVersionDiagnosticDto> toPdeExperienceVersionDiagnostics(
+      PdeAnalyticsSummary summary) {
+    if (summary.experienceVersions() == null) {
+      return List.of();
+    }
+    return summary.experienceVersions().stream()
+        .filter(version -> version != null)
+        .map(
+            version ->
+                new PdeExperienceVersionDiagnosticDto(
+                    version.experienceVersion(),
+                    version.totalEvents(),
+                    version.sessions(),
+                    version.pdeEntries(),
+                    version.videoPartial(),
+                    version.videoComplete(),
+                    version.loginStarted(),
+                    version.paywallViewed(),
+                    Math.max(version.subscriptionClicked(), version.checkoutStarted()),
+                    version.subscriptionApproved()))
+        .toList();
+  }
+
   /** Localiza a versão comercial do PDE correspondente ao slot versionado da URL do experimento. */
   private Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> findMatchingExperienceVersion(
       PdeAnalyticsSummary summary, String followUpActionUrl) {
@@ -1348,10 +1536,25 @@ public class ExperimentFunnelService {
    * Hub.
    */
   private Optional<String> resolveExpectedPdeExperienceVersion(String followUpActionUrl) {
+    return resolveExpectedPdeExperienceVersionDiagnostic(followUpActionUrl).value();
+  }
+
+  /** Resolve a versão esperada do PDE e registra a origem dessa decisão para diagnóstico. */
+  private ExpectedPdeExperienceVersion resolveExpectedPdeExperienceVersionDiagnostic(
+      String followUpActionUrl) {
     return normalizeDomainFromUrl(followUpActionUrl)
         .flatMap(pdeProductionSlotRepository::findFirstByDomain)
-        .map(slot -> slot.getExperienceVersion())
-        .filter(version -> version != null && !version.isBlank());
+        .map(this::toExpectedPdeExperienceVersion)
+        .orElse(new ExpectedPdeExperienceVersion(Optional.empty(), "NONE"));
+  }
+
+  /** Extrai a versão comercial do slot PDE quando o cadastro operacional a publicou. */
+  private ExpectedPdeExperienceVersion toExpectedPdeExperienceVersion(PdeProductionSlot slot) {
+    String experienceVersion = slot.getExperienceVersion();
+    if (experienceVersion == null || experienceVersion.isBlank()) {
+      return new ExpectedPdeExperienceVersion(Optional.empty(), "SLOT_WITHOUT_EXPERIENCE_VERSION");
+    }
+    return new ExpectedPdeExperienceVersion(Optional.of(experienceVersion), "PDE_PRODUCTION_SLOT");
   }
 
   /** Extrai o token de versão da URL pública quando o slot ainda não existe no cadastro. */
@@ -2069,6 +2272,9 @@ public class ExperimentFunnelService {
   private String firstNonBlank(String value, String fallback) {
     return value == null || value.isBlank() ? fallback : value.trim();
   }
+
+  /** Representa a versão esperada do PDE e a origem operacional dessa decisão. */
+  private record ExpectedPdeExperienceVersion(Optional<String> value, String source) {}
 
   /**
    * Converte números textuais de duração para long, retornando zero quando ausentes ou inválidos.

@@ -12,6 +12,7 @@ import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentStrategicPositioningRequest;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.experiment.funnel.dto.ExperimentPdeCockpitDiagnosticsDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
@@ -118,6 +119,12 @@ public class ExperimentController {
   @GetMapping("/{id}/cockpit")
   public ExperimentCockpitDto cockpit(@PathVariable Long id) {
     return cockpitService.getCockpit(id);
+  }
+
+  /** Retorna diagnóstico da integração PDE usada para montar o cockpit do experimento. */
+  @GetMapping("/{id}/cockpit/pde-diagnostics")
+  public ExperimentPdeCockpitDiagnosticsDto pdeCockpitDiagnostics(@PathVariable Long id) {
+    return funnelService.diagnosePdeCockpitIntegration(id);
   }
 
   /** Retorna diagnósticos operacionais e comerciais do experimento. */

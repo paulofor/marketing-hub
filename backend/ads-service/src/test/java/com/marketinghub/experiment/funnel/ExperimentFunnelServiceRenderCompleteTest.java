@@ -1325,6 +1325,117 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals(Instant.parse("2026-07-31T00:51:38Z"), pdeEntry.getLastEventAt());
   }
 
+  /** Valida que o diagnóstico do cockpit explica URL, versão PDE e fallback usados no funil. */
+  @Test
+  void diagnosePdeCockpitIntegrationExplainsVersionFallback() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(77L)
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .followUpActionUrl("https://v6.clubemusa.com.br")
+            .build();
+    when(experimentRepository.findById(77L)).thenReturn(Optional.of(experiment));
+    when(jdbcTemplate.queryForList(
+            any(String.class),
+            eq(String.class),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
+        .thenReturn(List.of("campanha-do-experimento-77"));
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br"))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v5-video-explicativo",
+                420,
+                35,
+                35,
+                35,
+                35,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                13375288,
+                "2026-07-30T21:51:38-03:00",
+                List.of(),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v6-video-motivacional",
+                        371,
+                        29,
+                        29,
+                        0,
+                        0,
+                        12,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                        "Meta",
+                        "ig",
+                        "paid",
+                        "120250665503920326",
+                        "120250665505440326",
+                        27,
+                        27,
+                        0,
+                        12,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        13311927,
+                        "2026-07-30T21:51:38-03:00")),
+                List.of(),
+                List.of(),
+                List.of()));
+    when(pdeProductionSlotRepository.findFirstByDomain("v6.clubemusa.com.br"))
+        .thenReturn(
+            Optional.of(
+                PdeProductionSlot.builder()
+                    .domain("v6.clubemusa.com.br")
+                    .publicUrl("https://v6.clubemusa.com.br")
+                    .experienceVersion("musa-pde-entry-v6-video-motivacional")
+                    .build()));
+
+    var diagnostics = service.diagnosePdeCockpitIntegration(77L);
+
+    assertTrue(diagnostics.pdeSummaryLoaded());
+    assertEquals("https://v6.clubemusa.com.br", diagnostics.requestedPdeBaseUrl());
+    assertEquals("metodo-musa-7-dias", diagnostics.productSlug());
+    assertEquals("v6.clubemusa.com.br", diagnostics.normalizedDomain());
+    assertEquals("musa-pde-entry-v5-video-explicativo", diagnostics.currentExperienceVersion());
+    assertEquals("musa-pde-entry-v6-video-motivacional", diagnostics.expectedExperienceVersion());
+    assertEquals("PDE_PRODUCTION_SLOT", diagnostics.expectedExperienceVersionSource());
+    assertEquals("-v6-", diagnostics.versionTokenFallback());
+    assertEquals("musa-pde-entry-v6-video-motivacional", diagnostics.matchedExperienceVersion());
+    assertTrue(diagnostics.attributionFilterApplied());
+    assertEquals(0, diagnostics.matchedTrafficSources());
+    assertTrue(diagnostics.fallbackUsed());
+    assertEquals("ATTRIBUTION_NOT_MATCHING_VERSION_AVAILABLE", diagnostics.fallbackReason());
+    assertEquals(1, diagnostics.availableExperienceVersions().size());
+    assertEquals(29, diagnostics.availableExperienceVersions().get(0).pdeEntries());
+  }
+
   /** Valida que render-complete rejeita slug vazio. */
   @Test
   void registerFormRenderCompletedFailsWhenSlugIsMissing() {

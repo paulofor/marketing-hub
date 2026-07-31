@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -46,6 +47,8 @@ class PostDeployMonitorServiceTest {
 
   @Mock private PdeProductionSlotService pdeProductionSlotService;
 
+  @Mock private JdbcTemplate jdbcTemplate;
+
   private PostDeployMonitorService service;
 
   /** Monta o serviço com dependências controladas para cenários comerciais. */
@@ -57,7 +60,8 @@ class PostDeployMonitorServiceTest {
             campaignMetricRepository,
             apiLogService,
             pdeAnalyticsClient,
-            pdeProductionSlotService);
+            pdeProductionSlotService,
+            jdbcTemplate);
     lenient()
         .when(pdeProductionSlotService.resolveProductSlug(null))
         .thenReturn("metodo-musa-7-dias");
@@ -365,6 +369,124 @@ class PostDeployMonitorServiceTest {
     assertThat(response.pde().measurementLabel()).isEqualTo("Validação pré-campanha");
     assertThat(response.alerts()).anyMatch(alert -> alert.contains("antes de impressões Meta"));
     assertThat(response.recommendation()).contains("tráfego real");
+  }
+
+  /** Impede que o cockpit misture histórico da versão com a campanha atual do experimento. */
+  @Test
+  void filtersPdeMetricsByExperimentAttributionInsteadOfVersionHistory() {
+    Experiment experiment = Experiment.builder().id(77L).build();
+    when(experimentRepository.findById(77L)).thenReturn(Optional.of(experiment));
+    when(campaignMetricRepository.findByExperiment(experiment))
+        .thenReturn(Optional.of(metric("1.00", null)));
+    when(apiLogService.findLogs(77L, 50)).thenReturn(List.of());
+    when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
+        .thenReturn(List.of(productionSlotDto("v6", "musa-pde-entry-v6-video-motivacional", 77L)));
+    when(jdbcTemplate.queryForList(
+            any(String.class),
+            eq(String.class),
+            eq(77L),
+            eq(77L),
+            eq(77L),
+            eq(77L),
+            eq(77L),
+            eq(77L),
+            eq(77L),
+            eq(77L)))
+        .thenReturn(List.of("120250742286340326"));
+    when(pdeAnalyticsClient.fetchSummary(
+            eq("metodo-musa-7-dias"), eq("https://v6.clubemusa.com.br")))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v6-video-motivacional",
+                500,
+                33,
+                33,
+                33,
+                33,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                40000,
+                "2026-07-30T12:00:00Z",
+                List.of(new PdeAnalyticsSummary.PdeEventMetric("VIDEO_COMPLETED", 6)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v6-video-motivacional",
+                        500,
+                        33,
+                        33,
+                        0,
+                        0,
+                        12,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                        "Meta",
+                        "facebook",
+                        "paid_social",
+                        "120250665503920326",
+                        "old-creative",
+                        32,
+                        32,
+                        0,
+                        12,
+                        6,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        39000,
+                        "2026-07-30T11:00:00Z"),
+                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
+                        "Meta",
+                        "facebook",
+                        "paid_social",
+                        "120250742286340326",
+                        "current-creative",
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        1000,
+                        "2026-07-30T12:00:00Z")),
+                List.of(),
+                List.of(),
+                List.of()));
+
+    var response = service.summarize(77L, "metodo-musa-7-dias");
+
+    assertThat(response.pde().sessions()).isEqualTo(1);
+    assertThat(response.pde().pdeEntries()).isEqualTo(1);
+    assertThat(response.pde().events().get("VIDEO_PARTIAL")).isZero();
+    assertThat(response.pde().events().get("VIDEO_COMPLETED")).isZero();
+    assertThat(response.pde().experienceVersions()).hasSize(1);
+    assertThat(response.pde().experienceVersions().getFirst().sessions()).isEqualTo(1);
+    assertThat(response.pde().trafficSources()).extracting("utmCampaign").containsExactly("120250742286340326");
+    assertThat(response.pde().measurementRecommendation()).contains("histórico de outras campanhas fica fora");
   }
 
   /** Cria slot produtivo com domínio normalizado para permitir URLs paralelas de hipótese PDE. */

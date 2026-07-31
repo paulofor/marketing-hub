@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -48,6 +49,7 @@ public class PostDeployMonitorService {
   private final ExperimentFacebookApiLogService apiLogService;
   private final PdeAnalyticsClient pdeAnalyticsClient;
   private final PdeProductionSlotService pdeProductionSlotService;
+  private final JdbcTemplate jdbcTemplate;
 
   /** Inicializa o agregador com as fontes persistidas do Hub e o cliente do PDE. */
   public PostDeployMonitorService(
@@ -55,12 +57,14 @@ public class PostDeployMonitorService {
       ExperimentCampaignMetricRepository campaignMetricRepository,
       ExperimentFacebookApiLogService apiLogService,
       PdeAnalyticsClient pdeAnalyticsClient,
-      PdeProductionSlotService pdeProductionSlotService) {
+      PdeProductionSlotService pdeProductionSlotService,
+      JdbcTemplate jdbcTemplate) {
     this.experimentRepository = experimentRepository;
     this.campaignMetricRepository = campaignMetricRepository;
     this.apiLogService = apiLogService;
     this.pdeAnalyticsClient = pdeAnalyticsClient;
     this.pdeProductionSlotService = pdeProductionSlotService;
+    this.jdbcTemplate = jdbcTemplate;
   }
 
   /** Monta o painel pós-deploy para o experimento e produto PDE informados. */
@@ -84,12 +88,14 @@ public class PostDeployMonitorService {
         monitoredSlot != null ? monitoredSlot.experienceVersion() : null;
     String monitoredPublicUrl = monitoredSlot != null ? monitoredSlot.publicUrl() : null;
     boolean campaignTrafficActive = hasCampaignTraffic(metaAds);
+    List<String> attributionCodes = fetchExperimentAttributionCodes(experimentId);
     PostDeployPdeSummaryDto pde =
         fetchPdeSummary(
             resolvedProductSlug,
             monitoredExperienceVersion,
             monitoredPublicUrl,
-            campaignTrafficActive);
+            campaignTrafficActive,
+            attributionCodes);
     PostDeployFacebookLogSummaryDto logs = summarizeLogs(experimentId);
     List<String> alerts = buildAlerts(metaAds, pde, logs);
     PostDeployMonitorDecision decision = decide(metaAds, pde, logs);
@@ -182,10 +188,11 @@ public class PostDeployMonitorService {
       String productSlug,
       String monitoredExperienceVersion,
       String monitoredPublicUrl,
-      boolean campaignTrafficActive) {
+      boolean campaignTrafficActive,
+      List<String> attributionCodes) {
     try {
       PdeAnalyticsSummary summary = pdeAnalyticsClient.fetchSummary(productSlug, monitoredPublicUrl);
-      return toPdeSummary(summary, monitoredExperienceVersion, campaignTrafficActive);
+      return toPdeSummary(summary, monitoredExperienceVersion, campaignTrafficActive, attributionCodes);
     } catch (Exception ex) {
       log.error(
           "Falha ao consultar analytics PDE no monitor pós-deploy; productSlug={}, monitoredPublicUrl={}",
@@ -278,7 +285,15 @@ public class PostDeployMonitorService {
 
   /** Converte o contrato do PDE em métricas comerciais específicas do painel. */
   private PostDeployPdeSummaryDto toPdeSummary(
-      PdeAnalyticsSummary summary, String monitoredExperienceVersion, boolean campaignTrafficActive) {
+      PdeAnalyticsSummary summary,
+      String monitoredExperienceVersion,
+      boolean campaignTrafficActive,
+      List<String> attributionCodes) {
+    List<String> safeAttributionCodes = normalizeAttributionCodes(attributionCodes);
+    if (!safeAttributionCodes.isEmpty() && summary.trafficSources() != null) {
+      return toAttributedPdeSummary(
+          summary, monitoredExperienceVersion, campaignTrafficActive, safeAttributionCodes);
+    }
     Map<String, Long> events = new LinkedHashMap<>();
     if (summary.events() != null) {
       summary.events().forEach(event -> events.put(event.eventType(), event.total()));
@@ -328,6 +343,127 @@ public class PostDeployMonitorService {
         toDeviceDtos(summary),
         toScreenSizeDtos(summary),
         toSessionJourneyDtos(summary));
+  }
+
+  /** Converte analytics PDE usando somente UTMs/códigos ligados ao experimento monitorado. */
+  private PostDeployPdeSummaryDto toAttributedPdeSummary(
+      PdeAnalyticsSummary summary,
+      String monitoredExperienceVersion,
+      boolean campaignTrafficActive,
+      List<String> attributionCodes) {
+    List<PdeAnalyticsSummary.PdeTrafficSourceMetric> matchingTrafficSources =
+        summary.trafficSources().stream()
+            .filter(source -> source != null && matchesPdeAttribution(source, attributionCodes))
+            .toList();
+    long sessions =
+        matchingTrafficSources.stream().mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::sessions).sum();
+    long pdeEntries =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::pdeEntries)
+            .sum();
+    long firstInteractionClicks =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::firstInteractionClicks)
+            .sum();
+    long videoPartial =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::videoPartial)
+            .sum();
+    long videoComplete =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::videoComplete)
+            .sum();
+    long loginStarted =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::loginStarted)
+            .sum();
+    long paywallViewed =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::paywallViewed)
+            .sum();
+    long checkoutStarted =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::checkoutStarted)
+            .sum();
+    long subscriptionApproved =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::subscriptionApproved)
+            .sum();
+    long totalVisibleMs =
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::totalVisibleMs)
+            .sum();
+    Map<String, Long> events = new LinkedHashMap<>();
+    events.put("VIDEO_PARTIAL", videoPartial);
+    events.put("VIDEO_COMPLETED", videoComplete);
+    String currentExperienceVersion =
+        StringUtils.hasText(monitoredExperienceVersion)
+            ? monitoredExperienceVersion
+            : summary.currentExperienceVersion();
+    long totalEvents =
+        pdeEntries
+            + firstInteractionClicks
+            + videoPartial
+            + videoComplete
+            + loginStarted
+            + paywallViewed
+            + checkoutStarted
+            + subscriptionApproved;
+    return new PostDeployPdeSummaryDto(
+        true,
+        "AVAILABLE",
+        null,
+        campaignTrafficActive ? "CAMPAIGN_PERFORMANCE" : "PRE_LAUNCH_VALIDATION",
+        campaignTrafficActive
+            ? "Performance atribuída ao experimento"
+            : "Validação atribuída ao experimento",
+        campaignTrafficActive
+            ? "KPIs filtrados por campanha/criativo do experimento; histórico de outras campanhas fica fora da decisão."
+            : "Eventos filtrados por campanha/criativo do experimento; aguarde entrega Meta para leitura comercial.",
+        currentExperienceVersion,
+        totalEvents,
+        totalEvents,
+        sessions,
+        sessions,
+        sessions,
+        sessions,
+        0,
+        0,
+        0,
+        0,
+        pdeEntries,
+        0,
+        firstInteractionClicks,
+        0,
+        0,
+        loginStarted,
+        0,
+        paywallViewed,
+        0,
+        checkoutStarted,
+        subscriptionApproved,
+        totalVisibleMs,
+        sessions > 0 ? totalVisibleMs / sessions : 0,
+        lastAttributedEventAt(matchingTrafficSources),
+        events,
+        List.of(
+            new PostDeployPdeExperienceVersionDto(
+                currentExperienceVersion,
+                totalEvents,
+                sessions,
+                pdeEntries,
+                firstInteractionClicks,
+                videoPartial,
+                videoComplete,
+                loginStarted,
+                paywallViewed,
+                checkoutStarted,
+                subscriptionApproved)),
+        toTrafficSourceDtosFromMetrics(matchingTrafficSources),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of());
   }
 
   /** Calcula o tempo médio visível por sessão PDE para leitura comercial do funil. */
@@ -395,7 +531,16 @@ public class PostDeployMonitorService {
     if (summary.trafficSources() == null) {
       return List.of();
     }
-    return summary.trafficSources().stream()
+    return toTrafficSourceDtosFromMetrics(summary.trafficSources());
+  }
+
+  /** Converte origens PDE já selecionadas para o contrato do painel. */
+  private List<PostDeployPdeTrafficSourceDto> toTrafficSourceDtosFromMetrics(
+      List<PdeAnalyticsSummary.PdeTrafficSourceMetric> trafficSources) {
+    if (trafficSources == null) {
+      return List.of();
+    }
+    return trafficSources.stream()
         .map(
             source ->
                 new PostDeployPdeTrafficSourceDto(
@@ -420,6 +565,102 @@ public class PostDeployMonitorService {
                     source.totalVisibleMs(),
                     source.lastEventAt()))
         .toList();
+  }
+
+  /** Busca códigos oficiais de campanha, conjunto, anúncio e UTM para atribuir o PDE ao experimento. */
+  private List<String> fetchExperimentAttributionCodes(Long experimentId) {
+    List<String> codes =
+        jdbcTemplate.queryForList(
+            """
+                SELECT DISTINCT code
+                FROM (
+                    SELECT fac.id AS code
+                    FROM facebook_ads_campaign fac
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fac.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fas.id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT fas.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT faa.id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT faa.external_id AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT utm.utm_campaign AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    JOIN facebook_ads_ad_tracking_utm utm ON utm.ad_id = faa.id
+                    WHERE fac.experiment_id = ?
+                    UNION ALL
+                    SELECT utm.utm_content AS code
+                    FROM facebook_ads_campaign fac
+                    JOIN facebook_ads_ad_set fas ON fas.campaign_id = fac.id
+                    JOIN facebook_ads_ad faa ON faa.adset_id = fas.id
+                    JOIN facebook_ads_ad_tracking_utm utm ON utm.ad_id = faa.id
+                    WHERE fac.experiment_id = ?
+                ) codes
+                WHERE code IS NOT NULL
+                  AND TRIM(code) <> ''
+                """,
+            String.class,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId,
+            experimentId);
+    return normalizeAttributionCodes(codes);
+  }
+
+  /** Normaliza códigos de atribuição para comparação estável entre Meta Ads e PDE. */
+  private List<String> normalizeAttributionCodes(List<String> attributionCodes) {
+    if (attributionCodes == null) {
+      return List.of();
+    }
+    return attributionCodes.stream()
+        .filter(StringUtils::hasText)
+        .map(String::trim)
+        .distinct()
+        .toList();
+  }
+
+  /** Confirma se a origem PDE pertence ao experimento por campanha ou criativo Meta. */
+  private boolean matchesPdeAttribution(
+      PdeAnalyticsSummary.PdeTrafficSourceMetric source, List<String> attributionCodes) {
+    return attributionCodes.contains(source.utmCampaign())
+        || attributionCodes.contains(source.utmContent());
+  }
+
+  /** Retorna o último evento entre as origens PDE atribuídas ao experimento. */
+  private Instant lastAttributedEventAt(
+      List<PdeAnalyticsSummary.PdeTrafficSourceMetric> trafficSources) {
+    return trafficSources.stream()
+        .map(PdeAnalyticsSummary.PdeTrafficSourceMetric::lastEventAt)
+        .filter(StringUtils::hasText)
+        .map(this::parseInstant)
+        .max(Instant::compareTo)
+        .orElse(null);
   }
 
   /** Converte a auditoria de qualidade de tráfego PDE para exibição no painel administrativo. */

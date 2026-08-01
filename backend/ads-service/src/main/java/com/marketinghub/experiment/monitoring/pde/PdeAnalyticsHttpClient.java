@@ -2,10 +2,13 @@ package com.marketinghub.experiment.monitoring.pde;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 /** Consulta o backend PDE por HTTP para obter métricas administrativas do funil versionado. */
 @Component
@@ -46,14 +49,48 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
   /** Busca a identidade da build PDE pela mesma origem administrativa usada nas métricas. */
   @Override
   public PdeBuildIdentity fetchBuildIdentity(String publicBaseUrl) {
+    String baseUrl = trimTrailingSlash(publicBaseUrl != null ? publicBaseUrl : defaultBaseUrl);
+    RestClient monitoredClient = monitoredClient(baseUrl);
+    try {
+      return monitoredClient
+          .get()
+          .uri("/api/pde/build-identity")
+          .retrieve()
+          .body(PdeBuildIdentity.class);
+    } catch (RestClientResponseException ex) {
+      return fetchBuildIdentityFromDeployStatus(monitoredClient, ex);
+    }
+  }
+
+  /** Reaproveita o manifesto de deploy quando a rota nova de identidade ainda não existe. */
+  private PdeBuildIdentity fetchBuildIdentityFromDeployStatus(
+      RestClient monitoredClient, RestClientResponseException originalException) {
+    try {
+      PdeDeployStatus status =
+          monitoredClient
+              .get()
+              .uri("/api/pde/deploy/status")
+              .retrieve()
+              .body(PdeDeployStatus.class);
+      if (status == null) {
+        throw originalException;
+      }
+      if (status.buildIdentity() != null) {
+        return status.buildIdentity();
+      }
+      return status.toBuildIdentity();
+    } catch (RuntimeException fallbackException) {
+      originalException.addSuppressed(fallbackException);
+      throw originalException;
+    }
+  }
+
+  /** Cria um client dedicado para a origem pública monitorada. */
+  private RestClient monitoredClient(String baseUrl) {
     return RestClient.builder()
-        .baseUrl(trimTrailingSlash(publicBaseUrl != null ? publicBaseUrl : defaultBaseUrl))
+        .baseUrl(baseUrl)
         .requestFactory(requestFactory)
-        .build()
-        .get()
-        .uri("/api/pde/build-identity")
-        .retrieve()
-        .body(PdeBuildIdentity.class);
+        .build();
   }
 
   /**
@@ -112,4 +149,50 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
     }
     return value.replaceAll("/+$", "");
   }
+
+  /** Representa o manifesto de deploy usado como fallback por versões antigas da PDE. */
+  private record PdeDeployStatus(
+      PdeBuildIdentity buildIdentity,
+      String environment,
+      String commitSha,
+      String branch,
+      String imageTag,
+      String frontendUrl,
+      String backendUrl,
+      Instant deployedAt,
+      List<PdeDeployServiceStatus> services) {
+
+    /** Converte campos legados do manifesto em identidade auditável para o cockpit. */
+    private PdeBuildIdentity toBuildIdentity() {
+      return new PdeBuildIdentity(
+          "pde-platform-backend",
+          "pde-platform-backend",
+          null,
+          commitSha,
+          branch,
+          imageTag,
+          backendImage(),
+          environment,
+          backendUrl,
+          frontendUrl,
+          null,
+          deployedAt);
+    }
+
+    /** Localiza a imagem do backend no manifesto legado de serviços publicados. */
+    private String backendImage() {
+      if (services == null) {
+        return null;
+      }
+      return services.stream()
+          .filter(service -> "backend".equalsIgnoreCase(service.role()))
+          .map(PdeDeployServiceStatus::image)
+          .filter(image -> image != null && !image.isBlank())
+          .findFirst()
+          .orElse(null);
+    }
+  }
+
+  /** Representa um serviço declarado no manifesto de deploy PDE legado. */
+  private record PdeDeployServiceStatus(String image, String role) {}
 }

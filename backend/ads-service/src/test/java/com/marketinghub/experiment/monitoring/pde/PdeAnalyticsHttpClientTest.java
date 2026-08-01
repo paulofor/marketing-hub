@@ -79,6 +79,30 @@ class PdeAnalyticsHttpClientTest {
     assertThat(identity.marketingHubBaseUrl()).contains("191.252.181.168");
   }
 
+  /** Garante fallback para versões PDE publicadas antes da rota dedicada de identidade. */
+  @Test
+  void fetchBuildIdentityFallsBackToDeployStatusWhenBuildIdentityRouteIsMissing() throws Exception {
+    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext("/api/pde/build-identity", this::respondMissingBuildIdentity);
+    server.createContext("/api/pde/deploy/status", this::respondDeployStatus);
+    executor = Executors.newSingleThreadExecutor();
+    server.setExecutor(executor);
+    server.start();
+
+    String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
+    PdeAnalyticsHttpClient client =
+        new PdeAnalyticsHttpClient("https://v5.clubemusa.com.br", Duration.ofSeconds(1), Duration.ofSeconds(7));
+
+    PdeBuildIdentity identity = client.fetchBuildIdentity(baseUrl);
+
+    assertThat(identity.commitSha()).isEqualTo("401a911");
+    assertThat(identity.imageTag()).isEqualTo("401a911");
+    assertThat(identity.backendImage()).isEqualTo("ghcr.io/paulofor/pde-platform-backend:401a911");
+    assertThat(identity.backendUrl()).isEqualTo("http://163.245.200.7:8096");
+    assertThat(identity.frontendUrl()).isEqualTo("https://v6.clubemusa.com.br");
+    assertThat(identity.environment()).isEqualTo("production");
+  }
+
   /** Responde um summary mínimo após atraso compatível com a produção do PDE v6. */
   private void respondSlowSummary(HttpExchange exchange) throws IOException {
     try {
@@ -147,6 +171,42 @@ class PdeAnalyticsHttpClientTest {
           "frontendUrl": "https://v6.clubemusa.com.br",
           "marketingHubBaseUrl": "http://191.252.181.168:8000,http://191.252.181.168",
           "deployedAt": "2026-07-31T10:00:00Z"
+        }
+        """
+            .getBytes(StandardCharsets.UTF_8);
+    exchange.getResponseHeaders().add("Content-Type", "application/json");
+    exchange.sendResponseHeaders(200, body.length);
+    exchange.getResponseBody().write(body);
+    exchange.close();
+  }
+
+  /** Simula a build PDE em produção que ainda não publicou a rota dedicada. */
+  private void respondMissingBuildIdentity(HttpExchange exchange) throws IOException {
+    byte[] body = "{\"error\":\"Falha técnica na API PDE\"}".getBytes(StandardCharsets.UTF_8);
+    exchange.getResponseHeaders().add("Content-Type", "application/json");
+    exchange.sendResponseHeaders(500, body.length);
+    exchange.getResponseBody().write(body);
+    exchange.close();
+  }
+
+  /** Responde o manifesto legado usado como origem alternativa de identidade. */
+  private void respondDeployStatus(HttpExchange exchange) throws IOException {
+    byte[] body =
+        """
+        {
+          "environment": "production",
+          "commitSha": "401a911",
+          "imageTag": "401a911",
+          "frontendUrl": "https://v6.clubemusa.com.br",
+          "backendUrl": "http://163.245.200.7:8096",
+          "deployedAt": "2026-07-31T14:10:13Z",
+          "services": [
+            {
+              "name": "pde-platform-backend",
+              "image": "ghcr.io/paulofor/pde-platform-backend:401a911",
+              "role": "backend"
+            }
+          ]
         }
         """
             .getBytes(StandardCharsets.UTF_8);

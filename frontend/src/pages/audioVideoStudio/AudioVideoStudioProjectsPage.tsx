@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { PlusCircle } from "lucide-react";
 import { useVideoProjects } from "../../api/salesVideo/useVideoProjects";
 import PageTitle from "../../components/PageTitle";
+import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
 import "./AudioVideoStudioPage.css";
 
 type ProjectListItem = {
@@ -112,13 +113,14 @@ export default function AudioVideoStudioProjectsPage() {
                       <small>{project.objective}</small>
                       {project.isExample ? (
                         <small>
-                          HLS: /assets/hls/musa-v6-microexperiencia-visivel/index.m3u8
+                          HLS:
+                          /assets/hls/musa-v6-microexperiencia-visivel/index.m3u8
                         </small>
                       ) : null}
                     </td>
-                    <td>{project.status}</td>
-                    <td>{project.targetChannel}</td>
-                    <td>{project.format}</td>
+                    <td>{getStudioCommercialLabel(project.status)}</td>
+                    <td>{getStudioCommercialLabel(project.targetChannel)}</td>
+                    <td>{getStudioCommercialLabel(project.format)}</td>
                     <td>{formatDate(project.createdAt)}</td>
                   </tr>
                 ))}

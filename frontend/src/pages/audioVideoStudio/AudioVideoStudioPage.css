@@ -298,7 +298,7 @@
 
 .audio-video-studio-page__workspace {
   display: grid;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+  grid-template-columns: 1fr;
   gap: 0.85rem;
   margin-bottom: 1.25rem;
 }

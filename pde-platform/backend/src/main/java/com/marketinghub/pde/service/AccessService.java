@@ -68,6 +68,7 @@ public class AccessService {
     private final boolean requireJdbcStorage;
     private final String appBaseUrl;
     private final boolean exposeMagicLinkInResponse;
+    private final PdeDatabaseMigrationService databaseMigrationService;
     private final PdeMailService mailService;
     private final GoogleIdentityService googleIdentityService;
     private final Set<String> internalExcludedIps;
@@ -98,6 +99,7 @@ public class AccessService {
         this.requireJdbcStorage = requireJdbcStorage;
         this.appBaseUrl = appBaseUrl;
         this.exposeMagicLinkInResponse = exposeMagicLinkInResponse;
+        this.databaseMigrationService = databaseMigrationService;
         this.mailService = mailService;
         this.googleIdentityService = googleIdentityService;
         this.internalExcludedIps = parseInternalExcludedIps(internalExcludedIps);
@@ -410,6 +412,7 @@ public class AccessService {
         if (!usesJdbcStorage()) {
             return emptyFunnelAnalytics(productSlug);
         }
+        ensureOperationalSchemaReady();
         String summarySql = """
                 SELECT
                   SUM(CASE WHEN """ + COMMERCIAL_TRAFFIC_FILTER + """
@@ -485,40 +488,23 @@ public class AccessService {
                             resultSet.getLong("checkout_started"),
                             resultSet.getLong("total_visible_ms"),
                             timestampAsOperationalText(resultSet, "last_event_at"),
-                            loadOptionalAnalyticsBreakdown(
-                                    connection, productSlug, "events", this::loadFunnelEventMetrics),
-                            loadOptionalAnalyticsBreakdown(
-                                    connection, productSlug, "experienceVersions", this::loadExperienceVersionMetrics),
-                            loadOptionalAnalyticsBreakdown(
-                                    connection, productSlug, "layouts", this::loadLayoutMetrics),
-                            loadOptionalAnalyticsBreakdown(
-                                    connection,
-                                    productSlug,
-                                    "trafficSources",
-                                    (analyticsConnection, analyticsProductSlug) ->
-                                            loadTrafficSourceMetrics(
-                                                    analyticsConnection,
-                                                    analyticsProductSlug,
-                                                    includeNonHumanTraffic)),
-                            loadOptionalAnalyticsBreakdown(
-                                    connection, productSlug, "trafficQuality", this::loadTrafficQualityMetrics),
-                            loadOptionalAnalyticsBreakdown(
-                                    connection, productSlug, "devices", this::loadDeviceMetrics),
-                            loadOptionalAnalyticsBreakdown(
-                                    connection, productSlug, "screenSizes", this::loadScreenSizeMetrics),
-                            loadOptionalAnalyticsBreakdown(
-                                    connection, productSlug, "recentJourneys",
-                                    (analyticsConnection, analyticsProductSlug) ->
-                                            loadSessionJourneyDtos(analyticsConnection, analyticsProductSlug, 20)));
+                            loadFunnelEventMetrics(connection, productSlug),
+                            loadExperienceVersionMetrics(connection, productSlug),
+                            loadLayoutMetrics(connection, productSlug),
+                            loadTrafficSourceMetrics(connection, productSlug, includeNonHumanTraffic),
+                            loadTrafficQualityMetrics(connection, productSlug),
+                            loadDeviceMetrics(connection, productSlug),
+                            loadScreenSizeMetrics(connection, productSlug),
+                            loadSessionJourneyDtos(connection, productSlug, 20));
                 }
             }
-        } catch (SQLException ex) {
+        } catch (SQLException | IOException ex) {
             log.error(
                     "Falha ao consolidar analytics PDE canônico; productSlug={}, operation=summary, jdbcConfigured={}",
                     productSlug,
                     usesJdbcStorage(),
                     ex);
-            return summarizeLegacyFunnelAnalytics(product, productSlug, ex);
+            throw new IllegalStateException("Não foi possível consolidar analytics PDE", ex);
         } catch (RuntimeException ex) {
             log.error(
                     "Falha inesperada ao consolidar analytics PDE; productSlug={}, operation=summary, jdbcConfigured={}",
@@ -530,136 +516,13 @@ public class AccessService {
         return emptyFunnelAnalytics(productSlug);
     }
 
-    /** Consolida o mínimo comercial quando o schema analítico ainda não aceita o SQL canônico. */
-    private FunnelAnalyticsSummaryResponse summarizeLegacyFunnelAnalytics(
-            ProductExperienceResponse product, String productSlug, SQLException originalFailure) {
-        try (Connection connection = openConnection()) {
-            boolean hasTrafficQuality = funnelEventColumnExists(connection, "traffic_quality");
-            boolean hasVisitorId = funnelEventColumnExists(connection, "visitor_id");
-            boolean hasSessionId = funnelEventColumnExists(connection, "session_id");
-            boolean hasVisibleMs = funnelEventColumnExists(connection, "visible_ms");
-            boolean hasOccurredAt = funnelEventColumnExists(connection, "occurred_at");
-            String commercialFilter = hasTrafficQuality ? " traffic_quality = 'HUMAN' " : " 1 = 1 ";
-            String sessionExpression = hasSessionId ? " COALESCE(session_id, event_id) " : " event_id ";
-            String visibleMsExpression = hasVisibleMs ? " visible_ms " : " 0 ";
-            String lastEventExpression = hasOccurredAt ? "MAX(occurred_at)" : "NULL";
-            String sql = """
-                    SELECT
-                      SUM(CASE WHEN """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS total_events,
-                      COUNT(*) AS raw_total_events,
-                      """ + (hasVisitorId
-                            ? "COUNT(DISTINCT CASE WHEN " + commercialFilter + " THEN visitor_id ELSE NULL END)"
-                            : "0") + """
-                        AS unique_visitors,
-                      COUNT(DISTINCT CASE WHEN """ + commercialFilter + """
-                        THEN """ + sessionExpression + """
-                        ELSE NULL END) AS sessions,
-                      COUNT(DISTINCT """ + sessionExpression + """
-                        ) AS raw_sessions,
-                      COUNT(DISTINCT CASE WHEN """ + commercialFilter + """
-                        THEN """ + sessionExpression + """
-                        ELSE NULL END) AS human_sessions,
-                      SUM(CASE WHEN event_type = 'PED_ENTRY' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS ped_entries,
-                      SUM(CASE WHEN event_type = 'PAGE_VIEW' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS page_views,
-                      SUM(CASE WHEN event_type = 'LOGIN_STARTED' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS login_started,
-                      SUM(CASE WHEN event_type = 'LOGIN_COMPLETED' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS login_completed,
-                      SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS paywall_viewed,
-                      SUM(CASE WHEN event_type = 'SUBSCRIPTION_CLICKED' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS subscription_clicked,
-                      SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS subscription_approved,
-                      SUM(CASE WHEN event_type = 'ACCESS_RELEASED' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS access_released,
-                      SUM(CASE WHEN event_type = 'FIRST_USE' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS first_use,
-                      SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' AND """ + commercialFilter + """
-                        THEN 1 ELSE 0 END) AS checkout_started,
-                      COALESCE(SUM(CASE WHEN """ + commercialFilter + """
-                        THEN """ + visibleMsExpression + """
-                        ELSE 0 END), 0) AS total_visible_ms,
-                      """ + lastEventExpression + """
-                        AS last_event_at
-                    FROM pde_funnel_event
-                    WHERE product_slug = ?
-                    """;
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, productSlug);
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    if (resultSet.next()) {
-                        return new FunnelAnalyticsSummaryResponse(
-                                productSlug,
-                                product.experienceVersion(),
-                                resultSet.getLong("total_events"),
-                                resultSet.getLong("raw_total_events"),
-                                resultSet.getLong("unique_visitors"),
-                                resultSet.getLong("sessions"),
-                                resultSet.getLong("raw_sessions"),
-                                resultSet.getLong("human_sessions"),
-                                0,
-                                0,
-                                0,
-                                0,
-                                resultSet.getLong("ped_entries"),
-                                resultSet.getLong("page_views"),
-                                resultSet.getLong("login_started"),
-                                resultSet.getLong("login_completed"),
-                                resultSet.getLong("paywall_viewed"),
-                                resultSet.getLong("subscription_clicked"),
-                                resultSet.getLong("subscription_approved"),
-                                resultSet.getLong("access_released"),
-                                resultSet.getLong("first_use"),
-                                resultSet.getLong("checkout_started"),
-                                resultSet.getLong("total_visible_ms"),
-                                timestampAsOperationalText(resultSet, "last_event_at"),
-                                loadLegacyFunnelEventMetrics(connection, productSlug, commercialFilter),
-                                List.of(),
-                                List.of(),
-                                List.of(),
-                                List.of(),
-                                List.of(),
-                                List.of(),
-                                List.of());
-                    }
-                }
-            }
-        } catch (SQLException fallbackFailure) {
-            log.error(
-                    "Falha ao consolidar analytics PDE legado; productSlug={}, operation=summary-legacy",
-                    productSlug,
-                    fallbackFailure);
-            fallbackFailure.addSuppressed(originalFailure);
-            throw new IllegalStateException("Não foi possível consolidar analytics PDE", fallbackFailure);
-        }
-        return emptyFunnelAnalytics(productSlug);
-    }
-
-    /** Carrega um bloco auxiliar do resumo sem derrubar os KPIs principais quando a quebra falhar. */
-    private <T> List<T> loadOptionalAnalyticsBreakdown(
-            Connection connection, String productSlug, String breakdownName, AnalyticsBreakdownLoader<T> loader) {
-        try {
-            return loader.load(connection, productSlug);
-        } catch (SQLException | IOException | RuntimeException ex) {
-            log.error(
-                    "Falha ao carregar breakdown do analytics PDE; productSlug={}, breakdown={}, operation=summary-breakdown",
-                    productSlug,
-                    breakdownName,
-                    ex);
-            return List.of();
-        }
-    }
-
     /** Consolida jornadas recentes por sessão para diagnosticar onde a visitante abandonou. */
     public FunnelAnalyticsJourneyResponse summarizeSessionJourneys(String productSlug, int limit) {
         productCatalogService.getProduct(productSlug);
         if (!usesJdbcStorage()) {
             return new FunnelAnalyticsJourneyResponse(productSlug, 0, List.of());
         }
+        ensureOperationalSchemaReady();
         int safeLimit = Math.max(1, Math.min(limit, 100));
         try (Connection connection = openConnection()) {
             List<FunnelAnalyticsSessionJourneyDto> sessions = loadSessionJourneyDtos(connection, productSlug, safeLimit);
@@ -1169,42 +1032,6 @@ public class AccessService {
         }
     }
 
-    /** Lê contagens por evento sem exigir colunas novas do schema analítico canônico. */
-    private List<FunnelAnalyticsEventMetricDto> loadLegacyFunnelEventMetrics(
-            Connection connection, String productSlug, String commercialFilter) throws SQLException {
-        String sql = """
-                SELECT event_type, COUNT(*) AS total
-                FROM pde_funnel_event
-                WHERE product_slug = ?
-                  AND """ + commercialFilter + """
-                GROUP BY event_type
-                ORDER BY total DESC, event_type
-                """;
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, productSlug);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<FunnelAnalyticsEventMetricDto> metrics = new java.util.ArrayList<>();
-                while (resultSet.next()) {
-                    metrics.add(new FunnelAnalyticsEventMetricDto(
-                            resultSet.getString("event_type"),
-                            resultSet.getLong("total")));
-                }
-                return metrics;
-            }
-        }
-    }
-
-    /** Verifica se a coluna está disponível antes de montar o SQL legado tolerante a migração parcial. */
-    private boolean funnelEventColumnExists(Connection connection, String columnName) throws SQLException {
-        String sql = "SELECT " + columnName + " FROM pde_funnel_event WHERE 1 = 0";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.executeQuery();
-            return true;
-        } catch (SQLException ex) {
-            return false;
-        }
-    }
-
     /** Lê as métricas agregadas por versão comercial para comparar formatos do PDE. */
     private List<FunnelAnalyticsExperienceVersionMetricDto> loadExperienceVersionMetrics(
             Connection connection, String productSlug) throws SQLException {
@@ -1353,14 +1180,6 @@ public class AccessService {
             return fallback;
         }
         return value;
-    }
-
-    /** Define o contrato dos carregadores auxiliares do resumo analítico. */
-    @FunctionalInterface
-    private interface AnalyticsBreakdownLoader<T> {
-
-        /** Carrega um breakdown específico usando a conexão compartilhada do resumo. */
-        List<T> load(Connection connection, String productSlug) throws SQLException, IOException;
     }
 
     /** Lê a auditoria de qualidade de tráfego sem misturar robôs nos KPIs comerciais. */
@@ -1625,6 +1444,13 @@ public class AccessService {
     /** Informa se o backend PDE deve usar o banco MySQL do Marketing Hub. */
     private boolean usesJdbcStorage() {
         return jdbcUrl != null && !jdbcUrl.isBlank();
+    }
+
+    /** Garante o contrato de schema antes de leituras analíticas usadas em decisão comercial. */
+    private void ensureOperationalSchemaReady() {
+        if (databaseMigrationService != null) {
+            databaseMigrationService.migrateIfNeeded();
+        }
     }
 
     /** Bloqueia execução comercial quando a produção exigir persistência JDBC configurada. */

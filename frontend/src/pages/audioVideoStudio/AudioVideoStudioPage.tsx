@@ -1480,51 +1480,6 @@ export default function AudioVideoStudioPage() {
               />
             </label>
             <div
-              className="audio-video-studio-page__asset-section"
-              id="audio-video-stage-provider"
-            >
-              <div className="audio-video-studio-page__section-heading">
-                <h2>6. Provider de video</h2>
-                <p>
-                  Escolha o motor de geracao de acordo com o tipo de cena antes
-                  de pedir uma nova renderizacao.
-                </p>
-              </div>
-              <div className="audio-video-studio-page__provider-grid">
-                {SALES_VIDEO_PROVIDER_OPTIONS.map((option) => {
-                  const isSelected =
-                    selectedProvider.providerName === option.providerName;
-                  return (
-                    <button
-                      className={`audio-video-studio-page__provider-card${
-                        isSelected
-                          ? " audio-video-studio-page__provider-card--selected"
-                          : ""
-                      }`}
-                      key={option.providerName}
-                      type="button"
-                      onClick={() => applyProviderOption(option)}
-                    >
-                      <Clapperboard size={18} aria-hidden="true" />
-                      <strong>{option.label}</strong>
-                      <small>{option.recommendedUse}</small>
-                      <span>
-                        {option.supportsSceneAssembly
-                          ? "Cenas cinematograficas"
-                          : "Formato direto/avatar"}
-                      </span>
-                      <em>
-                        Clipe {option.clipDurationSeconds}s
-                        {option.maxDirectDurationSeconds
-                          ? ` · direto ate ${option.maxDirectDurationSeconds}s`
-                          : ""}
-                      </em>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div
               className="audio-video-studio-page__stage-divider"
               id="audio-video-stage-audio"
             >
@@ -1599,7 +1554,65 @@ export default function AudioVideoStudioPage() {
                 )}
               </div>
             </div>
-            <label id="audio-video-stage-montagem">
+            <div
+              className="audio-video-studio-page__asset-section"
+              id="audio-video-stage-provider"
+            >
+              <div className="audio-video-studio-page__section-heading">
+                <h2>6. Provider de video</h2>
+                <p>
+                  Escolha o motor de geracao de acordo com o tipo de cena antes
+                  de pedir uma nova renderizacao.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__provider-grid">
+                {SALES_VIDEO_PROVIDER_OPTIONS.map((option) => {
+                  const isSelected =
+                    selectedProvider.providerName === option.providerName;
+                  return (
+                    <button
+                      className={`audio-video-studio-page__provider-card${
+                        isSelected
+                          ? " audio-video-studio-page__provider-card--selected"
+                          : ""
+                      }`}
+                      key={option.providerName}
+                      type="button"
+                      onClick={() => applyProviderOption(option)}
+                    >
+                      <Clapperboard size={18} aria-hidden="true" />
+                      <strong>{option.label}</strong>
+                      <small>{option.recommendedUse}</small>
+                      <span>
+                        {option.supportsSceneAssembly
+                          ? "Cenas cinematograficas"
+                          : "Formato direto/avatar"}
+                      </span>
+                      <em>
+                        Clipe {option.clipDurationSeconds}s
+                        {option.maxDirectDurationSeconds
+                          ? ` · direto ate ${option.maxDirectDurationSeconds}s`
+                          : ""}
+                      </em>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div
+              className="audio-video-studio-page__stage-divider"
+              id="audio-video-stage-montagem"
+            >
+              <Scissors size={18} aria-hidden="true" />
+              <div>
+                <h2>7. Montagem</h2>
+                <span>
+                  Cortes, ritmo, legenda, audio e arquivos publicaveis ficam
+                  consolidados antes da aprovacao comercial.
+                </span>
+              </div>
+            </div>
+            <label>
               Montagem e cortes
               <textarea
                 value={briefing.editingNotes}
@@ -1607,17 +1620,20 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
-            <div className="audio-video-studio-page__stage-divider">
+            <div
+              className="audio-video-studio-page__stage-divider"
+              id="audio-video-stage-revisao"
+            >
               <ClipboardCheck size={18} aria-hidden="true" />
               <div>
-                <strong>7. Montagem, 8. revisao e 9. aprendizado</strong>
+                <h2>8. Revisao</h2>
                 <span>
                   A entrega so avanca quando o video estiver claro, coerente,
-                  publicavel e medido pelo funil.
+                  publicavel e aderente a promessa permitida do PDE.
                 </span>
               </div>
             </div>
-            <label id="audio-video-stage-revisao">
+            <label>
               Gate de aprovacao
               <textarea
                 value={briefing.qualityGate}
@@ -1767,7 +1783,7 @@ export default function AudioVideoStudioPage() {
         id="audio-video-stage-storyboard"
       >
         <div className="audio-video-studio-page__section-heading">
-          <h2>Estrutura narrativa</h2>
+          <h2>4. Storyboard</h2>
           <p>
             Sequencia do blueprint atual para testar retencao, desejo e acao sem
             depender de improviso.
@@ -1832,26 +1848,35 @@ export default function AudioVideoStudioPage() {
       </section>
 
       <section
-        className="audio-video-studio-page__columns"
+        className="audio-video-studio-page__section"
         id="audio-video-stage-aprendizado"
       >
-        <div className="audio-video-studio-page__panel">
-          <h2>Experimentos recomendados</h2>
-          <ol>
-            <li>Video educativo com promessa forte para publico frio.</li>
-            <li>Video demonstrativo com prova visual para leads mornos.</li>
-            <li>Video de oferta com urgencia leve para remarketing.</li>
-          </ol>
+        <div className="audio-video-studio-page__section-heading">
+          <h2>9. Aprendizado e metricas</h2>
+          <p>
+            O funil mede consumo, cliques, diagnostico, paywall, checkout e
+            compra para decidir novos cortes e novas promessas.
+          </p>
         </div>
-        <div className="audio-video-studio-page__panel">
-          <h2>Recursos atuais conectaveis</h2>
-          <ul>
-            <li>Gerador de imagem para referencias visuais e cenas-chave.</li>
-            <li>
-              Fluxos de videos de produto para assets curtos ja existentes.
-            </li>
-            <li>Revisao comercial antes de usar em campanha ou PDE.</li>
-          </ul>
+        <div className="audio-video-studio-page__columns">
+          <div className="audio-video-studio-page__panel">
+            <h2>Experimentos recomendados</h2>
+            <ol>
+              <li>Video educativo com promessa forte para publico frio.</li>
+              <li>Video demonstrativo com prova visual para leads mornos.</li>
+              <li>Video de oferta com urgencia leve para remarketing.</li>
+            </ol>
+          </div>
+          <div className="audio-video-studio-page__panel">
+            <h2>Recursos atuais conectaveis</h2>
+            <ul>
+              <li>Gerador de imagem para referencias visuais e cenas-chave.</li>
+              <li>
+                Fluxos de videos de produto para assets curtos ja existentes.
+              </li>
+              <li>Revisao comercial antes de usar em campanha ou PDE.</li>
+            </ul>
+          </div>
         </div>
       </section>
 

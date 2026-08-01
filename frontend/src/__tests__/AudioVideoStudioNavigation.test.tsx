@@ -127,8 +127,23 @@ describe("audio video studio navigation", () => {
     expect(screen.getByText(/3\. biblia visual premium/i)).toBeTruthy();
     expect(screen.getByText(/projetos recentes do estudio/i)).toBeTruthy();
     expect(
-      screen.getByRole("heading", { name: /estrutura narrativa/i }),
-    ).toBeTruthy();
+      document.getElementById("audio-video-stage-storyboard")?.textContent,
+    ).toContain("4. Storyboard");
+    expect(
+      document.getElementById("audio-video-stage-montagem")?.textContent,
+    ).toContain("7. Montagem");
+    expect(
+      document.getElementById("audio-video-stage-revisao")?.textContent,
+    ).toContain("8. Revisao");
+    expect(
+      document.getElementById("audio-video-stage-aprendizado")?.textContent,
+    ).toContain("9. Aprendizado e metricas");
+    expect(
+      document.getElementById("audio-video-stage-montagem")?.tagName,
+    ).not.toBe("LABEL");
+    expect(
+      document.getElementById("audio-video-stage-revisao")?.tagName,
+    ).not.toBe("LABEL");
     expect(screen.getByText(/plano basico de cenas/i)).toBeTruthy();
     expect(screen.getByText(/checklist de producao/i)).toBeTruthy();
     expect(screen.getByText(/o que continua onde esta/i)).toBeTruthy();

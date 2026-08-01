@@ -19,6 +19,8 @@ import {
   useVideoProject,
   useVideoProjects,
 } from "../../api/salesVideo/useVideoProjects";
+import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
+import { useAsset } from "../../api/media/useAsset";
 import type {
   VideoProject,
   VideoProjectPayload,
@@ -669,6 +671,8 @@ export default function AudioVideoStudioPage() {
   const selectedProjectQuery = useVideoProject(editableProjectId);
   const selectedProject = selectedProjectQuery.data;
   const videoProjectsQuery = useVideoProjects();
+  const linkedProfileId = selectedProject?.salesVideoProfileId;
+  const linkedJobsQuery = useSalesVideoJobs(linkedProfileId ?? undefined);
   const createVideoProject = useCreateVideoProject();
   const updateVideoProject = useUpdateVideoProject();
   const [saveFeedback, setSaveFeedback] = useState("");
@@ -804,6 +808,25 @@ export default function AudioVideoStudioPage() {
   };
 
   const recentProjects = videoProjectsQuery.data?.slice(0, 4) ?? [];
+  const renderedJob = useMemo(
+    () =>
+      linkedJobsQuery.data
+        ?.filter((job) => job.status === "VIDEO_READY" && job.assetId)
+        .sort((first, second) => {
+          const firstDate =
+            first.finishedAt ?? first.updatedAt ?? first.createdAt ?? "";
+          const secondDate =
+            second.finishedAt ?? second.updatedAt ?? second.createdAt ?? "";
+          return secondDate.localeCompare(firstDate);
+        })[0],
+    [linkedJobsQuery.data],
+  );
+  const renderedAssetQuery = useAsset(renderedJob?.assetId);
+  const renderedAssetUrl =
+    renderedJob?.streamPlaybackUrl?.trim() ||
+    renderedAssetQuery.data?.publicUrl ||
+    renderedAssetQuery.data?.url ||
+    "";
 
   return (
     <div className="audio-video-studio-page">
@@ -1302,6 +1325,61 @@ export default function AudioVideoStudioPage() {
           </div>
         </div>
       </section>
+
+      {isEditingProject ? (
+        <section className="audio-video-studio-page__section">
+          <div className="audio-video-studio-page__section-heading">
+            <h2>MP4 gerado para revisao</h2>
+            <p>
+              Ultimo arquivo renderizado ligado a este projeto para assistir,
+              revisar e decidir se entra no funil.
+            </p>
+          </div>
+          {linkedJobsQuery.isLoading ? (
+            <article className="audio-video-studio-page__project-card">
+              Buscando renders do projeto...
+            </article>
+          ) : renderedJob && renderedAssetUrl ? (
+            <article className="audio-video-studio-page__render-card">
+              <div className="audio-video-studio-page__render-preview">
+                <video
+                  controls
+                  playsInline
+                  preload="metadata"
+                  src={renderedAssetUrl}
+                >
+                  Seu navegador nao conseguiu carregar este video.
+                </video>
+              </div>
+              <div className="audio-video-studio-page__render-details">
+                <span>Pronto para revisao</span>
+                <h3>{briefing.title}</h3>
+                <p>
+                  Job #{renderedJob.id}
+                  {renderedJob.providerName
+                    ? ` · ${renderedJob.providerName}`
+                    : ""}
+                  {renderedJob.assetId
+                    ? ` · Asset #${renderedJob.assetId}`
+                    : ""}
+                </p>
+                <a
+                  className="audio-video-studio-page__secondary-action"
+                  href={renderedAssetUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Abrir MP4
+                </a>
+              </div>
+            </article>
+          ) : (
+            <article className="audio-video-studio-page__project-card">
+              Nenhum MP4 pronto foi encontrado para este projeto ainda.
+            </article>
+          )}
+        </section>
+      ) : null}
 
       <section className="audio-video-studio-page__section">
         <div className="audio-video-studio-page__section-heading">

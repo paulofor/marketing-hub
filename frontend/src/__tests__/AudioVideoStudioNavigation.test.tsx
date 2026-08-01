@@ -157,6 +157,73 @@ describe("audio video studio navigation", () => {
     ).toBeTruthy();
   });
 
+  it("shows rendered mp4 for review when project has ready video job", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/projects/7") {
+        return Promise.resolve({
+          data: {
+            id: 7,
+            title: "Projeto MUSA carregado",
+            objective: "Aumentar inicio do diagnostico.",
+            storyText: "Historia persistida para continuar edicao.",
+            contextType: "PDE",
+            videoCategory: "COMMERCIAL_SHORT",
+            productionMode: "AVATAR_EXPLAINER",
+            targetChannel: "PDE_HERO_DIAGNOSTIC",
+            format: "VERTICAL_9_16",
+            status: "READY_FOR_REVIEW",
+            targetDurationSeconds: 30,
+            salesVideoProfileId: 52,
+          },
+        });
+      }
+
+      if (url === "/api/sales-videos/profiles/52/jobs") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 20487,
+              profileId: 52,
+              providerFamily: "EXTERNAL_VIDEO_MODULE",
+              providerName: "HEYGEN",
+              jobType: "RENDER",
+              status: "VIDEO_READY",
+              assetId: 1940,
+              finishedAt: "2026-08-01T06:03:43.298027Z",
+            },
+          ],
+        });
+      }
+
+      if (url === "/api/media/1940") {
+        return Promise.resolve({
+          data: {
+            id: 1940,
+            type: "VIDEO",
+            provider: "VIDEO_MODULE",
+            status: "READY",
+            url: "https://assets.example/musa-v7.mp4",
+          },
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/projects/7"]);
+
+    expect(
+      await screen.findByRole("heading", { name: /mp4 gerado para revisao/i }),
+    ).toBeTruthy();
+    expect(
+      await screen.findByText(/job #20487 · heygen · asset #1940/i),
+    ).toBeTruthy();
+    const mp4Link = screen.getByRole("link", { name: /abrir mp4/i });
+    expect(mp4Link.getAttribute("href")).toBe(
+      "https://assets.example/musa-v7.mp4",
+    );
+  });
+
   it("blocks audio video studio project below three minutes", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/sales-videos/projects/8") {

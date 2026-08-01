@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   Clapperboard,
   FileText,
+  ListChecks,
   Music,
   PlayCircle,
   Save,
@@ -21,6 +22,7 @@ import {
 import type {
   VideoProject,
   VideoProjectPayload,
+  VideoProjectStatus,
 } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
 import "./AudioVideoStudioPage.css";
@@ -57,6 +59,14 @@ type StudioBriefing = {
   captionPlan: string;
   editingNotes: string;
   qualityGate: string;
+  status: VideoProjectStatus;
+};
+
+type StudioCategoryOption = {
+  value: string;
+  label: string;
+  durationRule: string;
+  commercialUse: string;
 };
 
 type StudioPreset = {
@@ -103,6 +113,63 @@ const productionPillars = [
     title: "PDE premium",
     description:
       "Videos para elevar valor percebido de produtos digitais com IA aplicada ao dia a dia.",
+  },
+];
+
+const videoCategoryOptions: StudioCategoryOption[] = [
+  {
+    value: "COMMERCIAL_SHORT",
+    label: "Video comercial curto",
+    durationRule: "6 a 60 segundos",
+    commercialUse:
+      "Hero, anuncio, Reels, Stories, retargeting e clique para diagnostico.",
+  },
+  {
+    value: "LONG_FORM",
+    label: "Video longo / VSL",
+    durationRule: "180 segundos ou mais",
+    commercialUse:
+      "Paywall, pagina de venda, objecoes, prova e explicacao da oferta.",
+  },
+  {
+    value: "INSTITUTIONAL_CONTENT",
+    label: "Institucional / conteudo",
+    durationRule: "duracao livre",
+    commercialUse: "Conteudo de marca, autoridade, onboarding ou nutricao.",
+  },
+];
+
+const statusOptions: { value: VideoProjectStatus; label: string }[] = [
+  { value: "DRAFT", label: "Rascunho" },
+  { value: "READY_FOR_SCRIPT", label: "Pronto para roteiro" },
+  { value: "READY_FOR_RENDER", label: "Pronto para render" },
+  { value: "IN_PRODUCTION", label: "Em producao" },
+  { value: "READY_FOR_REVIEW", label: "Pronto para revisao" },
+  { value: "APPROVED", label: "Aprovado" },
+  { value: "ARCHIVED", label: "Arquivado" },
+];
+
+const studioWorkflowSteps = [
+  {
+    title: "Blueprint",
+    description: "Produto, funil, promessa, categoria, duracao e metrica.",
+  },
+  {
+    title: "Pre-producao",
+    description: "Personagem, ambiente, objetos, frames-chave e continuidade.",
+  },
+  {
+    title: "Producao",
+    description: "Provider, cenas, voz, trilha, legendas e montagem.",
+  },
+  {
+    title: "Aprovacao",
+    description: "Gate comercial, HLS/fallback e liberacao para uso no funil.",
+  },
+  {
+    title: "Aprendizado",
+    description:
+      "Play, retencao, CTA, diagnostico, paywall, checkout e compra.",
   },
 ];
 
@@ -186,8 +253,8 @@ const productionChecklist = [
   "Personagens com imagens mestre aprovadas",
   "Ambientes com placas visuais e mapa de continuidade",
   "Objetos/produto com referencias separadas",
-  "Roteiro narrado com ate 390 palavras",
-  "6 blocos de cena com funcao clara",
+  "Roteiro narrado compatível com a duracao escolhida",
+  "Blocos de cena com funcao clara",
   "Voz definida com ritmo, pausas e emocao",
   "Trilha escolhida sem competir com a narracao",
   "Legenda planejada para consumo sem audio",
@@ -259,6 +326,7 @@ const defaultBriefing: StudioBriefing = {
     "Priorizar cortes limpos, prova visual concreta e CTA sem excesso de texto.",
   qualityGate:
     "Aprovar somente se a historia estiver clara, o mecanismo parecer plausivel, o audio for compreensivel e o CTA estiver conectado ao funil.",
+  status: "READY_FOR_SCRIPT",
 };
 
 const musaV7Briefing: StudioBriefing = {
@@ -311,6 +379,7 @@ const musaV7Briefing: StudioBriefing = {
     "Montagem 28-34s: dor do espelho, resultado acessivel, mecanismo em cortes sensoriais e CTA no diagnostico. Criar tambem cortes de 15s e 6-8s para Reels/Stories e retargeting.",
   qualityGate:
     "Aprovar somente se completar Dor -> Resultado -> Mecanismo -> CTA, preservar promessa sem garantia absoluta, nao parecer luxo inacessivel, funcionar em mobile sem audio, ter HLS/fallback e revisao humana antes de entrar em heroVideos da v7.",
+  status: "READY_FOR_SCRIPT",
 };
 
 const studioPresets: StudioPreset[] = [
@@ -370,6 +439,7 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     captionPlan: project.captionPlan || defaultBriefing.captionPlan,
     editingNotes: project.editingNotes || defaultBriefing.editingNotes,
     qualityGate: project.qualityGate || defaultBriefing.qualityGate,
+    status: project.status || defaultBriefing.status,
   };
 }
 
@@ -384,6 +454,25 @@ function parseOptionalNumber(value: string) {
   }
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function durationValidationMessage(
+  videoCategory: string,
+  targetDurationSeconds?: number,
+) {
+  if (!targetDurationSeconds) {
+    return "Informe uma duracao alvo valida para o projeto.";
+  }
+  if (
+    videoCategory === "COMMERCIAL_SHORT" &&
+    (targetDurationSeconds < 6 || targetDurationSeconds > 60)
+  ) {
+    return "Video comercial curto deve ter entre 6 e 60 segundos.";
+  }
+  if (videoCategory === "LONG_FORM" && targetDurationSeconds < 180) {
+    return "Video longo ou VSL deve ter 180 segundos ou mais.";
+  }
+  return "";
 }
 
 export default function AudioVideoStudioPage() {
@@ -435,10 +524,22 @@ export default function AudioVideoStudioPage() {
     briefing.campaignKey === musaV7Briefing.campaignKey
       ? musaV7ScenePrompts
       : defaultScenePrompts;
+  const selectedCategory =
+    videoCategoryOptions.find(
+      (option) => option.value === briefing.videoCategory,
+    ) ?? videoCategoryOptions[1];
+  const durationIssue = durationValidationMessage(
+    briefing.videoCategory,
+    targetDurationSeconds,
+  );
 
   const updateBriefing =
     (field: keyof StudioBriefing) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (
+      event: ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
       setBriefing((current) => ({ ...current, [field]: event.target.value }));
     };
 
@@ -484,15 +585,15 @@ export default function AudioVideoStudioPage() {
     providerPlan: briefing.providerPlan,
     editingNotes: briefing.editingNotes,
     qualityGate: briefing.qualityGate,
-    status: selectedProject?.status || "READY_FOR_SCRIPT",
+    status: briefing.status || selectedProject?.status || "READY_FOR_SCRIPT",
     createdBy: isEditingProject ? undefined : "codex-mkt",
     updatedBy: "codex-mkt",
   });
 
   const handleSaveProject = async () => {
     setSaveFeedback("");
-    if (!targetDurationSeconds) {
-      setSaveFeedback("Informe uma duracao alvo valida para o projeto.");
+    if (durationIssue) {
+      setSaveFeedback(durationIssue);
       return;
     }
     try {
@@ -578,9 +679,22 @@ export default function AudioVideoStudioPage() {
             {targetDurationSeconds ?? 0}s / {briefing.format}
           </strong>
           <small>
-            {briefing.targetChannel} · {briefing.funnelStage}
+            {selectedCategory.label} · {briefing.funnelStage}
           </small>
         </div>
+      </section>
+
+      <section className="audio-video-studio-page__workflow">
+        {studioWorkflowSteps.map((step, index) => (
+          <article
+            className="audio-video-studio-page__workflow-step"
+            key={step.title}
+          >
+            <span>{index + 1}</span>
+            <strong>{step.title}</strong>
+            <small>{step.description}</small>
+          </article>
+        ))}
       </section>
 
       {!isEditingProject ? (
@@ -603,7 +717,7 @@ export default function AudioVideoStudioPage() {
       <section className="audio-video-studio-page__workspace">
         <form
           className="audio-video-studio-page__briefing"
-          aria-label="Briefing do video de 3 minutos"
+          aria-label="Blueprint operacional de video comercial"
         >
           <div className="audio-video-studio-page__section-heading">
             <h2>
@@ -632,10 +746,16 @@ export default function AudioVideoStudioPage() {
             </label>
             <label>
               Categoria do video
-              <input
+              <select
                 value={briefing.videoCategory}
                 onChange={updateBriefing("videoCategory")}
-              />
+              >
+                {videoCategoryOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Canal alvo
@@ -647,11 +767,38 @@ export default function AudioVideoStudioPage() {
             <label>
               Duracao alvo
               <input
+                type="number"
+                min="1"
                 value={briefing.targetDurationSeconds}
                 onChange={updateBriefing("targetDurationSeconds")}
               />
             </label>
+            <label>
+              Status operacional
+              <select
+                value={briefing.status}
+                onChange={updateBriefing("status")}
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
+          <div className="audio-video-studio-page__category-note">
+            <ListChecks size={18} aria-hidden="true" />
+            <div>
+              <strong>{selectedCategory.durationRule}</strong>
+              <span>{selectedCategory.commercialUse}</span>
+            </div>
+          </div>
+          {durationIssue ? (
+            <p className="audio-video-studio-page__duration-block">
+              {durationIssue}
+            </p>
+          ) : null}
           <label>
             Titulo do projeto
             <input value={briefing.title} onChange={updateBriefing("title")} />
@@ -848,7 +995,11 @@ export default function AudioVideoStudioPage() {
             className="audio-video-studio-page__primary-action"
             type="button"
             onClick={handleSaveProject}
-            disabled={isSavingProject || selectedProjectQuery.isLoading}
+            disabled={
+              isSavingProject ||
+              selectedProjectQuery.isLoading ||
+              Boolean(durationIssue)
+            }
           >
             <Save size={18} aria-hidden="true" />
             {isSavingProject

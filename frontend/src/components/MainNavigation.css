@@ -263,6 +263,8 @@
     gap: 1rem;
     border-right: none;
     border-bottom: 1px solid var(--bs-border-color);
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
   .main-navigation,
@@ -280,7 +282,8 @@
 
   .main-navigation__sections {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
     gap: 0.75rem;
     overflow: visible;
     padding-right: 0;
@@ -289,7 +292,8 @@
   .main-navigation__section {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
     gap: 0.5rem;
   }
 
@@ -300,7 +304,7 @@
 
   .main-navigation__items {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.5rem;
   }
 

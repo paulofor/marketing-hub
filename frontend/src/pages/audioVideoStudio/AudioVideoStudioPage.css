@@ -34,11 +34,13 @@
 .audio-video-studio-page__briefing,
 .audio-video-studio-page__draft,
 .audio-video-studio-page__visual-bible,
+.audio-video-studio-page__category-note,
 .audio-video-studio-page__next-action,
 .audio-video-studio-page__timeline-block,
 .audio-video-studio-page__panel,
 .audio-video-studio-page__project-card,
-.audio-video-studio-page__pillar {
+.audio-video-studio-page__pillar,
+.audio-video-studio-page__workflow-step {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #ffffff;
@@ -101,6 +103,43 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 0.85rem;
+}
+
+.audio-video-studio-page__workflow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.audio-video-studio-page__workflow-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.25rem 0.65rem;
+  align-items: start;
+  padding: 0.85rem;
+}
+
+.audio-video-studio-page__workflow-step span {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.audio-video-studio-page__workflow-step strong,
+.audio-video-studio-page__workflow-step small {
+  min-width: 0;
+}
+
+.audio-video-studio-page__workflow-step small {
+  grid-column: 2;
+  color: #475569;
+  line-height: 1.35;
 }
 
 .audio-video-studio-page__preset-grid,
@@ -208,6 +247,7 @@
 }
 
 .audio-video-studio-page__briefing input,
+.audio-video-studio-page__briefing select,
 .audio-video-studio-page__briefing textarea {
   width: 100%;
   border: 1px solid #cbd5e1;
@@ -220,10 +260,36 @@
 }
 
 .audio-video-studio-page__briefing input:focus,
+.audio-video-studio-page__briefing select:focus,
 .audio-video-studio-page__briefing textarea:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
   outline: none;
+}
+
+.audio-video-studio-page__category-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  padding: 0.8rem;
+}
+
+.audio-video-studio-page__category-note svg {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.audio-video-studio-page__category-note div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.audio-video-studio-page__category-note span {
+  color: #334155;
+  line-height: 1.4;
 }
 
 .audio-video-studio-page__primary-action {

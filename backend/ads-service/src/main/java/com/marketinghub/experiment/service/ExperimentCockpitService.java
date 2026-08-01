@@ -148,6 +148,8 @@ public class ExperimentCockpitService {
             analytics.pageViews(),
             stageTotal(funnelStages, ExperimentFunnelStage.VISUALIZACAO_FORM));
     long leads = stageTotal(funnelStages, ExperimentFunnelStage.ENVIO_FORM);
+    long partialVideoViews = stageTotal(funnelStages, ExperimentFunnelStage.VIDEO_VISTO_PARCIAL);
+    long completeVideoViews = stageTotal(funnelStages, ExperimentFunnelStage.VIDEO_VISTO_COMPLETO);
     long checkoutAccesses = stageTotal(funnelStages, ExperimentFunnelStage.ACESSO_CHECKOUT);
     long purchases = stageTotal(funnelStages, ExperimentFunnelStage.COMPRA);
     Long impressions = metric != null ? metric.getImpressions() : null;
@@ -162,6 +164,8 @@ public class ExperimentCockpitService {
         percentage(clicks, impressions),
         metric != null ? metric.getCpc() : null,
         measuredPageViews,
+        partialVideoViews,
+        completeVideoViews,
         leads,
         checkoutAccesses,
         purchases,
@@ -261,6 +265,15 @@ public class ExperimentCockpitService {
           "O funil capturou leads, porém ainda não gerou acesso ao checkout.",
           "A captura funciona, mas a ponte para monetização está fraca.",
           "Ajustar amostra, e-mail, CTA de compra e oferta de entrada.");
+    }
+    if (scoreboard.completeVideoViews() > 0 || scoreboard.partialVideoViews() > 0) {
+      return bottleneck(
+          "VIDEO_SEM_PROXIMO_PASSO",
+          "Vídeo engajou, mas não levou ao próximo passo",
+          "warning",
+          "Há consumo parcial ou completo do vídeo sem avanço para formulário, login, paywall ou checkout.",
+          "A promessa consegue prender atenção, mas a ponte para monetização ainda não está clara ou forte o suficiente.",
+          "Reforçar CTA pós-vídeo, promessa de continuidade e transição para diagnóstico, login ou pagamento.");
     }
     if (scoreboard.pageViews() > 0) {
       return bottleneck(
@@ -392,6 +405,18 @@ public class ExperimentCockpitService {
                   "Revisar promessa e CTA",
                   "Fortaleça dor, transformação percebida e clareza do próximo passo.",
                   experimentRoute + "/edit"));
+      case "VIDEO_SEM_PROXIMO_PASSO" ->
+          List.of(
+              action(
+                  "REFORCAR_CTA_POS_VIDEO",
+                  "Reforçar CTA pós-vídeo",
+                  "O vídeo reteve atenção; a próxima alavanca é transformar esse momento em clique para diagnóstico, login ou compra.",
+                  experimentRoute + "/edit"),
+              action(
+                  "CRIAR_PONTE_DE_CONTINUIDADE",
+                  "Criar ponte de continuidade",
+                  "Explicite o que a pessoa ganha imediatamente ao avançar depois do vídeo.",
+                  experimentRoute));
       case "ANUNCIO_SEM_CLIQUE" ->
           List.of(
               action(

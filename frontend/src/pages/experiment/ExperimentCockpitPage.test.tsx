@@ -51,6 +51,8 @@ describe("ExperimentCockpitPage", () => {
           ctr: 5,
           cpc: 2.08,
           pageViews: 42,
+          partialVideoViews: 12,
+          completeVideoViews: 4,
           leads: 0,
           checkoutAccesses: 0,
           purchases: 0,
@@ -84,22 +86,23 @@ describe("ExperimentCockpitPage", () => {
           },
         ],
         bottleneck: {
-          code: "PAGINA_SEM_CONVERSAO",
-          title: "Página recebeu tráfego, mas não converteu",
+          code: "VIDEO_SEM_PROXIMO_PASSO",
+          title: "Vídeo engajou, mas não levou ao próximo passo",
           severity: "warning",
           diagnosis:
-            "Há visualizações de página sem avanço funcional no funil.",
+            "Há consumo parcial ou completo do vídeo sem avanço para formulário, login, paywall ou checkout.",
           commercialImpact:
-            "O clique chegou, mas primeira dobra, promessa, prova ou formulário não moveram a pessoa.",
+            "A promessa consegue prender atenção, mas a ponte para monetização ainda não está clara ou forte o suficiente.",
           recommendedFocus:
-            "Criar nova primeira dobra e reforçar promessa, prova e CTA.",
+            "Reforçar CTA pós-vídeo, promessa de continuidade e transição para diagnóstico, login ou pagamento.",
         },
-        learnings: ["O clique chegou, mas a página não converteu."],
+        learnings: ["O vídeo reteve atenção, mas a página não monetizou."],
         nextActions: [
           {
-            code: "NOVA_PRIMEIRA_DOBRA",
-            label: "Gerar nova primeira dobra",
-            rationale: "O clique chegou, mas a página não moveu a pessoa.",
+            code: "REFORCAR_CTA_POS_VIDEO",
+            label: "Reforçar CTA pós-vídeo",
+            rationale:
+              "O vídeo reteve atenção; a próxima alavanca é transformar esse momento em clique para diagnóstico, login ou compra.",
             targetRoute: "/experiments/67",
           },
         ],
@@ -110,9 +113,10 @@ describe("ExperimentCockpitPage", () => {
 
     expect(await screen.findByText("Cockpit do Experimento")).toBeTruthy();
     expect(
-      screen.getByText("Página recebeu tráfego, mas não converteu"),
+      screen.getByText("Vídeo engajou, mas não levou ao próximo passo"),
     ).toBeTruthy();
-    expect(screen.getByText("Gerar nova primeira dobra")).toBeTruthy();
+    expect(screen.getByText("Reforçar CTA pós-vídeo")).toBeTruthy();
+    expect(screen.getByText("Vídeos completos")).toBeTruthy();
     expect(axios.get).toHaveBeenCalledWith("/api/experiments/67/cockpit");
   });
 });

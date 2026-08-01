@@ -90,6 +90,12 @@ components:
         pageViews:
           type: integer
           format: int64
+        partialVideoViews:
+          type: integer
+          format: int64
+        completeVideoViews:
+          type: integer
+          format: int64
         leads:
           type: integer
           format: int64

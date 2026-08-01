@@ -226,6 +226,33 @@ export default function ExperimentCockpitPage() {
         />
       </section>
 
+      <section className="row g-3">
+        <MetricCard
+          icon={<Workflow size={20} />}
+          label="Vídeos parciais"
+          value={formatNumber(scoreboard.partialVideoViews)}
+          tone={scoreboard.partialVideoViews > 0 ? "primary" : "secondary"}
+        />
+        <MetricCard
+          icon={<CheckCircle2 size={20} />}
+          label="Vídeos completos"
+          value={formatNumber(scoreboard.completeVideoViews)}
+          tone={scoreboard.completeVideoViews > 0 ? "success" : "secondary"}
+        />
+        <MetricCard
+          icon={<Target size={20} />}
+          label="Leads"
+          value={formatNumber(scoreboard.leads)}
+          tone={scoreboard.leads > 0 ? "success" : "secondary"}
+        />
+        <MetricCard
+          icon={<ShoppingCart size={20} />}
+          label="Acessos checkout"
+          value={formatNumber(scoreboard.checkoutAccesses)}
+          tone={scoreboard.checkoutAccesses > 0 ? "success" : "secondary"}
+        />
+      </section>
+
       <section className="border rounded-2 p-3">
         <h2 className="h5 d-flex align-items-center gap-2">
           <Workflow size={18} />

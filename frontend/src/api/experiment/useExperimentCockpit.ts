@@ -11,6 +11,8 @@ export interface ExperimentCockpitScoreboard {
   ctr?: number | null;
   cpc?: number | null;
   pageViews: number;
+  partialVideoViews: number;
+  completeVideoViews: number;
   leads: number;
   checkoutAccesses: number;
   purchases: number;

@@ -412,6 +412,10 @@ jobs:
           grep -q '"git"' /tmp/pde-backend-actuator-info.json
           grep -q '"commit"' /tmp/pde-backend-actuator-info.json
           grep -q '"pde"' /tmp/pde-backend-actuator-info.json
+          curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_BACKEND_PORT}/api/pde/build-identity" | tee /tmp/pde-backend-build-identity.json
+          grep -q '"commitSha"' /tmp/pde-backend-build-identity.json
+          grep -q '"backendImage"' /tmp/pde-backend-build-identity.json
+          grep -q '"marketingHubBaseUrl"' /tmp/pde-backend-build-identity.json
       - name: Validate production public HTTPS routes
         run: |
           validate_dns_points_to_deploy_host() {

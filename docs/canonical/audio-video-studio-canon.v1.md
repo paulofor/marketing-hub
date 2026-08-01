@@ -120,6 +120,22 @@ A primeira versao deve ser um cockpit de construcao no frontend, deixando clara 
 
 As proximas evolucoes devem ser incrementais e orientadas por etapas auditaveis: briefing, roteiro, cenas, referencias visuais, voz, trilha, montagem, revisao e publicacao.
 
+## Etapas premium de producao com IA
+
+A tela do Estudio de Audio e Video deve organizar projetos premium pelas seguintes etapas operacionais:
+
+1. **Estrategia / oferta e funil:** objetivo comercial, publico, dor, promessa, mecanismo, canal, duracao e metrica primaria.
+2. **Roteiro / narrativa:** gancho, historia, demonstracao, prova, objecoes e CTA falado ou visual.
+3. **Biblia visual / pre-producao:** personagem, ambiente, objetos, marca, direcao visual, imagens mestre e regras de continuidade.
+4. **Storyboard / plano de cenas:** cenas curtas com enquadramento, movimento, acao, emocao e transicao.
+5. **Audio / voz e trilha:** narracao, ritmo, pausas, trilha, efeitos e legibilidade para consumo sem som.
+6. **Geracao IA / provider:** escolha de Luma, Kling, HeyGen ou outro motor conforme tipo de cena, custo, duracao e consistencia.
+7. **Montagem / pos-producao:** corte de falhas, ritmo, uniao de cenas, legenda, audio, capa, HLS e fallback MP4.
+8. **Revisao / gate comercial:** promessa permitida, clareza, continuidade, audio, prova, CTA, HLS e aderencia ao PDE.
+9. **Aprendizado / metricas:** play, retencao, clique, diagnostico, paywall, checkout e compra para decidir novos cortes.
+
+Essa ordem evita desperdicio de geracao: nenhum video premium deve avancar para renderizacao antes de existir clareza comercial, roteiro estruturado e referencias visuais suficientes para preservar consistencia e valor percebido.
+
 ## HLS para PDEs
 
 Quando um projeto do Estudio de Audio e Video gerar material para PDE, a entrega publicavel deve incluir HLS (`.m3u8`) gerenciado pelo Marketing Hub. O arquivo MP4 pode ser preservado como master/origem, mas a URL usada pelo PDE deve ser a playlist HLS registrada no ativo comercial ou no job correspondente.

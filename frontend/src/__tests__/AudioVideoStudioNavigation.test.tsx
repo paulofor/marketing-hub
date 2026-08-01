@@ -105,6 +105,11 @@ describe("audio video studio navigation", () => {
     expect(
       screen.getByRole("button", { name: /criar blueprint/i }),
     ).toBeTruthy();
+    expect(screen.getByText(/etapas de producao premium com ia/i)).toBeTruthy();
+    expect(screen.getAllByText(/1\. estrategia/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/6\. geracao ia/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/9\. aprendizado/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/3\. biblia visual premium/i)).toBeTruthy();
     expect(screen.getByText(/projetos recentes do estudio/i)).toBeTruthy();
     expect(
       screen.getByRole("heading", { name: /estrutura narrativa/i }),

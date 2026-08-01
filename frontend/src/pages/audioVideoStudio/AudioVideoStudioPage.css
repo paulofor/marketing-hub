@@ -34,6 +34,8 @@
 .audio-video-studio-page__briefing,
 .audio-video-studio-page__draft,
 .audio-video-studio-page__visual-bible,
+.audio-video-studio-page__stage-card,
+.audio-video-studio-page__stage-divider,
 .audio-video-studio-page__category-note,
 .audio-video-studio-page__next-action,
 .audio-video-studio-page__timeline-block,
@@ -151,6 +153,52 @@
 
 .audio-video-studio-page__preset-grid {
   margin-bottom: 1.25rem;
+}
+
+.audio-video-studio-page__stage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.audio-video-studio-page__stage-card {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  min-height: 214px;
+  padding: 1rem;
+}
+
+.audio-video-studio-page__stage-card svg {
+  color: #7a2444;
+}
+
+.audio-video-studio-page__stage-card span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #f7e4c6;
+  color: #7a2444;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.audio-video-studio-page__stage-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.audio-video-studio-page__stage-card p,
+.audio-video-studio-page__stage-card small {
+  margin: 0;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.audio-video-studio-page__stage-card small {
+  color: #334155;
+  font-weight: 700;
 }
 
 .audio-video-studio-page__preset {
@@ -454,6 +502,31 @@
 }
 
 .audio-video-studio-page__category-note span {
+  color: #334155;
+  line-height: 1.4;
+}
+
+.audio-video-studio-page__stage-divider {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border-color: #f7e4c6;
+  background: #fff8f3;
+  color: #7a2444;
+  padding: 0.8rem;
+}
+
+.audio-video-studio-page__stage-divider svg {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.audio-video-studio-page__stage-divider div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.audio-video-studio-page__stage-divider span {
   color: #334155;
   line-height: 1.4;
 }
@@ -816,5 +889,9 @@
 
   .audio-video-studio-page__next-action {
     align-items: flex-start;
+  }
+
+  .audio-video-studio-page__stage-card {
+    min-height: auto;
   }
 }

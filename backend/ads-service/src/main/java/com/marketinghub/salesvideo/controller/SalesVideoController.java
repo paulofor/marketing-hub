@@ -119,6 +119,31 @@ public class SalesVideoController {
     return salesVideoService.createVideoReference(request);
   }
 
+  /** Recebe upload de vídeo do usuário para análise e aprendizado comercial. */
+  @PostMapping(
+      value = "/api/sales-videos/reference-videos",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  public VideoReferenceDto uploadVideoReference(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam String title,
+      @RequestParam(required = false) String sourcePlatform,
+      @RequestParam(required = false) String niche,
+      @RequestParam(required = false) String funnelStage,
+      @RequestParam String primaryLearningGoal,
+      @RequestParam(required = false) String successEvidence,
+      @RequestParam(required = false) String createdBy) {
+    return salesVideoService.uploadVideoReference(
+        file,
+        title,
+        sourcePlatform,
+        niche,
+        funnelStage,
+        primaryLearningGoal,
+        successEvidence,
+        createdBy);
+  }
+
   /** Cria um perfil de vídeo para um produto. */
   @PostMapping("/api/products/{productId}/sales-videos/profiles")
   public SalesVideoProfileDto createProfile(

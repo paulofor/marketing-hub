@@ -7,18 +7,34 @@ import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
+import com.marketinghub.storage.AssetStorageService;
+import com.marketinghub.storage.AssetStorageService.StoredObject;
+import com.marketinghub.storage.AssetUploadCategory;
+import com.marketinghub.storage.AssetUploadContext;
+import com.marketinghub.storage.StorageException;
+import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Gerencia a fila de vídeos externos usados como referência de aprendizado comercial. */
 @Component
 public class VideoReferenceService {
-  private final VideoReferenceRepository repository;
+  private static final Logger log = LoggerFactory.getLogger(VideoReferenceService.class);
 
-  /** Inicializa o serviço com o repositório canônico de referências de vídeo. */
-  public VideoReferenceService(VideoReferenceRepository repository) {
+  private final VideoReferenceRepository repository;
+  private final AssetStorageService storageService;
+
+  /** Inicializa o serviço com repositório e storage canônicos de referências de vídeo. */
+  public VideoReferenceService(
+      VideoReferenceRepository repository, AssetStorageService storageService) {
     this.repository = repository;
+    this.storageService = storageService;
   }
 
   /** Lista vídeos de referência do tenant atual. */
@@ -47,6 +63,48 @@ public class VideoReferenceService {
             .createdBy(trimToNull(request.createdBy()))
             .build();
     return toDto(repository.save(reference));
+  }
+
+  /** Recebe upload do usuário e cadastra o arquivo na fila de análise do estúdio. */
+  @Transactional
+  public VideoReferenceDto uploadReference(
+      MultipartFile file,
+      String title,
+      String sourcePlatform,
+      String niche,
+      String funnelStage,
+      String primaryLearningGoal,
+      String successEvidence,
+      String createdBy) {
+    validateVideoFile(file);
+    String requiredTitle = required(title, "Título");
+    String requiredGoal = required(primaryLearningGoal, "Objetivo de aprendizado");
+    try {
+      StoredObject stored =
+          storageService.store(
+              file,
+              new AssetUploadContext(
+                  AssetUploadCategory.SALES_VIDEO, null, null, "reference-analysis"));
+      return createReference(
+          new CreateVideoReferenceRequest(
+              requiredTitle,
+              stored.publicUrl(),
+              StringUtils.hasText(sourcePlatform) ? sourcePlatform : "Upload",
+              niche,
+              funnelStage,
+              requiredGoal,
+              successEvidence,
+              createdBy));
+    } catch (IOException | StorageException ex) {
+      log.error(
+          "Falha ao armazenar vídeo de referência para análise title={} createdBy={}",
+          title,
+          createdBy,
+          ex);
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Não foi possível armazenar o vídeo enviado para análise");
+    }
   }
 
   /** Converte entidade persistida para contrato público da API. */
@@ -85,5 +143,25 @@ public class VideoReferenceService {
       return null;
     }
     return value.trim();
+  }
+
+  /** Valida se o arquivo enviado é um vídeo aceito pela fila de análise. */
+  private static void validateVideoFile(MultipartFile file) {
+    if (file == null || file.isEmpty()) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST, "Arquivo de vídeo é obrigatório");
+    }
+    String contentType = file.getContentType();
+    String filename = file.getOriginalFilename();
+    boolean looksLikeVideo =
+        StringUtils.hasText(contentType)
+            && contentType.toLowerCase(Locale.ROOT).startsWith("video/");
+    boolean hasKnownExtension =
+        StringUtils.hasText(filename)
+            && filename.toLowerCase(Locale.ROOT).matches(".*\\.(mp4|mov|webm|m4v)$");
+    if (!looksLikeVideo && !hasKnownExtension) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST, "Envie um arquivo de vídeo MP4, MOV, WEBM ou M4V");
+    }
   }
 }

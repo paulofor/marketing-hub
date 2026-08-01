@@ -108,6 +108,27 @@ public class SalesVideoService {
     return videoReferenceService.createReference(request);
   }
 
+  /** Recebe upload de vídeo do usuário e cadastra na fila de análise do estúdio. */
+  public VideoReferenceDto uploadVideoReference(
+      MultipartFile file,
+      String title,
+      String sourcePlatform,
+      String niche,
+      String funnelStage,
+      String primaryLearningGoal,
+      String successEvidence,
+      String createdBy) {
+    return videoReferenceService.uploadReference(
+        file,
+        title,
+        sourcePlatform,
+        niche,
+        funnelStage,
+        primaryLearningGoal,
+        successEvidence,
+        createdBy);
+  }
+
   /** Consulta o catalogo operacional do estudio de audio e video. */
   public SalesVideoStudioCatalogDto getStudioCatalog() {
     return studioCatalogService.getCatalog();

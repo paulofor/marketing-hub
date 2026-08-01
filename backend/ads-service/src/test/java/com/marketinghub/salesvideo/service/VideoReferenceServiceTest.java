@@ -11,6 +11,8 @@ import com.marketinghub.salesvideo.dto.CreateVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import com.marketinghub.salesvideo.tenant.TenantContext;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
+import com.marketinghub.storage.AssetStorageService;
+import com.marketinghub.storage.AssetStorageService.StoredObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,18 +20,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 /** Valida a fila de vídeos externos enviados para análise comercial. */
 @ExtendWith(MockitoExtension.class)
 class VideoReferenceServiceTest {
   @Mock private VideoReferenceRepository repository;
+  @Mock private AssetStorageService storageService;
 
   private VideoReferenceService service;
 
   @BeforeEach
   void setUp() {
     TenantContextHolder.set(new TenantContext("tenant-musa", "editor@marketinghub.io", false));
-    service = new VideoReferenceService(repository);
+    service = new VideoReferenceService(repository, storageService);
   }
 
   @AfterEach
@@ -66,5 +70,44 @@ class VideoReferenceServiceTest {
     assertThat(captor.getValue().getStatus()).isEqualTo(VideoReferenceStatus.QUEUED);
     assertThat(result.id()).isEqualTo(41L);
     assertThat(result.primaryLearningGoal()).contains("primeiros três segundos");
+  }
+
+  /** Cadastra upload de vídeo usando a URL pública retornada pelo storage. */
+  @Test
+  void shouldUploadVideoReferenceAndQueueStoredFile() throws Exception {
+    MockMultipartFile file =
+        new MockMultipartFile("file", "video.mp4", "video/mp4", "conteudo".getBytes());
+    given(storageService.store(any(), any()))
+        .willReturn(
+            new StoredObject(
+                "sales-videos/2026/08/01/misc/video.mp4",
+                "https://cdn.example/video.mp4",
+                8L,
+                "video/mp4",
+                true));
+    given(repository.save(any(VideoReference.class)))
+        .willAnswer(
+            invocation -> {
+              VideoReference reference = invocation.getArgument(0);
+              reference.setId(42L);
+              return reference;
+            });
+
+    VideoReferenceDto result =
+        service.uploadReference(
+            file,
+            "Vídeo vencedor enviado pelo usuário",
+            "",
+            "MUSA",
+            "AWARENESS",
+            "Aprender ritmo, prova e CTA.",
+            "Alta retenção observada.",
+            "editor@marketinghub.io");
+
+    ArgumentCaptor<VideoReference> captor = ArgumentCaptor.forClass(VideoReference.class);
+    org.mockito.Mockito.verify(repository).save(captor.capture());
+    assertThat(captor.getValue().getSourceUrl()).isEqualTo("https://cdn.example/video.mp4");
+    assertThat(captor.getValue().getSourcePlatform()).isEqualTo("Upload");
+    assertThat(result.id()).isEqualTo(42L);
   }
 }

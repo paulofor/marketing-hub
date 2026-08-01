@@ -1,16 +1,22 @@
 import {
   BadgeCheck,
   Ban,
+  BarChart3,
+  Camera,
   Clapperboard,
+  ClipboardCheck,
   FileText,
   ListChecks,
+  Mic2,
   Music,
   PlayCircle,
   Save,
   Scissors,
   Sparkles,
+  Target,
   Timer,
   Volume2,
+  Wand2,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -96,6 +102,90 @@ type StudioPreset = {
   description: string;
   briefing: StudioBriefing;
 };
+
+const premiumProductionStages = [
+  {
+    icon: Target,
+    title: "1. Estrategia",
+    section: "Oferta e funil",
+    description:
+      "Definir objetivo comercial, publico, dor, promessa, mecanismo, canal, duracao e metrica primaria.",
+    output:
+      "Brief cinematografico com papel claro no funil e proximo clique esperado.",
+  },
+  {
+    icon: FileText,
+    title: "2. Roteiro",
+    section: "Narrativa",
+    description:
+      "Transformar a oferta em gancho, historia, demonstracao, prova, objecoes e CTA falado ou visual.",
+    output:
+      "Script por blocos de tempo, com funcao comercial de cada trecho.",
+  },
+  {
+    icon: Camera,
+    title: "3. Biblia visual",
+    section: "Pre-producao",
+    description:
+      "Aprovar personagem, ambiente, objetos, marca, direcao visual, imagens mestre e regras de continuidade.",
+    output:
+      "Referencias persistidas antes de qualquer render para evitar cenas bonitas e incoerentes.",
+  },
+  {
+    icon: Clapperboard,
+    title: "4. Storyboard",
+    section: "Plano de cenas",
+    description:
+      "Quebrar o video em cenas curtas com enquadramento, movimento, acao, emocao e transicao.",
+    output:
+      "Lista de cenas pronta para gerar imagem-base e video por IA.",
+  },
+  {
+    icon: Mic2,
+    title: "5. Audio",
+    section: "Voz e trilha",
+    description:
+      "Definir narracao, ritmo, pausas, trilha, efeitos e legibilidade quando a usuaria estiver sem som.",
+    output:
+      "Plano de voz, trilha e legendas alinhado ao consumo mobile.",
+  },
+  {
+    icon: Wand2,
+    title: "6. Geracao IA",
+    section: "Provider",
+    description:
+      "Escolher Luma, Kling, HeyGen ou outro motor conforme o tipo de cena, custo, duracao e consistencia.",
+    output:
+      "Jobs de clipes curtos ou avatar com request, response, custo e artefatos rastreaveis.",
+  },
+  {
+    icon: Scissors,
+    title: "7. Montagem",
+    section: "Pos-producao",
+    description:
+      "Cortar falhas, ajustar ritmo, unir cenas, inserir legenda, audio, capa, HLS e fallback MP4.",
+    output:
+      "Versao publicavel com acabamento premium e variações de corte quando fizer sentido.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "8. Revisao",
+    section: "Gate comercial",
+    description:
+      "Checar promessa permitida, clareza, continuidade, audio, prova, CTA, HLS e aderencia ao PDE.",
+    output:
+      "Aprovado, bloqueado com causa-raiz ou enviado para nova iteracao.",
+  },
+  {
+    icon: BarChart3,
+    title: "9. Aprendizado",
+    section: "Metricas",
+    description:
+      "Medir play, retencao, clique, diagnostico, paywall, checkout e compra para decidir novos cortes.",
+    output:
+      "Aprendizados acionaveis para criativos, funil e oferta.",
+  },
+];
 
 const productionPillars = [
   {
@@ -339,29 +429,10 @@ function optionsWithCurrent(
   ];
 }
 
-const studioWorkflowSteps = [
-  {
-    title: "Blueprint",
-    description: "Produto, funil, promessa, categoria, duracao e metrica.",
-  },
-  {
-    title: "Pre-producao",
-    description: "Personagem, ambiente, objetos, frames-chave e continuidade.",
-  },
-  {
-    title: "Producao",
-    description: "Provider, cenas, voz, trilha, legendas e montagem.",
-  },
-  {
-    title: "Aprovacao",
-    description: "Gate comercial, HLS/fallback e liberacao para uso no funil.",
-  },
-  {
-    title: "Aprendizado",
-    description:
-      "Play, retencao, CTA, diagnostico, paywall, checkout e compra.",
-  },
-];
+const studioWorkflowSteps = premiumProductionStages.map((stage) => ({
+  title: stage.section,
+  description: stage.description,
+}));
 
 const currentFlows = [
   "Criativos de experimentos continuam nas telas de experimentos e campanhas.",
@@ -992,6 +1063,31 @@ export default function AudioVideoStudioPage() {
         </section>
       ) : null}
 
+      <section className="audio-video-studio-page__section">
+        <div className="audio-video-studio-page__section-heading">
+          <h2>Etapas de producao premium com IA</h2>
+          <p>
+            A tela do estudio segue a ordem que evita desperdicio: primeiro
+            clareza comercial, depois referencias visuais, geracao, montagem,
+            aprovacao e aprendizado de venda.
+          </p>
+        </div>
+        <div className="audio-video-studio-page__stage-grid">
+          {premiumProductionStages.map((stage) => (
+            <article
+              className="audio-video-studio-page__stage-card"
+              key={stage.title}
+            >
+              <stage.icon size={20} aria-hidden="true" />
+              <span>{stage.section}</span>
+              <h3>{stage.title}</h3>
+              <p>{stage.description}</p>
+              <small>{stage.output}</small>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="audio-video-studio-page__workspace">
         <form
           className="audio-video-studio-page__briefing"
@@ -999,7 +1095,9 @@ export default function AudioVideoStudioPage() {
         >
           <div className="audio-video-studio-page__section-heading">
             <h2>
-              {isEditingProject ? "Projeto carregado" : "Projeto de exemplo"}
+              {isEditingProject
+                ? "1. Estrategia do projeto"
+                : "1. Estrategia e oferta"}
             </h2>
             <p>
               {isEditingProject
@@ -1243,9 +1341,19 @@ export default function AudioVideoStudioPage() {
             CTA
             <input value={briefing.cta} onChange={updateBriefing("cta")} />
           </label>
+          <div className="audio-video-studio-page__stage-divider">
+            <FileText size={18} aria-hidden="true" />
+            <div>
+              <strong>2. Roteiro e storyboard</strong>
+              <span>
+                O rascunho narrativo e a estrutura de cenas ficam visiveis ao
+                lado para transformar a estrategia em blocos de producao.
+              </span>
+            </div>
+          </div>
           <div className="audio-video-studio-page__visual-bible">
             <div className="audio-video-studio-page__section-heading">
-              <h2>Biblia visual premium</h2>
+              <h2>3. Biblia visual premium</h2>
               <p>
                 Defina referencias mestras antes de gerar cenas para preservar
                 consistencia entre takes.
@@ -1353,7 +1461,7 @@ export default function AudioVideoStudioPage() {
             </label>
             <div className="audio-video-studio-page__asset-section">
               <div className="audio-video-studio-page__section-heading">
-                <h2>Provider de video</h2>
+                <h2>6. Provider de video</h2>
                 <p>
                   Escolha o motor de geracao de acordo com o tipo de cena antes
                   de pedir uma nova renderizacao.
@@ -1391,6 +1499,16 @@ export default function AudioVideoStudioPage() {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+            <div className="audio-video-studio-page__stage-divider">
+              <Mic2 size={18} aria-hidden="true" />
+              <div>
+                <strong>5. Audio e ritmo</strong>
+                <span>
+                  Voz, trilha e legenda precisam sustentar a promessa mesmo em
+                  mobile e com som desligado.
+                </span>
               </div>
             </div>
             <label>
@@ -1463,6 +1581,16 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
+            <div className="audio-video-studio-page__stage-divider">
+              <ClipboardCheck size={18} aria-hidden="true" />
+              <div>
+                <strong>7. Montagem, 8. revisao e 9. aprendizado</strong>
+                <span>
+                  A entrega so avanca quando o video estiver claro, coerente,
+                  publicavel e medido pelo funil.
+                </span>
+              </div>
+            </div>
             <label>
               Gate de aprovacao
               <textarea

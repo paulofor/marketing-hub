@@ -49,6 +49,7 @@ class VideoProjectServiceTest {
             66L,
             12L,
             "musa-organico-001",
+            "COMMERCIAL_SHORT",
             "ORGANIC",
             "MIXED_AI_SCENES",
             "INSTAGRAM_REELS",
@@ -72,7 +73,7 @@ class VideoProjectServiceTest {
             "Trilha leve",
             "Legenda curta",
             "Fazer diagnóstico",
-            180,
+            30,
             "Runway para cenas, FFmpeg para montagem",
             "Corte rápido",
             "Audio audível e CTA claro",
@@ -93,6 +94,7 @@ class VideoProjectServiceTest {
     assertThat(captor.getValue().getTenantId()).isEqualTo("tenant-musa");
     assertThat(result.id()).isEqualTo(91L);
     assertThat(result.contextType()).isEqualTo("ORGANIC");
+    assertThat(result.videoCategory()).isEqualTo("COMMERCIAL_SHORT");
     assertThat(result.storyText()).contains("presença digital");
     assertThat(result.status()).isEqualTo(VideoProjectStatus.READY_FOR_SCRIPT);
   }
@@ -118,6 +120,7 @@ class VideoProjectServiceTest {
             null,
             null,
             "musa-campanha",
+            "LONG_FORM",
             "CAMPAIGN",
             "MONTAGE",
             "META_ADS",
@@ -159,15 +162,16 @@ class VideoProjectServiceTest {
     assertThat(result.status()).isEqualTo(VideoProjectStatus.READY_FOR_RENDER);
   }
 
-  /** Bloqueia criação de projeto abaixo de três minutos para preservar o escopo do Estúdio. */
+  /** Permite projeto comercial curto quando a categoria declara esse uso no funil. */
   @Test
-  void shouldRejectProjectShorterThanThreeMinutes() {
+  void shouldCreateCommercialShortVideoProjectWithThirtySeconds() {
     CreateVideoProjectRequest request =
         new CreateVideoProjectRequest(
             4L,
             66L,
             12L,
             "musa-organico-001",
+            "COMMERCIAL_SHORT",
             "ORGANIC",
             "MIXED_AI_SCENES",
             "INSTAGRAM_REELS",
@@ -191,20 +195,29 @@ class VideoProjectServiceTest {
             "Trilha leve",
             "Legenda curta",
             "Fazer diagnóstico",
-            179,
+            30,
             "Runway para cenas, FFmpeg para montagem",
             "Corte rápido",
             "Audio audível e CTA claro",
             VideoProjectStatus.READY_FOR_SCRIPT,
             "editor@marketinghub.io");
+    given(repository.save(any(VideoProject.class)))
+        .willAnswer(
+            invocation -> {
+              VideoProject project = invocation.getArgument(0);
+              project.setId(92L);
+              return project;
+            });
 
-    assertThatThrownBy(() -> service.createProject(request))
-        .hasMessageContaining("180 segundos ou mais");
+    VideoProjectDto result = service.createProject(request);
+
+    assertThat(result.videoCategory()).isEqualTo("COMMERCIAL_SHORT");
+    assertThat(result.targetDurationSeconds()).isEqualTo(30);
   }
 
-  /** Bloqueia edição que tente reduzir projeto do Estúdio para menos de três minutos. */
+  /** Bloqueia edição que tente reduzir projeto longo para menos de três minutos. */
   @Test
-  void shouldRejectUpdateThatMakesProjectShorterThanThreeMinutes() {
+  void shouldRejectUpdateThatMakesLongFormProjectShorterThanThreeMinutes() {
     VideoProject project =
         VideoProject.builder()
             .id(91L)
@@ -224,6 +237,7 @@ class VideoProjectServiceTest {
             null,
             null,
             "musa-campanha",
+            "LONG_FORM",
             "CAMPAIGN",
             "MONTAGE",
             "META_ADS",
@@ -268,6 +282,7 @@ class VideoProjectServiceTest {
             66L,
             12L,
             "musa-organico-001",
+            "LONG_FORM",
             "PDE",
             "STORY_FIRST_AUDIO_VIDEO",
             "PDE_AND_SOCIAL",

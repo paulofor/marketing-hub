@@ -56,13 +56,45 @@ Esse brief deve ficar associado ao perfil/playbook comercial do video e conter, 
 
 O brief nao deve ser decorativo. Ele deve deixar claro qual transformacao o consumidor precisa enxergar e como essa cena reduz esforco mental, aumenta desejo, prova o mecanismo ou aproxima o proximo clique.
 
-## Duracao minima obrigatoria
+## Categorias e duracao
 
-O Estudio de Audio e Video deve ser usado somente para videos com **3 minutos ou mais** (`180` segundos ou mais).
+O Estudio de Audio e Video deve trabalhar por **categoria de projeto**, para suportar tanto
+pecas comerciais curtas quanto producoes longas sem misturar objetivo, roteiro e governanca.
 
-Videos abaixo de 3 minutos pertencem aos fluxos rapidos de criativo, anuncio, corte curto, video organico curto ou assets especificos de experimentos. Esses fluxos podem continuar usando provedores e tratamentos existentes, mas nao devem acionar o Estudio.
+Categorias canonicas:
 
-O Marketing Hub deve bloquear criacao, edicao ou geracao de projeto do Estudio quando `targetDurationSeconds` for menor que `180`. A tela pode orientar o operador, mas o backend deve ser a fonte de verdade desse bloqueio para evitar criacao por API, automacao ou dados legados.
+- **Video Comercial Curto** (`COMMERCIAL_SHORT`): 6 a 60 segundos. Uso: hero de PDE, anuncio,
+  Reels, Stories, retargeting, amostra e criativo de aquisicao.
+- **Video Longo / VSL** (`LONG_FORM`): 180 segundos ou mais. Uso: pagina de venda, paywall,
+  explicacao de oferta, quebra de objecoes e conteudo comercial profundo.
+- **Video Institucional / Conteudo** (`INSTITUTIONAL_CONTENT`): duracao definida pelo contexto,
+  desde que tenha objetivo comercial explicito, brief, roteiro, uso e criterio de aprovacao.
+
+O Marketing Hub deve bloquear criacao, edicao ou geracao de projeto quando a duracao nao for
+compativel com a categoria informada. A tela pode orientar o operador, mas o backend deve ser a
+fonte de verdade desse bloqueio para evitar criacao por API, automacao ou dados legados.
+
+Para a MUSA v7, a categoria correta do video hero cinematografico e **Video Comercial Curto**,
+com duracao alvo de aproximadamente 30 segundos.
+
+## Separacao backend e providers de video
+
+O backend principal do Marketing Hub deve ser responsavel por:
+
+- cadastro do projeto, brief, blueprint, cenas, biblias visuais e regras de continuidade;
+- persistencia de jobs, eventos, status, custos, evidencias, assets, HLS e metricas;
+- endpoint de pendencias para o executor;
+- callbacks de progresso, sucesso, falha, expiracao e registro de artefatos;
+- relatorio operacional e comercial para a tela.
+
+O backend principal **nao deve** implementar integracao direta com providers de video, clientes
+HTTP/SDKs de renderizacao, adaptadores Luma, Kling, HeyGen, Runway, Veo ou qualquer executor de
+provider. Essas responsabilidades pertencem ao modulo executor de video, atualmente tratado como
+`video-management-service`, que deve consumir pendencias oficiais do backend e reportar resultados
+pelos callbacks canonicos.
+
+Essa separacao evita que o Estudio vire um conjunto caotico de chamadas externas dentro do backend:
+o Hub opera como cockpit no-code e fonte de verdade; o modulo de integracao executa a producao.
 
 ## Biblia visual obrigatoria
 

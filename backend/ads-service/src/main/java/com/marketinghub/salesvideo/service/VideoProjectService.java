@@ -17,7 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 /** Componente interno que executa o cadastro editorial de projetos de vídeo do Marketing Hub. */
 @Component
 public class VideoProjectService {
-  public static final int MINIMUM_STUDIO_DURATION_SECONDS = 180;
+  public static final String VIDEO_CATEGORY_COMMERCIAL_SHORT = "COMMERCIAL_SHORT";
+  public static final String VIDEO_CATEGORY_INSTITUTIONAL_CONTENT = "INSTITUTIONAL_CONTENT";
+  public static final String VIDEO_CATEGORY_LONG_FORM = "LONG_FORM";
+  public static final int MINIMUM_COMMERCIAL_SHORT_DURATION_SECONDS = 6;
+  public static final int MAXIMUM_COMMERCIAL_SHORT_DURATION_SECONDS = 60;
+  public static final int MINIMUM_LONG_FORM_DURATION_SECONDS = 180;
 
   private final VideoProjectRepository repository;
 
@@ -46,6 +51,7 @@ public class VideoProjectService {
             .experimentId(request.experimentId())
             .salesVideoProfileId(request.salesVideoProfileId())
             .campaignKey(trimToNull(request.campaignKey()))
+            .videoCategory(validatedVideoCategory(request.videoCategory()))
             .contextType(required(request.contextType(), "Tipo de contexto"))
             .productionMode(required(request.productionMode(), "Modo de produção"))
             .targetChannel(required(request.targetChannel(), "Canal"))
@@ -69,7 +75,9 @@ public class VideoProjectService {
             .soundtrackPlan(trimToNull(request.soundtrackPlan()))
             .captionPlan(trimToNull(request.captionPlan()))
             .ctaText(trimToNull(request.ctaText()))
-            .targetDurationSeconds(validatedTargetDurationSeconds(request.targetDurationSeconds()))
+            .targetDurationSeconds(
+                validatedTargetDurationSeconds(
+                    validatedVideoCategory(request.videoCategory()), request.targetDurationSeconds()))
             .providerPlan(trimToNull(request.providerPlan()))
             .editingNotes(trimToNull(request.editingNotes()))
             .qualityGate(trimToNull(request.qualityGate()))
@@ -94,6 +102,7 @@ public class VideoProjectService {
     project.setExperimentId(request.experimentId());
     project.setSalesVideoProfileId(request.salesVideoProfileId());
     project.setCampaignKey(trimToNull(request.campaignKey()));
+    project.setVideoCategory(validatedVideoCategory(request.videoCategory()));
     project.setContextType(required(request.contextType(), "Tipo de contexto"));
     project.setProductionMode(required(request.productionMode(), "Modo de produção"));
     project.setTargetChannel(required(request.targetChannel(), "Canal"));
@@ -118,7 +127,8 @@ public class VideoProjectService {
     project.setCaptionPlan(trimToNull(request.captionPlan()));
     project.setCtaText(trimToNull(request.ctaText()));
     project.setTargetDurationSeconds(
-        validatedTargetDurationSeconds(request.targetDurationSeconds()));
+        validatedTargetDurationSeconds(
+            validatedVideoCategory(request.videoCategory()), request.targetDurationSeconds()));
     project.setProviderPlan(trimToNull(request.providerPlan()));
     project.setEditingNotes(trimToNull(request.editingNotes()));
     project.setQualityGate(trimToNull(request.qualityGate()));
@@ -163,17 +173,42 @@ public class VideoProjectService {
     return value.trim();
   }
 
-  /** Garante que o Estúdio seja usado apenas para vídeos com pelo menos três minutos. */
-  private static Integer validatedTargetDurationSeconds(Integer targetDurationSeconds) {
+  /** Valida a categoria comercial do vídeo e preserva compatibilidade com projetos antigos. */
+  private static String validatedVideoCategory(String videoCategory) {
+    String normalized = Objects.requireNonNullElse(trimToNull(videoCategory), VIDEO_CATEGORY_LONG_FORM);
+    if (VIDEO_CATEGORY_COMMERCIAL_SHORT.equals(normalized)
+        || VIDEO_CATEGORY_LONG_FORM.equals(normalized)
+        || VIDEO_CATEGORY_INSTITUTIONAL_CONTENT.equals(normalized)) {
+      return normalized;
+    }
+    throw VideoModuleException.badRequest(
+        VideoModuleErrorCode.BAD_REQUEST, "Categoria de vídeo inválida: " + normalized);
+  }
+
+  /** Valida a duração mínima e máxima conforme a categoria comercial do projeto. */
+  private static Integer validatedTargetDurationSeconds(
+      String videoCategory, Integer targetDurationSeconds) {
     if (targetDurationSeconds == null) {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
           "Duração alvo é obrigatória para projeto do Estúdio de Audio e Video");
     }
-    if (targetDurationSeconds < MINIMUM_STUDIO_DURATION_SECONDS) {
+    if (VIDEO_CATEGORY_COMMERCIAL_SHORT.equals(videoCategory)) {
+      if (targetDurationSeconds < MINIMUM_COMMERCIAL_SHORT_DURATION_SECONDS
+          || targetDurationSeconds > MAXIMUM_COMMERCIAL_SHORT_DURATION_SECONDS) {
+        throw VideoModuleException.badRequest(
+            VideoModuleErrorCode.BAD_REQUEST,
+            "Vídeo comercial curto deve ter entre 6 e 60 segundos");
+      }
+      return targetDurationSeconds;
+    }
+    if (VIDEO_CATEGORY_INSTITUTIONAL_CONTENT.equals(videoCategory)) {
+      return targetDurationSeconds;
+    }
+    if (targetDurationSeconds < MINIMUM_LONG_FORM_DURATION_SECONDS) {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
-          "Estúdio de Audio e Video só pode gerar vídeos com 180 segundos ou mais");
+          "Vídeo longo ou VSL deve ter 180 segundos ou mais");
     }
     return targetDurationSeconds;
   }
@@ -251,6 +286,7 @@ public class VideoProjectService {
         project.getExperimentId(),
         project.getSalesVideoProfileId(),
         project.getCampaignKey(),
+        validatedVideoCategory(project.getVideoCategory()),
         project.getContextType(),
         project.getProductionMode(),
         project.getTargetChannel(),

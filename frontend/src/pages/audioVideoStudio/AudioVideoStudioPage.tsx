@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   Clapperboard,
   FileText,
+  ListChecks,
   Music,
   PlayCircle,
   Save,
@@ -18,11 +19,22 @@ import {
   useVideoProject,
   useVideoProjects,
 } from "../../api/salesVideo/useVideoProjects";
-import type { VideoProject, VideoProjectPayload } from "../../api/salesVideo/types";
+import type {
+  VideoProject,
+  VideoProjectPayload,
+  VideoProjectStatus,
+} from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
 import "./AudioVideoStudioPage.css";
 
 type StudioBriefing = {
+  productId: string;
+  campaignKey: string;
+  videoCategory: string;
+  contextType: string;
+  productionMode: string;
+  targetChannel: string;
+  format: string;
   title: string;
   story: string;
   product: string;
@@ -38,6 +50,31 @@ type StudioBriefing = {
   visualStyleGuide: string;
   imageGenerationPlan: string;
   continuityRules: string;
+  targetDurationSeconds: string;
+  funnelStage: string;
+  primaryMetric: string;
+  providerPlan: string;
+  voiceoverPlan: string;
+  soundtrackPlan: string;
+  captionPlan: string;
+  editingNotes: string;
+  qualityGate: string;
+  status: VideoProjectStatus;
+};
+
+type StudioCategoryOption = {
+  value: string;
+  label: string;
+  durationRule: string;
+  commercialUse: string;
+};
+
+type StudioPreset = {
+  key: string;
+  label: string;
+  badge: string;
+  description: string;
+  briefing: StudioBriefing;
 };
 
 const productionPillars = [
@@ -79,6 +116,63 @@ const productionPillars = [
   },
 ];
 
+const videoCategoryOptions: StudioCategoryOption[] = [
+  {
+    value: "COMMERCIAL_SHORT",
+    label: "Video comercial curto",
+    durationRule: "6 a 60 segundos",
+    commercialUse:
+      "Hero, anuncio, Reels, Stories, retargeting e clique para diagnostico.",
+  },
+  {
+    value: "LONG_FORM",
+    label: "Video longo / VSL",
+    durationRule: "180 segundos ou mais",
+    commercialUse:
+      "Paywall, pagina de venda, objecoes, prova e explicacao da oferta.",
+  },
+  {
+    value: "INSTITUTIONAL_CONTENT",
+    label: "Institucional / conteudo",
+    durationRule: "duracao livre",
+    commercialUse: "Conteudo de marca, autoridade, onboarding ou nutricao.",
+  },
+];
+
+const statusOptions: { value: VideoProjectStatus; label: string }[] = [
+  { value: "DRAFT", label: "Rascunho" },
+  { value: "READY_FOR_SCRIPT", label: "Pronto para roteiro" },
+  { value: "READY_FOR_RENDER", label: "Pronto para render" },
+  { value: "IN_PRODUCTION", label: "Em producao" },
+  { value: "READY_FOR_REVIEW", label: "Pronto para revisao" },
+  { value: "APPROVED", label: "Aprovado" },
+  { value: "ARCHIVED", label: "Arquivado" },
+];
+
+const studioWorkflowSteps = [
+  {
+    title: "Blueprint",
+    description: "Produto, funil, promessa, categoria, duracao e metrica.",
+  },
+  {
+    title: "Pre-producao",
+    description: "Personagem, ambiente, objetos, frames-chave e continuidade.",
+  },
+  {
+    title: "Producao",
+    description: "Provider, cenas, voz, trilha, legendas e montagem.",
+  },
+  {
+    title: "Aprovacao",
+    description: "Gate comercial, HLS/fallback e liberacao para uso no funil.",
+  },
+  {
+    title: "Aprendizado",
+    description:
+      "Play, retencao, CTA, diagnostico, paywall, checkout e compra.",
+  },
+];
+
 const currentFlows = [
   "Criativos de experimentos continuam nas telas de experimentos e campanhas.",
   "Videos para PDEs continuam dentro dos produtos e jornadas especificas.",
@@ -94,7 +188,7 @@ const buildSteps = [
   "Fila de renderizacao, revisao, custos e artefatos auditaveis.",
 ];
 
-const scriptBlocks = [
+const longFormScriptBlocks = [
   {
     time: "0:00-0:15",
     title: "Gancho",
@@ -128,20 +222,46 @@ const scriptBlocks = [
   },
 ];
 
+const heroScriptBlocks = [
+  {
+    time: "0:00-0:08",
+    title: "Dor do espelho",
+    objective:
+      "Gerar identificacao imediata com a sensacao de faltar presenca.",
+  },
+  {
+    time: "0:08-0:16",
+    title: "Resultado possivel",
+    objective:
+      "Mostrar elegancia acessivel, sem luxo e sem transformacao exagerada.",
+  },
+  {
+    time: "0:16-0:26",
+    title: "Mecanismo MUSA",
+    objective:
+      "Tangibilizar ruido visual, peca-sinal, cor, acabamento e postura.",
+  },
+  {
+    time: "0:26-0:34",
+    title: "Diagnostico",
+    objective: "Levar ao clique no plano MUSA de 7 dias.",
+  },
+];
+
 const productionChecklist = [
   "Briefing comercial preenchido",
   "Personagens com imagens mestre aprovadas",
   "Ambientes com placas visuais e mapa de continuidade",
   "Objetos/produto com referencias separadas",
-  "Roteiro narrado com ate 390 palavras",
-  "6 blocos de cena com funcao clara",
+  "Roteiro narrado compatível com a duracao escolhida",
+  "Blocos de cena com funcao clara",
   "Voz definida com ritmo, pausas e emocao",
   "Trilha escolhida sem competir com a narracao",
   "Legenda planejada para consumo sem audio",
   "CTA final conectado ao funil de venda",
 ];
 
-const scenePrompts = [
+const defaultScenePrompts = [
   "Cena de abertura com rosto, movimento ou demonstracao visual imediata.",
   "Cena de contraste mostrando a dor antes da solucao.",
   "Cena do mecanismo com objeto, tela ou metafora visual simples.",
@@ -150,20 +270,34 @@ const scenePrompts = [
   "Cena final com CTA, URL, produto ou proximo passo.",
 ];
 
-const MINIMUM_STUDIO_DURATION_SECONDS = 180;
+const musaV7ScenePrompts = [
+  "Cena 1 (6-8s): mulher urbana brasileira diante do espelho, pronta para sair, ajustando manga, cabelo ou acessorio, com duvida discreta e luz natural suave.",
+  "Cena 2 (6-8s): a mesma mulher caminha em ambiente urbano claro, com roupa simples, melhor acabamento e postura mais segura, comunicando intencao sem ostentacao.",
+  "Cena 3 (8-10s): cortes proximos de maos retirando excesso visual, escolhendo peca-sinal, comparando cor, ajustando acabamento e alinhando postura no espelho.",
+  "Cena 4 (6-8s): mulher segura o celular, inicia o diagnostico sem mostrar UI legivel e termina olhando no espelho com sorriso discreto e postura mais segura.",
+];
 
 const exampleStory =
   "Uma consultora independente sente que sua presenca digital nao mostra sua autoridade real. Ela tenta postar melhor, ajustar foto, escrever bio e criar conteudo, mas tudo parece solto. Ao entrar no Metodo MUSA, ela recebe um diagnostico guiado por IA que transforma sinais dispersos em uma direcao clara de imagem, conteudo e posicionamento. Em poucos dias, ela entende o que precisa ajustar, passa a se apresentar com mais seguranca e convida outras pessoas para fazerem o mesmo diagnostico.";
 
 const defaultBriefing: StudioBriefing = {
+  productId: "",
+  campaignKey: "musa-video-manifesto-presenca-digital",
+  videoCategory: "LONG_FORM",
+  contextType: "PDE",
+  productionMode: "STORY_FIRST_AUDIO_VIDEO",
+  targetChannel: "PDE_AND_SOCIAL",
+  format: "VERTICAL_9_16",
   title: "MUSA - video manifesto de presenca digital",
   story: exampleStory,
   product: "Metodo MUSA",
   audience: "Mulheres que vendem sua imagem, conhecimento ou atendimento",
   pain: "Esta se esforcando para aparecer melhor, mas sua presenca digital nao traduz autoridade",
-  promise: "Sair da sensacao de improviso e enxergar os proximos ajustes de imagem com clareza",
+  promise:
+    "Sair da sensacao de improviso e enxergar os proximos ajustes de imagem com clareza",
   mechanism: "Diagnostico de presenca publica guiado por IA",
-  proof: "Antes e depois da clareza de posicionamento, bio, imagem e direcao de conteudo",
+  proof:
+    "Antes e depois da clareza de posicionamento, bio, imagem e direcao de conteudo",
   cta: "Fazer o diagnostico MUSA",
   characterBible:
     "Personagem principal: mulher consultora, 35-45 anos, rosto frontal, tres quartos, perfil, corpo inteiro, figurino principal, acessorios e URLs/IDs das imagens aprovadas.",
@@ -177,10 +311,105 @@ const defaultBriefing: StudioBriefing = {
     "Solicitar ao modelo de imagem OpenAI primeiro as imagens mestre de personagem, ambiente, produto e frames-chave; aprovar antes de pedir video.",
   continuityRules:
     "Manter rosto, cabelo, figurino, acessorios, escala, temperatura de cor, posicao de objetos fixos e arquitetura do ambiente em todas as cenas.",
+  targetDurationSeconds: "180",
+  funnelStage: "AWARENESS",
+  primaryMetric: "DIAGNOSTIC_START",
+  providerPlan:
+    "Comecar com roteiro e storyboard; depois testar narracao, cenas-chave e montagem em jobs auditaveis.",
+  voiceoverPlan:
+    "Voz proxima, confiante e acolhedora, com ritmo medio e pausas curtas para reforcar pontos de virada.",
+  soundtrackPlan:
+    "Trilha leve, moderna e aspiracional, sempre abaixo da narracao.",
+  captionPlan:
+    "Legendas curtas com palavras-chave de dor, mecanismo, prova e CTA.",
+  editingNotes:
+    "Priorizar cortes limpos, prova visual concreta e CTA sem excesso de texto.",
+  qualityGate:
+    "Aprovar somente se a historia estiver clara, o mecanismo parecer plausivel, o audio for compreensivel e o CTA estiver conectado ao funil.",
+  status: "READY_FOR_SCRIPT",
 };
+
+const musaV7Briefing: StudioBriefing = {
+  productId: "4",
+  campaignKey: "musa-pde-entry-v7-espelho-antes-de-sair",
+  videoCategory: "COMMERCIAL_SHORT",
+  contextType: "PDE",
+  productionMode: "CINEMATIC_SCENE_BLUEPRINT",
+  targetChannel: "PDE_HERO_DIAGNOSTIC",
+  format: "VERTICAL_9_16",
+  title: "MUSA v7 - O espelho antes de sair",
+  story:
+    "Antes de sair, uma mulher urbana se olha no espelho e percebe que nao precisa comprar uma vida nova. Ela precisa ajustar pequenos sinais da presenca que ja quer comunicar: limpar ruido visual, escolher uma peca-sinal, alinhar cor, acabamento e postura. O video conduz essa passagem de duvida discreta para clareza elegante e termina no diagnostico gratuito do Plano MUSA de 7 dias.",
+  product: "Metodo MUSA - Presenca Elegante em 7 Dias",
+  audience:
+    "Mulheres urbanas que querem presenca mais elegante, marcante e segura com escolhas acessiveis e sem esforco excessivo",
+  pain: "A cliente se arruma, olha no espelho e sente que sua imagem ainda fica comum, apagada ou com ruido visual.",
+  promise:
+    "Em 7 dias, pequenos ajustes podem deixar a imagem mais intencional, elegante e coerente usando o que ela ja tem.",
+  mechanism:
+    "Arquitetura de Presenca Elegante Acessivel: ruido visual, peca-sinal, cor, acabamento, postura e repeticao diaria.",
+  proof:
+    "Mostrar microacoes reais: retirar excesso visual, escolher um acessorio discreto, comparar paleta, ajustar acabamento e iniciar o diagnostico.",
+  cta: "Ver meu plano MUSA de 7 dias",
+  characterBible:
+    "Sofia MUSA ou mulher urbana brasileira adulta, elegante sem ostentacao, roupa simples com acabamento bonito, expressao natural, postura discreta e confiante. Usar imagem-semente aprovada do produto quando disponivel; preservar cabelo, faixa de idade, figurino e energia visual entre as cenas.",
+  environmentBible:
+    "Quarto claro com espelho, luz natural suave e detalhes editoriais acessiveis; rua urbana elegante e realista; ambiente final claro com celular em maos sem texto legivel de interface.",
+  objectBible:
+    "Espelho, celular com diagnostico sem textos legiveis, acessorio discreto como peca-sinal, tecido, paleta creme/vinho, bolsa ou colar simples. Nao usar sacolas de luxo, marcas ou UI deformada.",
+  visualStyleGuide:
+    "Editorial realista, intimo e premium acessivel. Paleta vinho MUSA, creme editorial, blush quente, dourado discreto, grafite suave e oliva. Sem estetica de slide, palestra, banco de imagem ou luxo inacessivel.",
+  imageGenerationPlan:
+    "Gerar ou selecionar primeiro imagem mestre da personagem e frames-chave de espelho, caminhada, detalhes de mecanismo e gesto no celular. Aprovar antes de pedir cenas Luma/Kling.",
+  continuityRules:
+    "Manter a mesma personagem, cabelo, roupa base, temperatura de luz, estilo de ambiente e nivel de elegancia. O video deve funcionar sem audio, com legendas adicionadas na montagem final.",
+  targetDurationSeconds: "30",
+  funnelStage: "AWARENESS_TO_DIAGNOSTIC",
+  primaryMetric:
+    "CTA_CLICK_TO_DIAGNOSTIC; apoio: VIDEO_PLAY, VIDEO_75, DIAGNOSTIC_COMPLETED, PAYWALL_VIEWED, CHECKOUT_STARTED, PURCHASE",
+  providerPlan:
+    "Luma Ray como principal para cenas editoriais e movimento; Kling como alternativa de realismo/custo; HeyGen apenas se a decisao mudar para apresentadora/avatar.",
+  voiceoverPlan:
+    "Opcional. Se usar voz, pt-BR feminina, intima, baixa, segura e sem entusiasmo artificial. A peca precisa vender mesmo com audio desligado.",
+  soundtrackPlan:
+    "Trilha feminina, leve, editorial, crescente e sofisticada, sempre discreta para nao parecer propaganda agressiva.",
+  captionPlan:
+    "Legendas obrigatorias adicionadas fora do modelo: 'Voce se arruma... mas sente que ainda falta presenca?', 'Em 7 dias, pequenos ajustes deixam sua imagem mais intencional.', 'Ruido visual. Peca-sinal. Cor. Acabamento. Postura.', 'Faça o diagnostico gratuito e veja seu Plano MUSA de 7 dias.'",
+  editingNotes:
+    "Montagem 28-34s: dor do espelho, resultado acessivel, mecanismo em cortes sensoriais e CTA no diagnostico. Criar tambem cortes de 15s e 6-8s para Reels/Stories e retargeting.",
+  qualityGate:
+    "Aprovar somente se completar Dor -> Resultado -> Mecanismo -> CTA, preservar promessa sem garantia absoluta, nao parecer luxo inacessivel, funcionar em mobile sem audio, ter HLS/fallback e revisao humana antes de entrar em heroVideos da v7.",
+  status: "READY_FOR_SCRIPT",
+};
+
+const studioPresets: StudioPreset[] = [
+  {
+    key: "musa-v7",
+    label: "MUSA v7 hero cinematografico",
+    badge: "Caso real",
+    description:
+      "Blueprint comercial do video hero da Semana dos 7 Sinais de Presenca.",
+    briefing: musaV7Briefing,
+  },
+  {
+    key: "musa-manifesto",
+    label: "Manifesto MUSA 3 minutos",
+    badge: "Modelo longo",
+    description:
+      "Estrutura longa para historia, mecanismo, prova, oferta e CTA.",
+    briefing: defaultBriefing,
+  },
+];
 
 function buildBriefingFromProject(project: VideoProject): StudioBriefing {
   return {
+    productId: project.productId ? String(project.productId) : "",
+    campaignKey: project.campaignKey || "",
+    videoCategory: project.videoCategory || defaultBriefing.videoCategory,
+    contextType: project.contextType || defaultBriefing.contextType,
+    productionMode: project.productionMode || defaultBriefing.productionMode,
+    targetChannel: project.targetChannel || defaultBriefing.targetChannel,
+    format: project.format || defaultBriefing.format,
     title: project.title,
     story: project.storyText || project.objective,
     product: project.contextType || defaultBriefing.product,
@@ -191,13 +420,59 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     proof: project.visualReferences || defaultBriefing.proof,
     cta: project.ctaText || defaultBriefing.cta,
     characterBible: project.characterBible || defaultBriefing.characterBible,
-    environmentBible: project.environmentBible || defaultBriefing.environmentBible,
+    environmentBible:
+      project.environmentBible || defaultBriefing.environmentBible,
     objectBible: project.objectBible || defaultBriefing.objectBible,
-    visualStyleGuide: project.visualStyleGuide || defaultBriefing.visualStyleGuide,
+    visualStyleGuide:
+      project.visualStyleGuide || defaultBriefing.visualStyleGuide,
     imageGenerationPlan:
       project.imageGenerationPlan || defaultBriefing.imageGenerationPlan,
     continuityRules: project.continuityRules || defaultBriefing.continuityRules,
+    targetDurationSeconds: project.targetDurationSeconds
+      ? String(project.targetDurationSeconds)
+      : defaultBriefing.targetDurationSeconds,
+    funnelStage: project.funnelStage || defaultBriefing.funnelStage,
+    primaryMetric: project.primaryMetric || defaultBriefing.primaryMetric,
+    providerPlan: project.providerPlan || defaultBriefing.providerPlan,
+    voiceoverPlan: project.voiceoverPlan || defaultBriefing.voiceoverPlan,
+    soundtrackPlan: project.soundtrackPlan || defaultBriefing.soundtrackPlan,
+    captionPlan: project.captionPlan || defaultBriefing.captionPlan,
+    editingNotes: project.editingNotes || defaultBriefing.editingNotes,
+    qualityGate: project.qualityGate || defaultBriefing.qualityGate,
+    status: project.status || defaultBriefing.status,
   };
+}
+
+function parsePositiveInteger(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function parseOptionalNumber(value: string) {
+  if (!value.trim()) {
+    return undefined;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function durationValidationMessage(
+  videoCategory: string,
+  targetDurationSeconds?: number,
+) {
+  if (!targetDurationSeconds) {
+    return "Informe uma duracao alvo valida para o projeto.";
+  }
+  if (
+    videoCategory === "COMMERCIAL_SHORT" &&
+    (targetDurationSeconds < 6 || targetDurationSeconds > 60)
+  ) {
+    return "Video comercial curto deve ter entre 6 e 60 segundos.";
+  }
+  if (videoCategory === "LONG_FORM" && targetDurationSeconds < 180) {
+    return "Video longo ou VSL deve ter 180 segundos ou mais.";
+  }
+  return "";
 }
 
 export default function AudioVideoStudioPage() {
@@ -218,10 +493,9 @@ export default function AudioVideoStudioPage() {
   const isEditingProject = Boolean(editableProjectId);
   const isSavingProject =
     createVideoProject.isPending || updateVideoProject.isPending;
-  const targetDurationSeconds =
-    selectedProject?.targetDurationSeconds ?? MINIMUM_STUDIO_DURATION_SECONDS;
-  const isDurationBlocked =
-    targetDurationSeconds < MINIMUM_STUDIO_DURATION_SECONDS;
+  const targetDurationSeconds = parsePositiveInteger(
+    briefing.targetDurationSeconds,
+  );
 
   useEffect(() => {
     if (selectedProject) {
@@ -242,31 +516,60 @@ export default function AudioVideoStudioPage() {
     [briefing],
   );
 
+  const selectedTimeline =
+    targetDurationSeconds && targetDurationSeconds <= 60
+      ? heroScriptBlocks
+      : longFormScriptBlocks;
+  const selectedScenePrompts =
+    briefing.campaignKey === musaV7Briefing.campaignKey
+      ? musaV7ScenePrompts
+      : defaultScenePrompts;
+  const selectedCategory =
+    videoCategoryOptions.find(
+      (option) => option.value === briefing.videoCategory,
+    ) ?? videoCategoryOptions[1];
+  const durationIssue = durationValidationMessage(
+    briefing.videoCategory,
+    targetDurationSeconds,
+  );
+
   const updateBriefing =
     (field: keyof StudioBriefing) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (
+      event: ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
       setBriefing((current) => ({ ...current, [field]: event.target.value }));
     };
 
+  const applyPreset = (preset: StudioPreset) => {
+    setBriefing(preset.briefing);
+    setSaveFeedback("");
+  };
+
   const buildProjectPayload = (): VideoProjectPayload => ({
-    productId: selectedProject?.productId,
+    productId:
+      parseOptionalNumber(briefing.productId) ?? selectedProject?.productId,
     experimentId: selectedProject?.experimentId,
     salesVideoProfileId: selectedProject?.salesVideoProfileId,
-    campaignKey: selectedProject?.campaignKey ?? undefined,
-    contextType: selectedProject?.contextType || "PDE",
-    productionMode: selectedProject?.productionMode || "STORY_FIRST_AUDIO_VIDEO",
-    targetChannel: selectedProject?.targetChannel || "PDE_AND_SOCIAL",
-    format: selectedProject?.format || "VERTICAL_9_16",
+    campaignKey:
+      briefing.campaignKey || selectedProject?.campaignKey || undefined,
+    videoCategory: briefing.videoCategory || "LONG_FORM",
+    contextType: briefing.contextType || "PDE",
+    productionMode: briefing.productionMode || "STORY_FIRST_AUDIO_VIDEO",
+    targetChannel: briefing.targetChannel || "PDE_AND_SOCIAL",
+    format: briefing.format || "VERTICAL_9_16",
     title: briefing.title,
     objective:
       selectedProject?.objective ||
-      "Testar uma narrativa audiovisual de 3 minutos para aumentar desejo, confianca e acao no Metodo MUSA.",
+      "Testar uma narrativa audiovisual para aumentar desejo, confianca e acao no Metodo MUSA.",
     storyText: briefing.story,
-    funnelStage: selectedProject?.funnelStage || "AWARENESS",
-    primaryMetric: selectedProject?.primaryMetric || "DIAGNOSTIC_START",
+    funnelStage: briefing.funnelStage || "AWARENESS",
+    primaryMetric: briefing.primaryMetric || "DIAGNOSTIC_START",
     hookText: `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
     scriptText: scriptDraft.join("\n\n"),
-    scenePlan: selectedProject?.scenePlan || scenePrompts.join("\n"),
+    scenePlan: selectedScenePrompts.join("\n"),
     visualReferences: briefing.proof,
     characterBible: briefing.characterBible,
     environmentBible: briefing.environmentBible,
@@ -274,37 +577,23 @@ export default function AudioVideoStudioPage() {
     visualStyleGuide: briefing.visualStyleGuide,
     imageGenerationPlan: briefing.imageGenerationPlan,
     continuityRules: briefing.continuityRules,
-    voiceoverPlan:
-      selectedProject?.voiceoverPlan ||
-      "Voz proxima, confiante e acolhedora, com ritmo medio e pausas curtas para reforcar pontos de virada.",
-    soundtrackPlan:
-      selectedProject?.soundtrackPlan ||
-      "Trilha leve, moderna e aspiracional, sempre abaixo da narracao.",
-    captionPlan:
-      selectedProject?.captionPlan ||
-      "Legendas curtas com palavras-chave de dor, mecanismo, prova e CTA.",
+    voiceoverPlan: briefing.voiceoverPlan,
+    soundtrackPlan: briefing.soundtrackPlan,
+    captionPlan: briefing.captionPlan,
     ctaText: briefing.cta,
-    targetDurationSeconds,
-    providerPlan:
-      selectedProject?.providerPlan ||
-      "Comecar com roteiro e storyboard; depois testar narracao, cenas-chave e montagem em jobs auditaveis.",
-    editingNotes:
-      selectedProject?.editingNotes ||
-      "Priorizar cortes limpos, prova visual concreta e CTA sem excesso de texto.",
-    qualityGate:
-      selectedProject?.qualityGate ||
-      "Aprovar somente se a historia estiver clara, o mecanismo parecer plausivel, o audio for compreensivel e o CTA estiver conectado ao funil.",
-    status: selectedProject?.status || "READY_FOR_SCRIPT",
+    targetDurationSeconds: targetDurationSeconds ?? null,
+    providerPlan: briefing.providerPlan,
+    editingNotes: briefing.editingNotes,
+    qualityGate: briefing.qualityGate,
+    status: briefing.status || selectedProject?.status || "READY_FOR_SCRIPT",
     createdBy: isEditingProject ? undefined : "codex-mkt",
     updatedBy: "codex-mkt",
   });
 
   const handleSaveProject = async () => {
     setSaveFeedback("");
-    if (isDurationBlocked) {
-      setSaveFeedback(
-        "Projeto bloqueado: o Estudio de Audio e Video so pode gerar videos com 180 segundos ou mais.",
-      );
+    if (durationIssue) {
+      setSaveFeedback(durationIssue);
       return;
     }
     try {
@@ -313,12 +602,16 @@ export default function AudioVideoStudioPage() {
           projectId: editableProjectId,
           payload: buildProjectPayload(),
         });
-        setSaveFeedback(`Projeto atualizado: #${project.id} - ${project.title}`);
+        setSaveFeedback(
+          `Projeto atualizado: #${project.id} - ${project.title}`,
+        );
         return;
       }
 
-      const project = await createVideoProject.mutateAsync(buildProjectPayload());
-      setSaveFeedback(`Projeto exemplo criado: #${project.id} - ${project.title}`);
+      const project = await createVideoProject.mutateAsync(
+        buildProjectPayload(),
+      );
+      setSaveFeedback(`Projeto criado: #${project.id} - ${project.title}`);
     } catch {
       setSaveFeedback(
         "Nao foi possivel salvar o projeto agora. Revise a conexao com o backend e tente novamente.",
@@ -339,7 +632,7 @@ export default function AudioVideoStudioPage() {
         subtitle={
           isEditingProject
             ? "Projeto carregado para continuar roteiro, cenas, audio, montagem e revisao comercial."
-            : "Todo audio ou video nasce de um projeto. O primeiro passo do projeto e contar uma historia forte o suficiente para vender uma transformacao."
+            : "Todo video comercial nasce de um blueprint: funil, promessa, cenas, audio, provider, aprovacao e metrica antes da renderizacao."
         }
       />
 
@@ -367,13 +660,13 @@ export default function AudioVideoStudioPage() {
       <section className="audio-video-studio-page__intro">
         <div>
           <p className="audio-video-studio-page__eyebrow">
-            Experimento 3 minutos
+            Blueprint comercial
           </p>
-          <h2>Projeto primeiro, historia primeiro, producao depois.</h2>
+          <h2>Padronize o video antes de gerar cenas.</h2>
           <p>
             O Estudio organiza a producao audiovisual como um ativo comercial:
-            historia, roteiro, cenas, voz, trilha, montagem e revisao antes de
-            qualquer renderizacao.
+            funil, promessa, roteiro, cenas, voz, trilha, provider, montagem,
+            revisao e metrica antes de qualquer renderizacao.
           </p>
         </div>
         <div
@@ -381,35 +674,131 @@ export default function AudioVideoStudioPage() {
           aria-label="Status do modulo"
         >
           <Timer size={22} aria-hidden="true" />
-          <span>Formato base</span>
-          <strong>Video curto de 3 minutos</strong>
+          <span>Projeto atual</span>
+          <strong>
+            {targetDurationSeconds ?? 0}s / {briefing.format}
+          </strong>
           <small>
-            180 segundos para gancho, mecanismo, prova, oferta e CTA.
+            {selectedCategory.label} · {briefing.funnelStage}
           </small>
         </div>
       </section>
 
-      {isDurationBlocked ? (
-        <article className="audio-video-studio-page__duration-block">
-          Este projeto tem {targetDurationSeconds} segundos e esta bloqueado
-          para o Estudio. Use o fluxo rapido de criativo ou crie um projeto com
-          180 segundos ou mais.
-        </article>
+      <section className="audio-video-studio-page__workflow">
+        {studioWorkflowSteps.map((step, index) => (
+          <article
+            className="audio-video-studio-page__workflow-step"
+            key={step.title}
+          >
+            <span>{index + 1}</span>
+            <strong>{step.title}</strong>
+            <small>{step.description}</small>
+          </article>
+        ))}
+      </section>
+
+      {!isEditingProject ? (
+        <section className="audio-video-studio-page__preset-grid">
+          {studioPresets.map((preset) => (
+            <button
+              className="audio-video-studio-page__preset"
+              key={preset.key}
+              type="button"
+              onClick={() => applyPreset(preset)}
+            >
+              <span>{preset.badge}</span>
+              <strong>{preset.label}</strong>
+              <small>{preset.description}</small>
+            </button>
+          ))}
+        </section>
       ) : null}
 
       <section className="audio-video-studio-page__workspace">
         <form
           className="audio-video-studio-page__briefing"
-          aria-label="Briefing do video de 3 minutos"
+          aria-label="Blueprint operacional de video comercial"
         >
           <div className="audio-video-studio-page__section-heading">
-            <h2>{isEditingProject ? "Projeto carregado" : "Projeto de exemplo"}</h2>
+            <h2>
+              {isEditingProject ? "Projeto carregado" : "Projeto de exemplo"}
+            </h2>
             <p>
               {isEditingProject
                 ? "Continue o trabalho a partir dos dados persistidos neste projeto."
-                : "Ajuste a historia base e crie um projeto persistido para testar o Estudio."}
+                : "Use o preset MUSA v7 como primeiro caso real ou ajuste o blueprint para outro video comercial."}
             </p>
           </div>
+          <div className="audio-video-studio-page__briefing-grid">
+            <label>
+              ID do produto
+              <input
+                value={briefing.productId}
+                onChange={updateBriefing("productId")}
+              />
+            </label>
+            <label>
+              Chave da campanha/versao
+              <input
+                value={briefing.campaignKey}
+                onChange={updateBriefing("campaignKey")}
+              />
+            </label>
+            <label>
+              Categoria do video
+              <select
+                value={briefing.videoCategory}
+                onChange={updateBriefing("videoCategory")}
+              >
+                {videoCategoryOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Canal alvo
+              <input
+                value={briefing.targetChannel}
+                onChange={updateBriefing("targetChannel")}
+              />
+            </label>
+            <label>
+              Duracao alvo
+              <input
+                type="number"
+                min="1"
+                value={briefing.targetDurationSeconds}
+                onChange={updateBriefing("targetDurationSeconds")}
+              />
+            </label>
+            <label>
+              Status operacional
+              <select
+                value={briefing.status}
+                onChange={updateBriefing("status")}
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="audio-video-studio-page__category-note">
+            <ListChecks size={18} aria-hidden="true" />
+            <div>
+              <strong>{selectedCategory.durationRule}</strong>
+              <span>{selectedCategory.commercialUse}</span>
+            </div>
+          </div>
+          {durationIssue ? (
+            <p className="audio-video-studio-page__duration-block">
+              {durationIssue}
+            </p>
+          ) : null}
           <label>
             Titulo do projeto
             <input value={briefing.title} onChange={updateBriefing("title")} />
@@ -459,6 +848,36 @@ export default function AudioVideoStudioPage() {
               onChange={updateBriefing("mechanism")}
             />
           </label>
+          <div className="audio-video-studio-page__briefing-grid">
+            <label>
+              Etapa do funil
+              <input
+                value={briefing.funnelStage}
+                onChange={updateBriefing("funnelStage")}
+              />
+            </label>
+            <label>
+              Metrica primaria
+              <input
+                value={briefing.primaryMetric}
+                onChange={updateBriefing("primaryMetric")}
+              />
+            </label>
+            <label>
+              Modo de producao
+              <input
+                value={briefing.productionMode}
+                onChange={updateBriefing("productionMode")}
+              />
+            </label>
+            <label>
+              Formato
+              <input
+                value={briefing.format}
+                onChange={updateBriefing("format")}
+              />
+            </label>
+          </div>
           <label>
             Prova visual
             <input value={briefing.proof} onChange={updateBriefing("proof")} />
@@ -523,13 +942,63 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
+            <label>
+              Provider e renderizacao
+              <textarea
+                value={briefing.providerPlan}
+                onChange={updateBriefing("providerPlan")}
+                rows={3}
+              />
+            </label>
+            <label>
+              Voz
+              <textarea
+                value={briefing.voiceoverPlan}
+                onChange={updateBriefing("voiceoverPlan")}
+                rows={3}
+              />
+            </label>
+            <label>
+              Trilha
+              <textarea
+                value={briefing.soundtrackPlan}
+                onChange={updateBriefing("soundtrackPlan")}
+                rows={3}
+              />
+            </label>
+            <label>
+              Legendas
+              <textarea
+                value={briefing.captionPlan}
+                onChange={updateBriefing("captionPlan")}
+                rows={3}
+              />
+            </label>
+            <label>
+              Montagem e cortes
+              <textarea
+                value={briefing.editingNotes}
+                onChange={updateBriefing("editingNotes")}
+                rows={3}
+              />
+            </label>
+            <label>
+              Gate de aprovacao
+              <textarea
+                value={briefing.qualityGate}
+                onChange={updateBriefing("qualityGate")}
+                rows={4}
+              />
+            </label>
           </div>
           <button
             className="audio-video-studio-page__primary-action"
             type="button"
             onClick={handleSaveProject}
             disabled={
-              isSavingProject || selectedProjectQuery.isLoading || isDurationBlocked
+              isSavingProject ||
+              selectedProjectQuery.isLoading ||
+              Boolean(durationIssue)
             }
           >
             <Save size={18} aria-hidden="true" />
@@ -537,7 +1006,7 @@ export default function AudioVideoStudioPage() {
               ? "Salvando projeto..."
               : isEditingProject
                 ? "Salvar continuidade"
-                : "Criar projeto exemplo"}
+                : "Criar blueprint"}
           </button>
           {saveFeedback ? (
             <p className="audio-video-studio-page__feedback">{saveFeedback}</p>
@@ -605,14 +1074,14 @@ export default function AudioVideoStudioPage() {
 
       <section className="audio-video-studio-page__section">
         <div className="audio-video-studio-page__section-heading">
-          <h2>Estrutura de 3 minutos</h2>
+          <h2>Estrutura narrativa</h2>
           <p>
-            Sequencia minima para testar retencao, desejo e acao sem depender de
-            improviso.
+            Sequencia do blueprint atual para testar retencao, desejo e acao sem
+            depender de improviso.
           </p>
         </div>
         <div className="audio-video-studio-page__timeline">
-          {scriptBlocks.map((block) => (
+          {selectedTimeline.map((block) => (
             <article
               className="audio-video-studio-page__timeline-block"
               key={block.time}
@@ -629,7 +1098,7 @@ export default function AudioVideoStudioPage() {
         <div className="audio-video-studio-page__panel">
           <h2>Plano basico de cenas</h2>
           <ul>
-            {scenePrompts.map((prompt) => (
+            {selectedScenePrompts.map((prompt) => (
               <li key={prompt}>{prompt}</li>
             ))}
           </ul>

@@ -104,6 +104,11 @@ components:
         experimentId: { type: integer, format: int64, nullable: true }
         salesVideoProfileId: { type: integer, format: int64, nullable: true }
         campaignKey: { type: string, nullable: true }
+        videoCategory:
+          type: string
+          nullable: true
+          enum: [COMMERCIAL_SHORT, LONG_FORM, INSTITUTIONAL_CONTENT]
+          description: Categoria comercial que define a política de duração.
         contextType: { type: string, example: PRODUCT }
         productionMode: { type: string, example: MIXED_AI_SCENES }
         targetChannel: { type: string, example: INSTAGRAM_REELS }
@@ -146,7 +151,8 @@ components:
         ctaText: { type: string, nullable: true }
         targetDurationSeconds:
           type: integer
-          minimum: 180
+          minimum: 1
+          description: Vídeo comercial curto aceita 6-60s; vídeo longo/VSL aceita 180s ou mais.
           nullable: true
         providerPlan: { type: string, nullable: true }
         editingNotes: { type: string, nullable: true }

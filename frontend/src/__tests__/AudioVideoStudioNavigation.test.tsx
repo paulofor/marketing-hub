@@ -55,17 +55,23 @@ describe("audio video studio navigation", () => {
     expect(
       screen.getByRole("heading", { name: /estudio de audio e video/i }),
     ).toBeTruthy();
-    expect(screen.getByText(/projeto primeiro, historia primeiro/i)).toBeTruthy();
-    expect(screen.getByText(/video curto de 3 minutos/i)).toBeTruthy();
     expect(
-      screen.getByRole("form", { name: /briefing do video de 3 minutos/i }),
+      screen.getByText(/padronize o video antes de gerar cenas/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/180 segundos ou mais/i)).toBeTruthy();
+    expect(
+      screen.getByRole("form", {
+        name: /blueprint operacional de video comercial/i,
+      }),
     ).toBeTruthy();
     expect(screen.getByLabelText(/historia inicial/i)).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: /criar projeto exemplo/i }),
+      screen.getByRole("button", { name: /criar blueprint/i }),
     ).toBeTruthy();
     expect(screen.getByText(/projetos recentes do estudio/i)).toBeTruthy();
-    expect(screen.getByText(/estrutura de 3 minutos/i)).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /estrutura narrativa/i }),
+    ).toBeTruthy();
     expect(screen.getByText(/plano basico de cenas/i)).toBeTruthy();
     expect(screen.getByText(/checklist de producao/i)).toBeTruthy();
     expect(screen.getByText(/o que continua onde esta/i)).toBeTruthy();
@@ -117,6 +123,7 @@ describe("audio video studio navigation", () => {
             objective: "Aumentar inicio do diagnostico.",
             storyText: "Historia persistida para continuar edicao.",
             contextType: "PDE",
+            videoCategory: "LONG_FORM",
             productionMode: "STORY_FIRST_AUDIO_VIDEO",
             targetChannel: "PDE",
             format: "VERTICAL_9_16",
@@ -171,7 +178,11 @@ describe("audio video studio navigation", () => {
 
     setup(<App />, ["/audio-video-studio/projects/8"]);
 
-    expect(await screen.findByText(/120 segundos/i)).toBeTruthy();
+    expect(
+      await screen.findByText(
+        /video longo ou vsl deve ter 180 segundos ou mais/i,
+      ),
+    ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: /salvar continuidade/i }),
     ).toBeDisabled();
@@ -189,8 +200,6 @@ describe("audio video studio navigation", () => {
         /assets\/hls\/musa-v6-microexperiencia-visivel\/index\.m3u8/i,
       ),
     ).toBeTruthy();
-    expect(
-      screen.queryByText(/Nenhum projeto criado ainda/i),
-    ).not.toBeTruthy();
+    expect(screen.queryByText(/Nenhum projeto criado ainda/i)).not.toBeTruthy();
   });
 });

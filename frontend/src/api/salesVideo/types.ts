@@ -382,6 +382,7 @@ export interface VideoProject {
   experimentId?: number | null;
   salesVideoProfileId?: number | null;
   campaignKey?: string | null;
+  videoCategory?: string | null;
   contextType: string;
   productionMode: string;
   targetChannel: string;
@@ -421,6 +422,7 @@ export interface VideoProjectPayload {
   experimentId?: number | null;
   salesVideoProfileId?: number | null;
   campaignKey?: string;
+  videoCategory?: string;
   contextType: string;
   productionMode: string;
   targetChannel: string;

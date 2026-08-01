@@ -495,6 +495,52 @@ class AccessServiceTest {
         assertThat(summary.recentJourneys()).isEmpty();
     }
 
+    /** Confirma que schema legado sem qualidade de tráfego não derruba o resumo agregado. */
+    @Test
+    void returnsLegacyAnalyticsSummaryWhenCanonicalSchemaIsMissingTrafficQuality() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_legacy_analytics;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createLegacyPdeFunnelEventSchema(jdbcUrl);
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT INTO pde_funnel_event (
+                      event_id, product_slug, event_type, session_id, visitor_id, visible_ms, occurred_at
+                    )
+                    VALUES
+                      ('event-legacy-1', 'metodo-musa-7-dias', 'PAGE_VIEW', 'session-legacy-1',
+                        'visitor-legacy-1', 1200, TIMESTAMP '2026-07-30 12:00:00'),
+                      ('event-legacy-2', 'metodo-musa-7-dias', 'PED_ENTRY', 'session-legacy-1',
+                        'visitor-legacy-1', 800, TIMESTAMP '2026-07-30 12:00:02')
+                    """);
+        }
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isEqualTo(2);
+        assertThat(summary.rawTotalEvents()).isEqualTo(2);
+        assertThat(summary.sessions()).isEqualTo(1);
+        assertThat(summary.humanSessions()).isEqualTo(1);
+        assertThat(summary.pageViews()).isEqualTo(1);
+        assertThat(summary.pedEntries()).isEqualTo(1);
+        assertThat(summary.totalVisibleMs()).isEqualTo(2000);
+        assertThat(summary.lastEventAt()).isEqualTo("2026-07-30T12:00:02-03:00");
+        assertThat(summary.events()).hasSize(2);
+        assertThat(summary.trafficSources()).isEmpty();
+        assertThat(summary.recentJourneys()).isEmpty();
+    }
+
     /** Confirma que o resumo analítico expõe dispositivo e resolução gravados pelos eventos do PDE. */
     @Test
     void summarizesDeviceAndScreenSizeAnalyticsFromJdbcEvents() throws SQLException {
@@ -1223,6 +1269,50 @@ class AccessServiceTest {
                       experience_version VARCHAR(80),
                       event_type VARCHAR(80) NOT NULL,
                       traffic_quality VARCHAR(40),
+                      session_id VARCHAR(64),
+                      visitor_id VARCHAR(64),
+                      visible_ms BIGINT,
+                      occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+        }
+    }
+
+    /** Cria schema legado de analytics anterior à classificação de tráfego humano. */
+    private static void createLegacyPdeFunnelEventSchema(String jdbcUrl) throws SQLException {
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TABLE pde_access_grant (
+                      token VARCHAR(120) PRIMARY KEY,
+                      product_slug VARCHAR(120) NOT NULL,
+                      email VARCHAR(191) NOT NULL,
+                      source VARCHAR(80) NOT NULL,
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_access_mission_completion (
+                      access_token VARCHAR(120) NOT NULL,
+                      mission_id VARCHAR(120) NOT NULL,
+                      completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_access_mission_interaction_answer (
+                      access_token VARCHAR(120) NOT NULL,
+                      mission_id VARCHAR(120) NOT NULL,
+                      question_key VARCHAR(120) NOT NULL,
+                      answer_text TEXT,
+                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_funnel_event (
+                      id BIGINT AUTO_INCREMENT,
+                      event_id VARCHAR(64) PRIMARY KEY,
+                      product_slug VARCHAR(120) NOT NULL,
+                      event_type VARCHAR(80) NOT NULL,
                       session_id VARCHAR(64),
                       visitor_id VARCHAR(64),
                       visible_ms BIGINT,

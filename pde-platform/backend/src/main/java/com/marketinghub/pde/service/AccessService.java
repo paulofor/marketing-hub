@@ -512,13 +512,129 @@ public class AccessService {
                                             loadSessionJourneyDtos(analyticsConnection, analyticsProductSlug, 20)));
                 }
             }
-        } catch (SQLException | RuntimeException ex) {
+        } catch (SQLException ex) {
             log.error(
-                    "Falha ao consolidar analytics PDE; productSlug={}, operation=summary, jdbcConfigured={}",
+                    "Falha ao consolidar analytics PDE canônico; productSlug={}, operation=summary, jdbcConfigured={}",
+                    productSlug,
+                    usesJdbcStorage(),
+                    ex);
+            return summarizeLegacyFunnelAnalytics(product, productSlug, ex);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Falha inesperada ao consolidar analytics PDE; productSlug={}, operation=summary, jdbcConfigured={}",
                     productSlug,
                     usesJdbcStorage(),
                     ex);
             throw new IllegalStateException("Não foi possível consolidar analytics PDE", ex);
+        }
+        return emptyFunnelAnalytics(productSlug);
+    }
+
+    /** Consolida o mínimo comercial quando o schema analítico ainda não aceita o SQL canônico. */
+    private FunnelAnalyticsSummaryResponse summarizeLegacyFunnelAnalytics(
+            ProductExperienceResponse product, String productSlug, SQLException originalFailure) {
+        try (Connection connection = openConnection()) {
+            boolean hasTrafficQuality = funnelEventColumnExists(connection, "traffic_quality");
+            boolean hasVisitorId = funnelEventColumnExists(connection, "visitor_id");
+            boolean hasSessionId = funnelEventColumnExists(connection, "session_id");
+            boolean hasVisibleMs = funnelEventColumnExists(connection, "visible_ms");
+            boolean hasOccurredAt = funnelEventColumnExists(connection, "occurred_at");
+            String commercialFilter = hasTrafficQuality ? " traffic_quality = 'HUMAN' " : " 1 = 1 ";
+            String sessionExpression = hasSessionId ? " COALESCE(session_id, event_id) " : " event_id ";
+            String visibleMsExpression = hasVisibleMs ? " visible_ms " : " 0 ";
+            String lastEventExpression = hasOccurredAt ? "MAX(occurred_at)" : "NULL";
+            String sql = """
+                    SELECT
+                      SUM(CASE WHEN """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS total_events,
+                      COUNT(*) AS raw_total_events,
+                      """ + (hasVisitorId
+                            ? "COUNT(DISTINCT CASE WHEN " + commercialFilter + " THEN visitor_id ELSE NULL END)"
+                            : "0") + """
+                        AS unique_visitors,
+                      COUNT(DISTINCT CASE WHEN """ + commercialFilter + """
+                        THEN """ + sessionExpression + """
+                        ELSE NULL END) AS sessions,
+                      COUNT(DISTINCT """ + sessionExpression + """
+                        ) AS raw_sessions,
+                      COUNT(DISTINCT CASE WHEN """ + commercialFilter + """
+                        THEN """ + sessionExpression + """
+                        ELSE NULL END) AS human_sessions,
+                      SUM(CASE WHEN event_type = 'PED_ENTRY' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS ped_entries,
+                      SUM(CASE WHEN event_type = 'PAGE_VIEW' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS page_views,
+                      SUM(CASE WHEN event_type = 'LOGIN_STARTED' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS login_started,
+                      SUM(CASE WHEN event_type = 'LOGIN_COMPLETED' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS login_completed,
+                      SUM(CASE WHEN event_type = 'PAYWALL_VIEWED' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS paywall_viewed,
+                      SUM(CASE WHEN event_type = 'SUBSCRIPTION_CLICKED' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS subscription_clicked,
+                      SUM(CASE WHEN event_type = 'SUBSCRIPTION_APPROVED' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS subscription_approved,
+                      SUM(CASE WHEN event_type = 'ACCESS_RELEASED' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS access_released,
+                      SUM(CASE WHEN event_type = 'FIRST_USE' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS first_use,
+                      SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' AND """ + commercialFilter + """
+                        THEN 1 ELSE 0 END) AS checkout_started,
+                      COALESCE(SUM(CASE WHEN """ + commercialFilter + """
+                        THEN """ + visibleMsExpression + """
+                        ELSE 0 END), 0) AS total_visible_ms,
+                      """ + lastEventExpression + """
+                        AS last_event_at
+                    FROM pde_funnel_event
+                    WHERE product_slug = ?
+                    """;
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, productSlug);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        return new FunnelAnalyticsSummaryResponse(
+                                productSlug,
+                                product.experienceVersion(),
+                                resultSet.getLong("total_events"),
+                                resultSet.getLong("raw_total_events"),
+                                resultSet.getLong("unique_visitors"),
+                                resultSet.getLong("sessions"),
+                                resultSet.getLong("raw_sessions"),
+                                resultSet.getLong("human_sessions"),
+                                0,
+                                0,
+                                0,
+                                0,
+                                resultSet.getLong("ped_entries"),
+                                resultSet.getLong("page_views"),
+                                resultSet.getLong("login_started"),
+                                resultSet.getLong("login_completed"),
+                                resultSet.getLong("paywall_viewed"),
+                                resultSet.getLong("subscription_clicked"),
+                                resultSet.getLong("subscription_approved"),
+                                resultSet.getLong("access_released"),
+                                resultSet.getLong("first_use"),
+                                resultSet.getLong("checkout_started"),
+                                resultSet.getLong("total_visible_ms"),
+                                timestampAsOperationalText(resultSet, "last_event_at"),
+                                loadLegacyFunnelEventMetrics(connection, productSlug, commercialFilter),
+                                List.of(),
+                                List.of(),
+                                List.of(),
+                                List.of(),
+                                List.of(),
+                                List.of(),
+                                List.of());
+                    }
+                }
+            }
+        } catch (SQLException fallbackFailure) {
+            log.error(
+                    "Falha ao consolidar analytics PDE legado; productSlug={}, operation=summary-legacy",
+                    productSlug,
+                    fallbackFailure);
+            fallbackFailure.addSuppressed(originalFailure);
+            throw new IllegalStateException("Não foi possível consolidar analytics PDE", fallbackFailure);
         }
         return emptyFunnelAnalytics(productSlug);
     }
@@ -1050,6 +1166,42 @@ public class AccessService {
                 }
                 return metrics;
             }
+        }
+    }
+
+    /** Lê contagens por evento sem exigir colunas novas do schema analítico canônico. */
+    private List<FunnelAnalyticsEventMetricDto> loadLegacyFunnelEventMetrics(
+            Connection connection, String productSlug, String commercialFilter) throws SQLException {
+        String sql = """
+                SELECT event_type, COUNT(*) AS total
+                FROM pde_funnel_event
+                WHERE product_slug = ?
+                  AND """ + commercialFilter + """
+                GROUP BY event_type
+                ORDER BY total DESC, event_type
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, productSlug);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<FunnelAnalyticsEventMetricDto> metrics = new java.util.ArrayList<>();
+                while (resultSet.next()) {
+                    metrics.add(new FunnelAnalyticsEventMetricDto(
+                            resultSet.getString("event_type"),
+                            resultSet.getLong("total")));
+                }
+                return metrics;
+            }
+        }
+    }
+
+    /** Verifica se a coluna está disponível antes de montar o SQL legado tolerante a migração parcial. */
+    private boolean funnelEventColumnExists(Connection connection, String columnName) throws SQLException {
+        String sql = "SELECT " + columnName + " FROM pde_funnel_event WHERE 1 = 0";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.executeQuery();
+            return true;
+        } catch (SQLException ex) {
+            return false;
         }
     }
 

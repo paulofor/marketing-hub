@@ -95,6 +95,29 @@ class PostProductionVideoProviderTest {
                 .contains("gpt-4o-mini-tts", "nova", "Você se arruma");
     }
 
+    /** Deve aplicar legenda sem exigir TTS quando a pós-produção não pedir voz off. */
+    @Test
+    void shouldPostProduceCaptionOnlyVideoWithoutVoiceOver() throws Exception {
+        server.enqueue(mp4Response());
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
+        PostProductionVideoProvider provider =
+                new PostProductionVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(captionOnlyJob(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.videoFile().assetType()).isEqualTo(AssetType.VIDEO);
+        assertThat(new String(artifacts.captionFile().content())).contains("WEBVTT", "Legenda grande");
+        assertThat(artifacts.metadata())
+                .containsEntry("post_production_mode", "CAPTION_ONLY")
+                .containsKey("audio");
+        assertThat(artifacts.metadata().get("audio").toString())
+                .contains("voice_over=false", "mode=CAPTION_ONLY", "NOT_REQUESTED")
+                .doesNotContain("OPENAI_TTS", "ESPEAK_NG");
+        assertThat(server.getRequestCount()).isEqualTo(1);
+        assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
+    }
+
     /** Cria uma resposta MP4 mínima para o download fonte. */
     private MockResponse mp4Response() {
         return new MockResponse()
@@ -189,6 +212,43 @@ class PostProductionVideoProviderTest {
                           "sourceVideoUrl": "/source/musa.mp4",
                           "voiceOverScript": "Você se arruma e sente que falta presença. Veja seu plano MUSA.",
                           "captionText": "Pare de se sentir comum no espelho. Veja seu plano MUSA de 7 dias."
+                        }
+                        """,
+                Instant.now(),
+                Instant.now());
+    }
+
+    /** Cria um job de pós-produção apenas com legenda. */
+    private SalesVideoJob captionOnlyJob() {
+        return new SalesVideoJob(
+                56L,
+                2L,
+                3L,
+                "tenant-a",
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                "MUSA_POST_PRODUCTION",
+                null,
+                SalesVideoJobType.POST_PRODUCTION,
+                SalesVideoStatus.VIDEO_REQUESTED,
+                1,
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                Instant.now(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                """
+                        {
+                          "sourceVideoUrl": "/source/musa.mp4",
+                          "captionText": "Legenda grande para mobile sem depender de voz off."
                         }
                         """,
                 Instant.now(),

@@ -30,7 +30,7 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
-/** Finaliza vídeos brutos com voz off, legenda queimada e trilha leve para venda. */
+/** Finaliza vídeos brutos com legenda queimada e, quando houver roteiro, voz off e trilha leve. */
 @Component
 @ConditionalOnProperty(prefix = "video.providers.post-production", name = "enabled", havingValue = "true")
 public class PostProductionVideoProvider implements VideoProvider {
@@ -75,15 +75,15 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Baixa o vídeo fonte, adiciona voz, legenda e trilha, e devolve o MP4 final. */
+    /** Baixa o vídeo fonte, adiciona legenda e aplica voz/trilha quando houver roteiro. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
                                     ProgressCallback progressCallback) {
         JsonNode metadata = readMetadata(job);
         String sourceVideoUrl = requiredText(metadata, "sourceVideoUrl");
-        String captionText = firstText(metadata, "captionText", "voiceOverScript");
-        String voiceOverScript = firstText(metadata, "voiceOverScript", "captionText");
+        String captionText = requiredText(metadata, "captionText");
+        String voiceOverScript = optionalText(metadata, "voiceOverScript");
         Path source = null;
         Path voice = null;
         Path caption = null;
@@ -91,16 +91,23 @@ public class PostProductionVideoProvider implements VideoProvider {
         try {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
-            VoiceOverAudio voiceOverAudio = generateVoiceOver(voiceOverScript, job.id());
-            voice = voiceOverAudio.file();
             caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".txt");
             output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
             Files.writeString(caption, wrapCaption(captionText), StandardCharsets.UTF_8);
-            progressCallback.onProgress(35, SalesVideoStatus.VIDEO_PROCESSING, "Voz off em português gerada por "
-                    + voiceOverAudio.providerLabel());
-            progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda e trilha leve");
-            runFfmpeg(source, voice, caption, output);
-            Map<String, Object> audioReview = reviewAudio(output, voiceOverScript, voiceOverAudio);
+            VoiceOverAudio voiceOverAudio = null;
+            Map<String, Object> audioReview = Map.of("mode", "CAPTION_ONLY", "status", "NOT_REQUESTED");
+            if (StringUtils.hasText(voiceOverScript)) {
+                voiceOverAudio = generateVoiceOver(voiceOverScript, job.id());
+                voice = voiceOverAudio.file();
+                progressCallback.onProgress(35, SalesVideoStatus.VIDEO_PROCESSING, "Voz off em português gerada por "
+                        + voiceOverAudio.providerLabel());
+                progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda, voz e trilha leve");
+                runFfmpegWithVoice(source, voice, caption, output);
+                audioReview = reviewAudio(output, voiceOverScript, voiceOverAudio);
+            } else {
+                progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda grande sem voz off");
+                runFfmpegCaptionOnly(source, caption, output);
+            }
             ProviderFile video = new ProviderFile(
                     "sales-video-" + job.id() + "-musa-final.mp4",
                     VIDEO_MP4,
@@ -196,15 +203,26 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "espeak-ng falhou ao gerar voz off");
     }
 
-    /** Compoe o MP4 final com legenda queimada, voz e trilha discreta. */
-    private void runFfmpeg(Path source, Path voice, Path caption, Path output) {
+    /** Compõe o MP4 final apenas com legenda queimada, preservando o vídeo fonte. */
+    private void runFfmpegCaptionOnly(Path source, Path caption, Path output) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
-        String drawText = "drawtext=fontfile='%s':textfile='%s':fontcolor=white:fontsize=42:"
-                + "line_spacing=10:borderw=4:bordercolor=black@0.75:box=1:boxcolor=black@0.35:"
-                + "boxborderw=18:x=(w-text_w)/2:y=h-(text_h+140)";
-        String videoFilter = drawText.formatted(
-                escapeFilterPath(config.getFontFile()),
-                escapeFilterPath(caption.toAbsolutePath().toString()));
+        String videoFilter = captionDrawText(config, caption);
+        runProcess(List.of(
+                config.getFfmpegPath(),
+                "-y",
+                "-i", source.toAbsolutePath().toString(),
+                "-vf", videoFilter,
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-an",
+                output.toAbsolutePath().toString()),
+                "ffmpeg falhou ao aplicar legenda no vídeo");
+    }
+
+    /** Compõe o MP4 final com legenda queimada, voz e trilha discreta. */
+    private void runFfmpegWithVoice(Path source, Path voice, Path caption, Path output) {
+        VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        String videoFilter = captionDrawText(config, caption);
         String filter = "[2:a]volume=0.035,apad[music];[1:a]volume=1.0[voice];"
                 + "[voice][music]amix=inputs=2:duration=first:dropout_transition=0[aout];"
                 + "[0:v]" + videoFilter + "[vout]";
@@ -224,6 +242,16 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "-shortest",
                 output.toAbsolutePath().toString()),
                 "ffmpeg falhou ao finalizar vídeo para venda");
+    }
+
+    /** Monta o filtro visual de legenda grande para leitura em telas mobile. */
+    private String captionDrawText(VideoManagementProperties.PostProduction config, Path caption) {
+        String drawText = "drawtext=fontfile='%s':textfile='%s':fontcolor=white:fontsize=42:"
+                + "line_spacing=10:borderw=4:bordercolor=black@0.75:box=1:boxcolor=black@0.35:"
+                + "boxborderw=18:x=(w-text_w)/2:y=h-(text_h+140)";
+        return drawText.formatted(
+                escapeFilterPath(config.getFontFile()),
+                escapeFilterPath(caption.toAbsolutePath().toString()));
     }
 
     /** Executa um processo externo e converte falhas em erro operacional claro. */
@@ -277,13 +305,10 @@ public class PostProductionVideoProvider implements VideoProvider {
         return value.trim();
     }
 
-    /** Retorna o primeiro texto preenchido entre dois campos de metadados. */
-    private String firstText(JsonNode metadata, String preferredField, String fallbackField) {
-        String preferred = metadata.path(preferredField).asText(null);
-        if (StringUtils.hasText(preferred)) {
-            return preferred.trim();
-        }
-        return requiredText(metadata, fallbackField);
+    /** Retorna texto opcional normalizado dos metadados. */
+    private String optionalText(JsonNode metadata, String field) {
+        String value = metadata.path(field).asText(null);
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     /** Quebra a legenda em linhas curtas para leitura em vídeo vertical. */
@@ -447,14 +472,15 @@ public class PostProductionVideoProvider implements VideoProvider {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "MUSA_POST_PRODUCTION");
         metadata.put("provider_job_id", "post-production-" + job.id());
+        metadata.put("post_production_mode", StringUtils.hasText(voiceOverScript) ? "VOICE_AND_CAPTION" : "CAPTION_ONLY");
         metadata.put("duration_seconds", 30);
         metadata.put("audio", Map.of(
-                "voice_over", true,
+                "voice_over", StringUtils.hasText(voiceOverScript),
                 "language", "pt-BR",
-                "music", "synthetic_light_bed",
+                "music", StringUtils.hasText(voiceOverScript) ? "synthetic_light_bed" : "none",
                 "review", audioReview));
         metadata.put("captions", Map.of("burned_in", true, "vtt_asset", true, "text", captionText));
-        metadata.put("voice_over_script", voiceOverScript);
+        metadata.put("voice_over_script", StringUtils.hasText(voiceOverScript) ? voiceOverScript : null);
         metadata.put("source_experiment_video_asset_id", sourceMetadata.path("experimentVideoAssetId").asLong());
         metadata.put("finished_at", Instant.now().toString());
         return metadata;

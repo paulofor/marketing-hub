@@ -1088,8 +1088,10 @@ export default function AudioVideoStudioPage() {
               href={`#${stage.targetId}`}
               key={stage.title}
             >
-              <stage.icon size={20} aria-hidden="true" />
-              <span>{stage.section}</span>
+              <div className="audio-video-studio-page__stage-card-header">
+                <span>{stage.section}</span>
+                <stage.icon size={22} aria-hidden="true" />
+              </div>
               <h3>{stage.title}</h3>
               <p>{stage.description}</p>
               <small>{stage.output}</small>

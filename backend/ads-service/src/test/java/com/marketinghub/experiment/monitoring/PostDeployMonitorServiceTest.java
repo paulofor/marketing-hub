@@ -422,8 +422,15 @@ class PostDeployMonitorServiceTest {
                 "metodo-musa-7-dias",
                 "musa-pde-entry-v6-video-motivacional",
                 500,
+                500,
                 33,
                 33,
+                33,
+                33,
+                0,
+                0,
+                0,
+                0,
                 33,
                 33,
                 0,
@@ -495,9 +502,42 @@ class PostDeployMonitorServiceTest {
                         0.0,
                         1000,
                         "2026-07-30T12:00:00Z")),
-                List.of(),
-                List.of(),
-                List.of()));
+                List.of(
+                    new PdeAnalyticsSummary.PdeTrafficQualityMetric(
+                        "HUMAN", "Humano", 33, 500, 100.0)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeDeviceMetric("mobile", "Mobile", 29, 87.88),
+                    new PdeAnalyticsSummary.PdeDeviceMetric("desktop", "Computador", 4, 12.12)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeScreenSizeMetric(
+                        "360x690", "360x690", 360, 690, 10, 30.3)),
+                List.of(
+                    new PdeAnalyticsSummary.PdeSessionJourney(
+                        "session-current",
+                        "visitor-current",
+                        "203.0.113.77",
+                        "Mozilla/5.0 Mobile",
+                        "HUMAN",
+                        "REAL_USER",
+                        "Meta",
+                        "2026-07-30T11:59:00Z",
+                        "2026-07-30T12:00:00Z",
+                        1000,
+                        80,
+                        List.of("home"),
+                        List.of("hero"),
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        "CONSUMIU_PAGINA_SEM_ACAO",
+                        "VIDEO_COMPLETED",
+                        "video_completed"))));
 
     var response = service.summarize(77L, "metodo-musa-7-dias");
 
@@ -508,6 +548,10 @@ class PostDeployMonitorServiceTest {
     assertThat(response.pde().experienceVersions()).hasSize(1);
     assertThat(response.pde().experienceVersions().getFirst().sessions()).isEqualTo(1);
     assertThat(response.pde().trafficSources()).extracting("utmCampaign").containsExactly("120250742286340326");
+    assertThat(response.pde().trafficQualityBreakdown()).extracting("trafficQuality").contains("HUMAN");
+    assertThat(response.pde().deviceBreakdown()).extracting("deviceType").contains("mobile", "desktop");
+    assertThat(response.pde().screenSizeBreakdown()).extracting("screenSize").contains("360x690");
+    assertThat(response.pde().recentJourneys()).extracting("sessionId").contains("session-current");
     assertThat(response.pde().measurementRecommendation()).contains("histórico de outras campanhas fica fora");
   }
 

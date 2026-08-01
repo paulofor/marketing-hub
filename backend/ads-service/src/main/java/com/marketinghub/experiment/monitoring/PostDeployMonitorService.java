@@ -519,10 +519,10 @@ public class PostDeployMonitorService {
                 checkoutStarted,
                 subscriptionApproved)),
         toTrafficSourceDtosFromMetrics(matchingTrafficSources),
-        List.of(),
-        List.of(),
-        List.of(),
-        List.of());
+        toTrafficQualityDtos(summary),
+        toDeviceDtos(summary),
+        toScreenSizeDtos(summary),
+        toSessionJourneyDtos(summary));
   }
 
   /** Calcula o tempo médio visível por sessão PDE para leitura comercial do funil. */

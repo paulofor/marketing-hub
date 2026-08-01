@@ -167,6 +167,15 @@
   align-content: start;
   min-height: 214px;
   padding: 1rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.audio-video-studio-page__stage-card:hover,
+.audio-video-studio-page__stage-card:focus-visible {
+  border-color: #7a2444;
+  box-shadow: 0 0 0 3px rgba(122, 36, 68, 0.12);
+  outline: none;
 }
 
 .audio-video-studio-page__stage-card svg {
@@ -199,6 +208,24 @@
 .audio-video-studio-page__stage-card small {
   color: #334155;
   font-weight: 700;
+}
+
+.audio-video-studio-page__stage-link {
+  color: #7a2444;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+#audio-video-stage-estrategia,
+#audio-video-stage-roteiro,
+#audio-video-stage-biblia-visual,
+#audio-video-stage-storyboard,
+#audio-video-stage-audio,
+#audio-video-stage-provider,
+#audio-video-stage-montagem,
+#audio-video-stage-revisao,
+#audio-video-stage-aprendizado {
+  scroll-margin-top: 1rem;
 }
 
 .audio-video-studio-page__preset {

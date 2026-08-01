@@ -109,6 +109,21 @@ describe("audio video studio navigation", () => {
     expect(screen.getAllByText(/1\. estrategia/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/6\. geracao ia/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/9\. aprendizado/i).length).toBeGreaterThan(0);
+    expect(
+      screen
+        .getByRole("link", { name: /oferta e funil.*1\. estrategia/i })
+        .getAttribute("href"),
+    ).toBe("#audio-video-stage-estrategia");
+    expect(
+      screen
+        .getByRole("link", { name: /provider.*6\. geracao ia/i })
+        .getAttribute("href"),
+    ).toBe("#audio-video-stage-provider");
+    expect(
+      screen
+        .getByRole("link", { name: /metricas.*9\. aprendizado/i })
+        .getAttribute("href"),
+    ).toBe("#audio-video-stage-aprendizado");
     expect(screen.getByText(/3\. biblia visual premium/i)).toBeTruthy();
     expect(screen.getByText(/projetos recentes do estudio/i)).toBeTruthy();
     expect(

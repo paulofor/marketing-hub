@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-01-video-reference-analysis.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-01-video-project-category.yaml
       relativeToChangelogFile: true
   - include:

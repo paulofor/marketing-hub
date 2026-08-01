@@ -454,3 +454,35 @@ export interface VideoProjectPayload {
   createdBy?: string;
   updatedBy?: string;
 }
+
+export type VideoReferenceStatus =
+  "QUEUED" | "ANALYZING" | "ANALYZED" | "REJECTED";
+
+export interface VideoReference {
+  id: number;
+  tenantId?: string | null;
+  title: string;
+  sourceUrl: string;
+  sourcePlatform?: string | null;
+  niche?: string | null;
+  funnelStage?: string | null;
+  primaryLearningGoal: string;
+  successEvidence?: string | null;
+  analysisNotes?: string | null;
+  status: VideoReferenceStatus;
+  createdBy?: string | null;
+  analyzedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface VideoReferencePayload {
+  title: string;
+  sourceUrl: string;
+  sourcePlatform?: string;
+  niche?: string;
+  funnelStage?: string;
+  primaryLearningGoal: string;
+  successEvidence?: string;
+  createdBy?: string;
+}

@@ -14,6 +14,7 @@ import com.marketinghub.salesvideo.dto.CreateSalesVideoCommercialPlaybookRequest
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
 import com.marketinghub.salesvideo.dto.CreateVideoProjectRequest;
+import com.marketinghub.salesvideo.dto.CreateVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.GenerateSalesVideoScriptRequest;
 import com.marketinghub.salesvideo.dto.JobClaimRequest;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
@@ -41,6 +42,7 @@ import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
+import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -101,6 +103,20 @@ public class SalesVideoController {
   public VideoProjectDto updateVideoProject(
       @PathVariable Long projectId, @Valid @RequestBody UpdateVideoProjectRequest request) {
     return salesVideoService.updateVideoProject(projectId, request);
+  }
+
+  /** Lista vídeos externos enviados para análise e aprendizado comercial. */
+  @GetMapping("/api/sales-videos/reference-videos")
+  public List<VideoReferenceDto> listVideoReferences() {
+    return salesVideoService.listVideoReferences();
+  }
+
+  /** Cadastra um vídeo externo na fila de análise do estúdio. */
+  @PostMapping("/api/sales-videos/reference-videos")
+  @ResponseStatus(HttpStatus.CREATED)
+  public VideoReferenceDto createVideoReference(
+      @Valid @RequestBody CreateVideoReferenceRequest request) {
+    return salesVideoService.createVideoReference(request);
   }
 
   /** Cria um perfil de vídeo para um produto. */

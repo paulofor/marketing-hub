@@ -205,29 +205,26 @@ describe("audio video studio navigation", () => {
     expect(screen.getByRole("link", { name: /novo projeto/i })).toBeTruthy();
   });
 
-  it("renders videos analysis page from the global video library", async () => {
+  it("renders videos analysis page as a reference submission queue", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
       }
 
-      if (url === "/api/experiments/video-assets") {
+      if (url === "/api/sales-videos/reference-videos") {
         return Promise.resolve({
           data: [
             {
               id: 22,
-              experimentId: 74,
-              slot: "LANDING_HERO",
-              objective: "Provar a transformacao do diagnostico MUSA.",
-              primaryMetric: "VIDEO_PLAY",
-              provider: "VEO",
-              model: "veo-3",
-              status: "READY",
-              assetUrl: "https://assets.example/video.mp4",
-              hlsPlaybackUrl: "https://assets.example/video.m3u8",
-              durationSeconds: 32,
-              reviewStatus: "APPROVED",
-              requiredForRelease: true,
+              title: "Reels de transformacao visual",
+              sourceUrl: "https://social.example/video",
+              sourcePlatform: "Instagram",
+              niche: "MUSA",
+              funnelStage: "AWARENESS",
+              primaryLearningGoal:
+                "Entender como o gancho mostra valor nos 3 primeiros segundos.",
+              successEvidence: "1M views e muitos comentarios de intenção.",
+              status: "QUEUED",
               createdAt: "2026-07-29T10:00:00Z",
             },
           ],
@@ -243,15 +240,17 @@ describe("audio video studio navigation", () => {
       screen.getByRole("heading", { name: /videos para analise/i }),
     ).toBeTruthy();
     expect(
-      await screen.findByText(/provar a transformacao do diagnostico musa/i),
+      screen.getByRole("form", { name: /enviar video para analise/i }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText(/url do video/i)).toBeTruthy();
+    expect(
+      await screen.findByText(/reels de transformacao visual/i),
     ).toBeTruthy();
     expect(
-      screen.getByText(/aprender com gancho, ritmo, prova e cta/i),
+      screen.getByText(/na fila para extrair gancho, ritmo, prova/i),
     ).toBeTruthy();
     const videoLink = screen.getByRole("link", { name: /abrir video/i });
-    expect(videoLink.getAttribute("href")).toBe(
-      "https://assets.example/video.m3u8",
-    );
+    expect(videoLink.getAttribute("href")).toBe("https://social.example/video");
   });
 
   it("opens audio video editor with persisted project loaded", async () => {

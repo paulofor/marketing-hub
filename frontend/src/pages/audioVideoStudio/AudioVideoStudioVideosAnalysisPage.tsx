@@ -1,12 +1,23 @@
-import { Link } from "react-router-dom";
-import { ExternalLink, PlayCircle } from "lucide-react";
+import { FormEvent, useState } from "react";
+import { ExternalLink, PlusCircle } from "lucide-react";
 import {
-  type ExperimentVideoAsset,
-  useAllExperimentVideoAssets,
-} from "../../api/experiment/useExperimentVideoAssets";
+  useCreateVideoReference,
+  useVideoReferences,
+} from "../../api/salesVideo/useVideoReferences";
 import PageTitle from "../../components/PageTitle";
 import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
 import "./AudioVideoStudioPage.css";
+
+const initialForm = {
+  title: "",
+  sourceUrl: "",
+  sourcePlatform: "",
+  niche: "",
+  funnelStage: "",
+  primaryLearningGoal: "",
+  successEvidence: "",
+  createdBy: "operador@marketinghub.io",
+};
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -22,140 +33,252 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
-function formatDuration(value?: number | null) {
-  if (!value) {
-    return "Duracao nao informada";
+function getStatusLearningAction(status: string) {
+  if (status === "ANALYZED") {
+    return "Aprendizado pronto para reaproveitar em roteiro, gancho e CTA.";
   }
 
-  const minutes = Math.floor(value / 60);
-  const seconds = value % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
-
-function getPlaybackUrl(video: ExperimentVideoAsset) {
-  return video.hlsPlaybackUrl || video.assetUrl || "";
-}
-
-function getLearningPriority(video: ExperimentVideoAsset) {
-  if (video.status === "READY" && video.reviewStatus === "APPROVED") {
-    return "Aprender com gancho, ritmo, prova e CTA.";
+  if (status === "ANALYZING") {
+    return "Sistema analisando estrutura, retencao, prova e chamada.";
   }
 
-  if (video.reviewStatus === "REJECTED") {
-    return "Aprender com a causa da rejeicao antes de refazer.";
+  if (status === "REJECTED") {
+    return "Referencia bloqueada; revisar URL, direitos de uso ou relevancia.";
   }
 
-  return "Analisar antes de usar em campanha ou PDE.";
+  return "Na fila para extrair gancho, ritmo, prova, objecoes e CTA.";
 }
 
 export default function AudioVideoStudioVideosAnalysisPage() {
-  const videoLibraryQuery = useAllExperimentVideoAssets();
-  const videos = videoLibraryQuery.data ?? [];
+  const referencesQuery = useVideoReferences();
+  const createReference = useCreateVideoReference();
+  const [form, setForm] = useState(initialForm);
+
+  const references = referencesQuery.data ?? [];
+
+  function updateField(field: keyof typeof initialForm, value: string) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    createReference.mutate(
+      {
+        title: form.title,
+        sourceUrl: form.sourceUrl,
+        sourcePlatform: form.sourcePlatform,
+        niche: form.niche,
+        funnelStage: form.funnelStage,
+        primaryLearningGoal: form.primaryLearningGoal,
+        successEvidence: form.successEvidence,
+        createdBy: form.createdBy,
+      },
+      {
+        onSuccess: () => setForm(initialForm),
+      },
+    );
+  }
 
   return (
     <div className="audio-video-studio-page">
       <PageTitle
         title="Videos para analise"
-        subtitle="Lista de videos comerciais para revisar, comparar e transformar em aprendizados de criativo, funil e oferta."
+        subtitle="Envie videos de sucesso para o sistema analisar e transformar em aprendizado de gancho, ritmo, prova, oferta e CTA."
       />
 
       <section className="audio-video-studio-page__section">
-        <div className="audio-video-studio-page__section-heading audio-video-studio-page__section-heading--actions">
+        <div className="audio-video-studio-page__section-heading">
           <div>
-            <h2>Biblioteca de aprendizado</h2>
+            <h2>Enviar video de referencia</h2>
             <p>
-              Use esta fila para escolher videos que merecem analise comercial:
-              o que prende atencao, o que prova valor e o que precisa virar nova
-              variacao.
+              Cadastre videos externos que funcionaram no mercado para alimentar
+              a fila de aprendizado do Estudio de Audio e Video.
             </p>
           </div>
-          <Link
-            className="audio-video-studio-page__secondary-action"
-            to="/audio-video-studio"
-          >
-            <PlayCircle size={18} aria-hidden="true" />
-            Novo projeto
-          </Link>
         </div>
 
-        {videoLibraryQuery.isLoading ? (
+        <form
+          className="audio-video-studio-page__reference-form"
+          onSubmit={handleSubmit}
+          aria-label="Enviar video para analise"
+        >
+          <label>
+            Titulo do video
+            <input
+              value={form.title}
+              onChange={(event) => updateField("title", event.target.value)}
+              placeholder="Ex.: Reels com gancho de transformacao imediata"
+              required
+            />
+          </label>
+
+          <label>
+            URL do video
+            <input
+              value={form.sourceUrl}
+              onChange={(event) => updateField("sourceUrl", event.target.value)}
+              placeholder="https://..."
+              required
+            />
+          </label>
+
+          <label>
+            Plataforma
+            <input
+              value={form.sourcePlatform}
+              onChange={(event) =>
+                updateField("sourcePlatform", event.target.value)
+              }
+              placeholder="TikTok, Instagram, YouTube, Drive..."
+            />
+          </label>
+
+          <label>
+            Nicho ou produto
+            <input
+              value={form.niche}
+              onChange={(event) => updateField("niche", event.target.value)}
+              placeholder="Ex.: beleza, fitness, produtividade, MUSA"
+            />
+          </label>
+
+          <label>
+            Papel no funil
+            <input
+              value={form.funnelStage}
+              onChange={(event) =>
+                updateField("funnelStage", event.target.value)
+              }
+              placeholder="Topo, retargeting, landing, checkout..."
+            />
+          </label>
+
+          <label>
+            O que queremos aprender
+            <textarea
+              value={form.primaryLearningGoal}
+              onChange={(event) =>
+                updateField("primaryLearningGoal", event.target.value)
+              }
+              placeholder="Ex.: entender como o gancho prende atencao nos 3 primeiros segundos e como o CTA reduz esforco"
+              rows={4}
+              required
+            />
+          </label>
+
+          <label className="audio-video-studio-page__reference-form-wide">
+            Evidencia de sucesso
+            <textarea
+              value={form.successEvidence}
+              onChange={(event) =>
+                updateField("successEvidence", event.target.value)
+              }
+              placeholder="Views, comentarios, vendas, compartilhamentos, campanha onde apareceu, observacoes do operador..."
+              rows={4}
+            />
+          </label>
+
+          <button
+            className="audio-video-studio-page__primary-action"
+            type="submit"
+            disabled={createReference.isPending}
+          >
+            <PlusCircle size={18} aria-hidden="true" />
+            {createReference.isPending
+              ? "Enviando para analise..."
+              : "Enviar para analise"}
+          </button>
+        </form>
+
+        {createReference.isSuccess ? (
+          <p className="audio-video-studio-page__feedback">
+            Video enviado para a fila de analise.
+          </p>
+        ) : null}
+        {createReference.isError ? (
+          <p className="audio-video-studio-page__duration-block">
+            Nao foi possivel enviar o video para analise agora.
+          </p>
+        ) : null}
+      </section>
+
+      <section className="audio-video-studio-page__section">
+        <div className="audio-video-studio-page__section-heading">
+          <div>
+            <h2>Fila de aprendizado</h2>
+            <p>
+              Cada item deve virar aprendizado reutilizavel para criativos,
+              roteiros, ofertas, provas e novos cortes comerciais.
+            </p>
+          </div>
+        </div>
+
+        {referencesQuery.isLoading ? (
           <article className="audio-video-studio-page__project-card">
-            Carregando videos para analise...
+            Carregando videos enviados para analise...
           </article>
-        ) : videoLibraryQuery.isError ? (
+        ) : referencesQuery.isError ? (
           <article className="audio-video-studio-page__project-card">
-            Nao foi possivel carregar os videos agora.
+            Nao foi possivel carregar a fila de analise agora.
           </article>
-        ) : videos.length === 0 ? (
+        ) : references.length === 0 ? (
           <article className="audio-video-studio-page__project-card">
-            Nenhum video comercial encontrado para analise.
+            Nenhum video de referencia enviado para analise.
           </article>
         ) : (
           <div className="audio-video-studio-page__project-table-wrapper">
             <table className="audio-video-studio-page__project-table">
               <thead>
                 <tr>
-                  <th>Video</th>
+                  <th>Video enviado</th>
+                  <th>Origem</th>
+                  <th>Aprendizado desejado</th>
                   <th>Status</th>
-                  <th>Papel no funil</th>
-                  <th>Aprendizado</th>
-                  <th>Criado em</th>
+                  <th>Enviado em</th>
                   <th>Acesso</th>
                 </tr>
               </thead>
               <tbody>
-                {videos.map((video) => {
-                  const playbackUrl = getPlaybackUrl(video);
-
-                  return (
-                    <tr key={video.id}>
-                      <td>
-                        <strong>#{video.id}</strong>
-                        <span>{video.objective}</span>
-                        <small>
-                          {video.provider} · {video.model} ·{" "}
-                          {formatDuration(video.durationSeconds)}
-                        </small>
-                      </td>
-                      <td>
-                        {getStudioCommercialLabel(video.status)}
-                        <small>
-                          Revisao:{" "}
-                          {getStudioCommercialLabel(video.reviewStatus)}
-                        </small>
-                      </td>
-                      <td>
-                        {getStudioCommercialLabel(video.slot)}
-                        <small>
-                          Metrica:{" "}
-                          {getStudioCommercialLabel(video.primaryMetric)}
-                        </small>
-                      </td>
-                      <td>
-                        <span>{getLearningPriority(video)}</span>
-                        {video.rejectionReason ? (
-                          <small>{video.rejectionReason}</small>
-                        ) : null}
-                      </td>
-                      <td>{formatDate(video.createdAt)}</td>
-                      <td>
-                        {playbackUrl ? (
-                          <a
-                            className="audio-video-studio-page__project-open-link"
-                            href={playbackUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <ExternalLink size={16} aria-hidden="true" />
-                            <span>Abrir video</span>
-                          </a>
-                        ) : (
-                          <small>Sem URL publica</small>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {references.map((reference) => (
+                  <tr key={reference.id}>
+                    <td>
+                      <strong>#{reference.id}</strong>
+                      <span>{reference.title}</span>
+                      <small>{reference.niche || "Nicho nao informado"}</small>
+                    </td>
+                    <td>
+                      {reference.sourcePlatform || "Origem nao informada"}
+                      <small>
+                        Funil:{" "}
+                        {reference.funnelStage
+                          ? getStudioCommercialLabel(reference.funnelStage)
+                          : "Nao informado"}
+                      </small>
+                    </td>
+                    <td>
+                      <span>{reference.primaryLearningGoal}</span>
+                      {reference.successEvidence ? (
+                        <small>{reference.successEvidence}</small>
+                      ) : null}
+                    </td>
+                    <td>
+                      {getStudioCommercialLabel(reference.status)}
+                      <small>{getStatusLearningAction(reference.status)}</small>
+                    </td>
+                    <td>{formatDate(reference.createdAt)}</td>
+                    <td>
+                      <a
+                        className="audio-video-studio-page__project-open-link"
+                        href={reference.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <ExternalLink size={16} aria-hidden="true" />
+                        <span>Abrir video</span>
+                      </a>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

@@ -15,14 +15,14 @@ paths:
       tags: [VideoStudio]
       summary: Lista projetos editáveis de vídeo do tenant.
       responses:
-        '200':
+        "200":
           description: Projetos encontrados.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/VideoProjectDto'
+                  $ref: "#/components/schemas/VideoProjectDto"
     post:
       tags: [VideoStudio]
       summary: Cria projeto editável de vídeo.
@@ -31,45 +31,74 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateVideoProjectRequest'
+              $ref: "#/components/schemas/CreateVideoProjectRequest"
       responses:
-        '201':
+        "201":
           description: Projeto criado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VideoProjectDto'
+                $ref: "#/components/schemas/VideoProjectDto"
   /api/sales-videos/projects/{projectId}:
     get:
       tags: [VideoStudio]
       summary: Consulta projeto editável de vídeo.
       parameters:
-        - $ref: '#/components/parameters/ProjectId'
+        - $ref: "#/components/parameters/ProjectId"
       responses:
-        '200':
+        "200":
           description: Projeto encontrado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VideoProjectDto'
+                $ref: "#/components/schemas/VideoProjectDto"
     patch:
       tags: [VideoStudio]
       summary: Atualiza projeto editável de vídeo.
       parameters:
-        - $ref: '#/components/parameters/ProjectId'
+        - $ref: "#/components/parameters/ProjectId"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateVideoProjectRequest'
+              $ref: "#/components/schemas/UpdateVideoProjectRequest"
       responses:
-        '200':
+        "200":
           description: Projeto atualizado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VideoProjectDto'
+                $ref: "#/components/schemas/VideoProjectDto"
+  /api/sales-videos/reference-videos:
+    get:
+      tags: [VideoStudio]
+      summary: Lista vídeos externos enviados para análise comercial.
+      responses:
+        "200":
+          description: Vídeos de referência encontrados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VideoReferenceDto"
+    post:
+      tags: [VideoStudio]
+      summary: Cadastra vídeo externo na fila de análise do estúdio.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVideoReferenceRequest"
+      responses:
+        "201":
+          description: Vídeo enviado para análise.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoReferenceDto"
 components:
   parameters:
     ProjectId:
@@ -90,6 +119,49 @@ components:
         - READY_FOR_REVIEW
         - APPROVED
         - ARCHIVED
+    VideoReferenceStatus:
+      type: string
+      enum:
+        - QUEUED
+        - ANALYZING
+        - ANALYZED
+        - REJECTED
+    CreateVideoReferenceRequest:
+      type: object
+      required:
+        - title
+        - sourceUrl
+        - primaryLearningGoal
+      properties:
+        title: { type: string, maxLength: 255 }
+        sourceUrl:
+          type: string
+          maxLength: 2048
+          description: URL pública ou origem acessível do vídeo de referência.
+        sourcePlatform: { type: string, nullable: true, maxLength: 64 }
+        niche: { type: string, nullable: true, maxLength: 191 }
+        funnelStage: { type: string, nullable: true, maxLength: 64 }
+        primaryLearningGoal:
+          type: string
+          maxLength: 1024
+          description: Gancho, ritmo, prova, objeção, CTA ou outro aprendizado desejado.
+        successEvidence:
+          type: string
+          nullable: true
+          description: Views, comentários, vendas, retenção ou observação comercial.
+        createdBy: { type: string, nullable: true, maxLength: 191 }
+    VideoReferenceDto:
+      allOf:
+        - $ref: "#/components/schemas/CreateVideoReferenceRequest"
+      properties:
+        id: { type: integer, format: int64 }
+        tenantId: { type: string }
+        analysisNotes: { type: string, nullable: true }
+        status:
+          $ref: "#/components/schemas/VideoReferenceStatus"
+        analyzedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     CreateVideoProjectRequest:
       type: object
       required:
@@ -158,16 +230,16 @@ components:
         editingNotes: { type: string, nullable: true }
         qualityGate: { type: string, nullable: true }
         status:
-          $ref: '#/components/schemas/VideoProjectStatus'
+          $ref: "#/components/schemas/VideoProjectStatus"
         createdBy: { type: string, nullable: true }
     UpdateVideoProjectRequest:
       allOf:
-        - $ref: '#/components/schemas/CreateVideoProjectRequest'
+        - $ref: "#/components/schemas/CreateVideoProjectRequest"
       properties:
         updatedBy: { type: string, nullable: true }
     VideoProjectDto:
       allOf:
-        - $ref: '#/components/schemas/CreateVideoProjectRequest'
+        - $ref: "#/components/schemas/CreateVideoProjectRequest"
       properties:
         id: { type: integer, format: int64 }
         tenantId: { type: string }

@@ -166,6 +166,7 @@ import VideoProviderManagementPage from "./pages/video/VideoProviderManagementPa
 import CreativeVideoReviewPage from "./pages/creative/CreativeVideoReviewPage";
 import AudioVideoStudioPage from "./pages/audioVideoStudio/AudioVideoStudioPage";
 import AudioVideoStudioProjectsPage from "./pages/audioVideoStudio/AudioVideoStudioProjectsPage";
+import AudioVideoStudioVideosAnalysisPage from "./pages/audioVideoStudio/AudioVideoStudioVideosAnalysisPage";
 import PdeVideoProductionPage from "./pages/pdeVideoProduction/PdeVideoProductionPage";
 import HomePage from "./pages/HomePage";
 
@@ -439,6 +440,10 @@ export default function App() {
               <Route
                 path="/audio-video-studio/projects"
                 element={<AudioVideoStudioProjectsPage />}
+              />
+              <Route
+                path="/audio-video-studio/videos-analysis"
+                element={<AudioVideoStudioVideosAnalysisPage />}
               />
               <Route
                 path="/audio-video-studio/projects/:projectId"

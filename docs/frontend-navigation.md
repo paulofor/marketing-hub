@@ -51,6 +51,8 @@ flowchart TD
     root --> videos("/videos")
     videos --> video_providers("/videos/providers")
     root --> audio_video_studio("/audio-video-studio")
+    audio_video_studio --> audio_video_studio_projects("/audio-video-studio/projects")
+    audio_video_studio --> audio_video_studio_videos_analysis("/audio-video-studio/videos-analysis")
 ```
 
 The `*` route not shown above renders a simple `Início` placeholder.

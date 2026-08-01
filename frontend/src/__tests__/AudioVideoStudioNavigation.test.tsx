@@ -86,6 +86,19 @@ describe("audio video studio navigation", () => {
     expect(link.getAttribute("href")).toBe("/audio-video-studio/projects");
   });
 
+  it("has studio videos analysis submenu link", () => {
+    setup(<App />, ["/"]);
+
+    const link = screen.getByRole("link", {
+      name: /vídeos para análise/i,
+    });
+
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("href")).toBe(
+      "/audio-video-studio/videos-analysis",
+    );
+  });
+
   it("renders audio video studio page", () => {
     setup(<App />, ["/audio-video-studio"]);
 
@@ -190,6 +203,55 @@ describe("audio video studio navigation", () => {
       screen.getByText(/Vertical para Reels\/TikTok\/Shorts/i),
     ).toBeTruthy();
     expect(screen.getByRole("link", { name: /novo projeto/i })).toBeTruthy();
+  });
+
+  it("renders videos analysis page from the global video library", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+
+      if (url === "/api/experiments/video-assets") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 22,
+              experimentId: 74,
+              slot: "LANDING_HERO",
+              objective: "Provar a transformacao do diagnostico MUSA.",
+              primaryMetric: "VIDEO_PLAY",
+              provider: "VEO",
+              model: "veo-3",
+              status: "READY",
+              assetUrl: "https://assets.example/video.mp4",
+              hlsPlaybackUrl: "https://assets.example/video.m3u8",
+              durationSeconds: 32,
+              reviewStatus: "APPROVED",
+              requiredForRelease: true,
+              createdAt: "2026-07-29T10:00:00Z",
+            },
+          ],
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/videos-analysis"]);
+
+    expect(
+      screen.getByRole("heading", { name: /videos para analise/i }),
+    ).toBeTruthy();
+    expect(
+      await screen.findByText(/provar a transformacao do diagnostico musa/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/aprender com gancho, ritmo, prova e cta/i),
+    ).toBeTruthy();
+    const videoLink = screen.getByRole("link", { name: /abrir video/i });
+    expect(videoLink.getAttribute("href")).toBe(
+      "https://assets.example/video.m3u8",
+    );
   });
 
   it("opens audio video editor with persisted project loaded", async () => {

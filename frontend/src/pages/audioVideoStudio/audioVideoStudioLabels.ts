@@ -33,6 +33,12 @@ const commercialLabels: Record<string, string> = {
   READY_FOR_RENDER: "Pronto para render",
   IN_PRODUCTION: "Em producao",
   READY_FOR_REVIEW: "Pronto para revisao",
+  PLANNED: "Planejado",
+  GENERATING: "Gerando",
+  READY: "Pronto",
+  FAILED: "Falhou",
+  PENDING: "Pendente",
+  REJECTED: "Reprovado",
   APPROVED: "Aprovado",
   ARCHIVED: "Arquivado",
 };

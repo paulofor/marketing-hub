@@ -2,6 +2,9 @@ package com.marketinghub.pde.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.AccessResponse;
@@ -446,9 +449,9 @@ class AccessServiceTest {
         assertThat(exception).hasCauseInstanceOf(SQLException.class);
     }
 
-    /** Confirma que falha em breakdown auxiliar não derruba os KPIs principais do analytics. */
+    /** Confirma que falha em breakdown auxiliar bloqueia relatório parcial de analytics. */
     @Test
-    void keepsMainAnalyticsSummaryWhenOptionalBreakdownFails() throws SQLException {
+    void failsAnalyticsSummaryWhenAuxiliaryBreakdownSchemaIsIncomplete() throws SQLException {
         String jdbcUrl = "jdbc:h2:mem:pde_partial_analytics;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
         createPartialPdeFunnelEventSchema(jdbcUrl);
         try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
@@ -478,26 +481,17 @@ class AccessServiceTest {
                 null,
                 null);
 
-        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> accessService.summarizeFunnelAnalytics("metodo-musa-7-dias"));
 
-        assertThat(summary.totalEvents()).isEqualTo(1);
-        assertThat(summary.sessions()).isEqualTo(1);
-        assertThat(summary.pageViews()).isEqualTo(1);
-        assertThat(summary.events()).singleElement().satisfies(event -> {
-            assertThat(event.eventType()).isEqualTo("PAGE_VIEW");
-            assertThat(event.total()).isEqualTo(1);
-        });
-        assertThat(summary.experienceVersions())
-                .singleElement()
-                .satisfies(version -> assertThat(version.experienceVersion())
-                        .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair"));
-        assertThat(summary.trafficSources()).isEmpty();
-        assertThat(summary.recentJourneys()).isEmpty();
+        assertThat(exception).hasMessage("Não foi possível consolidar analytics PDE");
+        assertThat(exception).hasCauseInstanceOf(SQLException.class);
     }
 
-    /** Confirma que schema legado sem qualidade de tráfego não derruba o resumo agregado. */
+    /** Confirma que schema legado sem qualidade de tráfego não vira relatório comercial parcial. */
     @Test
-    void returnsLegacyAnalyticsSummaryWhenCanonicalSchemaIsMissingTrafficQuality() throws SQLException {
+    void failsAnalyticsSummaryWhenCanonicalSchemaIsMissingTrafficQuality() throws SQLException {
         String jdbcUrl = "jdbc:h2:mem:pde_legacy_analytics;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
         createLegacyPdeFunnelEventSchema(jdbcUrl);
         try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
@@ -526,19 +520,39 @@ class AccessServiceTest {
                 null,
                 null);
 
-        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> accessService.summarizeFunnelAnalytics("metodo-musa-7-dias"));
 
-        assertThat(summary.totalEvents()).isEqualTo(2);
-        assertThat(summary.rawTotalEvents()).isEqualTo(2);
-        assertThat(summary.sessions()).isEqualTo(1);
-        assertThat(summary.humanSessions()).isEqualTo(1);
-        assertThat(summary.pageViews()).isEqualTo(1);
-        assertThat(summary.pedEntries()).isEqualTo(1);
-        assertThat(summary.totalVisibleMs()).isEqualTo(2000);
-        assertThat(summary.lastEventAt()).isEqualTo("2026-07-30T12:00:02-03:00");
-        assertThat(summary.events()).hasSize(2);
-        assertThat(summary.trafficSources()).isEmpty();
-        assertThat(summary.recentJourneys()).isEmpty();
+        assertThat(exception).hasMessage("Não foi possível consolidar analytics PDE");
+        assertThat(exception).hasCauseInstanceOf(SQLException.class);
+    }
+
+    /** Confirma que o resumo aciona a migração canônica antes de consultar analytics. */
+    @Test
+    void migratesOperationalSchemaBeforeAnalyticsSummary() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_analytics_schema_ready;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        PdeDatabaseMigrationService migrationService = mock(PdeDatabaseMigrationService.class);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                "",
+                migrationService,
+                null,
+                null);
+        reset(migrationService);
+
+        accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        verify(migrationService).migrateIfNeeded();
     }
 
     /** Confirma que o resumo analítico expõe dispositivo e resolução gravados pelos eventos do PDE. */

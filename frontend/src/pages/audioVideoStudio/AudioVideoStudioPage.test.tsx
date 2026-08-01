@@ -89,10 +89,12 @@ describe("AudioVideoStudioPage", () => {
     expect(screen.getByText(/personagens do video/i)).toBeTruthy();
     expect(screen.getByText(/sofia com cabides/i)).toBeTruthy();
     expect(screen.getByText(/estilo de legenda/i)).toBeTruthy();
+    expect(screen.getByText(/provider de video/i)).toBeTruthy();
 
     await user.click(
       screen.getByRole("button", { name: /mulher urbana natural/i }),
     );
+    await user.click(screen.getByRole("button", { name: /kling 3.0/i }));
     await user.click(
       screen.getByRole("button", {
         name: /legenda alta conversao mobile/i,
@@ -126,6 +128,9 @@ describe("AudioVideoStudioPage", () => {
     );
     expect((axios.post as any).mock.calls[0][1].captionPlan).toContain(
       "alta conversao mobile",
+    );
+    expect((axios.post as any).mock.calls[0][1].providerPlan).toContain(
+      "KLING_3_0",
     );
     expect((axios.post as any).mock.calls[0][1].qualityGate).toContain(
       "heroVideos da v7",

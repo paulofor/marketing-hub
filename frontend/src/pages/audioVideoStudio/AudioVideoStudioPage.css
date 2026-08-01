@@ -248,14 +248,16 @@
 }
 
 .audio-video-studio-page__character-grid,
-.audio-video-studio-page__caption-grid {
+.audio-video-studio-page__caption-grid,
+.audio-video-studio-page__provider-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.75rem;
 }
 
 .audio-video-studio-page__character-card,
-.audio-video-studio-page__caption-card {
+.audio-video-studio-page__caption-card,
+.audio-video-studio-page__provider-card {
   display: grid;
   gap: 0.45rem;
   min-width: 0;
@@ -271,10 +273,21 @@
 .audio-video-studio-page__character-card:hover,
 .audio-video-studio-page__character-card:focus-visible,
 .audio-video-studio-page__caption-card:hover,
-.audio-video-studio-page__caption-card:focus-visible {
+.audio-video-studio-page__caption-card:focus-visible,
+.audio-video-studio-page__provider-card:hover,
+.audio-video-studio-page__provider-card:focus-visible {
   border-color: #7a2444;
   box-shadow: 0 0 0 3px rgba(122, 36, 68, 0.12);
   outline: none;
+}
+
+.audio-video-studio-page__provider-card--selected {
+  border-color: #7a2444;
+  background: #fff8f3;
+}
+
+.audio-video-studio-page__provider-card svg {
+  color: #7a2444;
 }
 
 .audio-video-studio-page__character-card img {
@@ -286,14 +299,17 @@
 }
 
 .audio-video-studio-page__character-card strong,
-.audio-video-studio-page__caption-card strong {
+.audio-video-studio-page__caption-card strong,
+.audio-video-studio-page__provider-card strong {
   min-width: 0;
   font-size: 0.95rem;
 }
 
 .audio-video-studio-page__character-card small,
 .audio-video-studio-page__caption-card small,
-.audio-video-studio-page__character-card em {
+.audio-video-studio-page__provider-card small,
+.audio-video-studio-page__character-card em,
+.audio-video-studio-page__provider-card em {
   min-width: 0;
   color: #475569;
   font-size: 0.78rem;
@@ -304,6 +320,20 @@
 
 .audio-video-studio-page__character-card em {
   color: #7a2444;
+}
+
+.audio-video-studio-page__provider-card span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #f7e4c6;
+  color: #7a2444;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.audio-video-studio-page__provider-card em {
+  color: #334155;
 }
 
 .audio-video-studio-page__asset-status {

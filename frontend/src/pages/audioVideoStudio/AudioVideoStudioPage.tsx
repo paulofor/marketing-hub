@@ -21,6 +21,11 @@ import {
   useVideoProjects,
 } from "../../api/salesVideo/useVideoProjects";
 import {
+  DEFAULT_SALES_VIDEO_PROVIDER,
+  SALES_VIDEO_PROVIDER_OPTIONS,
+  type SalesVideoProviderOption,
+} from "../../api/salesVideo/videoProviderCatalog";
+import {
   useVideoStudioCatalog,
   type StudioCaptionPreset,
   type StudioCharacterOption,
@@ -648,6 +653,19 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function findProviderFromPlan(providerPlan?: string | null) {
+  if (!providerPlan) {
+    return DEFAULT_SALES_VIDEO_PROVIDER;
+  }
+  return (
+    SALES_VIDEO_PROVIDER_OPTIONS.find(
+      (option) =>
+        providerPlan.includes(option.providerName) ||
+        providerPlan.toLowerCase().includes(option.label.toLowerCase()),
+    ) ?? DEFAULT_SALES_VIDEO_PROVIDER
+  );
+}
+
 function durationValidationMessage(
   videoCategory: string,
   targetDurationSeconds?: number,
@@ -725,6 +743,10 @@ export default function AudioVideoStudioPage() {
     ) ?? videoCategoryOptions[1];
   const characterOptions = studioCatalogQuery.data?.characters ?? [];
   const captionPresets = studioCatalogQuery.data?.captionPresets ?? [];
+  const selectedProvider = useMemo(
+    () => findProviderFromPlan(briefing.providerPlan),
+    [briefing.providerPlan],
+  );
   const durationIssue = durationValidationMessage(
     briefing.videoCategory,
     targetDurationSeconds,
@@ -763,6 +785,24 @@ export default function AudioVideoStudioPage() {
       captionPlan: `${preset.planText}\n\nTexto base: ${current.captionPlan}`,
     }));
     setSaveFeedback(`Preset de legenda aplicado: ${preset.label}`);
+  };
+
+  const applyProviderOption = (option: SalesVideoProviderOption) => {
+    setBriefing((current) => ({
+      ...current,
+      providerPlan: [
+        `Provider escolhido no Estudio: ${option.label} (${option.providerName}).`,
+        `Uso recomendado: ${option.recommendedUse}`,
+        `Duracao por clipe: ${option.clipDurationSeconds}s; duracao direta maxima: ${option.maxDirectDurationSeconds ?? option.clipDurationSeconds}s.`,
+        option.supportsSceneAssembly
+          ? "Permite montagem por cenas para preservar a narrativa visual."
+          : "Nao e indicado para montagem cinematografica por cenas.",
+        option.providerName === "HEYGEN"
+          ? "Usar apenas quando a decisao comercial for apresentadora/avatar explicando."
+          : "Indicado para testar cenas cinematograficas sem avatar fixo.",
+      ].join("\n"),
+    }));
+    setSaveFeedback(`Provider aplicado: ${option.label}`);
   };
 
   const buildProjectPayload = (): VideoProjectPayload => ({
@@ -1311,6 +1351,48 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
+            <div className="audio-video-studio-page__asset-section">
+              <div className="audio-video-studio-page__section-heading">
+                <h2>Provider de video</h2>
+                <p>
+                  Escolha o motor de geracao de acordo com o tipo de cena antes
+                  de pedir uma nova renderizacao.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__provider-grid">
+                {SALES_VIDEO_PROVIDER_OPTIONS.map((option) => {
+                  const isSelected =
+                    selectedProvider.providerName === option.providerName;
+                  return (
+                    <button
+                      className={`audio-video-studio-page__provider-card${
+                        isSelected
+                          ? " audio-video-studio-page__provider-card--selected"
+                          : ""
+                      }`}
+                      key={option.providerName}
+                      type="button"
+                      onClick={() => applyProviderOption(option)}
+                    >
+                      <Clapperboard size={18} aria-hidden="true" />
+                      <strong>{option.label}</strong>
+                      <small>{option.recommendedUse}</small>
+                      <span>
+                        {option.supportsSceneAssembly
+                          ? "Cenas cinematograficas"
+                          : "Formato direto/avatar"}
+                      </span>
+                      <em>
+                        Clipe {option.clipDurationSeconds}s
+                        {option.maxDirectDurationSeconds
+                          ? ` · direto ate ${option.maxDirectDurationSeconds}s`
+                          : ""}
+                      </em>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <label>
               Voz
               <textarea

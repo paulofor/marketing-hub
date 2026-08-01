@@ -18,6 +18,19 @@ export function useVideoReferences() {
   });
 }
 
+export function useVideoReference(referenceId?: string) {
+  return useQuery({
+    queryKey: ["sales-video-reference", referenceId],
+    enabled: Boolean(referenceId),
+    queryFn: async () => {
+      const { data } = await axios.get<VideoReference>(
+        `/api/sales-videos/reference-videos/${referenceId}`,
+      );
+      return data;
+    },
+  });
+}
+
 export function useCreateVideoReference() {
   const queryClient = useQueryClient();
   return useMutation({

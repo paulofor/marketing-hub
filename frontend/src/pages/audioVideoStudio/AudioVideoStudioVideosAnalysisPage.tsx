@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
-import { ExternalLink, PlusCircle, Upload } from "lucide-react";
+import { BarChart3, ExternalLink, PlusCircle, Upload } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   useCreateVideoReference,
   useVideoReferences,
@@ -279,7 +280,7 @@ export default function AudioVideoStudioVideosAnalysisPage() {
                   <th>Aprendizado desejado</th>
                   <th>Status</th>
                   <th>Enviado em</th>
-                  <th>Acesso</th>
+                  <th>Acoes</th>
                 </tr>
               </thead>
               <tbody>
@@ -311,6 +312,13 @@ export default function AudioVideoStudioVideosAnalysisPage() {
                     </td>
                     <td>{formatDate(reference.createdAt)}</td>
                     <td>
+                      <Link
+                        className="audio-video-studio-page__project-open-link"
+                        to={`/audio-video-studio/videos-analysis/${reference.id}/results`}
+                      >
+                        <BarChart3 size={16} aria-hidden="true" />
+                        <span>Ver analise</span>
+                      </Link>
                       <a
                         className="audio-video-studio-page__project-open-link"
                         href={reference.sourceUrl}

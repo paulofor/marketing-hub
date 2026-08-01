@@ -252,8 +252,53 @@ describe("audio video studio navigation", () => {
     expect(
       screen.getByText(/na fila para extrair gancho, ritmo, prova/i),
     ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /ver analise/i }).getAttribute("href"),
+    ).toBe("/audio-video-studio/videos-analysis/22/results");
     const videoLink = screen.getByRole("link", { name: /abrir video/i });
     expect(videoLink.getAttribute("href")).toBe("https://social.example/video");
+  });
+
+  it("renders video analysis result page as studio stages", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/reference-videos/22") {
+        return Promise.resolve({
+          data: {
+            id: 22,
+            title: "Tik Tok Flavio",
+            sourceUrl: "https://cdn.example/tiktok-flavio.mp4",
+            sourcePlatform: "TikTok",
+            niche: "Criativos IA",
+            funnelStage: "AWARENESS",
+            primaryLearningGoal: "Aprender gancho, ritmo e CTA.",
+            successEvidence: "Alta retencao observada.",
+            status: "ANALYZED",
+            analysisNotes:
+              "**Evidencias usadas**\n- Duracao: 2min11s.\n- Formato vertical 9:16.\n\n**Diagnostico comercial**\n- Funciona como criativo de topo de funil.\n\n**Analise por sequencia**\n- 0s-6s: capa/gatilho forte.\n\n**O que o sistema deve aprender desse video**\n- Promessa + tensao + recompensa + continuacao.\n\n**Melhorias acionaveis para usar em vendas**\n- Criar versoes de 30 a 45 segundos para anuncio pago.\n\n**Alternativas avaliadas**\n1. Analisar todos os frames.\n2. Analisar por frames-chave.\n\nEscolhi a terceira abordagem porque gera aprendizado reaproveitavel.",
+            analyzedAt: "2026-08-01T12:00:00Z",
+          },
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/videos-analysis/22/results"]);
+
+    expect(
+      screen.getByRole("heading", { name: /resultado da analise/i }),
+    ).toBeTruthy();
+    expect(await screen.findByText(/tik tok flavio/i)).toBeTruthy();
+    expect(screen.getAllByText(/base da analise/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/diagnostico comercial/i).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/frame a frame/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/duracao: 2min11s/i)).toBeTruthy();
+    expect(screen.getByText(/criar versoes de 30 a 45 segundos/i)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /voltar para videos/i }),
+    ).toBeTruthy();
   });
 
   it("opens audio video editor with persisted project loaded", async () => {

@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-01-video-project-category-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: video_project
+        - not:
+            columnExists:
+              tableName: video_project
+              columnName: video_category
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_project
+                ADD COLUMN video_category VARCHAR(64) NOT NULL DEFAULT 'LONG_FORM' AFTER campaign_key;

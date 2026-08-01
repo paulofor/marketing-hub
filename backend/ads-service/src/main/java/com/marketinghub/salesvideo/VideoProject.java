@@ -44,6 +44,10 @@ public class VideoProject {
   @Column(name = "campaign_key", length = 191)
   private String campaignKey;
 
+  @Builder.Default
+  @Column(name = "video_category", nullable = false, length = 64)
+  private String videoCategory = "LONG_FORM";
+
   @Column(name = "context_type", nullable = false, length = 64)
   private String contextType;
 

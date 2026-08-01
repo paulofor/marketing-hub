@@ -58,6 +58,7 @@ describe("AudioVideoStudioPage", () => {
         expect.objectContaining({
           productId: 4,
           campaignKey: "musa-pde-entry-v7-espelho-antes-de-sair",
+          videoCategory: "COMMERCIAL_SHORT",
           productionMode: "CINEMATIC_SCENE_BLUEPRINT",
           targetChannel: "PDE_HERO_DIAGNOSTIC",
           title: "MUSA v7 - O espelho antes de sair",

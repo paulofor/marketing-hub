@@ -11,6 +11,7 @@ public record VideoProjectDto(
     Long experimentId,
     Long salesVideoProfileId,
     String campaignKey,
+    String videoCategory,
     String contextType,
     String productionMode,
     String targetChannel,

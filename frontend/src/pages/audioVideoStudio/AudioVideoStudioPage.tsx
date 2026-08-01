@@ -28,6 +28,7 @@ import "./AudioVideoStudioPage.css";
 type StudioBriefing = {
   productId: string;
   campaignKey: string;
+  videoCategory: string;
   contextType: string;
   productionMode: string;
   targetChannel: string;
@@ -215,6 +216,7 @@ const exampleStory =
 const defaultBriefing: StudioBriefing = {
   productId: "",
   campaignKey: "musa-video-manifesto-presenca-digital",
+  videoCategory: "LONG_FORM",
   contextType: "PDE",
   productionMode: "STORY_FIRST_AUDIO_VIDEO",
   targetChannel: "PDE_AND_SOCIAL",
@@ -262,6 +264,7 @@ const defaultBriefing: StudioBriefing = {
 const musaV7Briefing: StudioBriefing = {
   productId: "4",
   campaignKey: "musa-pde-entry-v7-espelho-antes-de-sair",
+  videoCategory: "COMMERCIAL_SHORT",
   contextType: "PDE",
   productionMode: "CINEMATIC_SCENE_BLUEPRINT",
   targetChannel: "PDE_HERO_DIAGNOSTIC",
@@ -333,6 +336,7 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
   return {
     productId: project.productId ? String(project.productId) : "",
     campaignKey: project.campaignKey || "",
+    videoCategory: project.videoCategory || defaultBriefing.videoCategory,
     contextType: project.contextType || defaultBriefing.contextType,
     productionMode: project.productionMode || defaultBriefing.productionMode,
     targetChannel: project.targetChannel || defaultBriefing.targetChannel,
@@ -450,6 +454,7 @@ export default function AudioVideoStudioPage() {
     salesVideoProfileId: selectedProject?.salesVideoProfileId,
     campaignKey:
       briefing.campaignKey || selectedProject?.campaignKey || undefined,
+    videoCategory: briefing.videoCategory || "LONG_FORM",
     contextType: briefing.contextType || "PDE",
     productionMode: briefing.productionMode || "STORY_FIRST_AUDIO_VIDEO",
     targetChannel: briefing.targetChannel || "PDE_AND_SOCIAL",
@@ -457,7 +462,7 @@ export default function AudioVideoStudioPage() {
     title: briefing.title,
     objective:
       selectedProject?.objective ||
-      "Testar uma narrativa audiovisual de 3 minutos para aumentar desejo, confianca e acao no Metodo MUSA.",
+      "Testar uma narrativa audiovisual para aumentar desejo, confianca e acao no Metodo MUSA.",
     storyText: briefing.story,
     funnelStage: briefing.funnelStage || "AWARENESS",
     primaryMetric: briefing.primaryMetric || "DIAGNOSTIC_START",
@@ -623,6 +628,13 @@ export default function AudioVideoStudioPage() {
               <input
                 value={briefing.campaignKey}
                 onChange={updateBriefing("campaignKey")}
+              />
+            </label>
+            <label>
+              Categoria do video
+              <input
+                value={briefing.videoCategory}
+                onChange={updateBriefing("videoCategory")}
               />
             </label>
             <label>

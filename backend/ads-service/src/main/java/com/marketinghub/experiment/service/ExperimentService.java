@@ -548,6 +548,16 @@ public class ExperimentService {
     return repository.findByStatusAndPlatform(status, platform);
   }
 
+  /** Zera os custos manuais e legados do experimento preservando custos auditáveis externos. */
+  @Transactional
+  public Experiment resetCosts(Long id) {
+    Experiment exp = repository.findById(id).orElseThrow();
+    exp.setCost(BigDecimal.ZERO);
+    exp.setExpense(BigDecimal.ZERO);
+    exp.setTotalCost(BigDecimal.ZERO);
+    return exp;
+  }
+
   public java.util.List<Experiment> listReadyForCampaign() {
     return repository
         .findReadyForCampaign(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK)

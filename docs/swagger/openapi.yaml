@@ -205,6 +205,27 @@ paths:
       responses:
         '200':
           description: Experimento duplicado
+  /api/experiments/{id}/costs/reset:
+    post:
+      tags: [Experiments]
+      summary: Zerar custos manuais e legados do experimento
+      description: Zera cost, expense e totalCost do registro do experimento, preservando custos auditáveis vindos de campanhas, vídeos e jobs.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Experimento com custos manuais e legados zerados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+        '404':
+          description: Experimento não encontrado
   /api/experiments/{id}/construction:
     get:
       tags: [Experiments]

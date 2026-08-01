@@ -86,6 +86,19 @@ describe("audio video studio navigation", () => {
     expect(link.getAttribute("href")).toBe("/audio-video-studio/projects");
   });
 
+  it("has studio videos analysis submenu link", () => {
+    setup(<App />, ["/"]);
+
+    const link = screen.getByRole("link", {
+      name: /vídeos para análise/i,
+    });
+
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("href")).toBe(
+      "/audio-video-studio/videos-analysis",
+    );
+  });
+
   it("renders audio video studio page", () => {
     setup(<App />, ["/audio-video-studio"]);
 
@@ -190,6 +203,54 @@ describe("audio video studio navigation", () => {
       screen.getByText(/Vertical para Reels\/TikTok\/Shorts/i),
     ).toBeTruthy();
     expect(screen.getByRole("link", { name: /novo projeto/i })).toBeTruthy();
+  });
+
+  it("renders videos analysis page as a reference submission queue", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+
+      if (url === "/api/sales-videos/reference-videos") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 22,
+              title: "Reels de transformacao visual",
+              sourceUrl: "https://social.example/video",
+              sourcePlatform: "Instagram",
+              niche: "MUSA",
+              funnelStage: "AWARENESS",
+              primaryLearningGoal:
+                "Entender como o gancho mostra valor nos 3 primeiros segundos.",
+              successEvidence: "1M views e muitos comentarios de intenção.",
+              status: "QUEUED",
+              createdAt: "2026-07-29T10:00:00Z",
+            },
+          ],
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/videos-analysis"]);
+
+    expect(
+      screen.getByRole("heading", { name: /videos para analise/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("form", { name: /enviar video para analise/i }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText(/url do video/i)).toBeTruthy();
+    expect(
+      await screen.findByText(/reels de transformacao visual/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/na fila para extrair gancho, ritmo, prova/i),
+    ).toBeTruthy();
+    const videoLink = screen.getByRole("link", { name: /abrir video/i });
+    expect(videoLink.getAttribute("href")).toBe("https://social.example/video");
   });
 
   it("opens audio video editor with persisted project loaded", async () => {

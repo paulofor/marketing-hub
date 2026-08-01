@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-01-video-reference-analysis-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: video_reference
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE video_reference (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                tenant_id VARCHAR(64) NOT NULL DEFAULT 'default',
+                title VARCHAR(255) NOT NULL,
+                source_url VARCHAR(2048) NOT NULL,
+                source_platform VARCHAR(64) NULL,
+                niche VARCHAR(191) NULL,
+                funnel_stage VARCHAR(64) NULL,
+                primary_learning_goal VARCHAR(1024) NOT NULL,
+                success_evidence LONGTEXT NULL,
+                analysis_notes LONGTEXT NULL,
+                status VARCHAR(64) NOT NULL DEFAULT 'QUEUED',
+                created_by VARCHAR(191) NULL,
+                analyzed_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                CONSTRAINT pk_video_reference PRIMARY KEY (id)
+              );
+              CREATE INDEX idx_video_reference_tenant_updated ON video_reference (tenant_id, updated_at);
+              CREATE INDEX idx_video_reference_status_updated ON video_reference (status, updated_at);

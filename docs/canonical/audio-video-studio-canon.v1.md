@@ -120,6 +120,29 @@ A primeira versao deve ser um cockpit de construcao no frontend, deixando clara 
 
 As proximas evolucoes devem ser incrementais e orientadas por etapas auditaveis: briefing, roteiro, cenas, referencias visuais, voz, trilha, montagem, revisao e publicacao.
 
+## Videos de referencia para analise
+
+O subitem **Videos para analise** do Estudio de Audio e Video deve ser uma fila de envio de
+videos externos/de sucesso escolhidos pelo usuario para aprendizado do sistema, e nao uma
+listagem passiva de videos ja gerados pelos experimentos.
+
+Cada video de referencia deve registrar, no minimo:
+
+- URL publica ou origem acessivel do video;
+- titulo operacional;
+- plataforma ou fonte;
+- nicho, produto ou contexto comercial;
+- papel no funil quando conhecido;
+- objetivo de aprendizado, como gancho, ritmo, prova, objecao, CTA, edicao, promessa ou retencao;
+- evidencia de sucesso percebida ou medida, como views, comentarios, criativo vencedor, vendas,
+  retencao, compartilhamentos ou observacao comercial do operador;
+- status da analise, preservando fila, analise em andamento, analisado ou rejeitado.
+
+Essa fila deve alimentar aprendizados reutilizaveis para novos roteiros, criativos, ofertas,
+storyboards, cortes e criterios de revisao comercial. Videos de referencia nao devem ser
+misturados com assets produzidos em experimentos, porque a finalidade e diferente: referencia
+externa para aprendizado versus ativo interno de campanha.
+
 ## Etapas premium de producao com IA
 
 A tela do Estudio de Audio e Video deve organizar projetos premium pelas seguintes etapas operacionais:

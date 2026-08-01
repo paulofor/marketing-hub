@@ -11,6 +11,7 @@ import com.marketinghub.salesvideo.dto.CreateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoCommercialPlaybookRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoProfileRequest;
+import com.marketinghub.salesvideo.dto.CreateVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.CreateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.GenerateSalesVideoScriptRequest;
 import com.marketinghub.salesvideo.dto.JobClaimRequest;
@@ -39,6 +40,7 @@ import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
+import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -54,6 +56,7 @@ public class SalesVideoService {
   private final SalesVideoAssetService assetService;
   private final SalesVideoCommercialInsightsService commercialInsightsService;
   private final VideoProjectService videoProjectService;
+  private final VideoReferenceService videoReferenceService;
   private final SalesVideoStudioCatalogService studioCatalogService =
       new SalesVideoStudioCatalogService();
 
@@ -64,13 +67,15 @@ public class SalesVideoService {
       LandingVideoSlotService slotService,
       SalesVideoAssetService assetService,
       SalesVideoCommercialInsightsService commercialInsightsService,
-      VideoProjectService videoProjectService) {
+      VideoProjectService videoProjectService,
+      VideoReferenceService videoReferenceService) {
     this.profileService = profileService;
     this.jobService = jobService;
     this.slotService = slotService;
     this.assetService = assetService;
     this.commercialInsightsService = commercialInsightsService;
     this.videoProjectService = videoProjectService;
+    this.videoReferenceService = videoReferenceService;
   }
 
   /** Lista projetos editáveis de vídeo do tenant atual. */
@@ -91,6 +96,16 @@ public class SalesVideoService {
   /** Atualiza um projeto editável de vídeo. */
   public VideoProjectDto updateVideoProject(Long projectId, UpdateVideoProjectRequest request) {
     return videoProjectService.updateProject(projectId, request);
+  }
+
+  /** Lista vídeos externos enviados para análise e aprendizado comercial. */
+  public List<VideoReferenceDto> listVideoReferences() {
+    return videoReferenceService.listReferences();
+  }
+
+  /** Cadastra um vídeo externo na fila de análise do estúdio. */
+  public VideoReferenceDto createVideoReference(CreateVideoReferenceRequest request) {
+    return videoReferenceService.createReference(request);
   }
 
   /** Consulta o catalogo operacional do estudio de audio e video. */

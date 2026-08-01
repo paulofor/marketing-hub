@@ -155,6 +155,11 @@ const NAV_SECTIONS: NavSection[] = [
             label: "Lista de projetos",
             icon: List,
           },
+          {
+            to: "/audio-video-studio/videos-analysis",
+            label: "Vídeos para análise",
+            icon: Video,
+          },
         ],
       },
       {

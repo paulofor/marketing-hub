@@ -238,6 +238,165 @@
   padding: 0.9rem;
 }
 
+.audio-video-studio-page__asset-section {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.85rem;
+}
+
+.audio-video-studio-page__character-grid,
+.audio-video-studio-page__caption-grid,
+.audio-video-studio-page__provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.audio-video-studio-page__character-card,
+.audio-video-studio-page__caption-card,
+.audio-video-studio-page__provider-card {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.audio-video-studio-page__character-card:hover,
+.audio-video-studio-page__character-card:focus-visible,
+.audio-video-studio-page__caption-card:hover,
+.audio-video-studio-page__caption-card:focus-visible,
+.audio-video-studio-page__provider-card:hover,
+.audio-video-studio-page__provider-card:focus-visible {
+  border-color: #7a2444;
+  box-shadow: 0 0 0 3px rgba(122, 36, 68, 0.12);
+  outline: none;
+}
+
+.audio-video-studio-page__provider-card--selected {
+  border-color: #7a2444;
+  background: #fff8f3;
+}
+
+.audio-video-studio-page__provider-card svg {
+  color: #7a2444;
+}
+
+.audio-video-studio-page__character-card img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  background: #f8fafc;
+  object-fit: cover;
+}
+
+.audio-video-studio-page__character-card strong,
+.audio-video-studio-page__caption-card strong,
+.audio-video-studio-page__provider-card strong {
+  min-width: 0;
+  font-size: 0.95rem;
+}
+
+.audio-video-studio-page__character-card small,
+.audio-video-studio-page__caption-card small,
+.audio-video-studio-page__provider-card small,
+.audio-video-studio-page__character-card em,
+.audio-video-studio-page__provider-card em {
+  min-width: 0;
+  color: #475569;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.audio-video-studio-page__character-card em {
+  color: #7a2444;
+}
+
+.audio-video-studio-page__provider-card span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #f7e4c6;
+  color: #7a2444;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.audio-video-studio-page__provider-card em {
+  color: #334155;
+}
+
+.audio-video-studio-page__asset-status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.audio-video-studio-page__asset-status--aprovado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.audio-video-studio-page__asset-status--evitar {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.audio-video-studio-page__asset-status--reprovado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.audio-video-studio-page__caption-card > svg {
+  color: #7a2444;
+}
+
+.audio-video-studio-page__caption-card span {
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.audio-video-studio-page__caption-preview {
+  display: flex;
+  min-height: 70px;
+  align-items: end;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 6px;
+  background: #2f2a2c;
+  color: #fff8f3;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.audio-video-studio-page__caption-preview svg {
+  flex: 0 0 auto;
+  color: #d6a75c;
+}
+
+.audio-video-studio-page__caption-preview b {
+  max-width: 12rem;
+  font-size: 0.95rem;
+  line-height: 1.15;
+}
+
 .audio-video-studio-page__briefing label {
   display: grid;
   gap: 0.35rem;
@@ -510,6 +669,58 @@
   line-height: 1.45;
 }
 
+.audio-video-studio-page__render-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid #d1fae5;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.audio-video-studio-page__render-preview {
+  width: min(100%, 280px);
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #0f172a;
+}
+
+.audio-video-studio-page__render-preview video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.audio-video-studio-page__render-details {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.audio-video-studio-page__render-details span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audio-video-studio-page__render-details h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.audio-video-studio-page__render-details p {
+  margin: 0;
+  color: #475569;
+}
+
 .audio-video-studio-page__timeline {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -590,8 +801,13 @@
 @media (max-width: 760px) {
   .audio-video-studio-page__intro,
   .audio-video-studio-page__workspace,
-  .audio-video-studio-page__columns {
+  .audio-video-studio-page__columns,
+  .audio-video-studio-page__render-card {
     grid-template-columns: 1fr;
+  }
+
+  .audio-video-studio-page__render-preview {
+    width: min(100%, 260px);
   }
 
   .audio-video-studio-page__section-heading--actions {

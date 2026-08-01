@@ -10,7 +10,7 @@ public class RequestSalesVideoPostProductionRequest {
 
   private String sourceVideoUrl;
 
-  @NotBlank private String voiceOverScript;
+  private String voiceOverScript;
 
   @NotBlank private String captionText;
 }

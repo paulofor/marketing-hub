@@ -8,6 +8,38 @@ import AudioVideoStudioPage from "./AudioVideoStudioPage";
 
 vi.mock("axios");
 
+const studioCatalog = {
+  characters: [
+    {
+      key: "musa-natural-editorial",
+      name: "Mulher urbana natural",
+      status: "Aprovado",
+      imageUrl: "/assets/musa-editorial-presenca.png",
+      description: "Boa para a v7.",
+      reason: "Usar na cena do espelho.",
+      bibleText: "Personagem aprovada para cena do espelho.",
+    },
+    {
+      key: "sofia-cabides-rejected",
+      name: "Sofia com cabides",
+      status: "Reprovado",
+      imageUrl: "/assets/musa-diagnostic-slide-2.png",
+      description: "Nao usar na v7.",
+      reason: "Segura cabides o tempo todo.",
+      bibleText: "Personagem reprovada para novos videos.",
+    },
+  ],
+  captionPresets: [
+    {
+      key: "mobile-high-conversion",
+      label: "Legenda alta conversao mobile",
+      style: "Texto grande",
+      description: "Boa para mobile.",
+      planText: "Preset de legenda: alta conversao mobile.",
+    },
+  ],
+};
+
 function setup() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -28,7 +60,12 @@ afterEach(() => {
 describe("AudioVideoStudioPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    (axios.get as any).mockResolvedValue({ data: [] });
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      return Promise.resolve({ data: [] });
+    });
     (axios.post as any).mockResolvedValue({
       data: {
         id: 101,
@@ -49,6 +86,20 @@ describe("AudioVideoStudioPage", () => {
     expect(
       screen.getByDisplayValue("MUSA v7 - O espelho antes de sair"),
     ).toBeTruthy();
+    expect(screen.getByText(/personagens do video/i)).toBeTruthy();
+    expect(screen.getByText(/sofia com cabides/i)).toBeTruthy();
+    expect(screen.getByText(/estilo de legenda/i)).toBeTruthy();
+    expect(screen.getByText(/provider de video/i)).toBeTruthy();
+
+    await user.click(
+      screen.getByRole("button", { name: /mulher urbana natural/i }),
+    );
+    await user.click(screen.getByRole("button", { name: /kling 3.0/i }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /legenda alta conversao mobile/i,
+      }),
+    );
 
     await user.click(screen.getByRole("button", { name: /criar blueprint/i }));
 
@@ -71,6 +122,15 @@ describe("AudioVideoStudioPage", () => {
     });
     expect((axios.post as any).mock.calls[0][1].scenePlan).toContain(
       "Cena 1 (6-8s)",
+    );
+    expect((axios.post as any).mock.calls[0][1].characterBible).toContain(
+      "Personagem aprovada",
+    );
+    expect((axios.post as any).mock.calls[0][1].captionPlan).toContain(
+      "alta conversao mobile",
+    );
+    expect((axios.post as any).mock.calls[0][1].providerPlan).toContain(
+      "KLING_3_0",
     );
     expect((axios.post as any).mock.calls[0][1].qualityGate).toContain(
       "heroVideos da v7",

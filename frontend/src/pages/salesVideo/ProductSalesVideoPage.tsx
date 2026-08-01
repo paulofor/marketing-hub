@@ -370,7 +370,9 @@ export default function ProductSalesVideoPage() {
       return;
     }
     if (heyGenAvatarMissing) {
-      toast.error("Cadastre o avatar HeyGen reutilizável do produto antes do render");
+      toast.error(
+        "Cadastre o avatar HeyGen reutilizável do produto antes do render",
+      );
       return;
     }
     if (heyGenVoiceMissing) {
@@ -409,15 +411,15 @@ export default function ProductSalesVideoPage() {
       toast.error("Selecione um vídeo pronto antes da pós-produção");
       return;
     }
-    if (!postProductionVoiceOver.trim() || !postProductionCaption.trim()) {
-      toast.error("Informe voz off e legenda para finalizar o vídeo");
+    if (!postProductionCaption.trim()) {
+      toast.error("Informe a legenda para finalizar o vídeo");
       return;
     }
     try {
       await requestPostProduction.mutateAsync({
         requestedBy: tenantContext.userEmail,
         sourceVideoUrl: selectedVideoSourceUrl || undefined,
-        voiceOverScript: postProductionVoiceOver.trim(),
+        voiceOverScript: postProductionVoiceOver.trim() || undefined,
         captionText: postProductionCaption.trim(),
       });
       toast.success("Pós-produção solicitada");
@@ -1062,9 +1064,9 @@ export default function ProductSalesVideoPage() {
                     </div>
                   </div>
                   <p>
-                    Registre o avatar reutilizável do produto em
-                    /api/products/{productId}/video-provider-avatars antes de
-                    solicitar o render com HeyGen.
+                    Registre o avatar reutilizável do produto em /api/products/
+                    {productId}/video-provider-avatars antes de solicitar o
+                    render com HeyGen.
                   </p>
                 </div>
               ) : null}
@@ -1262,7 +1264,8 @@ export default function ProductSalesVideoPage() {
                 <strong>Uso recomendado</strong>
                 <span>Finalize vídeos Luma/Kling aprovados visualmente.</span>
                 <span>
-                  O resultado cria um novo job com áudio, legenda e trilha.
+                  O resultado cria um novo job com legenda grande; voz e trilha
+                  entram quando houver voz off.
                 </span>
               </div>
               <button

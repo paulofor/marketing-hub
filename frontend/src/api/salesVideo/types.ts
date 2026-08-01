@@ -178,7 +178,7 @@ export interface RequestVideoRenderPayload {
 export interface RequestSalesVideoPostProductionPayload {
   requestedBy: string;
   sourceVideoUrl?: string;
-  voiceOverScript: string;
+  voiceOverScript?: string;
   captionText: string;
 }
 

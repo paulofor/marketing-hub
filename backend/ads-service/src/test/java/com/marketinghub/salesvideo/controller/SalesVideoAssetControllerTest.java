@@ -13,8 +13,13 @@ import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.media.mapper.AssetMapperImpl;
+import com.marketinghub.salesvideo.dto.SalesVideoStudioCaptionPresetDto;
+import com.marketinghub.salesvideo.dto.SalesVideoStudioCatalogDto;
+import com.marketinghub.salesvideo.dto.SalesVideoStudioCharacterDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
+import com.marketinghub.salesvideo.service.SalesVideoStudioCatalogService;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -32,6 +37,41 @@ class SalesVideoAssetControllerTest {
   @Autowired private MockMvc mockMvc;
 
   @MockBean private SalesVideoService salesVideoService;
+
+  @MockBean private SalesVideoStudioCatalogService studioCatalogService;
+
+  /** Deve expor o catalogo visual do estudio para personagens e legendas. */
+  @Test
+  void shouldExposeStudioCatalog() throws Exception {
+    SalesVideoStudioCatalogDto catalog =
+        new SalesVideoStudioCatalogDto(
+            List.of(
+                new SalesVideoStudioCharacterDto(
+                    "sofia-cabides-rejected",
+                    "Sofia com cabides",
+                    "Reprovado",
+                    "/assets/musa-diagnostic-slide-2.png",
+                    "Nao usar na v7.",
+                    "Pose artificial.",
+                    "Personagem reprovada.")),
+            List.of(
+                new SalesVideoStudioCaptionPresetDto(
+                    "mobile-high-conversion",
+                    "Legenda alta conversao mobile",
+                    "Texto grande",
+                    "Boa para mobile.",
+                    "Preset de legenda: alta conversao mobile.")));
+    when(studioCatalogService.getCatalog()).thenReturn(catalog);
+
+    mockMvc
+        .perform(get("/api/sales-videos/studio/catalog").header("X-Tenant-ID", "tenant-test"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.characters[0].status").value("Reprovado"))
+        .andExpect(jsonPath("$.characters[0].name").value("Sofia com cabides"))
+        .andExpect(jsonPath("$.captionPresets[0].label").value("Legenda alta conversao mobile"));
+
+    verify(studioCatalogService).getCatalog();
+  }
 
   /** Deve aceitar upload interno e devolver o asset criado. */
   @Test

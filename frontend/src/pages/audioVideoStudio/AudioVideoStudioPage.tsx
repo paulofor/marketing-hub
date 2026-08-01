@@ -1,5 +1,6 @@
 import {
   BadgeCheck,
+  Ban,
   Clapperboard,
   FileText,
   ListChecks,
@@ -19,6 +20,18 @@ import {
   useVideoProject,
   useVideoProjects,
 } from "../../api/salesVideo/useVideoProjects";
+import {
+  DEFAULT_SALES_VIDEO_PROVIDER,
+  SALES_VIDEO_PROVIDER_OPTIONS,
+  type SalesVideoProviderOption,
+} from "../../api/salesVideo/videoProviderCatalog";
+import {
+  useVideoStudioCatalog,
+  type StudioCaptionPreset,
+  type StudioCharacterOption,
+} from "../../api/salesVideo/useVideoStudioCatalog";
+import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
+import { useAsset } from "../../api/media/useAsset";
 import type {
   VideoProject,
   VideoProjectPayload,
@@ -640,6 +653,19 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function findProviderFromPlan(providerPlan?: string | null) {
+  if (!providerPlan) {
+    return DEFAULT_SALES_VIDEO_PROVIDER;
+  }
+  return (
+    SALES_VIDEO_PROVIDER_OPTIONS.find(
+      (option) =>
+        providerPlan.includes(option.providerName) ||
+        providerPlan.toLowerCase().includes(option.label.toLowerCase()),
+    ) ?? DEFAULT_SALES_VIDEO_PROVIDER
+  );
+}
+
 function durationValidationMessage(
   videoCategory: string,
   targetDurationSeconds?: number,
@@ -669,6 +695,9 @@ export default function AudioVideoStudioPage() {
   const selectedProjectQuery = useVideoProject(editableProjectId);
   const selectedProject = selectedProjectQuery.data;
   const videoProjectsQuery = useVideoProjects();
+  const studioCatalogQuery = useVideoStudioCatalog();
+  const linkedProfileId = selectedProject?.salesVideoProfileId;
+  const linkedJobsQuery = useSalesVideoJobs(linkedProfileId ?? undefined);
   const createVideoProject = useCreateVideoProject();
   const updateVideoProject = useUpdateVideoProject();
   const [saveFeedback, setSaveFeedback] = useState("");
@@ -712,6 +741,12 @@ export default function AudioVideoStudioPage() {
     videoCategoryOptions.find(
       (option) => option.value === briefing.videoCategory,
     ) ?? videoCategoryOptions[1];
+  const characterOptions = studioCatalogQuery.data?.characters ?? [];
+  const captionPresets = studioCatalogQuery.data?.captionPresets ?? [];
+  const selectedProvider = useMemo(
+    () => findProviderFromPlan(briefing.providerPlan),
+    [briefing.providerPlan],
+  );
   const durationIssue = durationValidationMessage(
     briefing.videoCategory,
     targetDurationSeconds,
@@ -730,6 +765,44 @@ export default function AudioVideoStudioPage() {
   const applyPreset = (preset: StudioPreset) => {
     setBriefing(preset.briefing);
     setSaveFeedback("");
+  };
+
+  const applyCharacterOption = (option: StudioCharacterOption) => {
+    setBriefing((current) => ({
+      ...current,
+      characterBible: option.bibleText,
+      qualityGate:
+        option.status === "Reprovado"
+          ? `${current.qualityGate}\n\nBloqueio visual: ${option.name} nao deve ser usado. ${option.reason}`
+          : current.qualityGate,
+    }));
+    setSaveFeedback(`Personagem aplicado: ${option.name} - ${option.status}`);
+  };
+
+  const applyCaptionPreset = (preset: StudioCaptionPreset) => {
+    setBriefing((current) => ({
+      ...current,
+      captionPlan: `${preset.planText}\n\nTexto base: ${current.captionPlan}`,
+    }));
+    setSaveFeedback(`Preset de legenda aplicado: ${preset.label}`);
+  };
+
+  const applyProviderOption = (option: SalesVideoProviderOption) => {
+    setBriefing((current) => ({
+      ...current,
+      providerPlan: [
+        `Provider escolhido no Estudio: ${option.label} (${option.providerName}).`,
+        `Uso recomendado: ${option.recommendedUse}`,
+        `Duracao por clipe: ${option.clipDurationSeconds}s; duracao direta maxima: ${option.maxDirectDurationSeconds ?? option.clipDurationSeconds}s.`,
+        option.supportsSceneAssembly
+          ? "Permite montagem por cenas para preservar a narrativa visual."
+          : "Nao e indicado para montagem cinematografica por cenas.",
+        option.providerName === "HEYGEN"
+          ? "Usar apenas quando a decisao comercial for apresentadora/avatar explicando."
+          : "Indicado para testar cenas cinematograficas sem avatar fixo.",
+      ].join("\n"),
+    }));
+    setSaveFeedback(`Provider aplicado: ${option.label}`);
   };
 
   const buildProjectPayload = (): VideoProjectPayload => ({
@@ -804,6 +877,25 @@ export default function AudioVideoStudioPage() {
   };
 
   const recentProjects = videoProjectsQuery.data?.slice(0, 4) ?? [];
+  const renderedJob = useMemo(
+    () =>
+      linkedJobsQuery.data
+        ?.filter((job) => job.status === "VIDEO_READY" && job.assetId)
+        .sort((first, second) => {
+          const firstDate =
+            first.finishedAt ?? first.updatedAt ?? first.createdAt ?? "";
+          const secondDate =
+            second.finishedAt ?? second.updatedAt ?? second.createdAt ?? "";
+          return secondDate.localeCompare(firstDate);
+        })[0],
+    [linkedJobsQuery.data],
+  );
+  const renderedAssetQuery = useAsset(renderedJob?.assetId);
+  const renderedAssetUrl =
+    renderedJob?.streamPlaybackUrl?.trim() ||
+    renderedAssetQuery.data?.publicUrl ||
+    renderedAssetQuery.data?.url ||
+    "";
 
   return (
     <div className="audio-video-studio-page">
@@ -1167,6 +1259,50 @@ export default function AudioVideoStudioPage() {
                 rows={4}
               />
             </label>
+            <div className="audio-video-studio-page__asset-section">
+              <div className="audio-video-studio-page__section-heading">
+                <h2>Personagens do video</h2>
+                <p>
+                  Aprove ou bloqueie visualmente a personagem antes de pedir
+                  renderizacao.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__character-grid">
+                {studioCatalogQuery.isLoading ? (
+                  <article className="audio-video-studio-page__project-card">
+                    Carregando personagens do backend...
+                  </article>
+                ) : studioCatalogQuery.isError ? (
+                  <article className="audio-video-studio-page__project-card">
+                    Nao foi possivel carregar personagens do estudio.
+                  </article>
+                ) : (
+                  characterOptions.map((option) => (
+                  <button
+                    className="audio-video-studio-page__character-card"
+                    key={option.key}
+                    type="button"
+                    onClick={() => applyCharacterOption(option)}
+                  >
+                    <img src={option.imageUrl} alt={option.name} />
+                    <span
+                      className={`audio-video-studio-page__asset-status audio-video-studio-page__asset-status--${option.status.toLowerCase()}`}
+                    >
+                      {option.status === "Reprovado" ? (
+                        <Ban size={14} aria-hidden="true" />
+                      ) : (
+                        <BadgeCheck size={14} aria-hidden="true" />
+                      )}
+                      {option.status}
+                    </span>
+                    <strong>{option.name}</strong>
+                    <small>{option.description}</small>
+                    <em>{option.reason}</em>
+                  </button>
+                  ))
+                )}
+              </div>
+            </div>
             <label>
               Ambientes e imagens mestre
               <textarea
@@ -1215,6 +1351,48 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
+            <div className="audio-video-studio-page__asset-section">
+              <div className="audio-video-studio-page__section-heading">
+                <h2>Provider de video</h2>
+                <p>
+                  Escolha o motor de geracao de acordo com o tipo de cena antes
+                  de pedir uma nova renderizacao.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__provider-grid">
+                {SALES_VIDEO_PROVIDER_OPTIONS.map((option) => {
+                  const isSelected =
+                    selectedProvider.providerName === option.providerName;
+                  return (
+                    <button
+                      className={`audio-video-studio-page__provider-card${
+                        isSelected
+                          ? " audio-video-studio-page__provider-card--selected"
+                          : ""
+                      }`}
+                      key={option.providerName}
+                      type="button"
+                      onClick={() => applyProviderOption(option)}
+                    >
+                      <Clapperboard size={18} aria-hidden="true" />
+                      <strong>{option.label}</strong>
+                      <small>{option.recommendedUse}</small>
+                      <span>
+                        {option.supportsSceneAssembly
+                          ? "Cenas cinematograficas"
+                          : "Formato direto/avatar"}
+                      </span>
+                      <em>
+                        Clipe {option.clipDurationSeconds}s
+                        {option.maxDirectDurationSeconds
+                          ? ` · direto ate ${option.maxDirectDurationSeconds}s`
+                          : ""}
+                      </em>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <label>
               Voz
               <textarea
@@ -1239,6 +1417,44 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
+            <div className="audio-video-studio-page__asset-section">
+              <div className="audio-video-studio-page__section-heading">
+                <h2>Estilo de legenda</h2>
+                <p>
+                  Escolha um preset visual antes da pos-producao para garantir
+                  leitura em celular.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__caption-grid">
+                {studioCatalogQuery.isLoading ? (
+                  <article className="audio-video-studio-page__project-card">
+                    Carregando presets de legenda do backend...
+                  </article>
+                ) : studioCatalogQuery.isError ? (
+                  <article className="audio-video-studio-page__project-card">
+                    Nao foi possivel carregar presets de legenda.
+                  </article>
+                ) : (
+                  captionPresets.map((preset) => (
+                  <button
+                    className="audio-video-studio-page__caption-card"
+                    key={preset.key}
+                    type="button"
+                    onClick={() => applyCaptionPreset(preset)}
+                  >
+                    <FileText size={18} aria-hidden="true" />
+                    <strong>{preset.label}</strong>
+                    <span>{preset.style}</span>
+                    <div className="audio-video-studio-page__caption-preview">
+                      <PlayCircle size={16} aria-hidden="true" />
+                      <b>7 dias para ajustar sua presenca</b>
+                    </div>
+                    <small>{preset.description}</small>
+                  </button>
+                  ))
+                )}
+              </div>
+            </div>
             <label>
               Montagem e cortes
               <textarea
@@ -1302,6 +1518,61 @@ export default function AudioVideoStudioPage() {
           </div>
         </div>
       </section>
+
+      {isEditingProject ? (
+        <section className="audio-video-studio-page__section">
+          <div className="audio-video-studio-page__section-heading">
+            <h2>MP4 gerado para revisao</h2>
+            <p>
+              Ultimo arquivo renderizado ligado a este projeto para assistir,
+              revisar e decidir se entra no funil.
+            </p>
+          </div>
+          {linkedJobsQuery.isLoading ? (
+            <article className="audio-video-studio-page__project-card">
+              Buscando renders do projeto...
+            </article>
+          ) : renderedJob && renderedAssetUrl ? (
+            <article className="audio-video-studio-page__render-card">
+              <div className="audio-video-studio-page__render-preview">
+                <video
+                  controls
+                  playsInline
+                  preload="metadata"
+                  src={renderedAssetUrl}
+                >
+                  Seu navegador nao conseguiu carregar este video.
+                </video>
+              </div>
+              <div className="audio-video-studio-page__render-details">
+                <span>Pronto para revisao</span>
+                <h3>{briefing.title}</h3>
+                <p>
+                  Job #{renderedJob.id}
+                  {renderedJob.providerName
+                    ? ` · ${renderedJob.providerName}`
+                    : ""}
+                  {renderedJob.assetId
+                    ? ` · Asset #${renderedJob.assetId}`
+                    : ""}
+                </p>
+                <a
+                  className="audio-video-studio-page__secondary-action"
+                  href={renderedAssetUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Abrir MP4
+                </a>
+              </div>
+            </article>
+          ) : (
+            <article className="audio-video-studio-page__project-card">
+              Nenhum MP4 pronto foi encontrado para este projeto ainda.
+            </article>
+          )}
+        </section>
+      ) : null}
 
       <section className="audio-video-studio-page__section">
         <div className="audio-video-studio-page__section-heading">

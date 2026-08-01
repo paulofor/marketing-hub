@@ -8,6 +8,38 @@ import axios from "axios";
 
 vi.mock("axios");
 
+const studioCatalog = {
+  characters: [
+    {
+      key: "musa-natural-editorial",
+      name: "Mulher urbana natural",
+      status: "Aprovado",
+      imageUrl: "/assets/musa-editorial-presenca.png",
+      description: "Boa para a v7.",
+      reason: "Usar na cena do espelho.",
+      bibleText: "Personagem aprovada para cena do espelho.",
+    },
+    {
+      key: "sofia-cabides-rejected",
+      name: "Sofia com cabides",
+      status: "Reprovado",
+      imageUrl: "/assets/musa-diagnostic-slide-2.png",
+      description: "Nao usar na v7.",
+      reason: "Segura cabides o tempo todo.",
+      bibleText: "Personagem reprovada para novos videos.",
+    },
+  ],
+  captionPresets: [
+    {
+      key: "mobile-high-conversion",
+      label: "Legenda alta conversao mobile",
+      style: "Texto grande",
+      description: "Boa para mobile.",
+      planText: "Preset de legenda: alta conversao mobile.",
+    },
+  ],
+};
+
 function setup(ui: React.ReactNode, initialEntries: string[]) {
   const client = new QueryClient();
   return render(
@@ -24,7 +56,12 @@ afterEach(() => {
 describe("audio video studio navigation", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    (axios.get as any).mockResolvedValue({ data: [] });
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      return Promise.resolve({ data: [] });
+    });
   });
 
   it("has menu link to /audio-video-studio", () => {
@@ -79,6 +116,10 @@ describe("audio video studio navigation", () => {
 
   it("renders audio video studio projects page", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+
       if (url === "/api/sales-videos/projects") {
         return Promise.resolve({
           data: [
@@ -118,6 +159,10 @@ describe("audio video studio navigation", () => {
 
   it("opens audio video editor with persisted project loaded", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+
       if (url === "/api/sales-videos/projects/7") {
         return Promise.resolve({
           data: {
@@ -159,6 +204,10 @@ describe("audio video studio navigation", () => {
 
   it("shows rendered mp4 for review when project has ready video job", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+
       if (url === "/api/sales-videos/projects/7") {
         return Promise.resolve({
           data: {
@@ -226,6 +275,10 @@ describe("audio video studio navigation", () => {
 
   it("blocks audio video studio project below three minutes", async () => {
     (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+
       if (url === "/api/sales-videos/projects/8") {
         return Promise.resolve({
           data: {

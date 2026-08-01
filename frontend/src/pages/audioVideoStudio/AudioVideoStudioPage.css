@@ -238,6 +238,135 @@
   padding: 0.9rem;
 }
 
+.audio-video-studio-page__asset-section {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.85rem;
+}
+
+.audio-video-studio-page__character-grid,
+.audio-video-studio-page__caption-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.audio-video-studio-page__character-card,
+.audio-video-studio-page__caption-card {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.audio-video-studio-page__character-card:hover,
+.audio-video-studio-page__character-card:focus-visible,
+.audio-video-studio-page__caption-card:hover,
+.audio-video-studio-page__caption-card:focus-visible {
+  border-color: #7a2444;
+  box-shadow: 0 0 0 3px rgba(122, 36, 68, 0.12);
+  outline: none;
+}
+
+.audio-video-studio-page__character-card img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  background: #f8fafc;
+  object-fit: cover;
+}
+
+.audio-video-studio-page__character-card strong,
+.audio-video-studio-page__caption-card strong {
+  min-width: 0;
+  font-size: 0.95rem;
+}
+
+.audio-video-studio-page__character-card small,
+.audio-video-studio-page__caption-card small,
+.audio-video-studio-page__character-card em {
+  min-width: 0;
+  color: #475569;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.audio-video-studio-page__character-card em {
+  color: #7a2444;
+}
+
+.audio-video-studio-page__asset-status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.audio-video-studio-page__asset-status--aprovado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.audio-video-studio-page__asset-status--evitar {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.audio-video-studio-page__asset-status--reprovado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.audio-video-studio-page__caption-card > svg {
+  color: #7a2444;
+}
+
+.audio-video-studio-page__caption-card span {
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.audio-video-studio-page__caption-preview {
+  display: flex;
+  min-height: 70px;
+  align-items: end;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 6px;
+  background: #2f2a2c;
+  color: #fff8f3;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.audio-video-studio-page__caption-preview svg {
+  flex: 0 0 auto;
+  color: #d6a75c;
+}
+
+.audio-video-studio-page__caption-preview b {
+  max-width: 12rem;
+  font-size: 0.95rem;
+  line-height: 1.15;
+}
+
 .audio-video-studio-page__briefing label {
   display: grid;
   gap: 0.35rem;

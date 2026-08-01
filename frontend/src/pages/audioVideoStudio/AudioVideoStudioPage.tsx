@@ -1,5 +1,6 @@
 import {
   BadgeCheck,
+  Ban,
   Clapperboard,
   FileText,
   ListChecks,
@@ -19,6 +20,11 @@ import {
   useVideoProject,
   useVideoProjects,
 } from "../../api/salesVideo/useVideoProjects";
+import {
+  useVideoStudioCatalog,
+  type StudioCaptionPreset,
+  type StudioCharacterOption,
+} from "../../api/salesVideo/useVideoStudioCatalog";
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
 import { useAsset } from "../../api/media/useAsset";
 import type {
@@ -671,6 +677,7 @@ export default function AudioVideoStudioPage() {
   const selectedProjectQuery = useVideoProject(editableProjectId);
   const selectedProject = selectedProjectQuery.data;
   const videoProjectsQuery = useVideoProjects();
+  const studioCatalogQuery = useVideoStudioCatalog();
   const linkedProfileId = selectedProject?.salesVideoProfileId;
   const linkedJobsQuery = useSalesVideoJobs(linkedProfileId ?? undefined);
   const createVideoProject = useCreateVideoProject();
@@ -716,6 +723,8 @@ export default function AudioVideoStudioPage() {
     videoCategoryOptions.find(
       (option) => option.value === briefing.videoCategory,
     ) ?? videoCategoryOptions[1];
+  const characterOptions = studioCatalogQuery.data?.characters ?? [];
+  const captionPresets = studioCatalogQuery.data?.captionPresets ?? [];
   const durationIssue = durationValidationMessage(
     briefing.videoCategory,
     targetDurationSeconds,
@@ -734,6 +743,26 @@ export default function AudioVideoStudioPage() {
   const applyPreset = (preset: StudioPreset) => {
     setBriefing(preset.briefing);
     setSaveFeedback("");
+  };
+
+  const applyCharacterOption = (option: StudioCharacterOption) => {
+    setBriefing((current) => ({
+      ...current,
+      characterBible: option.bibleText,
+      qualityGate:
+        option.status === "Reprovado"
+          ? `${current.qualityGate}\n\nBloqueio visual: ${option.name} nao deve ser usado. ${option.reason}`
+          : current.qualityGate,
+    }));
+    setSaveFeedback(`Personagem aplicado: ${option.name} - ${option.status}`);
+  };
+
+  const applyCaptionPreset = (preset: StudioCaptionPreset) => {
+    setBriefing((current) => ({
+      ...current,
+      captionPlan: `${preset.planText}\n\nTexto base: ${current.captionPlan}`,
+    }));
+    setSaveFeedback(`Preset de legenda aplicado: ${preset.label}`);
   };
 
   const buildProjectPayload = (): VideoProjectPayload => ({
@@ -1190,6 +1219,50 @@ export default function AudioVideoStudioPage() {
                 rows={4}
               />
             </label>
+            <div className="audio-video-studio-page__asset-section">
+              <div className="audio-video-studio-page__section-heading">
+                <h2>Personagens do video</h2>
+                <p>
+                  Aprove ou bloqueie visualmente a personagem antes de pedir
+                  renderizacao.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__character-grid">
+                {studioCatalogQuery.isLoading ? (
+                  <article className="audio-video-studio-page__project-card">
+                    Carregando personagens do backend...
+                  </article>
+                ) : studioCatalogQuery.isError ? (
+                  <article className="audio-video-studio-page__project-card">
+                    Nao foi possivel carregar personagens do estudio.
+                  </article>
+                ) : (
+                  characterOptions.map((option) => (
+                  <button
+                    className="audio-video-studio-page__character-card"
+                    key={option.key}
+                    type="button"
+                    onClick={() => applyCharacterOption(option)}
+                  >
+                    <img src={option.imageUrl} alt={option.name} />
+                    <span
+                      className={`audio-video-studio-page__asset-status audio-video-studio-page__asset-status--${option.status.toLowerCase()}`}
+                    >
+                      {option.status === "Reprovado" ? (
+                        <Ban size={14} aria-hidden="true" />
+                      ) : (
+                        <BadgeCheck size={14} aria-hidden="true" />
+                      )}
+                      {option.status}
+                    </span>
+                    <strong>{option.name}</strong>
+                    <small>{option.description}</small>
+                    <em>{option.reason}</em>
+                  </button>
+                  ))
+                )}
+              </div>
+            </div>
             <label>
               Ambientes e imagens mestre
               <textarea
@@ -1262,6 +1335,44 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
+            <div className="audio-video-studio-page__asset-section">
+              <div className="audio-video-studio-page__section-heading">
+                <h2>Estilo de legenda</h2>
+                <p>
+                  Escolha um preset visual antes da pos-producao para garantir
+                  leitura em celular.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__caption-grid">
+                {studioCatalogQuery.isLoading ? (
+                  <article className="audio-video-studio-page__project-card">
+                    Carregando presets de legenda do backend...
+                  </article>
+                ) : studioCatalogQuery.isError ? (
+                  <article className="audio-video-studio-page__project-card">
+                    Nao foi possivel carregar presets de legenda.
+                  </article>
+                ) : (
+                  captionPresets.map((preset) => (
+                  <button
+                    className="audio-video-studio-page__caption-card"
+                    key={preset.key}
+                    type="button"
+                    onClick={() => applyCaptionPreset(preset)}
+                  >
+                    <FileText size={18} aria-hidden="true" />
+                    <strong>{preset.label}</strong>
+                    <span>{preset.style}</span>
+                    <div className="audio-video-studio-page__caption-preview">
+                      <PlayCircle size={16} aria-hidden="true" />
+                      <b>7 dias para ajustar sua presenca</b>
+                    </div>
+                    <small>{preset.description}</small>
+                  </button>
+                  ))
+                )}
+              </div>
+            </div>
             <label>
               Montagem e cortes
               <textarea

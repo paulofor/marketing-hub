@@ -25,6 +25,7 @@ import type {
   VideoProjectStatus,
 } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
+import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
 import "./AudioVideoStudioPage.css";
 
 type StudioBriefing = {
@@ -291,7 +292,10 @@ const statusOptions: { value: VideoProjectStatus; label: string }[] = [
 ];
 
 function getOptionLabel(options: StudioSelectOption[], value?: string | null) {
-  return options.find((option) => option.value === value)?.label ?? value ?? "";
+  return (
+    options.find((option) => option.value === value)?.label ??
+    getStudioCommercialLabel(value)
+  );
 }
 
 function getOptionDescription(
@@ -314,7 +318,7 @@ function optionsWithCurrent(
   return [
     {
       value: currentValue,
-      label: currentValue,
+      label: getStudioCommercialLabel(currentValue),
       description:
         "Valor já salvo no projeto. Troque por uma opção da lista quando quiser padronizar.",
     },
@@ -586,10 +590,17 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     title: project.title,
     story: project.storyText || project.objective,
     product: project.contextType || defaultBriefing.product,
-    audience: project.targetChannel || defaultBriefing.audience,
+    audience:
+      getStudioCommercialLabel(project.targetChannel) ||
+      defaultBriefing.audience,
     pain: project.hookText || project.objective,
-    promise: project.primaryMetric || project.objective,
-    mechanism: project.productionMode || defaultBriefing.mechanism,
+    promise:
+      getStudioCommercialLabel(project.primaryMetric) ||
+      project.objective ||
+      defaultBriefing.promise,
+    mechanism:
+      getStudioCommercialLabel(project.productionMode) ||
+      defaultBriefing.mechanism,
     proof: project.visualReferences || defaultBriefing.proof,
     cta: project.ctaText || defaultBriefing.cta,
     characterBible: project.characterBible || defaultBriefing.characterBible,
@@ -1314,11 +1325,7 @@ export default function AudioVideoStudioPage() {
                 <span>#{project.id}</span>
                 <h3>{project.title}</h3>
                 <p>{project.storyText || project.objective}</p>
-                <small>
-                  {statusOptions.find(
-                    (option) => option.value === project.status,
-                  )?.label ?? project.status}
-                </small>
+                <small>{getStudioCommercialLabel(project.status)}</small>
               </article>
             ))
           ) : (

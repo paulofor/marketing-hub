@@ -109,7 +109,10 @@ describe("audio video studio navigation", () => {
     expect(projectLink.getAttribute("href")).toBe(
       "/audio-video-studio/projects/7",
     );
-    expect(screen.getByText(/READY_FOR_SCRIPT/i)).toBeTruthy();
+    expect(screen.getByText(/Pronto para roteiro/i)).toBeTruthy();
+    expect(
+      screen.getByText(/Vertical para Reels\/TikTok\/Shorts/i),
+    ).toBeTruthy();
     expect(screen.getByRole("link", { name: /novo projeto/i })).toBeTruthy();
   });
 
@@ -194,7 +197,7 @@ describe("audio video studio navigation", () => {
     expect(
       await screen.findByText(/MUSA PDE v6 - video HLS motivacional/i),
     ).toBeTruthy();
-    expect(screen.getByText(/HLS LANDING_HERO/i)).toBeTruthy();
+    expect(screen.getByText(/Hero HLS da landing/i)).toBeTruthy();
     expect(
       screen.getByText(
         /assets\/hls\/musa-v6-microexperiencia-visivel\/index\.m3u8/i,

@@ -42,7 +42,6 @@ import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
-import com.marketinghub.salesvideo.service.SalesVideoStudioCatalogService;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.time.Instant;
@@ -64,23 +63,18 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 public class SalesVideoController {
   private final SalesVideoService salesVideoService;
-  private final SalesVideoStudioCatalogService studioCatalogService;
   private final AssetMapper assetMapper;
 
   /** Inicializa o controller com a fachada única do módulo e o mapper de assets. */
-  public SalesVideoController(
-      SalesVideoService salesVideoService,
-      SalesVideoStudioCatalogService studioCatalogService,
-      AssetMapper assetMapper) {
+  public SalesVideoController(SalesVideoService salesVideoService, AssetMapper assetMapper) {
     this.salesVideoService = salesVideoService;
-    this.studioCatalogService = studioCatalogService;
     this.assetMapper = assetMapper;
   }
 
   /** Consulta o catalogo operacional do estudio de audio e video. */
   @GetMapping("/api/sales-videos/studio/catalog")
   public SalesVideoStudioCatalogDto getStudioCatalog() {
-    return studioCatalogService.getCatalog();
+    return salesVideoService.getStudioCatalog();
   }
 
   /** Lista projetos editáveis do estúdio de vídeos. */

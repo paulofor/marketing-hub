@@ -553,6 +553,11 @@
   gap: 0.18rem;
 }
 
+.audio-video-studio-page__stage-divider h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .audio-video-studio-page__stage-divider span {
   color: #334155;
   line-height: 1.4;

@@ -246,6 +246,13 @@
   font-weight: 700;
 }
 
+.audio-video-studio-page__briefing label small {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .audio-video-studio-page__briefing input,
 .audio-video-studio-page__briefing select,
 .audio-video-studio-page__briefing textarea {

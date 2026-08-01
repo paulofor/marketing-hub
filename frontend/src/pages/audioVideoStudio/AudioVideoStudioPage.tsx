@@ -69,6 +69,12 @@ type StudioCategoryOption = {
   commercialUse: string;
 };
 
+type StudioSelectOption = {
+  value: string;
+  label: string;
+  description: string;
+};
+
 type StudioPreset = {
   key: string;
   label: string;
@@ -139,6 +145,141 @@ const videoCategoryOptions: StudioCategoryOption[] = [
   },
 ];
 
+const campaignOptions: StudioSelectOption[] = [
+  {
+    value: "musa-pde-entry-v7-espelho-antes-de-sair",
+    label: "MUSA v7 - vídeo leve dos 7 dias",
+    description:
+      "Hero curto para explicar a jornada MUSA pelo espelho, diagnóstico e plano de 7 dias.",
+  },
+  {
+    value: "musa-video-manifesto-presenca-digital",
+    label: "MUSA manifesto - presença digital",
+    description:
+      "Vídeo mais longo para história, mecanismo, prova, oferta e CTA.",
+  },
+];
+
+const targetChannelOptions: StudioSelectOption[] = [
+  {
+    value: "PDE_HERO_DIAGNOSTIC",
+    label: "Hero do PDE para diagnóstico",
+    description:
+      "Primeira dobra da experiência, levando a mulher para o diagnóstico gratuito.",
+  },
+  {
+    value: "PDE_AND_SOCIAL",
+    label: "PDE e redes sociais",
+    description:
+      "Peça reutilizável em página, Reels, TikTok, Shorts e remarketing.",
+  },
+  {
+    value: "SOCIAL_REELS_STORIES",
+    label: "Reels, Stories e TikTok",
+    description: "Criativo vertical de atenção rápida para tráfego frio.",
+  },
+  {
+    value: "PAYWALL_OFFER",
+    label: "Oferta antes do checkout",
+    description:
+      "Vídeo para explicar valor, reduzir objeções e empurrar para compra.",
+  },
+];
+
+const funnelStageOptions: StudioSelectOption[] = [
+  {
+    value: "AWARENESS_TO_DIAGNOSTIC",
+    label: "Anúncio para diagnóstico",
+    description:
+      "Atrai público frio e conduz para o primeiro passo gratuito do funil.",
+  },
+  {
+    value: "AWARENESS",
+    label: "Descoberta da dor",
+    description: "Gera identificação inicial com a dor e o desejo da cliente.",
+  },
+  {
+    value: "DIAGNOSTIC_TO_PAYWALL",
+    label: "Diagnóstico para oferta",
+    description:
+      "Conecta valor percebido no diagnóstico ao acesso completo do produto.",
+  },
+  {
+    value: "RETARGETING_PURCHASE",
+    label: "Remarketing para compra",
+    description:
+      "Retoma quem já demonstrou interesse e reforça motivo para avançar.",
+  },
+];
+
+const primaryMetricOptions: StudioSelectOption[] = [
+  {
+    value:
+      "CTA_CLICK_TO_DIAGNOSTIC; apoio: VIDEO_PLAY, VIDEO_75, DIAGNOSTIC_COMPLETED, PAYWALL_VIEWED, CHECKOUT_STARTED, PURCHASE",
+    label: "Clique no diagnóstico",
+    description:
+      "Métrica principal para vídeos de entrada; acompanha retenção, paywall, checkout e compra.",
+  },
+  {
+    value: "DIAGNOSTIC_START",
+    label: "Início do diagnóstico",
+    description:
+      "Boa métrica quando o criativo está mais próximo da experiência gratuita.",
+  },
+  {
+    value: "PAYWALL_VIEWED",
+    label: "Visualização da oferta",
+    description:
+      "Mede se o vídeo aumenta chegada na etapa em que a compra é apresentada.",
+  },
+  {
+    value: "PURCHASE",
+    label: "Compra",
+    description:
+      "Use quando o vídeo estiver diretamente ligado à página de venda ou checkout.",
+  },
+];
+
+const productionModeOptions: StudioSelectOption[] = [
+  {
+    value: "CINEMATIC_SCENE_BLUEPRINT",
+    label: "Vídeo narrativo com cenas",
+    description:
+      "Cenas cinematográficas planejadas antes de renderizar em Luma, Kling ou similar.",
+  },
+  {
+    value: "STORY_FIRST_AUDIO_VIDEO",
+    label: "Roteiro com voz e montagem",
+    description:
+      "Começa pela história, depois organiza narração, trilha, cenas e edição.",
+  },
+  {
+    value: "AVATAR_EXPLAINER",
+    label: "Apresentadora explicando",
+    description:
+      "Formato com avatar/apresentadora quando a clareza da explicação for prioridade.",
+  },
+];
+
+const formatOptions: StudioSelectOption[] = [
+  {
+    value: "VERTICAL_9_16",
+    label: "Vertical para Reels/TikTok/Shorts",
+    description:
+      "Formato principal para mobile, hero vertical e criativos sociais.",
+  },
+  {
+    value: "SQUARE_1_1",
+    label: "Quadrado para feed",
+    description: "Peça de feed e variações de mídia social.",
+  },
+  {
+    value: "HORIZONTAL_16_9",
+    label: "Horizontal para página ou YouTube",
+    description: "Vídeo amplo para VSL, YouTube ou apresentação em desktop.",
+  },
+];
+
 const statusOptions: { value: VideoProjectStatus; label: string }[] = [
   { value: "DRAFT", label: "Rascunho" },
   { value: "READY_FOR_SCRIPT", label: "Pronto para roteiro" },
@@ -148,6 +289,38 @@ const statusOptions: { value: VideoProjectStatus; label: string }[] = [
   { value: "APPROVED", label: "Aprovado" },
   { value: "ARCHIVED", label: "Arquivado" },
 ];
+
+function getOptionLabel(options: StudioSelectOption[], value?: string | null) {
+  return options.find((option) => option.value === value)?.label ?? value ?? "";
+}
+
+function getOptionDescription(
+  options: StudioSelectOption[],
+  value?: string | null,
+) {
+  return options.find((option) => option.value === value)?.description ?? "";
+}
+
+function optionsWithCurrent(
+  options: StudioSelectOption[],
+  currentValue: string,
+) {
+  if (
+    !currentValue ||
+    options.some((option) => option.value === currentValue)
+  ) {
+    return options;
+  }
+  return [
+    {
+      value: currentValue,
+      label: currentValue,
+      description:
+        "Valor já salvo no projeto. Troque por uma opção da lista quando quiser padronizar.",
+    },
+    ...options,
+  ];
+}
 
 const studioWorkflowSteps = [
   {
@@ -676,10 +849,12 @@ export default function AudioVideoStudioPage() {
           <Timer size={22} aria-hidden="true" />
           <span>Projeto atual</span>
           <strong>
-            {targetDurationSeconds ?? 0}s / {briefing.format}
+            {targetDurationSeconds ?? 0}s /{" "}
+            {getOptionLabel(formatOptions, briefing.format)}
           </strong>
           <small>
-            {selectedCategory.label} · {briefing.funnelStage}
+            {selectedCategory.label} ·{" "}
+            {getOptionLabel(funnelStageOptions, briefing.funnelStage)}
           </small>
         </div>
       </section>
@@ -738,11 +913,22 @@ export default function AudioVideoStudioPage() {
               />
             </label>
             <label>
-              Chave da campanha/versao
-              <input
+              Campanha
+              <select
                 value={briefing.campaignKey}
                 onChange={updateBriefing("campaignKey")}
-              />
+              >
+                {optionsWithCurrent(campaignOptions, briefing.campaignKey).map(
+                  (option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ),
+                )}
+              </select>
+              <small>
+                {getOptionDescription(campaignOptions, briefing.campaignKey)}
+              </small>
             </label>
             <label>
               Categoria do video
@@ -759,10 +945,25 @@ export default function AudioVideoStudioPage() {
             </label>
             <label>
               Canal alvo
-              <input
+              <select
                 value={briefing.targetChannel}
                 onChange={updateBriefing("targetChannel")}
-              />
+              >
+                {optionsWithCurrent(
+                  targetChannelOptions,
+                  briefing.targetChannel,
+                ).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <small>
+                {getOptionDescription(
+                  targetChannelOptions,
+                  briefing.targetChannel,
+                )}
+              </small>
             </label>
             <label>
               Duracao alvo
@@ -851,31 +1052,84 @@ export default function AudioVideoStudioPage() {
           <div className="audio-video-studio-page__briefing-grid">
             <label>
               Etapa do funil
-              <input
+              <select
                 value={briefing.funnelStage}
                 onChange={updateBriefing("funnelStage")}
-              />
+              >
+                {optionsWithCurrent(
+                  funnelStageOptions,
+                  briefing.funnelStage,
+                ).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <small>
+                {getOptionDescription(funnelStageOptions, briefing.funnelStage)}
+              </small>
             </label>
             <label>
               Metrica primaria
-              <input
+              <select
                 value={briefing.primaryMetric}
                 onChange={updateBriefing("primaryMetric")}
-              />
+              >
+                {optionsWithCurrent(
+                  primaryMetricOptions,
+                  briefing.primaryMetric,
+                ).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <small>
+                {getOptionDescription(
+                  primaryMetricOptions,
+                  briefing.primaryMetric,
+                )}
+              </small>
             </label>
             <label>
               Modo de producao
-              <input
+              <select
                 value={briefing.productionMode}
                 onChange={updateBriefing("productionMode")}
-              />
+              >
+                {optionsWithCurrent(
+                  productionModeOptions,
+                  briefing.productionMode,
+                ).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <small>
+                {getOptionDescription(
+                  productionModeOptions,
+                  briefing.productionMode,
+                )}
+              </small>
             </label>
             <label>
               Formato
-              <input
+              <select
                 value={briefing.format}
                 onChange={updateBriefing("format")}
-              />
+              >
+                {optionsWithCurrent(formatOptions, briefing.format).map(
+                  (option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ),
+                )}
+              </select>
+              <small>
+                {getOptionDescription(formatOptions, briefing.format)}
+              </small>
             </label>
           </div>
           <label>
@@ -1060,7 +1314,11 @@ export default function AudioVideoStudioPage() {
                 <span>#{project.id}</span>
                 <h3>{project.title}</h3>
                 <p>{project.storyText || project.objective}</p>
-                <small>{project.status}</small>
+                <small>
+                  {statusOptions.find(
+                    (option) => option.value === project.status,
+                  )?.label ?? project.status}
+                </small>
               </article>
             ))
           ) : (

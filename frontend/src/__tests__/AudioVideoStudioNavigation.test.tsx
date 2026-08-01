@@ -242,7 +242,10 @@ describe("audio video studio navigation", () => {
     expect(
       screen.getByRole("form", { name: /enviar video para analise/i }),
     ).toBeTruthy();
-    expect(screen.getByLabelText(/url do video/i)).toBeTruthy();
+    expect(screen.getByLabelText(/arquivo do video/i)).toBeTruthy();
+    expect(
+      screen.getByLabelText(/url publica do video, se nao fizer upload/i),
+    ).toBeTruthy();
     expect(
       await screen.findByText(/reels de transformacao visual/i),
     ).toBeTruthy();

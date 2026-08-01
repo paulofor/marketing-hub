@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { ExternalLink, PlusCircle } from "lucide-react";
+import { ExternalLink, PlusCircle, Upload } from "lucide-react";
 import {
   useCreateVideoReference,
   useVideoReferences,
@@ -53,6 +53,9 @@ export default function AudioVideoStudioVideosAnalysisPage() {
   const referencesQuery = useVideoReferences();
   const createReference = useCreateVideoReference();
   const [form, setForm] = useState(initialForm);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileInputVersion, setFileInputVersion] = useState(0);
+  const [formError, setFormError] = useState("");
 
   const references = referencesQuery.data ?? [];
 
@@ -62,19 +65,38 @@ export default function AudioVideoStudioVideosAnalysisPage() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setFormError("");
+    if (!selectedFile && !form.sourceUrl.trim()) {
+      setFormError("Envie um arquivo de video ou informe uma URL publica.");
+      return;
+    }
+
+    const basePayload = {
+      title: form.title,
+      sourcePlatform: form.sourcePlatform,
+      niche: form.niche,
+      funnelStage: form.funnelStage,
+      primaryLearningGoal: form.primaryLearningGoal,
+      successEvidence: form.successEvidence,
+      createdBy: form.createdBy,
+    };
+
     createReference.mutate(
+      selectedFile
+        ? {
+            ...basePayload,
+            file: selectedFile,
+          }
+        : {
+            ...basePayload,
+            sourceUrl: form.sourceUrl,
+          },
       {
-        title: form.title,
-        sourceUrl: form.sourceUrl,
-        sourcePlatform: form.sourcePlatform,
-        niche: form.niche,
-        funnelStage: form.funnelStage,
-        primaryLearningGoal: form.primaryLearningGoal,
-        successEvidence: form.successEvidence,
-        createdBy: form.createdBy,
-      },
-      {
-        onSuccess: () => setForm(initialForm),
+        onSuccess: () => {
+          setForm(initialForm);
+          setSelectedFile(null);
+          setFileInputVersion((current) => current + 1);
+        },
       },
     );
   }
@@ -102,6 +124,22 @@ export default function AudioVideoStudioVideosAnalysisPage() {
           onSubmit={handleSubmit}
           aria-label="Enviar video para analise"
         >
+          <label className="audio-video-studio-page__reference-form-wide">
+            Arquivo do video
+            <input
+              key={fileInputVersion}
+              type="file"
+              accept="video/mp4,video/quicktime,video/webm,video/x-m4v"
+              onChange={(event) =>
+                setSelectedFile(event.target.files?.[0] ?? null)
+              }
+            />
+            <small>
+              Envie MP4, MOV, WEBM ou M4V. O arquivo sera armazenado e colocado
+              na fila de aprendizado.
+            </small>
+          </label>
+
           <label>
             Titulo do video
             <input
@@ -113,12 +151,11 @@ export default function AudioVideoStudioVideosAnalysisPage() {
           </label>
 
           <label>
-            URL do video
+            URL publica do video, se nao fizer upload
             <input
               value={form.sourceUrl}
               onChange={(event) => updateField("sourceUrl", event.target.value)}
               placeholder="https://..."
-              required
             />
           </label>
 
@@ -183,13 +220,20 @@ export default function AudioVideoStudioVideosAnalysisPage() {
             type="submit"
             disabled={createReference.isPending}
           >
-            <PlusCircle size={18} aria-hidden="true" />
+            {selectedFile ? (
+              <Upload size={18} aria-hidden="true" />
+            ) : (
+              <PlusCircle size={18} aria-hidden="true" />
+            )}
             {createReference.isPending
               ? "Enviando para analise..."
               : "Enviar para analise"}
           </button>
         </form>
 
+        {formError ? (
+          <p className="audio-video-studio-page__duration-block">{formError}</p>
+        ) : null}
         {createReference.isSuccess ? (
           <p className="audio-video-studio-page__feedback">
             Video enviado para a fila de analise.

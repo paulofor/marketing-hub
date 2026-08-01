@@ -92,6 +92,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateVideoReferenceRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UploadVideoReferenceRequest"
       responses:
         "201":
           description: Vídeo enviado para análise.
@@ -139,6 +142,34 @@ components:
           maxLength: 2048
           description: URL pública ou origem acessível do vídeo de referência.
         sourcePlatform: { type: string, nullable: true, maxLength: 64 }
+        niche: { type: string, nullable: true, maxLength: 191 }
+        funnelStage: { type: string, nullable: true, maxLength: 64 }
+        primaryLearningGoal:
+          type: string
+          maxLength: 1024
+          description: Gancho, ritmo, prova, objeção, CTA ou outro aprendizado desejado.
+        successEvidence:
+          type: string
+          nullable: true
+          description: Views, comentários, vendas, retenção ou observação comercial.
+        createdBy: { type: string, nullable: true, maxLength: 191 }
+    UploadVideoReferenceRequest:
+      type: object
+      required:
+        - file
+        - title
+        - primaryLearningGoal
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Arquivo de vídeo enviado pelo usuário para análise.
+        title: { type: string, maxLength: 255 }
+        sourcePlatform:
+          type: string
+          nullable: true
+          maxLength: 64
+          description: Plataforma ou origem comercial do vídeo; assume Upload quando omitido.
         niche: { type: string, nullable: true, maxLength: 191 }
         funnelStage: { type: string, nullable: true, maxLength: 64 }
         primaryLearningGoal:

@@ -655,6 +655,16 @@
   padding: 0.75rem 0.85rem;
 }
 
+.audio-video-studio-page__reference-form input[type="file"] {
+  background: #f8fafc;
+}
+
+.audio-video-studio-page__reference-form small {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .audio-video-studio-page__reference-form textarea {
   resize: vertical;
 }

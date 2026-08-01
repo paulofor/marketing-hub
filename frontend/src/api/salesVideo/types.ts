@@ -486,3 +486,14 @@ export interface VideoReferencePayload {
   successEvidence?: string;
   createdBy?: string;
 }
+
+export interface VideoReferenceUploadPayload {
+  title: string;
+  file: File;
+  sourcePlatform?: string;
+  niche?: string;
+  funnelStage?: string;
+  primaryLearningGoal: string;
+  successEvidence?: string;
+  createdBy?: string;
+}

@@ -235,7 +235,7 @@ Garanta que `SPRING_DATASOURCE_URL` use o host correto. O `mcp-server` agora tam
 
 O PDE Platform Backend usa banco próprio para analytics e comportamento de leads. Para manter o banco geral do Marketing Hub e também consultar o schema efetivo do PDE, configure no MCP:
 
-- `MCP_PDE_DATASOURCE_URL` (ex.: `jdbc:mysql://d555d.vps-kinghost.net:3306/aihubdb?useSSL=false&serverTimezone=UTC`);
+- `MCP_PDE_DATASOURCE_URL` (ex.: `jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC`);
 - `MCP_PDE_DATASOURCE_USERNAME`;
 - `MCP_PDE_DATASOURCE_PASSWORD`.
 

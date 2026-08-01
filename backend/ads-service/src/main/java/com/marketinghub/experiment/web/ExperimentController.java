@@ -179,6 +179,13 @@ public class ExperimentController {
     return mapper.toDto(service.updateStatus(id, status));
   }
 
+  /** Zera custos manuais e legados do experimento mantendo custos auditáveis reconciliados. */
+  @PostMapping("/{id}/costs/reset")
+  public ExperimentDto resetCosts(@PathVariable Long id) {
+    com.marketinghub.experiment.Experiment experiment = service.resetCosts(id);
+    return costReconciliationService.enrich(experiment, mapper.toDto(experiment));
+  }
+
   /** Reativa um experimento parado registrando o motivo informado pelo usuário. */
   @PostMapping("/{id}/reactivate")
   public ExperimentDto reactivate(

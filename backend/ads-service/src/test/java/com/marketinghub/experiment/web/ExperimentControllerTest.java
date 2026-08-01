@@ -287,6 +287,46 @@ class ExperimentControllerTest {
         .andExpect(jsonPath("$.sections[1].items[0].value").value("Mulheres urbanas"));
   }
 
+  /** Garante que o endpoint administrativo zera custos manuais e legados do experimento. */
+  @Test
+  void resetCostsEndpointClearsManualAndLegacyCosts() throws Exception {
+    var niche = nicheRepo.findById(nicheId).orElseThrow();
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Custos").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Hipótese custos")
+                .premiseAngle(angle)
+                .build());
+    var experiment =
+        repository.save(
+            com.marketinghub.experiment.Experiment.builder()
+                .niche(niche)
+                .name("Experimento com custo legado")
+                .hypothesisRef(hyp)
+                .cost(new BigDecimal("2.00"))
+                .expense(new BigDecimal("3.00"))
+                .totalCost(new BigDecimal("14.64"))
+                .build());
+
+    mockMvc
+        .perform(post("/api/experiments/{id}/costs/reset", experiment.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.cost").value(0))
+        .andExpect(jsonPath("$.expense").value(0))
+        .andExpect(jsonPath("$.totalCost").value(0))
+        .andExpect(jsonPath("$.legacyTotalCost").value(0))
+        .andExpect(jsonPath("$.unreconciledLegacyCost").value(0));
+
+    var saved = repository.findById(experiment.getId()).orElseThrow();
+    assertThat(saved.getCost()).isEqualByComparingTo("0");
+    assertThat(saved.getExpense()).isEqualByComparingTo("0");
+    assertThat(saved.getTotalCost()).isEqualByComparingTo("0");
+  }
+
   /** Garante que o preparo de Produto IA expõe rascunho somente quando a hipótese está completa. */
   @Test
   void productAiPreparationReturnsDraftWhenHypothesisIsReady() throws Exception {

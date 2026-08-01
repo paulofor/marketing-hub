@@ -4,10 +4,8 @@ import com.marketinghub.salesvideo.dto.SalesVideoStudioCaptionPresetDto;
 import com.marketinghub.salesvideo.dto.SalesVideoStudioCatalogDto;
 import com.marketinghub.salesvideo.dto.SalesVideoStudioCharacterDto;
 import java.util.List;
-import org.springframework.stereotype.Service;
 
-/** Responsabilidade: fornecer catalogos comerciais usados pelo Estudio de Audio e Video. */
-@Service
+/** Responsabilidade: fornecer catalogos comerciais internos usados pelo Estudio de Audio e Video. */
 public class SalesVideoStudioCatalogService {
 
   /** Lista personagens e estilos de legenda aprovados para decisao operacional no estudio. */

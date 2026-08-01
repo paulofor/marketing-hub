@@ -34,6 +34,7 @@ import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
 import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
+import com.marketinghub.salesvideo.dto.SalesVideoStudioCatalogDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
@@ -53,6 +54,8 @@ public class SalesVideoService {
   private final SalesVideoAssetService assetService;
   private final SalesVideoCommercialInsightsService commercialInsightsService;
   private final VideoProjectService videoProjectService;
+  private final SalesVideoStudioCatalogService studioCatalogService =
+      new SalesVideoStudioCatalogService();
 
   /** Inicializa a fachada com os componentes internos do módulo de vídeo. */
   public SalesVideoService(
@@ -88,6 +91,11 @@ public class SalesVideoService {
   /** Atualiza um projeto editável de vídeo. */
   public VideoProjectDto updateVideoProject(Long projectId, UpdateVideoProjectRequest request) {
     return videoProjectService.updateProject(projectId, request);
+  }
+
+  /** Consulta o catalogo operacional do estudio de audio e video. */
+  public SalesVideoStudioCatalogDto getStudioCatalog() {
+    return studioCatalogService.getCatalog();
   }
 
   /** Cria um perfil de vídeo para o produto informado. */

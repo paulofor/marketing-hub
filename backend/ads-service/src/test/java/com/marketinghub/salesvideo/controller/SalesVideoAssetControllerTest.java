@@ -18,7 +18,6 @@ import com.marketinghub.salesvideo.dto.SalesVideoStudioCatalogDto;
 import com.marketinghub.salesvideo.dto.SalesVideoStudioCharacterDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
-import com.marketinghub.salesvideo.service.SalesVideoStudioCatalogService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,8 +36,6 @@ class SalesVideoAssetControllerTest {
   @Autowired private MockMvc mockMvc;
 
   @MockBean private SalesVideoService salesVideoService;
-
-  @MockBean private SalesVideoStudioCatalogService studioCatalogService;
 
   /** Deve expor o catalogo visual do estudio para personagens e legendas. */
   @Test
@@ -61,7 +58,7 @@ class SalesVideoAssetControllerTest {
                     "Texto grande",
                     "Boa para mobile.",
                     "Preset de legenda: alta conversao mobile.")));
-    when(studioCatalogService.getCatalog()).thenReturn(catalog);
+    when(salesVideoService.getStudioCatalog()).thenReturn(catalog);
 
     mockMvc
         .perform(get("/api/sales-videos/studio/catalog").header("X-Tenant-ID", "tenant-test"))
@@ -70,7 +67,7 @@ class SalesVideoAssetControllerTest {
         .andExpect(jsonPath("$.characters[0].name").value("Sofia com cabides"))
         .andExpect(jsonPath("$.captionPresets[0].label").value("Legenda alta conversao mobile"));
 
-    verify(studioCatalogService).getCatalog();
+    verify(salesVideoService).getStudioCatalog();
   }
 
   /** Deve aceitar upload interno e devolver o asset criado. */

@@ -55,6 +55,7 @@ type ProductionStep = {
   description: string;
   actionLabel: string;
   route: string;
+  productStudioAnchor?: string;
 };
 
 const funnelSlots: FunnelSlot[] = [
@@ -102,6 +103,7 @@ const productionSteps: ProductionStep[] = [
       "Registrar dor, desejo, objecao, acao esperada e metrica antes de gerar qualquer ativo.",
     actionLabel: "Abrir Estudio",
     route: "/audio-video-studio",
+    productStudioAnchor: "roteiro",
   },
   {
     key: "roteiro",
@@ -111,6 +113,7 @@ const productionSteps: ProductionStep[] = [
       "Quebrar a promessa em gancho, dor, mecanismo, recompensa e CTA por cena curta.",
     actionLabel: "Editar roteiro",
     route: "/audio-video-studio/projects",
+    productStudioAnchor: "roteiro",
   },
   {
     key: "storyboard",
@@ -120,6 +123,7 @@ const productionSteps: ProductionStep[] = [
       "Definir imagem mestre, movimento, personagem, ambiente, legenda e continuidade visual.",
     actionLabel: "Planejar cenas",
     route: "/audio-video-studio",
+    productStudioAnchor: "geracao",
   },
   {
     key: "geracao",
@@ -129,6 +133,7 @@ const productionSteps: ProductionStep[] = [
       "Escolher provider pelo objetivo comercial: hero premium, anuncio, teaser, retargeting ou avatar.",
     actionLabel: "Gerar video",
     route: "/videos",
+    productStudioAnchor: "geracao",
   },
   {
     key: "qualidade",
@@ -138,6 +143,7 @@ const productionSteps: ProductionStep[] = [
       "Bloquear video sem audio, sem CTA, com artefatos ou sem funcao clara no funil.",
     actionLabel: "Revisar videos",
     route: "/creative-video-review",
+    productStudioAnchor: "qualidade",
   },
   {
     key: "vinculo",
@@ -147,6 +153,7 @@ const productionSteps: ProductionStep[] = [
       "Conectar video aprovado ao produto, versao, slot, HLS e experimento correto.",
     actionLabel: "Ver versoes",
     route: "/products",
+    productStudioAnchor: "pos-producao",
   },
   {
     key: "distribuicao",
@@ -156,6 +163,7 @@ const productionSteps: ProductionStep[] = [
       "Reaproveitar o video aprovado em PDE, Meta Ads, cortes organicos e teste A/B.",
     actionLabel: "Distribuir",
     route: "/social-distribution",
+    productStudioAnchor: "pos-producao",
   },
   {
     key: "aprendizado",
@@ -335,6 +343,17 @@ function readinessForSlot({
     tone: "blocked",
     nextAction: "Criar briefing comercial antes de gerar video.",
   };
+}
+
+function productVideoStudioRoute(
+  productId: number | undefined,
+  anchor?: string,
+  fallbackRoute = "/products",
+) {
+  if (!productId) {
+    return fallbackRoute;
+  }
+  return `/products/${productId}/sales-videos${anchor ? `#${anchor}` : ""}`;
 }
 
 export default function PdeVideoProductionPage() {
@@ -596,7 +615,12 @@ export default function PdeVideoProductionPage() {
                     ) : selectedProduct ? (
                       <Link
                         className="btn btn-outline-primary btn-sm"
-                        to={`/products/${selectedProduct.id}/sales-videos`}
+                        to={productVideoStudioRoute(
+                          selectedProduct.id,
+                          readiness.label === "Pronto sem HLS"
+                            ? "pos-producao"
+                            : "roteiro",
+                        )}
                       >
                         Criar perfil
                       </Link>
@@ -644,7 +668,11 @@ export default function PdeVideoProductionPage() {
                 <p>{step.description}</p>
                 <Link
                   className="btn btn-outline-primary btn-sm"
-                  to={step.route}
+                  to={productVideoStudioRoute(
+                    selectedProduct?.id,
+                    step.productStudioAnchor,
+                    step.route,
+                  )}
                 >
                   {step.actionLabel}
                 </Link>

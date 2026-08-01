@@ -108,6 +108,7 @@ const premiumProductionStages = [
     icon: Target,
     title: "1. Estrategia",
     section: "Oferta e funil",
+    targetId: "audio-video-stage-estrategia",
     description:
       "Definir objetivo comercial, publico, dor, promessa, mecanismo, canal, duracao e metrica primaria.",
     output:
@@ -117,6 +118,7 @@ const premiumProductionStages = [
     icon: FileText,
     title: "2. Roteiro",
     section: "Narrativa",
+    targetId: "audio-video-stage-roteiro",
     description:
       "Transformar a oferta em gancho, historia, demonstracao, prova, objecoes e CTA falado ou visual.",
     output:
@@ -126,6 +128,7 @@ const premiumProductionStages = [
     icon: Camera,
     title: "3. Biblia visual",
     section: "Pre-producao",
+    targetId: "audio-video-stage-biblia-visual",
     description:
       "Aprovar personagem, ambiente, objetos, marca, direcao visual, imagens mestre e regras de continuidade.",
     output:
@@ -135,6 +138,7 @@ const premiumProductionStages = [
     icon: Clapperboard,
     title: "4. Storyboard",
     section: "Plano de cenas",
+    targetId: "audio-video-stage-storyboard",
     description:
       "Quebrar o video em cenas curtas com enquadramento, movimento, acao, emocao e transicao.",
     output:
@@ -144,6 +148,7 @@ const premiumProductionStages = [
     icon: Mic2,
     title: "5. Audio",
     section: "Voz e trilha",
+    targetId: "audio-video-stage-audio",
     description:
       "Definir narracao, ritmo, pausas, trilha, efeitos e legibilidade quando a usuaria estiver sem som.",
     output:
@@ -153,6 +158,7 @@ const premiumProductionStages = [
     icon: Wand2,
     title: "6. Geracao IA",
     section: "Provider",
+    targetId: "audio-video-stage-provider",
     description:
       "Escolher Luma, Kling, HeyGen ou outro motor conforme o tipo de cena, custo, duracao e consistencia.",
     output:
@@ -162,6 +168,7 @@ const premiumProductionStages = [
     icon: Scissors,
     title: "7. Montagem",
     section: "Pos-producao",
+    targetId: "audio-video-stage-montagem",
     description:
       "Cortar falhas, ajustar ritmo, unir cenas, inserir legenda, audio, capa, HLS e fallback MP4.",
     output:
@@ -171,6 +178,7 @@ const premiumProductionStages = [
     icon: ClipboardCheck,
     title: "8. Revisao",
     section: "Gate comercial",
+    targetId: "audio-video-stage-revisao",
     description:
       "Checar promessa permitida, clareza, continuidade, audio, prova, CTA, HLS e aderencia ao PDE.",
     output:
@@ -180,6 +188,7 @@ const premiumProductionStages = [
     icon: BarChart3,
     title: "9. Aprendizado",
     section: "Metricas",
+    targetId: "audio-video-stage-aprendizado",
     description:
       "Medir play, retencao, clique, diagnostico, paywall, checkout e compra para decidir novos cortes.",
     output:
@@ -1074,8 +1083,9 @@ export default function AudioVideoStudioPage() {
         </div>
         <div className="audio-video-studio-page__stage-grid">
           {premiumProductionStages.map((stage) => (
-            <article
+            <a
               className="audio-video-studio-page__stage-card"
+              href={`#${stage.targetId}`}
               key={stage.title}
             >
               <stage.icon size={20} aria-hidden="true" />
@@ -1083,13 +1093,17 @@ export default function AudioVideoStudioPage() {
               <h3>{stage.title}</h3>
               <p>{stage.description}</p>
               <small>{stage.output}</small>
-            </article>
+              <strong className="audio-video-studio-page__stage-link">
+                Ir para esta etapa
+              </strong>
+            </a>
           ))}
         </div>
       </section>
 
       <section className="audio-video-studio-page__workspace">
         <form
+          id="audio-video-stage-estrategia"
           className="audio-video-studio-page__briefing"
           aria-label="Blueprint operacional de video comercial"
         >
@@ -1341,7 +1355,10 @@ export default function AudioVideoStudioPage() {
             CTA
             <input value={briefing.cta} onChange={updateBriefing("cta")} />
           </label>
-          <div className="audio-video-studio-page__stage-divider">
+          <div
+            className="audio-video-studio-page__stage-divider"
+            id="audio-video-stage-roteiro"
+          >
             <FileText size={18} aria-hidden="true" />
             <div>
               <strong>2. Roteiro e storyboard</strong>
@@ -1351,7 +1368,10 @@ export default function AudioVideoStudioPage() {
               </span>
             </div>
           </div>
-          <div className="audio-video-studio-page__visual-bible">
+          <div
+            className="audio-video-studio-page__visual-bible"
+            id="audio-video-stage-biblia-visual"
+          >
             <div className="audio-video-studio-page__section-heading">
               <h2>3. Biblia visual premium</h2>
               <p>
@@ -1459,7 +1479,10 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
-            <div className="audio-video-studio-page__asset-section">
+            <div
+              className="audio-video-studio-page__asset-section"
+              id="audio-video-stage-provider"
+            >
               <div className="audio-video-studio-page__section-heading">
                 <h2>6. Provider de video</h2>
                 <p>
@@ -1501,7 +1524,10 @@ export default function AudioVideoStudioPage() {
                 })}
               </div>
             </div>
-            <div className="audio-video-studio-page__stage-divider">
+            <div
+              className="audio-video-studio-page__stage-divider"
+              id="audio-video-stage-audio"
+            >
               <Mic2 size={18} aria-hidden="true" />
               <div>
                 <strong>5. Audio e ritmo</strong>
@@ -1573,7 +1599,7 @@ export default function AudioVideoStudioPage() {
                 )}
               </div>
             </div>
-            <label>
+            <label id="audio-video-stage-montagem">
               Montagem e cortes
               <textarea
                 value={briefing.editingNotes}
@@ -1591,7 +1617,7 @@ export default function AudioVideoStudioPage() {
                 </span>
               </div>
             </div>
-            <label>
+            <label id="audio-video-stage-revisao">
               Gate de aprovacao
               <textarea
                 value={briefing.qualityGate}
@@ -1736,7 +1762,10 @@ export default function AudioVideoStudioPage() {
         </div>
       </section>
 
-      <section className="audio-video-studio-page__section">
+      <section
+        className="audio-video-studio-page__section"
+        id="audio-video-stage-storyboard"
+      >
         <div className="audio-video-studio-page__section-heading">
           <h2>Estrutura narrativa</h2>
           <p>
@@ -1802,7 +1831,10 @@ export default function AudioVideoStudioPage() {
         </div>
       </section>
 
-      <section className="audio-video-studio-page__columns">
+      <section
+        className="audio-video-studio-page__columns"
+        id="audio-video-stage-aprendizado"
+      >
         <div className="audio-video-studio-page__panel">
           <h2>Experimentos recomendados</h2>
           <ol>

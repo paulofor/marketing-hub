@@ -529,6 +529,64 @@
   background: #f8fff9;
 }
 
+.product-video-page__post-production-status {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  padding: 0.75rem;
+}
+
+.product-video-page__post-production-status strong,
+.product-video-page__post-production-status span {
+  display: block;
+}
+
+.product-video-page__post-production-status strong {
+  color: #1e3a8a;
+}
+
+.product-video-page__post-production-status span,
+.product-video-page__post-production-status li {
+  color: #334155;
+  font-size: 0.86rem;
+}
+
+.product-video-page__post-production-status ul {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.product-video-page__post-production-status--ready {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.product-video-page__post-production-status--ready strong {
+  color: #166534;
+}
+
+.product-video-page__post-production-status--warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.product-video-page__post-production-status--warning strong {
+  color: #92400e;
+}
+
+.product-video-page__post-production-status--blocked {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.product-video-page__post-production-status--blocked strong {
+  color: #991b1b;
+}
+
 .product-video-page .btn {
   display: inline-flex;
   align-items: center;

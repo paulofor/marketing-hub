@@ -28,6 +28,7 @@ import { useProductVideoProviderAvatars } from "../../api/product/useProductVide
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
 import { useCreateSalesVideoProfile } from "../../api/salesVideo/useCreateSalesVideoProfile";
 import { useProductSalesVideoJobs } from "../../api/salesVideo/useProductSalesVideoJobs";
+import { useSalesVideoJobEvents } from "../../api/salesVideo/useSalesVideoJobEvents";
 import { useApproveSalesVideoScript } from "../../api/salesVideo/useApproveSalesVideoScript";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
@@ -35,6 +36,7 @@ import { useRequestSalesVideoPostProduction } from "../../api/salesVideo/useRequ
 import { useTenantContext } from "../../utils/tenantContext";
 import {
   SalesVideoJob,
+  SalesVideoJobEvent,
   SalesVideoAvatarStrategy,
   SalesVideoKind,
   SalesVideoProfile,
@@ -178,14 +180,24 @@ export default function ProductSalesVideoPage() {
     selectedVideoJob?.assetId ?? undefined,
   );
   const selectedSeedAssetId = parseOptionalNumber(seedImageAssetId);
+  const { data: selectedSeedAssetById } = useAsset(selectedSeedAssetId);
   const selectedSeedImageAsset = useMemo(
     () => readyImageAssets.find((asset) => asset.id === selectedSeedAssetId),
     [readyImageAssets, selectedSeedAssetId],
   );
+  const effectiveSeedImageAsset =
+    selectedSeedImageAsset ?? selectedSeedAssetById;
   const requestPostProduction = useRequestSalesVideoPostProduction(
     selectedVideoJob?.id,
     productId,
     selectedVideoJob?.profileId,
+  );
+  const selectedPostProductionJob = useMemo(
+    () => findLatestPostProductionJob(jobList, selectedVideoJob?.id),
+    [jobList, selectedVideoJob?.id],
+  );
+  const { data: selectedPostProductionEvents } = useSalesVideoJobEvents(
+    selectedPostProductionJob?.id,
   );
   const selectedProfile = useMemo(() => {
     if (selectedProfileId) {
@@ -205,6 +217,13 @@ export default function ProductSalesVideoPage() {
     selectedVideoJob?.streamPlaybackUrl?.trim() ||
     selectedVideoAsset?.publicUrl ||
     "";
+  const selectedPostProductionStatus = selectedVideoJob
+    ? describePostProductionStatus(
+        selectedVideoJob,
+        selectedPostProductionJob,
+        selectedPostProductionEvents ?? [],
+      )
+    : undefined;
   const selectedProvider =
     findSalesVideoProviderOption(selectedProviderName) ??
     DEFAULT_SALES_VIDEO_PROVIDER;
@@ -390,8 +409,8 @@ export default function ProductSalesVideoPage() {
           openAiReferenceImageEnabled,
           openAiReferenceImagePrompt,
           referenceImageCount: Number(referenceImageCount),
-          sourceImageAssetId: selectedSeedImageAsset?.id,
-          sourceImageUrl: selectedSeedImageAsset?.publicUrl ?? undefined,
+          sourceImageAssetId: effectiveSeedImageAsset?.id,
+          sourceImageUrl: effectiveSeedImageAsset?.publicUrl ?? undefined,
           heygenAvatarId: selectedHeyGenAvatar?.providerAvatarId ?? undefined,
           heygenAvatarGroupId:
             selectedHeyGenAvatar?.providerAvatarGroupId ?? undefined,
@@ -415,6 +434,10 @@ export default function ProductSalesVideoPage() {
       toast.error("Informe a legenda para finalizar o vídeo");
       return;
     }
+    if (!selectedVideoSourceUrl) {
+      toast.error("Aguarde o carregamento do asset ou stream do vídeo");
+      return;
+    }
     try {
       await requestPostProduction.mutateAsync({
         requestedBy: tenantContext.userEmail,
@@ -425,9 +448,7 @@ export default function ProductSalesVideoPage() {
       toast.success("Pós-produção solicitada");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Falha ao solicitar pós-produção",
+        readRequestErrorMessage(error, "Falha ao solicitar pós-produção"),
       );
     }
   };
@@ -576,10 +597,10 @@ export default function ProductSalesVideoPage() {
                   ? "Reprovada para vídeo"
                   : "Pendente de aprovação"}
             </div>
-            {selectedSeedImageAsset?.publicUrl ? (
+            {effectiveSeedImageAsset?.publicUrl ? (
               <img
                 className="product-video-page__seed-preview"
-                src={selectedSeedImageAsset.publicUrl}
+                src={effectiveSeedImageAsset.publicUrl}
                 alt={`Imagem semente de ${seedCharacterName || "personagem"}`}
               />
             ) : (
@@ -864,7 +885,7 @@ export default function ProductSalesVideoPage() {
         </aside>
 
         <main className="product-video-page__main">
-          <section className="product-video-page__hero-panel">
+          <section className="product-video-page__hero-panel" id="qualidade">
             <div className="product-video-page__hero-copy">
               <span>Vídeo selecionado</span>
               <h2>{selectedProfile?.title ?? "Nenhum vídeo selecionado"}</h2>
@@ -987,7 +1008,7 @@ export default function ProductSalesVideoPage() {
           </section>
 
           <section className="product-video-page__workflow">
-            <div className="product-video-page__script">
+            <div className="product-video-page__script" id="roteiro">
               <div className="product-video-page__panel-heading">
                 <FileText size={18} aria-hidden="true" />
                 <strong>Roteiro comercial</strong>
@@ -1011,7 +1032,7 @@ export default function ProductSalesVideoPage() {
               </button>
             </div>
 
-            <div className="product-video-page__render">
+            <div className="product-video-page__render" id="geracao">
               <div className="product-video-page__panel-heading">
                 <RefreshCcw size={18} aria-hidden="true" />
                 <strong>Geração</strong>
@@ -1178,7 +1199,10 @@ export default function ProductSalesVideoPage() {
               </div>
             </div>
 
-            <div className="product-video-page__post-production">
+            <div
+              className="product-video-page__post-production"
+              id="pos-producao"
+            >
               <div className="product-video-page__panel-heading">
                 <Sparkles size={18} aria-hidden="true" />
                 <strong>Pós-produção</strong>
@@ -1264,10 +1288,27 @@ export default function ProductSalesVideoPage() {
                 <strong>Uso recomendado</strong>
                 <span>Finalize vídeos Luma/Kling aprovados visualmente.</span>
                 <span>
-                  O resultado cria um novo job com legenda grande; voz e trilha
-                  entram quando houver voz off.
+                  O resultado cria um novo job com legenda grande, voz/trilha
+                  quando houver voz off e stream HLS publicável para o PDE.
                 </span>
               </div>
+              {selectedPostProductionStatus ? (
+                <div
+                  className={`product-video-page__post-production-status product-video-page__post-production-status--${selectedPostProductionStatus.tone}`}
+                >
+                  <div>
+                    <strong>{selectedPostProductionStatus.title}</strong>
+                    <span>{selectedPostProductionStatus.message}</span>
+                  </div>
+                  {selectedPostProductionStatus.details.length > 0 ? (
+                    <ul>
+                      {selectedPostProductionStatus.details.map((detail) => (
+                        <li key={detail}>{detail}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : null}
               <button
                 type="button"
                 className="btn btn-primary"
@@ -1275,13 +1316,14 @@ export default function ProductSalesVideoPage() {
                 disabled={
                   !selectedVideoJob ||
                   !isExistingVideoJob(selectedVideoJob) ||
+                  !selectedVideoSourceUrl ||
                   requestPostProduction.isPending
                 }
               >
                 <Sparkles size={16} aria-hidden="true" />
                 {requestPostProduction.isPending
                   ? "Solicitando..."
-                  : "Finalizar com áudio"}
+                  : "Gerar pós-produção + HLS"}
               </button>
             </div>
           </section>
@@ -1437,6 +1479,92 @@ function isExistingVideoJob(job: SalesVideoJob) {
     job.status === "VIDEO_READY" &&
     (Boolean(job.streamPlaybackUrl?.trim()) || Boolean(job.assetId))
   );
+}
+
+function findLatestPostProductionJob(
+  jobs: SalesVideoJob[],
+  sourceJobId?: number,
+) {
+  if (!sourceJobId) {
+    return undefined;
+  }
+  return jobs
+    .filter(
+      (job) =>
+        job.jobType === "POST_PRODUCTION" &&
+        job.retryOfJobId === sourceJobId &&
+        job.providerName === "MUSA_POST_PRODUCTION",
+    )
+    .sort((a, b) => jobTimestamp(b) - jobTimestamp(a))[0];
+}
+
+function jobTimestamp(job: SalesVideoJob) {
+  return new Date(
+    job.updatedAt ?? job.finishedAt ?? job.startedAt ?? job.requestedAt ?? 0,
+  ).getTime();
+}
+
+function describePostProductionStatus(
+  sourceJob: SalesVideoJob,
+  postProductionJob?: SalesVideoJob,
+  events: SalesVideoJobEvent[] = [],
+) {
+  if (!postProductionJob) {
+    return {
+      tone: sourceJob.streamPlaybackUrl?.trim() ? "ready" : "idle",
+      title: sourceJob.streamPlaybackUrl?.trim()
+        ? "HLS já disponível neste vídeo"
+        : "Pós-produção/HLS ainda não solicitada",
+      message: sourceJob.streamPlaybackUrl?.trim()
+        ? "O job selecionado já tem stream publicável. Revise no mobile antes de vincular ao PDE."
+        : "Use este comando para transformar o MP4 bruto em vídeo final com áudio, legenda e HLS.",
+      details: [],
+    };
+  }
+
+  const latestEvent = [...events].sort(
+    (a, b) =>
+      new Date(b.createdAt ?? 0).getTime() -
+      new Date(a.createdAt ?? 0).getTime(),
+  )[0];
+  const details = [
+    postProductionJob.failureCode
+      ? `Código: ${postProductionJob.failureCode}`
+      : "",
+    postProductionJob.failureDetail
+      ? `Erro: ${postProductionJob.failureDetail}`
+      : "",
+    latestEvent?.message ? `Último evento: ${latestEvent.message}` : "",
+    latestEvent?.detailsJson
+      ? `Detalhe técnico: ${latestEvent.detailsJson}`
+      : "",
+  ].filter(Boolean);
+
+  if (postProductionJob.status === "VIDEO_FAILED") {
+    return {
+      tone: "blocked",
+      title: `Pós-produção falhou no job #${postProductionJob.id}`,
+      message:
+        "Corrija a causa exibida abaixo antes de publicar o vídeo na v7 do PDE.",
+      details,
+    };
+  }
+  if (postProductionJob.status === "VIDEO_READY") {
+    return {
+      tone: postProductionJob.streamPlaybackUrl?.trim() ? "ready" : "warning",
+      title: `Pós-produção pronta no job #${postProductionJob.id}`,
+      message: postProductionJob.streamPlaybackUrl?.trim()
+        ? "HLS publicável disponível. Próximo passo: revisar no mobile e vincular ao contrato da versão."
+        : "O job finalizou, mas ainda não trouxe stream HLS. Use o asset como fallback só para revisão.",
+      details,
+    };
+  }
+  return {
+    tone: "warning",
+    title: `Pós-produção em andamento no job #${postProductionJob.id}`,
+    message: "Acompanhe até receber HLS publicável ou erro detalhado.",
+    details,
+  };
 }
 
 function summarizeProductVideoCost(jobs: SalesVideoJob[]) {
@@ -2041,6 +2169,24 @@ function parseOptionalNumber(value?: string) {
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function readRequestErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = (error as { response?: { data?: unknown } }).response;
+    const data = response?.data;
+    if (typeof data === "string" && data.trim()) {
+      return data;
+    }
+    if (typeof data === "object" && data !== null) {
+      const record = data as Record<string, unknown>;
+      const message = record.message ?? record.detail ?? record.error;
+      if (typeof message === "string" && message.trim()) {
+        return message;
+      }
+    }
+  }
+  return error instanceof Error ? error.message : fallback;
 }
 
 function formatDurationSeconds(value: number) {

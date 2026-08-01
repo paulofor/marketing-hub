@@ -68,6 +68,8 @@ class ExperimentCockpitServiceTest {
     assertEquals("SIMULATED", cockpit.health().status());
     assertEquals("FAKE_PDE_VIDEO_METRICAS", cockpit.bottleneck().code());
     assertEquals(7L, cockpit.scoreboard().pageViews());
+    assertEquals(4L, cockpit.scoreboard().partialVideoViews());
+    assertEquals(2L, cockpit.scoreboard().completeVideoViews());
     assertEquals(1L, cockpit.scoreboard().checkoutAccesses());
     assertEquals(5, cockpit.funnel().size());
     verify(funnelService).summarizeLandingAnalytics(88L);
@@ -75,12 +77,9 @@ class ExperimentCockpitServiceTest {
     verifyNoInteractions(readinessService, diagnosticsService, funnelDiagnosticService);
   }
 
-  /**
-   * Garante que entradas medidas no PDE contam como página carregada antes do diagnóstico de
-   * conversão.
-   */
+  /** Garante que consumo de vídeo sem próximo passo recebe diagnóstico comercial específico. */
   @Test
-  void getCockpitUsesPdeEntryAsMeasuredPageViewForBottleneck() {
+  void getCockpitDiagnosesVideoEngagementWithoutNextStep() {
     ExperimentCampaignMetric campaignMetric =
         ExperimentCampaignMetric.builder().impressions(100L).clicks(20L).build();
     Experiment experiment =
@@ -124,7 +123,10 @@ class ExperimentCockpitServiceTest {
     var cockpit = service.getCockpit(77L);
 
     assertEquals(29, cockpit.scoreboard().pageViews());
-    assertEquals("PAGINA_SEM_CONVERSAO", cockpit.bottleneck().code());
+    assertEquals(12, cockpit.scoreboard().partialVideoViews());
+    assertEquals(6, cockpit.scoreboard().completeVideoViews());
+    assertEquals("VIDEO_SEM_PROXIMO_PASSO", cockpit.bottleneck().code());
+    assertEquals("REFORCAR_CTA_POS_VIDEO", cockpit.nextActions().get(0).code());
   }
 
   /** Cria uma etapa mínima do funil para o teste do cockpit. */

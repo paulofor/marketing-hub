@@ -13,6 +13,8 @@ public record ExperimentCockpitScoreboardDto(
     BigDecimal ctr,
     BigDecimal cpc,
     long pageViews,
+    long partialVideoViews,
+    long completeVideoViews,
     long leads,
     long checkoutAccesses,
     long purchases,

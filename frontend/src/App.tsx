@@ -164,6 +164,7 @@ import FashionChatValidationPage from "./pages/fashionChat/FashionChatValidation
 import VideoHubPage from "./pages/video/VideoHubPage";
 import VideoProviderManagementPage from "./pages/video/VideoProviderManagementPage";
 import CreativeVideoReviewPage from "./pages/creative/CreativeVideoReviewPage";
+import WinningAdsLibraryPage from "./pages/creative/WinningAdsLibraryPage";
 import AudioVideoStudioPage from "./pages/audioVideoStudio/AudioVideoStudioPage";
 import AudioVideoStudioProjectsPage from "./pages/audioVideoStudio/AudioVideoStudioProjectsPage";
 import AudioVideoStudioVideoAnalysisResultPage from "./pages/audioVideoStudio/AudioVideoStudioVideoAnalysisResultPage";
@@ -465,6 +466,10 @@ export default function App() {
               <Route
                 path="/creative-video-review"
                 element={<CreativeVideoReviewPage />}
+              />
+              <Route
+                path="/winning-ads-library"
+                element={<WinningAdsLibraryPage />}
               />
               <Route
                 path="/ai/pending-requests"

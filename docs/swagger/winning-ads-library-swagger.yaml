@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Winning Ads Library API
+  version: 1.0.0
+  description: Contrato administrativo da Biblioteca de Anúncios Vencedores.
+servers:
+  - url: /api/winning-ads-library
+paths:
+  /api/winning-ads-library:
+    get:
+      summary: Lista anúncios vencedores reutilizáveis.
+      parameters:
+        - name: productSlug
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filtra a biblioteca por produto.
+      responses:
+        '200':
+          description: Lista de anúncios vencedores.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinningAdListResponse'
+components:
+  schemas:
+    WinningAdListResponse:
+      type: object
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WinningAdResponse'
+    WinningAdResponse:
+      type: object
+      required:
+        - id
+        - productSlug
+        - productName
+        - niche
+        - funnelStage
+        - channel
+        - format
+        - winningStatus
+        - score
+        - hook
+        - primaryText
+        - creativeBrief
+        - offerAngle
+        - proofSignal
+        - metricSnapshot
+        - learning
+        - nextAction
+        - sourceReference
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        productSlug:
+          type: string
+        productName:
+          type: string
+        niche:
+          type: string
+        funnelStage:
+          type: string
+        channel:
+          type: string
+        format:
+          type: string
+        winningStatus:
+          type: string
+        score:
+          type: integer
+        hook:
+          type: string
+        primaryText:
+          type: string
+        creativeBrief:
+          type: string
+        offerAngle:
+          type: string
+        proofSignal:
+          type: string
+        metricSnapshot:
+          type: string
+        learning:
+          type: string
+        nextAction:
+          type: string
+        sourceReference:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time

@@ -29,6 +29,7 @@ import {
   Server,
   Video,
   Music2,
+  Megaphone,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -166,6 +167,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/creative-video-review",
         label: "Aprovar vídeos",
         icon: BadgeCheck,
+      },
+      {
+        to: "/winning-ads-library",
+        label: "Anúncios Vencedores",
+        icon: Megaphone,
       },
       {
         to: "/pde-video-production",

@@ -178,6 +178,11 @@
   outline: none;
 }
 
+.audio-video-studio-page__stage-card--estrategia {
+  border-color: #b4235b;
+  box-shadow: inset 4px 0 0 #b4235b;
+}
+
 .audio-video-studio-page__stage-card-header {
   display: flex;
   align-items: center;

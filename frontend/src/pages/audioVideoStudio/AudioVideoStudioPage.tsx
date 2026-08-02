@@ -1084,7 +1084,10 @@ export default function AudioVideoStudioPage() {
         <div className="audio-video-studio-page__stage-grid">
           {premiumProductionStages.map((stage) => (
             <a
-              className="audio-video-studio-page__stage-card"
+              className={`audio-video-studio-page__stage-card audio-video-studio-page__stage-card--${stage.targetId.replace(
+                "audio-video-stage-",
+                "",
+              )}`}
               href={`#${stage.targetId}`}
               key={stage.title}
             >

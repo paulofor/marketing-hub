@@ -1,4 +1,10 @@
-import { render, screen, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -298,6 +304,86 @@ describe("audio video studio navigation", () => {
     expect(screen.getByText(/criar versoes de 30 a 45 segundos/i)).toBeTruthy();
     expect(
       screen.getByRole("link", { name: /voltar para videos/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("form", {
+        name: /registrar analise comercial do video/i,
+      }),
+    ).toBeTruthy();
+  });
+
+  it("submits structured commercial video analysis to backend", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/reference-videos/22") {
+        return Promise.resolve({
+          data: {
+            id: 22,
+            title: "Tik Tok Flavio",
+            sourceUrl: "https://cdn.example/tiktok-flavio.mp4",
+            sourcePlatform: "TikTok",
+            niche: "Criativos IA",
+            funnelStage: "AWARENESS",
+            primaryLearningGoal: "Aprender gancho, ritmo e CTA.",
+            status: "QUEUED",
+          },
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+    (axios.patch as any).mockResolvedValue({
+      data: {
+        id: 22,
+        title: "Tik Tok Flavio",
+        sourceUrl: "https://cdn.example/tiktok-flavio.mp4",
+        sourcePlatform: "TikTok",
+        niche: "Criativos IA",
+        funnelStage: "AWARENESS",
+        primaryLearningGoal: "Aprender gancho, ritmo e CTA.",
+        status: "ANALYZED",
+        analysisNotes:
+          "**Evidencias usadas**\n- Formato vertical.\n\n**Diagnostico comercial**\n- Topo de funil.",
+      },
+    });
+
+    setup(<App />, ["/audio-video-studio/videos-analysis/22/results"]);
+
+    await screen.findByText(/tik tok flavio/i);
+    fireEvent.change(screen.getByLabelText(/evidencias usadas/i), {
+      target: { value: "- Formato vertical 9:16." },
+    });
+    fireEvent.change(screen.getByLabelText(/diagnostico comercial/i), {
+      target: { value: "- Topo de funil com promessa clara." },
+    });
+    fireEvent.change(screen.getByLabelText(/analise por sequencia/i), {
+      target: { value: "- 0s-3s: gancho direto." },
+    });
+    fireEvent.change(screen.getByLabelText(/aprendizados do sistema/i), {
+      target: { value: "- Repetir tensão e recompensa." },
+    });
+    fireEvent.change(screen.getByLabelText(/melhorias para vendas/i), {
+      target: { value: "- Criar variação curta para anúncio." },
+    });
+    fireEvent.change(screen.getByLabelText(/decisao operacional/i), {
+      target: { value: "Usar como referência de roteiro." },
+    });
+    fireEvent.change(screen.getByLabelText(/responsavel pela analise/i), {
+      target: { value: "editor@marketinghub.io" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /salvar analise/i }));
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/api/sales-videos/reference-videos/22/analysis",
+        expect.objectContaining({
+          evidence: "- Formato vertical 9:16.",
+          commercialDiagnosis: "- Topo de funil com promessa clara.",
+          analyzedBy: "editor@marketinghub.io",
+        }),
+      ),
+    );
+    expect(
+      await screen.findByText(/analise registrada e aprendizado liberado/i),
     ).toBeTruthy();
   });
 

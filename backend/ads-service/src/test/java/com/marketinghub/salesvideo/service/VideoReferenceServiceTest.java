@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import com.marketinghub.repository.jpa.salesvideo.VideoReferenceRepository;
 import com.marketinghub.salesvideo.VideoReference;
 import com.marketinghub.salesvideo.VideoReferenceStatus;
+import com.marketinghub.salesvideo.dto.AnalyzeVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.CreateVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import com.marketinghub.salesvideo.tenant.TenantContext;
@@ -132,5 +133,41 @@ class VideoReferenceServiceTest {
     assertThat(result.title()).isEqualTo("Tik Tok Flavio");
     assertThat(result.analysisNotes()).contains("Diagnóstico comercial");
     assertThat(result.status()).isEqualTo(VideoReferenceStatus.ANALYZED);
+  }
+
+  /** Registra análise estruturada e muda o vídeo para aprendizado disponível. */
+  @Test
+  void shouldAnalyzeVideoReferenceWithStructuredCommercialNotes() {
+    VideoReference reference =
+        VideoReference.builder()
+            .tenantId("tenant-musa")
+            .title("Tik Tok Flavio")
+            .sourceUrl("https://cdn.example/tiktok-flavio.mp4")
+            .primaryLearningGoal("Aprender ritmo e gancho.")
+            .status(VideoReferenceStatus.QUEUED)
+            .build();
+    reference.setId(44L);
+    given(repository.findById(44L)).willReturn(java.util.Optional.of(reference));
+    given(repository.save(any(VideoReference.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+    VideoReferenceDto result =
+        service.analyzeReference(
+            44L,
+            new AnalyzeVideoReferenceRequest(
+                "- Vertical 9:16 com cortes rápidos.",
+                "- Topo de funil com promessa clara.",
+                "- 0s-3s: gancho direto.\n- 4s-12s: prova visual.",
+                "- Repetir promessa + tensão + recompensa.",
+                "- Criar variação curta para anúncio.",
+                "Usar como referência de roteiro para criativo de aquisição.",
+                "editor@marketinghub.io"));
+
+    assertThat(result.status()).isEqualTo(VideoReferenceStatus.ANALYZED);
+    assertThat(result.analyzedAt()).isNotNull();
+    assertThat(result.analysisNotes()).contains("**Evidencias usadas**");
+    assertThat(result.analysisNotes()).contains("Topo de funil com promessa clara.");
+    assertThat(result.analysisNotes()).contains("Criar variação curta para anúncio.");
+    assertThat(result.analysisNotes())
+        .contains("Usar como referência de roteiro para criativo de aquisição.");
   }
 }

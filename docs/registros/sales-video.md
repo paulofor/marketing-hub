@@ -158,3 +158,10 @@
 - Confirmação via MCP: `sales_video_job_event.event_type` no banco real estava como `ENUM` sem o valor `RETRIED`; o código atual grava `SalesVideoJobEventType.RETRIED`.
 - Causa-raiz: schema real ficou preso em contrato antigo de enum, enquanto entidade JPA e changelog fundacional atuais esperam `VARCHAR(64)`.
 - Correção preparada: Liquibase `sales-video-hardening-007-event-type-varchar` converte `sales_video_job_event.event_type` para `VARCHAR(64) NOT NULL`, mantendo compatibilidade com eventos futuros sem precisar alterar enum físico no banco.
+
+# 2026-08-02 — Audio Video Studio: análise manual estruturada de vídeo
+
+- foi feito: a tela de resultado de vídeos de referência passou a ter um formulário de análise comercial com evidências, diagnóstico, sequência, aprendizados, melhorias de venda e decisão operacional.
+- contrato oficial: `PATCH /api/sales-videos/reference-videos/{referenceId}/analysis`.
+- impacto comercial: vídeos vencedores de TikTok/Reels/YouTube deixam de ficar apenas “na fila” e viram aprendizado persistido para novos roteiros, criativos, provas e CTAs.
+- prevenção: o relatório continua vindo do backend em `analysis_notes`, preservando a tela como verdade do sistema e evitando análise solta apenas no navegador.

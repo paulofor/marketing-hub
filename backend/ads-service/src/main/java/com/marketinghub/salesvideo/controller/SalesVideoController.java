@@ -9,6 +9,7 @@ import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.ApproveSalesVideoScriptRequest;
+import com.marketinghub.salesvideo.dto.AnalyzeVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.CreateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoCommercialPlaybookRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
@@ -123,6 +124,13 @@ public class SalesVideoController {
   public VideoReferenceDto createVideoReference(
       @Valid @RequestBody CreateVideoReferenceRequest request) {
     return salesVideoService.createVideoReference(request);
+  }
+
+  /** Registra a análise comercial estruturada de um vídeo externo. */
+  @PatchMapping("/api/sales-videos/reference-videos/{referenceId}/analysis")
+  public VideoReferenceDto analyzeVideoReference(
+      @PathVariable Long referenceId, @Valid @RequestBody AnalyzeVideoReferenceRequest request) {
+    return salesVideoService.analyzeVideoReference(referenceId, request);
   }
 
   /** Recebe upload de vídeo do usuário para análise e aprendizado comercial. */

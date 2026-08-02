@@ -115,6 +115,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VideoReferenceDto"
+  /api/sales-videos/reference-videos/{referenceId}/analysis:
+    patch:
+      tags: [VideoStudio]
+      summary: Registra análise comercial estruturada de um vídeo externo.
+      parameters:
+        - $ref: "#/components/parameters/ReferenceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeVideoReferenceRequest"
+      responses:
+        "200":
+          description: Análise registrada e vídeo liberado como aprendizado comercial.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoReferenceDto"
 components:
   parameters:
     ProjectId:
@@ -201,6 +220,38 @@ components:
           nullable: true
           description: Views, comentários, vendas, retenção ou observação comercial.
         createdBy: { type: string, nullable: true, maxLength: 191 }
+    AnalyzeVideoReferenceRequest:
+      type: object
+      required:
+        - evidence
+        - commercialDiagnosis
+        - sequenceAnalysis
+        - systemLearnings
+        - salesImprovements
+        - operationalDecision
+        - analyzedBy
+      properties:
+        evidence:
+          type: string
+          description: Dados técnicos, origem, duração, formato, ritmo e sinais usados como prova.
+        commercialDiagnosis:
+          type: string
+          description: Papel no funil, promessa, emoção, prova, objeção e potencial de conversão.
+        sequenceAnalysis:
+          type: string
+          description: Quebra por tempo, cortes, viradas, repetição e recompensa visual.
+        systemLearnings:
+          type: string
+          description: Padrões que devem alimentar roteiros, criativos, CTAs e templates.
+        salesImprovements:
+          type: string
+          description: Ações práticas para transformar retenção em clique, cadastro, checkout ou compra.
+        operationalDecision:
+          type: string
+          description: Próximo movimento recomendado para reaproveitar o aprendizado comercial.
+        analyzedBy:
+          type: string
+          description: Responsável pela análise registrada.
     VideoReferenceDto:
       allOf:
         - $ref: "#/components/schemas/CreateVideoReferenceRequest"

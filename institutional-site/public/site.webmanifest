@@ -1,10 +1,10 @@
 {
-  "name": "Marketing Hub",
-  "short_name": "MarketingHub",
+  "name": "Digicom Digital",
+  "short_name": "Digicom",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
   "icons": [
     {
       "src": "/assets/logo.svg",

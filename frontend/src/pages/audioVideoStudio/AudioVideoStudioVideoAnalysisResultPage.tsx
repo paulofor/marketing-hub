@@ -6,10 +6,15 @@ import {
   ExternalLink,
   FileText,
   Lightbulb,
+  Save,
   Target,
 } from "lucide-react";
+import { FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useVideoReference } from "../../api/salesVideo/useVideoReferences";
+import {
+  useAnalyzeVideoReference,
+  useVideoReference,
+} from "../../api/salesVideo/useVideoReferences";
 import type { VideoReference } from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
 import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
@@ -74,6 +79,16 @@ const fallbackStages = [
     icon: BarChart3,
   },
 ];
+
+const initialAnalysisForm = {
+  evidence: "",
+  commercialDiagnosis: "",
+  sequenceAnalysis: "",
+  systemLearnings: "",
+  salesImprovements: "",
+  operationalDecision: "",
+  analyzedBy: "operador@marketinghub.io",
+};
 
 function markdownLines(section?: string | null) {
   if (!section) {
@@ -164,8 +179,24 @@ function getReferenceSummary(reference: VideoReference) {
 export default function AudioVideoStudioVideoAnalysisResultPage() {
   const { referenceId } = useParams();
   const referenceQuery = useVideoReference(referenceId);
+  const analyzeReference = useAnalyzeVideoReference(referenceId);
   const reference = referenceQuery.data;
   const stages = reference ? buildStages(reference) : [];
+  const [analysisForm, setAnalysisForm] = useState(initialAnalysisForm);
+
+  function updateAnalysisField(
+    field: keyof typeof initialAnalysisForm,
+    value: string,
+  ) {
+    setAnalysisForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleAnalysisSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    analyzeReference.mutate(analysisForm, {
+      onSuccess: () => setAnalysisForm(initialAnalysisForm),
+    });
+  }
 
   return (
     <div className="audio-video-studio-page">
@@ -227,6 +258,141 @@ export default function AudioVideoStudioVideoAnalysisResultPage() {
                 <small>{stage.description}</small>
               </article>
             ))}
+          </section>
+
+          <section className="audio-video-studio-page__section">
+            <div className="audio-video-studio-page__section-heading">
+              <div>
+                <h2>Registrar analise comercial</h2>
+                <p>
+                  Transforme a observação do vídeo em aprendizado pronto para
+                  roteiro, criativo, prova e chamada de venda.
+                </p>
+              </div>
+            </div>
+
+            <form
+              className="audio-video-studio-page__analysis-form"
+              onSubmit={handleAnalysisSubmit}
+              aria-label="Registrar analise comercial do video"
+            >
+              <label>
+                Evidencias usadas *
+                <textarea
+                  value={analysisForm.evidence}
+                  onChange={(event) =>
+                    updateAnalysisField("evidence", event.target.value)
+                  }
+                  placeholder="Formato, duração, plataforma, cortes, áudio, sinais de retenção e prova observável."
+                  rows={4}
+                  required
+                />
+              </label>
+
+              <label>
+                Diagnostico comercial *
+                <textarea
+                  value={analysisForm.commercialDiagnosis}
+                  onChange={(event) =>
+                    updateAnalysisField(
+                      "commercialDiagnosis",
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Papel no funil, promessa, tensão, emoção, prova, objeção e potencial de conversão."
+                  rows={4}
+                  required
+                />
+              </label>
+
+              <label>
+                Analise por sequencia *
+                <textarea
+                  value={analysisForm.sequenceAnalysis}
+                  onChange={(event) =>
+                    updateAnalysisField("sequenceAnalysis", event.target.value)
+                  }
+                  placeholder="0s-3s gancho, 4s-12s desenvolvimento, viradas visuais, CTA e fechamento."
+                  rows={4}
+                  required
+                />
+              </label>
+
+              <label>
+                Aprendizados do sistema *
+                <textarea
+                  value={analysisForm.systemLearnings}
+                  onChange={(event) =>
+                    updateAnalysisField("systemLearnings", event.target.value)
+                  }
+                  placeholder="Padrões de gancho, ritmo, prova, promessa, objeções, legenda, câmera e template reutilizável."
+                  rows={4}
+                  required
+                />
+              </label>
+
+              <label>
+                Melhorias para vendas *
+                <textarea
+                  value={analysisForm.salesImprovements}
+                  onChange={(event) =>
+                    updateAnalysisField("salesImprovements", event.target.value)
+                  }
+                  placeholder="Ações para gerar clique, cadastro, checkout, compra, retargeting ou novos testes de criativo."
+                  rows={4}
+                  required
+                />
+              </label>
+
+              <label>
+                Decisao operacional *
+                <textarea
+                  value={analysisForm.operationalDecision}
+                  onChange={(event) =>
+                    updateAnalysisField(
+                      "operationalDecision",
+                      event.target.value,
+                    )
+                  }
+                  placeholder="O que fazer agora com esse aprendizado: novo roteiro, variação, anúncio, landing, CTA ou descarte."
+                  rows={4}
+                  required
+                />
+              </label>
+
+              <label>
+                Responsavel pela analise *
+                <input
+                  value={analysisForm.analyzedBy}
+                  onChange={(event) =>
+                    updateAnalysisField("analyzedBy", event.target.value)
+                  }
+                  required
+                />
+              </label>
+
+              <button
+                className="audio-video-studio-page__primary-action"
+                type="submit"
+                disabled={analyzeReference.isPending}
+              >
+                <Save size={18} aria-hidden="true" />
+                {analyzeReference.isPending
+                  ? "Salvando analise..."
+                  : "Salvar analise"}
+              </button>
+            </form>
+
+            {analyzeReference.isSuccess ? (
+              <p className="audio-video-studio-page__feedback">
+                Analise registrada e aprendizado liberado para uso comercial.
+              </p>
+            ) : null}
+            {analyzeReference.isError ? (
+              <p className="audio-video-studio-page__duration-block">
+                Nao foi possivel registrar a analise agora.
+              </p>
+            ) : null}
           </section>
 
           <section className="audio-video-studio-page__section">

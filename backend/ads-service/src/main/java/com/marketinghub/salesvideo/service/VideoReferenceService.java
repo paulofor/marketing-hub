@@ -2,6 +2,8 @@ package com.marketinghub.salesvideo.service;
 
 import com.marketinghub.repository.jpa.salesvideo.VideoReferenceRepository;
 import com.marketinghub.salesvideo.VideoReference;
+import com.marketinghub.salesvideo.VideoReferenceStatus;
+import com.marketinghub.salesvideo.dto.AnalyzeVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.CreateVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
@@ -13,6 +15,7 @@ import com.marketinghub.storage.AssetUploadCategory;
 import com.marketinghub.storage.AssetUploadContext;
 import com.marketinghub.storage.StorageException;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -68,6 +71,20 @@ public class VideoReferenceService {
             .successEvidence(trimToNull(request.successEvidence()))
             .createdBy(trimToNull(request.createdBy()))
             .build();
+    return toDto(repository.save(reference));
+  }
+
+  /** Registra análise comercial estruturada e libera o aprendizado para a tela de resultado. */
+  @Transactional
+  public VideoReferenceDto analyzeReference(Long referenceId, AnalyzeVideoReferenceRequest request) {
+    VideoReference reference = loadReference(referenceId);
+    reference.setAnalysisNotes(buildAnalysisNotes(reference, request));
+    reference.setStatus(VideoReferenceStatus.ANALYZED);
+    reference.setAnalyzedAt(Instant.now());
+    reference.setCreatedBy(
+        StringUtils.hasText(reference.getCreatedBy())
+            ? reference.getCreatedBy()
+            : trimToNull(request.analyzedBy()));
     return toDto(repository.save(reference));
   }
 
@@ -160,6 +177,46 @@ public class VideoReferenceService {
           VideoModuleErrorCode.BAD_REQUEST, fieldName + " é obrigatório no vídeo de referência");
     }
     return normalized;
+  }
+
+  /** Monta relatório em Markdown para manter compatibilidade com a tela por etapas. */
+  private static String buildAnalysisNotes(
+      VideoReference reference, AnalyzeVideoReferenceRequest request) {
+    return """
+        **Evidencias usadas**
+        %s
+
+        **Diagnostico comercial**
+        %s
+
+        **Analise por sequencia**
+        %s
+
+        **O que o sistema deve aprender desse video**
+        %s
+
+        **Melhorias acionaveis para usar em vendas**
+        %s
+
+        **Alternativas avaliadas**
+        - Proximo movimento: %s
+        1. Analisar manualmente apenas impressões gerais: baixo custo, mas pouco reaproveitavel.
+        2. Esperar automação completa por IA: maior escala futura, mas atrasa o aprendizado comercial imediato.
+        3. Registrar análise estruturada por evidência, funil, sequência, aprendizado e ação: melhor equilíbrio para vender mais agora.
+
+        Escolhi a terceira abordagem porque transforma o vídeo "%s" em padrão reutilizável de criativo, roteiro, prova e CTA.
+
+        Analisado por: %s
+        """
+        .formatted(
+            required(request.evidence(), "Evidências usadas"),
+            required(request.commercialDiagnosis(), "Diagnóstico comercial"),
+            required(request.sequenceAnalysis(), "Análise por sequência"),
+            required(request.systemLearnings(), "Aprendizados do sistema"),
+            required(request.salesImprovements(), "Melhorias acionáveis"),
+            required(request.operationalDecision(), "Decisão operacional"),
+            reference.getTitle(),
+            required(request.analyzedBy(), "Responsável pela análise"));
   }
 
   /** Normaliza strings vazias recebidas do frontend. */

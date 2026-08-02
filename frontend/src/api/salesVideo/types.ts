@@ -487,6 +487,16 @@ export interface VideoReferencePayload {
   createdBy?: string;
 }
 
+export interface AnalyzeVideoReferencePayload {
+  evidence: string;
+  commercialDiagnosis: string;
+  sequenceAnalysis: string;
+  systemLearnings: string;
+  salesImprovements: string;
+  operationalDecision: string;
+  analyzedBy: string;
+}
+
 export interface VideoReferenceUploadPayload {
   title: string;
   file: File;

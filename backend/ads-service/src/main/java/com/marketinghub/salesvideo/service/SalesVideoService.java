@@ -7,6 +7,7 @@ import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.ApproveSalesVideoScriptRequest;
+import com.marketinghub.salesvideo.dto.AnalyzeVideoReferenceRequest;
 import com.marketinghub.salesvideo.dto.CreateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoCommercialPlaybookRequest;
 import com.marketinghub.salesvideo.dto.CreateSalesVideoConversionEventRequest;
@@ -111,6 +112,12 @@ public class SalesVideoService {
   /** Cadastra um vídeo externo na fila de análise do estúdio. */
   public VideoReferenceDto createVideoReference(CreateVideoReferenceRequest request) {
     return videoReferenceService.createReference(request);
+  }
+
+  /** Registra a análise comercial estruturada de um vídeo externo. */
+  public VideoReferenceDto analyzeVideoReference(
+      Long referenceId, AnalyzeVideoReferenceRequest request) {
+    return videoReferenceService.analyzeReference(referenceId, request);
   }
 
   /** Recebe upload de vídeo do usuário e cadastra na fila de análise do estúdio. */

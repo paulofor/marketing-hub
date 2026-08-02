@@ -1,0 +1,198 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-02-winning-ads-library-pilot-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: winning_ad
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE winning_ad (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                product_slug VARCHAR(191) NOT NULL,
+                product_name VARCHAR(191) NOT NULL,
+                niche VARCHAR(255) NOT NULL,
+                funnel_stage VARCHAR(64) NOT NULL,
+                channel VARCHAR(64) NOT NULL,
+                format VARCHAR(64) NOT NULL,
+                winning_status VARCHAR(64) NOT NULL,
+                score INT NOT NULL,
+                hook LONGTEXT NOT NULL,
+                primary_text LONGTEXT NOT NULL,
+                creative_brief LONGTEXT NOT NULL,
+                offer_angle LONGTEXT NOT NULL,
+                proof_signal LONGTEXT NOT NULL,
+                metric_snapshot LONGTEXT NOT NULL,
+                learning LONGTEXT NOT NULL,
+                next_action LONGTEXT NOT NULL,
+                source_reference VARCHAR(255) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                KEY idx_winning_ad_product_slug (product_slug),
+                KEY idx_winning_ad_score (score)
+              );
+  - changeSet:
+      id: 2026-08-02-winning-ads-library-pilot-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: winning_ad
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO winning_ad (
+                product_slug,
+                product_name,
+                niche,
+                funnel_stage,
+                channel,
+                format,
+                winning_status,
+                score,
+                hook,
+                primary_text,
+                creative_brief,
+                offer_angle,
+                proof_signal,
+                metric_snapshot,
+                learning,
+                next_action,
+                source_reference,
+                created_at,
+                updated_at
+              )
+              SELECT
+                'costure-e-venda',
+                'Costure e Venda',
+                'Costureiras autônomas que sabem costurar, mas ainda vendem por indicação, conversa solta e pedido improvisado.',
+                'AQUISICAO',
+                'META_ADS',
+                'CARROSSEL',
+                'PILOTO',
+                94,
+                'Sua costura está boa, mas seus pedidos ainda chegam no improviso?',
+                'Se você costura bem, mas depende de indicação, mensagem solta e orçamento feito na pressa, o problema talvez não seja sua técnica. É falta de um mini processo para transformar interesse em pedido. O Costure e Venda organiza fotos, mensagens, preço de entrada e resposta para cliente indecisa sem virar uma aula longa de marketing.',
+                'Carrossel em 5 telas: WhatsApp cheio de pergunta sem fechamento; peça pronta fotografada de forma simples; tabela de modelos e preços de entrada; mensagem pronta de orçamento; agenda com pedidos confirmados.',
+                'Vender mais peças sob encomenda com um processo simples de apresentação, resposta e fechamento.',
+                'Mostra a ponte entre peça pronta, mensagem profissional e pedido confirmado, sem prometer agenda cheia.',
+                'Piloto curado sem métrica real publicada. Meta inicial: CTR acima de 1,2%, CPC aceitável e comentários de reconhecimento da dor.',
+                'O melhor primeiro anúncio não deve falar “ganhe dinheiro com costura”; deve mostrar a dor concreta de costurar bem e perder venda por improviso comercial.',
+                'Testar como carrossel Meta Ads em tráfego frio amplo para mulheres interessadas em costura, corte e costura, moda autoral e renda extra manual.',
+                'piloto-costure-e-venda',
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM winning_ad
+                 WHERE product_slug = 'costure-e-venda'
+                   AND hook = 'Sua costura está boa, mas seus pedidos ainda chegam no improviso?'
+              );
+              INSERT INTO winning_ad (
+                product_slug,
+                product_name,
+                niche,
+                funnel_stage,
+                channel,
+                format,
+                winning_status,
+                score,
+                hook,
+                primary_text,
+                creative_brief,
+                offer_angle,
+                proof_signal,
+                metric_snapshot,
+                learning,
+                next_action,
+                source_reference,
+                created_at,
+                updated_at
+              )
+              SELECT
+                'costure-e-venda',
+                'Costure e Venda',
+                'Costureiras autônomas que querem transformar habilidade manual em pedidos recorrentes.',
+                'AQUISICAO',
+                'META_ADS',
+                'REELS_CURTO',
+                'PILOTO',
+                91,
+                'Antes de postar outra foto da peça pronta, organize esta resposta.',
+                'A cliente pergunta preço, você responde no impulso, ela some e a peça fica só como elogio. O Costure e Venda entrega um roteiro simples para responder com clareza, mostrar opções e conduzir o próximo passo sem parecer insistente.',
+                'Vídeo vertical de 20 segundos com tela dividida: de um lado conversa travada no WhatsApp; do outro uma resposta estruturada com opções, prazo e chamada para confirmar medida/modelo.',
+                'Transformar conversa curiosa em próximo passo claro.',
+                'Prova visual da mensagem pronta aplicada em uma conversa realista de orçamento.',
+                'Piloto curado sem métrica real publicada. Meta inicial: taxa de retenção de 3 segundos acima de 35% e cliques qualificados para a página.',
+                'O anúncio precisa vender alívio imediato: parar de responder preço no improviso e conduzir a cliente sem desconforto.',
+                'Testar como Reels curto com legenda grande e primeira cena reconhecível no WhatsApp.',
+                'piloto-costure-e-venda',
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM winning_ad
+                 WHERE product_slug = 'costure-e-venda'
+                   AND hook = 'Antes de postar outra foto da peça pronta, organize esta resposta.'
+              );
+              INSERT INTO winning_ad (
+                product_slug,
+                product_name,
+                niche,
+                funnel_stage,
+                channel,
+                format,
+                winning_status,
+                score,
+                hook,
+                primary_text,
+                creative_brief,
+                offer_angle,
+                proof_signal,
+                metric_snapshot,
+                learning,
+                next_action,
+                source_reference,
+                created_at,
+                updated_at
+              )
+              SELECT
+                'costure-e-venda',
+                'Costure e Venda',
+                'Mulheres que costuram para vender e precisam apresentar produto, preço e prazo com mais segurança.',
+                'RETARGETING',
+                'META_ADS',
+                'IMAGEM_UNICA',
+                'PILOTO',
+                88,
+                'O cliente não compra só a peça. Ele compra clareza para pedir sem medo.',
+                'Quando a apresentação está confusa, a cliente adia, pede desconto ou desaparece. Com uma vitrine simples, mensagens prontas e regras claras, a costureira reduz esforço na conversa e aumenta a chance de transformar interesse em encomenda.',
+                'Imagem de mesa de costura organizada com celular aberto em uma mensagem de orçamento, três cartões de modelos e uma peça finalizada ao lado.',
+                'Aumentar confiança percebida na compra sob encomenda.',
+                'Mostra organização, modelos e resposta pronta como sinais de profissionalismo.',
+                'Piloto curado sem métrica real publicada. Meta inicial: recuperar visitantes da página com CPC menor que o tráfego frio e maior taxa de checkout iniciado.',
+                'No retargeting, a objeção principal é confiança e clareza; a peça criativa deve reduzir risco percebido, não repetir a dor inicial.',
+                'Usar para público que visitou a página ou engajou com vídeo/carrossel do piloto.',
+                'piloto-costure-e-venda',
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM winning_ad
+                 WHERE product_slug = 'costure-e-venda'
+                   AND hook = 'O cliente não compra só a peça. Ele compra clareza para pedir sem medo.'
+              );

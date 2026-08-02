@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import {
+  AnalyzeVideoReferencePayload,
   VideoReference,
   VideoReferencePayload,
   VideoReferenceUploadPayload,
@@ -72,6 +73,25 @@ export function useCreateVideoReference() {
       return data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales-video-references"] });
+    },
+  });
+}
+
+export function useAnalyzeVideoReference(referenceId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: AnalyzeVideoReferencePayload) => {
+      const { data } = await axios.patch<VideoReference>(
+        `/api/sales-videos/reference-videos/${referenceId}/analysis`,
+        payload,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["sales-video-reference", referenceId],
+      });
       queryClient.invalidateQueries({ queryKey: ["sales-video-references"] });
     },
   });

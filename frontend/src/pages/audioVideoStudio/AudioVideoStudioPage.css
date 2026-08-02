@@ -180,7 +180,32 @@
 
 .audio-video-studio-page__stage-card--estrategia {
   border-color: #b4235b;
+  background: #fff5f8;
   box-shadow: inset 4px 0 0 #b4235b;
+}
+
+.audio-video-studio-page__stage-card--estrategia
+  .audio-video-studio-page__stage-card-header
+  span {
+  background: #b4235b;
+  color: #ffffff;
+}
+
+.audio-video-studio-page__stage-card--estrategia
+  .audio-video-studio-page__stage-card-header
+  svg,
+.audio-video-studio-page__stage-card--estrategia
+  .audio-video-studio-page__stage-link {
+  color: #b4235b;
+}
+
+.audio-video-studio-page__stage-card--estrategia h3,
+.audio-video-studio-page__stage-card--estrategia small {
+  color: #7a1638;
+}
+
+.audio-video-studio-page__stage-card--estrategia p {
+  color: #5f263d;
 }
 
 .audio-video-studio-page__stage-card-header {
@@ -828,6 +853,41 @@
   min-height: 300px;
 }
 
+.audio-video-studio-page__analysis-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.audio-video-studio-page__analysis-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: #334155;
+  font-weight: 800;
+}
+
+.audio-video-studio-page__analysis-form input,
+.audio-video-studio-page__analysis-form textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0.75rem;
+  font: inherit;
+  font-weight: 600;
+}
+
+.audio-video-studio-page__analysis-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.audio-video-studio-page__analysis-form
+  .audio-video-studio-page__primary-action {
+  align-self: end;
+}
+
 .audio-video-studio-page__analysis-list {
   display: grid;
   gap: 0.55rem;
@@ -986,6 +1046,7 @@
   .audio-video-studio-page__workspace,
   .audio-video-studio-page__columns,
   .audio-video-studio-page__reference-form,
+  .audio-video-studio-page__analysis-form,
   .audio-video-studio-page__render-card {
     grid-template-columns: 1fr;
   }

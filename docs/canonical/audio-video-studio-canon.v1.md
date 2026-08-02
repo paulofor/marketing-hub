@@ -143,6 +143,19 @@ storyboards, cortes e criterios de revisao comercial. Videos de referencia nao d
 misturados com assets produzidos em experimentos, porque a finalidade e diferente: referencia
 externa para aprendizado versus ativo interno de campanha.
 
+Cada video de referencia deve possuir tela propria de **resultado da analise**, acessivel pela
+fila, organizada em etapas semelhantes ao Studio principal:
+
+- evidencias usadas;
+- diagnostico comercial;
+- analise por sequencia/frame-chave;
+- aprendizados que o sistema deve reaproveitar;
+- melhorias acionaveis para vendas;
+- decisao operacional e proximo movimento.
+
+O resultado deve ser ligado ao video de referencia e exposto pelo backend, para que o frontend
+mostre relatorio auditavel sem depender de logs tecnicos ou recomputacao local.
+
 ## Etapas premium de producao com IA
 
 A tela do Estudio de Audio e Video deve organizar projetos premium pelas seguintes etapas operacionais:

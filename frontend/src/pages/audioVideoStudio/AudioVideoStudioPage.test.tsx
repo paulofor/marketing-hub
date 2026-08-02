@@ -136,4 +136,16 @@ describe("AudioVideoStudioPage", () => {
       "heroVideos da v7",
     );
   });
+
+  it("destaca a etapa inicial com classe de cor propria", async () => {
+    setup();
+
+    const estrategiaStage = await screen.findByRole("link", {
+      name: /oferta e funil/i,
+    });
+
+    expect(estrategiaStage).toHaveClass(
+      "audio-video-studio-page__stage-card--estrategia",
+    );
+  });
 });

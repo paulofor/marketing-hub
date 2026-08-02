@@ -110,4 +110,27 @@ class VideoReferenceServiceTest {
     assertThat(captor.getValue().getSourcePlatform()).isEqualTo("Upload");
     assertThat(result.id()).isEqualTo(42L);
   }
+
+  /** Consulta vídeo de referência preservando isolamento do tenant atual. */
+  @Test
+  void shouldGetVideoReferenceForCurrentTenant() {
+    VideoReference reference =
+        VideoReference.builder()
+            .tenantId("tenant-musa")
+            .title("Tik Tok Flavio")
+            .sourceUrl("https://cdn.example/tiktok-flavio.mp4")
+            .primaryLearningGoal("Aprender ritmo e gancho.")
+            .analysisNotes("**Diagnóstico comercial**\n- Criativo de topo de funil.")
+            .status(VideoReferenceStatus.ANALYZED)
+            .build();
+    reference.setId(43L);
+    given(repository.findById(43L)).willReturn(java.util.Optional.of(reference));
+
+    VideoReferenceDto result = service.getReference(43L);
+
+    assertThat(result.id()).isEqualTo(43L);
+    assertThat(result.title()).isEqualTo("Tik Tok Flavio");
+    assertThat(result.analysisNotes()).contains("Diagnóstico comercial");
+    assertThat(result.status()).isEqualTo(VideoReferenceStatus.ANALYZED);
+  }
 }

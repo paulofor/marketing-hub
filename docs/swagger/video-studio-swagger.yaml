@@ -102,11 +102,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VideoReferenceDto"
+  /api/sales-videos/reference-videos/{referenceId}:
+    get:
+      tags: [VideoStudio]
+      summary: Consulta vídeo externo enviado para análise comercial.
+      parameters:
+        - $ref: "#/components/parameters/ReferenceId"
+      responses:
+        "200":
+          description: Vídeo de referência encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoReferenceDto"
 components:
   parameters:
     ProjectId:
       in: path
       name: projectId
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ReferenceId:
+      in: path
+      name: referenceId
       required: true
       schema:
         type: integer

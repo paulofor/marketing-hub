@@ -53,6 +53,7 @@ flowchart TD
     root --> audio_video_studio("/audio-video-studio")
     audio_video_studio --> audio_video_studio_projects("/audio-video-studio/projects")
     audio_video_studio --> audio_video_studio_videos_analysis("/audio-video-studio/videos-analysis - fila de videos de referencia")
+    audio_video_studio_videos_analysis --> audio_video_studio_video_analysis_result("/audio-video-studio/videos-analysis/:referenceId/results - resultado por etapas")
 ```
 
 The `*` route not shown above renders a simple `Início` placeholder.

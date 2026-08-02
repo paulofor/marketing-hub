@@ -103,6 +103,11 @@ public class SalesVideoService {
     return videoReferenceService.listReferences();
   }
 
+  /** Consulta um vídeo externo enviado para análise e aprendizado comercial. */
+  public VideoReferenceDto getVideoReference(Long referenceId) {
+    return videoReferenceService.getReference(referenceId);
+  }
+
   /** Cadastra um vídeo externo na fila de análise do estúdio. */
   public VideoReferenceDto createVideoReference(CreateVideoReferenceRequest request) {
     return videoReferenceService.createReference(request);

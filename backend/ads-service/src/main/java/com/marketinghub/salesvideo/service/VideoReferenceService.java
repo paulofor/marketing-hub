@@ -46,6 +46,12 @@ public class VideoReferenceService {
         .toList();
   }
 
+  /** Consulta um vídeo de referência garantindo isolamento por tenant. */
+  @Transactional(readOnly = true)
+  public VideoReferenceDto getReference(Long referenceId) {
+    return toDto(loadReference(referenceId));
+  }
+
   /** Cadastra um vídeo externo para entrar na fila de análise do estúdio. */
   @Transactional
   public VideoReferenceDto createReference(CreateVideoReferenceRequest request) {
@@ -125,6 +131,25 @@ public class VideoReferenceService {
         reference.getAnalyzedAt(),
         reference.getCreatedAt(),
         reference.getUpdatedAt());
+  }
+
+  /** Carrega um vídeo de referência garantindo isolamento por tenant. */
+  private VideoReference loadReference(Long referenceId) {
+    String tenantId = TenantContextHolder.requireTenant();
+    VideoReference reference =
+        repository
+            .findById(referenceId)
+            .orElseThrow(
+                () ->
+                    VideoModuleException.notFound(
+                        VideoModuleErrorCode.PROFILE_NOT_FOUND,
+                        "Vídeo de referência não encontrado: " + referenceId));
+    if (!tenantId.equals(reference.getTenantId())) {
+      throw VideoModuleException.notFound(
+          VideoModuleErrorCode.PROFILE_NOT_FOUND,
+          "Vídeo de referência não encontrado: " + referenceId);
+    }
+    return reference;
   }
 
   /** Normaliza texto obrigatório para gravação segura. */

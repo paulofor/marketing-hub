@@ -111,6 +111,12 @@ public class SalesVideoController {
     return salesVideoService.listVideoReferences();
   }
 
+  /** Consulta um vídeo externo enviado para análise e aprendizado comercial. */
+  @GetMapping("/api/sales-videos/reference-videos/{referenceId}")
+  public VideoReferenceDto getVideoReference(@PathVariable Long referenceId) {
+    return salesVideoService.getVideoReference(referenceId);
+  }
+
   /** Cadastra um vídeo externo na fila de análise do estúdio. */
   @PostMapping("/api/sales-videos/reference-videos")
   @ResponseStatus(HttpStatus.CREATED)

@@ -137,9 +137,11 @@ O workflow `CI – Lead Portal Payments Service` (`.github/workflows/lead-portal
 
 1. **Testes** – roda `mvn test` com Java 21.
 2. **Build da imagem** – monta a imagem multi-stage e publica no GitHub Container Registry (`ghcr.io/<owner>/lead-portal-payments-service`) com tags `latest` e o SHA do commit, reaproveitando cache remoto.
-3. **Deploy** – apenas em pushes para `main`, o GitHub Actions acessa o VPS `163.245.200.7`, cria um backup remoto de `docker/proxy/html`, sincroniza este diretório via `rsync`, instala Docker/Compose quando necessário, força o login no GHCR, garante que a network Docker (`public-net` por padrão) exista, aplica `docker compose -f docker-compose.deploy.yml up -d --remove-orphans` e finaliza com `docker image prune -af` para remover imagens antigas. O compose de deploy é autônomo e usa somente a imagem publicada, sem herdar o `build` do compose local.
+3. **Deploy** – no disparo manual padrão, o GitHub Actions acessa o VPS canônico do Clube MUSA (`163.245.200.7`), cria um backup remoto de `docker/proxy/html`, sincroniza este diretório via `rsync`, instala Docker/Compose quando necessário, força o login no GHCR, garante que a network Docker (`public-net` por padrão) exista, aplica `docker compose -f docker-compose.deploy.yml up -d --remove-orphans` e finaliza com `docker image prune -af`. Quando `issue_digicomdigital_certificate=true`, o workflow publica o mesmo proxy no host institucional `191.252.102.54`, que recebe o DNS de `digicomdigital.com.br`, antes de emitir o certificado. O compose de deploy é autônomo e usa somente a imagem publicada, sem herdar o `build` do compose local.
 
 Depois que o DNS de `clubemusa.com.br` e subdomínios versionados apontar para `163.245.200.7`, execute o workflow manualmente com `issue_clubemusa_certificate=true` para emitir/renovar o certificado Let's Encrypt do Clube MUSA e recriar o proxy.
+
+Para publicar o site institucional, confirme que `digicomdigital.com.br` e `www.digicomdigital.com.br` apontam para `191.252.102.54` e execute o workflow manualmente com `issue_digicomdigital_certificate=true`. Esse modo seleciona o host institucional, publica a rota do domínio, emite o certificado Let's Encrypt e recria o proxy sem deslocar o deploy canônico do Clube MUSA.
 
 O `rsync` continua usando `--delete` para manter o serviço limpo, mas protege contra deleção os ativos comerciais públicos gerados pelo Marketing Hub antes de entrarem no `main`:
 

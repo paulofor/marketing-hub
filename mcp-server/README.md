@@ -58,7 +58,7 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 
 - `MCP_LOG_BACKEND_PATH` (default `http://191.252.210.83:4567/worker-observability/logfile`);
 - `MCP_LOG_AI_WORKER_PATH` (default `http://191.252.210.83:4567/worker-observability/logfile`);
-- `MCP_LOG_LEAD_PORTAL_PATH` (default `http://191.252.120.96:8082/public/runtime-logs/tail?lines=300`);
+- `MCP_LOG_LEAD_PORTAL_PATH` (default `https://oportunidadebrasil.shop/api/ops-lp-observability-v2/logfile`);
 - `MCP_LOG_FACEBOOK_ADS_PATH` (default `http://191.252.210.83:8082/public/runtime-logs/tail?lines=300`);
 - `MCP_LOG_EMAIL_SERVICE_PATH` (default `http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log`);
 - `MCP_LOG_LEAD_PORTAL_PAYMENT_PATH` (default `http://163.245.200.7:8092/api/v1/logs/runtime?lines=200`);

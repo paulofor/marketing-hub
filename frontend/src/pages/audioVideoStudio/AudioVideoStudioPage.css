@@ -180,7 +180,32 @@
 
 .audio-video-studio-page__stage-card--estrategia {
   border-color: #b4235b;
+  background: #fff5f8;
   box-shadow: inset 4px 0 0 #b4235b;
+}
+
+.audio-video-studio-page__stage-card--estrategia
+  .audio-video-studio-page__stage-card-header
+  span {
+  background: #b4235b;
+  color: #ffffff;
+}
+
+.audio-video-studio-page__stage-card--estrategia
+  .audio-video-studio-page__stage-card-header
+  svg,
+.audio-video-studio-page__stage-card--estrategia
+  .audio-video-studio-page__stage-link {
+  color: #b4235b;
+}
+
+.audio-video-studio-page__stage-card--estrategia h3,
+.audio-video-studio-page__stage-card--estrategia small {
+  color: #7a1638;
+}
+
+.audio-video-studio-page__stage-card--estrategia p {
+  color: #5f263d;
 }
 
 .audio-video-studio-page__stage-card-header {

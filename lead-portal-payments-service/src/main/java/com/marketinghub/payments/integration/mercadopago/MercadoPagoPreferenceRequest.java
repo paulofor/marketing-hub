@@ -12,7 +12,8 @@ public record MercadoPagoPreferenceRequest(
         Map<String, Object> metadata,
         @JsonProperty("notification_url") String notificationUrl,
         @JsonProperty("external_reference") String externalReference,
-        @JsonProperty("statement_descriptor") String statementDescriptor
+        @JsonProperty("statement_descriptor") String statementDescriptor,
+        @JsonProperty("auto_return") String autoReturn
 ) {
 
     public record Item(

@@ -24,6 +24,9 @@ public class DigitalProductEmailDeliveryProperties {
     private String experiment66DeliveryPageUrl = "https://pagamentopalf.site/obrigado-exp66-metodo-musa.html";
     private String experiment66DownloadUrl =
             "https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip";
+    private String agendaCheiaReference = "agenda-cheia-nail-design";
+    private String agendaCheiaProductName = "Agenda Cheia Nail Design";
+    private String agendaCheiaDeliveryPageUrl = "https://pagamentopalf.site/agenda-cheia/obrigado.html";
 
     /** Indica se o envio automático está ativo. */
     public boolean isEnabled() {
@@ -154,4 +157,22 @@ public class DigitalProductEmailDeliveryProperties {
     public void setExperiment66DownloadUrl(String experiment66DownloadUrl) {
         this.experiment66DownloadUrl = experiment66DownloadUrl;
     }
+
+    /** Retorna a referência usada pelo checkout do Agenda Cheia. */
+    public String getAgendaCheiaReference() { return agendaCheiaReference; }
+
+    /** Define a referência usada pelo checkout do Agenda Cheia. */
+    public void setAgendaCheiaReference(String value) { agendaCheiaReference = value; }
+
+    /** Retorna o nome comercial do Agenda Cheia. */
+    public String getAgendaCheiaProductName() { return agendaCheiaProductName; }
+
+    /** Define o nome comercial do Agenda Cheia. */
+    public void setAgendaCheiaProductName(String value) { agendaCheiaProductName = value; }
+
+    /** Retorna a página pública do briefing pós-compra. */
+    public String getAgendaCheiaDeliveryPageUrl() { return agendaCheiaDeliveryPageUrl; }
+
+    /** Define a página pública do briefing pós-compra. */
+    public void setAgendaCheiaDeliveryPageUrl(String value) { agendaCheiaDeliveryPageUrl = value; }
 }

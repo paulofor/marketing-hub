@@ -9,6 +9,7 @@ import com.marketinghub.payments.config.MercadoPagoProperties;
 import com.marketinghub.payments.dto.TemporaryCheckoutRequest;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoClient;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceResponse;
+import com.marketinghub.payments.integration.mercadopago.MercadoPagoPreferenceRequest;
 import com.marketinghub.payments.model.TemporaryCheckout;
 import com.marketinghub.payments.repository.TemporaryCheckoutRepository;
 import java.math.BigDecimal;
@@ -44,6 +45,11 @@ class TemporaryCheckoutServiceTest {
         assertThat(response.status()).isEqualTo("ACTIVE");
         assertThat(response.redirectUrl()).endsWith("/agenda-cheia-nail-design/redirect");
         assertThat(response.commercialCheckoutUrl()).contains("commercial");
+        var requestCaptor = org.mockito.ArgumentCaptor.forClass(MercadoPagoPreferenceRequest.class);
+        verify(mercadoPagoClient).createPreference(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().autoReturn()).isEqualTo("approved");
+        assertThat(requestCaptor.getValue().backUrls().success())
+                .isEqualTo("https://pagamentopalf.site/agenda-cheia/obrigado.html");
         verify(repository).save(any(TemporaryCheckout.class));
     }
 

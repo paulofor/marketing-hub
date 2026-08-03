@@ -116,3 +116,19 @@ CREATE TABLE IF NOT EXISTS temporary_checkout (
     expires_at TIMESTAMP NOT NULL,
     restored_at TIMESTAMP NULL
 );
+
+CREATE TABLE IF NOT EXISTS agenda_cheia_briefing (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    payment_id VARCHAR(100) NOT NULL UNIQUE,
+    buyer_email VARCHAR(320) NOT NULL,
+    professional_name VARCHAR(180) NOT NULL,
+    city_region VARCHAR(180) NOT NULL,
+    whatsapp VARCHAR(40) NOT NULL,
+    services CLOB NOT NULL,
+    visual_style VARCHAR(120) NOT NULL,
+    preferred_colors VARCHAR(180),
+    weekly_goal VARCHAR(180) NOT NULL,
+    notes CLOB,
+    status VARCHAR(40) NOT NULL,
+    submitted_at TIMESTAMP NOT NULL
+);

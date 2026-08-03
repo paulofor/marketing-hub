@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pagamento aprovado | Agenda Cheia Nail Design</title>
+    <style>
+      *{box-sizing:border-box}body{margin:0;background:#fff8f7;color:#321e27;font:16px/1.5 system-ui,sans-serif}.wrap{max-width:720px;margin:auto;padding:28px 18px 60px}.card{background:#fff;border:1px solid #ead9df;border-radius:22px;padding:26px;box-shadow:0 12px 40px #5e183018}h1{font-size:clamp(28px,7vw,44px);line-height:1.08;margin:8px 0 12px}.ok{color:#8d244c;font-weight:800}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}label{display:grid;gap:6px;font-weight:700;margin-top:14px}input,textarea,select{width:100%;padding:13px;border:1px solid #cdb8c0;border-radius:10px;font:inherit}textarea{min-height:92px}button{width:100%;margin-top:22px;padding:15px;border:0;border-radius:12px;background:#8d244c;color:#fff;font-weight:800;font-size:17px}.message{padding:13px;border-radius:10px;background:#f7e9ee;margin:16px 0}.hidden{display:none}@media(max-width:600px){.grid{grid-template-columns:1fr}.card{padding:20px}}
+    </style>
+  </head>
+  <body>
+    <main class="wrap"><section class="card">
+      <div class="ok">✓ Pagamento recebido</div>
+      <h1>Agora vamos personalizar seu kit.</h1>
+      <p>Responda o briefing abaixo. O prazo de até 3 dias úteis começa quando recebermos todas as informações.</p>
+      <div id="message" class="message">Confirmando seu pagamento…</div>
+      <form id="briefing" class="hidden">
+        <div class="grid"><label>E-mail<input name="buyerEmail" type="email" required /></label><label>Nome profissional ou do espaço<input name="professionalName" required maxlength="180" /></label></div>
+        <div class="grid"><label>Cidade ou região<input name="cityRegion" required maxlength="180" /></label><label>WhatsApp<input name="whatsapp" required maxlength="40" /></label></div>
+        <label>Quais serviços você oferece?<textarea name="services" required maxlength="2000"></textarea></label>
+        <div class="grid"><label>Estilo visual<select name="visualStyle" required><option value="">Escolha</option><option>Clean e elegante</option><option>Luxo e sofisticado</option><option>Delicado e feminino</option><option>Moderno e marcante</option><option>Colorido e divertido</option></select></label><label>Cores preferidas<input name="preferredColors" maxlength="180" /></label></div>
+        <label>Qual é seu objetivo principal nesta semana?<select name="weeklyGoal" required><option value="">Escolha</option><option>Divulgar agenda aberta</option><option>Preencher horários vagos</option><option>Trazer clientes antigas de volta</option><option>Divulgar um serviço específico</option><option>Gerar indicações</option></select></label>
+        <label>Observações, promoções ou dias disponíveis<textarea name="notes" maxlength="2000"></textarea></label>
+        <button type="submit">Enviar briefing e iniciar meu kit</button>
+      </form>
+    </section></main>
+    <script src="/agenda-cheia/obrigado.js" defer></script>
+  </body>
+</html>

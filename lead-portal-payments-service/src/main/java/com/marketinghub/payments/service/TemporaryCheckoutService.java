@@ -54,13 +54,14 @@ public class TemporaryCheckoutService {
                         request.productName() + " - Compra teste", 1, request.testAmount(), "BRL")),
                 null,
                 new MercadoPagoPreferenceRequest.BackUrls(
-                        mercadoPagoProperties.getSuccessUrl(),
+                        publicBaseUrl + "/agenda-cheia/obrigado.html",
                         mercadoPagoProperties.getFailureUrl(),
                         mercadoPagoProperties.getPendingUrl()),
                 Map.of("productKey", productKey, "checkoutMode", "temporary_test"),
                 mercadoPagoProperties.getNotificationUrl(),
                 productKey,
-                mercadoPagoProperties.getStatementDescriptor());
+                mercadoPagoProperties.getStatementDescriptor(),
+                "approved");
         MercadoPagoPreferenceResponse created = mercadoPagoClient.createPreference(preference);
         if (created == null || !StringUtils.hasText(created.initPoint())) {
             throw new IllegalStateException("Mercado Pago não retornou o checkout temporário");

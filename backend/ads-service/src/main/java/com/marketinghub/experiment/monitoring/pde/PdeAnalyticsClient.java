@@ -11,6 +11,12 @@ public interface PdeAnalyticsClient {
     return fetchSummary(productSlug);
   }
 
+  /** Busca o resumo limitado à versão exata ligada ao experimento. */
+  default PdeAnalyticsSummary fetchSummary(
+      String productSlug, String publicBaseUrl, String experienceVersion) {
+    return fetchSummary(productSlug, publicBaseUrl);
+  }
+
   /** Busca o resumo incluindo tráfego técnico para experimentos fake de diagnóstico. */
   default PdeAnalyticsSummary fetchSummaryIncludingNonHumanTraffic(
       String productSlug, String publicBaseUrl) {

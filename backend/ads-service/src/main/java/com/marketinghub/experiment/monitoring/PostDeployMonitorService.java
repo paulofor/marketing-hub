@@ -250,7 +250,9 @@ public class PostDeployMonitorService {
       boolean campaignTrafficActive,
       List<String> attributionCodes) {
     try {
-      PdeAnalyticsSummary summary = pdeAnalyticsClient.fetchSummary(productSlug, monitoredPublicUrl);
+      PdeAnalyticsSummary summary =
+          pdeAnalyticsClient.fetchSummary(
+              productSlug, monitoredPublicUrl, monitoredExperienceVersion);
       return toPdeSummary(summary, monitoredExperienceVersion, campaignTrafficActive, attributionCodes);
     } catch (Exception ex) {
       log.error(

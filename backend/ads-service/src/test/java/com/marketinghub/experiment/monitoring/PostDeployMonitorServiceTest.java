@@ -82,7 +82,7 @@ class PostDeployMonitorServiceTest {
     when(campaignMetricRepository.findByExperiment(experiment))
         .thenReturn(Optional.of(metric("25.00", null)));
     when(apiLogService.findLogs(67L, 50)).thenReturn(List.of());
-    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any()))
+    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any(), any()))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -182,7 +182,7 @@ class PostDeployMonitorServiceTest {
     when(campaignMetricRepository.findByExperiment(experiment))
         .thenReturn(Optional.of(metric("12.00", null)));
     when(apiLogService.findLogs(67L, 50)).thenReturn(List.of());
-    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any()))
+    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any(), any()))
         .thenThrow(new IllegalStateException("offline"));
 
     var response = service.summarize(67L, "metodo-musa-7-dias");
@@ -200,7 +200,7 @@ class PostDeployMonitorServiceTest {
     when(campaignMetricRepository.findByExperiment(experiment))
         .thenReturn(Optional.of(metric("8.00", null)));
     when(apiLogService.findLogs(67L, 50)).thenReturn(List.of(successLog()));
-    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any()))
+    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any(), any()))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -249,7 +249,9 @@ class PostDeployMonitorServiceTest {
                 productionSlotDto("v5", "musa-pde-entry-v5-video-explicativo", 74L),
                 productionSlotDto("v6", "musa-pde-entry-v6-video-motivacional", 76L)));
     when(pdeAnalyticsClient.fetchSummary(
-            eq("metodo-musa-7-dias"), eq("https://v6.clubemusa.com.br")))
+            eq("metodo-musa-7-dias"),
+            eq("https://v6.clubemusa.com.br"),
+            eq("musa-pde-entry-v6-video-motivacional")))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -331,7 +333,10 @@ class PostDeployMonitorServiceTest {
     assertThat(response.pdeBuildIdentity().branch()).isEqualTo("main");
     assertThat(response.pdeBuildIdentity().backendUrl()).isEqualTo("http://163.245.200.7:8096");
     verify(pdeAnalyticsClient)
-        .fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");
+        .fetchSummary(
+            "metodo-musa-7-dias",
+            "https://v6.clubemusa.com.br",
+            "musa-pde-entry-v6-video-motivacional");
   }
 
   /** Mantém eventos PDE pré-campanha fora da decisão comercial quando a Meta ainda não entregou. */
@@ -343,7 +348,7 @@ class PostDeployMonitorServiceTest {
     when(apiLogService.findLogs(76L, 50)).thenReturn(List.of());
     when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
         .thenReturn(List.of(productionSlotDto("v6", "musa-pde-entry-v6-video-motivacional", 76L)));
-    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any()))
+    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any(), any()))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -416,7 +421,9 @@ class PostDeployMonitorServiceTest {
             eq(77L)))
         .thenReturn(List.of("120250742286340326"));
     when(pdeAnalyticsClient.fetchSummary(
-            eq("metodo-musa-7-dias"), eq("https://v6.clubemusa.com.br")))
+            eq("metodo-musa-7-dias"),
+            eq("https://v6.clubemusa.com.br"),
+            eq("musa-pde-entry-v6-video-motivacional")))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",

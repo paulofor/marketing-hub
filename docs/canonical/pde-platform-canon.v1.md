@@ -220,6 +220,8 @@ O modelo AIDA pode ser usado como apoio psicológico dentro de cada estágio, ma
 4. **Conversão comercial**: paywall, clique de assinatura, checkout e compra transformam intenção em receita.
 5. **Validação pós-compra**: acesso liberado, primeiro uso, missão concluída e materiais abertos confirmam que a promessa vendida começou a ser aplicada.
 
+Cada evento comercial e cada consulta administrativa de analytics deve preservar `experienceVersion`. Quando um experimento estiver ligado a um slot produtivo, o monitor deve consultar a versão exata do slot e não pode somar sessões, eventos, origens ou jornadas de outras versões do mesmo produto. A jornada guiada também deve medir `MISSION_FEEDBACK_SUBMITTED` após a conclusão das missões, com percepção de utilidade, facilidade e aplicabilidade, e `JOURNEY_COMPLETED` ao concluir o plano inteiro.
+
 O contrato `persuasiveJourney` publicado pelo Marketing Hub deve declarar esses estágios de forma versionada, com função comercial, mudança esperada no usuário, seções/eventos rastreados, métrica principal e regra de otimização quando o estágio quebrar. O relatório do experimento deve usar essa jornada para responder em qual estágio a pessoa perdeu confiança, desejo ou disposição de pagar.
 
 ### Analytics obrigatório para campanhas PDE

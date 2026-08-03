@@ -98,15 +98,41 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
    */
   @Override
   public PdeAnalyticsSummary fetchSummary(String productSlug, String publicBaseUrl) {
+    return fetchSummary(productSlug, publicBaseUrl, null);
+  }
+
+  /** Consulta métricas da versão informada para impedir mistura entre slots do mesmo produto. */
+  @Override
+  public PdeAnalyticsSummary fetchSummary(
+      String productSlug, String publicBaseUrl, String experienceVersion) {
     if (publicBaseUrl == null || publicBaseUrl.isBlank()) {
-      return fetchSummary(productSlug);
+      return restClient
+          .get()
+          .uri(
+              uriBuilder -> {
+                var builder =
+                    uriBuilder.path("/api/pde/access/analytics/{productSlug}/summary");
+                if (experienceVersion != null && !experienceVersion.isBlank()) {
+                  builder.queryParam("experienceVersion", experienceVersion.trim());
+                }
+                return builder.build(productSlug);
+              })
+          .retrieve()
+          .body(PdeAnalyticsSummary.class);
     }
     return RestClient.builder()
         .baseUrl(trimTrailingSlash(publicBaseUrl))
         .requestFactory(requestFactory)
         .build()
         .get()
-        .uri("/api/pde/access/analytics/{productSlug}/summary", productSlug)
+        .uri(
+            uriBuilder -> {
+              var builder = uriBuilder.path("/api/pde/access/analytics/{productSlug}/summary");
+              if (experienceVersion != null && !experienceVersion.isBlank()) {
+                builder.queryParam("experienceVersion", experienceVersion.trim());
+              }
+              return builder.build(productSlug);
+            })
         .retrieve()
         .body(PdeAnalyticsSummary.class);
   }

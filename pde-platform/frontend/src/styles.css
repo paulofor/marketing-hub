@@ -2434,6 +2434,51 @@ h3 {
   background: linear-gradient(120deg, #eef5f2, #fff8f3);
 }
 
+.mission-feedback-panel {
+  background: #fffaf4;
+  border: 1px solid rgba(122, 36, 68, 0.14);
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 18px;
+}
+
+.mission-feedback-panel h3 {
+  color: #24171c;
+  margin: 0;
+}
+
+.mission-feedback-panel fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.mission-feedback-panel legend {
+  color: #5f4c45;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.mission-feedback-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mission-feedback-options button {
+  background: #fff;
+  border: 1px solid rgba(122, 36, 68, 0.24);
+  color: #6f213f;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.mission-feedback-options button.selected {
+  background: #6f213f;
+  color: #fff;
+}
+
 .mission-processing-panel h3,
 .mission-success-panel h3 {
   color: #24171c;

@@ -6496,3 +6496,9 @@
 - Causa-raiz confirmada após o pacote real do pagamento `170895084433`: fotografias tecnicamente distintas ainda podiam deixar as unhas pequenas, repetir linguagem visual e perder força comercial porque o prompt não exigia protagonismo mensurável e o compositor cobria uma área excessiva da foto.
 - Correção: o prompt fotográfico passou a exigir unhas ocupando de 35% a 55% do enquadramento, diversidade explícita de pose/ângulo/cor/fundo/contexto e leitura mobile; o compositor reduziu o card de texto e adicionou chamada curta para WhatsApp ou reserva.
 - Prevenção de recorrência: teste de contrato protege as exigências comerciais centrais do prompt. Tráfego permanece bloqueado até um pacote real atingir avaliação visual humana mínima de 9/10.
+# 2026-08-03 — Instrumentação e valor percebido do MUSA por versão
+
+- O analytics PDE passou a aceitar filtro explícito por `experienceVersion`, e o monitor pós-deploy passou a enviar a versão do slot ligado ao experimento.
+- Eventos, origens, layouts e jornadas usados na leitura do experimento deixam de misturar slots diferentes do MUSA.
+- A jornada passou a coletar, após a missão, percepção de utilidade, facilidade e aplicabilidade, além de registrar a conclusão dos sete dias.
+- A mudança não altera preço, campanha, promessa nem publicação; ela prepara uma leitura confiável antes de novas decisões comerciais.

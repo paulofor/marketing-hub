@@ -136,8 +136,9 @@ public class AccessController {
     @GetMapping("/analytics/{productSlug}/summary")
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(
             @PathVariable("productSlug") String productSlug,
-            @RequestParam(name = "includeNonHumanTraffic", defaultValue = "false") boolean includeNonHumanTraffic) {
-        return accessService.summarizeFunnelAnalytics(productSlug, includeNonHumanTraffic);
+            @RequestParam(name = "includeNonHumanTraffic", defaultValue = "false") boolean includeNonHumanTraffic,
+            @RequestParam(name = "experienceVersion", required = false) String experienceVersion) {
+        return accessService.summarizeFunnelAnalytics(productSlug, includeNonHumanTraffic, experienceVersion);
     }
 
     /** Retorna jornadas individuais por sessão para localizar abandono antes do primeiro acesso. */

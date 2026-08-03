@@ -749,6 +749,62 @@ class AccessServiceTest {
                 .satisfies(source -> assertThat(source.trafficChannel()).isEqualTo("Remarketing"));
     }
 
+    /** Isola eventos, origem e jornada quando o monitor pede uma versão produtiva específica. */
+    @Test
+    void filtersCommercialAnalyticsByExperienceVersion() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_version_analytics;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        accessService.recordFunnelEvent(versionedEvent("musa-v6", "session-v6", "campaign-v6"));
+        accessService.recordFunnelEvent(versionedEvent("musa-v7", "session-v7", "campaign-v7"));
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias", false, "musa-v7");
+
+        assertThat(summary.currentExperienceVersion()).isEqualTo("musa-v7");
+        assertThat(summary.totalEvents()).isEqualTo(1);
+        assertThat(summary.sessions()).isEqualTo(1);
+        assertThat(summary.events()).extracting("eventType").containsExactly("PED_ENTRY");
+        assertThat(summary.trafficSources())
+                .singleElement()
+                .satisfies(source -> assertThat(source.utmCampaign()).isEqualTo("campaign-v7"));
+        assertThat(summary.recentJourneys())
+                .singleElement()
+                .satisfies(journey -> assertThat(journey.sessionId()).isEqualTo("session-v7"));
+    }
+
+    /** Cria um evento humano identificado por versão para validar isolamento do analytics. */
+    private FunnelEventRequest versionedEvent(String experienceVersion, String sessionId, String campaign) {
+        return new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "PED_ENTRY",
+                null,
+                null,
+                "TEST",
+                "test",
+                "https://clubemusa.com.br",
+                Map.of(
+                        "visitorId", "visitor-" + sessionId,
+                        "sessionId", sessionId,
+                        "experienceVersion", experienceVersion,
+                        "utmSource", "instagram",
+                        "utmMedium", "paid_social",
+                        "utmCampaign", campaign,
+                        "userAgent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+                        "deviceType", "mobile"));
+    }
+
     /** Confirma que robôs ficam fora dos KPIs comerciais e seguem disponíveis para auditoria. */
     @Test
     void excludesBotTrafficFromCommercialAnalyticsAndKeepsAuditBreakdown() throws SQLException {

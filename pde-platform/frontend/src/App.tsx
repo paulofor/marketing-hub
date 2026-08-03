@@ -492,6 +492,8 @@ function App() {
   const [savingInteraction, setSavingInteraction] = useState(false);
   const [missionCompletionStatus, setMissionCompletionStatus] = useState<'idle' | 'processing' | 'success'>('idle');
   const [completedMissionFeedbackId, setCompletedMissionFeedbackId] = useState('');
+  const [missionFeedback, setMissionFeedback] = useState<Record<string, string>>({});
+  const [missionFeedbackSent, setMissionFeedbackSent] = useState(false);
   const firstUseTrackedRef = useRef(false);
   const visitorIdRef = useRef(stableBrowserId('musaVisitorId'));
   const sessionIdRef = useRef(window.sessionStorage.getItem('musaSessionId') ?? '');
@@ -1280,6 +1282,8 @@ function App() {
     }
     setMissionCompletionStatus('processing');
     setCompletedMissionFeedbackId('');
+    setMissionFeedback({});
+    setMissionFeedbackSent(false);
     setErrorMessage('');
     setSuccessMessage('');
     try {
@@ -1302,10 +1306,31 @@ function App() {
         provider: data.accessSource,
         metadata: { missionId },
       });
+      if (data.totalMissions > 0 && data.completedMissions >= data.totalMissions) {
+        trackEvent('JOURNEY_COMPLETED', {
+          accessToken,
+          email: data.email,
+          provider: data.accessSource,
+          metadata: { missionId, completedMissions: data.completedMissions },
+        });
+      }
     } catch {
       setMissionCompletionStatus('idle');
       setErrorMessage('Não conseguimos registrar sua conclusão agora. Tente novamente em alguns instantes.');
     }
+  }
+
+  async function submitMissionFeedback(missionId: string) {
+    if (!workspace || !missionFeedback.useful || !missionFeedback.easy || !missionFeedback.applicable) {
+      return;
+    }
+    await trackEvent('MISSION_FEEDBACK_SUBMITTED', {
+      accessToken,
+      email: workspace.email,
+      provider: workspace.accessSource,
+      metadata: { missionId, ...missionFeedback },
+    });
+    setMissionFeedbackSent(true);
   }
 
   async function saveMissionInteraction(missionId: string) {
@@ -2569,6 +2594,46 @@ function App() {
                       </button>
                     )}
                   </div>
+                </div>
+              )}
+              {completedMissionFeedbackId === activeMission.id && (
+                <div className="mission-feedback-panel" aria-label="Avaliação rápida da missão">
+                  <div>
+                    <p className="section-kicker">Ajude a personalizar os próximos dias</p>
+                    <h3>{missionFeedbackSent ? 'Obrigada. Sua percepção ficou salva.' : 'Como esta missão funcionou para você?'}</h3>
+                  </div>
+                  {!missionFeedbackSent && (
+                    <>
+                      {[
+                        ['useful', 'Foi útil?'],
+                        ['easy', 'Foi fácil?'],
+                        ['applicable', 'Você consegue aplicar hoje?'],
+                      ].map(([key, label]) => (
+                        <fieldset key={key}>
+                          <legend>{label}</legend>
+                          <div className="mission-feedback-options">
+                            {['Sim', 'Em parte', 'Ainda não'].map((option) => (
+                              <button
+                                type="button"
+                                className={missionFeedback[key] === option ? 'selected' : ''}
+                                key={option}
+                                onClick={() => setMissionFeedback((current) => ({ ...current, [key]: option }))}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                        </fieldset>
+                      ))}
+                      <button
+                        className="inline-save-button"
+                        disabled={!missionFeedback.useful || !missionFeedback.easy || !missionFeedback.applicable}
+                        onClick={() => submitMissionFeedback(activeMission.id)}
+                      >
+                        Salvar percepção
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
               <button className="secondary-button" disabled={!workspace || completedMissionIds.has(activeMission.id) || !canRegisterActiveMission || missionCompletionStatus === 'processing'} onClick={() => completeMission(activeMission.id)}>

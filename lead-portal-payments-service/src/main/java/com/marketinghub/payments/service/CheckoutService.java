@@ -300,7 +300,8 @@ public class CheckoutService {
                 metadata,
                 mercadoPagoProperties.getNotificationUrl(),
                 "lead-portal-package-" + imagePackage.packageId(),
-                mercadoPagoProperties.getStatementDescriptor()
+                mercadoPagoProperties.getStatementDescriptor(),
+                "approved"
         );
     }
 

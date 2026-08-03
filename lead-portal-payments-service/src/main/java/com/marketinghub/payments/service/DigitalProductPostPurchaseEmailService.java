@@ -190,6 +190,13 @@ public class DigitalProductPostPurchaseEmailService {
                     properties.getExperiment66DeliveryPageUrl(),
                     properties.getExperiment66DownloadUrl()));
         }
+        if (normalized.equals(normalize(properties.getAgendaCheiaReference()))) {
+            return Optional.of(new DigitalProductConfig(
+                    properties.getAgendaCheiaReference(),
+                    properties.getAgendaCheiaProductName(),
+                    properties.getAgendaCheiaDeliveryPageUrl(),
+                    null));
+        }
         return Optional.empty();
     }
 

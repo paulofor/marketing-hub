@@ -73,6 +73,9 @@ digital-product:
       experiment66-product-name: ${DIGITAL_PRODUCT_EXP66_PRODUCT_NAME:Método MUSA - Presença Elegante em 7 Dias}
       experiment66-delivery-page-url: ${DIGITAL_PRODUCT_EXP66_DELIVERY_PAGE_URL:https://pagamentopalf.site/obrigado-exp66-metodo-musa.html}
       experiment66-download-url: ${DIGITAL_PRODUCT_EXP66_DOWNLOAD_URL:https://pagamentopalf.site/downloads/experimento-66-entregaveis.zip}
+      agenda-cheia-reference: ${DIGITAL_PRODUCT_AGENDA_CHEIA_REFERENCE:agenda-cheia-nail-design}
+      agenda-cheia-product-name: ${DIGITAL_PRODUCT_AGENDA_CHEIA_PRODUCT_NAME:Agenda Cheia Nail Design}
+      agenda-cheia-delivery-page-url: ${DIGITAL_PRODUCT_AGENDA_CHEIA_DELIVERY_PAGE_URL:https://pagamentopalf.site/agenda-cheia/obrigado.html}
 
 product-ai:
   delivery:

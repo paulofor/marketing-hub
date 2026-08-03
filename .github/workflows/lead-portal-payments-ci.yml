@@ -121,7 +121,7 @@ jobs:
           exit 1
       - name: Configure SSH
         env:
-          VPS_SSH_KEY: ${{ secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY != '' && secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY || secrets.PDE_PLATFORM_VPS_SSH_KEY != '' && secrets.PDE_PLATFORM_VPS_SSH_KEY || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
+          VPS_SSH_KEY: ${{ inputs.issue_digicomdigital_certificate == 'true' && secrets.VPS_SSH_KEY || secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY != '' && secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY || secrets.PDE_PLATFORM_VPS_SSH_KEY != '' && secrets.PDE_PLATFORM_VPS_SSH_KEY || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
         run: |
           if [ -z "${VPS_SSH_KEY}" ]; then
             echo "Erro: nenhuma chave SSH foi encontrada. Configure LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY para o host ${DEPLOY_HOST} ou mantenha um fallback compatível." >&2
@@ -179,6 +179,8 @@ jobs:
             --exclude 'target/' \
             lead-portal-payments-service/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
       - name: Publish service
+        env:
+          PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
@@ -186,6 +188,7 @@ jobs:
             && (docker network inspect ${LEAD_PORTAL_PAYMENTS_NETWORK} >/dev/null 2>&1 || docker network create ${LEAD_PORTAL_PAYMENTS_NETWORK}) \
             && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
             && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
+            && export LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${PAYMENTS_AUTH_TOKEN}' \
             && docker compose -f docker-compose.deploy.yml pull \
             && (docker rm -f lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 >/dev/null 2>&1 || true) \
             && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \

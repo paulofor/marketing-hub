@@ -406,11 +406,12 @@ jobs:
       - name: Apply backend/frontend stack
         env:
           GIT_SHA: ${{ github.sha }}
+          LEAD_PORTAL_PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
           SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
           ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply.sh"
           timeout -k 30s 18m ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image-${GIT_SHA}.tar FRONTEND_TAR=/tmp/frontend-image-${GIT_SHA}.tar VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
+            "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image-${GIT_SHA}.tar FRONTEND_TAR=/tmp/frontend-image-${GIT_SHA}.tar VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN}' DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
 
   deploy-video-management:
     name: Deploy video management

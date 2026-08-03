@@ -68,6 +68,15 @@ public class GrowthOperatorExecution {
   @Column(name = "recommended_action", columnDefinition = "TEXT")
   private String recommendedAction;
 
+  @Column(name = "daily_report", columnDefinition = "LONGTEXT")
+  private String dailyReport;
+
+  @Column(name = "cycle_number", nullable = false)
+  private Integer cycleNumber;
+
+  @Column(name = "automatic_cycle", nullable = false)
+  private Boolean automaticCycle;
+
   @Column(name = "error_message", columnDefinition = "TEXT")
   private String errorMessage;
 

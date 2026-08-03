@@ -1,5 +1,6 @@
 services:
   growth-operator-worker:
+    image: ${GROWTH_OPERATOR_IMAGE:-marketing-hub/growth-operator-worker:local}
     build:
       context: .
       args:
@@ -7,9 +8,11 @@ services:
     environment:
       BACKEND_URL: http://backend:8000
       MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
+      MARKETING_HUB_URL: ${MARKETING_HUB_URL:-http://backend:8000}
+      COMMERCIAL_PLAN_ID: ${COMMERCIAL_PLAN_ID:-1}
     volumes:
       - ..:/workspace/marketing-hub:ro
-      - ${CODEX_HOME}:/home/operator/.codex:ro
+      - ${CODEX_HOME}:/home/operator/.codex
     read_only: true
     tmpfs:
       - /tmp:size=128m,noexec,nosuid

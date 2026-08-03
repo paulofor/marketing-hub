@@ -110,6 +110,14 @@ export default function GrowthOperatorPanel({
                 {execution.recommendedAction}
               </p>
             ) : null}
+            {execution.dailyReport ? (
+              <div className="alert alert-light border mt-2 mb-0">
+                <strong>Relatório diário:</strong>
+                <p className="mb-0 mt-1" style={{ whiteSpace: "pre-wrap" }}>
+                  {execution.dailyReport}
+                </p>
+              </div>
+            ) : null}
             {execution.errorMessage ? (
               <p className="text-danger mb-0">{execution.errorMessage}</p>
             ) : null}

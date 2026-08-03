@@ -53,6 +53,8 @@ public class GrowthOperatorService {
         hasText(request.objective()) ? request.objective() : defaultObjective(plan));
     execution.setBlocker(plan.getCurrentBlocker());
     execution.setEvidenceSnapshot(buildEvidenceSnapshot(plan));
+    execution.setCycleNumber(nextCycleNumber(planId));
+    execution.setAutomaticCycle(false);
     return toResponse(repository.save(execution));
   }
 
@@ -83,6 +85,31 @@ public class GrowthOperatorService {
     return toResponse(repository.save(execution));
   }
 
+  /** Cria o proximo ciclo automatico somente quando o backend considera a cadencia vencida. */
+  @Transactional
+  public GrowthOperatorExecutionResponse ensureAutomaticCycle(Long planId) {
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    var latest = repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(planId);
+    Instant cutoff = Instant.now().minusSeconds(30 * 60L);
+    if (latest.isPresent()
+        && (latest.get().getStatus() == GrowthOperatorExecutionStatus.PENDING
+            || latest.get().getStatus() == GrowthOperatorExecutionStatus.RUNNING
+            || latest.get().getCreatedAt().isAfter(cutoff))) {
+      return toResponse(latest.get());
+    }
+    GrowthOperatorExecution execution = new GrowthOperatorExecution();
+    execution.setCommercialPlan(plan);
+    execution.setWeekNumber(1);
+    execution.setStatus(GrowthOperatorExecutionStatus.PENDING);
+    execution.setAuthorityMode(READ_ONLY);
+    execution.setObjective(defaultObjective(plan));
+    execution.setBlocker(plan.getCurrentBlocker());
+    execution.setEvidenceSnapshot(buildEvidenceSnapshot(plan, latest.orElse(null)));
+    execution.setCycleNumber(nextCycleNumber(planId));
+    execution.setAutomaticCycle(true);
+    return toResponse(repository.save(execution));
+  }
+
   /** Registra somente o diagnostico, sem executar nem persistir a acao recomendada no plano. */
   @Transactional
   public GrowthOperatorExecutionResponse complete(Long id, CompleteGrowthOperatorRequest request) {
@@ -95,6 +122,7 @@ public class GrowthOperatorService {
     execution.setRawModelResponse(request.rawModelResponse());
     execution.setRecommendedDecision(request.recommendedDecision());
     execution.setRecommendedAction(request.recommendedAction());
+    execution.setDailyReport(request.dailyReport());
     execution.setModel(request.model());
     execution.setInputTokens(request.inputTokens());
     execution.setOutputTokens(request.outputTokens());
@@ -134,6 +162,12 @@ public class GrowthOperatorService {
 
   /** Congela as evidencias comerciais disponiveis no momento da solicitacao. */
   private String buildEvidenceSnapshot(CommercialPlan plan) {
+    return buildEvidenceSnapshot(plan, null);
+  }
+
+  /** Congela o plano e o ultimo aprendizado para impedir ciclos repetitivos sem memoria. */
+  private String buildEvidenceSnapshot(
+      CommercialPlan plan, GrowthOperatorExecution previousExecution) {
     LinkedHashMap<String, Object> snapshot = new LinkedHashMap<>();
     snapshot.put("planId", plan.getId());
     snapshot.put("objective", plan.getCommercialObjective());
@@ -146,6 +180,12 @@ public class GrowthOperatorService {
     snapshot.put("actualCost", plan.getActualTotalCost());
     snapshot.put("actualRevenue", plan.getActualRevenue());
     snapshot.put("deadline", plan.getDeadline());
+    if (previousExecution != null) {
+      snapshot.put("previousCycle", previousExecution.getCycleNumber());
+      snapshot.put("previousDecision", previousExecution.getRecommendedDecision());
+      snapshot.put("previousAction", previousExecution.getRecommendedAction());
+      snapshot.put("previousDailyReport", previousExecution.getDailyReport());
+    }
     try {
       return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {
@@ -170,6 +210,9 @@ public class GrowthOperatorService {
         execution.getDiagnosisJson(),
         execution.getRecommendedDecision(),
         execution.getRecommendedAction(),
+        execution.getDailyReport(),
+        execution.getCycleNumber(),
+        execution.getAutomaticCycle(),
         execution.getErrorMessage(),
         execution.getModel(),
         execution.getInputTokens(),
@@ -178,6 +221,16 @@ public class GrowthOperatorService {
         execution.getStartedAt(),
         execution.getFinishedAt(),
         execution.getCreatedAt());
+  }
+
+  /** Calcula a sequencia auditavel do ciclo dentro do planejamento. */
+  private int nextCycleNumber(Long planId) {
+    return repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId).stream()
+            .map(GrowthOperatorExecution::getCycleNumber)
+            .filter(java.util.Objects::nonNull)
+            .max(Integer::compareTo)
+            .orElse(0)
+        + 1;
   }
 
   /** Indica se um texto possui conteudo util. */

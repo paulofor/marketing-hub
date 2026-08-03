@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-03-growth-operator-continuous-loop
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: growth_operator_execution
+        - not:
+            - columnExists:
+                tableName: growth_operator_execution
+                columnName: daily_report
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE growth_operator_execution
+                ADD COLUMN daily_report LONGTEXT NULL AFTER recommended_action,
+                ADD COLUMN cycle_number INT NOT NULL DEFAULT 1 AFTER daily_report,
+                ADD COLUMN automatic_cycle TINYINT(1) NOT NULL DEFAULT 0 AFTER cycle_number,
+                ADD INDEX idx_growth_operator_plan_cycle (commercial_plan_id, cycle_number);

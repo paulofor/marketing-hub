@@ -39,6 +39,16 @@ paths:
       responses:
         "200": {description: Pendencia reservada.}
         "404": {description: Fila vazia.}
+  /api/growth-operator/v1/internal/commercial-plans/{planId}/executions/ensure:
+    post:
+      summary: Delega ao backend a decisao de criar o proximo ciclo automatico.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        "200": {description: Ciclo atual ou novo ciclo criado conforme a cadencia.}
   /api/growth-operator/v1/internal/executions/{id}/complete:
     post:
       summary: Registra diagnostico, evidencias e recomendacao sem aplica-la.

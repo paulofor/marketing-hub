@@ -42,6 +42,12 @@ public class GrowthOperatorController {
     return service.claimPending();
   }
 
+  /** Solicita ao backend que decida se a cadencia permite criar o proximo ciclo. */
+  @PostMapping("/internal/commercial-plans/{planId}/executions/ensure")
+  public GrowthOperatorExecutionResponse ensureAutomaticCycle(@PathVariable Long planId) {
+    return service.ensureAutomaticCycle(planId);
+  }
+
   /** Recebe um diagnostico estruturado sem aplicar a recomendacao. */
   @PostMapping("/internal/executions/{id}/complete")
   public GrowthOperatorExecutionResponse complete(

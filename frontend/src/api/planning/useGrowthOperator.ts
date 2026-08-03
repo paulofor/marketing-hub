@@ -19,6 +19,9 @@ export interface GrowthOperatorExecution {
   diagnosisJson?: string | null;
   recommendedDecision?: GrowthOperatorDecision | null;
   recommendedAction?: string | null;
+  dailyReport?: string | null;
+  cycleNumber: number;
+  automaticCycle: boolean;
   errorMessage?: string | null;
   model?: string | null;
   estimatedCost?: number | null;

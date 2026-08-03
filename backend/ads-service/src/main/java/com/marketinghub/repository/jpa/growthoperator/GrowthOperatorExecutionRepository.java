@@ -22,4 +22,7 @@ public interface GrowthOperatorExecutionRepository
 
   /** Busca uma execucao vinculada ao plano informado. */
   Optional<GrowthOperatorExecution> findByIdAndCommercialPlanId(Long id, Long planId);
+
+  /** Busca o ciclo mais recente de um planejamento. */
+  Optional<GrowthOperatorExecution> findFirstByCommercialPlanIdOrderByCreatedAtDesc(Long planId);
 }

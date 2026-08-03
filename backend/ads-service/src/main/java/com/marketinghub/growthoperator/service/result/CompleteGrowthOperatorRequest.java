@@ -10,6 +10,7 @@ public record CompleteGrowthOperatorRequest(
     String rawModelResponse,
     GrowthOperatorDecision recommendedDecision,
     String recommendedAction,
+    String dailyReport,
     String model,
     Long inputTokens,
     Long outputTokens,

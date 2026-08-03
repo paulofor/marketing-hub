@@ -48,6 +48,7 @@ public class CodexReadOnlyRunner {
       payload.put("rawModelResponse", rawResponse);
       payload.put("recommendedDecision", result.get("decision").asText());
       payload.put("recommendedAction", result.get("recommendedAction").asText());
+      payload.put("dailyReport", result.get("dailyReport").asText());
       payload.put(
           "model", hasText(properties.getModel()) ? properties.getModel() : "codex-default");
       payload.put("inputTokens", null);
@@ -63,11 +64,11 @@ public class CodexReadOnlyRunner {
   List<String> buildCommand(Path output) throws IOException {
     List<String> command = new ArrayList<>();
     command.add(properties.getCodexCommand());
+    command.add("--search");
     command.add("exec");
     command.add("-");
     command.add("--sandbox");
     command.add("read-only");
-    command.add("--ephemeral");
     command.add("--cd");
     command.add(properties.getRepositoryPath());
     command.add("--output-schema");
@@ -89,7 +90,8 @@ public class CodexReadOnlyRunner {
     return template
         .replace("{{OBJECTIVE}}", text(job.objective()))
         .replace("{{BLOCKER}}", text(job.blocker()))
-        .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()));
+        .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()))
+        .replace("{{MARKETING_HUB_URL}}", text(properties.getMarketingHubUrl()));
   }
 
   /** Materializa o schema do classpath fora do repositorio para uso pelo CLI. */
@@ -113,7 +115,8 @@ public class CodexReadOnlyRunner {
         || result.get("alternatives").size() != 3
         || !result.hasNonNull("diagnosis")
         || !result.hasNonNull("decision")
-        || !result.hasNonNull("recommendedAction")) {
+        || !result.hasNonNull("recommendedAction")
+        || !result.hasNonNull("dailyReport")) {
       throw new IllegalArgumentException("Resposta Codex fora do contrato de diagnostico v1.");
     }
   }

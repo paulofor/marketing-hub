@@ -36,6 +36,15 @@ public class GrowthOperatorBackendClient {
     }
   }
 
+  /** Pede ao backend para avaliar a criacao do proximo ciclo do plano configurado. */
+  public void ensureAutomaticCycle(Long planId) {
+    client
+        .post()
+        .uri("/api/growth-operator/v1/internal/commercial-plans/{planId}/executions/ensure", planId)
+        .retrieve()
+        .toBodilessEntity();
+  }
+
   /** Envia o diagnostico estruturado e preserva a resposta bruta para auditoria. */
   public void complete(Long id, Map<String, Object> payload) {
     client

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: validar os limites de seguranca do comando Codex. */
 class CodexReadOnlyRunnerTest {
-  /** Confirma sandbox read-only, sessao efemera e repositorio explicitamente delimitado. */
+  /** Confirma sandbox read-only, pesquisa web e repositorio explicitamente delimitado. */
   @Test
   void shouldForceReadOnlyEphemeralExecution() throws Exception {
     WorkerProperties properties = new WorkerProperties();
@@ -19,7 +19,7 @@ class CodexReadOnlyRunnerTest {
     var command = runner.buildCommand(Path.of("/tmp/result.json"));
 
     assertThat(command).containsSubsequence("--sandbox", "read-only");
-    assertThat(command).contains("--ephemeral", "--cd", "/workspace/repository");
+    assertThat(command).contains("--search", "--cd", "/workspace/repository");
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
   }
 }

@@ -10,10 +10,10 @@
 | Documento (origem) | Alinhamento | Decisão | Justificativa curta |
 |---|---|---|---|
 | `Comandos-Patterns-Video.txt` | Médio | Manter fora de `melhores` | É roteiro operacional de sprints, não base conceitual do produto. |
-| `archive/deep-research-report (2).md` | Baixo | Manter fora | Arquivado/deprecated. |
-| `archive/deep-research-report (3).md` | Baixo | Manter fora | Arquivado/deprecated. |
-| `archive/deep-research-report (4).md` | Baixo | Manter fora | Arquivado/deprecated. |
-| `archive/deep-research-report (5).md` | Baixo | Manter fora | Arquivado/deprecated. |
+| `archive/deep-research-report-v2.md` | Baixo | Manter fora | Arquivado/deprecated. |
+| `archive/deep-research-report-v3.md` | Baixo | Manter fora | Arquivado/deprecated. |
+| `archive/deep-research-report-v4.md` | Baixo | Manter fora | Arquivado/deprecated. |
+| `archive/deep-research-report-v5.md` | Baixo | Manter fora | Arquivado/deprecated. |
 | `archive/novo.txt` | Baixo | Manter fora | Arquivado/deprecated. |
 | `avatar-implementation-plan.md` | Médio | Manter fora | Plano geral de avatar por tenant; pouco focado no avatar de venda em vídeo. |
 | `avatar-module-architecture.md` | Alto | **Movido para `melhores`** | Define base técnica e governança para avatar/render/pipeline confiável. |

@@ -1,5 +1,11 @@
 # Relatório consolidado do framework Dor-Resultado-Oferta
 
+> STATUS: HISTÓRICO
+> ORIGEM: exportação legada `relatorio-framework-7cc71751-2510-4407-bfb3-904d2518714e (2).md`
+> ÚLTIMA CLASSIFICAÇÃO: 2026-08-03
+
+Este relatório preserva uma geração passada e não define a oferta vigente.
+
 Nome do Nicho: Profissionais da Área de Educação Física - Personal Trainer
 
 ## Prompts e Respostas de cada geração de IA

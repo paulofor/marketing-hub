@@ -16,8 +16,8 @@ Arquivos usados como base:
 - `docs/implementacao/experimentos/plano-mestre-evolucao-funis-produtos-personalizacao.md`
 - `docs/implementacao/experimentos/especificacao-centro-de-decisao-frontend.md`
 - `docs/relatorios/experimentos/analises/analise-campanhas-resultados-fracos.md`
-- `docs/relatorios/experimentos/experimento-37-relatorio-completo (1).md`
-- `docs/relatorios/experimentos/experimento-38-relatorio-completo (1).md`
+- `docs/history/reports/experiments/experiment-37-2026-06-20.md`
+- `docs/history/reports/experiments/experiment-38-2026-06-20.md`
 - `docs/relatorios/experimentos/experimento-39-relatorio-completo.md`
 - `docs/relatorios/experimentos/experimento-40-relatorio-completo.md`
 - `docs/relatorios/experimentos/experimento-41-relatorio-completo.md`

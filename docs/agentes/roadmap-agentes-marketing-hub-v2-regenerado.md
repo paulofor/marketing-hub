@@ -1,5 +1,12 @@
 # Roadmap Técnico por Sprint — Marketing Hub Agents v2
 
+> STATUS: PROPOSTA
+> SUBSTITUI: `docs/agentes/roadmap-agentes-marketing-hub.md`
+> FONTE CANÔNICA: `docs/canonical/system-governance-canon.v2.md`
+> ÚLTIMA VALIDAÇÃO: 2026-08-03
+
+Este documento é o roadmap de agentes mais recente, mas não comprova implementação. Confirme o estado atual no código, banco, logs e registros operacionais.
+
 ## 1. Objetivo
 
 Este documento define o plano técnico por sprint para implementar uma camada de agentes sobre o projeto **Marketing Hub**, aproveitando a base já existente do produto e adicionando:
@@ -749,4 +756,3 @@ A sequência ideal após este roadmap é criar um documento de execução com:
 - estimativas;
 - owners por squad;
 - plano de rollout por ambiente.
-

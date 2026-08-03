@@ -1,4 +1,4 @@
-# Relatório Arquivado — deep-research-report (4)
+# Relatório Arquivado — deep-research-report v4
 
 - **Versão:** v2.0
 - **Data de revisão:** 2026-03-24
@@ -8,6 +8,6 @@
 > **Nota de obsolescência:** Este relatório foi arquivado por consolidar conteúdo em documentos canônicos mais recentes.
 >
 > Consulte os documentos ativos:
-> - [Arquitetura Canônica do Módulo de Avatar](../avatar-module-architecture.md)
-> - [Avatar Scene Composition Spec](../avatar-scene-composition-spec.md)
+> - [Arquitetura Canônica do Módulo de Avatar](../melhores/avatar-module-architecture.md)
+> - [Avatar Scene Composition Spec](../melhores/avatar-scene-composition-spec.md)
 > - [Plano de Implementação — Avatar](../avatar-implementation-plan.md)

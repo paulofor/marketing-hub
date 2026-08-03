@@ -35,7 +35,7 @@ Arquivos com conteúdo misto (não exclusivamente avatar/vídeo):
 - `arquitetura-prompts/arquitetura_marketing_hub_workflow_ia.md`
 - `arquitetura-prompts/plano_workflow_orientado_artefatos_marketing_hub.md`
 - `docs/novos-modulos/OPRM/oprm_plano_geral_implementacao_atualizado.md`
-- `relatorios/relatorio-pipeline-experimento-10 (7).md`
-- `relatorios/relatorio-pipeline-experimento-10 (8).md`
+- `docs/history/reports/experiment-10/export-07.md`
+- `docs/history/reports/experiment-10/export-08.md`
 
 > Observação: esses arquivos foram mantidos em suas localizações originais por fazerem parte de documentação transversal de outros módulos/processos.

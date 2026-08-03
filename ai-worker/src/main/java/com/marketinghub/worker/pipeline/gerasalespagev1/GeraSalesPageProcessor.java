@@ -105,12 +105,14 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
             return rawResult;
         }
         Object htmlValue = output.payload().get("html");
-        if (!(htmlValue instanceof String html) || html.isBlank() || html.contains("data-mh-sales-page-analytics")) {
+        if (!(htmlValue instanceof String html) || html.isBlank()) {
             return rawResult;
         }
         Map<String, Object> enrichedPayload = new LinkedHashMap<>(output.payload());
         String htmlWithTransformationMarkers = ensureTransformationVisualMarkers(html);
-        enrichedPayload.put("html", injectSalesPageAnalyticsTracking(htmlWithTransformationMarkers));
+        enrichedPayload.put("html", htmlWithTransformationMarkers.contains("data-mh-sales-page-analytics")
+                ? htmlWithTransformationMarkers
+                : injectSalesPageAnalyticsTracking(htmlWithTransformationMarkers));
         try {
             String enrichedModelResponse = objectMapper.writeValueAsString(enrichedPayload);
             return new OpenAiResult<>(

@@ -38,7 +38,7 @@ public class OpenAiAgendaCheiaPhotoGenerator implements AgendaCheiaPhotoGenerato
     /** Configura cliente, modelo e prompt versionado da geração fotográfica. */
     public OpenAiAgendaCheiaPhotoGenerator(@Value("${agenda-cheia.production.openai-api-key:${OPENAI_API_KEY:}}") String apiKey,
                                            @Value("${agenda-cheia.production.openai-base-url:https://api.openai.com/v1}") String baseUrl,
-                                           @Value("${agenda-cheia.production.image-model:gpt-image-1}") String model,
+                                           @Value("${agenda-cheia.production.image-model:gpt-image-2-2026-04-21}") String model,
                                            ObjectMapper mapper) throws IOException {
         this.mapper = mapper;
         this.model = model;

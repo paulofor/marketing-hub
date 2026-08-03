@@ -5,6 +5,7 @@
     "decisionSummary": { "type": "string" },
     "opportunities": {
       "type": "array",
+      "minItems": 3,
       "items": {
         "type": "object",
         "required": ["name", "primaryAudience", "rootPain", "score", "decision"],

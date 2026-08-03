@@ -11,6 +11,9 @@ public interface ProductDiscoveryOpportunityRepository
   /** Lista oportunidades do ciclo ordenadas pelo score comercial. */
   List<ProductDiscoveryOpportunity> findAllByCycleIdOrderByScoreDesc(Long cycleId);
 
+  /** Retorna as oportunidades pesquisadas mais fortes para o ranking gerencial dinâmico. */
+  List<ProductDiscoveryOpportunity> findTop10ByOrderByScoreDescUpdatedAtDesc();
+
   /** Remove oportunidades de um ciclo antes de registrar um novo resultado auditável. */
   void deleteAllByCycleId(Long cycleId);
 }

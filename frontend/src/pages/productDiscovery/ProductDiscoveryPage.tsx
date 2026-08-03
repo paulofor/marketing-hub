@@ -126,12 +126,10 @@ export default function ProductDiscoveryPage() {
         <div className="card-body">
           <div className="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
             <div>
-              <h2 className="h5 mb-1">
-                Top 10 produtos com mais chance de sucesso
-              </h2>
+              <h2 className="h5 mb-1">Oportunidades com evidência comercial</h2>
               <p className="text-secondary mb-0">
-                Visão rápida dos produtos priorizados pelo ranking de
-                maturidade comercial do backend.
+                Ranking de hipóteses pesquisadas. Nenhuma posição representa
+                venda validada sem checkout, compra e entrega observados.
               </p>
             </div>
             <span className="badge text-bg-primary align-self-start">
@@ -150,7 +148,7 @@ export default function ProductDiscoveryPage() {
           !maturityRankingQuery.isError &&
           topSuccessProducts.length === 0 ? (
             <div className="text-secondary">
-              Nenhum produto priorizado disponível no momento.
+              Nenhuma oportunidade com evidência suficiente no momento.
             </div>
           ) : null}
           {topSuccessProducts.length > 0 ? (
@@ -188,8 +186,8 @@ export default function ProductDiscoveryPage() {
             <div>
               <h2 className="h5 mb-1">Ranking de maturidade comercial</h2>
               <p className="text-secondary mb-0">
-                Priorize produtos prontos, oportunidades promissoras e temas
-                que ainda precisam de evidência.
+                Priorize produtos prontos, oportunidades promissoras e temas que
+                ainda precisam de evidência.
               </p>
             </div>
             <button
@@ -315,7 +313,10 @@ export default function ProductDiscoveryPage() {
               />
             </div>
             <div className="col-md-4">
-              <label className="form-label" htmlFor="product-discovery-audience">
+              <label
+                className="form-label"
+                htmlFor="product-discovery-audience"
+              >
                 Público desejado
               </label>
               <input
@@ -340,7 +341,10 @@ export default function ProductDiscoveryPage() {
               />
             </div>
             <div className="col-md-4">
-              <label className="form-label" htmlFor="product-discovery-objective">
+              <label
+                className="form-label"
+                htmlFor="product-discovery-objective"
+              >
                 Objetivo
               </label>
               <textarea
@@ -471,7 +475,8 @@ export default function ProductDiscoveryPage() {
                     </td>
                   </tr>
                 ))}
-                {!cyclesQuery.isLoading && (cyclesQuery.data ?? []).length === 0 ? (
+                {!cyclesQuery.isLoading &&
+                (cyclesQuery.data ?? []).length === 0 ? (
                   <tr>
                     <td className="text-secondary" colSpan={5}>
                       Nenhum ciclo criado ainda.

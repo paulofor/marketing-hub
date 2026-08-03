@@ -68,6 +68,11 @@ public class ProductDiscoveryService {
   /** Retorna o ranking gerencial atual por maturidade comercial para orientar novos ciclos PDE. */
   @Transactional(readOnly = true)
   public ProductDiscoveryMaturityRankingResponse getMaturityRanking() {
+    List<ProductDiscoveryOpportunity> researchedOpportunities =
+        opportunityRepository.findTop10ByOrderByScoreDescUpdatedAtDesc();
+    if (!researchedOpportunities.isEmpty()) {
+      return buildEvidenceBasedRanking(researchedOpportunities);
+    }
     return new ProductDiscoveryMaturityRankingResponse(
         "Ranking por maturidade comercial",
         "Muitas pessoas vivem uma dor concreta, as soluções atuais deixam uma lacuna clara e conseguimos entregar uma microexperiência digital de valor rápido com baixo esforço.",
@@ -189,6 +194,42 @@ public class ProductDiscoveryService {
                 "Reconquista garantida, manipulação emocional, controle do outro, aconselhamento jurídico ou situação de violência.")));
   }
 
+  /** Monta o ranking a partir das oportunidades realmente persistidas, sem lista fixa de produtos. */
+  private ProductDiscoveryMaturityRankingResponse buildEvidenceBasedRanking(
+      List<ProductDiscoveryOpportunity> opportunities) {
+    List<ProductDiscoveryMaturityItemResponse> items =
+        java.util.stream.IntStream.range(0, opportunities.size())
+            .mapToObj(
+                index -> {
+                  ProductDiscoveryOpportunity opportunity = opportunities.get(index);
+                  return new ProductDiscoveryMaturityItemResponse(
+                      index + 1,
+                      opportunity.getName(),
+                      opportunity.getDecision().name(),
+                      opportunity.getRootPain(),
+                      opportunity.getScaleEvidence(),
+                      opportunity.getDecision()
+                              == com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision.APPROVE
+                          ? "Validar preço e compra com gate financeiro antes de escalar."
+                          : "Coletar evidência comercial ausente antes de criar campanha.",
+                      List.of(
+                          defaultText(opportunity.getScaleEvidence(), "Escala não comprovada"),
+                          defaultText(
+                              opportunity.getUnmetnessEvidence(), "Lacuna não comprovada")),
+                      List.of(
+                          defaultText(
+                              opportunity.getCommercialRisk(),
+                              "Feedback de vendas ainda não disponível")));
+                })
+            .toList();
+    return new ProductDiscoveryMaturityRankingResponse(
+        "Ranking por evidência comercial persistida",
+        "Demanda, concorrência, intenção de compra, lacuna, entrega e feedback real de vendas.",
+        "Priorizar a primeira hipótese com evidência suficiente e menor risco; score textual não substitui compra.",
+        items,
+        List.of());
+  }
+
   /** Entrega pendências ao worker e marca ciclos como em pesquisa para evitar consumo duplicado. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pending() {
@@ -211,6 +252,7 @@ public class ProductDiscoveryService {
   public ProductDiscoveryCycleDetailResponse complete(
       Long cycleId, ProductDiscoveryResultRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
+    validateCommercialIntelligence(request);
     opportunityRepository.deleteAllByCycleId(cycleId);
     for (ProductDiscoveryOpportunityResultRequest item : request.opportunities()) {
       ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
@@ -236,6 +278,27 @@ public class ProductDiscoveryService {
     cycle.setErrorMessage(null);
     cycleRepository.save(cycle);
     return getCycle(cycleId);
+  }
+
+  /** Bloqueia resultados genéricos, fallback e ciclos sem hipóteses concorrentes auditáveis. */
+  private void validateCommercialIntelligence(ProductDiscoveryResultRequest request) {
+    if (request.opportunities() == null || request.opportunities().size() < 3) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "A descoberta comercial exige ao menos três hipóteses concorrentes");
+    }
+    for (ProductDiscoveryOpportunityResultRequest opportunity : request.opportunities()) {
+      String evidenceJson = optionalText(opportunity.evidenceJson());
+      if (evidenceJson == null
+          || !evidenceJson.contains("\"scoreDimensions\"")
+          || !evidenceJson.contains("\"buyingIntent\"")
+          || !evidenceJson.contains("\"competingOffers\"")
+          || evidenceJson.contains("INSUFFICIENT_FALLBACK")) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST,
+            "Oportunidade sem evidência comercial auditável não pode concluir o ciclo");
+      }
+    }
   }
 
   /** Registra falha operacional do worker preservando a causa para o usuário. */

@@ -96,7 +96,7 @@ test("buildSearchQueries uses domain language for style and routine cycles", () 
   assert.ok(routineQueries.includes("guarda roupa cheio e nada para vestir"));
 });
 
-test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () => {
+test("analyzeSearchResults creates competing commercially scored hypotheses", () => {
   const report = analyzeSearchResults(
     {
       theme: "mulheres que compram roupa online",
@@ -106,17 +106,20 @@ test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () =>
       {
         title: "Dificuldade para escolher roupa online",
         url: "https://forum.example/a",
-        snippet: "problema insegurança caro complicado como fazer",
+        snippet:
+          "problema insegurança caro complicado como fazer comprar preço vale a pena orçamento",
       },
       {
         title: "Review de consultoria de estilo",
         url: "https://reviews.example/b",
-        snippet: "demorado confuso não resolve reclamação",
+        snippet:
+          "demorado confuso não resolve reclamação curso kit assinatura R$ 97 checkout garantia desconto",
       },
       {
         title: "Perguntas frequentes sobre estilo",
         url: "https://questions.example/c",
-        snippet: "não consigo decidir e tenho medo de errar",
+        snippet:
+          "não consigo decidir e tenho medo de errar comprar consultoria parcelado vagas inscreva-se",
       },
       {
         title: "Behavior change intervention for online decision support",
@@ -126,10 +129,14 @@ test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () =>
     ],
   );
 
-  assert.equal(report.opportunities.length, 1);
+  assert.equal(report.opportunities.length, 3);
   assert.equal(report.opportunities[0].decision, "APPROVE");
   assert.ok(report.opportunities[0].score >= 70);
   const evidence = JSON.parse(report.opportunities[0].evidenceJson);
+  assert.equal(evidence.evidenceStatus, "OBSERVED");
+  assert.ok(evidence.scoreDimensions.demand > 0);
+  assert.ok(evidence.scoreDimensions.willingnessToPay > 0);
+  assert.equal(evidence.signals.salesFeedback, "NOT_AVAILABLE");
   assert.equal(evidence.scientificArticles.length, 1);
   assert.deepEqual(Object.keys(evidence.scientificArticles[0]), [
     "link",
@@ -138,6 +145,26 @@ test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () =>
     "summary",
     "mechanismApplication",
   ]);
+});
+
+test("analyzeSearchResults rejects fallback as commercial evidence", () => {
+  const report = analyzeSearchResults(
+    { theme: "tema sem evidência", targetAudience: "público" },
+    [
+      {
+        title: "Pesquisa inicial sobre tema sem evidência",
+        url: "https://search.brave.com/search?q=tema%20sem%20evidencia",
+        snippet: "pesquisar mais em comunidades, reviews e anúncios",
+      },
+    ],
+  );
+
+  assert.equal(report.opportunities.length, 3);
+  assert.ok(report.opportunities.every((item) => item.decision === "RESEARCH_MORE"));
+  assert.equal(
+    JSON.parse(report.opportunities[0].evidenceJson).evidenceStatus,
+    "INSUFFICIENT_FALLBACK",
+  );
 });
 
 test("analyzeSearchResults requires scientific articles before approving mechanism", () => {

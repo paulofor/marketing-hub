@@ -40,6 +40,30 @@ const HIGH_RISK_TERMS = [
   "processo judicial",
 ];
 
+const BUYING_INTENT_TERMS = [
+  "preço",
+  "preco",
+  "comprar",
+  "vale a pena",
+  "orçamento",
+  "orcamento",
+  "curso",
+  "kit",
+  "consultoria",
+  "assinatura",
+];
+
+const OFFER_TERMS = [
+  "r$",
+  "checkout",
+  "garantia",
+  "desconto",
+  "parcelado",
+  "vagas",
+  "compre agora",
+  "inscreva-se",
+];
+
 const DOMAIN_PAIN_QUERIES = [
   {
     match: [
@@ -370,23 +394,35 @@ export function analyzeSearchResults(job, results) {
   const painHits = countHits(combined, PAIN_TERMS);
   const unmetHits = countHits(combined, UNMET_TERMS);
   const highRiskHits = countHits(combined, HIGH_RISK_TERMS);
+  const buyingIntentHits = countHits(combined, BUYING_INTENT_TERMS);
+  const offerHits = countHits(combined, OFFER_TERMS);
   const independentDomains = new Set(
     evidence.map((item) => safeDomain(item.url)).filter(Boolean),
   ).size;
-  const scaleScore = Math.min(35, independentDomains * 7 + painHits * 3);
-  const unmetScore = Math.min(30, unmetHits * 5);
-  const pdeScore = highRiskHits > 0 ? 5 : 25;
-  const scientificEvidenceScore = Math.min(10, scientificArticles.length * 3);
+  const isFallbackEvidence = evidence.some((item) =>
+    item.url.includes("search.brave.com/search?q="),
+  );
+  const dimensions = {
+    demand: Math.min(25, independentDomains * 3 + painHits * 2),
+    competition: Math.min(20, offerHits * 4),
+    willingnessToPay: Math.min(20, buyingIntentHits * 3),
+    unmetNeed: Math.min(15, unmetHits * 3),
+    deliveryViability: highRiskHits > 0 ? 2 : 10,
+    salesFeedback: 0,
+    scientificSupport: Math.min(10, scientificArticles.length * 3),
+  };
   const score = Math.min(
     100,
-    scaleScore + unmetScore + pdeScore + scientificEvidenceScore + 5,
+    Object.values(dimensions).reduce((total, value) => total + value, 0),
   );
   const decision =
-    highRiskHits > 0
+    isFallbackEvidence || evidence.length < 3 || independentDomains < 2
+      ? "RESEARCH_MORE"
+      : highRiskHits > 0
       ? "HUMAN_REVIEW"
       : scientificArticles.length === 0
         ? "RESEARCH_MORE"
-        : score >= 70 && independentDomains >= 2
+        : score >= 70 && buyingIntentHits > 0 && offerHits > 0
           ? "APPROVE"
           : score >= 45
             ? "RESEARCH_MORE"
@@ -396,36 +432,96 @@ export function analyzeSearchResults(job, results) {
       ? `${scientificArticles.length} artigo(s) científico(s) candidato(s) coletado(s) para sustentar ou limitar o mecanismo.`
       : "Nenhum artigo científico candidato foi coletado; o mecanismo não deve ser tratado como validado antes de nova pesquisa científica.";
 
+  const hypotheses = buildCompetingHypotheses(job, {
+    evidence,
+    scientificArticles,
+    dimensions,
+    score,
+    decision,
+    highRiskHits,
+    buyingIntentHits,
+    offerHits,
+    painHits,
+    unmetHits,
+    independentDomains,
+    isFallbackEvidence,
+    mechanismEvidence,
+  });
+
   return {
     decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${independentDomains} domínios independentes e ${scientificArticles.length} artigos científicos candidatos. Principal decisão: ${decision}.`,
-    opportunities: [
-      {
-        name: `PDE de alívio para ${job.theme}`,
-        primaryAudience: job.targetAudience || job.theme,
-        rootPain: `O público demonstra esforço recorrente para resolver ${job.theme} com clareza e baixo risco.`,
-        practicalPain:
-          "A dor aparece como excesso de tentativa, comparação, busca por orientação e dificuldade de transformar informação em ação.",
-        emotionalPain:
-          "A fricção tende a gerar insegurança, medo de errar e sensação de estar sozinho na decisão.",
-        scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
-        unmetnessEvidence: `${unmetHits} sinais sugerem soluções caras, confusas, demoradas ou incompletas.`,
-        pdeExperience: `Experiência guiada em que o usuário informa sua situação, recebe diagnóstico simples, plano de ação e primeiro antes/depois aplicável. Mecanismo deve ser definido usando os artigos coletados: ${mechanismEvidence}`,
-        firstCampaignAngle: `Pare de tentar resolver ${job.theme} no improviso: veja em poucos minutos qual é o próximo passo mais seguro.`,
-        commercialRisk:
-          highRiskHits > 0
-            ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
-            : scientificArticles.length === 0
-              ? "Risco principal é criar promessa sem sustentação científica do mecanismo; pesquisar artigos antes de campanha."
-              : "Risco principal é extrapolar artigos científicos para promessa comercial absoluta; transformar evidência em mecanismo prático com limites claros.",
-        evidenceJson: JSON.stringify({
-          publicEvidence: evidence,
-          scientificArticles,
-        }),
-        score,
-        decision,
-      },
-    ],
+    opportunities: hypotheses,
   };
+}
+
+function buildCompetingHypotheses(job, context) {
+  const variants = [
+    {
+      suffix: "ação imediata",
+      rootPain: `O público não consegue transformar informação sobre ${job.theme} em uma próxima ação clara.`,
+      experience: "Diagnóstico curto, primeira ação guiada e plano de sete dias.",
+      angle: `Descubra o próximo passo prático para ${job.theme} sem continuar no improviso.`,
+    },
+    {
+      suffix: "decisão segura",
+      rootPain: `O público teme escolher errado ao lidar com ${job.theme} e adia uma decisão importante.`,
+      experience: "Comparador guiado, critérios de decisão e recomendação explicada.",
+      angle: `Pare de comparar sem fim: use critérios simples para decidir sobre ${job.theme}.`,
+    },
+    {
+      suffix: "kit de execução",
+      rootPain: `O público entende o problema de ${job.theme}, mas perde tempo criando materiais e rotinas do zero.`,
+      experience: "Kit personalizado de scripts, modelos e calendário de aplicação.",
+      angle: `Receba materiais prontos para aplicar ${job.theme} com menos esforço.`,
+    },
+  ];
+  return variants.map((variant, index) => ({
+    name: `${job.theme} — ${variant.suffix}`,
+    primaryAudience: job.targetAudience || job.theme,
+    rootPain: variant.rootPain,
+    practicalPain:
+      "A dor precisa aparecer em situações concretas, recorrentes e controláveis pelo comprador.",
+    emotionalPain:
+      "A hipótese busca reduzir insegurança e esforço sem prometer resultado garantido.",
+    scaleEvidence: `${context.independentDomains} domínios independentes, ${context.painHits} sinais de dor e ${context.buyingIntentHits} sinais de intenção de compra.`,
+    unmetnessEvidence: `${context.unmetHits} sinais de lacuna e ${context.offerHits} sinais de ofertas ou concorrência observável.`,
+    pdeExperience: variant.experience,
+    firstCampaignAngle: variant.angle,
+    commercialRisk: buildCommercialRisk(context),
+    evidenceJson: JSON.stringify({
+      evidenceStatus: context.isFallbackEvidence ? "INSUFFICIENT_FALLBACK" : "OBSERVED",
+      hypothesisPosition: index + 1,
+      scoreDimensions: context.dimensions,
+      signals: {
+        independentDomains: context.independentDomains,
+        pain: context.painHits,
+        unmetNeed: context.unmetHits,
+        buyingIntent: context.buyingIntentHits,
+        competingOffers: context.offerHits,
+        salesFeedback: "NOT_AVAILABLE",
+      },
+      publicEvidence: context.evidence,
+      scientificArticles: context.scientificArticles,
+    }),
+    score: Math.max(0, context.score - index * 3),
+    decision: context.decision,
+  }));
+}
+
+function buildCommercialRisk(context) {
+  if (context.isFallbackEvidence) {
+    return "Pesquisa sem evidência estruturada real; proibido criar produto ou campanha antes de nova coleta.";
+  }
+  if (context.highRiskHits > 0) {
+    return "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento.";
+  }
+  if (context.scientificArticles.length === 0) {
+    return "Risco principal é criar promessa sem sustentação científica do mecanismo; pesquisar artigos antes de campanha.";
+  }
+  if (context.buyingIntentHits === 0 || context.offerHits === 0) {
+    return "Ainda falta comprovar disposição de pagar ou ofertas concorrentes; validar preço e checkout antes de mídia paga.";
+  }
+  return "A hipótese ainda precisa fechar o ciclo com checkout, compra, reembolso e entrega reais.";
 }
 
 export function normalizeDuckDuckGoResponse(payload) {

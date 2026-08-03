@@ -173,20 +173,21 @@ public class AgendaCheiaKitProductionService {
         graphics.setPaint(new java.awt.GradientPaint(0, 0, new Color(0, 0, 0, 15), 0, height, new Color(0, 0, 0, 115)));
         graphics.fillRect(0, 0, width, height);
         float cardY = switch (variant % 3) {
-            case 0 -> height * .56f;
-            case 1 -> height * .50f;
-            default -> height * .62f;
+            case 0 -> height * .68f;
+            case 1 -> height * .64f;
+            default -> height * .71f;
         };
-        float cardHeight = height * .30f;
+        float cardHeight = height * .22f;
         graphics.setColor(new Color(255, 255, 255, 238));
         graphics.fill(new RoundRectangle2D.Float(58, cardY, width - 116, cardHeight, 42, 42));
         graphics.setColor(palette[variant % palette.length]);
         graphics.fill(new RoundRectangle2D.Float(58, cardY, 18, cardHeight, 18, 18));
         graphics.setColor(new Color(48, 25, 37));
         graphics.setFont(new Font("SansSerif", Font.BOLD, width / 18));
-        drawWrapped(graphics, headline, 102, (int) (cardY + height * .07f), width - 204, width / 16);
+        drawWrapped(graphics, headline, 102, (int) (cardY + height * .055f), width - 204, width / 16);
         graphics.setFont(new Font("SansSerif", Font.PLAIN, width / 34));
-        graphics.drawString(serviceName(briefing), 102, (int) (cardY + cardHeight - height * .055f));
+        graphics.drawString(serviceName(briefing), 102, (int) (cardY + cardHeight - height * .035f));
+        drawActionChip(graphics, width, height, cardY, variant);
         graphics.setFont(new Font("SansSerif", Font.BOLD, width / 38));
         graphics.drawString(publicText(briefing.getProfessionalName()), 70, 92);
         graphics.setFont(new Font("SansSerif", Font.PLAIN, width / 45));
@@ -195,6 +196,22 @@ public class AgendaCheiaKitProductionService {
         graphics.dispose();
         ImageIO.write(image, "png", output.toFile());
         return output;
+    }
+
+    /** Aplica uma chamada comercial curta e legível sem encobrir a fotografia. */
+    private void drawActionChip(Graphics2D graphics, int width, int height, float cardY, int variant) {
+        String action = variant % 2 == 0 ? "CHAME NO WHATSAPP" : "RESERVE SEU HORÁRIO";
+        int chipWidth = width / 3;
+        int chipHeight = Math.max(42, height / 28);
+        int chipX = width - chipWidth - 70;
+        int chipY = (int) cardY - chipHeight - 24;
+        graphics.setColor(new Color(36, 120, 82, 242));
+        graphics.fill(new RoundRectangle2D.Float(chipX, chipY, chipWidth, chipHeight, 22, 22));
+        graphics.setColor(Color.WHITE);
+        graphics.setFont(new Font("SansSerif", Font.BOLD, Math.max(20, width / 48)));
+        FontMetrics metrics = graphics.getFontMetrics();
+        graphics.drawString(action, chipX + (chipWidth - metrics.stringWidth(action)) / 2,
+                chipY + (chipHeight + metrics.getAscent() - metrics.getDescent()) / 2);
     }
 
     /** Recorta a fotografia proporcionalmente para preencher o formato sem distorção. */

@@ -73,6 +73,28 @@ class GeraSalesPageProcessorTest {
                 .doesNotContain("Prova do produto");
     }
 
+    /** Garante que analytics preexistente não impeça a marcação visual exigida na publicação. */
+    @Test
+    void keepsExistingAnalyticsAndStillMarksTransformationScenes() throws Exception {
+        GeraSalesPageProcessor processor = processor();
+        Method method = GeraSalesPageProcessor.class.getDeclaredMethod(
+                "ensureTransformationVisualMarkers", String.class);
+        method.setAccessible(true);
+
+        String html = (String) method.invoke(processor,
+                "<html><body data-mh-sales-page-analytics><main>"
+                        + "<section><img src='https://cdn.test/after.jpg' alt='Resultado'></section>"
+                        + "<section><img src='https://cdn.test/pain.jpg' alt='Dor'></section>"
+                        + "<section><img src='https://cdn.test/preview.jpg' alt='Produto'></section>"
+                        + "</main></body></html>");
+
+        assertThat(html)
+                .contains("data-mh-sales-page-analytics")
+                .contains("data-transform-visual=\"after\"")
+                .contains("data-transform-visual=\"pain\"")
+                .contains("data-transform-visual=\"preview\"");
+    }
+
     /** Cria processor mínimo para exercitar métodos puros por reflexão. */
     private GeraSalesPageProcessor processor() {
         ObjectMapper objectMapper = new ObjectMapper();

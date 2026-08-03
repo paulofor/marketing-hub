@@ -139,12 +139,12 @@ public class AgendaCheiaKitProductionService {
         List<String> captions = captions(briefing);
         try {
             List<BufferedImage> photos = new ArrayList<>();
-            for (int index = 0; index < 5; index++) photos.add(photoGenerator.generate(token, index));
+            for (int index = 0; index < 10; index++) photos.add(photoGenerator.generate(token, index));
             for (int index = 0; index < 10; index++) {
                 images.add(render(work.resolve("post-%02d.png".formatted(index + 1)), 1080, 1080,
-                        briefing, headline(index), index, photos.get(index % photos.size())));
+                        briefing, headline(index), index, photos.get(index)));
                 images.add(render(work.resolve("story-%02d.png".formatted(index + 1)), 1080, 1920,
-                        briefing, headline(index), index + 10, photos.get(index % photos.size())));
+                        briefing, headline(index), index + 10, photos.get(index)));
             }
             Files.writeString(work.resolve("legendas-prontas.txt"), String.join("\n\n---\n\n", captions), StandardCharsets.UTF_8);
             Files.writeString(work.resolve("mensagens-whatsapp.txt"), whatsappMessages(briefing), StandardCharsets.UTF_8);
@@ -172,13 +172,21 @@ public class AgendaCheiaKitProductionService {
         drawCoverPhoto(graphics, photo, width, height);
         graphics.setPaint(new java.awt.GradientPaint(0, 0, new Color(0, 0, 0, 15), 0, height, new Color(0, 0, 0, 115)));
         graphics.fillRect(0, 0, width, height);
+        float cardY = switch (variant % 3) {
+            case 0 -> height * .56f;
+            case 1 -> height * .50f;
+            default -> height * .62f;
+        };
+        float cardHeight = height * .30f;
         graphics.setColor(new Color(255, 255, 255, 238));
-        graphics.fill(new RoundRectangle2D.Float(58, height * .56f, width - 116, height * .35f, 42, 42));
+        graphics.fill(new RoundRectangle2D.Float(58, cardY, width - 116, cardHeight, 42, 42));
+        graphics.setColor(palette[variant % palette.length]);
+        graphics.fill(new RoundRectangle2D.Float(58, cardY, 18, cardHeight, 18, 18));
         graphics.setColor(new Color(48, 25, 37));
         graphics.setFont(new Font("SansSerif", Font.BOLD, width / 18));
-        drawWrapped(graphics, headline, 102, (int) (height * .63), width - 204, width / 16);
+        drawWrapped(graphics, headline, 102, (int) (cardY + height * .07f), width - 204, width / 16);
         graphics.setFont(new Font("SansSerif", Font.PLAIN, width / 34));
-        graphics.drawString(serviceName(briefing), 102, (int) (height * .83));
+        graphics.drawString(serviceName(briefing), 102, (int) (cardY + cardHeight - height * .055f));
         graphics.setFont(new Font("SansSerif", Font.BOLD, width / 38));
         graphics.drawString(publicText(briefing.getProfessionalName()), 70, 92);
         graphics.setFont(new Font("SansSerif", Font.PLAIN, width / 45));

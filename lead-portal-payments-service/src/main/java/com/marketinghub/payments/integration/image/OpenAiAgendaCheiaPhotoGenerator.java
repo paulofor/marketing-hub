@@ -23,8 +23,15 @@ import org.springframework.web.client.RestClient;
 @Component
 public class OpenAiAgendaCheiaPhotoGenerator implements AgendaCheiaPhotoGenerator {
     private static final Logger log = LoggerFactory.getLogger(OpenAiAgendaCheiaPhotoGenerator.class);
-    private static final List<String> STYLES = List.of("clean girl leitoso", "french moderno", "cat-eye vinho", "chrome rosé", "jelly nude");
-    private static final List<String> SCENES = List.of("mão apoiada em tecido de linho", "close editorial em mesa de salão", "mão segurando delicadamente um frasco sem marca", "mão sobre pedra clara", "gesto natural com joia minimalista");
+    private static final List<String> STYLES = List.of(
+            "clean girl leitoso", "french moderno", "cat-eye vinho", "chrome rosé", "jelly nude",
+            "micro french dourado", "baby boomer sofisticado", "vermelho cereja glossy", "nude mocha", "azul profundo minimalista");
+    private static final List<String> SCENES = List.of(
+            "mão apoiada em tecido de linho", "close editorial em mesa de salão",
+            "mão segurando delicadamente um frasco sem marca", "mão sobre pedra clara",
+            "gesto natural com joia minimalista", "mãos sobre bolsa de couro neutra",
+            "detalhe das unhas ao segurar uma xícara de cerâmica", "mão apoiada em vestido acetinado",
+            "close lateral com fundo de salão desfocado", "mãos em pose natural sobre mesa de madeira clara");
     private final RestClient client;
     private final ObjectMapper mapper;
     private final String model;

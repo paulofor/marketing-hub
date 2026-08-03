@@ -47,7 +47,8 @@ services:
       - lead-portal-payments-net
 
   proxy:
-    image: nginx:1.25-alpine
+    build:
+      context: ./docker/proxy
     depends_on:
       lead-portal-payments-service:
         condition: service_started

@@ -231,6 +231,12 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isError: false,
       isSuccess: false,
     }),
+    useUpdateCommercialPlan: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      isSuccess: false,
+    }),
   };
 });
 
@@ -390,6 +396,26 @@ describe("CommercialPlanningPage", () => {
     expect(screen.queryByText("Plano ativo")).toBeNull();
     expect(screen.queryByText("Planos de Primeira Venda")).toBeNull();
     expect(screen.queryByText("Novo Plano de Primeira Venda")).toBeNull();
+  });
+
+  it("permite editar as decisoes comerciais do plano pela tela", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Editar plano" }));
+
+    expect(screen.getByLabelText("Status")).toBeTruthy();
+    expect(screen.getByLabelText("Prazo da meta")).toBeTruthy();
+    expect(screen.getByLabelText("Meta de receita")).toBeTruthy();
+    expect(screen.getByLabelText("Objetivo comercial")).toBeTruthy();
+    expect(screen.getByLabelText("Critério de sucesso")).toBeTruthy();
+    expect(screen.getByLabelText("Critério de parada")).toBeTruthy();
+    expect(screen.getByLabelText("Próxima ação")).toBeTruthy();
+    expect(screen.getByLabelText("Gargalo atual")).toBeTruthy();
+    expect(screen.getByLabelText("Causa-raiz")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Salvar planejamento" }),
+    ).toBeTruthy();
   });
 
   it("inicializa semanas fechadas e abre a tabela ordenada por media de tempo", async () => {

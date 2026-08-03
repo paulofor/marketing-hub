@@ -25,7 +25,7 @@ generate() {
     fi
     prompt="Fotografia macro editorial premium e fotorrealista de nail design ${styles[$index]}. Unhas grandes, nítidas e protagonistas; mãos anatomicamente corretas; composição comercial distinta; fundo elegante. Sem letras, logotipos, marcas d'água, telefone, interface, moldura ou texto incorporado."
     response="$(curl --fail --silent --show-error --connect-timeout 20 --max-time 300 \
-      --retry 2 --retry-delay 5 --retry-all-errors https://api.openai.com/v1/images/generations \
+      --retry 2 --retry-delay 5 https://api.openai.com/v1/images/generations \
       -H "Authorization: Bearer $OPENAI_API_KEY" -H 'Content-Type: application/json' \
       --data "$(jq -n --arg model "$model" --arg prompt "$prompt" '{model:$model,prompt:$prompt,size:"1024x1024",quality:"high"}')")"
     jq -er '.data[0].b64_json' <<<"$response" | base64 -d > "$candidate_dir/$filename"

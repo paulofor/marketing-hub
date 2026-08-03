@@ -40,6 +40,20 @@ const HIGH_RISK_TERMS = [
   "processo judicial",
 ];
 
+const COMMERCIAL_INTENT_TERMS = [
+  "preço",
+  "preco",
+  "comprar",
+  "contratar",
+  "curso",
+  "consultoria",
+  "anúncio",
+  "anuncio",
+  "vale a pena",
+  "review",
+  "alternativa",
+];
+
 const DOMAIN_PAIN_QUERIES = [
   {
     match: [
@@ -206,12 +220,15 @@ export function buildSearchQueries(job) {
   );
 
   return deduplicateQueries([
-    ...domainQueries,
+    ...domainQueries.slice(0, 2),
+    ...commercialSignalQueries.slice(0, 2),
+    ...scientificResearchQueries.slice(0, 2),
+    ...domainQueries.slice(2),
+    ...commercialSignalQueries.slice(2),
+    ...scientificResearchQueries.slice(2),
     ...genericQueries,
     ...marketSignalQueries,
     ...sourceDiscoveryQueries,
-    ...commercialSignalQueries,
-    ...scientificResearchQueries,
   ]);
 }
 
@@ -306,9 +323,7 @@ export async function searchInternet(job, options = {}) {
       providerErrors.length,
     );
   }
-  if (collected.length === 0) {
-    return fallbackResults(job, config.provider);
-  }
+  if (collected.length === 0) return [];
   return deduplicateResults(collected).slice(0, maxSearchResults);
 }
 
@@ -367,9 +382,18 @@ export function analyzeSearchResults(job, results) {
     .map((item) => `${item.title} ${item.snippet}`)
     .join(" ")
     .toLowerCase();
+  const commercialCombined = evidence
+    .filter((item) => !isScientificArticleCandidate(item))
+    .map((item) => `${item.title} ${item.snippet}`)
+    .join(" ")
+    .toLowerCase();
   const painHits = countHits(combined, PAIN_TERMS);
   const unmetHits = countHits(combined, UNMET_TERMS);
   const highRiskHits = countHits(combined, HIGH_RISK_TERMS);
+  const commercialIntentHits = countHits(
+    commercialCombined,
+    COMMERCIAL_INTENT_TERMS,
+  );
   const independentDomains = new Set(
     evidence.map((item) => safeDomain(item.url)).filter(Boolean),
   ).size;
@@ -377,15 +401,20 @@ export function analyzeSearchResults(job, results) {
   const unmetScore = Math.min(30, unmetHits * 5);
   const pdeScore = highRiskHits > 0 ? 5 : 25;
   const scientificEvidenceScore = Math.min(10, scientificArticles.length * 3);
+  const commercialScore = Math.min(15, commercialIntentHits * 3);
   const score = Math.min(
     100,
-    scaleScore + unmetScore + pdeScore + scientificEvidenceScore + 5,
+    scaleScore + unmetScore + pdeScore + scientificEvidenceScore + commercialScore,
   );
   const decision =
-    highRiskHits > 0
+    evidence.length === 0
+      ? "RESEARCH_MORE"
+      : highRiskHits > 0
       ? "HUMAN_REVIEW"
       : scientificArticles.length === 0
         ? "RESEARCH_MORE"
+        : commercialIntentHits === 0
+          ? "RESEARCH_MORE"
         : score >= 70 && independentDomains >= 2
           ? "APPROVE"
           : score >= 45
@@ -396,35 +425,57 @@ export function analyzeSearchResults(job, results) {
       ? `${scientificArticles.length} artigo(s) científico(s) candidato(s) coletado(s) para sustentar ou limitar o mecanismo.`
       : "Nenhum artigo científico candidato foi coletado; o mecanismo não deve ser tratado como validado antes de nova pesquisa científica.";
 
-  return {
-    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${independentDomains} domínios independentes e ${scientificArticles.length} artigos científicos candidatos. Principal decisão: ${decision}.`,
-    opportunities: [
+  const opportunityBlueprints = evidence.length === 0 ? [] : [
       {
-        name: `PDE de alívio para ${job.theme}`,
+        name: `Diagnóstico de decisão para ${job.theme}`,
         primaryAudience: job.targetAudience || job.theme,
-        rootPain: `O público demonstra esforço recorrente para resolver ${job.theme} com clareza e baixo risco.`,
+        rootPain: `O público não consegue identificar com segurança o próximo passo para resolver ${job.theme}.`,
         practicalPain:
-          "A dor aparece como excesso de tentativa, comparação, busca por orientação e dificuldade de transformar informação em ação.",
+          "Excesso de comparação e informação impede uma decisão prática.",
         emotionalPain:
-          "A fricção tende a gerar insegurança, medo de errar e sensação de estar sozinho na decisão.",
-        scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
-        unmetnessEvidence: `${unmetHits} sinais sugerem soluções caras, confusas, demoradas ou incompletas.`,
-        pdeExperience: `Experiência guiada em que o usuário informa sua situação, recebe diagnóstico simples, plano de ação e primeiro antes/depois aplicável. Mecanismo deve ser definido usando os artigos coletados: ${mechanismEvidence}`,
-        firstCampaignAngle: `Pare de tentar resolver ${job.theme} no improviso: veja em poucos minutos qual é o próximo passo mais seguro.`,
-        commercialRisk:
-          highRiskHits > 0
-            ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
-            : scientificArticles.length === 0
-              ? "Risco principal é criar promessa sem sustentação científica do mecanismo; pesquisar artigos antes de campanha."
-              : "Risco principal é extrapolar artigos científicos para promessa comercial absoluta; transformar evidência em mecanismo prático com limites claros.",
-        evidenceJson: JSON.stringify({
-          publicEvidence: evidence,
-          scientificArticles,
-        }),
-        score,
-        decision,
+          "A indecisão gera insegurança e medo de desperdiçar tempo ou dinheiro.",
+        pdeExperience: "Diagnóstico guiado que classifica a situação e entrega uma decisão priorizada com justificativa.",
+        firstCampaignAngle: `Descubra em poucos minutos qual próximo passo faz sentido para ${job.theme}.`,
       },
-    ],
+      {
+        name: `Plano de primeira ação para ${job.theme}`,
+        primaryAudience: job.targetAudience || job.theme,
+        rootPain: `O público entende informações sobre ${job.theme}, mas não consegue transformá-las em ação consistente.`,
+        practicalPain: "Orientações genéricas não viram uma sequência executável na rotina real.",
+        emotionalPain: "A falta de progresso reforça frustração e sensação de incapacidade.",
+        pdeExperience: "Plano curto e adaptativo com uma ação por vez, confirmação de execução e ajuste pela resposta do usuário.",
+        firstCampaignAngle: `Saia da pesquisa e execute hoje a primeira ação segura para ${job.theme}.`,
+      },
+      {
+        name: `Simulador prático para ${job.theme}`,
+        primaryAudience: job.targetAudience || job.theme,
+        rootPain: `O público teme errar ao aplicar uma solução de ${job.theme} sem testar antes.`,
+        practicalPain: "Faltam exemplos personalizados, ensaio e feedback antes da aplicação real.",
+        emotionalPain: "O risco percebido bloqueia a tentativa mesmo quando existe intenção de resolver.",
+        pdeExperience: "Simulação interativa com cenário personalizado, resposta sugerida e feedback imediato.",
+        firstCampaignAngle: `Teste sua próxima decisão sobre ${job.theme} antes de colocá-la em prática.`,
+      },
+    ];
+  const commercialRisk = highRiskHits > 0
+    ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
+    : scientificArticles.length === 0
+      ? "Sem sustentação científica candidata do mecanismo; nova pesquisa é obrigatória antes de campanha."
+      : commercialIntentHits === 0
+        ? "Não há sinal verificável de intenção de compra; pesquisar preços, concorrentes, reviews e anúncios antes de campanha."
+        : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
+
+  return {
+    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Principal decisão: ${decision}.`,
+    opportunities: opportunityBlueprints.map((blueprint, index) => ({
+      ...blueprint,
+      scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
+      unmetnessEvidence: `${unmetHits} sinais sugerem soluções caras, confusas, demoradas ou incompletas; ${commercialIntentHits} sinais indicam intenção comercial.`,
+      pdeExperience: `${blueprint.pdeExperience} Mecanismo deve respeitar a evidência coletada: ${mechanismEvidence}`,
+      commercialRisk,
+      evidenceJson: JSON.stringify({ publicEvidence: evidence, scientificArticles, commercialIntentHits }),
+      score: Math.max(0, score - index * 3),
+      decision,
+    })),
   };
 }
 
@@ -611,16 +662,6 @@ function requireApiKey(value, envName, provider) {
   if (!value) {
     throw new Error(`${provider} search requires ${envName}`);
   }
-}
-
-function fallbackResults(job, provider = SEARCH_PROVIDERS.DUCKDUCKGO) {
-  return [
-    {
-      title: `Pesquisa inicial sobre ${job.theme}`,
-      url: `https://search.brave.com/search?q=${encodeURIComponent(job.theme || "produto PDE")}`,
-      snippet: `Busca ${provider} não retornou resultados estruturados suficientes para ${job.theme}; pesquisar mais em comunidades, reviews e anúncios.`,
-    },
-  ];
 }
 
 function toSearchResult(item) {

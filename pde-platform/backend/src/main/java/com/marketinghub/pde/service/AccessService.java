@@ -403,12 +403,19 @@ public class AccessService {
 
     /** Consolida métricas comerciais de humanos e preserva auditoria de tráfego não elegível. */
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(String productSlug) {
-        return summarizeFunnelAnalytics(productSlug, false);
+        return summarizeFunnelAnalytics(productSlug, false, null);
     }
 
     /** Consolida métricas comerciais e permite incluir tráfego técnico em quebras de diagnóstico. */
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(String productSlug, boolean includeNonHumanTraffic) {
+        return summarizeFunnelAnalytics(productSlug, includeNonHumanTraffic, null);
+    }
+
+    /** Consolida métricas de uma versão específica sem misturar jornadas de outros slots do produto. */
+    public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(
+            String productSlug, boolean includeNonHumanTraffic, String experienceVersion) {
         ProductExperienceResponse product = productCatalogService.getProduct(productSlug);
+        String normalizedExperienceVersion = blankToNull(experienceVersion);
         if (!usesJdbcStorage()) {
             return emptyFunnelAnalytics(productSlug);
         }
@@ -457,15 +464,18 @@ public class AccessService {
                   MAX(occurred_at) AS last_event_at
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                 """;
         try (Connection connection = openConnection();
                 PreparedStatement summaryStatement = connection.prepareStatement(summarySql)) {
             summaryStatement.setString(1, productSlug);
+            summaryStatement.setString(2, normalizedExperienceVersion);
+            summaryStatement.setString(3, normalizedExperienceVersion);
             try (ResultSet resultSet = summaryStatement.executeQuery()) {
                 if (resultSet.next()) {
                     return new FunnelAnalyticsSummaryResponse(
                             productSlug,
-                            product.experienceVersion(),
+                            normalizedExperienceVersion == null ? product.experienceVersion() : normalizedExperienceVersion,
                             resultSet.getLong("total_events"),
                             resultSet.getLong("raw_total_events"),
                             resultSet.getLong("unique_visitors"),
@@ -488,14 +498,14 @@ public class AccessService {
                             resultSet.getLong("checkout_started"),
                             resultSet.getLong("total_visible_ms"),
                             timestampAsOperationalText(resultSet, "last_event_at"),
-                            loadFunnelEventMetrics(connection, productSlug),
+                            loadFunnelEventMetrics(connection, productSlug, normalizedExperienceVersion),
                             loadExperienceVersionMetrics(connection, productSlug),
-                            loadLayoutMetrics(connection, productSlug),
-                            loadTrafficSourceMetrics(connection, productSlug, includeNonHumanTraffic),
-                            loadTrafficQualityMetrics(connection, productSlug),
-                            loadDeviceMetrics(connection, productSlug),
-                            loadScreenSizeMetrics(connection, productSlug),
-                            loadSessionJourneyDtos(connection, productSlug, 20));
+                            loadLayoutMetrics(connection, productSlug, normalizedExperienceVersion),
+                            loadTrafficSourceMetrics(connection, productSlug, includeNonHumanTraffic, normalizedExperienceVersion),
+                            loadTrafficQualityMetrics(connection, productSlug, normalizedExperienceVersion),
+                            loadDeviceMetrics(connection, productSlug, normalizedExperienceVersion),
+                            loadScreenSizeMetrics(connection, productSlug, normalizedExperienceVersion),
+                            loadSessionJourneyDtos(connection, productSlug, normalizedExperienceVersion, 20));
                 }
             }
         } catch (SQLException | IOException ex) {
@@ -525,7 +535,8 @@ public class AccessService {
         ensureOperationalSchemaReady();
         int safeLimit = Math.max(1, Math.min(limit, 100));
         try (Connection connection = openConnection()) {
-            List<FunnelAnalyticsSessionJourneyDto> sessions = loadSessionJourneyDtos(connection, productSlug, safeLimit);
+            List<FunnelAnalyticsSessionJourneyDto> sessions =
+                    loadSessionJourneyDtos(connection, productSlug, null, safeLimit);
             return new FunnelAnalyticsJourneyResponse(productSlug, sessions.size(), sessions);
         } catch (SQLException | IOException ex) {
             log.error("Falha ao consolidar jornadas PDE; productSlug={}, limit={}", productSlug, safeLimit, ex);
@@ -534,9 +545,10 @@ public class AccessService {
     }
 
     /** Carrega as jornadas mais recentes usando a conexão informada. */
-    private List<FunnelAnalyticsSessionJourneyDto> loadSessionJourneyDtos(Connection connection, String productSlug, int limit)
+    private List<FunnelAnalyticsSessionJourneyDto> loadSessionJourneyDtos(
+            Connection connection, String productSlug, String experienceVersion, int limit)
             throws SQLException, IOException {
-        List<String> recentSessionIds = loadRecentHumanSessionIds(connection, productSlug, limit);
+        List<String> recentSessionIds = loadRecentHumanSessionIds(connection, productSlug, experienceVersion, limit);
         if (recentSessionIds.isEmpty()) {
             return List.of();
         }
@@ -559,6 +571,7 @@ public class AccessService {
                   e.occurred_at
                 FROM pde_funnel_event e
                 WHERE e.product_slug = ?
+                  AND (? IS NULL OR e.experience_version = ?)
                   AND e.traffic_quality = 'HUMAN'
                   AND COALESCE(e.session_id, e.event_id) IN (""" + placeholders + """
                   )
@@ -566,8 +579,10 @@ public class AccessService {
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
             for (int index = 0; index < recentSessionIds.size(); index++) {
-                statement.setString(index + 2, recentSessionIds.get(index));
+                statement.setString(index + 4, recentSessionIds.get(index));
             }
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<String, SessionJourneyBuilder> builders = new LinkedHashMap<>();
@@ -588,11 +603,13 @@ public class AccessService {
     }
 
     /** Seleciona sessões humanas recentes com leitura indexável antes de carregar os passos da jornada. */
-    private List<String> loadRecentHumanSessionIds(Connection connection, String productSlug, int limit) throws SQLException {
+    private List<String> loadRecentHumanSessionIds(
+            Connection connection, String productSlug, String experienceVersion, int limit) throws SQLException {
         String sql = """
                 SELECT COALESCE(session_id, event_id) AS resolved_session_id
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                   AND traffic_quality = 'HUMAN'
                 ORDER BY occurred_at DESC, id DESC
                 LIMIT ?
@@ -600,7 +617,9 @@ public class AccessService {
         int scanLimit = Math.max(limit * 20, limit);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
-            statement.setInt(2, scanLimit);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
+            statement.setInt(4, scanLimit);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Set<String> sessionIds = new LinkedHashSet<>();
                 while (resultSet.next() && sessionIds.size() < limit) {
@@ -902,6 +921,8 @@ public class AccessService {
                 "FIRST_USE",
                 "MISSION_OPEN",
                 "MISSION_COMPLETED",
+                "MISSION_FEEDBACK_SUBMITTED",
+                "JOURNEY_COMPLETED",
                 "MISSION_INTERACTION_SAVED",
                 "AI_GUIDANCE_REQUESTED",
                 "MATERIAL_OPEN");
@@ -1008,18 +1029,22 @@ public class AccessService {
     }
 
     /** Lê as contagens por tipo de evento para detalhar o relatório comercial. */
-    private List<FunnelAnalyticsEventMetricDto> loadFunnelEventMetrics(Connection connection, String productSlug)
+    private List<FunnelAnalyticsEventMetricDto> loadFunnelEventMetrics(
+            Connection connection, String productSlug, String experienceVersion)
             throws SQLException {
         String sql = """
                 SELECT event_type, COUNT(*) AS total
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                   AND traffic_quality = 'HUMAN'
                 GROUP BY event_type
                 ORDER BY total DESC, event_type
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<FunnelAnalyticsEventMetricDto> metrics = new java.util.ArrayList<>();
                 while (resultSet.next()) {
@@ -1083,7 +1108,8 @@ public class AccessService {
     }
 
     /** Lê as métricas agregadas por layout para comparar formatos visuais independentes do PDE. */
-    private List<FunnelAnalyticsLayoutMetricDto> loadLayoutMetrics(Connection connection, String productSlug)
+    private List<FunnelAnalyticsLayoutMetricDto> loadLayoutMetrics(
+            Connection connection, String productSlug, String experienceVersion)
             throws SQLException, IOException {
         String sql = """
                 SELECT
@@ -1093,11 +1119,14 @@ public class AccessService {
                   metadata_json
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                   AND traffic_quality = 'HUMAN'
                 ORDER BY occurred_at DESC, id DESC
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<String, LayoutMetricBuilder> builders = new LinkedHashMap<>();
                 while (resultSet.next()) {
@@ -1120,12 +1149,12 @@ public class AccessService {
     /** Lê desempenho por origem, campanha e criativo para cruzar mídia com comportamento real no PDE. */
     private List<FunnelAnalyticsTrafficSourceMetricDto> loadTrafficSourceMetrics(Connection connection, String productSlug)
             throws SQLException {
-        return loadTrafficSourceMetrics(connection, productSlug, false);
+        return loadTrafficSourceMetrics(connection, productSlug, false, null);
     }
 
     /** Lê desempenho por origem permitindo tráfego técnico somente em diagnóstico fake explícito. */
     private List<FunnelAnalyticsTrafficSourceMetricDto> loadTrafficSourceMetrics(
-            Connection connection, String productSlug, boolean includeNonHumanTraffic)
+            Connection connection, String productSlug, boolean includeNonHumanTraffic, String experienceVersion)
             throws SQLException {
         String sql = """
                 SELECT
@@ -1140,11 +1169,14 @@ public class AccessService {
                   occurred_at
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                   AND (? OR traffic_quality = 'HUMAN')
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
-            statement.setBoolean(2, includeNonHumanTraffic);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
+            statement.setBoolean(4, includeNonHumanTraffic);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<TrafficSourceKey, TrafficSourceMetricBuilder> builders = new LinkedHashMap<>();
                 while (resultSet.next()) {
@@ -1184,8 +1216,8 @@ public class AccessService {
 
     /** Lê a auditoria de qualidade de tráfego sem misturar robôs nos KPIs comerciais. */
     private List<FunnelAnalyticsTrafficQualityMetricDto> loadTrafficQualityMetrics(
-            Connection connection, String productSlug) throws SQLException {
-        long rawSessions = countRawSessions(connection, productSlug);
+            Connection connection, String productSlug, String experienceVersion) throws SQLException {
+        long rawSessions = countRawSessions(connection, productSlug, experienceVersion);
         String sql = """
                 SELECT
                   COALESCE(NULLIF(traffic_quality, ''), 'UNKNOWN') AS resolved_traffic_quality,
@@ -1193,11 +1225,14 @@ public class AccessService {
                   COUNT(*) AS events
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                 GROUP BY COALESCE(NULLIF(traffic_quality, ''), 'UNKNOWN')
                 ORDER BY sessions DESC, events DESC
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<FunnelAnalyticsTrafficQualityMetricDto> metrics = new java.util.ArrayList<>();
                 while (resultSet.next()) {
@@ -1260,20 +1295,23 @@ public class AccessService {
 
     /** Lê distribuição de sessões por dispositivo para diagnosticar aderência do tráfego pago ao PDE. */
     private List<com.marketinghub.pde.dto.FunnelAnalyticsDeviceMetricDto> loadDeviceMetrics(
-            Connection connection, String productSlug) throws SQLException {
-        long totalSessions = countSessions(connection, productSlug);
+            Connection connection, String productSlug, String experienceVersion) throws SQLException {
+        long totalSessions = countSessions(connection, productSlug, experienceVersion);
         String sql = """
                 SELECT
                   COALESCE(NULLIF(device_type, ''), 'desktop') AS resolved_device_type,
                   COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                   AND traffic_quality = 'HUMAN'
                 GROUP BY COALESCE(NULLIF(device_type, ''), 'desktop')
                 """;
         Map<String, Long> sessionsByDevice = new java.util.HashMap<>();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     sessionsByDevice.put(
@@ -1293,8 +1331,8 @@ public class AccessService {
 
     /** Lê distribuição de sessões por tamanho de tela capturado pelo frontend PDE. */
     private List<com.marketinghub.pde.dto.FunnelAnalyticsScreenSizeMetricDto> loadScreenSizeMetrics(
-            Connection connection, String productSlug) throws SQLException {
-        long totalSessions = countSessions(connection, productSlug);
+            Connection connection, String productSlug, String experienceVersion) throws SQLException {
+        long totalSessions = countSessions(connection, productSlug, experienceVersion);
         String sql = """
                 SELECT
                   viewport_width,
@@ -1302,6 +1340,7 @@ public class AccessService {
                   COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                   AND traffic_quality = 'HUMAN'
                   AND viewport_width IS NOT NULL
                   AND viewport_height IS NOT NULL
@@ -1311,6 +1350,8 @@ public class AccessService {
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<com.marketinghub.pde.dto.FunnelAnalyticsScreenSizeMetricDto> metrics =
                         new java.util.ArrayList<>();
@@ -1333,15 +1374,18 @@ public class AccessService {
     }
 
     /** Conta sessões totais do produto para calcular percentuais de agregados comerciais. */
-    private long countSessions(Connection connection, String productSlug) throws SQLException {
+    private long countSessions(Connection connection, String productSlug, String experienceVersion) throws SQLException {
         String sql = """
                 SELECT COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                   AND traffic_quality = 'HUMAN'
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() ? resultSet.getLong("sessions") : 0L;
             }
@@ -1349,14 +1393,17 @@ public class AccessService {
     }
 
     /** Conta sessões brutas para calcular a participação de robôs e validadores. */
-    private long countRawSessions(Connection connection, String productSlug) throws SQLException {
+    private long countRawSessions(Connection connection, String productSlug, String experienceVersion) throws SQLException {
         String sql = """
                 SELECT COUNT(DISTINCT COALESCE(session_id, event_id)) AS sessions
                 FROM pde_funnel_event
                 WHERE product_slug = ?
+                  AND (? IS NULL OR experience_version = ?)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, productSlug);
+            statement.setString(2, experienceVersion);
+            statement.setString(3, experienceVersion);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() ? resultSet.getLong("sessions") : 0L;
             }

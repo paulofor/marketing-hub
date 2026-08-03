@@ -210,8 +210,8 @@ jobs:
             && docker compose -f docker-compose.deploy.yml pull \
             && (docker rm -f lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 >/dev/null 2>&1 || true) \
             && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
-            && test \"\$(docker inspect lead-portal-payments-service --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^LEAD_PORTAL_PAYMENTS_AUTH_TOKEN=//p' | awk '{ print length }')\" -ge 32 \
-            && test \"\$(docker inspect lead-portal-payments-service --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^OPENAI_API_KEY=//p' | awk '{ print length }')\" -ge 20 \
+            && test \"\$(docker inspect lead-portal-payments-service --format '{{range .Config.Env}}{{println .}}{{end}}' | awk -F= '/^LEAD_PORTAL_PAYMENTS_AUTH_TOKEN=/{print length(\$2); found=1} END{if (!found) print 0}')\" -ge 32 \
+            && test \"\$(docker inspect lead-portal-payments-service --format '{{range .Config.Env}}{{println .}}{{end}}' | awk -F= '/^OPENAI_API_KEY=/{print length(\$2); found=1} END{if (!found) print 0}')\" -ge 20 \
             && docker image prune -af"
       - name: Issue Clube MUSA certificate
         if: github.event_name == 'workflow_dispatch' && inputs.issue_clubemusa_certificate == 'true'

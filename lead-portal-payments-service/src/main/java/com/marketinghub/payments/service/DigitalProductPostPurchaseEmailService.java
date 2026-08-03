@@ -178,7 +178,8 @@ public class DigitalProductPostPurchaseEmailService {
                     withPaymentId(delivery.getDeliveryPageUrl(), paymentDetails.id()),
                     delivery.getDownloadUrl(),
                     paymentDetails.id(),
-                    delivery.getExternalReference()));
+                    delivery.getExternalReference(),
+                    brandName(delivery)));
             delivery.setStatus(DigitalProductDeliveryEmailStatus.SENT);
             delivery.setEmailRequestId(response != null ? response.requestId() : null);
             delivery.setSentAt(Instant.now());
@@ -237,6 +238,9 @@ public class DigitalProductPostPurchaseEmailService {
 
     /** Resolve o nome do produto priorizando descrição real do pagamento. */
     private String resolveProductName(MercadoPagoPaymentDetails paymentDetails, DigitalProductConfig productConfig) {
+        if (normalize(paymentDetails.externalReference()).equals(normalize(properties.getAgendaCheiaReference()))) {
+            return properties.getAgendaCheiaProductName();
+        }
         if (StringUtils.hasText(paymentDetails.description())) {
             return paymentDetails.description();
         }
@@ -245,6 +249,12 @@ public class DigitalProductPostPurchaseEmailService {
             return metadataProductName;
         }
         return productConfig.productName();
+    }
+
+    /** Define a identidade pública do remetente conforme o produto entregue. */
+    private String brandName(DigitalProductDeliveryEmail delivery) {
+        return normalize(delivery.getExternalReference()).equals(normalize(properties.getAgendaCheiaReference()))
+                ? "Agenda Cheia Nail Design" : "Digicom Digital";
     }
 
     /** Resolve a URL de download configurada nos metadados ou no fallback do experimento. */

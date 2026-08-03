@@ -10,6 +10,7 @@ public record DigitalProductDeliveryEmailRequest(
         String deliveryPageUrl,
         String downloadUrl,
         String paymentId,
-        String externalReference
+        String externalReference,
+        String brandName
 ) {
 }

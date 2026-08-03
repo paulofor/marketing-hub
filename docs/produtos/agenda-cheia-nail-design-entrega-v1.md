@@ -1,6 +1,6 @@
 # Agenda Cheia Nail Design — entrega personalizada v1
 
-**STATUS: IMPLEMENTADO NA WORKTREE**
+**STATUS: IMPLEMENTADO**
 
 ## Objetivo comercial
 
@@ -20,16 +20,16 @@ garante clientes ou agenda cheia.
 ## Personalização aplicada
 
 As artes e textos usam nome profissional, cidade ou região, WhatsApp, serviço principal,
-cores preferidas e objetivo semanal informados no briefing. A versão inicial usa composição
-visual editorial gerada por código e templates reutilizáveis. Texto sempre é aplicado pelo
-compositor, nunca incorporado por geração livre de imagem.
+cores preferidas e objetivo semanal informados no briefing. O pipeline produz cinco fotografias
+premium sem texto a partir de prompt versionado, e templates reutilizáveis fazem a composição.
+Texto sempre é aplicado pelo compositor, nunca incorporado pela geração livre de imagem.
 
 ## Pipeline operacional
 
 1. O pagamento aprovado libera o briefing.
 2. O briefing é persistido como `BRIEFING_RECEBIDO`.
 3. A composição cria posts, stories e textos em diretório privado.
-4. O gate automático valida quantidades, dimensões, formato e integridade do ZIP.
+4. O gate automático valida quantidades, dimensões, nitidez, diversidade visual, formato e integridade do ZIP.
 5. Nota inferior a 90 bloqueia a entrega e persiste falha técnica.
 6. O pacote aprovado recebe token opaco de download.
 7. O link é enviado ao e-mail confirmado no briefing.

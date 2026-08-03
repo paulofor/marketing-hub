@@ -19,6 +19,7 @@ public record DigitalProductDeliveryEmailRequest(
         @NotBlank(message = "PaymentId é obrigatório")
         String paymentId,
         @NotBlank(message = "ExternalReference é obrigatória")
-        String externalReference
+        String externalReference,
+        String brandName
 ) {
 }

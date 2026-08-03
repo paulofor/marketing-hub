@@ -4,9 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetails;
+import com.marketinghub.payments.integration.image.AgendaCheiaPhotoGenerator;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
 import com.marketinghub.payments.model.AgendaCheiaBriefing;
 import com.marketinghub.payments.model.AgendaCheiaDelivery;
 import com.marketinghub.payments.repository.AgendaCheiaDeliveryRepository;
@@ -35,7 +39,7 @@ class AgendaCheiaKitProductionServiceTest {
         when(repository.findByBriefingId(7L)).thenReturn(Optional.empty());
         when(repository.save(any(AgendaCheiaDelivery.class))).thenAnswer(invocation -> invocation.getArgument(0));
         AgendaCheiaKitProductionService service = new AgendaCheiaKitProductionService(
-                repository, emailService, new ObjectMapper(), storage.toString(), "https://pagamentos.example");
+                repository, emailService, new ObjectMapper(), photographicGenerator(), storage.toString(), "https://pagamentos.example");
         AgendaCheiaBriefing briefing = briefing();
         MercadoPagoPaymentDetails payment = new MercadoPagoPaymentDetails(
                 "pay-67", "approved", new BigDecimal("0.67"), "BRL", "Agenda Cheia",
@@ -62,6 +66,44 @@ class AgendaCheiaKitProductionServiceTest {
                 org.mockito.ArgumentMatchers.eq("buyer@example.com"),
                 org.mockito.ArgumentMatchers.eq("Studio Ana"),
                 org.mockito.ArgumentMatchers.contains("/download"));
+    }
+
+    /** Deve bloquear um kit composto por imagens planas e visualmente repetidas. */
+    @Test
+    void rejectsFlatAndRepeatedImages() {
+        AgendaCheiaDeliveryRepository repository = org.mockito.Mockito.mock(AgendaCheiaDeliveryRepository.class);
+        DigitalProductPostPurchaseEmailService emailService = org.mockito.Mockito.mock(DigitalProductPostPurchaseEmailService.class);
+        when(repository.findByBriefingId(7L)).thenReturn(Optional.empty());
+        when(repository.save(any(AgendaCheiaDelivery.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        AgendaCheiaPhotoGenerator flat = (executionId, variant) -> {
+            BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_RGB);
+            var graphics = image.createGraphics();
+            graphics.setColor(Color.PINK);
+            graphics.fillRect(0, 0, 1024, 1024);
+            graphics.dispose();
+            return image;
+        };
+        AgendaCheiaKitProductionService service = new AgendaCheiaKitProductionService(
+                repository, emailService, new ObjectMapper(), flat, storage.toString(), "https://pagamentos.example");
+        MercadoPagoPaymentDetails payment = new MercadoPagoPaymentDetails(
+                "pay-67", "approved", new BigDecimal("0.67"), "BRL", "Agenda Cheia",
+                "buyer@example.com", "agenda-cheia-nail-design", Instant.now(), Map.of(), "{}");
+
+        assertThatThrownBy(() -> service.produceAndDeliver(briefing(), payment))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Não foi possível concluir o kit personalizado");
+    }
+
+    /** Simula fotografias variadas e detalhadas sem chamar provedor externo no teste. */
+    private AgendaCheiaPhotoGenerator photographicGenerator() {
+        return (executionId, variant) -> {
+            BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_RGB);
+            for (int y = 0; y < 1024; y++) for (int x = 0; x < 1024; x++) {
+                int noise = (x * 17 + y * 31 + variant * 47) & 63;
+                image.setRGB(x, y, new Color((80 + variant * 25 + noise) % 255, (40 + y / 5 + noise) % 255, (90 + x / 6) % 255).getRGB());
+            }
+            return image;
+        };
     }
 
     /** Monta um briefing completo para o cenário de produção. */

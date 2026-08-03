@@ -42,6 +42,8 @@ services:
       DELIVERY_FIXED_DELAY: ${DELIVERY_FIXED_DELAY:-60000}
       DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL:-http://digital-product-email-service:8080}
       AGENDA_CHEIA_PRODUCTION_STORAGE_ROOT: /data/agenda-cheia
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required for premium Agenda Cheia production}
+      OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1}
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"
     extra_hosts:

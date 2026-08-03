@@ -3,6 +3,7 @@ package com.marketinghub.payments.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.payments.dto.AgendaCheiaDeliveryResponse;
+import com.marketinghub.payments.integration.image.AgendaCheiaPhotoGenerator;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetails;
 import com.marketinghub.payments.model.AgendaCheiaBriefing;
 import com.marketinghub.payments.model.AgendaCheiaDelivery;
@@ -42,6 +43,7 @@ public class AgendaCheiaKitProductionService {
     private final AgendaCheiaDeliveryRepository repository;
     private final DigitalProductPostPurchaseEmailService emailService;
     private final ObjectMapper objectMapper;
+    private final AgendaCheiaPhotoGenerator photoGenerator;
     private final Path storageRoot;
     private final String publicBaseUrl;
 
@@ -50,11 +52,13 @@ public class AgendaCheiaKitProductionService {
             AgendaCheiaDeliveryRepository repository,
             DigitalProductPostPurchaseEmailService emailService,
             ObjectMapper objectMapper,
+            AgendaCheiaPhotoGenerator photoGenerator,
             @Value("${agenda-cheia.production.storage-root:/data/agenda-cheia}") String storageRoot,
             @Value("${payments.public-base-url:https://pagamentopalf.site}") String publicBaseUrl) {
         this.repository = repository;
         this.emailService = emailService;
         this.objectMapper = objectMapper;
+        this.photoGenerator = photoGenerator;
         this.storageRoot = Path.of(storageRoot).toAbsolutePath().normalize();
         this.publicBaseUrl = publicBaseUrl.replaceAll("/+$", "");
     }
@@ -134,18 +138,20 @@ public class AgendaCheiaKitProductionService {
         List<Path> images = new ArrayList<>();
         List<String> captions = captions(briefing);
         try {
+            List<BufferedImage> photos = new ArrayList<>();
+            for (int index = 0; index < 5; index++) photos.add(photoGenerator.generate(token, index));
             for (int index = 0; index < 10; index++) {
                 images.add(render(work.resolve("post-%02d.png".formatted(index + 1)), 1080, 1080,
-                        briefing, headline(index), index));
+                        briefing, headline(index), index, photos.get(index % photos.size())));
                 images.add(render(work.resolve("story-%02d.png".formatted(index + 1)), 1080, 1920,
-                        briefing, headline(index), index + 10));
+                        briefing, headline(index), index + 10, photos.get(index % photos.size())));
             }
             Files.writeString(work.resolve("legendas-prontas.txt"), String.join("\n\n---\n\n", captions), StandardCharsets.UTF_8);
             Files.writeString(work.resolve("mensagens-whatsapp.txt"), whatsappMessages(briefing), StandardCharsets.UTF_8);
             Files.writeString(work.resolve("calendario-7-dias.txt"), calendar(), StandardCharsets.UTF_8);
             Files.writeString(work.resolve("LEIA-ME.txt"), instructions(briefing), StandardCharsets.UTF_8);
             Path temporaryZip = work.resolve("agenda-cheia.zip");
-            int qualityScore = reviewImages(images, captions.size(), 5, 7);
+            int qualityScore = reviewImages(images, photos, captions.size(), 5, 7);
             zip(work, temporaryZip);
             Path finalZip = storageRoot.resolve("agenda-cheia-" + token + ".zip");
             Files.move(temporaryZip, finalZip, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -158,14 +164,14 @@ public class AgendaCheiaKitProductionService {
 
     /** Renderiza uma arte premium com texto aplicado fora de imagens geradas. */
     private Path render(Path output, int width, int height, AgendaCheiaBriefing briefing,
-                        String headline, int variant) throws IOException {
+                        String headline, int variant, BufferedImage photo) throws IOException {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         Color[] palette = palette(briefing.getPreferredColors(), variant);
-        graphics.setPaint(new java.awt.GradientPaint(0, 0, palette[0], width, height, palette[1]));
+        drawCoverPhoto(graphics, photo, width, height);
+        graphics.setPaint(new java.awt.GradientPaint(0, 0, new Color(0, 0, 0, 15), 0, height, new Color(0, 0, 0, 115)));
         graphics.fillRect(0, 0, width, height);
-        drawNailEditorial(graphics, width, height, palette[2], variant);
         graphics.setColor(new Color(255, 255, 255, 238));
         graphics.fill(new RoundRectangle2D.Float(58, height * .56f, width - 116, height * .35f, 42, 42));
         graphics.setColor(new Color(48, 25, 37));
@@ -183,20 +189,12 @@ public class AgendaCheiaKitProductionService {
         return output;
     }
 
-    /** Desenha uma composição editorial inspirada em unhas modernas sem depender de imagem externa. */
-    private void drawNailEditorial(Graphics2D graphics, int width, int height, Color accent, int variant) {
-        graphics.setColor(new Color(255, 255, 255, 42));
-        graphics.fillOval(width / 2 - 320, height / 8, 650, 650);
-        for (int index = 0; index < 5; index++) {
-            int x = width / 2 - 260 + index * 115;
-            int y = height / 6 + Math.abs(2 - index) * 38;
-            graphics.setColor(new Color(238, 190, 178));
-            graphics.fillRoundRect(x, y, 92, 330, 70, 70);
-            graphics.setColor(index == variant % 5 ? accent : accent.brighter());
-            graphics.fillRoundRect(x + 8, y + 5, 76, 145, 62, 62);
-            graphics.setColor(new Color(255, 255, 255, 105));
-            graphics.fillRoundRect(x + 25, y + 19, 15, 92, 12, 12);
-        }
+    /** Recorta a fotografia proporcionalmente para preencher o formato sem distorção. */
+    private void drawCoverPhoto(Graphics2D graphics, BufferedImage photo, int width, int height) {
+        double scale = Math.max((double) width / photo.getWidth(), (double) height / photo.getHeight());
+        int drawWidth = (int) Math.ceil(photo.getWidth() * scale);
+        int drawHeight = (int) Math.ceil(photo.getHeight() * scale);
+        graphics.drawImage(photo, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight, null);
     }
 
     /** Quebra texto em linhas legíveis dentro da área segura. */
@@ -217,7 +215,8 @@ public class AgendaCheiaKitProductionService {
     }
 
     /** Aplica o gate determinístico de quantidade, dimensões e conteúdo publicável. */
-    private int reviewImages(List<Path> images, int captionCount, int messageCount, int calendarDays) throws IOException {
+    private int reviewImages(List<Path> images, List<BufferedImage> photos,
+                             int captionCount, int messageCount, int calendarDays) throws IOException {
         if (images.size() != 20 || captionCount != 10 || messageCount != 5 || calendarDays != 7) {
             return 0;
         }
@@ -228,7 +227,40 @@ public class AgendaCheiaKitProductionService {
                 return 0;
             }
         }
-        return 100;
+        List<Long> fingerprints = photos.stream().map(this::fingerprint).toList();
+        double sharpnessTotal = photos.stream().mapToDouble(this::sharpness).sum();
+        long distinct = fingerprints.stream().distinct().count();
+        int diversity = (int) Math.min(30, distinct * 6);
+        int sharpness = sharpnessTotal / photos.size() >= 1 ? 35 : 0;
+        int completeness = 35;
+        int score = completeness + diversity + sharpness;
+        log.info("Revisão visual Agenda Cheia. score={}, distinctPhotos={}, averageSharpness={}",
+                score, distinct, Math.round(sharpnessTotal / photos.size()));
+        return score;
+    }
+
+    /** Mede nitidez por diferenças locais para bloquear fundos planos ou desfocados. */
+    private double sharpness(BufferedImage image) {
+        double total = 0;
+        int samples = 0;
+        for (int y = 2; y < image.getHeight(); y += 8) for (int x = 2; x < image.getWidth(); x += 8) {
+            int center = image.getRGB(x, y) & 255;
+            total += Math.abs(center - (image.getRGB(x - 2, y) & 255));
+            total += Math.abs(center - (image.getRGB(x, y - 2) & 255));
+            samples += 2;
+        }
+        return samples == 0 ? 0 : total / samples * 12;
+    }
+
+    /** Cria assinatura visual simples para exigir diversidade real entre composições. */
+    private long fingerprint(BufferedImage image) {
+        long result = 0;
+        for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) {
+            int rgb = image.getRGB((x * image.getWidth() + image.getWidth() / 2) / 8,
+                    (y * image.getHeight() + image.getHeight() / 2) / 8);
+            result = result * 31 + ((rgb >> 16) & 0xf0) + ((rgb >> 8) & 0xf0) + (rgb & 0xf0);
+        }
+        return result;
     }
 
     /** Serializa apenas o resumo funcional do pacote final. */

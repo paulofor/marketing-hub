@@ -44,7 +44,7 @@ public class DigitalProductDeliveryEmailService {
             String textBody = buildTextBody(request);
             EmailMessage message = new EmailMessage(
                     smtpConfigurationService.resolveFromAddress(),
-                    smtpConfigurationService.resolveFromName(),
+                    resolveBrandName(request),
                     List.of(request.to()),
                     List.of(),
                     List.of(),
@@ -85,7 +85,7 @@ public class DigitalProductDeliveryEmailService {
                     </a>
                   </p>
                   %s
-                  <p>Comece pelo guia principal e depois use a planilha de agenda 7D.</p>
+                  <p>Baixe o kit, abra o calendário de 7 dias e publique as artes com as legendas correspondentes.</p>
                   <p>Pagamento: %s<br>Referência: %s</p>
                 </body>
                 </html>
@@ -109,7 +109,7 @@ public class DigitalProductDeliveryEmailService {
                 Acesse sua entrega:
                 %s%s
 
-                Comece pelo guia principal e depois use a planilha de agenda 7D.
+                Baixe o kit, abra o calendário de 7 dias e publique as artes com as legendas correspondentes.
 
                 Pagamento: %s
                 Referência: %s
@@ -119,6 +119,13 @@ public class DigitalProductDeliveryEmailService {
                 directLink,
                 request.paymentId(),
                 request.externalReference());
+    }
+
+    /** Usa a marca específica da oferta sem permitir cabeçalho arbitrário vazio. */
+    private String resolveBrandName(DigitalProductDeliveryEmailRequest request) {
+        return StringUtils.hasText(request.brandName())
+                ? request.brandName().trim()
+                : smtpConfigurationService.resolveFromName();
     }
 
     /** Escapa texto para uso seguro em HTML. */

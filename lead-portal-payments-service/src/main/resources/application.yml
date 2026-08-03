@@ -50,6 +50,10 @@ payments:
   checkout-ttl: ${PAYMENTS_CHECKOUT_TTL:PT72H}
   supported-currencies: ${PAYMENTS_SUPPORTED_CURRENCIES:BRL}
 
+agenda-cheia:
+  production:
+    storage-root: ${AGENDA_CHEIA_PRODUCTION_STORAGE_ROOT:/data/agenda-cheia}
+
 delivery:
   enabled: ${DELIVERY_ENABLED:true}
   batch-size: ${DELIVERY_BATCH_SIZE:3}

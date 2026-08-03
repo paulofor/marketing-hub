@@ -9,7 +9,6 @@ import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /** Valida o pagamento e registra o briefing que inicia a produção do Agenda Cheia. */
 @Service
@@ -20,15 +19,18 @@ public class AgendaCheiaPostPurchaseService {
     private final CheckoutService checkoutService;
     private final AgendaCheiaBriefingRepository repository;
     private final DigitalProductPostPurchaseEmailService emailService;
+    private final AgendaCheiaKitProductionService productionService;
 
     /** Configura a consulta de pagamento e a persistência do briefing. */
     public AgendaCheiaPostPurchaseService(
             CheckoutService checkoutService,
             AgendaCheiaBriefingRepository repository,
-            DigitalProductPostPurchaseEmailService emailService) {
+            DigitalProductPostPurchaseEmailService emailService,
+            AgendaCheiaKitProductionService productionService) {
         this.checkoutService = checkoutService;
         this.repository = repository;
         this.emailService = emailService;
+        this.productionService = productionService;
     }
 
     /** Confirma se o pagamento pertence ao produto e está aprovado. */
@@ -40,7 +42,6 @@ public class AgendaCheiaPostPurchaseService {
     }
 
     /** Salva o briefing uma única vez e o deixa pronto para a produção. */
-    @Transactional
     public AgendaCheiaBriefingResponse submit(AgendaCheiaBriefingRequest request) {
         MercadoPagoPaymentDetails payment = approvedPayment(request.paymentId());
         AgendaCheiaBriefing briefing = repository.findByPaymentId(payment.id())
@@ -60,6 +61,9 @@ public class AgendaCheiaPostPurchaseService {
         AgendaCheiaBriefing saved = repository.save(briefing);
         log.info("Briefing Agenda Cheia recebido. paymentId={}, briefingId={}", payment.id(), saved.getId());
         sendBriefingConfirmation(payment, request);
+        productionService.produceAndDeliver(saved, payment);
+        saved.setStatus("ENTREGUE");
+        repository.save(saved);
         return toResponse(saved);
     }
 

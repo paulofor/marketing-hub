@@ -215,3 +215,20 @@ CREATE TABLE IF NOT EXISTS agenda_cheia_briefing (
     status VARCHAR(40) NOT NULL,
     submitted_at DATETIME NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS agenda_cheia_delivery (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    briefing_id BIGINT NOT NULL UNIQUE,
+    payment_id VARCHAR(100) NOT NULL UNIQUE,
+    status VARCHAR(40) NOT NULL,
+    stage_code VARCHAR(80) NOT NULL,
+    artifact_path VARCHAR(1200) NULL,
+    download_token VARCHAR(64) NULL UNIQUE,
+    manifest_json LONGTEXT NULL,
+    quality_score INT NULL,
+    error_message LONGTEXT NULL,
+    started_at DATETIME NOT NULL,
+    finished_at DATETIME NULL,
+    delivered_at DATETIME NULL,
+    INDEX idx_agenda_cheia_delivery_status (status, started_at)
+);

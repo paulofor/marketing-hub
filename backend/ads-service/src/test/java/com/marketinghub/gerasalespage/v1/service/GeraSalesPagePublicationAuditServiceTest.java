@@ -114,7 +114,9 @@ class GeraSalesPagePublicationAuditServiceTest {
     assertThat(audit.getValue().getHtml()).contains("Venda");
     assertThat(audit.getValue().getHtml()).contains("data-track-section");
     assertThat(audit.getValue().getHtml()).contains("data-mh-sales-page-analytics");
-    assertThat(audit.getValue().getHtml()).contains("/mh-api/internal/lead-portal/flows/");
+    assertThat(audit.getValue().getHtml())
+        .contains("/api/flows/")
+        .doesNotContain("/mh-api/internal/lead-portal/flows/");
     assertThat(audit.getValue().getHtml()).contains("application/json");
     assertThat(audit.getValue().getHtml()).contains("section_view_time");
     assertThat(flow.getValue().getCustomFormHtml()).contains("data-track-section");

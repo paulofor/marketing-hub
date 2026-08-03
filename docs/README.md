@@ -38,6 +38,7 @@ O cabeçalho recomendado é:
 - Produtos e ofertas: `docs/canonical/product-catalog-canon.v1.md`, `docs/canonical/product-types-canon.v1.md` e `docs/canonical/psicologia-aplicada-ofertas-canon.v1.md`.
 - Experimentos e funis: `docs/canonical/procedimento-experimento-canon.v1.md`, `docs/canonical/manual-experiments-flow-canon.v1.md` e `docs/canonical/trafego-frio-compra-direta-canon.v1.md`.
 - Landing pages: `docs/canonical/geralanding-arquitetura-canon.v1.md` e `docs/canonical/gerasalespage-arquitetura-canon.v1.md`.
+- Geração de imagens e seleção do modelo visual: `docs/canonical/image-generation-model-canon.v1.md`.
 - Banco e Liquibase: `docs/database/liquibase-mysql57.md` e `docs/canonical/liquibase-mysql57-temporal-fields-canon.v1.md`.
 - Evidências e incidentes: `docs/registros/`, `docs/diagnostics/`, `docs/diagnosticos/` e `relatorios/`.
 
@@ -48,4 +49,3 @@ O cabeçalho recomendado é:
 - Não usar `ini.md` vazio como marcador de diretório. Criar um `README.md` útil ou remover o arquivo.
 - Planos não comprovam implementação. Após implementar, atualizar o status e apontar para testes, código ou registro operacional.
 - Relatórios exportados devem ser arquivados com nome determinístico e contexto de data/execução.
-

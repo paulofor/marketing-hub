@@ -72,7 +72,8 @@ class SalesVideoAssetServiceTest {
     assertThat(result.getUrl()).isEqualTo("https://cdn.local/demo.mp4");
     verify(assetRepository).save(assetCaptor.capture());
     assertThat(assetCaptor.getValue().getPayload()).contains("quality");
-    assertThat(assetCaptor.getValue().getPayload()).contains("\"storage_medium\":\"CLOUDFLARE_R2\"");
+    assertThat(assetCaptor.getValue().getPayload())
+        .contains("\"storage_medium\":\"CLOUDFLARE_R2\"");
   }
 
   @Test

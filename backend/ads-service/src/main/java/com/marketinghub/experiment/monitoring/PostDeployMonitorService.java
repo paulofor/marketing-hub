@@ -14,8 +14,8 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotReq
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeScreenSizeDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSessionJourneyDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeSummaryDto;
-import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficQualityDto;
+import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeBuildIdentity;
@@ -146,7 +146,8 @@ public class PostDeployMonitorService {
           "Falha ao consultar identidade da build PDE; monitoredPublicUrl={}",
           monitoredPublicUrl,
           ex);
-      return unavailableBuildIdentity(monitoredPublicUrl, ex.getClass().getSimpleName(), ex.getMessage());
+      return unavailableBuildIdentity(
+          monitoredPublicUrl, ex.getClass().getSimpleName(), ex.getMessage());
     }
   }
 
@@ -253,7 +254,8 @@ public class PostDeployMonitorService {
       PdeAnalyticsSummary summary =
           pdeAnalyticsClient.fetchSummary(
               productSlug, monitoredPublicUrl, monitoredExperienceVersion);
-      return toPdeSummary(summary, monitoredExperienceVersion, campaignTrafficActive, attributionCodes);
+      return toPdeSummary(
+          summary, monitoredExperienceVersion, campaignTrafficActive, attributionCodes);
     } catch (Exception ex) {
       log.error(
           "Falha ao consultar analytics PDE no monitor pós-deploy; productSlug={}, monitoredPublicUrl={}",
@@ -302,7 +304,9 @@ public class PostDeployMonitorService {
     }
   }
 
-  /** Resolve o slot PDE que o experimento deve monitorar a partir do vínculo e da URL de destino. */
+  /**
+   * Resolve o slot PDE que o experimento deve monitorar a partir do vínculo e da URL de destino.
+   */
   private PostDeployPdeProductionSlotDto resolveMonitoredSlot(
       Experiment experiment, List<PostDeployPdeProductionSlotDto> pdeProductionSlots) {
     if (pdeProductionSlots == null) {
@@ -417,7 +421,9 @@ public class PostDeployMonitorService {
             .filter(source -> source != null && matchesPdeAttribution(source, attributionCodes))
             .toList();
     long sessions =
-        matchingTrafficSources.stream().mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::sessions).sum();
+        matchingTrafficSources.stream()
+            .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::sessions)
+            .sum();
     long pdeEntries =
         matchingTrafficSources.stream()
             .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::pdeEntries)
@@ -628,7 +634,9 @@ public class PostDeployMonitorService {
         .toList();
   }
 
-  /** Busca códigos oficiais de campanha, conjunto, anúncio e UTM para atribuir o PDE ao experimento. */
+  /**
+   * Busca códigos oficiais de campanha, conjunto, anúncio e UTM para atribuir o PDE ao experimento.
+   */
   private List<String> fetchExperimentAttributionCodes(Long experimentId) {
     List<String> codes =
         jdbcTemplate.queryForList(

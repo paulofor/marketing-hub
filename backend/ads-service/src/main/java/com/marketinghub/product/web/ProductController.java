@@ -257,9 +257,7 @@ public class ProductController {
         pdeProductionSlotService
             .findPublishedExperienceJson(productCode, slotCode, experienceVersion)
             .orElseGet(() -> service.getPublicPdeExperienceJson(productCode));
-    return ResponseEntity.ok()
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(body);
+    return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(body);
   }
 
   /** Retorna a jornada persuasiva interativa cadastrada no contrato PDE do produto. */

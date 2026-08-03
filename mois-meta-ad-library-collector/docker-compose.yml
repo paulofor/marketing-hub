@@ -1,0 +1,8 @@
+services:
+  mois-meta-ad-library-collector:
+    build: .
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal}
+      META_AD_LIBRARY_ACCESS_TOKEN: ${META_AD_LIBRARY_ACCESS_TOKEN:-}
+    ports:
+      - "8104:8104"

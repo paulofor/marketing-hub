@@ -43,8 +43,7 @@ class AssetStorageServiceTest {
             () ->
                 service.storeInBucketOnly(
                     file,
-                    new AssetUploadContext(
-                        AssetUploadCategory.SALES_VIDEO, null, null, null)));
+                    new AssetUploadContext(AssetUploadCategory.SALES_VIDEO, null, null, null)));
 
     assertThat(exception.getMessage()).contains("Cloudflare R2 must be configured");
     assertThat(Files.notExists(localSalesVideosDir)).isTrue();

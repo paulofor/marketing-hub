@@ -17,8 +17,7 @@ public class WinningAdLibraryController {
 
   /** Lista anúncios vencedores com filtro opcional por produto. */
   @GetMapping
-  public WinningAdListResponse listWinningAds(
-      @RequestParam(required = false) String productSlug) {
+  public WinningAdListResponse listWinningAds(@RequestParam(required = false) String productSlug) {
     return winningAdLibraryService.listWinningAds(productSlug);
   }
 }

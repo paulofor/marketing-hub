@@ -9,7 +9,9 @@ public interface OpsModuleHealthCheckRepository extends JpaRepository<OpsModuleH
   /** Lista as verificações mais recentes de um módulo. */
   List<OpsModuleHealthCheck> findTop30ByModuleCodeOrderByCheckedAtDesc(String moduleCode);
 
-  /** Lista verificações recentes suficientes para montar histórico quando não há consolidado diário. */
+  /**
+   * Lista verificações recentes suficientes para montar histórico quando não há consolidado diário.
+   */
   List<OpsModuleHealthCheck> findTop500ByModuleCodeOrderByCheckedAtDesc(String moduleCode);
 
   /** Busca a última verificação registrada de um módulo. */

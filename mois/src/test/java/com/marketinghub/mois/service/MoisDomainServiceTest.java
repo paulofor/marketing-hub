@@ -244,6 +244,7 @@ class MoisDomainServiceTest {
         assertThat(summary.decisionReadyActions()).isNotEmpty();
     }
 
+    @org.junit.jupiter.api.Disabled("Fluxo legado dependia de referências sintéticas removidas")
     @Test
     void shouldCreateAndListCollectionJobsInMoisModule() {
         String workspaceId = "workspace-001-" + java.util.UUID.randomUUID();
@@ -269,6 +270,7 @@ class MoisDomainServiceTest {
         assertThat(created.status()).isEqualTo("COMPLETED");
     }
 
+    @org.junit.jupiter.api.Disabled("Fluxo legado dependia de referências sintéticas removidas")
     @Test
     void shouldReturnCollectedReferencesForExistingJob() {
         MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
@@ -294,6 +296,7 @@ class MoisDomainServiceTest {
         assertThat(references.items().getFirst().confidenceLevel()).isIn("LOW", "MEDIUM", "HIGH");
     }
 
+    @org.junit.jupiter.api.Disabled("Fluxo legado dependia de referências sintéticas removidas")
     @Test
     void shouldFilterCollectedReferencesByScoreAndConfidenceAndHandleMissingEvidence() {
         MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
@@ -320,6 +323,7 @@ class MoisDomainServiceTest {
         assertThat(filtered.items()).allMatch(item -> item.evidenceScore() > 0.0);
     }
 
+    @org.junit.jupiter.api.Disabled("Fluxo legado dependia de referências sintéticas removidas")
     @Test
     void shouldFavoriteDiscardAndImportCollectedReference() {
         MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
@@ -353,6 +357,7 @@ class MoisDomainServiceTest {
         assertThat(discarded.status()).isEqualTo("DISCARDED");
     }
 
+    @org.junit.jupiter.api.Disabled("Fluxo legado dependia de referências sintéticas removidas")
     @Test
     void shouldImportAndStartExtractionWithLineageAndLibraryBlocks() {
         MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
@@ -392,6 +397,7 @@ class MoisDomainServiceTest {
         assertThat(lineage.generatedLibraryBlockIds()).hasSize(2);
     }
 
+    @org.junit.jupiter.api.Disabled("Métricas operacionais sintéticas da Meta foram removidas")
     @Test
     void shouldExposeCollectionOpsSummaryWithRetriesAndLatency() {
         String workspaceId = "workspace-ops-" + java.util.UUID.randomUUID();
@@ -435,6 +441,26 @@ class MoisDomainServiceTest {
         );
 
         org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> service.createCollectionJob(request));
+    }
+
+    @Test
+    void shouldRejectSourceWithoutRealCollectorInsteadOfGeneratingSyntheticReferences() {
+        var request = new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                "workspace-no-synthetic",
+                "nutricao",
+                "tema",
+                List.of("META_AD_LIBRARY"),
+                "LAST_30_DAYS",
+                10,
+                "pt-BR",
+                "BR",
+                80
+        );
+
+        IllegalStateException exception = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalStateException.class,
+                () -> service.createCollectionJob(request));
+        assertThat(exception.getMessage()).contains("collectors not implemented");
     }
 
 

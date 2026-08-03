@@ -53,6 +53,7 @@ public class MoisDomainService {
     private static final double RECURRENCE_WEIGHT = 0.35;
     private static final double EVIDENCE_WEIGHT = 0.20;
     private static final int MAX_COLLECTION_RETRIES = 2;
+    private static final Set<String> AVAILABLE_GENERIC_COLLECTION_SOURCES = Set.of("HOTMART");
 
     private final Map<String, DiscoveryRequest> requests = new ConcurrentHashMap<>();
     private final Map<String, SourceSnapshot> snapshots = new ConcurrentHashMap<>();
@@ -675,6 +676,13 @@ public class MoisDomainService {
         if (!isCollectionRolloutAllowed(request.workspaceId())) {
             throw new IllegalStateException("collection rollout is disabled for workspace");
         }
+        List<String> unavailableSources = request.sources().stream()
+                .map(source -> source == null ? "" : source.trim().toUpperCase())
+                .filter(source -> !AVAILABLE_GENERIC_COLLECTION_SOURCES.contains(source))
+                .toList();
+        if (!unavailableSources.isEmpty()) {
+            throw new IllegalStateException("collectors not implemented for sources: " + unavailableSources);
+        }
         String jobId = "mois-collect-" + UUID.randomUUID();
         Instant now = Instant.now();
         int limitPerSource = request.limitPerSource() == null ? DEFAULT_LIMIT_PER_SOURCE : request.limitPerSource();
@@ -1278,13 +1286,11 @@ public class MoisDomainService {
                 continue;
             }
             List<SourceLead> sourceLeads = resolveSourceLeads(normalizedSource, niche, safeLimitPerSource);
-            for (int sourceRank = 1; sourceRank <= safeLimitPerSource; sourceRank++) {
+            for (int sourceRank = 1; sourceRank <= sourceLeads.size(); sourceRank++) {
                 index++;
-                SourceMetricSnapshot metrics = buildSourceMetricSnapshot(job, source, index);
+                SourceMetricSnapshot metrics = new SourceMetricSnapshot(0, 0, 0.0);
                 NormalizedSuccessSignal normalized = normalizeSuccessSignal(metrics, job.minSuccessScore());
-                SourceLead sourceLead = sourceRank <= sourceLeads.size()
-                        ? sourceLeads.get(sourceRank - 1)
-                        : new SourceLead(buildCollectionSourceUrl(normalizedSource, niche, sourceRank), null, null, null, null, null);
+                SourceLead sourceLead = sourceLeads.get(sourceRank - 1);
                 MoisWorkspaceDtos.CollectedReferenceResponse item = buildCollectedReference(
                         job,
                         normalizedSource,
@@ -1377,11 +1383,7 @@ public class MoisDomainService {
             log.warn("mois_hotmart_leads_fallback_activated niche={} reason=no_hotmart_leads_resolved limitPerSource={}",
                     niche, limitPerSource);
         }
-        List<SourceLead> fallback = new ArrayList<>();
-        for (int sourceRank = 1; sourceRank <= limitPerSource; sourceRank++) {
-            fallback.add(new SourceLead(buildCollectionSourceUrl(source, niche, sourceRank), null, null, null, null, null));
-        }
-        return fallback;
+        return List.of();
     }
 
     private List<SourceLead> fetchHotmartProductLeads(String niche, int limitPerSource) {
@@ -1655,7 +1657,7 @@ public class MoisDomainService {
         double recurrence = clamp(metrics.recurrenceRaw());
         double evidence = metrics.evidenceRaw() == null ? ((engagement + recurrence) / 2.0) : clamp(metrics.evidenceRaw());
         int score = (int) Math.round((engagement * ENGAGEMENT_WEIGHT) + (recurrence * RECURRENCE_WEIGHT) + (evidence * EVIDENCE_WEIGHT));
-        score = Math.max(minSuccessScore, Math.min(100, score));
+        score = Math.min(100, score);
         String successSignal = score >= 85 ? "HIGH" : (score >= 70 ? "MEDIUM" : "LOW");
         String confidenceLevel = score >= 85 ? "HIGH" : (score >= 65 ? "MEDIUM" : "LOW");
         return new NormalizedSuccessSignal(score, successSignal, confidenceLevel, engagement, recurrence, evidence);

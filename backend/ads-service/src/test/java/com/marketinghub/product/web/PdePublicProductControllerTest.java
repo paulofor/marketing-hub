@@ -38,8 +38,7 @@ class PdePublicProductControllerTest {
   /** Deve expor o mesmo contrato PDE canônico pela rota pública usada pelo Clube MUSA. */
   @Test
   void getPublicPdeProduct() throws Exception {
-    when(pdeProductionSlotService.findPublishedExperienceJson(
-            "metodo-musa-7-dias", null, null))
+    when(pdeProductionSlotService.findPublishedExperienceJson("metodo-musa-7-dias", null, null))
         .thenReturn(Optional.empty());
     when(productService.getPublicPdeExperienceJson("metodo-musa-7-dias"))
         .thenReturn("{\"slug\":\"metodo-musa-7-dias\",\"missions\":[]}");

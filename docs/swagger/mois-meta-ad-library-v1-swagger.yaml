@@ -1,0 +1,35 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - MOIS Meta Ad Library Investigator v1
+  version: 1.0.0
+paths:
+  /api/v1/mois/meta-ad-investigations:
+    post:
+      summary: Cria uma investigação de anúncios Meta
+      responses:
+        '201': { description: Investigação criada }
+    get:
+      summary: Lista investigações por workspace
+      responses:
+        '200': { description: Lista retornada }
+  /api/v1/mois/meta-ad-investigations/{id}:
+    get:
+      summary: Consulta gate, evidências, lacunas e ficha ética
+      responses:
+        '200': { description: Investigação retornada }
+  /api/internal/mois/meta-ad-library/v1/investigations/pending:
+    get:
+      summary: Reserva a próxima investigação pendente para o coletor
+      responses:
+        '200': { description: Pendência reservada }
+        '204': { description: Sem pendência }
+  /api/internal/mois/meta-ad-library/v1/investigations/{id}/observations:
+    post:
+      summary: Persiste observações brutas reais e recalcula o gate
+      responses:
+        '200': { description: Observações persistidas }
+  /api/internal/mois/meta-ad-library/v1/investigations/{id}/complete:
+    post:
+      summary: Registra a conclusão técnica da coleta
+      responses:
+        '200': { description: Execução concluída }

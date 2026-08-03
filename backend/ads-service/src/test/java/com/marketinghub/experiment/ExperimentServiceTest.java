@@ -1358,7 +1358,8 @@ class ExperimentServiceTest {
                 .problem("Problema")
                 .persona("Persona")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
-                .productAiSubtype(com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
+                .productAiSubtype(
+                    com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
                 .kpiTargetCpl(new BigDecimal("1"))
                 .build());
     metricPresetRepository.save(

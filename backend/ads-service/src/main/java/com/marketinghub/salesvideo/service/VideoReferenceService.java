@@ -76,7 +76,8 @@ public class VideoReferenceService {
 
   /** Registra análise comercial estruturada e libera o aprendizado para a tela de resultado. */
   @Transactional
-  public VideoReferenceDto analyzeReference(Long referenceId, AnalyzeVideoReferenceRequest request) {
+  public VideoReferenceDto analyzeReference(
+      Long referenceId, AnalyzeVideoReferenceRequest request) {
     VideoReference reference = loadReference(referenceId);
     reference.setAnalysisNotes(buildAnalysisNotes(reference, request));
     reference.setStatus(VideoReferenceStatus.ANALYZED);

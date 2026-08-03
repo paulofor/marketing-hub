@@ -52,7 +52,8 @@ public class AssetStorageService {
 
   /** Armazena arquivo enviado pela aplicação respeitando a política de fallback local. */
   private StoredObject store(
-      MultipartFile file, AssetUploadContext context, boolean allowLocalFallback) throws IOException {
+      MultipartFile file, AssetUploadContext context, boolean allowLocalFallback)
+      throws IOException {
     if (file == null || file.isEmpty()) {
       throw new StorageException("File must not be empty");
     }

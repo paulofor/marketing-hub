@@ -33,13 +33,9 @@ class PdeAnalyticsHttpClientTest {
   /** Garante que o client suporta summaries saudáveis que demoram mais que quatro segundos. */
   @Test
   void fetchSummaryWaitsForHealthySlowPdeSummary() throws Exception {
-    server =
-        HttpServer.create(
-            new InetSocketAddress("127.0.0.1", 0),
-            0);
+    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     server.createContext(
-        "/api/pde/access/analytics/metodo-musa-7-dias/summary",
-        this::respondSlowSummary);
+        "/api/pde/access/analytics/metodo-musa-7-dias/summary", this::respondSlowSummary);
     executor = Executors.newSingleThreadExecutor();
     server.setExecutor(executor);
     server.start();
@@ -69,7 +65,8 @@ class PdeAnalyticsHttpClientTest {
 
     String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
     PdeAnalyticsHttpClient client =
-        new PdeAnalyticsHttpClient("https://v5.clubemusa.com.br", Duration.ofSeconds(1), Duration.ofSeconds(7));
+        new PdeAnalyticsHttpClient(
+            "https://v5.clubemusa.com.br", Duration.ofSeconds(1), Duration.ofSeconds(7));
 
     PdeBuildIdentity identity = client.fetchBuildIdentity(baseUrl);
 
@@ -91,7 +88,8 @@ class PdeAnalyticsHttpClientTest {
 
     String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
     PdeAnalyticsHttpClient client =
-        new PdeAnalyticsHttpClient("https://v5.clubemusa.com.br", Duration.ofSeconds(1), Duration.ofSeconds(7));
+        new PdeAnalyticsHttpClient(
+            "https://v5.clubemusa.com.br", Duration.ofSeconds(1), Duration.ofSeconds(7));
 
     PdeBuildIdentity identity = client.fetchBuildIdentity(baseUrl);
 

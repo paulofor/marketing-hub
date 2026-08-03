@@ -32,5 +32,4 @@ class RuntimeBuildInfoControllerTest {
         .andExpect(jsonPath("$.git['commit.id']").value("1234567890abcdef"))
         .andExpect(jsonPath("$.git['commit.id.abbrev']").value("1234567890ab"));
   }
-
 }

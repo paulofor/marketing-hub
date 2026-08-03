@@ -10,9 +10,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Responsabilidade: expor identidade rastreável do build do backend principal para diagnóstico.
- */
+/** Responsabilidade: expor identidade rastreável do build do backend principal para diagnóstico. */
 @RestController
 public class RuntimeBuildInfoController {
 
@@ -44,8 +42,14 @@ public class RuntimeBuildInfoController {
 
     putIfPresent(build, "version", valueFromBuild("version", "0.0.1-SNAPSHOT"));
     putIfPresent(build, "time", valueFromBuild("time", null));
-    putIfPresent(git, "branch", firstText(gitValue("branch"), env("BACKEND_BUILD_BRANCH"), env("GITHUB_REF_NAME")));
-    putIfPresent(git, "commit.id", firstText(gitValue("commit.id"), env("BACKEND_BUILD_COMMIT"), env("GITHUB_SHA")));
+    putIfPresent(
+        git,
+        "branch",
+        firstText(gitValue("branch"), env("BACKEND_BUILD_BRANCH"), env("GITHUB_REF_NAME")));
+    putIfPresent(
+        git,
+        "commit.id",
+        firstText(gitValue("commit.id"), env("BACKEND_BUILD_COMMIT"), env("GITHUB_SHA")));
     putIfPresent(git, "commit.id.abbrev", abbreviate((String) git.get("commit.id")));
 
     response.put("app", Map.of("name", "marketinghub-backend"));
@@ -63,7 +67,8 @@ public class RuntimeBuildInfoController {
     String value =
         switch (key) {
           case "version" -> buildProperties.getVersion();
-          case "time" -> buildProperties.getTime() != null ? buildProperties.getTime().toString() : null;
+          case "time" ->
+              buildProperties.getTime() != null ? buildProperties.getTime().toString() : null;
           default -> buildProperties.get(key);
         };
     return firstText(value, fallback);

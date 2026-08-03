@@ -19,12 +19,16 @@ public class AgendaCheiaPostPurchaseService {
 
     private final CheckoutService checkoutService;
     private final AgendaCheiaBriefingRepository repository;
+    private final DigitalProductPostPurchaseEmailService emailService;
 
     /** Configura a consulta de pagamento e a persistência do briefing. */
     public AgendaCheiaPostPurchaseService(
-            CheckoutService checkoutService, AgendaCheiaBriefingRepository repository) {
+            CheckoutService checkoutService,
+            AgendaCheiaBriefingRepository repository,
+            DigitalProductPostPurchaseEmailService emailService) {
         this.checkoutService = checkoutService;
         this.repository = repository;
+        this.emailService = emailService;
     }
 
     /** Confirma se o pagamento pertence ao produto e está aprovado. */
@@ -55,7 +59,22 @@ public class AgendaCheiaPostPurchaseService {
         briefing.setSubmittedAt(Instant.now());
         AgendaCheiaBriefing saved = repository.save(briefing);
         log.info("Briefing Agenda Cheia recebido. paymentId={}, briefingId={}", payment.id(), saved.getId());
+        sendBriefingConfirmation(payment, request);
         return toResponse(saved);
+    }
+
+    /** Envia ao endereço confirmado no briefing o link seguro do pós-compra. */
+    private void sendBriefingConfirmation(
+            MercadoPagoPaymentDetails payment, AgendaCheiaBriefingRequest request) {
+        try {
+            emailService.sendToRecipient(payment, request.buyerEmail().trim(), request.professionalName().trim());
+        } catch (Exception ex) {
+            log.error(
+                    "Falha ao enviar confirmação do briefing Agenda Cheia (paymentId={}, professionalName={})",
+                    payment.id(),
+                    request.professionalName(),
+                    ex);
+        }
     }
 
     /** Carrega e valida o pagamento diretamente na fonte autoritativa. */

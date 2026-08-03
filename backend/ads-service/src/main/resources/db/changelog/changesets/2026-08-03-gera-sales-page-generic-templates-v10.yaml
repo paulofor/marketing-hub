@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-03-gera-sales-page-generic-templates-v10.yaml
+  - changeSet:
+      id: 2026-08-03-gera-sales-page-generic-templates-v10-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+              SET active = false, updated_at = CURRENT_TIMESTAMP
+              WHERE pipeline_code = 'gera-sales-page-v1'
+                AND stage_code IN ('sales-page-copy', 'sales-page-html', 'sales-page-checkout-quality-review', 'sales-page-publication-package');
+
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('gera-sales-page-v1:sales-page-copy:v10', 'gera-sales-page-v1', 'sales-page-copy', 'v10', 'gpt-5.5', 'gera_sales_page_v1_copy',
+                 'Você é copywriter de resposta direta. Gere a copy usando exclusivamente o experimento e as saídas anteriores recebidas. O nome, a promessa, o preço, o público e a entrega devem vir do contrato do experimento; nunca reutilize nomes, URLs, arquivos, marcas ou entregáveis de outro produto. Use experiment.feoDeliverablePackage somente quando estiver preenchido. Se estiver vazio, descreva apenas os componentes explicitamente presentes no experimento, sem inventar arquivos ou bônus. Para DIRECT_CHECKOUT, use CTA de compra direta. Para LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, explique a coleta necessária sem misturar outro produto. Nunca exponha termos internos, pipeline, stage, MDS, MUSA, FEO ou identificadores técnicos. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["headline","subheadline","sections","cta"],"properties":{"headline":{"type":"string"},"subheadline":{"type":"string"},"sections":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","title","body"],"properties":{"id":{"type":"string"},"title":{"type":"string"},"body":{"type":"string"}}}},"cta":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-html:v10', 'gera-sales-page-v1', 'sales-page-html', 'v10', 'gpt-5.5', 'gera_sales_page_v1_html',
+                 'Você é desenvolvedor front-end de páginas de venda. Gere HTML responsivo usando exclusivamente os dados e URLs do experimento e as saídas anteriores. É proibido reutilizar marca, nome, arquivo, URL, entrega ou texto de outro experimento. Não invente entregáveis quando experiment.feoDeliverablePackage estiver vazio. Para DIRECT_CHECKOUT, todos os CTAs devem usar o checkout real e não pode haver formulário obrigatório antes da compra. Para LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, use somente o formulário gerenciado descrito pelo contrato. Inclua prova visual concreta sem expor linguagem de produção ou identificadores técnicos. Nunca escreva MUSA, FEO, pipeline, stage, número de experimento ou URL não fornecida pelo contrato atual. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["html","checkoutUrl","notes"],"properties":{"html":{"type":"string"},"checkoutUrl":{"type":"string"},"notes":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-checkout-quality-review:v10', 'gera-sales-page-v1', 'sales-page-checkout-quality-review', 'v10', 'gpt-5.5', 'gera_sales_page_v1_checkout_quality_review',
+                 'Você é auditor comercial. Aprove somente se a página usar exclusivamente nome, oferta, público, preço, destino e entrega do experimento atual. Bloqueie qualquer marca, URL, arquivo, entregável ou identificador pertencente a outro produto ou experimento. Bloqueie entregáveis inventados, formulário obrigatório em DIRECT_CHECKOUT, CTA sem destino real, termos internos e promessa incompatível com o contrato. Compare explicitamente HTML, copy, experiment e experiment.feoDeliverablePackage. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["approved","blockers","recommendation"],"properties":{"approved":{"type":"boolean"},"blockers":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-publication-package:v10', 'gera-sales-page-v1', 'sales-page-publication-package', 'v10', 'gpt-5.5', 'gera_sales_page_v1_publication_package',
+                 'Você é responsável pelo pacote final. Retorne readyForTraffic=true somente quando a revisão anterior estiver aprovada e o HTML usar exclusivamente o contrato do experimento atual, com destino real, preço coerente, entrega verdadeira e nenhuma marca, URL, arquivo, entregável ou identificador de outro produto. Não complete lacunas com exemplos históricos. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["readyForTraffic","html","checkoutUrl","releaseChecklist"],"properties":{"readyForTraffic":{"type":"boolean"},"html":{"type":"string"},"checkoutUrl":{"type":"string"},"releaseChecklist":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                openai_model = VALUES(openai_model),
+                schema_name = VALUES(schema_name),
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = true,
+                updated_at = CURRENT_TIMESTAMP;

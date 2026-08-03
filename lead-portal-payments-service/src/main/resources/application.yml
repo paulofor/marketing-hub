@@ -53,6 +53,7 @@ payments:
 agenda-cheia:
   production:
     storage-root: ${AGENDA_CHEIA_PRODUCTION_STORAGE_ROOT:/data/agenda-cheia}
+    approved-photo-root: ${AGENDA_CHEIA_APPROVED_PHOTO_ROOT:/data/agenda-cheia/photo-library/approved}
     openai-api-key: ${OPENAI_API_KEY:}
     openai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
     image-model: ${OPENAI_IMAGE_MODEL:gpt-image-1}

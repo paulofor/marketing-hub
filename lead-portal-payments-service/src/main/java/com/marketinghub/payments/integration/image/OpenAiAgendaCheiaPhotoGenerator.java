@@ -16,11 +16,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 /** Integra o pipeline Agenda Cheia à geração fotográfica versionada da OpenAI. */
-@Component
 public class OpenAiAgendaCheiaPhotoGenerator implements AgendaCheiaPhotoGenerator {
     private static final Logger log = LoggerFactory.getLogger(OpenAiAgendaCheiaPhotoGenerator.class);
     private static final List<String> STYLES = List.of(

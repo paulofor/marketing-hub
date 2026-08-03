@@ -67,12 +67,52 @@ class VpsHostInventoryServiceTest {
     }
 
     /**
+     * Garante que a leitura remota retorna somente logs do proxy permitido.
+     */
+    @Test
+    void shouldReadAllowedRemoteDockerLogs() throws Exception {
+        VpsHostInventoryService service = new VpsHostInventoryService(buildProperties(fakeSshCommand(), true));
+
+        Map<String, Object> result = service.readDockerLogs(
+                "191.252.210.83", "lead-portal-payments-proxy", 50, "certificate");
+
+        assertEquals("lead-portal-payments-proxy", result.get("target"));
+        assertEquals(1, result.get("returnedLines"));
+        assertEquals(List.of("2026-08-03 certificate file missing"), result.get("lines"));
+    }
+
+    /**
+     * Garante que nomes arbitrários de container não podem alcançar o SSH remoto.
+     */
+    @Test
+    void shouldRejectRemoteDockerTargetOutsideAllowList() throws Exception {
+        VpsHostInventoryService service = new VpsHostInventoryService(buildProperties(fakeSshCommand(), true));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.readDockerLogs("191.252.210.83", "mysql", 50, null));
+
+        assertEquals("target must be one of: lead-portal-payments-proxy", exception.getMessage());
+    }
+
+    /**
      * Cria um executável falso para simular o SSH durante os testes.
      */
     private String fakeSshCommand() throws Exception {
         Path script = tempDir.resolve("ssh-fake.sh");
         Files.writeString(script, """
                 #!/usr/bin/env sh
+                case "$*" in
+                  *"docker logs"*)
+                    echo "__MCP_CONTAINER__"
+                    echo "lead-portal-payments-service-proxy-1"
+                    echo "__MCP_STATUS__"
+                    echo "restarting|true|12|1|"
+                    echo "__MCP_LOGS__"
+                    echo "2026-08-03 certificate file missing"
+                    echo "2026-08-03 nginx exited"
+                    exit 0
+                    ;;
+                esac
                 echo "__MCP_HOSTNAME__"
                 echo "ads-vps"
                 echo "__MCP_CPU__"

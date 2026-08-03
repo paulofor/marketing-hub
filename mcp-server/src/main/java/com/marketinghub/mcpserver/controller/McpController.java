@@ -294,6 +294,26 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "vps_docker_logs",
+                            "description", "Retorna status e logs Docker de proxies remotos permitidos em VPS da allowlist, sem executar comandos arbitrários.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "host", Map.of("type", "string",
+                                                    "enum", vpsHostInventoryService.allowedHosts(),
+                                                    "description", "IP/host do VPS permitido."),
+                                            "target", Map.of("type", "string",
+                                                    "enum", vpsHostInventoryService.allowedDockerLogTargets(),
+                                                    "description", "Proxy remoto permitido para consulta."),
+                                            "lines", Map.of("type", "integer", "minimum", 1,
+                                                    "maximum", dockerOperationsService.maxLines(),
+                                                    "description", "Quantidade de linhas recentes. Padrão: 200."),
+                                            "contains", Map.of("type", "string",
+                                                    "description", "Filtra localmente linhas que contenham este texto literal.")),
+                                    "required", List.of("host", "target"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "product_discovery_worker_health",
                             "description", "Consulta o health do Product Discovery Worker e retorna provider ativo, chave configurada, último polling, último erro e último ciclo processado.",
                             "inputSchema", Map.of(
@@ -418,6 +438,7 @@ public class McpController {
                 case "docker_ops" -> callDockerOpsTool(id, arguments);
                 case "runtime_build_info" -> callRuntimeBuildInfoTool(id, arguments);
                 case "vps_host_inventory" -> callVpsHostInventoryTool(id, arguments);
+                case "vps_docker_logs" -> callVpsDockerLogsTool(id, arguments);
                 case "product_discovery_worker_health" -> callProductDiscoveryWorkerHealthTool(id);
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
                 case "meta_graph_get" -> callMetaGraphGetTool(id, arguments);
@@ -735,6 +756,32 @@ public class McpController {
         } catch (Exception ex) {
             logger.error("Falha ao executar vps_host_inventory: requestId={} host={}", id, host, ex);
             return error(id, -32603, "Failed to inspect VPS host: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Consulta logs Docker de um alvo remoto previamente liberado no MCP.
+     */
+    private Map<String, Object> callVpsDockerLogsTool(Object id, Map<String, Object> arguments) {
+        String host = stringArgument(arguments, "host");
+        String target = stringArgument(arguments, "target");
+        Integer linesArgument = intArgument(arguments, "lines");
+        int lines = linesArgument == null ? 200 : linesArgument;
+        String contains = stringArgument(arguments, "contains");
+
+        try {
+            Map<String, Object> result = vpsHostInventoryService.readDockerLogs(host, target, lines, contains);
+            return successToolResult(id, result,
+                    "Read " + result.get("returnedLines") + " remote Docker log lines from " + target
+                            + " on " + host);
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP vps_docker_logs inválido: requestId={} host={} target={} motivo={}",
+                    id, host, target, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar vps_docker_logs: requestId={} host={} target={} lines={}",
+                    id, host, target, lines, ex);
+            return error(id, -32603, "Failed to read remote Docker logs: " + ex.getMessage());
         }
     }
 

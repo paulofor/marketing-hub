@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class VpsHostInventoryService {
     private static final Logger logger = LoggerFactory.getLogger(VpsHostInventoryService.class);
+    private static final String LEAD_PORTAL_PAYMENTS_PROXY = "lead-portal-payments-proxy";
+    private static final List<String> ALLOWED_DOCKER_LOG_TARGETS = List.of(LEAD_PORTAL_PAYMENTS_PROXY);
 
     private final McpProperties properties;
 
@@ -35,6 +37,13 @@ public class VpsHostInventoryService {
      */
     public List<String> allowedHosts() {
         return properties.vpsHostInventory().allowedHosts();
+    }
+
+    /**
+     * Retorna os alvos remotos de logs Docker liberados para diagnóstico.
+     */
+    public List<String> allowedDockerLogTargets() {
+        return ALLOWED_DOCKER_LOG_TARGETS;
     }
 
     /**
@@ -57,6 +66,35 @@ public class VpsHostInventoryService {
     }
 
     /**
+     * Lê os logs Docker de um alvo remoto conhecido sem aceitar comandos ou nomes arbitrários.
+     */
+    public Map<String, Object> readDockerLogs(String host, String target, int lines, String contains) {
+        if (!properties.vpsHostInventory().enabled()) {
+            throw new IllegalArgumentException(
+                    "vps host inventory is disabled (set mcp.vps-host-inventory.enabled=true)");
+        }
+        String normalizedHost = normalizeHost(host);
+        String normalizedTarget = normalizeDockerLogTarget(target);
+        int maxLines = properties.dockerOps().maxLines();
+        if (lines < 1 || lines > maxLines) {
+            throw new IllegalArgumentException("lines must be between 1 and " + maxLines);
+        }
+
+        List<String> outputLines = executeSshDockerLogs(normalizedHost, normalizedTarget, lines);
+        if (StringUtils.hasText(contains)) {
+            outputLines = outputLines.stream().filter(line -> line.contains(contains)).toList();
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("host", normalizedHost);
+        response.put("target", normalizedTarget);
+        response.put("requestedLines", lines);
+        response.put("returnedLines", outputLines.size());
+        response.put("lines", outputLines);
+        return response;
+    }
+
+    /**
      * Normaliza e valida se o host solicitado está liberado na allowlist.
      */
     private String normalizeHost(String host) {
@@ -67,6 +105,21 @@ public class VpsHostInventoryService {
         if (!properties.vpsHostInventory().allowedHosts().contains(normalized)) {
             throw new IllegalArgumentException("host must be one of: "
                     + String.join(", ", properties.vpsHostInventory().allowedHosts()));
+        }
+        return normalized;
+    }
+
+    /**
+     * Valida o alvo lógico para impedir consulta de containers arbitrários no VPS.
+     */
+    private String normalizeDockerLogTarget(String target) {
+        if (!StringUtils.hasText(target)) {
+            throw new IllegalArgumentException("target is required");
+        }
+        String normalized = target.trim();
+        if (!ALLOWED_DOCKER_LOG_TARGETS.contains(normalized)) {
+            throw new IllegalArgumentException("target must be one of: "
+                    + String.join(", ", ALLOWED_DOCKER_LOG_TARGETS));
         }
         return normalized;
     }
@@ -88,6 +141,51 @@ public class VpsHostInventoryService {
                 inventoryScript()
         );
         return executeCommand(command, "ssh host inventory", host);
+    }
+
+    /**
+     * Executa uma leitura remota fixa para o proxy de pagamentos permitido.
+     */
+    private List<String> executeSshDockerLogs(String host, String target, int lines) {
+        String destination = properties.vpsHostInventory().user() + "@" + host;
+        String script = switch (target) {
+            case LEAD_PORTAL_PAYMENTS_PROXY -> leadPortalPaymentsProxyLogsScript(lines);
+            default -> throw new IllegalArgumentException("unsupported docker log target: " + target);
+        };
+        List<String> command = List.of(
+                properties.vpsHostInventory().sshCommand(),
+                "-i", properties.vpsHostInventory().identityFile(),
+                "-o", "BatchMode=yes",
+                "-o", "IdentitiesOnly=yes",
+                "-o", "StrictHostKeyChecking=accept-new",
+                "-o", "UserKnownHostsFile=" + properties.vpsHostInventory().knownHostsFile(),
+                "-o", "ConnectTimeout=" + properties.vpsHostInventory().timeoutSeconds(),
+                destination,
+                script
+        );
+        return executeCommand(command, "ssh docker logs", host);
+    }
+
+    /**
+     * Resolve nomes conhecidos do container do proxy e retorna sua situação seguida dos logs recentes.
+     */
+    private String leadPortalPaymentsProxyLogsScript(int lines) {
+        return """
+                container=''
+                for candidate in lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 lead-portal-payments-proxy-1 lead-portal-payments_proxy_1; do
+                  if docker inspect "$candidate" >/dev/null 2>&1; then container="$candidate"; break; fi
+                done
+                if [ -z "$container" ]; then
+                  echo 'proxy container not found; known candidates:' >&2
+                  docker ps -a --format '{{.Names}}|{{.Status}}|{{.Image}}' | sed -n '/lead-portal-payments.*proxy/p' >&2
+                  exit 4
+                fi
+                printf '__MCP_CONTAINER__\\n%s\\n' "$container"
+                printf '__MCP_STATUS__\\n'
+                docker inspect --format '{{.State.Status}}|{{.State.Restarting}}|{{.RestartCount}}|{{.State.ExitCode}}|{{.State.Error}}' "$container"
+                printf '__MCP_LOGS__\\n'
+                docker logs --timestamps --tail __MCP_LINES__ "$container" 2>&1
+                """.replace("__MCP_LINES__", Integer.toString(lines));
     }
 
     /**

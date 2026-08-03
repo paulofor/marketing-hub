@@ -21,6 +21,8 @@ São personalizados por compra: nome profissional, região, WhatsApp, serviços,
 - Somente fotografias revisadas visualmente e liberadas para uso comercial podem entrar em `approved`.
 - A ausência de acervo suficiente bloqueia a entrega; não existe fallback para geração improvisada durante a compra.
 - Novas fotografias devem ser geradas em lotes pelo fluxo versionado, revisadas fora da jornada da compradora e promovidas ao diretório aprovado somente após nota visual mínima 9/10.
+- Cada acervo aprovado deve conter `approved-manifest.tsv`, com SHA-256, modelo exato, nota humana, decisão e confirmação de ausência de texto incorporado para cada fotografia.
+- O runtime recalcula o SHA-256 antes de usar a fotografia. Arquivo ausente do manifesto, alterado depois da aprovação, repetido, com nota abaixo de 9 ou com texto incorporado bloqueia a entrega.
 
 ## Modelo de geração do acervo
 
@@ -28,6 +30,17 @@ São personalizados por compra: nome profissional, região, WhatsApp, serviços,
 - O modelo é configurável e deve seguir `docs/canonical/image-generation-model-canon.v1.md`; o identificador exato efetivamente usado fica persistido no lote para auditoria.
 - A geração acontece antes das vendas. Durante a compra, o pipeline apenas seleciona fotografias aprovadas e personaliza o material da cliente.
 - A troca para um modelo de ponta mais novo exige novo lote comparativo e aprovação visual humana mínima 9/10 antes de substituir fotografias do acervo comercial.
+
+## Operação versionada
+
+O script `lead-portal-payments-service/scripts/agenda-cheia-photo-library.sh` é o único fluxo de promoção do acervo:
+
+1. `generate <batch-id>` cria dez candidatas limpas com GPT Image 2 e registra hashes/modelo em `candidate-manifest.tsv`.
+2. A revisão humana registra em TSV: arquivo, nota, presença de texto, decisão e observação.
+3. `promote <batch-id> <review.tsv>` aceita somente dez ou mais imagens com nota mínima 9, sem texto e com hash intacto.
+4. A promoção é atômica e arquiva o acervo anterior para rollback.
+
+É proibido copiar manualmente imagens para `approved` ou promover fotos que já contenham nome, telefone, cidade, marca ou CTA de uma cliente. Esses dados são aplicados somente pelo compositor depois da seleção.
 
 ## Razão comercial
 

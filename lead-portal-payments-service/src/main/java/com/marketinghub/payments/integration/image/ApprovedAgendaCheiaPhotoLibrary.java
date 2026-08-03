@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.imageio.ImageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class ApprovedAgendaCheiaPhotoLibrary implements AgendaCheiaPhotoGenerator {
     private static final Logger log = LoggerFactory.getLogger(ApprovedAgendaCheiaPhotoLibrary.class);
     private static final int MINIMUM_LIBRARY_SIZE = 10;
+    private static final String MANIFEST_NAME = "approved-manifest.tsv";
     private final Path approvedRoot;
 
     /** Configura o diretório persistente que contém exclusivamente fotografias aprovadas. */
@@ -63,10 +66,44 @@ public class ApprovedAgendaCheiaPhotoLibrary implements AgendaCheiaPhotoGenerato
             if (assets.size() < MINIMUM_LIBRARY_SIZE) {
                 throw new IllegalStateException("Biblioteca fotográfica aprovada precisa de ao menos 10 imagens");
             }
+            validateManifest(assets);
             return assets;
         } catch (IOException ex) {
             log.error("Falha ao listar biblioteca fotográfica aprovada. root={}", approvedRoot, ex);
             throw new IllegalStateException("Não foi possível consultar a biblioteca fotográfica aprovada", ex);
+        }
+    }
+
+    /** Confirma que cada fotografia foi promovida por revisão humana e corresponde ao hash auditado. */
+    private void validateManifest(List<Path> assets) throws IOException {
+        Path manifest = approvedRoot.resolve(MANIFEST_NAME);
+        if (!Files.isRegularFile(manifest)) {
+            throw new IllegalStateException("Biblioteca fotográfica aprovada não possui manifesto auditável");
+        }
+        Map<String, String> approvedHashes = new HashMap<>();
+        for (String line : Files.readAllLines(manifest)) {
+            if (line.isBlank() || line.startsWith("#")) continue;
+            String[] columns = line.split("\\t", -1);
+            if (columns.length < 6 || !"APPROVED".equals(columns[4]) || Double.parseDouble(columns[3]) < 9.0
+                    || !"false".equals(columns[5])) continue;
+            approvedHashes.put(columns[0], columns[1]);
+        }
+        for (Path asset : assets) {
+            String expected = approvedHashes.get(asset.getFileName().toString());
+            String actual = sha256(asset);
+            if (!actual.equals(expected)) {
+                throw new IllegalStateException("Fotografia sem aprovação auditável: " + asset.getFileName());
+            }
+        }
+    }
+
+    /** Calcula a identidade imutável do arquivo aprovado. */
+    private String sha256(Path asset) throws IOException {
+        try {
+            return java.util.HexFormat.of().formatHex(
+                    java.security.MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(asset)));
+        } catch (java.security.NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 indisponível no runtime", ex);
         }
     }
 

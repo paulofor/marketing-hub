@@ -19,6 +19,7 @@ class ApprovedAgendaCheiaPhotoLibraryTest {
     @Test
     void selectsTenDistinctApprovedPhotos() throws Exception {
         for (int index = 0; index < 10; index++) writeImage(index);
+        writeManifest(10);
         ApprovedAgendaCheiaPhotoLibrary library = new ApprovedAgendaCheiaPhotoLibrary(storage.toString());
 
         java.util.Set<Integer> colors = new java.util.HashSet<>();
@@ -33,11 +34,26 @@ class ApprovedAgendaCheiaPhotoLibraryTest {
     @Test
     void rejectsInsufficientApprovedLibrary() throws Exception {
         for (int index = 0; index < 9; index++) writeImage(index);
+        writeManifest(9);
         ApprovedAgendaCheiaPhotoLibrary library = new ApprovedAgendaCheiaPhotoLibrary(storage.toString());
 
         assertThatThrownBy(() -> library.generate("purchase-123", 0))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("ao menos 10 imagens");
+    }
+
+    /** Deve bloquear arquivo alterado depois da revisão humana. */
+    @Test
+    void rejectsPhotoChangedAfterApproval() throws Exception {
+        for (int index = 0; index < 10; index++) writeImage(index);
+        writeManifest(10);
+        Files.writeString(storage.resolve("approved-00.png"), "alterada");
+
+        ApprovedAgendaCheiaPhotoLibrary library = new ApprovedAgendaCheiaPhotoLibrary(storage.toString());
+
+        assertThatThrownBy(() -> library.generate("purchase-123", 0))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("sem aprovação auditável");
     }
 
     /** Cria uma fotografia raster válida e identificável para o teste. */
@@ -48,5 +64,18 @@ class ApprovedAgendaCheiaPhotoLibraryTest {
         graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
         graphics.dispose();
         ImageIO.write(image, "png", storage.resolve("approved-%02d.png".formatted(index)).toFile());
+    }
+
+    /** Registra o manifesto humano auditável das fotografias do teste. */
+    private void writeManifest(int count) throws Exception {
+        StringBuilder manifest = new StringBuilder();
+        for (int index = 0; index < count; index++) {
+            Path image = storage.resolve("approved-%02d.png".formatted(index));
+            String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(Files.readAllBytes(image)));
+            manifest.append(image.getFileName()).append('\t').append(hash)
+                    .append("\tgpt-image-2-2026-04-21\t9.5\tAPPROVED\tfalse\tteste\n");
+        }
+        Files.writeString(storage.resolve("approved-manifest.tsv"), manifest.toString());
     }
 }

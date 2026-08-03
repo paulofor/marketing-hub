@@ -44,40 +44,6 @@ export default function FlowPage() {
     setSubmissionResult(null);
   }, [slug]);
 
-  const trackFormEvent = (eventType: "form_start" | "form_submit") => {
-    if (!resolvedFlowSlug || testMode) {
-      return;
-    }
-    const eventPayload = buildFlowPageAnalyticsPayload(eventType);
-    registerFlowPageAnalytics(resolvedFlowSlug, eventPayload).catch((trackError) => {
-      console.warn(`Falha ao registrar ${eventType} do fluxo`, trackError);
-    });
-  };
-
-  useEffect(() => {
-    if (!resolvedFlowSlug || testMode || typeof document === "undefined") {
-      return;
-    }
-    return attachVideoAnalyticsToDocument(document, {
-      flowSlug: resolvedFlowSlug,
-      rootElement: document.body,
-    });
-  }, [resolvedFlowSlug, testMode, customTemplateHtml]);
-
-  const handleFormStarted = () => {
-    if (hasTrackedFormStart) {
-      return;
-    }
-    setHasTrackedFormStart(true);
-    trackFormEvent("form_start");
-  };
-
-  const handleSubmissionComplete = (result: FlowSubmissionResponse) => {
-    trackFormEvent("form_submit");
-    setSubmissionResult(result);
-    setHasSubmitted(true);
-  };
-
   const { data: flow, isLoading, isError, error } = useQuery({
     queryKey: ["lead-portal-flow", slug, campaignCode ?? null, testMode],
     queryFn: async () => {
@@ -111,6 +77,40 @@ export default function FlowPage() {
     }
     return buildCustomHtmlTemplateVariables(flow, metadata);
   }, [hasCustomTemplate, flow, metadata]);
+
+  const trackFormEvent = (eventType: "form_start" | "form_submit") => {
+    if (!resolvedFlowSlug || testMode) {
+      return;
+    }
+    const eventPayload = buildFlowPageAnalyticsPayload(eventType);
+    registerFlowPageAnalytics(resolvedFlowSlug, eventPayload).catch((trackError) => {
+      console.warn(`Falha ao registrar ${eventType} do fluxo`, trackError);
+    });
+  };
+
+  useEffect(() => {
+    if (!resolvedFlowSlug || testMode || typeof document === "undefined") {
+      return;
+    }
+    return attachVideoAnalyticsToDocument(document, {
+      flowSlug: resolvedFlowSlug,
+      rootElement: document.body,
+    });
+  }, [resolvedFlowSlug, testMode, customTemplateHtml]);
+
+  const handleFormStarted = () => {
+    if (hasTrackedFormStart) {
+      return;
+    }
+    setHasTrackedFormStart(true);
+    trackFormEvent("form_start");
+  };
+
+  const handleSubmissionComplete = (result: FlowSubmissionResponse) => {
+    trackFormEvent("form_submit");
+    setSubmissionResult(result);
+    setHasSubmitted(true);
+  };
 
   useEffect(() => {
     if (testMode || !resolvedFlowSlug || isLoading || isError || hasTrackedRenderComplete) {

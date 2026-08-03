@@ -167,6 +167,20 @@ Para ativar em produção:
 2. Cadastre a chave pública em `/root/.ssh/authorized_keys` nos VPS permitidos.
 3. Coloque a chave privada no host do MCP em `/opt/marketinghub/mcp/ssh/id_ed25519` com permissão `600`.
 4. Ative `MCP_VPS_HOST_INVENTORY_ENABLED=true` no `.env` do host do MCP.
+
+Com o inventário ativo, a tool `vps_docker_logs` também permite consultar o status e a
+cauda dos logs do alvo remoto `lead-portal-payments-proxy`. A chamada exige um host da
+allowlist, aceita no máximo o limite global de linhas Docker e não recebe nomes de
+container nem comandos livres. Exemplo de argumentos:
+
+```json
+{
+  "host": "191.252.102.54",
+  "target": "lead-portal-payments-proxy",
+  "lines": 200,
+  "contains": "nginx"
+}
+```
 5. Reinicie o container do MCP pelo fluxo versionado de deploy.
 
 Não versione a chave privada nem cole o conteúdo dela em logs, issues, PRs ou mensagens.

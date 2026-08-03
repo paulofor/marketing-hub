@@ -195,6 +195,17 @@ class McpControllerTest {
         Path fakeSsh = TEST_LOG_DIR.resolve("ssh-fake.sh");
         Files.writeString(fakeSsh,
                 "#!/usr/bin/env sh\n"
+                        + "case \"$*\" in\n"
+                        + "  *\"docker logs\"*)\n"
+                        + "    echo '__MCP_CONTAINER__'\n"
+                        + "    echo 'lead-portal-payments-service-proxy-1'\n"
+                        + "    echo '__MCP_STATUS__'\n"
+                        + "    echo 'restarting|true|9|1|'\n"
+                        + "    echo '__MCP_LOGS__'\n"
+                        + "    echo '2026-08-03T10:00:00Z nginx certificate missing'\n"
+                        + "    exit 0\n"
+                        + "    ;;\n"
+                        + "esac\n"
                         + "echo '__MCP_HOSTNAME__'\n"
                         + "echo 'ads-vps'\n"
                         + "echo '__MCP_CPU__'\n"
@@ -656,6 +667,25 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
                         .value("host must be one of: 191.252.210.83, 191.252.120.96"));
+    }
+
+    /**
+     * Garante que a tool remota lê apenas o proxy Docker explicitamente permitido.
+     */
+    @Test
+    void shouldReadAllowedRemoteDockerLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":31,"method":"tools/call","params":{"name":"vps_docker_logs","arguments":{"host":"191.252.210.83","target":"lead-portal-payments-proxy","lines":100,"contains":"certificate"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.host").value("191.252.210.83"))
+                .andExpect(jsonPath("$.result.structuredContent.target")
+                        .value("lead-portal-payments-proxy"))
+                .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value("2026-08-03T10:00:00Z nginx certificate missing"));
     }
 
 

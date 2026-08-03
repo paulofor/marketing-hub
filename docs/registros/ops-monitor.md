@@ -138,3 +138,8 @@
 - Causa-raiz tratada: o cadastro canônico do monitor não incluía os workers sociais e o compose operacional do MCP mantinha `MCP_VPS_HOST_INVENTORY_ENABLED=false` por padrão.
 - Correção aplicada: o deploy do MCP passa a habilitar `vps_host_inventory` por padrão e um changelog cadastra `social-media-worker` (`v1-youtube`, porta pública `8099`) e `tiktok-ads-worker` (`v1`, porta pública `8097`) no Ops Monitor.
 - Prevenção de recorrência: o cadastro registra no campo `monitoring_url` o uso operacional do MCP para confirmar host/container, separando health HTTP da evidência de inventário do VPS.
+- 2026-08-03 — O MCP passou a expor a tool restrita `vps_docker_logs` para consultar
+  status e logs do proxy Docker do `lead-portal-payments-service` em hosts da allowlist,
+  incluindo `191.252.102.54`. A correção evita depender de logs locais do host do MCP,
+  bloqueia nomes de container/comandos arbitrários e permite diagnosticar ciclos de
+  reinicialização do Nginx pela causa registrada pelo próprio container.

@@ -1,3 +1,9 @@
+> STATUS: OPERACIONAL
+> FONTE DE VERDADE DO SCHEMA: changelogs Liquibase e schema real
+> ÚLTIMA VALIDAÇÃO DOCUMENTAL: 2026-08-03
+
+Este documento é uma referência de navegação do modelo. Antes de alterar banco, confirme os changelogs Liquibase, entidades JPA e schema real.
+
 | stimulus_type | VARCHAR(255) | Tipo do estímulo aplicado no passo da jornada |
 
 This document summarizes the current database schema defined in `schema.sql`.

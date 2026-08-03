@@ -1,5 +1,11 @@
 # Modelo de Dados (snapshot)
 
+> STATUS: HISTÓRICO
+> FONTE DE REFERÊNCIA: `docs/data-model.md`
+> ÚLTIMA VALIDAÇÃO: 2026-03-11
+
+Este arquivo é um retrato temporal de tabelas com registros no ambiente consultado. Não representa o schema vigente e não deve ser usado para criar migrations ou contratos.
+
 - Fonte: esquema atual do banco configurado para o ambiente de sandbox.
 - Critério: apenas tabelas com `table_rows > 0` no `information_schema` (consultado em 2026-03-11T15:29:33+00:00).
 - Observação: os valores de `table_rows` no MySQL são estimativas; use-os como referência aproximada.

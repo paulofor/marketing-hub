@@ -1,5 +1,12 @@
 # Roadmap Técnico por Sprint — Camada de Agentes do Marketing Hub
 
+> STATUS: OBSOLETO
+> SUBSTITUÍDO POR: `docs/agentes/roadmap-agentes-marketing-hub-v2-regenerado.md`
+> FONTE CANÔNICA: `docs/canonical/system-governance-canon.v2.md`
+> ÚLTIMA VALIDAÇÃO: 2026-08-03
+
+Este plano foi preservado apenas como histórico. Não deve orientar novas implementações.
+
 ## 1. Objetivo
 
 Este documento define um plano técnico por sprint para implementar uma **camada de agentes baseada em IA + sandbox** sobre o projeto **Marketing Hub**, aproveitando a base já existente do sistema.
@@ -804,4 +811,3 @@ Em termos práticos, o sistema deixa de ser apenas um conjunto de módulos opera
 - `rollback_last_action`
 - `budget_guardrail`
 - `price_guardrail`
-

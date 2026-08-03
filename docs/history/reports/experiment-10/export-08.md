@@ -1,5 +1,11 @@
 # Relatório consolidado do pipeline de conteúdo do experimento
 
+> STATUS: HISTÓRICO
+> ORIGEM: exportação legada `relatorio-pipeline-experimento-10 (8).md`
+> ÚLTIMA CLASSIFICAÇÃO: 2026-08-03
+
+Este relatório preserva uma execução passada e não representa o estado atual do experimento.
+
 Experimento: Experimento 4
 Hipótese vinculada: Agenda Cheia Sem Desconto (8 Semanas)
 

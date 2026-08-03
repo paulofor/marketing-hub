@@ -225,6 +225,12 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isError: false,
       isSuccess: false,
     }),
+    useCreateCommercialPlan: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      isSuccess: false,
+    }),
   };
 });
 

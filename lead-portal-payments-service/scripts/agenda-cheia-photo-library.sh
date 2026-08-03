@@ -36,7 +36,7 @@ generate() {
 }
 
 promote() {
-  review_file="${3:?Informe o TSV de revisão humana}"
+  review_file="${1:?Informe o TSV de revisão humana}"
   require_tool sha256sum
   [[ -f "$candidate_dir/candidate-manifest.tsv" && -f "$review_file" ]] || { echo "Lote ou revisão inexistente" >&2; exit 3; }
   tmp_dir="$library_root/approved.next.$batch_id"; mkdir -p "$tmp_dir"
@@ -63,6 +63,6 @@ promote() {
 
 case "$command_name" in
   generate) generate ;;
-  promote) promote ;;
+  promote) promote "${3:-}" ;;
   *) echo "Uso: $0 generate [batch-id] | promote <batch-id> <review.tsv>" >&2; exit 1 ;;
 esac

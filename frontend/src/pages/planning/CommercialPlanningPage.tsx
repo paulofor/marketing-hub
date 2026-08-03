@@ -10,11 +10,48 @@ import {
   SaveCommercialPlanPayload,
   useCommercialPlanWeeks,
   useCommercialPlans,
+  useCreateCommercialPlan,
   useUpdateCommercialPlanWeekObjectives,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 
 const CURRENT_OPERATIONAL_MONTH = "2026-07";
+
+const augustRevenuePlan: SaveCommercialPlanPayload = {
+  name: "Planejamento Agosto 2026 - Receita Agenda Cheia",
+  status: "IN_PROGRESS",
+  experimentId: 81,
+  commercialObjective:
+    "Gerar receita ainda em agosto de 2026 com o Agenda Cheia Nail Design, priorizando compra aprovada e preservando caixa com decisões rápidas por etapa do funil.",
+  targetAudience:
+    "Nail designers e manicures que publicam fotos de unhas, mas recebem poucas conversas e pedidos de horário pelo WhatsApp.",
+  mainPain:
+    "A profissional produz um trabalho visualmente bonito, mas suas publicações não conduzem interessadas a perguntar sobre horários e serviços.",
+  mainOffer:
+    "Agenda Cheia Nail Design por R$ 67: kit personalizado com 10 posts, 10 stories, 10 legendas, 5 mensagens de WhatsApp e calendário de 7 dias.",
+  mainLeadMagnet:
+    "Amostra demonstrativa com quatro peças do kit na página de vendas, sem cadastro antes da compra.",
+  mainChannel:
+    "Meta Ads para página de venda direta com checkout Mercado Pago e recuperação por WhatsApp.",
+  mainMetric:
+    "Compra aprovada; checkout iniciado e clique no checkout como sinais intermediários.",
+  successCriteria:
+    "Obter ao menos 1 compra aprovada nos primeiros 7 dias e buscar 5 vendas no mês, com entrega do kit concluída e receita atribuída ao experimento.",
+  stopCriteria:
+    "Revisar o criativo se não houver clique qualificado em 3 dias; revisar página e prova visual se houver visita sem checkout; revisar confiança, preço ou checkout se houver início sem compra; pausar antes de ultrapassar R$ 175 sem venda.",
+  deadline: "2026-08-31",
+  maxBudget: 400,
+  targetRevenue: 67,
+  operationalRevenueTarget: 335,
+  experimentsToCreate: 1,
+  experimentsToPublish: 1,
+  nextAction:
+    "Acompanhar diariamente o experimento 81 a R$ 25 por dia, proteger a primeira venda e corrigir somente o ponto comprovado de abandono.",
+  currentBlocker:
+    "Ainda não há compra comercial atribuída à campanha ativa; o primeiro objetivo é transformar tráfego em receita real sem abrir novas frentes prematuramente.",
+  rootCause:
+    "Julho acumulou execução sem um plano mensal orientado a receita. Agosto precisa concentrar oferta, mídia e análise em um único funil comprável e operacionalmente entregue.",
+};
 
 const julyPlanningForm: SaveCommercialPlanPayload = {
   name: "Planejamento Julho 2026 - Primeira venda",
@@ -341,7 +378,9 @@ function buildBudgetDirections(
     .map((item) => ({
       ...item,
       percentage:
-        referenceTotal > 0 ? Math.round((item.amount / referenceTotal) * 100) : 0,
+        referenceTotal > 0
+          ? Math.round((item.amount / referenceTotal) * 100)
+          : 0,
     }));
 }
 
@@ -833,7 +872,11 @@ function WeeklyExperimentList({
 
 export default function CommercialPlanningPage() {
   const plansQuery = useCommercialPlans();
+  const createPlan = useCreateCommercialPlan();
   const plans = asArray(plansQuery.data);
+  const hasAugustPlan = plans.some(
+    (plan) => resolvePlanReferenceMonth(plan) === "2026-08",
+  );
   const currentMonthPlan = useMemo<CommercialPlan>(
     () => plans[0] ?? fallbackMonthPlan(),
     [plans],
@@ -884,7 +927,31 @@ export default function CommercialPlanningPage() {
         <div>
           <PageTitle>Planejamento</PageTitle>
         </div>
+        {!hasAugustPlan ? (
+          <button
+            className="btn btn-primary align-self-start"
+            type="button"
+            disabled={createPlan.isPending}
+            onClick={() => createPlan.mutate(augustRevenuePlan)}
+          >
+            {createPlan.isPending
+              ? "Criando plano de agosto..."
+              : "Criar plano de agosto"}
+          </button>
+        ) : null}
       </header>
+
+      {createPlan.isError ? (
+        <div className="alert alert-danger mb-0" role="alert">
+          Não foi possível criar o planejamento de agosto.
+        </div>
+      ) : null}
+
+      {createPlan.isSuccess ? (
+        <div className="alert alert-success mb-0" role="status">
+          Planejamento de agosto criado com foco em receita e controle de caixa.
+        </div>
+      ) : null}
 
       {plansQuery.isError ? (
         <div className="alert alert-danger mb-0" role="alert">

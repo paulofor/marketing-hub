@@ -1,5 +1,12 @@
 # Registro de Planejamento Comercial
 
+## 2026-08-03 - Edicao das decisoes comerciais pela tela
+
+- Solicitacao: alinhar o planejamento da primeira semana de agosto a meta operacional de cinco vendas e priorizar a validacao da instrumentacao.
+- Causa-raiz: a tela apresentava o plano persistido, mas nao permitia corrigir status, prazo, meta de receita, objetivo, criterio de sucesso, proxima acao, gargalo e causa-raiz; isso obrigaria uma atualizacao fora do fluxo visual do Marketing Hub.
+- Foi feito: a tela passou a expor uma edicao controlada desses campos usando o endpoint oficial de atualizacao do proprio modulo.
+- Impacto esperado: o planejamento pode refletir imediatamente o gargalo comprovado e orientar a operacao por eventos reais, sem manter metas e proximas acoes obsoletas.
+
 ## 2026-07-19 - Tela de planejamento com funil
 
 - Solicitacao: implementar na tela de planejamento a regra canonica de metricas de funil para planejamentos mensais, semanais e objetivos.

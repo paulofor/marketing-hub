@@ -5,13 +5,20 @@ import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.socialdistribution.SocialAccountRepository;
+import com.marketinghub.repository.jpa.socialdistribution.SocialGrowthContentRepository;
+import com.marketinghub.repository.jpa.socialdistribution.SocialGrowthPlanRepository;
 import com.marketinghub.repository.jpa.socialdistribution.SocialPublicationMetricRepository;
 import com.marketinghub.repository.jpa.socialdistribution.SocialVideoPublicationRepository;
 import com.marketinghub.socialdistribution.*;
 import com.marketinghub.socialdistribution.dto.SocialDistributionDtos.*;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +31,8 @@ public class SocialDistributionService {
   private final SocialAccountRepository accountRepository;
   private final SocialVideoPublicationRepository publicationRepository;
   private final SocialPublicationMetricRepository metricRepository;
+  private final SocialGrowthPlanRepository growthPlanRepository;
+  private final SocialGrowthContentRepository growthContentRepository;
   private final ProductRepository productRepository;
   private final AssetRepository assetRepository;
 
@@ -32,11 +41,15 @@ public class SocialDistributionService {
       SocialAccountRepository accountRepository,
       SocialVideoPublicationRepository publicationRepository,
       SocialPublicationMetricRepository metricRepository,
+      SocialGrowthPlanRepository growthPlanRepository,
+      SocialGrowthContentRepository growthContentRepository,
       ProductRepository productRepository,
       AssetRepository assetRepository) {
     this.accountRepository = accountRepository;
     this.publicationRepository = publicationRepository;
     this.metricRepository = metricRepository;
+    this.growthPlanRepository = growthPlanRepository;
+    this.growthContentRepository = growthContentRepository;
     this.productRepository = productRepository;
     this.assetRepository = assetRepository;
   }
@@ -95,9 +108,12 @@ public class SocialDistributionService {
   @Transactional
   public SocialVideoPublicationResponse createPublication(
       CreateSocialVideoPublicationRequest request) {
+    SocialGrowthContent growthContent = resolveApprovedGrowthContent(request.growthContentId());
+    Long requestedProductId =
+        growthContent != null ? growthContent.getPlan().getProduct().getId() : request.productId();
     Product product =
         productRepository
-            .findById(requireId(request.productId(), "Informe o produto."))
+            .findById(requireId(requestedProductId, "Informe o produto."))
             .orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
     Asset asset = resolveAsset(request.assetId());
@@ -110,13 +126,27 @@ public class SocialDistributionService {
     publication.setVideoFormat(
         Optional.ofNullable(request.videoFormat()).orElse(defaultFormat(platform)));
     publication.setStatus(SocialVideoPublicationStatus.DRAFT);
-    publication.setTitle(normalizeRequired(request.title(), "Informe o título do vídeo."));
-    publication.setCaption(normalizeOptional(request.caption()));
+    publication.setTitle(
+        normalizeRequired(
+            growthContent != null && !StringUtils.hasText(request.title())
+                ? growthContent.getTopic()
+                : request.title(),
+            "Informe o título do vídeo."));
+    publication.setCaption(
+        normalizeOptional(
+            growthContent != null && !StringUtils.hasText(request.caption())
+                ? growthContent.getCta() + " " + growthContent.getTrackingUrl()
+                : request.caption()));
     publication.setHashtags(normalizeOptional(request.hashtags()));
     publication.setVideoUrl(normalizeOptional(request.videoUrl()));
     publication.setScheduledAt(request.scheduledAt());
     publication.setPublishPayloadJson(buildPublishPayload(publication));
-    return toPublicationResponse(publicationRepository.save(publication));
+    SocialVideoPublication saved = publicationRepository.save(publication);
+    if (growthContent != null) {
+      growthContent.setPublication(saved);
+      growthContentRepository.save(growthContent);
+    }
+    return toPublicationResponse(saved);
   }
 
   /** Coloca uma publicação na fila quando a conta tem condição operacional de publicar. */
@@ -157,7 +187,15 @@ public class SocialDistributionService {
     publication.setExternalPostId(normalizeOptional(request.externalPostId()));
     publication.setPublishedAt(Optional.ofNullable(request.publishedAt()).orElse(Instant.now()));
     publication.setFailureReason(null);
-    return toPublicationResponse(publicationRepository.save(publication));
+    SocialVideoPublication saved = publicationRepository.save(publication);
+    growthContentRepository
+        .findByPublicationId(publicationId)
+        .ifPresent(
+            content -> {
+              content.setStatus(SocialGrowthContentStatus.PUBLISHED);
+              growthContentRepository.save(content);
+            });
+    return toPublicationResponse(saved);
   }
 
   /** Marca uma publicação como em processamento pelo executor externo. */
@@ -188,13 +226,94 @@ public class SocialDistributionService {
     SocialPublicationMetric metric = new SocialPublicationMetric();
     metric.setPublication(publication);
     metric.setViews(nonNegative(request.views()));
+    metric.setEngagedViews(nonNegative(request.engagedViews()));
+    metric.setAverageViewDurationSeconds(nonNegative(request.averageViewDurationSeconds()));
+    metric.setRecurringViewers(nonNegative(request.recurringViewers()));
+    metric.setSubscribersGained(nonNegative(request.subscribersGained()));
     metric.setLikes(nonNegative(request.likes()));
     metric.setComments(nonNegative(request.comments()));
     metric.setShares(nonNegative(request.shares()));
     metric.setClicks(nonNegative(request.clicks()));
+    metric.setLandingSessions(nonNegative(request.landingSessions()));
+    metric.setLeads(nonNegative(request.leads()));
+    metric.setCheckoutsStarted(nonNegative(request.checkoutsStarted()));
+    metric.setSalesApproved(nonNegative(request.salesApproved()));
+    metric.setRevenue(nonNegative(request.revenue()));
     metric.setRawPayloadJson(normalizeOptional(request.rawPayloadJson()));
     metric.setCapturedAt(Optional.ofNullable(request.capturedAt()).orElse(Instant.now()));
     return toMetricResponse(metricRepository.save(metric));
+  }
+
+  /** Lista planos orgânicos com calendário e leitura comercial calculada no backend. */
+  @Transactional(readOnly = true)
+  public List<SocialGrowthPlanResponse> listGrowthPlans(Long productId) {
+    List<SocialGrowthPlan> plans =
+        productId == null
+            ? growthPlanRepository.findTop50ByOrderByCreatedAtDesc()
+            : growthPlanRepository.findTop50ByProductIdOrderByCreatedAtDesc(productId);
+    return plans.stream().map(this::toGrowthPlanResponse).toList();
+  }
+
+  /** Cria um plano em rascunho sem autorizar qualquer publicação externa. */
+  @Transactional
+  public SocialGrowthPlanResponse createGrowthPlan(CreateSocialGrowthPlanRequest request) {
+    Product product =
+        productRepository
+            .findById(requireId(request.productId(), "Informe o produto."))
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
+    if (request.startsOn() != null
+        && request.endsOn() != null
+        && request.endsOn().isBefore(request.startsOn())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A data final deve ser posterior à data inicial.");
+    }
+    SocialGrowthPlan plan = new SocialGrowthPlan();
+    plan.setProduct(product);
+    plan.setName(normalizeRequired(request.name(), "Informe o nome do plano."));
+    plan.setAudience(normalizeRequired(request.audience(), "Informe o público do plano."));
+    plan.setCommercialHypothesis(
+        normalizeRequired(request.commercialHypothesis(), "Informe a hipótese comercial."));
+    plan.setCommercialObjective(
+        normalizeRequired(request.commercialObjective(), "Informe o objetivo comercial."));
+    plan.setPrimaryCta(normalizeRequired(request.primaryCta(), "Informe o CTA principal."));
+    plan.setDestinationUrl(
+        normalizeRequired(request.destinationUrl(), "Informe a URL de destino."));
+    plan.setUtmCampaign(normalizeTrackingValue(request.utmCampaign(), "Informe a campanha UTM."));
+    plan.setStatus(SocialGrowthPlanStatus.DRAFT);
+    plan.setStartsOn(request.startsOn());
+    plan.setEndsOn(request.endsOn());
+    return toGrowthPlanResponse(growthPlanRepository.save(plan));
+  }
+
+  /** Adiciona uma pauta em rascunho e gera sua URL rastreável no backend. */
+  @Transactional
+  public SocialGrowthContentResponse createGrowthContent(
+      Long planId, CreateSocialGrowthContentRequest request) {
+    SocialGrowthPlan plan = getGrowthPlan(planId);
+    SocialGrowthContent content = new SocialGrowthContent();
+    content.setPlan(plan);
+    content.setContentType(
+        Optional.ofNullable(request.contentType()).orElse(SocialGrowthContentType.SHORT));
+    content.setPillar(normalizeRequired(request.pillar(), "Informe o pilar editorial."));
+    content.setTopic(normalizeRequired(request.topic(), "Informe a pauta."));
+    content.setFunnelStage(normalizeRequired(request.funnelStage(), "Informe a etapa do funil."));
+    content.setCta(
+        StringUtils.hasText(request.cta()) ? request.cta().trim() : plan.getPrimaryCta());
+    content.setTrackingCode(
+        normalizeTrackingValue(plan.getUtmCampaign() + "-" + UUID.randomUUID(), ""));
+    content.setTrackingUrl(buildTrackingUrl(plan, content));
+    content.setStatus(SocialGrowthContentStatus.DRAFT);
+    content.setPlannedAt(request.plannedAt());
+    return toGrowthContentResponse(growthContentRepository.save(content));
+  }
+
+  /** Registra aprovação humana da pauta sem colocá-la automaticamente na fila. */
+  @Transactional
+  public SocialGrowthContentResponse approveGrowthContent(Long planId, Long contentId) {
+    SocialGrowthContent content = getGrowthContent(planId, contentId);
+    content.setStatus(SocialGrowthContentStatus.APPROVED);
+    return toGrowthContentResponse(growthContentRepository.save(content));
   }
 
   /** Retorna a publicação pelo identificador interno. */
@@ -203,6 +322,49 @@ public class SocialDistributionService {
         .findById(requireId(publicationId, "Informe a publicação."))
         .orElseThrow(
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Publicação não encontrada."));
+  }
+
+  /** Resolve uma pauta opcional e exige aprovação humana antes de criar a publicação. */
+  private SocialGrowthContent resolveApprovedGrowthContent(Long contentId) {
+    if (contentId == null) {
+      return null;
+    }
+    SocialGrowthContent content =
+        growthContentRepository
+            .findById(contentId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pauta não encontrada."));
+    if (content.getStatus() != SocialGrowthContentStatus.APPROVED) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A pauta precisa de aprovação humana antes da publicação.");
+    }
+    if (content.getPublication() != null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A pauta já possui uma publicação vinculada.");
+    }
+    return content;
+  }
+
+  /** Retorna um plano orgânico pelo identificador. */
+  private SocialGrowthPlan getGrowthPlan(Long planId) {
+    return growthPlanRepository
+        .findById(requireId(planId, "Informe o plano."))
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plano não encontrado."));
+  }
+
+  /** Retorna uma pauta e valida que ela pertence ao plano informado. */
+  private SocialGrowthContent getGrowthContent(Long planId, Long contentId) {
+    SocialGrowthContent content =
+        growthContentRepository
+            .findById(requireId(contentId, "Informe a pauta."))
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pauta não encontrada."));
+    if (!content.getPlan().getId().equals(requireId(planId, "Informe o plano."))) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A pauta não pertence ao plano informado.");
+    }
+    return content;
   }
 
   /** Resolve asset opcional de vídeo para publicação. */
@@ -344,6 +506,10 @@ public class SocialDistributionService {
         product.getName(),
         product.getSlug(),
         publication.getAsset() != null ? publication.getAsset().getId() : null,
+        growthContentRepository.findByPublicationId(publication.getId()).stream()
+            .map(SocialGrowthContent::getId)
+            .findFirst()
+            .orElse(null),
         account != null ? account.getId() : null,
         account != null ? account.getDisplayName() : null,
         publication.getPlatform(),
@@ -369,12 +535,142 @@ public class SocialDistributionService {
     return new SocialPublicationMetricResponse(
         metric.getId(),
         metric.getViews(),
+        metric.getEngagedViews(),
+        metric.getAverageViewDurationSeconds(),
+        metric.getRecurringViewers(),
+        metric.getSubscribersGained(),
         metric.getLikes(),
         metric.getComments(),
         metric.getShares(),
         metric.getClicks(),
+        metric.getLandingSessions(),
+        metric.getLeads(),
+        metric.getCheckoutsStarted(),
+        metric.getSalesApproved(),
+        metric.getRevenue(),
         metric.getRawPayloadJson(),
         metric.getCapturedAt());
+  }
+
+  /** Converte o plano persistido em relatório comercial completo. */
+  private SocialGrowthPlanResponse toGrowthPlanResponse(SocialGrowthPlan plan) {
+    List<SocialGrowthContent> contents =
+        growthContentRepository.findByPlanIdOrderByPlannedAtAscCreatedAtAsc(plan.getId());
+    return new SocialGrowthPlanResponse(
+        plan.getId(),
+        plan.getProduct().getId(),
+        plan.getProduct().getName(),
+        plan.getName(),
+        plan.getAudience(),
+        plan.getCommercialHypothesis(),
+        plan.getCommercialObjective(),
+        plan.getPrimaryCta(),
+        plan.getDestinationUrl(),
+        plan.getUtmCampaign(),
+        plan.getStatus(),
+        plan.getStartsOn(),
+        plan.getEndsOn(),
+        contents.stream().map(this::toGrowthContentResponse).toList(),
+        buildPlanPerformance(contents));
+  }
+
+  /** Converte uma pauta em contrato da tela. */
+  private SocialGrowthContentResponse toGrowthContentResponse(SocialGrowthContent content) {
+    return new SocialGrowthContentResponse(
+        content.getId(),
+        content.getContentType(),
+        content.getPillar(),
+        content.getTopic(),
+        content.getFunnelStage(),
+        content.getCta(),
+        content.getTrackingCode(),
+        content.getTrackingUrl(),
+        content.getStatus(),
+        content.getPlannedAt(),
+        content.getPublication() != null ? content.getPublication().getId() : null);
+  }
+
+  /** Consolida os snapshots mais recentes e recomenda o próximo movimento do plano. */
+  private SocialGrowthPlanPerformanceResponse buildPlanPerformance(
+      List<SocialGrowthContent> contents) {
+    List<SocialPublicationMetric> metrics = new ArrayList<>();
+    for (SocialGrowthContent content : contents) {
+      if (content.getPublication() != null) {
+        metricRepository
+            .findFirstByPublicationIdOrderByCapturedAtDesc(content.getPublication().getId())
+            .ifPresent(metrics::add);
+      }
+    }
+    long views = sum(metrics, SocialPublicationMetric::getViews);
+    long engagedViews = sum(metrics, SocialPublicationMetric::getEngagedViews);
+    long recurringViewers = sum(metrics, SocialPublicationMetric::getRecurringViewers);
+    long landingSessions = sum(metrics, SocialPublicationMetric::getLandingSessions);
+    long leads = sum(metrics, SocialPublicationMetric::getLeads);
+    long checkouts = sum(metrics, SocialPublicationMetric::getCheckoutsStarted);
+    long sales = sum(metrics, SocialPublicationMetric::getSalesApproved);
+    BigDecimal revenue =
+        metrics.stream()
+            .map(SocialPublicationMetric::getRevenue)
+            .filter(value -> value != null)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    String decision;
+    String reason;
+    if (contents.isEmpty()) {
+      decision = "PLANEJAR";
+      reason = "Adicione pautas com pilar, etapa do funil e CTA antes de avaliar o canal.";
+    } else if (metrics.isEmpty()) {
+      decision = "COLETAR_AMOSTRA";
+      reason = "Ainda não existem métricas atribuídas às publicações deste plano.";
+    } else if (sales > 0 || leads > 0) {
+      decision = "CONTINUAR";
+      reason =
+          "O conteúdo já gerou lead ou venda atribuída; preserve o formato e amplie a amostra.";
+    } else if (views > 0 && landingSessions == 0) {
+      decision = "AJUSTAR_CTA";
+      reason =
+          "Há audiência, mas nenhuma sessão rastreada na landing; revise CTA e passagem do conteúdo.";
+    } else {
+      decision = "COLETAR_AMOSTRA";
+      reason = "O funil ainda não possui sinal comercial suficiente para encerrar o formato.";
+    }
+    return new SocialGrowthPlanPerformanceResponse(
+        views,
+        engagedViews,
+        recurringViewers,
+        landingSessions,
+        leads,
+        checkouts,
+        sales,
+        revenue,
+        decision,
+        reason);
+  }
+
+  /** Soma uma métrica opcional sem transformar ausência em valor negativo. */
+  private long sum(
+      List<SocialPublicationMetric> metrics,
+      java.util.function.Function<SocialPublicationMetric, Long> extractor) {
+    return metrics.stream()
+        .map(extractor)
+        .filter(value -> value != null)
+        .mapToLong(Long::longValue)
+        .sum();
+  }
+
+  /** Gera a URL canônica de atribuição sem depender de inferência do frontend. */
+  private String buildTrackingUrl(SocialGrowthPlan plan, SocialGrowthContent content) {
+    String separator = plan.getDestinationUrl().contains("?") ? "&" : "?";
+    return plan.getDestinationUrl()
+        + separator
+        + "utm_source=youtube&utm_medium=organic&utm_campaign="
+        + encode(plan.getUtmCampaign())
+        + "&utm_content="
+        + encode(content.getTrackingCode());
+  }
+
+  /** Codifica valores usados na URL de atribuição. */
+  private String encode(String value) {
+    return URLEncoder.encode(value, StandardCharsets.UTF_8);
   }
 
   /** Valida identificador obrigatório. */
@@ -412,6 +708,20 @@ public class SocialDistributionService {
       return null;
     }
     return Math.max(0L, value);
+  }
+
+  /** Garante que valores decimais negativos não entrem na leitura comercial. */
+  private BigDecimal nonNegative(BigDecimal value) {
+    if (value == null) {
+      return null;
+    }
+    return value.max(BigDecimal.ZERO);
+  }
+
+  /** Normaliza identificadores de rastreamento para uso seguro em UTM. */
+  private String normalizeTrackingValue(String value, String message) {
+    String normalized = normalizeRequired(value, message).toLowerCase();
+    return normalized.replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
   }
 
   /** Normaliza a falha operacional recebida do worker para exibição na tela. */

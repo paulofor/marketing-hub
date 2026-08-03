@@ -11,6 +11,7 @@ import {
   useCommercialPlanWeeks,
   useCommercialPlans,
   useCreateCommercialPlan,
+  useUpdateCommercialPlan,
   useUpdateCommercialPlanWeekObjectives,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
@@ -101,6 +102,34 @@ const statusLabel: Record<CommercialPlanStatus, string> = {
 
 function asArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
+}
+
+function planToPayload(plan: CommercialPlan): SaveCommercialPlanPayload {
+  return {
+    name: plan.name,
+    status: plan.status,
+    nicheId: plan.nicheId,
+    hypothesisId: plan.hypothesisId,
+    experimentId: plan.experimentId,
+    commercialObjective: plan.commercialObjective ?? undefined,
+    targetAudience: plan.targetAudience ?? undefined,
+    mainPain: plan.mainPain ?? undefined,
+    mainOffer: plan.mainOffer ?? undefined,
+    mainLeadMagnet: plan.mainLeadMagnet ?? undefined,
+    mainChannel: plan.mainChannel ?? undefined,
+    mainMetric: plan.mainMetric ?? undefined,
+    successCriteria: plan.successCriteria ?? undefined,
+    stopCriteria: plan.stopCriteria ?? undefined,
+    deadline: plan.deadline ?? undefined,
+    maxBudget: plan.maxBudget,
+    targetRevenue: plan.targetRevenue,
+    operationalRevenueTarget: plan.operationalRevenueTarget,
+    experimentsToCreate: plan.experimentsToCreate,
+    experimentsToPublish: plan.experimentsToPublish,
+    nextAction: plan.nextAction ?? undefined,
+    currentBlocker: plan.currentBlocker ?? undefined,
+    rootCause: plan.rootCause ?? undefined,
+  };
 }
 
 function resolvePlanStatus(status?: string | null): CommercialPlanStatus {
@@ -873,6 +902,7 @@ function WeeklyExperimentList({
 export default function CommercialPlanningPage() {
   const plansQuery = useCommercialPlans();
   const createPlan = useCreateCommercialPlan();
+  const updatePlan = useUpdateCommercialPlan();
   const plans = asArray(plansQuery.data);
   const hasAugustPlan = plans.some(
     (plan) => resolvePlanReferenceMonth(plan) === "2026-08",
@@ -884,10 +914,34 @@ export default function CommercialPlanningPage() {
   const planReferenceMonth = resolvePlanReferenceMonth(currentMonthPlan);
   const [selectedReferenceMonth, setSelectedReferenceMonth] =
     useState(planReferenceMonth);
+  const [isEditingPlan, setIsEditingPlan] = useState(false);
+  const [planDraft, setPlanDraft] = useState<SaveCommercialPlanPayload>(() =>
+    planToPayload(currentMonthPlan),
+  );
 
   useEffect(() => {
     setSelectedReferenceMonth(planReferenceMonth);
   }, [planReferenceMonth]);
+
+  useEffect(() => {
+    setPlanDraft(planToPayload(currentMonthPlan));
+    setIsEditingPlan(false);
+  }, [currentMonthPlan]);
+
+  function updatePlanDraft<K extends keyof SaveCommercialPlanPayload>(
+    field: K,
+    value: SaveCommercialPlanPayload[K],
+  ) {
+    setPlanDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function savePlan() {
+    if (currentMonthPlan.id <= 0) return;
+    updatePlan.mutate(
+      { id: currentMonthPlan.id, payload: planDraft },
+      { onSuccess: () => setIsEditingPlan(false) },
+    );
+  }
 
   const planWeeksQuery = useCommercialPlanWeeks(
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
@@ -978,6 +1032,15 @@ export default function CommercialPlanningPage() {
               </h2>
             </div>
             <div className="commercial-planning-month-actions">
+              {showingPlanReferenceMonth && currentMonthPlan.id > 0 ? (
+                <button
+                  className="btn btn-outline-primary"
+                  type="button"
+                  onClick={() => setIsEditingPlan((current) => !current)}
+                >
+                  {isEditingPlan ? "Fechar edição" : "Editar plano"}
+                </button>
+              ) : null}
               {!showingPlanReferenceMonth ? (
                 <button
                   className="btn btn-outline-secondary"
@@ -998,6 +1061,178 @@ export default function CommercialPlanningPage() {
               </button>
             </div>
           </div>
+
+          {isEditingPlan ? (
+            <section
+              className="card border-primary"
+              aria-label="Edição do plano comercial"
+            >
+              <div className="card-body d-flex flex-column gap-3">
+                <div className="row g-3">
+                  <div className="col-md-4">
+                    <label className="form-label" htmlFor="planning-status">
+                      Status
+                    </label>
+                    <select
+                      id="planning-status"
+                      className="form-select"
+                      value={planDraft.status ?? "DRAFT"}
+                      onChange={(event) =>
+                        updatePlanDraft(
+                          "status",
+                          event.target.value as CommercialPlanStatus,
+                        )
+                      }
+                    >
+                      {Object.entries(statusLabel).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label" htmlFor="planning-deadline">
+                      Prazo da meta
+                    </label>
+                    <input
+                      id="planning-deadline"
+                      className="form-control"
+                      type="date"
+                      value={planDraft.deadline ?? ""}
+                      onChange={(event) =>
+                        updatePlanDraft("deadline", event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-md-4">
+                    <label
+                      className="form-label"
+                      htmlFor="planning-revenue-target"
+                    >
+                      Meta de receita
+                    </label>
+                    <input
+                      id="planning-revenue-target"
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={planDraft.targetRevenue ?? ""}
+                      onChange={(event) =>
+                        updatePlanDraft(
+                          "targetRevenue",
+                          event.target.value === ""
+                            ? null
+                            : Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+                <label className="form-label mb-0" htmlFor="planning-objective">
+                  Objetivo comercial
+                </label>
+                <textarea
+                  id="planning-objective"
+                  className="form-control"
+                  rows={2}
+                  value={planDraft.commercialObjective ?? ""}
+                  onChange={(event) =>
+                    updatePlanDraft("commercialObjective", event.target.value)
+                  }
+                />
+                <label className="form-label mb-0" htmlFor="planning-success">
+                  Critério de sucesso
+                </label>
+                <textarea
+                  id="planning-success"
+                  className="form-control"
+                  rows={2}
+                  value={planDraft.successCriteria ?? ""}
+                  onChange={(event) =>
+                    updatePlanDraft("successCriteria", event.target.value)
+                  }
+                />
+                <label className="form-label mb-0" htmlFor="planning-stop">
+                  Critério de parada
+                </label>
+                <textarea
+                  id="planning-stop"
+                  className="form-control"
+                  rows={2}
+                  value={planDraft.stopCriteria ?? ""}
+                  onChange={(event) =>
+                    updatePlanDraft("stopCriteria", event.target.value)
+                  }
+                />
+                <label
+                  className="form-label mb-0"
+                  htmlFor="planning-next-action"
+                >
+                  Próxima ação
+                </label>
+                <textarea
+                  id="planning-next-action"
+                  className="form-control"
+                  rows={2}
+                  value={planDraft.nextAction ?? ""}
+                  onChange={(event) =>
+                    updatePlanDraft("nextAction", event.target.value)
+                  }
+                />
+                <label className="form-label mb-0" htmlFor="planning-blocker">
+                  Gargalo atual
+                </label>
+                <textarea
+                  id="planning-blocker"
+                  className="form-control"
+                  rows={2}
+                  value={planDraft.currentBlocker ?? ""}
+                  onChange={(event) =>
+                    updatePlanDraft("currentBlocker", event.target.value)
+                  }
+                />
+                <label
+                  className="form-label mb-0"
+                  htmlFor="planning-root-cause"
+                >
+                  Causa-raiz
+                </label>
+                <textarea
+                  id="planning-root-cause"
+                  className="form-control"
+                  rows={2}
+                  value={planDraft.rootCause ?? ""}
+                  onChange={(event) =>
+                    updatePlanDraft("rootCause", event.target.value)
+                  }
+                />
+                <div className="d-flex align-items-center gap-3">
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    disabled={updatePlan.isPending}
+                    onClick={savePlan}
+                  >
+                    {updatePlan.isPending
+                      ? "Salvando..."
+                      : "Salvar planejamento"}
+                  </button>
+                  {updatePlan.isError ? (
+                    <span className="text-danger">
+                      Não foi possível salvar o planejamento.
+                    </span>
+                  ) : null}
+                  {updatePlan.isSuccess ? (
+                    <span className="text-success">
+                      Planejamento atualizado.
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+          ) : null}
 
           <div className="commercial-planning-month-metrics">
             <MonthlyMetricCard

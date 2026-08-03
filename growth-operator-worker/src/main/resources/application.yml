@@ -1,0 +1,10 @@
+server:
+  port: 8094
+spring:
+  application:
+    name: growth-operator-worker
+growth-operator:
+  backend-url: ${BACKEND_URL:http://backend:8000}
+  repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
+  codex-command: ${CODEX_COMMAND:codex}
+  model: ${CODEX_MODEL:}

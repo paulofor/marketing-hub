@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["alternatives", "diagnosis", "decision", "recommendedAction"],
+  "properties": {
+    "alternatives": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": {"type": "string"}, "benefit": {"type": "string"},
+          "risk": {"type": "string"}, "effort": {"type": "string"}, "fit": {"type": "string"}
+        }
+      }
+    },
+    "diagnosis": {
+      "type": "object", "additionalProperties": false,
+      "required": ["rootCause", "evidence", "expectedMetric", "continueCriteria", "adjustCriteria", "stopCriteria"],
+      "properties": {
+        "rootCause": {"type": "string"}, "evidence": {"type": "array", "items": {"type": "string"}},
+        "expectedMetric": {"type": "string"}, "continueCriteria": {"type": "string"},
+        "adjustCriteria": {"type": "string"}, "stopCriteria": {"type": "string"}
+      }
+    },
+    "decision": {"type": "string", "enum": ["CONTINUE", "ADJUST", "STOP", "WAIT_FOR_APPROVAL"]},
+    "recommendedAction": {"type": "string"}
+  }
+}

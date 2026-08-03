@@ -1,0 +1,64 @@
+package com.marketinghub.growthoperatorworker;
+
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
+
+/** Responsabilidade: consumir pendencias e reportar resultados exclusivamente pelo backend. */
+@Component
+public class GrowthOperatorBackendClient {
+  private static final Logger log = LoggerFactory.getLogger(GrowthOperatorBackendClient.class);
+  private final RestClient client;
+
+  public GrowthOperatorBackendClient(WorkerProperties properties) {
+    this.client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+  }
+
+  /** Reserva a proxima pendencia ou retorna vazio quando a fila nao possui trabalho. */
+  public GrowthOperatorJob claimPending() {
+    try {
+      return client
+          .post()
+          .uri("/api/growth-operator/v1/internal/executions/pending/claim")
+          .retrieve()
+          .body(GrowthOperatorJob.class);
+    } catch (HttpClientErrorException ex) {
+      if (ex.getStatusCode().value() == 404) return null;
+      log.error(
+          "Falha no modulo growth-operator-worker ao reservar pendencia em {}",
+          "/api/growth-operator/v1/internal/executions/pending/claim",
+          ex);
+      throw ex;
+    }
+  }
+
+  /** Envia o diagnostico estruturado e preserva a resposta bruta para auditoria. */
+  public void complete(Long id, Map<String, Object> payload) {
+    client
+        .post()
+        .uri("/api/growth-operator/v1/internal/executions/{id}/complete", id)
+        .body(payload)
+        .retrieve()
+        .onStatus(
+            HttpStatusCode::isError,
+            (request, response) -> {
+              throw new IllegalStateException(
+                  "Backend recusou o diagnostico: " + response.getStatusCode());
+            })
+        .toBodilessEntity();
+  }
+
+  /** Registra falha tecnica sem transformar a execucao em sucesso. */
+  public void fail(Long id, String errorMessage) {
+    client
+        .post()
+        .uri("/api/growth-operator/v1/internal/executions/{id}/fail", id)
+        .body(Map.of("errorMessage", errorMessage))
+        .retrieve()
+        .toBodilessEntity();
+  }
+}

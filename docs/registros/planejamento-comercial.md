@@ -1,5 +1,12 @@
 # Registro de Planejamento Comercial
 
+## 2026-08-03 - Operador de Crescimento v1 em sandbox
+
+- Solicitacao: integrar ao planejamento semanal um operador Codex autonomo em modo somente leitura e diagnostico.
+- Foi feito: criado backend auditavel de execucoes, worker separado com `codex exec` efemero em sandbox `read-only`, prompt/schema versionados e painel no planejamento para solicitar e acompanhar diagnosticos.
+- Gate: o resultado apenas recomenda; nenhuma mudanca comercial ou de codigo e aplicada automaticamente e toda mutacao exige aprovacao.
+- Impacto esperado: reduzir o tempo entre identificar o gargalo semanal e obter uma proxima acao sustentada por evidencias.
+
 ## 2026-08-03 - Edicao das decisoes comerciais pela tela
 
 - Solicitacao: alinhar o planejamento da primeira semana de agosto a meta operacional de cinco vendas e priorizar a validacao da instrumentacao.

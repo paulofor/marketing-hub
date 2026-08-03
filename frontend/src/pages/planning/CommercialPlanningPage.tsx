@@ -15,6 +15,7 @@ import {
   useUpdateCommercialPlanWeekObjectives,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
+import GrowthOperatorPanel from "./GrowthOperatorPanel";
 
 const CURRENT_OPERATIONAL_MONTH = "2026-07";
 
@@ -1275,6 +1276,10 @@ export default function CommercialPlanningPage() {
           </div>
 
           <BudgetDirectionPanel plan={currentMonthPlan} weeks={weeks} />
+          <GrowthOperatorPanel
+            planId={currentMonthPlan.id}
+            defaultObjective={currentMonthPlan.nextAction}
+          />
         </div>
       </section>
 

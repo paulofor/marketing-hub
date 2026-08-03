@@ -47,14 +47,14 @@ public class LeadPortalPaymentController {
   /** Consulta o estado vigente do checkout temporário. */
   @GetMapping("/temporary-checkout/{productKey}")
   public LeadPortalPaymentsClient.TemporaryCheckoutResponse temporaryCheckout(
-      @PathVariable String productKey) {
+      @PathVariable("productKey") String productKey) {
     return paymentsClient.getTemporaryCheckout(productKey);
   }
 
   /** Restaura o checkout comercial antes do vencimento. */
   @PostMapping("/temporary-checkout/{productKey}/restore")
   public LeadPortalPaymentsClient.TemporaryCheckoutResponse restoreTemporaryCheckout(
-      @PathVariable String productKey) {
+      @PathVariable("productKey") String productKey) {
     return paymentsClient.restoreTemporaryCheckout(productKey);
   }
 

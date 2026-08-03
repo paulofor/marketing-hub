@@ -72,7 +72,7 @@ public class CheckoutController {
     @GetMapping("/temporary/{productKey}")
     public TemporaryCheckoutResponse temporaryStatus(
             @RequestHeader(name = "Authorization", required = false) String authorization,
-            @PathVariable String productKey) {
+            @PathVariable("productKey") String productKey) {
         temporaryCheckoutAdminAuthorizer.authorize(authorization);
         return temporaryCheckoutService.status(productKey);
     }
@@ -81,14 +81,14 @@ public class CheckoutController {
     @PostMapping("/temporary/{productKey}/restore")
     public TemporaryCheckoutResponse restoreTemporary(
             @RequestHeader(name = "Authorization", required = false) String authorization,
-            @PathVariable String productKey) {
+            @PathVariable("productKey") String productKey) {
         temporaryCheckoutAdminAuthorizer.authorize(authorization);
         return temporaryCheckoutService.restore(productKey);
     }
 
     /** Redireciona para o checkout de teste vigente ou para o comercial após a expiração. */
     @GetMapping("/temporary/{productKey}/redirect")
-    public ResponseEntity<Void> redirectTemporary(@PathVariable String productKey) {
+    public ResponseEntity<Void> redirectTemporary(@PathVariable("productKey") String productKey) {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(temporaryCheckoutService.resolveDestination(productKey))
                 .build();

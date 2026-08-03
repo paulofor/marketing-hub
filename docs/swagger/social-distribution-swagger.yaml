@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info:
+  title: Social Distribution API
+  version: 1.1.0
+paths:
+  /api/social-distribution/growth-plans:
+    get:
+      summary: Lista planos de crescimento orgânico com calendário e desempenho atribuído
+      parameters:
+        - in: query
+          name: productId
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Planos encontrados
+    post:
+      summary: Cria um plano de crescimento orgânico em rascunho
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSocialGrowthPlanRequest"
+      responses:
+        "200":
+          description: Plano criado
+  /api/social-distribution/growth-plans/{planId}/contents:
+    post:
+      summary: Adiciona pauta e gera URL UTM no backend
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSocialGrowthContentRequest"
+      responses:
+        "200":
+          description: Pauta criada em rascunho
+  /api/social-distribution/growth-plans/{planId}/contents/{contentId}/approve:
+    post:
+      summary: Registra aprovação humana da pauta
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Pauta aprovada sem enfileiramento automático
+components:
+  schemas:
+    CreateSocialGrowthPlanRequest:
+      type: object
+      required: [productId, name, audience, commercialHypothesis, commercialObjective, primaryCta, destinationUrl, utmCampaign]
+      properties:
+        productId: { type: integer, format: int64 }
+        name: { type: string }
+        audience: { type: string }
+        commercialHypothesis: { type: string }
+        commercialObjective: { type: string }
+        primaryCta: { type: string }
+        destinationUrl: { type: string, format: uri }
+        utmCampaign: { type: string }
+        startsOn: { type: string, format: date }
+        endsOn: { type: string, format: date }
+    CreateSocialGrowthContentRequest:
+      type: object
+      required: [contentType, pillar, topic, funnelStage]
+      properties:
+        contentType:
+          type: string
+          enum: [SHORT, LONG_VIDEO]
+        pillar: { type: string }
+        topic: { type: string }
+        funnelStage: { type: string }
+        cta: { type: string }
+        plannedAt: { type: string, format: date-time }

@@ -25,10 +25,19 @@ export interface SocialAccount {
 export interface SocialPublicationMetric {
   id: number;
   views?: number;
+  engagedViews?: number;
+  averageViewDurationSeconds?: number;
+  recurringViewers?: number;
+  subscribersGained?: number;
   likes?: number;
   comments?: number;
   shares?: number;
   clicks?: number;
+  landingSessions?: number;
+  leads?: number;
+  checkoutsStarted?: number;
+  salesApproved?: number;
+  revenue?: number;
   rawPayloadJson?: string;
   capturedAt: string;
 }
@@ -39,6 +48,7 @@ export interface SocialVideoPublication {
   productName?: string;
   productSlug?: string;
   assetId?: number;
+  growthContentId?: number;
   socialAccountId?: number;
   socialAccountName?: string;
   socialAccountExternalAccountId?: string;
@@ -71,6 +81,7 @@ export interface SaveSocialAccountRequest {
 
 export interface CreateSocialVideoPublicationRequest {
   productId: number;
+  growthContentId?: number;
   assetId?: number;
   socialAccountId?: number;
   platform: SocialPlatform;
@@ -93,7 +104,81 @@ export interface RecordMetricRequest {
   comments?: number;
   shares?: number;
   clicks?: number;
+  engagedViews?: number;
+  averageViewDurationSeconds?: number;
+  recurringViewers?: number;
+  subscribersGained?: number;
+  landingSessions?: number;
+  leads?: number;
+  checkoutsStarted?: number;
+  salesApproved?: number;
+  revenue?: number;
   rawPayloadJson?: string;
+}
+
+export interface SocialGrowthContent {
+  id: number;
+  contentType: "SHORT" | "LONG_VIDEO";
+  pillar: string;
+  topic: string;
+  funnelStage: string;
+  cta: string;
+  trackingCode: string;
+  trackingUrl: string;
+  status: "DRAFT" | "APPROVED" | "PUBLISHED";
+  plannedAt?: string;
+  publicationId?: number;
+}
+
+export interface SocialGrowthPlan {
+  id: number;
+  productId: number;
+  productName: string;
+  name: string;
+  audience: string;
+  commercialHypothesis: string;
+  commercialObjective: string;
+  primaryCta: string;
+  destinationUrl: string;
+  utmCampaign: string;
+  status: "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED";
+  startsOn?: string;
+  endsOn?: string;
+  contents: SocialGrowthContent[];
+  performance: {
+    views: number;
+    engagedViews: number;
+    recurringViewers: number;
+    landingSessions: number;
+    leads: number;
+    checkoutsStarted: number;
+    salesApproved: number;
+    revenue: number;
+    decision: string;
+    decisionReason: string;
+  };
+}
+
+export interface CreateSocialGrowthPlanRequest {
+  productId: number;
+  name: string;
+  audience: string;
+  commercialHypothesis: string;
+  commercialObjective: string;
+  primaryCta: string;
+  destinationUrl: string;
+  utmCampaign: string;
+  startsOn?: string;
+  endsOn?: string;
+}
+
+export interface CreateSocialGrowthContentRequest {
+  contentType: "SHORT" | "LONG_VIDEO";
+  pillar: string;
+  topic: string;
+  funnelStage: string;
+  cta?: string;
+  plannedAt?: string;
 }
 
 export function useSocialAccounts(platform?: SocialPlatform) {
@@ -119,6 +204,81 @@ export function useSocialPublications(productId?: string) {
       );
       return data;
     },
+  });
+}
+
+export function useSocialGrowthPlans(productId?: string) {
+  return useQuery({
+    queryKey: ["social-distribution", "growth-plans", productId ?? "ALL"],
+    queryFn: async () => {
+      const { data } = await axios.get<SocialGrowthPlan[]>(
+        "/api/social-distribution/growth-plans",
+        { params: productId ? { productId } : undefined },
+      );
+      return data;
+    },
+  });
+}
+
+export function useCreateSocialGrowthPlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: CreateSocialGrowthPlanRequest) => {
+      const { data } = await axios.post<SocialGrowthPlan>(
+        "/api/social-distribution/growth-plans",
+        request,
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["social-distribution", "growth-plans"],
+      }),
+  });
+}
+
+export function useCreateSocialGrowthContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      planId,
+      request,
+    }: {
+      planId: number;
+      request: CreateSocialGrowthContentRequest;
+    }) => {
+      const { data } = await axios.post<SocialGrowthContent>(
+        `/api/social-distribution/growth-plans/${planId}/contents`,
+        request,
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["social-distribution", "growth-plans"],
+      }),
+  });
+}
+
+export function useApproveSocialGrowthContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      planId,
+      contentId,
+    }: {
+      planId: number;
+      contentId: number;
+    }) => {
+      const { data } = await axios.post<SocialGrowthContent>(
+        `/api/social-distribution/growth-plans/${planId}/contents/${contentId}/approve`,
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["social-distribution", "growth-plans"],
+      }),
   });
 }
 

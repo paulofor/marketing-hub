@@ -35,3 +35,15 @@ A opção implementada é o núcleo operacional.
 - YouTube Data API permite upload de vídeos com `videos.insert`.
 - Instagram Content Publishing API permite publicação de vídeos/Reels para contas profissionais elegíveis.
 - TikTok Content Posting API permite upload/rascunho e Direct Post, mas Direct Post público depende de aprovação/auditoria.
+
+## Evolução: plano de crescimento mensurável
+
+A tela de Distribuição Orgânica passa a organizar ciclos por produto com
+público, hipótese comercial, objetivo, CTA e campanha UTM. As pautas distinguem
+Shorts de vídeos longos, registram pilar e etapa do funil e recebem uma URL
+rastreável gerada pelo backend.
+
+O gate humano permanece obrigatório: aprovar uma pauta libera seu vínculo com
+uma publicação, mas não a coloca na fila. O desempenho do ciclo separa alcance,
+aquecimento e conversão por meio de visualizações engajadas, recorrência,
+sessões, leads, checkouts, vendas e receita atribuída.

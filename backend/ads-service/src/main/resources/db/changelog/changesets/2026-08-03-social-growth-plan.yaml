@@ -1,0 +1,107 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-03-social-growth-plan-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: social_growth_plan
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE social_growth_plan (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                product_id BIGINT NOT NULL,
+                name VARCHAR(191) NOT NULL,
+                audience LONGTEXT NOT NULL,
+                commercial_hypothesis LONGTEXT NOT NULL,
+                commercial_objective LONGTEXT NOT NULL,
+                primary_cta VARCHAR(255) NOT NULL,
+                destination_url VARCHAR(1024) NOT NULL,
+                utm_campaign VARCHAR(191) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                starts_on DATE NULL,
+                ends_on DATE NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                INDEX idx_social_growth_plan_product (product_id),
+                INDEX idx_social_growth_plan_status (status),
+                CONSTRAINT fk_social_growth_plan_product FOREIGN KEY (product_id) REFERENCES product (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-08-03-social-growth-plan-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: social_growth_content
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE social_growth_content (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                plan_id BIGINT NOT NULL,
+                publication_id BIGINT NULL,
+                content_type VARCHAR(32) NOT NULL,
+                pillar VARCHAR(191) NOT NULL,
+                topic VARCHAR(255) NOT NULL,
+                funnel_stage VARCHAR(64) NOT NULL,
+                cta VARCHAR(255) NOT NULL,
+                tracking_code VARCHAR(191) NOT NULL,
+                tracking_url VARCHAR(2048) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                planned_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_social_growth_content_tracking (tracking_code),
+                UNIQUE KEY uk_social_growth_content_publication (publication_id),
+                INDEX idx_social_growth_content_plan (plan_id),
+                CONSTRAINT fk_social_growth_content_plan FOREIGN KEY (plan_id) REFERENCES social_growth_plan (id),
+                CONSTRAINT fk_social_growth_content_publication FOREIGN KEY (publication_id) REFERENCES social_video_publication (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-08-03-social-growth-plan-003
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: social_publication_metric
+            columnName: clicks
+        - not:
+            columnExists:
+              tableName: social_publication_metric
+              columnName: engaged_views
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE social_publication_metric
+                ADD COLUMN engaged_views BIGINT NULL AFTER views,
+                ADD COLUMN average_view_duration_seconds DECIMAL(12,2) NULL AFTER engaged_views,
+                ADD COLUMN recurring_viewers BIGINT NULL AFTER average_view_duration_seconds,
+                ADD COLUMN subscribers_gained BIGINT NULL AFTER recurring_viewers,
+                ADD COLUMN landing_sessions BIGINT NULL AFTER clicks,
+                ADD COLUMN leads BIGINT NULL AFTER landing_sessions,
+                ADD COLUMN checkouts_started BIGINT NULL AFTER leads,
+                ADD COLUMN sales_approved BIGINT NULL AFTER checkouts_started,
+                ADD COLUMN revenue DECIMAL(15,2) NULL AFTER sales_approved;

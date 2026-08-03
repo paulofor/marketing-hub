@@ -46,3 +46,17 @@ Cada publicacao deve preservar:
 
 O objetivo nao e apenas postar conteudo: e criar uma base de sinais para melhorar
 copy, oferta, criativos pagos e priorizacao de mercado.
+
+## Plano de crescimento orgânico
+
+A Distribuição Orgânica deve persistir, antes da publicação, um plano ligado ao
+produto com público, hipótese, objetivo comercial, CTA, destino e campanha UTM.
+Cada pauta deve declarar formato, pilar e etapa do funil. A URL rastreável é
+gerada pelo backend e a pauta exige aprovação humana antes de ser vinculada a
+uma publicação; aprovação nunca enfileira conteúdo automaticamente.
+
+O relatório do plano deve separar audiência de resultado comercial, incluindo
+visualizações engajadas, espectadores recorrentes, sessões na landing, leads,
+checkouts, vendas e receita atribuída. Visualização ou impacto estimado nunca
+deve ser contado como venda. A decisão do backend deve orientar coleta de
+amostra, ajuste do CTA ou continuidade usando os eventos persistidos.

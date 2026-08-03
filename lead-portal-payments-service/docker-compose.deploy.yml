@@ -43,6 +43,7 @@ services:
       DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL:-http://digital-product-email-service:8080}
       AGENDA_CHEIA_PRODUCTION_STORAGE_ROOT: /data/agenda-cheia
       AGENDA_CHEIA_APPROVED_PHOTO_ROOT: /data/agenda-cheia/photo-library/approved
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required}
       OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-2-2026-04-21}
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"

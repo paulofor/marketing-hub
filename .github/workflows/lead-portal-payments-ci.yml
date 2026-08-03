@@ -123,12 +123,18 @@ jobs:
       - name: Validate payments authentication secret
         env:
           PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
+          AGENDA_CHEIA_OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY }}
         run: |
           if [ "${#PAYMENTS_AUTH_TOKEN}" -lt 32 ]; then
             echo "Erro: LEAD_PORTAL_PAYMENTS_AUTH_TOKEN ausente ou menor que 32 caracteres no ambiente production." >&2
             exit 1
           fi
+          if [ "${#AGENDA_CHEIA_OPENAI_API_KEY}" -lt 20 ]; then
+            echo "Erro: PDE_OPENAI_API_KEY ausente no ambiente production; a produção premium do Agenda Cheia ficaria indisponível." >&2
+            exit 1
+          fi
           echo "Segredo administrativo disponível para o deploy (conteúdo protegido)."
+          echo "Credencial de geração premium disponível para o deploy (conteúdo protegido)."
       - name: Configure SSH
         env:
           VPS_SSH_KEY: ${{ inputs.issue_digicomdigital_certificate == 'true' && secrets.VPS_SSH_KEY || secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY != '' && secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY || secrets.PDE_PLATFORM_VPS_SSH_KEY != '' && secrets.PDE_PLATFORM_VPS_SSH_KEY || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
@@ -191,6 +197,7 @@ jobs:
       - name: Publish service
         env:
           PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
+          AGENDA_CHEIA_OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY }}
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
@@ -199,21 +206,25 @@ jobs:
             && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
             && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
             && export LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${PAYMENTS_AUTH_TOKEN}' \
+            && export OPENAI_API_KEY='${AGENDA_CHEIA_OPENAI_API_KEY}' \
             && docker compose -f docker-compose.deploy.yml pull \
             && (docker rm -f lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 >/dev/null 2>&1 || true) \
             && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
             && test \"\$(docker inspect lead-portal-payments-service --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^LEAD_PORTAL_PAYMENTS_AUTH_TOKEN=//p' | awk '{ print length }')\" -ge 32 \
+            && test "\$(docker inspect lead-portal-payments-service --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^OPENAI_API_KEY=//p' | awk '{ print length }')" -ge 20 \
             && docker image prune -af"
       - name: Issue Clube MUSA certificate
         if: github.event_name == 'workflow_dispatch' && inputs.issue_clubemusa_certificate == 'true'
         env:
           PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
+          AGENDA_CHEIA_OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY }}
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
             && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
             && export LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${PAYMENTS_AUTH_TOKEN}' \
+            && export OPENAI_API_KEY='${AGENDA_CHEIA_OPENAI_API_KEY}' \
             && export CERTBOT_PRIMARY_DOMAIN=clubemusa.com.br \
             && export CERTBOT_EXTRA_DOMAINS='v1.clubemusa.com.br v2.clubemusa.com.br v5.clubemusa.com.br v6.clubemusa.com.br v7.clubemusa.com.br v8.clubemusa.com.br v9.clubemusa.com.br v10.clubemusa.com.br' \
             && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
@@ -222,12 +233,14 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.issue_digicomdigital_certificate == 'true'
         env:
           PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
+          AGENDA_CHEIA_OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY }}
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
             && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
             && export LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${PAYMENTS_AUTH_TOKEN}' \
+            && export OPENAI_API_KEY='${AGENDA_CHEIA_OPENAI_API_KEY}' \
             && export CERTBOT_PRIMARY_DOMAIN=digicomdigital.com.br \
             && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
             && docker compose -f docker-compose.deploy.yml up -d --force-recreate --no-deps proxy"

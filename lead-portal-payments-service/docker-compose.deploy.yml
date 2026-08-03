@@ -41,10 +41,13 @@ services:
       DELIVERY_INITIAL_DELAY: ${DELIVERY_INITIAL_DELAY:-20000}
       DELIVERY_FIXED_DELAY: ${DELIVERY_FIXED_DELAY:-60000}
       DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL:-http://digital-product-email-service:8080}
+      AGENDA_CHEIA_PRODUCTION_STORAGE_ROOT: /data/agenda-cheia
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/lib/marketinghub/agenda-cheia:/data/agenda-cheia
     networks:
       - lead-portal-payments-net
 

@@ -98,6 +98,31 @@ public class DigitalProductPostPurchaseEmailService {
         return delivery;
     }
 
+    /** Envia a entrega final do Agenda Cheia com o pacote aprovado para download. */
+    @Transactional
+    public DigitalProductDeliveryEmail sendCompletedKit(
+            MercadoPagoPaymentDetails paymentDetails,
+            String recipientEmail,
+            String recipientName,
+            String downloadUrl) {
+        DigitalProductConfig productConfig = supportedProduct(paymentDetails.externalReference())
+                .orElseThrow(() -> new IllegalStateException("Produto digital não suportado"));
+        DigitalProductDeliveryEmail delivery = repository.findByPaymentId(paymentDetails.id())
+                .orElseGet(() -> createPendingDelivery(
+                        paymentDetails, recipientEmail, recipientName, productConfig));
+        delivery.setRecipientEmail(recipientEmail.trim());
+        delivery.setRecipientName(recipientName.trim());
+        delivery.setDownloadUrl(downloadUrl);
+        delivery.setStatus(DigitalProductDeliveryEmailStatus.PENDING);
+        delivery.setLastError(null);
+        repository.save(delivery);
+        send(delivery, paymentDetails);
+        if (delivery.getStatus() != DigitalProductDeliveryEmailStatus.SENT) {
+            throw new IllegalStateException("A entrega final não pôde ser enviada");
+        }
+        return delivery;
+    }
+
     /** Cria o registro pendente a partir dos dados do pagamento aprovado. */
     private DigitalProductDeliveryEmail createPendingDelivery(MercadoPagoPaymentDetails paymentDetails,
                                                               DigitalProductConfig productConfig) {

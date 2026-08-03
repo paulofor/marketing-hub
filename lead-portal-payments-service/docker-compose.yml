@@ -40,10 +40,13 @@ services:
       DELIVERY_BATCH_SIZE: ${DELIVERY_BATCH_SIZE:-3}
       DELIVERY_INITIAL_DELAY: ${DELIVERY_INITIAL_DELAY:-20000}
       DELIVERY_FIXED_DELAY: ${DELIVERY_FIXED_DELAY:-60000}
+      AGENDA_CHEIA_PRODUCTION_STORAGE_ROOT: /data/agenda-cheia
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/agenda-cheia:/data/agenda-cheia
     networks:
       - lead-portal-payments-net
 

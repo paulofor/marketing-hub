@@ -6491,3 +6491,8 @@
 - ajuste preparado: o backend PDE passa a publicar a identidade de build também no `/actuator/info`, com `build`, `git` e bloco `pde`; o workflow PDE valida esse endpoint no pós-deploy; o compose do MCP passa a herdar o datasource `PDE_ACCESS_JDBC_*` do PDE quando `MCP_PDE_DATASOURCE_*` não for definido.
 - prevenção: antes de usar métricas PDE para pausar, escalar ou trocar criativo/oferta, validar `runtime_build_info(module=pde-platform-backend)` e `pde_db_health`, conectando commit, imagem, API pública e schema efetivo.
 - impacto comercial esperado: reduzir risco de decidir escala de tráfego pago com API antiga, banco errado ou cockpit lendo uma versão diferente da experiência pública.
+# Agenda Cheia Nail Design — qualidade visual do kit (2026-08-03)
+
+- Causa-raiz confirmada após o pacote real do pagamento `170895084433`: fotografias tecnicamente distintas ainda podiam deixar as unhas pequenas, repetir linguagem visual e perder força comercial porque o prompt não exigia protagonismo mensurável e o compositor cobria uma área excessiva da foto.
+- Correção: o prompt fotográfico passou a exigir unhas ocupando de 35% a 55% do enquadramento, diversidade explícita de pose/ângulo/cor/fundo/contexto e leitura mobile; o compositor reduziu o card de texto e adicionou chamada curta para WhatsApp ou reserva.
+- Prevenção de recorrência: teste de contrato protege as exigências comerciais centrais do prompt. Tráfego permanece bloqueado até um pacote real atingir avaliação visual humana mínima de 9/10.

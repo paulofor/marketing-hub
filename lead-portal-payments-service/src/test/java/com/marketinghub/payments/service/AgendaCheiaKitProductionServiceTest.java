@@ -15,6 +15,7 @@ import com.marketinghub.payments.model.AgendaCheiaBriefing;
 import com.marketinghub.payments.model.AgendaCheiaDelivery;
 import com.marketinghub.payments.repository.AgendaCheiaDeliveryRepository;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -92,6 +93,18 @@ class AgendaCheiaKitProductionServiceTest {
         assertThatThrownBy(() -> service.produceAndDeliver(briefing(), payment))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Não foi possível concluir o kit personalizado");
+    }
+
+    /** Deve manter no prompt o protagonismo das unhas e a diversidade visual exigida para venda. */
+    @Test
+    void requiresNailsAsThePhotographicHeroAndRealVariation() throws Exception {
+        String prompt = new String(getClass().getResourceAsStream(
+                "/prompts/agenda-cheia/nail-photo.md").readAllBytes(), StandardCharsets.UTF_8);
+
+        assertThat(prompt).contains("35% a 55% do enquadramento")
+                .contains("imediatamente reconhecíveis no celular")
+                .contains("Varie de verdade pose, ângulo de câmera, cor dominante, fundo e contexto")
+                .contains("sem reduzir o protagonismo das unhas");
     }
 
     /** Simula fotografias variadas e detalhadas sem chamar provedor externo no teste. */

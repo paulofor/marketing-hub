@@ -92,6 +92,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - calcular custo OpenAI conforme o service tier usado.
 - **Regra preventiva**:
   - nunca liberar campanha low-ticket apenas porque existe URL pública; a URL deve ser resultado auditável do GeraSalesPage v1 concluído.
+  - templates globais do GeraSalesPage nunca podem fixar marca, URL, arquivo ou entrega de um experimento específico; conteúdo específico deve vir apenas do contrato persistido do experimento atual.
+  - a revisão de qualidade deve bloquear contaminação cruzada entre produtos antes do pacote de publicação.
 
 ## LOOP-FB-PUBLICATION — Publicação Facebook Ads
 

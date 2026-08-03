@@ -26,6 +26,9 @@ class AiPromptSchemaTemplateChangelogTest {
   private static final Path GERA_SALES_PAGE_EXP66_DELIVERY_V9_CHANGELOG =
       Path.of(
           "src/main/resources/db/changelog/changesets/2026-07-15-gera-sales-page-exp66-delivery-v9.yaml");
+  private static final Path GERA_SALES_PAGE_GENERIC_V10_CHANGELOG =
+      Path.of(
+          "src/main/resources/db/changelog/changesets/2026-08-03-gera-sales-page-generic-templates-v10.yaml");
 
   /** Garante que a etapa Prova use o mesmo campo de evidencias aceito pelo AI Worker. */
   @Test
@@ -98,5 +101,21 @@ class AiPromptSchemaTemplateChangelogTest {
         .contains("Bloqueie qualquer página que exponha termos internos")
         .contains("após pagamento aprovado no Mercado Pago")
         .contains("ON DUPLICATE KEY UPDATE");
+  }
+
+  /** Garante que o template global ativo não imponha marca ou entrega de outro experimento. */
+  @Test
+  void geraSalesPageGenericV10ShouldRejectCrossProductContent() throws IOException {
+    String changelog =
+        Files.readString(GERA_SALES_PAGE_GENERIC_V10_CHANGELOG, StandardCharsets.UTF_8);
+
+    assertThat(changelog)
+        .contains("gera-sales-page-v1:sales-page-copy:v10")
+        .contains("gera-sales-page-v1:sales-page-html:v10")
+        .contains("exclusivamente os dados e URLs do experimento")
+        .contains("Bloqueie qualquer marca, URL, arquivo, entregável ou identificador")
+        .doesNotContain("Kit MUSA")
+        .doesNotContain("experimento-66-entregaveis.zip")
+        .doesNotContain("obrigado-exp66");
   }
 }

@@ -15,6 +15,12 @@ COMPOSE_RECREATE_TIMEOUT=${COMPOSE_RECREATE_TIMEOUT:-8m}
 DIAGNOSTIC_COMMAND_TIMEOUT=${DIAGNOSTIC_COMMAND_TIMEOUT:-20s}
 BACKEND_HEALTH_URL=${BACKEND_HEALTH_URL:-http://localhost:8000/ops-mh-observability-v2/health}
 FRONTEND_HEALTH_URL=${FRONTEND_HEALTH_URL:-http://localhost:5173/healthz}
+PAYMENTS_AUTH_TOKEN_VALUE=${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:-}
+
+if [[ ${#PAYMENTS_AUTH_TOKEN_VALUE} -lt 32 ]]; then
+  printf '[apply.sh] Erro: LEAD_PORTAL_PAYMENTS_AUTH_TOKEN ausente ou menor que 32 caracteres.\n' >&2
+  exit 1
+fi
 
 log() {
   printf '[%s] [apply.sh] %s\n' "$(date -Is)" "$*"
@@ -218,6 +224,15 @@ run_with_timeout_and_diagnostics \
 
 wait_http "backend" "${BACKEND_HEALTH_URL}"
 wait_http "frontend" "${FRONTEND_HEALTH_URL}" 12 5
+
+backend_token_length="$(docker inspect marketinghub-backend --format '{{range .Config.Env}}{{println .}}{{end}}' \
+  | sed -n 's/^LEAD_PORTAL_PAYMENTS_AUTH_TOKEN=//p' \
+  | awk '{ print length }')"
+if [[ "${backend_token_length:-0}" -lt 32 ]]; then
+  log "Erro: backend recriado sem LEAD_PORTAL_PAYMENTS_AUTH_TOKEN válido."
+  exit 1
+fi
+log "Token administrativo do serviço de pagamentos confirmado no backend (conteúdo protegido)."
 
 cleanup_previous_tags "${BACKEND_IMAGE}" "latest"
 cleanup_previous_tags "${FRONTEND_IMAGE}" "latest"

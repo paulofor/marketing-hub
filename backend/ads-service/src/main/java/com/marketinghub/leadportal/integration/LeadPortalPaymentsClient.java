@@ -17,6 +17,7 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+/** Integra o backend principal ao serviço oficial de pagamentos do Lead Portal. */
 @Component
 public class LeadPortalPaymentsClient {
 
@@ -25,6 +26,7 @@ public class LeadPortalPaymentsClient {
   private final RestTemplate restTemplate;
   private final LeadPortalPaymentsIntegrationProperties properties;
 
+  /** Configura o cliente HTTP com tempo limite e credenciais internas. */
   public LeadPortalPaymentsClient(
       RestTemplateBuilder restTemplateBuilder, LeadPortalPaymentsIntegrationProperties properties) {
     this.properties = properties;
@@ -35,6 +37,7 @@ public class LeadPortalPaymentsClient {
             .build();
   }
 
+  /** Cria ou recupera o checkout comercial de um pacote. */
   public PaymentCheckoutResponse ensureCheckout(
       long packageId, String buyerEmail, String buyerName) {
     if (!properties.isEnabled()) {
@@ -94,6 +97,47 @@ public class LeadPortalPaymentsClient {
     }
   }
 
+  /** Ativa um checkout temporário por meio do serviço oficial de pagamentos. */
+  public TemporaryCheckoutResponse activateTemporaryCheckout(TemporaryCheckoutRequest request) {
+    return exchangeTemporary(HttpMethod.POST, "/api/v1/payments/temporary", request, request.productKey());
+  }
+
+  /** Consulta a fonte de verdade do checkout temporário. */
+  public TemporaryCheckoutResponse getTemporaryCheckout(String productKey) {
+    return exchangeTemporary(HttpMethod.GET, "/api/v1/payments/temporary/" + productKey, null, productKey);
+  }
+
+  /** Restaura imediatamente o checkout comercial do produto. */
+  public TemporaryCheckoutResponse restoreTemporaryCheckout(String productKey) {
+    return exchangeTemporary(HttpMethod.POST,
+        "/api/v1/payments/temporary/" + productKey + "/restore", null, productKey);
+  }
+
+  private TemporaryCheckoutResponse exchangeTemporary(
+      HttpMethod method, String path, TemporaryCheckoutRequest request, String productKey) {
+    if (!properties.isEnabled() || !StringUtils.hasText(properties.getBaseUrl())) {
+      throw new IllegalStateException("Integração com lead-portal-payments não configurada");
+    }
+    var uri = UriComponentsBuilder.fromHttpUrl(properties.getBaseUrl()).path(path).build().toUri();
+    try {
+      ResponseEntity<TemporaryCheckoutResponse> response = restTemplate.exchange(
+          uri, method, new HttpEntity<>(request, buildHeaders()), TemporaryCheckoutResponse.class);
+      if (response.getBody() == null) {
+        throw new IllegalStateException("Serviço de pagamentos não retornou o checkout temporário");
+      }
+      return response.getBody();
+    } catch (RestClientResponseException ex) {
+      log.error("Falha HTTP na operação de checkout temporário. productKey={}, method={}, endpoint={}, body={}",
+          productKey, method, uri, ex.getResponseBodyAsString(), ex);
+      throw new IllegalStateException("Falha ao administrar checkout temporário", ex);
+    } catch (RestClientException ex) {
+      log.error("Falha de comunicação no checkout temporário. productKey={}, method={}, endpoint={}",
+          productKey, method, uri, ex);
+      throw new IllegalStateException("Serviço de pagamentos indisponível", ex);
+    }
+  }
+
+  /** Monta os cabeçalhos internos exigidos pelo serviço de pagamentos. */
   private HttpHeaders buildHeaders() {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
@@ -115,4 +159,22 @@ public class LeadPortalPaymentsClient {
       String currency,
       Instant expiresAt,
       String statementDescriptor) {}
+
+  public record TemporaryCheckoutRequest(
+      String productKey,
+      String productName,
+      BigDecimal testAmount,
+      String commercialCheckoutUrl,
+      Integer durationMinutes) {}
+
+  public record TemporaryCheckoutResponse(
+      String productKey,
+      String productName,
+      String redirectUrl,
+      String temporaryCheckoutUrl,
+      String commercialCheckoutUrl,
+      BigDecimal testAmount,
+      String status,
+      Instant activatedAt,
+      Instant expiresAt) {}
 }

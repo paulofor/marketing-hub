@@ -105,6 +105,7 @@ import PrivacyPolicySettingsPage from "./pages/settings/PrivacyPolicySettingsPag
 import EmailSettingsPage from "./pages/settings/EmailSettingsPage";
 import WhatsAppConsolePage from "./pages/whatsapp/WhatsAppConsolePage";
 import LeadPortalExperimentMetricsPage from "./pages/leadPortal/LeadPortalExperimentMetricsPage";
+import TemporaryCheckoutPage from "./pages/leadPortal/TemporaryCheckoutPage";
 import LeadPortalImagesPage from "./pages/leadPortal/LeadPortalImagesPage";
 import LeadPortalImagePackageDetailPage from "./pages/leadPortal/LeadPortalImagePackageDetailPage";
 import LeadPortalSimpleFormStylesPage from "./pages/leadPortal/LeadPortalSimpleFormStylesPage";
@@ -666,6 +667,10 @@ export default function App() {
               <Route
                 path="/lead-portal/email-template"
                 element={<LeadPortalEmailTemplatePage />}
+              />
+              <Route
+                path="/lead-portal/temporary-checkout"
+                element={<TemporaryCheckoutPage />}
               />
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />

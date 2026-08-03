@@ -43,6 +43,8 @@ mercado-pago:
   statement-descriptor: ${MERCADO_PAGO_STATEMENT_DESCRIPTOR:MarketingHub}
 
 payments:
+  public-base-url: ${PAYMENTS_PUBLIC_BASE_URL:https://pagamentopalf.site}
+  admin-auth-token: ${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:}
   default-amount: ${PAYMENTS_DEFAULT_AMOUNT:49.90}
   default-currency: ${PAYMENTS_DEFAULT_CURRENCY:BRL}
   checkout-ttl: ${PAYMENTS_CHECKOUT_TTL:PT72H}

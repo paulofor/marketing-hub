@@ -103,3 +103,16 @@ CREATE TABLE IF NOT EXISTS digital_product_delivery_email (
 
 CREATE INDEX IF NOT EXISTS idx_digital_product_delivery_status
     ON digital_product_delivery_email(status, updated_at);
+
+CREATE TABLE IF NOT EXISTS temporary_checkout (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_key VARCHAR(120) NOT NULL UNIQUE,
+    product_name VARCHAR(180) NOT NULL,
+    commercial_checkout_url VARCHAR(1200) NOT NULL,
+    temporary_checkout_url VARCHAR(1200) NOT NULL,
+    mercado_pago_preference_id VARCHAR(150) NOT NULL,
+    test_amount DECIMAL(12,2) NOT NULL,
+    activated_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    restored_at TIMESTAMP NULL
+);

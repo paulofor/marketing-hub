@@ -101,7 +101,9 @@ jobs:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 163.245.200.7
+      # O institucional permanece no host legado que recebe o DNS de
+      # digicomdigital.com.br. Os PDEs do Clube MUSA continuam no host canônico.
+      DEPLOY_HOST: ${{ inputs.issue_digicomdigital_certificate == 'true' && '191.252.102.54' || '163.245.200.7' }}
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.LEAD_PORTAL_PAYMENTS_REMOTE_PATH || '/root/lead-portal-payments-service' }}
       IMAGE_REGISTRY: ghcr.io
@@ -112,6 +114,11 @@ jobs:
       LEAD_PORTAL_PAYMENTS_NETWORK: ${{ secrets.LEAD_PORTAL_PAYMENTS_NETWORK != '' && secrets.LEAD_PORTAL_PAYMENTS_NETWORK || 'public-net' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate certificate target
+        if: inputs.issue_clubemusa_certificate == 'true' && inputs.issue_digicomdigital_certificate == 'true'
+        run: |
+          echo "Selecione apenas um domínio por execução para impedir emissão no host incorreto." >&2
+          exit 1
       - name: Configure SSH
         env:
           VPS_SSH_KEY: ${{ secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY != '' && secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY || secrets.PDE_PLATFORM_VPS_SSH_KEY != '' && secrets.PDE_PLATFORM_VPS_SSH_KEY || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}

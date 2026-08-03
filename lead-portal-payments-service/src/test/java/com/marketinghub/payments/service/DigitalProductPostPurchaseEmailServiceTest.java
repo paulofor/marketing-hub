@@ -103,4 +103,39 @@ class DigitalProductPostPurchaseEmailServiceTest {
         verify(repository, never()).save(any());
         verify(emailClient, never()).send(any());
     }
+
+    /** Deve remover o rótulo de compra teste ao reenviar a entrega final do Agenda Cheia. */
+    @Test
+    void sendCompletedKitShouldRestoreAgendaCheiaCommercialIdentity() {
+        MercadoPagoPaymentDetails payment = new MercadoPagoPaymentDetails(
+                "pay-agenda",
+                "approved",
+                BigDecimal.valueOf(0.67),
+                "BRL",
+                "Agenda Cheia Nail Design - Compra teste",
+                "masked@example.com",
+                "agenda-cheia-nail-design",
+                Instant.now(),
+                Map.of(),
+                "{}");
+        DigitalProductDeliveryEmail existing = new DigitalProductDeliveryEmail();
+        existing.setPaymentId("pay-agenda");
+        existing.setExternalReference("agenda-cheia-nail-design");
+        existing.setProductName("Agenda Cheia Nail Design - Compra teste");
+        existing.setStatus(DigitalProductDeliveryEmailStatus.SENT);
+
+        when(repository.findByPaymentId("pay-agenda")).thenReturn(Optional.of(existing));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(emailClient.send(any())).thenReturn(new DigitalProductDeliveryEmailResponse("req-agenda", "SENT", "ok"));
+
+        service.sendCompletedKit(
+                payment,
+                "teste@digicomdigital.com.br",
+                "Studio Teste",
+                "https://pagamentopalf.site/download");
+
+        verify(emailClient).send(argThat(request ->
+                request.productName().equals("Agenda Cheia Nail Design")
+                        && request.brandName().equals("Agenda Cheia Nail Design")));
+    }
 }

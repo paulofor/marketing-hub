@@ -44,14 +44,12 @@ public class MercadoPagoClient {
                     request.items() != null && !request.items().isEmpty() ? request.items().get(0).unitPrice() : null,
                     request.items() != null && !request.items().isEmpty() ? request.items().get(0).currencyId() : null,
                     request.notificationUrl());
-            log.info("JSON enviado ao Mercado Pago (/checkout/preferences): {}", toJson(request));
             ResponseEntity<MercadoPagoPreferenceResponse> response = restClient.post()
                     .uri("/checkout/preferences")
                     .body(request)
                     .retrieve()
                     .toEntity(MercadoPagoPreferenceResponse.class);
             MercadoPagoPreferenceResponse body = response.getBody();
-            log.info("JSON recebido do Mercado Pago (/checkout/preferences): {}", toJson(body));
             if (body != null) {
                 log.info("Preferência {} criada no Mercado Pago (initPoint={})", body.id(), body.initPoint());
             }
@@ -78,7 +76,6 @@ public class MercadoPagoClient {
                     .retrieve()
                     .toEntity(JsonNode.class);
             String rawJson = toJson(response.getBody());
-            log.info("JSON recebido do Mercado Pago (/v1/payments/{}): {}", paymentId, rawJson);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 MercadoPagoPaymentDetails payment = parsePayment(response.getBody(), rawJson);
                 log.info("Pagamento {} retornado pelo Mercado Pago com status {} (amount={} {})", paymentId,
@@ -111,10 +108,6 @@ public class MercadoPagoClient {
                     .uri("/checkout/preferences/{id}", preferenceId)
                     .retrieve()
                     .toEntity(JsonNode.class);
-            log.info(
-                    "JSON recebido do Mercado Pago (/checkout/preferences/{}): {}",
-                    preferenceId,
-                    toJson(response.getBody()));
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 MercadoPagoPreferenceDetails preference = parsePreference(response.getBody());
                 log.info("Preferência {} retornada pelo Mercado Pago com status {} (expira em {})", preferenceId,

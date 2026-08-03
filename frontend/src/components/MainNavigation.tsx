@@ -135,6 +135,11 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/funnels", label: "Funil de Vendas", icon: Workflow },
       {
+        to: "/lead-portal/temporary-checkout",
+        label: "Checkout de teste",
+        icon: ShieldCheck,
+      },
+      {
         to: "/videos",
         label: "Vídeos",
         icon: Video,

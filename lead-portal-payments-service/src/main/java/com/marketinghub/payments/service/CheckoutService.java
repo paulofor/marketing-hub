@@ -299,6 +299,7 @@ public class CheckoutService {
                         pendingUrl),
                 metadata,
                 mercadoPagoProperties.getNotificationUrl(),
+                "lead-portal-package-" + imagePackage.packageId(),
                 mercadoPagoProperties.getStatementDescriptor()
         );
     }

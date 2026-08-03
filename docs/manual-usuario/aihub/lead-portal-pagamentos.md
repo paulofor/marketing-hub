@@ -43,6 +43,22 @@ Todo checkout é criado com prazo padrão de 72 horas. Se expirar, basta gerar
 novo link pela tela de pagamentos; o valor continuará sincronizado com o
 experimento.
 
+### Compra de teste com preço temporário
+
+Use **Campanhas → Checkout de teste** quando precisar validar uma compra real
+com valor reduzido sem substituir definitivamente a oferta comercial.
+
+1. Informe o preço de teste, a duração e o checkout comercial vigente.
+2. Ative o teste e copie a **URL estável** retornada pela tela para os botões da
+   página de venda.
+3. Durante a validade, essa URL encaminha para a preferência de teste.
+4. No vencimento, a mesma URL volta automaticamente ao checkout comercial. A
+   restauração também pode ser antecipada pelo botão **Restaurar agora**.
+
+Os comandos administrativos exigem que backend e serviço de pagamentos usem o
+mesmo segredo em `LEAD_PORTAL_PAYMENTS_AUTH_TOKEN`. A URL pública de
+redirecionamento não expõe esse segredo nem os dados administrativos.
+
 ## 4. Boas práticas
 
 - Revise sempre o preço unitário antes de ativar campanhas.

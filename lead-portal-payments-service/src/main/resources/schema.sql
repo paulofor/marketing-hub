@@ -186,3 +186,16 @@ CREATE TABLE IF NOT EXISTS digital_product_delivery_email (
     UNIQUE KEY uq_digital_product_delivery_payment (payment_id),
     INDEX idx_digital_product_delivery_status (status, updated_at)
 );
+
+CREATE TABLE IF NOT EXISTS temporary_checkout (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_key VARCHAR(120) NOT NULL UNIQUE,
+    product_name VARCHAR(180) NOT NULL,
+    commercial_checkout_url VARCHAR(1200) NOT NULL,
+    temporary_checkout_url VARCHAR(1200) NOT NULL,
+    mercado_pago_preference_id VARCHAR(150) NOT NULL,
+    test_amount DECIMAL(12,2) NOT NULL,
+    activated_at DATETIME NOT NULL,
+    expires_at DATETIME NOT NULL,
+    restored_at DATETIME NULL
+);

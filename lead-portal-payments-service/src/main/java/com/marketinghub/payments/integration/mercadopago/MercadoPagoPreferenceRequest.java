@@ -11,6 +11,7 @@ public record MercadoPagoPreferenceRequest(
         @JsonProperty("back_urls") BackUrls backUrls,
         Map<String, Object> metadata,
         @JsonProperty("notification_url") String notificationUrl,
+        @JsonProperty("external_reference") String externalReference,
         @JsonProperty("statement_descriptor") String statementDescriptor
 ) {
 

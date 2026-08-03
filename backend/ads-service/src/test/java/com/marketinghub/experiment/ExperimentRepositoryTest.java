@@ -67,6 +67,37 @@ class ExperimentRepositoryTest {
         .hasValueSatisfying(found -> assertThat(found.getId()).isEqualTo(experiment.getId()));
   }
 
+  /**
+   * Garante que analytics encontre o experimento quando a campanha usa a rota pública amigável do
+   * Lead Portal.
+   */
+  @Test
+  void findFirstByFollowUpActionUrlFlowSlugAcceptsPublicFlowRoute() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Public flow niche").build());
+    Hypothesis hypothesis =
+        hypothesisRepository.save(
+            Hypothesis.builder().marketNiche(niche).title("Public flow hypothesis").build());
+    JourneyTemplate template =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("Venda direta").build());
+    Experiment experiment =
+        repository.save(
+            Experiment.builder()
+                .name("Public sales page")
+                .niche(niche)
+                .hypothesisRef(hypothesis)
+                .journeyTemplate(template)
+                .followUpActionUrl(
+                    "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1")
+                .build());
+
+    entityManager.flush();
+    entityManager.clear();
+
+    assertThat(repository.findFirstByFollowUpActionUrlFlowSlug("exp-81-gerasalespage-v1"))
+        .hasValueSatisfying(found -> assertThat(found.getId()).isEqualTo(experiment.getId()));
+  }
+
   @Test
   void findAllToGenerateCreativesFetchesHypothesis() {
     MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("N1").build());

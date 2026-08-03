@@ -352,6 +352,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 ## LOOP-LANDING-ANALYTICS-FUNNEL — Analytics, funil e submissão
 
 - Em 2026-08-03, o GeraSalesPage foi protegido contra publicar o coletor público usando a rota administrativa `/mh-api/internal/...`. Páginas servidas pelo Lead Portal devem enviar eventos para `/api/flows/{slug}/page-analytics`; o endpoint interno continua sendo responsabilidade exclusiva do backend do Lead Portal ao encaminhar o evento.
+- Em 2026-08-03, a resolução do experimento pelo destino da campanha passou a aceitar também a rota pública amigável `/flows/{slug}`. O gate do GeraSalesPage já exigia essa URL, mas o analytics reconhecia apenas `/api/flows/{slug}/page`, fazendo a página aprovada retornar 502 ao registrar eventos.
 
 - **Severidade**: CRÍTICO.
 - **Status**: recorrente.

@@ -112,6 +112,7 @@ public class DigitalProductPostPurchaseEmailService {
                         paymentDetails, recipientEmail, recipientName, productConfig));
         delivery.setRecipientEmail(recipientEmail.trim());
         delivery.setRecipientName(recipientName.trim());
+        delivery.setProductName(productConfig.productName());
         delivery.setDownloadUrl(downloadUrl);
         delivery.setStatus(DigitalProductDeliveryEmailStatus.PENDING);
         delivery.setLastError(null);

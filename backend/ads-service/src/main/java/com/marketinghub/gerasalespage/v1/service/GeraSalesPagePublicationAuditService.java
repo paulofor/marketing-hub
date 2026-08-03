@@ -505,7 +505,7 @@ public class GeraSalesPagePublicationAuditService {
                   }
                   if (testParam || sessionStorage.getItem('mh_internal_test') === 'true') return;
                   var flowSlug = '%s';
-                  var endpoint = flowSlug ? '/mh-api/internal/lead-portal/flows/' + encodeURIComponent(flowSlug) + '/page-analytics' : '';
+                  var endpoint = flowSlug ? '/api/flows/' + encodeURIComponent(flowSlug) + '/page-analytics' : '';
                   var sessionId = localStorage.getItem('mh_session_id') || (Date.now() + '-' + Math.random().toString(16).slice(2));
                   localStorage.setItem('mh_session_id', sessionId);
                   function emit(eventType, extra) {

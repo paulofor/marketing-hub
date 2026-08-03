@@ -21,16 +21,23 @@ por uma experiencia digital simples, observavel e vendavel?
 
 ## Principio central
 
-Toda oportunidade de produto PDE deve nascer de tres provas minimas:
+Toda oportunidade de produto PDE deve nascer de cinco provas minimas:
 
 - dor grande: muitas pessoas vivem a situacao, em frequencia relevante;
 - dor mal atendida: as solucoes atuais sao caras, complexas, fragmentadas, demoradas,
   pouco personalizadas ou exigem esforco alto;
 - encaixe PDE: existe uma microexperiencia digital capaz de gerar valor percebido rapido,
   antes de pedir uma compra maior.
+- mecanismo plausivel: existe base cientifica candidata verificavel para sustentar ou
+  limitar a explicacao de como a microexperiencia pode ajudar;
+- intencao de compra: existem sinais observaveis em precos, concorrentes, anuncios,
+  reviews, cursos, contratacao ou busca por alternativas pagas.
 
-Sem essas tres provas, o material deve ficar como sinal de pesquisa, nao como oportunidade
+Sem essas cinco provas, o material deve ficar como sinal de pesquisa, nao como oportunidade
 de produto.
+
+Falha, indisponibilidade ou ausencia de resultado da busca nunca deve gerar evidencia
+artificial. O ciclo deve permanecer em pesquisa, com a lacuna explicitada para nova coleta.
 
 ## Relação com a estrada do desejo
 
@@ -175,6 +182,14 @@ Toda oportunidade aprovada deve gerar um dossie curto e auditavel com:
 - score final;
 - decisao: aprovar, pesquisar mais, rejeitar ou pedir revisao humana.
 
+Cada ciclo com evidencia real deve comparar de duas a tres oportunidades distintas por
+dor raiz, mecanismo e formato de microexperiencia. Uma unica formulacao generica de
+"alivio" nao representa comparacao suficiente para decisao comercial.
+
+O ranking gerencial deve ser derivado das oportunidades e evidencias persistidas nos
+ciclos mais recentes. Trilhas editoriais fixas podem orientar novas pesquisas quando nao
+houver dados, mas nao podem se sobrepor ao ranking produzido por resultados reais.
+
 ## Separacao entre historico legado e maturidade PDE
 
 Historico de campanhas, paginas, criativos ou produtos antigos nao deve ser tratado como
@@ -204,13 +219,15 @@ validacao PDE atual superar os motivos historicos de baixa conversao.
 
 ## Gates de negocio
 
-O modulo deve ter pelo menos quatro gates:
+O modulo deve ter pelo menos cinco gates:
 
 1. Gate de escala: bloqueia dores pequenas demais ou sem evidencias independentes.
 2. Gate de desatendimento: bloqueia dores ja bem atendidas por solucoes simples e baratas.
 3. Gate de encaixe PDE: bloqueia oportunidades sem microexperiencia clara.
 4. Gate de compra: bloqueia oportunidades em que o caminho do desconhecimento ate a compra
    exige salto mental grande demais.
+5. Gate de mecanismo: bloqueia aprovacao sem base cientifica candidata verificavel e sem
+   limites de promessa coerentes com essa evidencia.
 
 ## Relacao com outros modulos
 

@@ -6,6 +6,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,7 +69,7 @@ public class ProductDiscoveryService {
   /** Retorna o ranking gerencial atual por maturidade comercial para orientar novos ciclos PDE. */
   @Transactional(readOnly = true)
   public ProductDiscoveryMaturityRankingResponse getMaturityRanking() {
-    return new ProductDiscoveryMaturityRankingResponse(
+    ProductDiscoveryMaturityRankingResponse baseline = new ProductDiscoveryMaturityRankingResponse(
         "Ranking por maturidade comercial",
         "Muitas pessoas vivem uma dor concreta, as soluções atuais deixam uma lacuna clara e conseguimos entregar uma microexperiência digital de valor rápido com baixo esforço.",
         "Começar por renda extra para autônomos/MEIs, mantendo manicure como candidato pronto e relacionamento sob trava de segurança.",
@@ -187,6 +188,43 @@ public class ProductDiscoveryService {
                 "Encontrar dores de relacionamento que possam virar PDE responsável de clareza, conversa, limites ou tomada de decisão.",
                 "Foco em comunicação, preparação para conversa, limites pessoais, leitura de padrões e decisão responsável.",
                 "Reconquista garantida, manipulação emocional, controle do outro, aconselhamento jurídico ou situação de violência.")));
+    List<ProductDiscoveryMaturityItemResponse> discoveredItems = buildDiscoveredRankingItems();
+    if (discoveredItems.isEmpty()) {
+      return baseline;
+    }
+    return new ProductDiscoveryMaturityRankingResponse(
+        baseline.strategyName(),
+        "Ranking derivado dos ciclos persistidos: score, decisão, evidência de escala, lacuna e risco comercial.",
+        "Priorizar validação comercial de " + discoveredItems.getFirst().niche() + ".",
+        discoveredItems,
+        baseline.recommendedTracks());
+  }
+
+  /** Constrói o ranking atual usando oportunidades persistidas, sem depender de uma lista estática. */
+  private List<ProductDiscoveryMaturityItemResponse> buildDiscoveredRankingItems() {
+    List<ProductDiscoveryOpportunity> opportunities =
+        opportunityRepository.findTop50ByOrderByScoreDesc().stream().limit(10).toList();
+    return IntStream.range(0, opportunities.size())
+        .mapToObj(index -> toMaturityItem(index + 1, opportunities.get(index)))
+        .toList();
+  }
+
+  /** Converte uma oportunidade auditável em item gerencial do ranking. */
+  private ProductDiscoveryMaturityItemResponse toMaturityItem(
+      int position, ProductDiscoveryOpportunity opportunity) {
+    return new ProductDiscoveryMaturityItemResponse(
+        position,
+        opportunity.getName(),
+        opportunity.getDecision().name(),
+        opportunity.getRootPain(),
+        defaultText(opportunity.getUnmetnessEvidence(), "Lacuna comercial ainda não descrita."),
+        opportunity.getDecision().name().equals("APPROVE")
+            ? "Executar validação comercial controlada antes de ampliar investimento."
+            : "Completar as evidências ausentes antes de criar campanha.",
+        List.of(
+            defaultText(opportunity.getScaleEvidence(), "Escala ainda não comprovada."),
+            "Score comercial: " + opportunity.getScore()),
+        List.of(defaultText(opportunity.getCommercialRisk(), "Revisão humana obrigatória.")));
   }
 
   /** Entrega pendências ao worker e marca ciclos como em pesquisa para evitar consumo duplicado. */

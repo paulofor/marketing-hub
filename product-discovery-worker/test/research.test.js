@@ -126,7 +126,7 @@ test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () =>
     ],
   );
 
-  assert.equal(report.opportunities.length, 1);
+  assert.equal(report.opportunities.length, 3);
   assert.equal(report.opportunities[0].decision, "APPROVE");
   assert.ok(report.opportunities[0].score >= 70);
   const evidence = JSON.parse(report.opportunities[0].evidenceJson);
@@ -168,7 +168,7 @@ test("analyzeSearchResults requires scientific articles before approving mechani
   assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
   assert.match(
     report.opportunities[0].commercialRisk,
-    /sem sustentação científica do mecanismo/,
+    /[Ss]em sustentação científica.*mecanismo/,
   );
 });
 
@@ -372,9 +372,15 @@ test("searchInternet uses stronger default search depth before stopping", async 
     ),
     "deve executar consultas comerciais específicas antes de parar",
   );
+  assert.ok(
+    calls.some((url) =>
+      new URL(url).searchParams.get("q")?.includes("scientific study mechanism"),
+    ),
+    "deve executar consulta científica antes de encerrar pelo volume de resultados",
+  );
 });
 
-test("searchInternet falls back when search provider rejects every query", async () => {
+test("searchInternet does not fabricate evidence when every query fails", async () => {
   const results = await searchInternet(
     {
       theme: "diagnostico de estilo acessivel",
@@ -395,6 +401,25 @@ test("searchInternet falls back when search provider rejects every query", async
     },
   );
 
-  assert.equal(results.length, 1);
-  assert.match(results[0].title, /Pesquisa inicial/);
+  assert.deepEqual(results, []);
+});
+
+test("analyzeSearchResults blocks approval without commercial intent", () => {
+  const report = analyzeSearchResults(
+    { theme: "organização pessoal", targetAudience: "adultos" },
+    [
+      { title: "Dificuldade de organização", url: "https://forum.example/a", snippet: "problema confuso não consigo" },
+      { title: "Relato sobre rotina", url: "https://community.example/b", snippet: "dificuldade demorado" },
+      { title: "Behavior change systematic review", url: "https://pubmed.ncbi.nlm.nih.gov/42", snippet: "systematic review intervention" },
+    ],
+  );
+  assert.equal(report.opportunities.length, 3);
+  assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
+  assert.match(report.opportunities[0].commercialRisk, /intenção de compra/);
+});
+
+test("scientific and commercial queries are inside the operational query limit", () => {
+  const queries = buildSearchQueries({ theme: "tema novo", targetAudience: "público" }).slice(0, 14);
+  assert.ok(queries.some((query) => query.includes("scientific study mechanism")));
+  assert.ok(queries.some((query) => query.includes("preço") || query.includes("resposta pronta")));
 });

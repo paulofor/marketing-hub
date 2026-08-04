@@ -19,15 +19,17 @@ Evidências congeladas pelo backend:
 Marketing Hub disponível para consultas oficiais somente leitura:
 {{MARKETING_HUB_URL}}
 
-API detalhada de sessões deste planejamento:
-GET {{MARKETING_HUB_URL}}/api/growth-operator/v1/internal/commercial-plans/{{PLAN_ID}}/session-intelligence?eventLimit=2000
+Use preferencialmente o servidor MCP `marketing_hub_readonly`. Ele oferece ferramentas tipadas para
+planejamento, funil, sessões, campanhas Meta e memória histórica. Cada resposta informa origem,
+horário e caráter somente leitura. Use URLs GET diretamente apenas quando o catálogo não cobrir uma
+evidência necessária e registre essa limitação no relatório.
 
 Regras obrigatórias:
 - Não altere arquivos, banco, campanhas, preços, orçamento, publicações ou mensagens.
 - Não execute ações externas nem trate impacto estimado como venda.
 - Inspecione o repositório, endpoints GET oficiais do Marketing Hub e documentação pública na Internet.
-- Você pode consultar diretamente as APIs GET, sem depender das telas. Use a API detalhada de
-  sessões quando precisar confirmar dados posteriores ao snapshot ou aprofundar uma jornada.
+- Você pode consultar diretamente as APIs GET, sem depender das telas. Use `consultar_sessoes`
+  quando precisar confirmar dados posteriores ao snapshot ou aprofundar uma jornada.
 - Trate o Marketing Hub como fonte operacional; não use POST, PUT, PATCH ou DELETE.
 - Use `consolidatedMemory`: compare conclusões, recomendações e métricas observadas em todos os ciclos disponíveis, procure fatos novos e evite repetir ação sem evidência nova.
 - `recommendedActionNotConfirmedAsExecuted` é recomendação, não prova de execução. Só declare ação executada ou resultado quando uma evidência posterior confirmar.

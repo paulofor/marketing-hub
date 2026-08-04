@@ -1,5 +1,12 @@
 # Registro de Planejamento Comercial
 
+## 2026-08-04 - Catalogo MCP comercial somente leitura
+
+- Causa-raiz: o Operador conhecia APIs por texto no prompt, sem descoberta tipada nem limite tecnico que impedisse consultas fora do catalogo comercial autorizado.
+- Foi feito: o worker passou a iniciar um servidor MCP local com ferramentas para planejamento, funil, sessoes, campanhas Meta e memoria; funil e campanhas sao resolvidos exclusivamente pelo experimento vinculado ao planejamento do job.
+- Gate: o catalogo aceita apenas GETs predefinidos, nao expoe HTTP generico nem banco, limita eventos de sessao a 2.000 e inclui origem e horario em cada evidencia retornada.
+- Impacto esperado: diagnosticos mais profundos e reproduziveis sem depender da tela ou ampliar autoridade de mutacao do agente.
+
 ## 2026-08-04 - Memoria consolidada do Operador de Crescimento
 
 - Causa-raiz: cada novo ciclo recebia somente o relatorio imediatamente anterior e podia perder hipoteses, falhas e conclusoes mais antigas do mesmo planejamento.

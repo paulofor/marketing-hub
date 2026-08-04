@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
 import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
@@ -14,6 +15,8 @@ import com.marketinghub.growthoperator.service.view.GrowthOperatorMcpToolRespons
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
+import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
+import com.marketinghub.salesvideo.VideoProject;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,20 +67,32 @@ public class GrowthOperatorService {
               "Consulta o historico auditavel dos ciclos do Operador.",
               "SOMENTE_LEITURA",
               "Memoria do Operador",
+              Map.of()),
+          new GrowthOperatorMcpToolResponse(
+              "consultar_estrategia_videos",
+              "Consulta estrategia, custo, progressao e aprendizados dos videos do experimento.",
+              "SOMENTE_LEITURA",
+              "Estrategia e aprendizado de videos",
               Map.of()));
   private final GrowthOperatorExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
   private final ExperimentFunnelService experimentFunnelService;
+  private final VideoProjectRepository videoProjectRepository;
+  private final ExperimentVideoPerformanceDashboardService videoPerformanceService;
   private final ObjectMapper objectMapper;
 
   public GrowthOperatorService(
       GrowthOperatorExecutionRepository repository,
       CommercialPlanService commercialPlanService,
       ExperimentFunnelService experimentFunnelService,
+      VideoProjectRepository videoProjectRepository,
+      ExperimentVideoPerformanceDashboardService videoPerformanceService,
       ObjectMapper objectMapper) {
     this.repository = repository;
     this.commercialPlanService = commercialPlanService;
     this.experimentFunnelService = experimentFunnelService;
+    this.videoProjectRepository = videoProjectRepository;
+    this.videoPerformanceService = videoPerformanceService;
     this.objectMapper = objectMapper;
   }
 
@@ -135,6 +150,53 @@ public class GrowthOperatorService {
     intelligence.put(
         "pdeAnalytics", experimentFunnelService.buildDetailedPdeAnalyticsEvidence(experimentId));
     return intelligence;
+  }
+
+  /** Consolida estrategia, custos de campanha, progressao e aprendizado dos videos do plano. */
+  @Transactional(readOnly = true)
+  public Map<String, Object> videoStrategyIntelligence(Long planId) {
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    if (plan.getExperiment() == null) {
+      return Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT", "planId", planId);
+    }
+    Long experimentId = plan.getExperiment().getId();
+    List<Map<String, Object>> strategies =
+        videoProjectRepository.findByExperimentIdOrderByUpdatedAtDesc(experimentId).stream()
+            .map(this::toVideoStrategyEvidence)
+            .toList();
+    LinkedHashMap<String, Object> intelligence = new LinkedHashMap<>();
+    intelligence.put("available", true);
+    intelligence.put("planId", planId);
+    intelligence.put("experimentId", experimentId);
+    intelligence.put("strategyCount", strategies.size());
+    intelligence.put("strategies", strategies);
+    intelligence.put("performance", videoPerformanceService.summarize(experimentId));
+    intelligence.put("commercialCost", plan.getActualCampaignCost());
+    intelligence.put("totalPlanCost", plan.getActualTotalCost());
+    intelligence.put("revenue", plan.getActualRevenue());
+    return intelligence;
+  }
+
+  /** Converte um projeto em evidencia comercial sem expor campos internos desnecessarios. */
+  private Map<String, Object> toVideoStrategyEvidence(VideoProject project) {
+    LinkedHashMap<String, Object> evidence = new LinkedHashMap<>();
+    evidence.put("projectId", project.getId());
+    evidence.put("title", project.getTitle());
+    evidence.put("strategyGroupKey", project.getStrategyGroupKey());
+    evidence.put("strategyRole", project.getStrategyRole());
+    evidence.put("funnelStage", project.getFunnelStage());
+    evidence.put("primaryMetric", project.getPrimaryMetric());
+    evidence.put("commercialHypothesis", project.getCommercialHypothesis());
+    evidence.put("persuasionFramework", project.getPersuasionFramework());
+    evidence.put("scientificBasis", project.getScientificBasis());
+    evidence.put("measurementPlan", project.getMeasurementPlan());
+    evidence.put("resultsSnapshot", project.getResultsSnapshot());
+    evidence.put("learningDecision", project.getLearningDecision());
+    evidence.put("confirmedLearning", project.getConfirmedLearning());
+    evidence.put("nextVersionRecommendation", project.getNextVersionRecommendation());
+    evidence.put("status", project.getStatus());
+    evidence.put("updatedAt", project.getUpdatedAt());
+    return evidence;
   }
 
   /** Reserva a pendencia mais antiga para um unico worker. */
@@ -255,6 +317,7 @@ public class GrowthOperatorService {
       Long experimentId = plan.getExperiment().getId();
       snapshot.put("experimentId", experimentId);
       snapshot.put("sessionIntelligence", sessionIntelligence(plan.getId(), SESSION_EVENT_LIMIT));
+      snapshot.put("videoStrategyIntelligence", videoStrategyIntelligence(plan.getId()));
     } else {
       snapshot.put(
           "sessionIntelligence", Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT"));

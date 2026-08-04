@@ -69,6 +69,16 @@ paths:
           schema: {type: integer, default: 2000, minimum: 1, maximum: 2000}
       responses:
         "200": {description: Inteligencia de sessoes atual retornada em modo somente leitura.}
+  /api/growth-operator/v1/internal/commercial-plans/{planId}/video-strategy-intelligence:
+    get:
+      summary: Entrega estrategia, custos, progressao e aprendizados dos videos ao agente.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        "200": {description: Inteligencia comercial de videos retornada em modo somente leitura.}
   /api/growth-operator/v1/internal/executions/{id}/complete:
     post:
       summary: Registra diagnostico, evidencias e recomendacao sem aplica-la.

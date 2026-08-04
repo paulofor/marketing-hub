@@ -8,4 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface VideoProjectRepository extends JpaRepository<VideoProject, Long> {
   /** Lista os projetos do tenant mais recentes primeiro. */
   List<VideoProject> findByTenantIdOrderByUpdatedAtDesc(String tenantId);
+
+  /** Lista as estrategias de video vinculadas ao experimento mais recentes primeiro. */
+  List<VideoProject> findByExperimentIdOrderByUpdatedAtDesc(Long experimentId);
 }

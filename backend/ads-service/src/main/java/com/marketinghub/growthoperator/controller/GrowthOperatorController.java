@@ -52,6 +52,12 @@ public class GrowthOperatorController {
     return service.sessionIntelligence(planId, eventLimit);
   }
 
+  /** Entrega estrategia, custos, progressao e aprendizados dos videos ao agente. */
+  @GetMapping("/internal/commercial-plans/{planId}/video-strategy-intelligence")
+  public Map<String, Object> videoStrategyIntelligence(@PathVariable Long planId) {
+    return service.videoStrategyIntelligence(planId);
+  }
+
   /** Reserva a proxima pendencia para o worker executor. */
   @PostMapping("/internal/executions/pending/claim")
   public GrowthOperatorExecutionResponse claimPending() {

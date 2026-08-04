@@ -12,12 +12,17 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDetailedEventDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsEvidenceDto;
+import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
+import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
+import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.VideoProjectStatus;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +40,8 @@ class GrowthOperatorServiceTest {
             mock(GrowthOperatorExecutionRepository.class),
             mock(CommercialPlanService.class),
             mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
             new ObjectMapper());
 
     var tools = service.listMcpTools();
@@ -46,7 +53,8 @@ class GrowthOperatorServiceTest {
             "consultar_funil",
             "consultar_sessoes",
             "consultar_campanhas",
-            "consultar_memoria");
+            "consultar_memoria",
+            "consultar_estrategia_videos");
     assertThat(tools).allMatch(tool -> "SOMENTE_LEITURA".equals(tool.accessMode()));
   }
 
@@ -74,7 +82,13 @@ class GrowthOperatorServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
     ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     GrowthOperatorService service =
-        new GrowthOperatorService(repository, planService, funnelService, objectMapper);
+        new GrowthOperatorService(
+            repository,
+            planService,
+            funnelService,
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            objectMapper);
 
     service.start(2L, new StartGrowthOperatorRequest(1, "Reavaliar o gargalo"));
 
@@ -127,7 +141,13 @@ class GrowthOperatorServiceTest {
         .thenReturn(Map.of("available", false));
     ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     GrowthOperatorService service =
-        new GrowthOperatorService(repository, planService, funnelService, objectMapper);
+        new GrowthOperatorService(
+            repository,
+            planService,
+            funnelService,
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            objectMapper);
 
     service.start(2L, new StartGrowthOperatorRequest(1, "Diagnosticar funil"));
 
@@ -161,7 +181,12 @@ class GrowthOperatorServiceTest {
         .thenReturn(Map.of("available", false));
     GrowthOperatorService service =
         new GrowthOperatorService(
-            repository, planService, funnelService, new ObjectMapper().findAndRegisterModules());
+            repository,
+            planService,
+            funnelService,
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            new ObjectMapper().findAndRegisterModules());
 
     Map<String, Object> result = service.sessionIntelligence(2L, 5000);
 
@@ -169,5 +194,56 @@ class GrowthOperatorServiceTest {
     assertThat(result.get("experimentId")).isEqualTo(81L);
     assertThat(result.get("appliedEventLimit")).isEqualTo(2000);
     verify(funnelService).buildDetailedAnalyticsEvidence(81L, 2000);
+  }
+
+  /** Confirma que o agente recebe estrategia e custos sem depender da tela do Estudio. */
+  @Test
+  void shouldExposeVideoStrategyIntelligenceForDailyLearning() {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    ExperimentFunnelService funnelService = mock(ExperimentFunnelService.class);
+    VideoProjectRepository videoRepository = mock(VideoProjectRepository.class);
+    ExperimentVideoPerformanceDashboardService videoPerformanceService =
+        mock(ExperimentVideoPerformanceDashboardService.class);
+    Experiment experiment = new Experiment();
+    experiment.setId(81L);
+    CommercialPlan plan =
+        CommercialPlan.builder()
+            .id(2L)
+            .experiment(experiment)
+            .actualCampaignCost(new BigDecimal("53.32"))
+            .actualTotalCost(new BigDecimal("56.02"))
+            .actualRevenue(BigDecimal.ZERO)
+            .build();
+    VideoProject project =
+        VideoProject.builder()
+            .id(1L)
+            .experimentId(81L)
+            .title("MUSA - qualificacao pela dor")
+            .strategyGroupKey("musa-two-video-funnel-v1")
+            .strategyRole("CAMPAIGN_QUALIFICATION")
+            .commercialHypothesis("Qualificar pela identificacao com a dor")
+            .learningDecision("COLLECTING")
+            .status(VideoProjectStatus.READY_FOR_SCRIPT)
+            .build();
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(videoRepository.findByExperimentIdOrderByUpdatedAtDesc(81L)).thenReturn(List.of(project));
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            planService,
+            funnelService,
+            videoRepository,
+            videoPerformanceService,
+            new ObjectMapper().findAndRegisterModules());
+
+    Map<String, Object> result = service.videoStrategyIntelligence(2L);
+
+    assertThat(result.get("strategyCount")).isEqualTo(1);
+    assertThat(result.get("commercialCost")).isEqualTo(new BigDecimal("53.32"));
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> strategies = (List<Map<String, Object>>) result.get("strategies");
+    assertThat(strategies.get(0).get("strategyGroupKey")).isEqualTo("musa-two-video-funnel-v1");
+    assertThat(strategies.get(0).get("learningDecision")).isEqualTo("COLLECTING");
   }
 }

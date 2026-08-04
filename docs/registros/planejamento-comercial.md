@@ -72,5 +72,11 @@
 # 2026-08-04 - Estrategia de videos no Operador
 
 - O catalogo MCP ganhou a ferramenta somente leitura `consultar_estrategia_videos`.
+
+## 2026-08-04 — Pausa preventiva governada pelo Operador
+
+- `solicitar_pausa_experimento` somente pausa quando o backend comprova o primeiro gate sem receita.
+- A pausa registra origem, motivo e evidencias e solicita a parada operacional das campanhas Meta.
+- `solicitar_retomada_experimento` nunca reativa; retorna pendencia de aprovacao humana.
 - O contexto auditavel de cada ciclo passa a incluir hipotese, papel no funil, custos, progressao, acoes posteriores e aprendizados dos videos vinculados ao experimento.
 - Aprendizado so pode ser confirmado com eventos humanos atribuidos; gasto de campanha, custo de producao e receita permanecem separados.

@@ -48,6 +48,7 @@ class GrowthOperatorServiceTest {
             mock(ExperimentFunnelService.class),
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
             new ObjectMapper());
 
     var tools = service.listMcpTools();
@@ -60,8 +61,10 @@ class GrowthOperatorServiceTest {
             "consultar_sessoes",
             "consultar_campanhas",
             "consultar_memoria",
-            "consultar_estrategia_videos");
-    assertThat(tools).allMatch(tool -> "SOMENTE_LEITURA".equals(tool.accessMode()));
+            "consultar_estrategia_videos",
+            "solicitar_pausa_experimento",
+            "solicitar_retomada_experimento");
+    assertThat(tools.subList(0, 6)).allMatch(tool -> "SOMENTE_LEITURA".equals(tool.accessMode()));
   }
 
   /** Confirma que o novo ciclo recebe conclusoes e resultados observados de todo o historico. */
@@ -95,6 +98,7 @@ class GrowthOperatorServiceTest {
             funnelService,
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
             objectMapper);
 
     service.start(2L, new StartGrowthOperatorRequest(1, "Reavaliar o gargalo"));
@@ -155,6 +159,7 @@ class GrowthOperatorServiceTest {
             funnelService,
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
             objectMapper);
 
     service.start(2L, new StartGrowthOperatorRequest(1, "Diagnosticar funil"));
@@ -195,6 +200,7 @@ class GrowthOperatorServiceTest {
             funnelService,
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
             new ObjectMapper().findAndRegisterModules());
 
     Map<String, Object> result = service.sessionIntelligence(2L, 5000);
@@ -245,6 +251,7 @@ class GrowthOperatorServiceTest {
             funnelService,
             videoRepository,
             videoPerformanceService,
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
             new ObjectMapper().findAndRegisterModules());
 
     Map<String, Object> result = service.videoStrategyIntelligence(2L);
@@ -292,6 +299,7 @@ class GrowthOperatorServiceTest {
             mock(ExperimentFunnelService.class),
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
             objectMapper);
 
     service.start(2L, new StartGrowthOperatorRequest(1, "Cumprir meta semanal"));
@@ -336,6 +344,7 @@ class GrowthOperatorServiceTest {
             mock(ExperimentFunnelService.class),
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
             new ObjectMapper());
 
     GrowthOperatorExecutionResponse response =
@@ -355,5 +364,85 @@ class GrowthOperatorServiceTest {
 
     assertThat(response.recommendedDecision()).isEqualTo(GrowthOperatorDecision.WAIT_FOR_APPROVAL);
     assertThat(response.recommendedAction()).contains("Gate preventivo atingido");
+  }
+
+  /** Confirma que a pausa somente e delegada ao servico de experimento apos o gate comprovado. */
+  @Test
+  void shouldPauseRunningExperimentAtPreventiveGateWithoutRevenue() {
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    com.marketinghub.experiment.service.ExperimentService experimentService =
+        mock(com.marketinghub.experiment.service.ExperimentService.class);
+    Experiment experiment = new Experiment();
+    experiment.setId(81L);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.RUNNING);
+    CommercialPlan plan =
+        CommercialPlan.builder()
+            .id(2L)
+            .experiment(experiment)
+            .actualTotalCost(new BigDecimal("80"))
+            .actualRevenue(BigDecimal.ZERO)
+            .stopCriteria("Revisar em R$ 75; bloquear em R$ 175 sem venda.")
+            .build();
+    when(planService.getPlan(2L)).thenReturn(plan);
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            mock(GrowthOperatorExecutionRepository.class),
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            experimentService,
+            new ObjectMapper());
+
+    Map<String, Object> result =
+        service.requestPreventivePause(
+            2L,
+            new com.marketinghub.growthoperator.service.action
+                .GrowthOperatorExperimentActionRequest(
+                "Gate preventivo atingido sem vendas", List.of("Custo R$ 80", "Receita R$ 0")));
+
+    assertThat(result.get("executed")).isEqualTo(true);
+    verify(experimentService)
+        .pauseByGrowthOperator(
+            org.mockito.ArgumentMatchers.eq(81L),
+            org.mockito.ArgumentMatchers.contains("Custo R$ 80"));
+  }
+
+  /** Confirma que a retomada fica pendente e registra auditoria sem reativar. */
+  @Test
+  void shouldKeepResumeWaitingForHumanApproval() {
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    com.marketinghub.experiment.service.ExperimentService experimentService =
+        mock(com.marketinghub.experiment.service.ExperimentService.class);
+    Experiment experiment = new Experiment();
+    experiment.setId(81L);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PAUSED);
+    when(planService.getPlan(2L))
+        .thenReturn(CommercialPlan.builder().id(2L).experiment(experiment).build());
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            mock(GrowthOperatorExecutionRepository.class),
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            experimentService,
+            new ObjectMapper());
+
+    Map<String, Object> result =
+        service.requestExperimentResume(
+            2L,
+            new com.marketinghub.growthoperator.service.action
+                .GrowthOperatorExperimentActionRequest(
+                "Instrumentacao corrigida e validada", List.of("Teste ponta a ponta aprovado")));
+
+    assertThat(result.get("executed")).isEqualTo(false);
+    assertThat(result.get("status")).isEqualTo("WAITING_HUMAN_APPROVAL");
+    verify(experimentService)
+        .requestResumeApprovalByGrowthOperator(
+            org.mockito.ArgumentMatchers.eq(81L),
+            org.mockito.ArgumentMatchers.contains("Teste ponta a ponta aprovado"));
   }
 }

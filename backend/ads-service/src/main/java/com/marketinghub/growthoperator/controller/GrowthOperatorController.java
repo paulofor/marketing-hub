@@ -1,6 +1,7 @@
 package com.marketinghub.growthoperator.controller;
 
 import com.marketinghub.growthoperator.service.GrowthOperatorService;
+import com.marketinghub.growthoperator.service.action.GrowthOperatorExperimentActionRequest;
 import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.result.FailGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
@@ -56,6 +57,20 @@ public class GrowthOperatorController {
   @GetMapping("/internal/commercial-plans/{planId}/video-strategy-intelligence")
   public Map<String, Object> videoStrategyIntelligence(@PathVariable Long planId) {
     return service.videoStrategyIntelligence(planId);
+  }
+
+  /** Solicita pausa preventiva submetida aos gates deterministas do backend. */
+  @PostMapping("/internal/commercial-plans/{planId}/experiment/pause")
+  public Map<String, Object> requestPreventivePause(
+      @PathVariable Long planId, @RequestBody GrowthOperatorExperimentActionRequest request) {
+    return service.requestPreventivePause(planId, request);
+  }
+
+  /** Registra uma solicitacao de retomada sem reativar o experimento. */
+  @PostMapping("/internal/commercial-plans/{planId}/experiment/resume-request")
+  public Map<String, Object> requestExperimentResume(
+      @PathVariable Long planId, @RequestBody GrowthOperatorExperimentActionRequest request) {
+    return service.requestExperimentResume(planId, request);
   }
 
   /** Reserva a proxima pendencia para o worker executor. */

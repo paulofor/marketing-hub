@@ -11,7 +11,9 @@ const tools = [
   }),
   tool('consultar_campanhas', 'Consulta as campanhas Meta do experimento vinculado ao planejamento.', {}),
   tool('consultar_memoria', 'Consulta o historico auditavel dos ciclos do Operador.', {}),
-  tool('consultar_estrategia_videos', 'Consulta estrategia, custos, progressao e aprendizados dos videos.', {})
+  tool('consultar_estrategia_videos', 'Consulta estrategia, custos, progressao e aprendizados dos videos.', {}),
+  tool('solicitar_pausa_experimento', 'Solicita pausa preventiva governada pelo backend.', actionSchema(), ['reason', 'evidence']),
+  tool('solicitar_retomada_experimento', 'Solicita retomada sujeita a aprovacao humana.', actionSchema(), ['reason', 'evidence'])
 ];
 
 const routes = {
@@ -20,7 +22,9 @@ const routes = {
   consultar_sessoes: args => `/api/growth-operator/v1/internal/commercial-plans/${planId}/session-intelligence?eventLimit=${boundedLimit(args.eventLimit)}`,
   consultar_campanhas: () => experimentRoute('facebook-campaigns'),
   consultar_memoria: () => `/api/growth-operator/v1/commercial-plans/${planId}/executions`,
-  consultar_estrategia_videos: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/video-strategy-intelligence`
+  consultar_estrategia_videos: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/video-strategy-intelligence`,
+  solicitar_pausa_experimento: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/experiment/pause`,
+  solicitar_retomada_experimento: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/experiment/resume-request`
 };
 
 const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
@@ -52,14 +56,20 @@ async function dispatch(request) {
 async function callTool(params) {
   const route = routes[params.name];
   if (!route) throw new Error(`Ferramenta nao permitida: ${params.name}`);
-  const path = await route(params.arguments ?? {});
+  const args = params.arguments ?? {};
+  const path = await route(args);
+  const mutable = params.name.startsWith('solicitar_');
   const startedAt = new Date().toISOString();
-  const response = await fetch(`${baseUrl}${path}`, { method: 'GET', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(30000) });
+  const response = await fetch(`${baseUrl}${path}`, { method: mutable ? 'POST' : 'GET', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: mutable ? JSON.stringify(args) : undefined, signal: AbortSignal.timeout(30000) });
   const body = await response.text();
   process.stderr.write(`${JSON.stringify({ tool: params.name, planId, path, startedAt, status: response.status })}\n`);
   if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} em ${params.name}`);
   const payload = JSON.parse(body);
-  return { content: [{ type: 'text', text: JSON.stringify({ audit: { tool: params.name, planId, source: path, consultedAt: startedAt, readOnly: true }, data: payload }) }] };
+  return { content: [{ type: 'text', text: JSON.stringify({ audit: { tool: params.name, planId, source: path, consultedAt: startedAt, readOnly: !mutable, governedMutation: mutable }, data: payload }) }] };
+}
+
+function actionSchema() {
+  return { reason: { type: 'string', minLength: 10, maxLength: 500 }, evidence: { type: 'array', minItems: 1, maxItems: 10, items: { type: 'string', minLength: 3, maxLength: 300 } } };
 }
 
 async function experimentRoute(suffix) {

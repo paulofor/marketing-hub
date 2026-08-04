@@ -19,6 +19,13 @@ Qual dor recorrente, intensa e mal atendida aparece em grande escala e pode ser 
 por uma experiencia digital simples, observavel e vendavel?
 ```
 
+## Pesquisa sem evidencia real
+
+Uma busca valida pode terminar sem oportunidades quando nao encontrar evidencia publica
+suficiente. Nesse caso, o worker deve concluir o ciclo com lista vazia e decisao de
+pesquisar mais; o backend deve aceitar o resultado e nunca exigir ou fabricar uma
+oportunidade apenas para satisfazer o contrato tecnico.
+
 ## Principio central
 
 Toda oportunidade de produto PDE deve nascer de cinco provas minimas:

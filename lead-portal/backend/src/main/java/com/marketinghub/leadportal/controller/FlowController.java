@@ -227,6 +227,26 @@ public class FlowController {
                   const deviceType = resolveDeviceType();
                   const operatingSystem = resolveOperatingSystem();
                   let resourceErrorCount = 0;
+                  let largestContentfulPaintMs = null;
+                  let cumulativeLayoutShift = 0;
+                  let interactionToNextPaintMs = null;
+                  if (window.PerformanceObserver) {
+                    try {
+                      new PerformanceObserver(function(list){
+                        const entries = list.getEntries();
+                        if (entries.length) largestContentfulPaintMs = Math.round(entries[entries.length - 1].startTime);
+                      }).observe({type:'largest-contentful-paint', buffered:true});
+                      new PerformanceObserver(function(list){
+                        list.getEntries().forEach(function(entry){ if (!entry.hadRecentInput) cumulativeLayoutShift += entry.value; });
+                      }).observe({type:'layout-shift', buffered:true});
+                      new PerformanceObserver(function(list){
+                        list.getEntries().forEach(function(entry){
+                          const duration = Math.round(entry.duration || 0);
+                          interactionToNextPaintMs = Math.max(interactionToNextPaintMs || 0, duration);
+                        });
+                      }).observe({type:'event', buffered:true, durationThreshold:40});
+                    } catch (ignored) { /* Navegadores antigos continuam com as métricas básicas. */ }
+                  }
                   window.addEventListener('error', function(event){
                     const target = event && event.target;
                     if (target && target !== window && (target.src || target.href)) {
@@ -251,6 +271,10 @@ public class FlowController {
                       loadDurationMs: metric('loadEventEnd') || metric('duration'),
                       domContentLoadedMs: metric('domContentLoadedEventEnd'),
                       firstContentfulPaintMs: firstContentfulPaintMs,
+                      largestContentfulPaintMs: largestContentfulPaintMs,
+                      cumulativeLayoutShift: Math.round(cumulativeLayoutShift * 1000) / 1000,
+                      interactionToNextPaintMs: interactionToNextPaintMs,
+                      timeToFirstByteMs: navigation && navigation.responseStart ? Math.round(navigation.responseStart) : null,
                       resourceErrorCount: resourceErrorCount,
                       connectionType: navigator.connection && navigator.connection.effectiveType ? navigator.connection.effectiveType : null
                     };

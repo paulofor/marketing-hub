@@ -11,7 +11,7 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 - O Codex roda com sandbox `read-only`, identidade ChatGPT persistida em volume proprio e repositorio montado sem escrita.
 - Como o repositorio e montado de outro host e pertence a um UID diferente, o comando aceita explicitamente essa arvore com `--skip-git-repo-check`; essa opcao nao amplia permissoes e o sandbox `read-only` permanece obrigatorio.
 - O worker mantem o loop operacional, mas solicita ao backend a criacao de cada novo ciclo; somente o backend decide se a cadencia de 30 minutos venceu.
-- A investigacao pode consultar endpoints GET oficiais do Marketing Hub e documentacao publica na Internet. Metodos HTTP de mutacao ficam proibidos na v1.
+- A investigacao consulta APIs oficiais e documentacao publica. A unica mutacao autonoma permitida e solicitar pausa preventiva; o backend valida gates deterministas, registra auditoria e aciona o worker da Meta. Retomada apenas registra pedido para aprovacao humana.
 - A v1 nao altera plano, codigo, campanha, preco, orcamento, publicacao, comunicacao ou dados comerciais.
 - Toda recomendacao que exija mutacao deve retornar `WAIT_FOR_APPROVAL`.
 - O backend nunca aplica automaticamente a proxima acao recomendada.
@@ -34,9 +34,10 @@ digitado e identificadores publicos completos nao entram no snapshot. O worker c
 direto ao banco e toda evidencia usada permanece congelada na execucao auditavel.
 
 O agente nao depende das telas para investigar. Um servidor MCP local, dedicado ao Operador e
-vinculado ao planejamento do job, apresenta ferramentas tipadas somente leitura para consultar
+vinculado ao planejamento do job, apresenta ferramentas tipadas para consultar
 planejamento, funil, sessoes, campanhas Meta, estrategia de videos e memoria historica. O catalogo nao expoe ferramenta
-generica HTTP, banco ou metodos mutaveis. Cada resposta inclui ferramenta, planejamento, rota de
+generica HTTP nem banco. As unicas mutacoes sao a pausa governada e o pedido de retomada que nunca
+reativa diretamente. Cada resposta inclui ferramenta, planejamento, rota de
 origem e horario da consulta para a evidencia permanecer auditavel no resultado do modelo. Para
 aprofundar ou atualizar a leitura durante um ciclo, o backend expoe
 `GET /api/growth-operator/v1/internal/commercial-plans/{planId}/session-intelligence?eventLimit=2000`,
@@ -59,6 +60,8 @@ atribuidos.
 - A credencial Codex/ChatGPT fica no volume dedicado e persistente `/opt/growth-operator/codex-home`, montado em `CODEX_HOME`, sem ser gravada na imagem ou no repositorio. O workflow nao pode substituir esse volume por um diretorio vazio ou sem permissao do usuario do container.
 
 Decisoes permitidas: `CONTINUE`, `ADJUST`, `STOP` e `WAIT_FOR_APPROVAL`.
+
+`RUN`, retomada automatica, aumento de orcamento e publicacao permanecem proibidos.
 
 ## Metas e gates de gasto
 

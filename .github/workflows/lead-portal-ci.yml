@@ -196,7 +196,8 @@ jobs:
             && test -n "\$asset_path" \
             && docker exec lead-portal-frontend test -f "/usr/share/nginx/html\${asset_path}" \
             && test "\$(curl -fsS -o /dev/null -w '%{http_code}:%{content_type}' "https://oportunidadebrasil.shop\${asset_path}")" = '200:application/javascript' \
-            && for probe in 1 2 3 4 5; do curl -fsS "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-probe=${GITHUB_SHA}-\$probe" | grep -F "\$asset_path" >/dev/null; done \
+            && for probe in 1 2 3 4 5; do curl -fsS "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-probe=${GITHUB_SHA}-\$probe" | grep -F 'data-mh-landing-analytics' >/dev/null; done \
+            && test "\$(curl -fsS -o /dev/null -w '%{http_code}' 'https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-health=1')" = '200' \
             && docker image prune -af"
       - name: Clean build artifacts from repository
         if: always()

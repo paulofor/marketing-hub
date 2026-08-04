@@ -1004,6 +1004,10 @@ public class ExperimentFunnelService {
         request.domContentLoadedMs() == null ? "" : request.domContentLoadedMs().toString();
     String firstContentfulPaintMs =
         request.firstContentfulPaintMs() == null ? "" : request.firstContentfulPaintMs().toString();
+    String largestContentfulPaintMs = request.largestContentfulPaintMs() == null ? "" : request.largestContentfulPaintMs().toString();
+    String cumulativeLayoutShift = request.cumulativeLayoutShift() == null ? "" : request.cumulativeLayoutShift().toString();
+    String interactionToNextPaintMs = request.interactionToNextPaintMs() == null ? "" : request.interactionToNextPaintMs().toString();
+    String timeToFirstByteMs = request.timeToFirstByteMs() == null ? "" : request.timeToFirstByteMs().toString();
     String resourceErrorCount =
         request.resourceErrorCount() == null ? "" : request.resourceErrorCount().toString();
     String connectionType = sanitizePayloadValue(request.connectionType());
@@ -1045,6 +1049,14 @@ public class ExperimentFunnelService {
         + sanitizePayloadValue(domContentLoadedMs)
         + ";firstContentfulPaintMs="
         + sanitizePayloadValue(firstContentfulPaintMs)
+        + ";largestContentfulPaintMs="
+        + sanitizePayloadValue(largestContentfulPaintMs)
+        + ";cumulativeLayoutShift="
+        + sanitizePayloadValue(cumulativeLayoutShift)
+        + ";interactionToNextPaintMs="
+        + sanitizePayloadValue(interactionToNextPaintMs)
+        + ";timeToFirstByteMs="
+        + sanitizePayloadValue(timeToFirstByteMs)
         + ";resourceErrorCount="
         + sanitizePayloadValue(resourceErrorCount)
         + ";connectionType="

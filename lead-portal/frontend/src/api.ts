@@ -210,6 +210,10 @@ export interface FlowPageAnalyticsPayload {
   loadDurationMs?: number | null;
   domContentLoadedMs?: number | null;
   firstContentfulPaintMs?: number | null;
+  largestContentfulPaintMs?: number | null;
+  cumulativeLayoutShift?: number | null;
+  interactionToNextPaintMs?: number | null;
+  timeToFirstByteMs?: number | null;
   resourceErrorCount?: number | null;
   connectionType?: string | null;
   videoId?: string | null;

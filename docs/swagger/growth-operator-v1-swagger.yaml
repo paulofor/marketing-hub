@@ -2,11 +2,11 @@ openapi: 3.0.3
 info:
   title: Operador de Crescimento v1
   version: 1.0.0
-  description: Diagnosticos Codex auditaveis e estritamente somente leitura vinculados ao planejamento comercial.
+  description: Diagnosticos Codex auditaveis com pausa preventiva governada pelo backend.
 paths:
   /api/growth-operator/v1/mcp-tools:
     get:
-      summary: Lista o catalogo MCP somente leitura autorizado para o Operador.
+      summary: Lista o catalogo MCP autorizado para o Operador.
       responses:
         "200":
           description: Ferramentas MCP retornadas.
@@ -79,6 +79,37 @@ paths:
           schema: {type: integer, format: int64}
       responses:
         "200": {description: Inteligencia comercial de videos retornada em modo somente leitura.}
+  /api/growth-operator/v1/internal/commercial-plans/{planId}/experiment/pause:
+    post:
+      summary: Solicita pausa preventiva condicionada aos gates comprovados pelo backend.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ExperimentActionRequest"}
+      responses:
+        "200": {description: Pausa executada e encaminhada ao worker da Meta.}
+        "409": {description: Gate ou estado do experimento nao autoriza a pausa.}
+  /api/growth-operator/v1/internal/commercial-plans/{planId}/experiment/resume-request:
+    post:
+      summary: Registra solicitacao de retomada sem reativar o experimento.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ExperimentActionRequest"}
+      responses:
+        "200": {description: Pedido registrado como dependente de aprovacao humana.}
   /api/growth-operator/v1/internal/executions/{id}/complete:
     post:
       summary: Registra diagnostico, evidencias e recomendacao sem aplica-la.
@@ -99,3 +130,15 @@ paths:
           schema: {type: integer, format: int64}
       responses:
         "200": {description: Falha registrada.}
+components:
+  schemas:
+    ExperimentActionRequest:
+      type: object
+      required: [reason, evidence]
+      properties:
+        reason: {type: string, minLength: 10, maxLength: 500}
+        evidence:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: {type: string, minLength: 3, maxLength: 300}

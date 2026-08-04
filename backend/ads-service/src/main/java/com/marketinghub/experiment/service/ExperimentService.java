@@ -649,6 +649,55 @@ public class ExperimentService {
     return exp;
   }
 
+  /** Pausa um experimento por decisao governada do Operador e registra a origem auditavel. */
+  @Transactional
+  public Experiment pauseByGrowthOperator(Long id, String reason) {
+    Experiment exp = repository.findById(id).orElseThrow();
+    ExperimentStatus previousStatus = exp.getStatus();
+    if (previousStatus != ExperimentStatus.RUNNING) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "experiment is not running");
+    }
+    exp.setStatus(ExperimentStatus.PAUSED);
+    exp.setLastStatusChangeAction("GROWTH_OPERATOR_PREVENTIVE_PAUSE");
+    exp.setLastStatusChangeReason(reason);
+    exp.setLastStatusChangedAt(Instant.now());
+    statusChangeRepository.save(
+        ExperimentStatusChange.builder()
+            .experiment(exp)
+            .previousStatus(previousStatus)
+            .newStatus(ExperimentStatus.PAUSED)
+            .action("GROWTH_OPERATOR_PREVENTIVE_PAUSE")
+            .reason(reason)
+            .changedBy("GROWTH_OPERATOR")
+            .changedAt(exp.getLastStatusChangedAt())
+            .build());
+    experimentFunnelStandbyService.requestFacebookCampaignStops(
+        exp.getId(),
+        FacebookCampaignStopReason.ADMIN_EXPERIMENT_PAUSED,
+        "pausa preventiva governada pelo Operador de Crescimento");
+    return exp;
+  }
+
+  /** Registra pedido de retomada do Operador sem alterar o estado do experimento. */
+  @Transactional
+  public Experiment requestResumeApprovalByGrowthOperator(Long id, String reason) {
+    Experiment exp = repository.findById(id).orElseThrow();
+    if (exp.getStatus() == ExperimentStatus.RUNNING) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "experiment is already running");
+    }
+    statusChangeRepository.save(
+        ExperimentStatusChange.builder()
+            .experiment(exp)
+            .previousStatus(exp.getStatus())
+            .newStatus(exp.getStatus())
+            .action("GROWTH_OPERATOR_RESUME_REQUEST")
+            .reason(reason)
+            .changedBy("GROWTH_OPERATOR")
+            .changedAt(Instant.now())
+            .build());
+    return exp;
+  }
+
   /** Reativa um experimento parado registrando motivo de negócio e histórico auditável. */
   @Transactional
   public Experiment reactivate(Long id, ReactivateExperimentRequest request) {

@@ -8,6 +8,12 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-PDE-EVIDENCIA-VAZIA — Descoberta PDE
+
+- Sintoma: pesquisa real sem resultados termina em HTTP 400 no callback `complete` e o ciclo aparece como falha.
+- Causa-raiz: o worker corretamente não fabrica evidência, mas o contrato backend exigia ao menos uma oportunidade.
+- Prevenção: aceitar lista vazia de oportunidades, concluir o ciclo auditavelmente como pesquisa insuficiente e manter teste de contrato que proíba a reintrodução de fallback artificial.
+
 ## Regra operacional de uso
 
 Antes de implementar uma correção em tema com histórico de loop:
@@ -636,3 +642,8 @@ Use este checklist quando o problema estiver em algum loop acima:
 - documentos lidos para pesquisar e resolver o problema:
   - AGENTS.md
   - docs/registros/experimentos.md
+# LOOP-LANDING-DYNAMIC-CRITICAL-PATH — Landing comercial dependente de shell React e API lenta
+
+- **Sintoma:** clique abre um shell vazio e o conteúdo comercial aparece vários segundos depois.
+- **Causa-raiz:** a rota pública `/flows/exp-*-gerasalespage-v1` carregava o SPA antes de buscar novamente o HTML da landing no backend.
+- **Prevenção:** o proxy serve a landing GeraSalesPage diretamente, usa cache curto com stale seguro e o deploy valida o HTML instrumentado na rota pública. Web Vitals reais continuam vinculados às sessões humanas.

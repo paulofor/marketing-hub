@@ -268,6 +268,11 @@ describe("AudioVideoStudioPage", () => {
     expect(
       await screen.findAllByRole("button", { name: "Gerar clipe" }),
     ).toHaveLength(4);
+    expect(
+      screen.getAllByText(
+        /0-2,5s, as maos afastam dois acessorios e deixam somente um/i,
+      ),
+    ).toHaveLength(2);
     const provider = SALES_VIDEO_PROVIDER_OPTIONS.find(
       (option) => option.providerName === "LUMA_RAY_3_2",
     );

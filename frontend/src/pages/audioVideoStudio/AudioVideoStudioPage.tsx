@@ -546,7 +546,7 @@ const defaultScenePrompts = [
 const musaV7ScenePrompts = [
   "Cena 1 (6-8s): mulher urbana brasileira diante do espelho, pronta para sair, ajustando manga, cabelo ou acessorio, com duvida discreta e luz natural suave.",
   "Cena 2 (6-8s): a mesma mulher caminha em ambiente urbano claro, com roupa simples, melhor acabamento e postura mais segura, comunicando intencao sem ostentacao.",
-  "Cena 3 (8-10s): cortes proximos de maos retirando excesso visual, escolhendo peca-sinal, comparando cor, ajustando acabamento e alinhando postura no espelho.",
+  "Cena 3 MECANISMO (10s), montagem com quatro planos distintos e em ordem: 0-2,5s, as maos afastam dois acessorios e deixam somente um, removendo ruido visual; 2,5-5s, a mulher coloca esse unico acessorio como peca-sinal; 5-7,5s, compara junto ao rosto dois tecidos, creme e vinho, e escolhe o vinho; 7,5-10s, dobra a manga com acabamento limpo e alinha os ombros diante do espelho. Usar cortes secos entre as quatro microacoes, sem rasgar tecido, sem dobrar roupas sobre mesa, sem caminhada e sem repetir o mesmo gesto.",
   "Cena 4 (6-8s): mulher segura o celular, inicia o diagnostico sem mostrar UI legivel e termina olhando no espelho com sorriso discreto e postura mais segura.",
 ];
 

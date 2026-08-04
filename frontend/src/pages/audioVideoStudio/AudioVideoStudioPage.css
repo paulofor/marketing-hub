@@ -457,6 +457,51 @@
   line-height: 1.35;
 }
 
+.audio-video-studio-page__scene-production {
+  margin-top: 1.25rem;
+}
+
+.audio-video-studio-page__scene-production-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.audio-video-studio-page__scene-production-grid article {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #d9dee8);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.audio-video-studio-page__scene-production-grid article > span {
+  color: #7c2d55;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.audio-video-studio-page__scene-production-grid article > p,
+.audio-video-studio-page__scene-production-grid article > label {
+  margin: 0;
+}
+
+.audio-video-studio-page__scene-production-grid article > label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 720px) {
+  .audio-video-studio-page__scene-production-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .audio-video-studio-page__character-card em {
   color: #7a2444;
 }

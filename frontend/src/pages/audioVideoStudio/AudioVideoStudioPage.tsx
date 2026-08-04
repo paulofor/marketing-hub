@@ -37,7 +37,10 @@ import {
   type StudioCharacterOption,
 } from "../../api/salesVideo/useVideoStudioCatalog";
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
+import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
+import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
 import { useAsset } from "../../api/media/useAsset";
+import { useTenantContext } from "../../utils/tenantContext";
 import type {
   VideoProject,
   VideoProjectPayload,
@@ -537,6 +540,61 @@ const musaV7ScenePrompts = [
   "Cena 4 (6-8s): mulher segura o celular, inicia o diagnostico sem mostrar UI legivel e termina olhando no espelho com sorriso discreto e postura mais segura.",
 ];
 
+const musaV7SceneRoles = ["DOR", "RESULTADO", "MECANISMO", "CTA"];
+
+export function buildStudioSceneMetadata(
+  project: VideoProject,
+  provider: SalesVideoProviderOption,
+  scenePrompt: string,
+  sceneIndex: number,
+) {
+  return JSON.stringify({
+    commercial_goal: "PDE_MUSA_HERO_VIDEO_SCENE",
+    generation_strategy: "SCENE_BY_SCENE_MONTAGE",
+    studio_project_id: project.id,
+    campaign_key: project.campaignKey,
+    scene: {
+      order: sceneIndex + 1,
+      role: musaV7SceneRoles[sceneIndex] ?? `CENA_${sceneIndex + 1}`,
+      prompt: scenePrompt,
+      duration_seconds: provider.clipDurationSeconds,
+    },
+    continuity: {
+      character_bible: project.characterBible,
+      environment_bible: project.environmentBible,
+      object_bible: project.objectBible,
+      visual_style_guide: project.visualStyleGuide,
+      rules: project.continuityRules,
+    },
+    post_production: {
+      caption_plan: project.captionPlan,
+      voiceover_plan: project.voiceoverPlan,
+      soundtrack_plan: project.soundtrackPlan,
+      cta_text: project.ctaText,
+    },
+    provider_strategy: {
+      provider_name: provider.providerName,
+      expected_clip_duration_seconds: provider.clipDurationSeconds,
+    },
+  });
+}
+
+function readStudioSceneOrder(metadataJson?: string | null) {
+  if (!metadataJson) return undefined;
+  try {
+    const metadata = JSON.parse(metadataJson) as {
+      studio_project_id?: number;
+      scene?: { order?: number };
+    };
+    return {
+      projectId: metadata.studio_project_id,
+      order: metadata.scene?.order,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 const exampleStory =
   "Uma consultora independente sente que sua presenca digital nao mostra sua autoridade real. Ela tenta postar melhor, ajustar foto, escrever bio e criar conteudo, mas tudo parece solto. Ao entrar no Metodo MUSA, ela recebe um diagnostico guiado por IA que transforma sinais dispersos em uma direcao clara de imagem, conteudo e posicionamento. Em poucos dias, ela entende o que precisa ajustar, passa a se apresentar com mais seguranca e convida outras pessoas para fazerem o mesmo diagnostico.";
 
@@ -756,6 +814,7 @@ function durationValidationMessage(
 }
 
 export default function AudioVideoStudioPage() {
+  const tenantContext = useTenantContext();
   const { projectId } = useParams<{ projectId: string }>();
   const parsedProjectId = projectId ? Number(projectId) : undefined;
   const editableProjectId =
@@ -768,9 +827,16 @@ export default function AudioVideoStudioPage() {
   const studioCatalogQuery = useVideoStudioCatalog();
   const linkedProfileId = selectedProject?.salesVideoProfileId;
   const linkedJobsQuery = useSalesVideoJobs(linkedProfileId ?? undefined);
+  const requestSceneRender = useRequestVideoRender(
+    linkedProfileId ?? undefined,
+  );
+  const requestMontage = useRequestSalesVideoMontage(
+    selectedProject?.productId ?? undefined,
+  );
   const createVideoProject = useCreateVideoProject();
   const updateVideoProject = useUpdateVideoProject();
   const [saveFeedback, setSaveFeedback] = useState("");
+  const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
   const [briefing, setBriefing] = useState<StudioBriefing>(defaultBriefing);
 
   const isEditingProject = Boolean(editableProjectId);
@@ -820,6 +886,21 @@ export default function AudioVideoStudioPage() {
   const durationIssue = durationValidationMessage(
     briefing.videoCategory,
     targetDurationSeconds,
+  );
+
+  const studioSceneJobs = useMemo(
+    () =>
+      (linkedJobsQuery.data ?? [])
+        .map((job) => ({ job, scene: readStudioSceneOrder(job.metadataJson) }))
+        .filter(
+          ({ scene }) =>
+            scene?.projectId === selectedProject?.id && Boolean(scene?.order),
+        )
+        .sort(
+          (first, second) =>
+            (first.scene?.order ?? 0) - (second.scene?.order ?? 0),
+        ),
+    [linkedJobsQuery.data, selectedProject?.id],
   );
 
   const updateBriefing =
@@ -942,6 +1023,64 @@ export default function AudioVideoStudioPage() {
     } catch {
       setSaveFeedback(
         "Nao foi possivel salvar o projeto agora. Revise a conexao com o backend e tente novamente.",
+      );
+    }
+  };
+
+  const handleRequestSceneRender = async (sceneIndex: number) => {
+    if (!selectedProject || !linkedProfileId) {
+      setSaveFeedback(
+        "Vincule um perfil de video ao projeto antes de gerar cenas.",
+      );
+      return;
+    }
+    try {
+      const job = await requestSceneRender.mutateAsync({
+        requestedBy: tenantContext.userEmail,
+        providerFamily: selectedProvider.providerFamily,
+        providerName: selectedProvider.providerName,
+        executionMode: "TEST",
+        metadataJson: buildStudioSceneMetadata(
+          selectedProject,
+          selectedProvider,
+          selectedScenePrompts[sceneIndex],
+          sceneIndex,
+        ),
+      });
+      setSaveFeedback(
+        `Cena ${sceneIndex + 1} enviada para geracao no job #${job.id}.`,
+      );
+    } catch {
+      setSaveFeedback(`Nao foi possivel gerar a cena ${sceneIndex + 1}.`);
+    }
+  };
+
+  const handleToggleSceneApproval = (jobId: number) => {
+    setSelectedSceneJobIds((current) =>
+      current.includes(jobId)
+        ? current.filter((id) => id !== jobId)
+        : [...current, jobId],
+    );
+  };
+
+  const handleRequestSceneMontage = async () => {
+    if (selectedSceneJobIds.length !== 4) {
+      setSaveFeedback(
+        "Aprove exatamente um clipe pronto para cada uma das quatro cenas.",
+      );
+      return;
+    }
+    try {
+      const job = await requestMontage.mutateAsync({
+        requestedBy: tenantContext.userEmail,
+        sourceJobIds: selectedSceneJobIds,
+      });
+      setSaveFeedback(
+        `Montagem das quatro cenas solicitada no job #${job.id}.`,
+      );
+    } catch {
+      setSaveFeedback(
+        "Nao foi possivel solicitar a montagem das cenas aprovadas.",
       );
     }
   };
@@ -1638,6 +1777,59 @@ export default function AudioVideoStudioPage() {
                   );
                 })}
               </div>
+              {isEditingProject && selectedProject ? (
+                <div className="audio-video-studio-page__scene-production">
+                  <div className="audio-video-studio-page__section-heading">
+                    <h3>Geracao por quatro cenas</h3>
+                    <p>
+                      Gere e revise cada funcao narrativa separadamente. Uma
+                      cena reprovada pode ser refeita sem descartar as demais.
+                    </p>
+                  </div>
+                  <div className="audio-video-studio-page__scene-production-grid">
+                    {selectedScenePrompts.slice(0, 4).map((prompt, index) => {
+                      const jobs = studioSceneJobs.filter(
+                        ({ scene }) => scene?.order === index + 1,
+                      );
+                      return (
+                        <article key={prompt}>
+                          <span>
+                            Cena {index + 1} · {musaV7SceneRoles[index]}
+                          </span>
+                          <p>{prompt}</p>
+                          <button
+                            className="audio-video-studio-page__secondary-action"
+                            type="button"
+                            disabled={requestSceneRender.isPending}
+                            onClick={() => handleRequestSceneRender(index)}
+                          >
+                            <Wand2 size={16} aria-hidden="true" />
+                            {jobs.length
+                              ? "Gerar nova variacao"
+                              : "Gerar clipe"}
+                          </button>
+                          {jobs.map(({ job }) => (
+                            <label key={job.id}>
+                              <input
+                                type="checkbox"
+                                disabled={
+                                  job.status !== "VIDEO_READY" || !job.assetId
+                                }
+                                checked={selectedSceneJobIds.includes(job.id)}
+                                onChange={() =>
+                                  handleToggleSceneApproval(job.id)
+                                }
+                              />
+                              Job #{job.id} ·{" "}
+                              {getStudioCommercialLabel(job.status)}
+                            </label>
+                          ))}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
             <div
               className="audio-video-studio-page__stage-heading"
@@ -1660,6 +1852,19 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
+            {isEditingProject ? (
+              <button
+                className="audio-video-studio-page__primary-action"
+                type="button"
+                disabled={
+                  requestMontage.isPending || selectedSceneJobIds.length !== 4
+                }
+                onClick={handleRequestSceneMontage}
+              >
+                <Scissors size={18} aria-hidden="true" />
+                Montar quatro clipes aprovados
+              </button>
+            ) : null}
             <div
               className="audio-video-studio-page__stage-heading"
               id="audio-video-stage-revisao"

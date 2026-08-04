@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-04-video-strategy-learning-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: video_project
+        - not:
+            columnExists:
+              tableName: video_project
+              columnName: strategy_group_key
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_project
+                ADD COLUMN strategy_group_key VARCHAR(191) NULL AFTER primary_metric,
+                ADD COLUMN strategy_role VARCHAR(64) NULL AFTER strategy_group_key,
+                ADD COLUMN commercial_hypothesis LONGTEXT NULL AFTER strategy_role,
+                ADD COLUMN persuasion_framework VARCHAR(255) NULL AFTER commercial_hypothesis,
+                ADD COLUMN scientific_basis LONGTEXT NULL AFTER persuasion_framework,
+                ADD COLUMN measurement_plan LONGTEXT NULL AFTER scientific_basis,
+                ADD COLUMN results_snapshot LONGTEXT NULL AFTER measurement_plan,
+                ADD COLUMN learning_decision VARCHAR(64) NULL AFTER results_snapshot,
+                ADD COLUMN confirmed_learning LONGTEXT NULL AFTER learning_decision,
+                ADD COLUMN next_version_recommendation LONGTEXT NULL AFTER confirmed_learning;

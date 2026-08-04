@@ -75,6 +75,36 @@ public class VideoProject {
   @Column(name = "primary_metric", length = 191)
   private String primaryMetric;
 
+  @Column(name = "strategy_group_key", length = 191)
+  private String strategyGroupKey;
+
+  @Column(name = "strategy_role", length = 64)
+  private String strategyRole;
+
+  @Column(name = "commercial_hypothesis", columnDefinition = "LONGTEXT")
+  private String commercialHypothesis;
+
+  @Column(name = "persuasion_framework", length = 255)
+  private String persuasionFramework;
+
+  @Column(name = "scientific_basis", columnDefinition = "LONGTEXT")
+  private String scientificBasis;
+
+  @Column(name = "measurement_plan", columnDefinition = "LONGTEXT")
+  private String measurementPlan;
+
+  @Column(name = "results_snapshot", columnDefinition = "LONGTEXT")
+  private String resultsSnapshot;
+
+  @Column(name = "learning_decision", length = 64)
+  private String learningDecision;
+
+  @Column(name = "confirmed_learning", columnDefinition = "LONGTEXT")
+  private String confirmedLearning;
+
+  @Column(name = "next_version_recommendation", columnDefinition = "LONGTEXT")
+  private String nextVersionRecommendation;
+
   @Column(name = "hook_text", length = 1024)
   private String hookText;
 

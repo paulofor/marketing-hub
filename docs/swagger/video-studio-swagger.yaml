@@ -291,6 +291,31 @@ components:
         objective: { type: string }
         funnelStage: { type: string, nullable: true }
         primaryMetric: { type: string, nullable: true }
+        strategyGroupKey:
+          type: string
+          nullable: true
+          description: Agrupa peças complementares da mesma estratégia comercial.
+        strategyRole:
+          type: string
+          nullable: true
+          enum: [CAMPAIGN_QUALIFICATION, PDE_HERO_CONVERSION]
+        commercialHypothesis: { type: string, nullable: true }
+        persuasionFramework: { type: string, nullable: true }
+        scientificBasis:
+          type: string
+          nullable: true
+          description: Evidências aplicadas e limites explícitos da promessa.
+        measurementPlan: { type: string, nullable: true }
+        resultsSnapshot:
+          type: string
+          nullable: true
+          description: Fotografia auditável de resultados reais observados.
+        learningDecision:
+          type: string
+          nullable: true
+          enum: [COLLECTING, CONTINUE, ADJUST, STOP]
+        confirmedLearning: { type: string, nullable: true }
+        nextVersionRecommendation: { type: string, nullable: true }
         hookText: { type: string, nullable: true }
         scriptText: { type: string, nullable: true }
         scenePlan: { type: string, nullable: true }

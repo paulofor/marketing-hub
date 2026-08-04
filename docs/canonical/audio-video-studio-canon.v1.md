@@ -170,6 +170,10 @@ A tela do Estudio de Audio e Video deve organizar projetos premium pelas seguint
 8. **Revisao / gate comercial:** promessa permitida, clareza, continuidade, audio, prova, CTA, HLS e aderencia ao PDE.
 9. **Aprendizado / metricas:** play, retencao, clique, diagnostico, paywall, checkout e compra para decidir novos cortes.
 
+### Estrategia e aprendizado por experimento
+
+Cada video comercial deve preservar a hipotese, funcao no funil, framework, evidencias cientificas, limites da promessa, plano de medicao, resultados reais, decisao e proxima versao. Pecas complementares usam o mesmo `strategyGroupKey`: o video de campanha qualifica pela dor e o hero do PDE aprofunda mecanismo e jornada, mantendo `message match`. Resultados estimados nunca podem ser registrados como venda; a decisao permitida e `COLLECTING`, `CONTINUE`, `ADJUST` ou `STOP`.
+
 Essa ordem evita desperdicio de geracao: nenhum video premium deve avancar para renderizacao antes de existir clareza comercial, roteiro estruturado e referencias visuais suficientes para preservar consistencia e valor percebido.
 
 A pagina de edicao do projeto deve apresentar os blocos operacionais nessa mesma ordem, tanto visualmente quanto no documento HTML. A navegacao resumida pode permanecer no topo, mas roteiro, storyboard, audio, geracao, montagem, revisao e aprendizado nao podem ser separados por listas de projetos, escopo institucional ou outros paineis auxiliares. Em telas pequenas, a navegacao das etapas pode ter rolagem horizontal, enquanto o conteudo principal permanece em uma unica sequencia vertical.
@@ -177,6 +181,8 @@ A pagina de edicao do projeto deve apresentar os blocos operacionais nessa mesma
 Os cabecalhos das nove etapas devem usar o mesmo componente visual, com tipografia, borda, fundo e espacamento consistentes. Paineis internos podem variar conforme o tipo de conteudo, mas nao podem competir visualmente com o inicio de uma nova etapa nem fazer etapas equivalentes parecerem componentes sem relacao.
 
 Para vídeos montados por cenas, cada item do plano deve declarar localização, ação visível e direção de câmera próprias, além da função comercial. Prompts genéricos que repetem personagem caminhando, pose ou enquadramento não comprovam mecanismo e devem ser bloqueados na revisão. Quando o roteiro exigir espelho, a direção visual pode usá-lo como objeto narrativo, mas deve proibir câmera/equipe refletida, duplicação impossível da personagem e reflexos incoerentes. O provider escolhido também deve respeitar sua duração direta máxima; suporte declarado a montagem por cenas só pode ser oferecido na tela quando o executor realmente gerar e unir os clipes.
+
+Quando uma cena curta precisar demonstrar varias microacoes, o prompt operacional deve ordenar cada plano em intervalos de tempo, descrever o resultado visual verificavel de cada gesto e proibir explicitamente repeticao ou acoes ambiguas observadas nas tentativas reprovadas. Enumerar conceitos em uma unica frase nao comprova que o provider mostrara todos eles; o gate humano deve reprovar a cena quando uma microacao planejada nao for compreensivel sem audio.
 
 Quando a estratégia exigir montagem narrativa, o Estúdio deve criar um job independente por cena, vinculando projeto, ordem e função comercial no metadata auditável. O operador deve revisar e selecionar exatamente um clipe pronto por função antes de solicitar a montagem. Uma cena reprovada deve poder ser regenerada isoladamente, e a montagem não pode avançar com cenas ausentes ou ainda em processamento. A publicação continua bloqueada até a revisão humana do vídeo final.
 

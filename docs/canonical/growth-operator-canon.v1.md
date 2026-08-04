@@ -35,13 +35,19 @@ direto ao banco e toda evidencia usada permanece congelada na execucao auditavel
 
 O agente nao depende das telas para investigar. Um servidor MCP local, dedicado ao Operador e
 vinculado ao planejamento do job, apresenta ferramentas tipadas somente leitura para consultar
-planejamento, funil, sessoes, campanhas Meta e memoria historica. O catalogo nao expoe ferramenta
+planejamento, funil, sessoes, campanhas Meta, estrategia de videos e memoria historica. O catalogo nao expoe ferramenta
 generica HTTP, banco ou metodos mutaveis. Cada resposta inclui ferramenta, planejamento, rota de
 origem e horario da consulta para a evidencia permanecer auditavel no resultado do modelo. Para
 aprofundar ou atualizar a leitura durante um ciclo, o backend expoe
 `GET /api/growth-operator/v1/internal/commercial-plans/{planId}/session-intelligence?eventLimit=2000`,
 com o mesmo contrato detalhado, anonimizado e limitado do snapshot. Essa consulta nao autoriza
 acesso direto ao banco nem metodos HTTP de mutacao.
+
+A ferramenta `consultar_estrategia_videos` consolida pelo experimento a hipotese registrada no
+Estudio, funcao no funil, custo comercial, progressao dos videos, acoes posteriores, vendas e
+aprendizados. O Operador deve comparar pecas do mesmo `strategyGroupKey`, distinguir custo de
+producao de gasto de campanha e somente confirmar aprendizado quando houver eventos humanos
+atribuidos.
 
 ## Imagem e operacao
 

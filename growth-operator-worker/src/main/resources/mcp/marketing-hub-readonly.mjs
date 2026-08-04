@@ -10,7 +10,8 @@ const tools = [
     eventLimit: { type: 'integer', minimum: 1, maximum: 2000, default: 2000 }
   }),
   tool('consultar_campanhas', 'Consulta as campanhas Meta do experimento vinculado ao planejamento.', {}),
-  tool('consultar_memoria', 'Consulta o historico auditavel dos ciclos do Operador.', {})
+  tool('consultar_memoria', 'Consulta o historico auditavel dos ciclos do Operador.', {}),
+  tool('consultar_estrategia_videos', 'Consulta estrategia, custos, progressao e aprendizados dos videos.', {})
 ];
 
 const routes = {
@@ -18,7 +19,8 @@ const routes = {
   consultar_funil: () => experimentRoute('funnel'),
   consultar_sessoes: args => `/api/growth-operator/v1/internal/commercial-plans/${planId}/session-intelligence?eventLimit=${boundedLimit(args.eventLimit)}`,
   consultar_campanhas: () => experimentRoute('facebook-campaigns'),
-  consultar_memoria: () => `/api/growth-operator/v1/commercial-plans/${planId}/executions`
+  consultar_memoria: () => `/api/growth-operator/v1/commercial-plans/${planId}/executions`,
+  consultar_estrategia_videos: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/video-strategy-intelligence`
 };
 
 const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });

@@ -61,6 +61,16 @@ public class VideoProjectService {
             .storyText(trimToNull(request.storyText()))
             .funnelStage(trimToNull(request.funnelStage()))
             .primaryMetric(trimToNull(request.primaryMetric()))
+            .strategyGroupKey(trimToNull(request.strategyGroupKey()))
+            .strategyRole(trimToNull(request.strategyRole()))
+            .commercialHypothesis(trimToNull(request.commercialHypothesis()))
+            .persuasionFramework(trimToNull(request.persuasionFramework()))
+            .scientificBasis(trimToNull(request.scientificBasis()))
+            .measurementPlan(trimToNull(request.measurementPlan()))
+            .resultsSnapshot(trimToNull(request.resultsSnapshot()))
+            .learningDecision(validatedLearningDecision(request.learningDecision()))
+            .confirmedLearning(trimToNull(request.confirmedLearning()))
+            .nextVersionRecommendation(trimToNull(request.nextVersionRecommendation()))
             .hookText(trimToNull(request.hookText()))
             .scriptText(trimToNull(request.scriptText()))
             .scenePlan(trimToNull(request.scenePlan()))
@@ -113,6 +123,16 @@ public class VideoProjectService {
     project.setStoryText(trimToNull(request.storyText()));
     project.setFunnelStage(trimToNull(request.funnelStage()));
     project.setPrimaryMetric(trimToNull(request.primaryMetric()));
+    project.setStrategyGroupKey(trimToNull(request.strategyGroupKey()));
+    project.setStrategyRole(trimToNull(request.strategyRole()));
+    project.setCommercialHypothesis(trimToNull(request.commercialHypothesis()));
+    project.setPersuasionFramework(trimToNull(request.persuasionFramework()));
+    project.setScientificBasis(trimToNull(request.scientificBasis()));
+    project.setMeasurementPlan(trimToNull(request.measurementPlan()));
+    project.setResultsSnapshot(trimToNull(request.resultsSnapshot()));
+    project.setLearningDecision(validatedLearningDecision(request.learningDecision()));
+    project.setConfirmedLearning(trimToNull(request.confirmedLearning()));
+    project.setNextVersionRecommendation(trimToNull(request.nextVersionRecommendation()));
     project.setHookText(trimToNull(request.hookText()));
     project.setScriptText(trimToNull(request.scriptText()));
     project.setScenePlan(trimToNull(request.scenePlan()));
@@ -172,6 +192,20 @@ public class VideoProjectService {
       return null;
     }
     return value.trim();
+  }
+
+  /** Valida a decisao de aprendizado sem inferir resultado comercial no backend. */
+  private static String validatedLearningDecision(String value) {
+    String normalized = trimToNull(value);
+    if (normalized == null
+        || normalized.equals("COLLECTING")
+        || normalized.equals("CONTINUE")
+        || normalized.equals("ADJUST")
+        || normalized.equals("STOP")) {
+      return normalized;
+    }
+    throw VideoModuleException.badRequest(
+        VideoModuleErrorCode.BAD_REQUEST, "Decisão de aprendizado inválida: " + normalized);
   }
 
   /** Valida a categoria comercial do vídeo e preserva compatibilidade com projetos antigos. */
@@ -297,6 +331,16 @@ public class VideoProjectService {
         project.getStoryText(),
         project.getFunnelStage(),
         project.getPrimaryMetric(),
+        project.getStrategyGroupKey(),
+        project.getStrategyRole(),
+        project.getCommercialHypothesis(),
+        project.getPersuasionFramework(),
+        project.getScientificBasis(),
+        project.getMeasurementPlan(),
+        project.getResultsSnapshot(),
+        project.getLearningDecision(),
+        project.getConfirmedLearning(),
+        project.getNextVersionRecommendation(),
         project.getHookText(),
         project.getScriptText(),
         project.getScenePlan(),

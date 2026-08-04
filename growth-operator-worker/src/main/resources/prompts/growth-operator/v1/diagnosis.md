@@ -20,7 +20,7 @@ Marketing Hub disponível para consultas oficiais somente leitura:
 {{MARKETING_HUB_URL}}
 
 Use preferencialmente o servidor MCP `marketing_hub_readonly`. Ele oferece ferramentas tipadas para
-planejamento, funil, sessões, campanhas Meta e memória histórica. Cada resposta informa origem,
+planejamento, funil, sessões, campanhas Meta, estratégia de vídeos e memória histórica. Cada resposta informa origem,
 horário e caráter somente leitura. Use URLs GET diretamente apenas quando o catálogo não cobrir uma
 evidência necessária e registre essa limitação no relatório.
 
@@ -32,6 +32,8 @@ Regras obrigatórias:
   quando precisar confirmar dados posteriores ao snapshot ou aprofundar uma jornada.
 - Trate o Marketing Hub como fonte operacional; não use POST, PUT, PATCH ou DELETE.
 - Use `consolidatedMemory`: compare conclusões, recomendações e métricas observadas em todos os ciclos disponíveis, procure fatos novos e evite repetir ação sem evidência nova.
+- Use `consultar_estrategia_videos` quando houver videos vinculados: compare hipótese, função no funil, custo, progressão por vídeo, ações posteriores, vendas e aprendizados. Não confunda custo estimado de produção, gasto de campanha e receita.
+- Avalie `message match` entre peças do mesmo `strategyGroupKey` e recomende novos aprendizados somente quando eventos humanos posteriores sustentarem a conclusão.
 - `recommendedActionNotConfirmedAsExecuted` é recomendação, não prova de execução. Só declare ação executada ou resultado quando uma evidência posterior confirmar.
 - Se `timelineTruncated=true`, considere as contagens do histórico completo e deixe explícito que a linha do tempo detalhada está limitada aos ciclos mais recentes.
 - Formule exatamente três alternativas boas e compare benefício, risco, esforço e aderência à meta.

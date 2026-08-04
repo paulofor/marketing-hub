@@ -69,3 +69,8 @@
 - Causa-raiz: metas planejadas sem executado obrigavam acompanhamento manual e impediam saber rapidamente se julho estava dentro do limite de custo, receita e publicacao.
 - Foi feito: adicionados campos executados no plano mensal e nos marcos semanais, com sincronizacao backend a partir de metricas de campanha, custos de IA, metricas financeiras, experimentos criados e campanhas publicadas.
 - Impacto esperado: a tela passa a mostrar planejado vs. executado e fica preparada para alertas/recomendacoes por IA sem depender de interpretacao manual.
+# 2026-08-04 - Estrategia de videos no Operador
+
+- O catalogo MCP ganhou a ferramenta somente leitura `consultar_estrategia_videos`.
+- O contexto auditavel de cada ciclo passa a incluir hipotese, papel no funil, custos, progressao, acoes posteriores e aprendizados dos videos vinculados ao experimento.
+- Aprendizado so pode ser confirmado com eventos humanos atribuidos; gasto de campanha, custo de producao e receita permanecem separados.

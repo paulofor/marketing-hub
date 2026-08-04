@@ -60,7 +60,7 @@ cleanup_previous_tags() {
 VIDEO_MGMT_IMAGE="${VIDEO_MGMT_IMAGE}" \
 VIDEO_MGMT_IMAGE_TAG="${VIDEO_MGMT_IMAGE_TAG}" \
 VIDEO_BACKEND_BASE_URL="${VIDEO_BACKEND_BASE_URL}" \
-docker compose up -d --no-deps video-management
+docker compose -f docker-compose.video.yml up -d --no-deps video-management
 
 cleanup_previous_tags "${VIDEO_MGMT_IMAGE}" "${VIDEO_MGMT_IMAGE_TAG}"
 

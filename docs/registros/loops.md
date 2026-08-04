@@ -52,6 +52,26 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-COST-MODEL-AUDIT` | MÉDIO | Em observação | Custos OpenAI e modelo por etapa | preço vindo do catálogo backend + modelo efetivo auditado por etapa |
 | `LOOP-LOW-TICKET-SALES-PAGE-BYPASS` | CRÍTICO | Fechado em 2026-07-01 | Low-ticket/GeraSalesPage | campanha bloqueada sem etapa final do pipeline concluída |
 | `LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION` | ALTO | Fechado em 2026-07-07 | GeraSalesPage | prompts v5 + quality review + auditoria bloqueiam pagina sem cenas visuais |
+| `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
+
+---
+
+## LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS — Deploy isolado bloqueado por segredo alheio
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-08-04.
+- **Sintoma recorrente ou risco observado**:
+  - deploy de vídeo ou MCP falha antes de atualizar o serviço porque o Compose exige segredo privado do backend/pagamentos;
+  - `--no-deps` não evita a falha, pois a interpolação ocorre antes da seleção dos serviços.
+- **Causa-raiz sistêmica confirmada**:
+  - stacks de hosts e responsabilidades diferentes compartilhavam o mesmo descritor Compose monolítico.
+- **Correção efetiva**:
+  - manter descritores independentes para vídeo e MCP;
+  - fazer cada script de publicação apontar explicitamente para seu descritor;
+  - preservar secrets obrigatórios apenas no stack que efetivamente os consome.
+- **Regra preventiva**:
+  - todo deploy isolado deve validar e subir somente o descritor do seu destino;
+  - um teste de contrato deve renderizar o Compose isolado sem secrets de outros módulos.
 
 ---
 

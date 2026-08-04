@@ -199,16 +199,21 @@ public class RunwayVideoProvider implements VideoProvider {
         return prompt.substring(0, end).stripTrailing();
     }
 
-    /** Monta prompt comercial genérico a partir do roteiro aprovado e metadados do job. */
+    /** Monta prompt priorizando a ação da cena antes do contexto comercial sujeito ao limite da Runway. */
     private String buildPrompt(SalesVideoJob job,
                                SalesVideoProfile profile,
                                SalesVideoScript script,
                                JsonNode metadata) {
         String visualDirectives = visualProviderDirectives(metadata);
-        String scenes = metadata.path("assembly_plan").path("scenes").isMissingNode()
+        String scenePrompt = metadata.path("scene").path("prompt").asText("");
+        String scenes = StringUtils.hasText(scenePrompt)
+                ? scenePrompt
+                : metadata.path("assembly_plan").path("scenes").isMissingNode()
                 ? "Recognizable pain, plausible mechanism, personal value and CTA."
                 : metadata.path("assembly_plan").path("scenes").toString();
         return """
+                REQUIRED SCENE ACTION: %s.
+                Provider-specific visual directives: %s.
                 Vertical short-form sales video for a digital product.
                 Language: %s.
                 Title: %s.
@@ -218,10 +223,11 @@ public class RunwayVideoProvider implements VideoProvider {
                 Approved script context: %s.
                 Approved CTA: %s.
                 Scene plan: %s.
-                Provider-specific visual directives: %s.
                 Keep the scene natural, concrete and commercially useful. Show a human situation, the felt pain, a plausible mechanism and a light CTA.
                 Avoid embedded text, logos, distorted hands, haze, blur, flicker, body-focused framing, seductive posing and luxury ostentation.
                 """.formatted(
+                scenes,
+                visualDirectives,
                 nullToDefault(profile.language(), "pt-BR"),
                 nullToDefault(profile.title(), "Sales video"),
                 nullToDefault(profile.personaName(), "target customer"),
@@ -229,8 +235,7 @@ public class RunwayVideoProvider implements VideoProvider {
                 nullToDefault(script.hookText(), ""),
                 script.scriptText(),
                 nullToDefault(script.ctaText(), ""),
-                scenes,
-                visualDirectives);
+                scenes);
     }
 
     /** Extrai diretivas visuais enviadas pelo Marketing Hub. */

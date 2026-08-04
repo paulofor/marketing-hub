@@ -26,7 +26,7 @@ export type SalesVideoRenderMetadataOptions = {
 };
 
 export const DEFAULT_VISUAL_PROVIDER_DIRECTIVES = [
-  "Direct camera shot, no mirror and no reflection.",
+  "Use direct camera shots. A full-length mirror may appear only when the scene brief asks for it; never show the camera, crew or an impossible duplicate reflection.",
   "Very sharp image, crisp focus on face and eyes, clear skin texture.",
   "Stable exposure, constant soft natural daylight, no haze, no blur, no dreamy filter, no flickering.",
   "Brazilian urban woman in her 30s, elegant but accessible, premium but human.",
@@ -199,6 +199,12 @@ export function buildSalesVideoRenderMetadata(
           role: "DOR",
           title: "Dor do espelho",
           message: "Você se arruma, mas sente que ainda falta presença.",
+          location:
+            "Quarto brasileiro claro e realista, diante de um espelho de corpo inteiro.",
+          action:
+            "A mesma mulher adulta ajusta a manga e um acessório, observa o conjunto com dúvida discreta e retira um elemento que cria ruído visual.",
+          camera:
+            "Começar em close de 1 segundo no olhar refletido, abrir para plano médio lateral e terminar nas mãos retirando o excesso.",
         },
         {
           order: 2,
@@ -206,18 +212,34 @@ export function buildSalesVideoRenderMetadata(
           title: "Presença desejada",
           message:
             "Pequenos ajustes deixam a imagem mais intencional em 7 dias.",
+          location:
+            "Entrada do mesmo apartamento e rua urbana cotidiana, sem luxo.",
+          action:
+            "A mesma mulher sai com a roupa-base preservada, agora com uma única peça-sinal, acabamento alinhado e postura natural mais segura.",
+          camera:
+            "Match cut do espelho para movimento de saída; travelling curto frontal e detalhe do acessório, sem caminhada repetitiva prolongada.",
         },
         {
           order: 3,
           role: "MECANISMO",
           title: "Mecanismo MUSA",
           message: "Ruído visual, peça-sinal, cor, acabamento e postura.",
+          location: "Mesa clara e espelho do mesmo apartamento.",
+          action:
+            "Montagem de microações: afastar dois acessórios e manter um, comparar creme e vinho, dobrar a manga com acabamento e alinhar os ombros.",
+          camera:
+            "Quatro inserts rápidos e distintos de mãos, tecido, acessório e postura; nenhum plano deve repetir a caminhada da cena anterior.",
         },
         {
           order: 4,
           role: "CTA",
           title: "Diagnóstico gratuito",
           message: "Faça o diagnóstico e veja seu Plano MUSA de 7 dias.",
+          location: "Perto do espelho, com luz natural e fundo limpo.",
+          action:
+            "A mesma mulher toca uma única vez no celular, sem interface ou texto legível, recebe clareza e olha novamente para o espelho com alívio sutil.",
+          camera:
+            "Close curto no gesto do celular, rack focus para o rosto e espaço negativo inferior seguro para a legenda e o CTA da pós-produção.",
         },
       ],
     },

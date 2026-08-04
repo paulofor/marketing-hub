@@ -1089,7 +1089,7 @@ export default function AudioVideoStudioPage() {
           className="audio-video-studio-page__briefing"
           aria-label="Blueprint operacional de video comercial"
         >
-          <div className="audio-video-studio-page__section-heading">
+          <div className="audio-video-studio-page__stage-heading">
             <h2>
               {isEditingProject
                 ? "1. Estrategia do projeto"
@@ -1338,12 +1338,12 @@ export default function AudioVideoStudioPage() {
             <input value={briefing.cta} onChange={updateBriefing("cta")} />
           </label>
           <div
-            className="audio-video-studio-page__stage-divider"
+            className="audio-video-studio-page__stage-heading"
             id="audio-video-stage-roteiro"
           >
             <FileText size={18} aria-hidden="true" />
             <div>
-              <strong>2. Roteiro e storyboard</strong>
+              <h2>2. Roteiro e storyboard</h2>
               <span>
                 O rascunho narrativo e a estrutura de cenas ficam visiveis ao
                 lado para transformar a estrategia em blocos de producao.
@@ -1367,7 +1367,7 @@ export default function AudioVideoStudioPage() {
             className="audio-video-studio-page__visual-bible"
             id="audio-video-stage-biblia-visual"
           >
-            <div className="audio-video-studio-page__section-heading">
+            <div className="audio-video-studio-page__stage-heading">
               <h2>3. Biblia visual premium</h2>
               <p>
                 Defina referencias mestras antes de gerar cenas para preservar
@@ -1478,7 +1478,7 @@ export default function AudioVideoStudioPage() {
               className="audio-video-studio-page__stage-section"
               id="audio-video-stage-storyboard"
             >
-              <div className="audio-video-studio-page__section-heading">
+              <div className="audio-video-studio-page__stage-heading">
                 <h2>4. Storyboard</h2>
                 <p>
                   Sequencia do blueprint atual para testar retencao, desejo e
@@ -1520,12 +1520,12 @@ export default function AudioVideoStudioPage() {
               </div>
             </section>
             <div
-              className="audio-video-studio-page__stage-divider"
+              className="audio-video-studio-page__stage-heading"
               id="audio-video-stage-audio"
             >
               <Mic2 size={18} aria-hidden="true" />
               <div>
-                <strong>5. Audio e ritmo</strong>
+                <h2>5. Audio e ritmo</h2>
                 <span>
                   Voz, trilha e legenda precisam sustentar a promessa mesmo em
                   mobile e com som desligado.
@@ -1598,7 +1598,7 @@ export default function AudioVideoStudioPage() {
               className="audio-video-studio-page__asset-section"
               id="audio-video-stage-provider"
             >
-              <div className="audio-video-studio-page__section-heading">
+              <div className="audio-video-studio-page__stage-heading">
                 <h2>6. Provider de video</h2>
                 <p>
                   Escolha o motor de geracao de acordo com o tipo de cena antes
@@ -1640,7 +1640,7 @@ export default function AudioVideoStudioPage() {
               </div>
             </div>
             <div
-              className="audio-video-studio-page__stage-divider"
+              className="audio-video-studio-page__stage-heading"
               id="audio-video-stage-montagem"
             >
               <Scissors size={18} aria-hidden="true" />
@@ -1661,7 +1661,7 @@ export default function AudioVideoStudioPage() {
               />
             </label>
             <div
-              className="audio-video-studio-page__stage-divider"
+              className="audio-video-studio-page__stage-heading"
               id="audio-video-stage-revisao"
             >
               <ClipboardCheck size={18} aria-hidden="true" />
@@ -1685,7 +1685,7 @@ export default function AudioVideoStudioPage() {
               className="audio-video-studio-page__stage-section"
               id="audio-video-stage-aprendizado"
             >
-              <div className="audio-video-studio-page__section-heading">
+              <div className="audio-video-studio-page__stage-heading">
                 <h2>9. Aprendizado e metricas</h2>
                 <p>
                   O funil mede consumo, cliques, diagnostico, paywall, checkout

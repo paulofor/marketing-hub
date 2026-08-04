@@ -35,7 +35,7 @@
 .audio-video-studio-page__draft,
 .audio-video-studio-page__visual-bible,
 .audio-video-studio-page__stage-card,
-.audio-video-studio-page__stage-divider,
+.audio-video-studio-page__stage-heading,
 .audio-video-studio-page__category-note,
 .audio-video-studio-page__next-action,
 .audio-video-studio-page__timeline-block,
@@ -597,32 +597,36 @@
   line-height: 1.4;
 }
 
-.audio-video-studio-page__stage-divider {
+.audio-video-studio-page__stage-heading {
   display: flex;
   align-items: flex-start;
   gap: 0.65rem;
+  margin: 0;
   border-color: #f7e4c6;
   background: #fff8f3;
   color: #7a2444;
   padding: 0.8rem;
 }
 
-.audio-video-studio-page__stage-divider svg {
+.audio-video-studio-page__stage-heading svg {
   flex: 0 0 auto;
   margin-top: 0.1rem;
 }
 
-.audio-video-studio-page__stage-divider div {
+.audio-video-studio-page__stage-heading div {
   display: grid;
   gap: 0.18rem;
 }
 
-.audio-video-studio-page__stage-divider h2 {
+.audio-video-studio-page__stage-heading h2 {
   margin: 0;
   font-size: 1rem;
 }
 
-.audio-video-studio-page__stage-divider span {
+.audio-video-studio-page__stage-heading p,
+.audio-video-studio-page__stage-heading span {
+  max-width: 780px;
+  margin: 0;
   color: #334155;
   line-height: 1.4;
 }

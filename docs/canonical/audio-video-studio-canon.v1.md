@@ -174,6 +174,8 @@ Essa ordem evita desperdicio de geracao: nenhum video premium deve avancar para 
 
 A pagina de edicao do projeto deve apresentar os blocos operacionais nessa mesma ordem, tanto visualmente quanto no documento HTML. A navegacao resumida pode permanecer no topo, mas roteiro, storyboard, audio, geracao, montagem, revisao e aprendizado nao podem ser separados por listas de projetos, escopo institucional ou outros paineis auxiliares. Em telas pequenas, a navegacao das etapas pode ter rolagem horizontal, enquanto o conteudo principal permanece em uma unica sequencia vertical.
 
+Os cabecalhos das nove etapas devem usar o mesmo componente visual, com tipografia, borda, fundo e espacamento consistentes. Paineis internos podem variar conforme o tipo de conteudo, mas nao podem competir visualmente com o inicio de uma nova etapa nem fazer etapas equivalentes parecerem componentes sem relacao.
+
 Para vídeos montados por cenas, cada item do plano deve declarar localização, ação visível e direção de câmera próprias, além da função comercial. Prompts genéricos que repetem personagem caminhando, pose ou enquadramento não comprovam mecanismo e devem ser bloqueados na revisão. Quando o roteiro exigir espelho, a direção visual pode usá-lo como objeto narrativo, mas deve proibir câmera/equipe refletida, duplicação impossível da personagem e reflexos incoerentes. O provider escolhido também deve respeitar sua duração direta máxima; suporte declarado a montagem por cenas só pode ser oferecido na tela quando o executor realmente gerar e unir os clipes.
 
 ## HLS para PDEs

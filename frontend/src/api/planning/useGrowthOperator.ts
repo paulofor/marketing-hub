@@ -31,6 +31,27 @@ export interface GrowthOperatorExecution {
   createdAt: string;
 }
 
+export interface GrowthOperatorMcpTool {
+  name: string;
+  description: string;
+  accessMode: "SOMENTE_LEITURA";
+  dataSource: string;
+  parameters: Record<string, string>;
+}
+
+export function useGrowthOperatorMcpTools() {
+  return useQuery({
+    queryKey: ["growth-operator-mcp-tools"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await axios.get<GrowthOperatorMcpTool[]>(
+        "/api/growth-operator/v1/mcp-tools",
+      );
+      return data;
+    },
+  });
+}
+
 export function useGrowthOperatorExecutions(planId?: number | null) {
   return useQuery({
     queryKey: ["growth-operator-executions", planId],

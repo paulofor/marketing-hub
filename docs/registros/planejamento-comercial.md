@@ -1,5 +1,12 @@
 # Registro de Planejamento Comercial
 
+## 2026-08-04 - Catalogo MCP visivel no Planejamento
+
+- Causa-raiz: as ferramentas estavam disponiveis ao Operador no runtime, mas o usuario nao conseguia verificar pelo Marketing Hub quais capacidades estavam autorizadas.
+- Foi feito: o backend passou a expor o catalogo MCP canônico e o painel do Operador lista nome, finalidade, fonte, parametros e modo de acesso de cada ferramenta.
+- Gate: a tela apenas consulta o catalogo; todas as ferramentas permanecem somente leitura, auditaveis e sem HTTP generico ou acesso direto ao banco.
+- Impacto esperado: aumentar transparencia e facilitar a validacao das fontes que o agente pode usar em seus diagnosticos.
+
 ## 2026-08-04 - Catalogo MCP comercial somente leitura
 
 - Causa-raiz: o Operador conhecia APIs por texto no prompt, sem descoberta tipada nem limite tecnico que impedisse consultas fora do catalogo comercial autorizado.

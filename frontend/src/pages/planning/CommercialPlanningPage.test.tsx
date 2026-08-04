@@ -241,6 +241,10 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
 });
 
 vi.mock("../../api/planning/useGrowthOperator", () => ({
+  useGrowthOperatorMcpTools: () => ({
+    data: [],
+    isError: false,
+  }),
   useGrowthOperatorExecutions: () => ({
     data: [],
     isError: false,
@@ -562,6 +566,15 @@ describe("CommercialPlanningPage", () => {
     renderPage();
 
     expect(screen.getAllByText("Rascunho").length).toBeGreaterThan(0);
+  });
+
+  it("mostra o catalogo MCP dentro do painel do Operador", () => {
+    renderPage();
+
+    expect(screen.getByText("Ferramentas disponíveis via MCP")).toBeTruthy();
+    expect(
+      screen.getByText(/Todas as ferramentas são somente leitura e auditáveis/),
+    ).toBeTruthy();
   });
 
   it("renderiza sugestao de julho quando a API ainda nao retorna planos", () => {

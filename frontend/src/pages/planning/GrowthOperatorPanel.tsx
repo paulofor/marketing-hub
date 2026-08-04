@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   GrowthOperatorExecution,
   useGrowthOperatorExecutions,
+  useGrowthOperatorMcpTools,
   useStartGrowthOperator,
 } from "../../api/planning/useGrowthOperator";
 
@@ -51,6 +52,7 @@ export default function GrowthOperatorPanel({
 }) {
   const [objective, setObjective] = useState(defaultObjective ?? "");
   const executionsQuery = useGrowthOperatorExecutions(planId);
+  const toolsQuery = useGrowthOperatorMcpTools();
   const start = useStartGrowthOperator(planId);
   const executions = executionsQuery.data ?? [];
 
@@ -71,6 +73,51 @@ export default function GrowthOperatorPanel({
             executada.
           </p>
         </div>
+
+        <details
+          className="border rounded p-3"
+          data-testid="growth-operator-mcp-tools"
+        >
+          <summary className="d-flex align-items-center gap-2 flex-wrap">
+            <strong>Ferramentas disponíveis via MCP</strong>
+            <span className="badge text-bg-secondary">
+              {toolsQuery.data?.length ?? 0} ferramentas
+            </span>
+          </summary>
+          <p className="text-muted small mt-2 mb-2">
+            Catálogo autorizado para investigação direta do Marketing Hub. Todas
+            as ferramentas são somente leitura e auditáveis.
+          </p>
+          {toolsQuery.isError ? (
+            <div className="alert alert-warning py-2 mb-0">
+              Não foi possível carregar o catálogo MCP.
+            </div>
+          ) : (
+            <div className="d-grid gap-2">
+              {(toolsQuery.data ?? []).map((tool) => (
+                <div className="border rounded p-2" key={tool.name}>
+                  <div className="d-flex justify-content-between gap-2 flex-wrap">
+                    <code>{tool.name}</code>
+                    <span className="badge text-bg-success">
+                      Somente leitura
+                    </span>
+                  </div>
+                  <p className="mb-1 mt-1">{tool.description}</p>
+                  <div className="text-muted small">
+                    Fonte: {tool.dataSource}
+                    {Object.entries(tool.parameters).map(
+                      ([name, description]) => (
+                        <span className="d-block" key={name}>
+                          Parâmetro <code>{name}</code>: {description}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </details>
 
         <div>
           <label className="form-label" htmlFor="growth-operator-objective">

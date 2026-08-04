@@ -4,6 +4,12 @@ info:
   version: 1.0.0
   description: Diagnosticos Codex auditaveis e estritamente somente leitura vinculados ao planejamento comercial.
 paths:
+  /api/growth-operator/v1/mcp-tools:
+    get:
+      summary: Lista o catalogo MCP somente leitura autorizado para o Operador.
+      responses:
+        "200":
+          description: Ferramentas MCP retornadas.
   /api/growth-operator/v1/commercial-plans/{planId}/executions:
     get:
       summary: Lista diagnosticos de um planejamento.

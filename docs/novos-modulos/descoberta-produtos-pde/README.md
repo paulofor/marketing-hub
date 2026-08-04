@@ -133,6 +133,7 @@ Contratos principais:
 - `GET /api/product-discovery/v1/cycles`
 - `POST /api/product-discovery/v1/cycles`
 - `GET /api/product-discovery/v1/cycles/{cycleId}`
+- `POST /api/product-discovery/v1/legacy-artificial-evidence/archive`
 - `GET /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending`
 - `POST /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/complete`
 - `POST /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/fail`
@@ -140,6 +141,11 @@ Contratos principais:
 O backend nao pesquisa internet, nao executa rotina e nao cria produto automaticamente.
 Ele apenas persiste contratos, publica pendencias e recebe resultados. O worker executor
 mantem a rotina operacional e os prompts/schemas versionados em `product-discovery-worker`.
+
+A limpeza de resultados legados deve ser lógica e auditável: ciclos compostos somente
+por páginas de busca sem resultados são arquivados pela tela, permanecem consultáveis
+no histórico e deixam de participar do ranking comercial. Nenhum resultado deve ser
+apagado nem tratado como evidência real apenas para completar uma execução.
 
 Fora da v1:
 

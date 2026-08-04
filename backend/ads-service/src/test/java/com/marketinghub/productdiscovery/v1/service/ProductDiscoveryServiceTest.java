@@ -3,6 +3,8 @@ package com.marketinghub.productdiscovery.v1.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
@@ -25,7 +27,9 @@ class ProductDiscoveryServiceTest {
   /** Deve manter renda extra como primeira trilha de pesquisa recomendada com travas comerciais. */
   @Test
   void getMaturityRanking() {
-    when(opportunityRepository.findTop50ByOrderByScoreDesc()).thenReturn(List.of());
+    when(opportunityRepository.findTop50ByCycleStatusOrderByScoreDesc(
+            ProductDiscoveryCycleStatus.COMPLETED))
+        .thenReturn(List.of());
     ProductDiscoveryService service =
         new ProductDiscoveryService(cycleRepository, opportunityRepository);
 
@@ -54,7 +58,9 @@ class ProductDiscoveryServiceTest {
     opportunity.setCommercialRisk("Validar disposição de compra.");
     opportunity.setScore(new BigDecimal("82.00"));
     opportunity.setDecision(ProductDiscoveryOpportunityDecision.APPROVE);
-    when(opportunityRepository.findTop50ByOrderByScoreDesc()).thenReturn(List.of(opportunity));
+    when(opportunityRepository.findTop50ByCycleStatusOrderByScoreDesc(
+            ProductDiscoveryCycleStatus.COMPLETED))
+        .thenReturn(List.of(opportunity));
     ProductDiscoveryService service =
         new ProductDiscoveryService(cycleRepository, opportunityRepository);
 
@@ -63,5 +69,50 @@ class ProductDiscoveryServiceTest {
     assertThat(ranking.items()).hasSize(1);
     assertThat(ranking.items().getFirst().niche()).contains("agenda de manicure");
     assertThat(ranking.recommendedPriority()).contains("agenda de manicure");
+  }
+
+  /** Deve arquivar apenas ciclos cujo resultado inteiro seja o fallback artificial legado. */
+  @Test
+  void archiveArtificialLegacyEvidence() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(17L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
+    ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
+    opportunity.setEvidenceJson(
+        "[{\"snippet\":\"Busca brave não retornou resultados estruturados suficientes; pesquisar mais.\"}]");
+    when(cycleRepository.findTop50ByOrderByUpdatedAtDesc()).thenReturn(List.of(cycle));
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(17L))
+        .thenReturn(List.of(opportunity));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(cycleRepository, opportunityRepository);
+
+    ProductDiscoveryLegacyCleanupResponse response = service.archiveArtificialLegacyEvidence();
+
+    assertThat(response.archivedCycles()).isEqualTo(1);
+    assertThat(response.archivedOpportunities()).isEqualTo(1);
+    assertThat(response.cycleIds()).containsExactly(17L);
+    assertThat(cycle.getStatus()).isEqualTo(ProductDiscoveryCycleStatus.ARCHIVED);
+    assertThat(cycle.getDecisionSummary()).contains("não comprova dor");
+  }
+
+  /** Deve reconhecer também a frase usada pelo primeiro fallback DuckDuckGo. */
+  @Test
+  void archiveOldestArtificialLegacyEvidence() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(1L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
+    ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
+    opportunity.setEvidenceJson(
+        "[{\"snippet\":\"Busca pública não retornou tópicos estruturados suficientes; pesquisar mais.\"}]");
+    when(cycleRepository.findTop50ByOrderByUpdatedAtDesc()).thenReturn(List.of(cycle));
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(1L))
+        .thenReturn(List.of(opportunity));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(cycleRepository, opportunityRepository);
+
+    ProductDiscoveryLegacyCleanupResponse response = service.archiveArtificialLegacyEvidence();
+
+    assertThat(response.cycleIds()).containsExactly(1L);
+    assertThat(cycle.getStatus()).isEqualTo(ProductDiscoveryCycleStatus.ARCHIVED);
   }
 }

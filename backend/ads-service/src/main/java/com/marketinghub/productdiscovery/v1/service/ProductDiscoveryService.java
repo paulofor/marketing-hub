@@ -19,6 +19,12 @@ public class ProductDiscoveryService {
 
   private static final String PIPELINE_CODE = "productdiscovery.v1";
   private static final String STAGE_CODE = "research";
+  private static final List<String> LEGACY_ARTIFICIAL_EVIDENCE_MARKERS =
+      List.of(
+          "não retornou resultados estruturados suficientes",
+          "não retornou tópicos estruturados suficientes");
+  private static final String LEGACY_ARCHIVE_REASON =
+      "Evidências artificiais legadas invalidadas: a página de busca sem resultados não comprova dor, ciência ou intenção de compra.";
   private final ProductDiscoveryCycleRepository cycleRepository;
   private final ProductDiscoveryOpportunityRepository opportunityRepository;
 
@@ -206,7 +212,11 @@ public class ProductDiscoveryService {
    */
   private List<ProductDiscoveryMaturityItemResponse> buildDiscoveredRankingItems() {
     List<ProductDiscoveryOpportunity> opportunities =
-        opportunityRepository.findTop50ByOrderByScoreDesc().stream().limit(10).toList();
+        opportunityRepository
+            .findTop50ByCycleStatusOrderByScoreDesc(ProductDiscoveryCycleStatus.COMPLETED)
+            .stream()
+            .limit(10)
+            .toList();
     return IntStream.range(0, opportunities.size())
         .mapToObj(index -> toMaturityItem(index + 1, opportunities.get(index)))
         .toList();
@@ -277,6 +287,49 @@ public class ProductDiscoveryService {
     cycle.setErrorMessage(null);
     cycleRepository.save(cycle);
     return getCycle(cycleId);
+  }
+
+  /** Arquiva ciclos legados compostos exclusivamente por páginas de busca sem resultados reais. */
+  @Transactional
+  public ProductDiscoveryLegacyCleanupResponse archiveArtificialLegacyEvidence() {
+    List<ProductDiscoveryCycle> candidates =
+        cycleRepository.findTop50ByOrderByUpdatedAtDesc().stream()
+            .filter(cycle -> cycle.getStatus() == ProductDiscoveryCycleStatus.COMPLETED)
+            .filter(this::containsOnlyArtificialLegacyEvidence)
+            .toList();
+    int opportunityCount = 0;
+    for (ProductDiscoveryCycle cycle : candidates) {
+      List<ProductDiscoveryOpportunity> opportunities =
+          opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycle.getId());
+      opportunityCount += opportunities.size();
+      cycle.setStatus(ProductDiscoveryCycleStatus.ARCHIVED);
+      cycle.setStageCode("legacy-evidence-archived");
+      cycle.setDecisionSummary(LEGACY_ARCHIVE_REASON);
+      cycleRepository.save(cycle);
+    }
+    return new ProductDiscoveryLegacyCleanupResponse(
+        candidates.size(),
+        opportunityCount,
+        candidates.stream().map(ProductDiscoveryCycle::getId).toList(),
+        LEGACY_ARCHIVE_REASON);
+  }
+
+  /** Confirma que todas as oportunidades do ciclo usam o fallback artificial conhecido. */
+  private boolean containsOnlyArtificialLegacyEvidence(ProductDiscoveryCycle cycle) {
+    List<ProductDiscoveryOpportunity> opportunities =
+        opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycle.getId());
+    return !opportunities.isEmpty()
+        && opportunities.stream()
+            .allMatch(
+                opportunity ->
+                    optionalText(opportunity.getEvidenceJson()) != null
+                        && LEGACY_ARTIFICIAL_EVIDENCE_MARKERS.stream()
+                            .anyMatch(
+                                marker ->
+                                    opportunity
+                                        .getEvidenceJson()
+                                        .toLowerCase(java.util.Locale.ROOT)
+                                        .contains(marker)));
   }
 
   /** Registra falha operacional do worker preservando a causa para o usuário. */
